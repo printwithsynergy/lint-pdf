@@ -51,6 +51,7 @@ export const footerGroups: FooterGroup[] = [
         label: "GitHub",
         external: true,
       },
+      { href: "/contact", label: "Contact Us" },
     ],
   },
 ];

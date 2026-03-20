@@ -77,7 +77,7 @@ export function HeroSection() {
           >
             <path
               d="M40 10 Q 20 10, 20 30 L 20 50 Q 20 60, 10 60 Q 20 60, 20 70 L 20 90 Q 20 110, 40 110"
-              stroke="#0c4a6e"
+              stroke="#1e3a8a"
               strokeWidth="2"
               fill="none"
             />
@@ -91,7 +91,7 @@ export function HeroSection() {
           >
             <path
               d="M20 10 Q 40 10, 40 30 L 40 50 Q 40 60, 50 60 Q 40 60, 40 70 L 40 90 Q 40 110, 20 110"
-              stroke="#0369a1"
+              stroke="#1d4ed8"
               strokeWidth="2"
               fill="none"
             />
@@ -103,13 +103,13 @@ export function HeroSection() {
             viewBox="0 0 200 200"
             fill="none"
           >
-            <circle cx="85" cy="85" r="55" stroke="#0c4a6e" strokeWidth="2" />
+            <circle cx="85" cy="85" r="55" stroke="#1e3a8a" strokeWidth="2" />
             <line
               x1="125"
               y1="125"
               x2="170"
               y2="170"
-              stroke="#0c4a6e"
+              stroke="#1e3a8a"
               strokeWidth="3"
               strokeLinecap="round"
             />
@@ -119,7 +119,7 @@ export function HeroSection() {
               y1="70"
               x2="115"
               y2="70"
-              stroke="#0284c7"
+              stroke="#2563eb"
               strokeWidth="1"
               strokeDasharray="4 3"
             />
@@ -128,7 +128,7 @@ export function HeroSection() {
               y1="85"
               x2="115"
               y2="85"
-              stroke="#0284c7"
+              stroke="#2563eb"
               strokeWidth="1"
               strokeDasharray="4 3"
             />
@@ -137,7 +137,7 @@ export function HeroSection() {
               y1="100"
               x2="100"
               y2="100"
-              stroke="#0284c7"
+              stroke="#2563eb"
               strokeWidth="1"
               strokeDasharray="4 3"
             />
@@ -155,7 +155,7 @@ export function HeroSection() {
               width="180"
               height="140"
               rx="8"
-              stroke="#0c4a6e"
+              stroke="#1e3a8a"
               strokeWidth="2"
             />
             <line
@@ -163,13 +163,13 @@ export function HeroSection() {
               y1="35"
               x2="190"
               y2="35"
-              stroke="#0c4a6e"
+              stroke="#1e3a8a"
               strokeWidth="1"
             />
             {/* Terminal prompt */}
             <path
               d="M30 55 L45 70 L30 85"
-              stroke="#0ea5e9"
+              stroke="#3b82f6"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -180,7 +180,7 @@ export function HeroSection() {
               y1="70"
               x2="100"
               y2="70"
-              stroke="#0284c7"
+              stroke="#2563eb"
               strokeWidth="1.5"
               strokeDasharray="4 3"
             />
@@ -189,7 +189,7 @@ export function HeroSection() {
               y1="90"
               x2="120"
               y2="90"
-              stroke="#0369a1"
+              stroke="#1d4ed8"
               strokeWidth="1"
               strokeDasharray="3 4"
             />
@@ -198,7 +198,7 @@ export function HeroSection() {
               y1="110"
               x2="90"
               y2="110"
-              stroke="#0369a1"
+              stroke="#1d4ed8"
               strokeWidth="1"
               strokeDasharray="3 4"
             />
@@ -218,13 +218,13 @@ export function HeroSection() {
                   width="16"
                   height="16"
                   rx="3"
-                  stroke="#0284c7"
+                  stroke="#2563eb"
                   strokeWidth="1.5"
                   fill="none"
                 />
                 <path
                   d="M12 12 L15 15 L22 7"
-                  stroke="#0c4a6e"
+                  stroke="#1e3a8a"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -235,7 +235,7 @@ export function HeroSection() {
                   y1="12"
                   x2="90"
                   y2="12"
-                  stroke="#0ea5e9"
+                  stroke="#3b82f6"
                   strokeWidth="1"
                   strokeDasharray="3 2"
                 />
@@ -251,11 +251,11 @@ export function HeroSection() {
           >
             <path
               d="M20 180 Q 100 20, 180 100"
-              stroke="#0c4a6e"
+              stroke="#1e3a8a"
               strokeWidth="2"
               strokeDasharray="8 10"
             />
-            <circle cx="180" cy="100" r="4" fill="#0c4a6e" />
+            <circle cx="180" cy="100" r="4" fill="#1e3a8a" />
           </svg>
           <svg
             className="absolute bottom-[12%] left-[18%] w-56 h-56 opacity-[0.06]"
@@ -264,11 +264,11 @@ export function HeroSection() {
           >
             <path
               d="M180 180 Q 60 80, 20 20"
-              stroke="#0ea5e9"
+              stroke="#3b82f6"
               strokeWidth="2"
               strokeDasharray="8 10"
             />
-            <circle cx="20" cy="20" r="4" fill="#0ea5e9" />
+            <circle cx="20" cy="20" r="4" fill="#3b82f6" />
           </svg>
 
           {/* ── Code block indicator (top-left) ── */}
@@ -280,7 +280,7 @@ export function HeroSection() {
             {/* Opening angle bracket < */}
             <path
               d="M100 40 L50 100 L100 160"
-              stroke="#0c4a6e"
+              stroke="#1e3a8a"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -292,14 +292,14 @@ export function HeroSection() {
               y1="40"
               x2="135"
               y2="160"
-              stroke="#0284c7"
+              stroke="#2563eb"
               strokeWidth="2"
               strokeLinecap="round"
             />
             {/* Closing angle bracket > */}
             <path
               d="M150 40 L200 100 L150 160"
-              stroke="#0c4a6e"
+              stroke="#1e3a8a"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -321,12 +321,12 @@ export function HeroSection() {
               viewBox="0 0 20 20"
               fill="none"
             >
-              <circle cx="10" cy="10" r="3" fill="#0284c7" />
+              <circle cx="10" cy="10" r="3" fill="#2563eb" />
               <circle
                 cx="10"
                 cy="10"
                 r="7"
-                stroke="#0284c7"
+                stroke="#2563eb"
                 strokeWidth="0.8"
               />
             </svg>
