@@ -126,9 +126,9 @@ class TestWebhookDispatcherDeliver:
         call_kwargs = mock_post.call_args
         headers = call_kwargs.kwargs.get("headers") or call_kwargs[1].get("headers")
         assert headers["Content-Type"] == "application/json"
-        assert headers["X-Grounded-Event"] == "preflight.complete"
-        assert headers["X-Grounded-Signature"].startswith("sha256=")
-        assert headers["User-Agent"] == "Grounded-Webhook/0.1.0"
+        assert headers["X-LintPDF-Event"] == "preflight.complete"
+        assert headers["X-LintPDF-Signature"].startswith("sha256=")
+        assert headers["User-Agent"] == "LintPDF-Webhook/0.1.0"
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
     def test_delivery_sends_sorted_json(self, mock_post: MagicMock) -> None:

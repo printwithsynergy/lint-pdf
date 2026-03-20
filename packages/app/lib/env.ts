@@ -12,7 +12,7 @@ const envSchema = baseEnvSchema.extend({
   STRIPE_MODE: z.enum(["standard", "connect"]).default("standard"),
   STRIPE_SANDBOX: z.string().default("true"),
 
-  // Grounded engine
+  // LintPDF engine
   GROUNDED_API_URL: z.string().url().default("http://localhost:8000"),
   GROUNDED_WEBHOOK_SECRET: z.string().default(""),
   GROUNDED_API_KEY: z.string().optional(),

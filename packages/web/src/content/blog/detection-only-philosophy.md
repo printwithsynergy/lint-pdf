@@ -3,7 +3,7 @@ title: "Why Detection-Only Matters for Print Production"
 date: "2026-03-14"
 author: "Think Neverland"
 category: "Prepress Tips"
-excerpt: "Automated PDF correction sounds appealing until a tool re-renders your transparency wrong or drops an ICC profile. Here is why Never Grounded chose detection-only — and why it is the safer path for production workflows."
+excerpt: "Automated PDF correction sounds appealing until a tool re-renders your transparency wrong or drops an ICC profile. Here is why LintPDF chose detection-only — and why it is the safer path for production workflows."
 tags: ["philosophy", "prepress", "quality"]
 ---
 
@@ -19,9 +19,9 @@ Or consider transparency flattening. A tool detects transparency that is incompa
 
 ## Detection gives you the information without the risk
 
-Never Grounded takes a different approach. We run 250+ Inspections across your file and tell you exactly what we find. Fonts that are not embedded, spot colors in the wrong workflow, images below minimum resolution, missing bleed, non-compliant ICC profiles, barcode quiet zones that are too narrow.
+LintPDF takes a different approach. We run 250+ Checks across your file and tell you exactly what we find. Fonts that are not embedded, spot colors in the wrong workflow, images below minimum resolution, missing bleed, non-compliant ICC profiles, barcode quiet zones that are too narrow.
 
-Every finding includes a severity level. Aground findings are blockers — issues that will almost certainly cause production problems. Squalls are warnings — potential issues that may need attention depending on the workflow. Advisories are informational — things worth knowing but unlikely to cause problems.
+Every finding includes a severity level. Error findings are blockers — issues that will almost certainly cause production problems. Warnings are potential issues that may need attention depending on the workflow. Info findings are informational — things worth knowing but unlikely to cause problems.
 
 You get the complete picture. You make the decisions. Your files stay exactly as they were.
 
@@ -29,10 +29,10 @@ You get the complete picture. You make the decisions. Your files stay exactly as
 
 There are cases where automated correction is appropriate — standardizing page sizes, embedding missing fonts from a known font library, converting color spaces with verified ICC profiles in a controlled environment. But these corrections require deep domain knowledge, verified profiles, and careful testing.
 
-Never Grounded gives you the detection layer. Correction, when it is needed, should happen in tools and workflows where humans verify the results before production.
+LintPDF gives you the detection layer. Correction, when it is needed, should happen in tools and workflows where humans verify the results before production.
 
 ## The bottom line
 
 Detection is the foundation. It is the one step in a preflight workflow that has zero risk of damaging customer files. Start with detection, review the findings, then decide how to handle each issue in the context of your specific production workflow.
 
-Your files were built to sail. Never Grounded makes sure they are ready.
+Every check. Every page. Every time.

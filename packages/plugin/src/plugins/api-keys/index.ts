@@ -1,5 +1,5 @@
 /**
- * API key management plugin — manage tenant API keys via the Grounded engine.
+ * API key management plugin — manage tenant API keys via the LintPDF engine.
  */
 
 import type {
@@ -15,12 +15,12 @@ type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 
 // ---------------------------------------------------------------------------
-// Helper: proxy fetch to the Grounded engine admin API
+// Helper: proxy fetch to the LintPDF engine admin API
 // ---------------------------------------------------------------------------
 
 function adminFetch(path: string, init?: RequestInit): Promise<Response> {
   const baseUrl = (
-    process.env.GROUNDED_API_URL ?? "https://api.grounded.dev"
+    process.env.GROUNDED_API_URL ?? "https://api.lintpdf.com"
   ).replace(/\/$/, "");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -40,7 +40,7 @@ function adminFetch(path: string, init?: RequestInit): Promise<Response> {
 export const groundedApiKeysPlugin: PixieDustPlugin = {
   name: "grounded-api-keys",
   version: "0.1.0",
-  description: "Manage per-tenant API keys for the Grounded engine",
+  description: "Manage per-tenant API keys for the LintPDF engine",
   dependencies: ["grounded"],
 
   register(ctx: PluginContext): void {

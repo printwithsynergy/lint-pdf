@@ -1,24 +1,24 @@
 const steps = [
   {
     number: "01",
-    title: "Launch",
+    title: "Submit",
     subtitle: "Submit your file",
     description:
-      "POST your PDF (or EPS, TIFF, JPEG, PNG, AI) to the Launch endpoint with your chosen Voyage Plan. One request, one file, one API call.",
+      "POST your PDF (or EPS, TIFF, JPEG, PNG, AI) to the Submit endpoint with your chosen Ruleset. One request, one file, one API call.",
   },
   {
     number: "02",
-    title: "Underway",
-    subtitle: "250+ Inspections in seconds",
+    title: "Processing",
+    subtitle: "250+ Checks in seconds",
     description:
-      "Never Grounded runs your file through the full Inspection suite — color spaces, fonts, images, transparency, page geometry, compliance, and more. Processing happens asynchronously on The Channel.",
+      "LintPDF runs your file through the full Check suite — color spaces, fonts, images, transparency, page geometry, compliance, and more. Processing happens asynchronously on the Queue.",
   },
   {
     number: "03",
-    title: "Captain's Log",
+    title: "Report",
     subtitle: "Your preflight report",
     description:
-      "Retrieve your Captain's Log as JSON, XML, or a white-labeled PDF. Every finding includes severity, page location, and Inspection ID. Clear to Sail or Aground — you know instantly.",
+      "Retrieve your Report as JSON, XML, or a white-labeled PDF. Every finding includes severity, page location, and Check ID. Pass or Error — you know instantly.",
   },
 ];
 
@@ -32,7 +32,7 @@ export function HowItWorksSection() {
             How it works
           </h2>
           <p className="text-slate-500">
-            Three steps from Launch to Captain&apos;s Log.
+            Three steps from Submit to Report.
           </p>
         </div>
 

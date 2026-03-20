@@ -20,12 +20,12 @@ interface AccountDb {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: proxy fetch to the Grounded engine admin API
+// Helper: proxy fetch to the LintPDF engine admin API
 // ---------------------------------------------------------------------------
 
 function adminFetch(path: string, init?: RequestInit): Promise<Response> {
   const baseUrl = (
-    process.env.GROUNDED_API_URL ?? "https://api.grounded.dev"
+    process.env.GROUNDED_API_URL ?? "https://api.lintpdf.com"
   ).replace(/\/$/, "");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -138,7 +138,7 @@ export const groundedAccountPlugin: PixieDustPlugin = {
             return { status: 400, body: { error: "Missing tenant context" } };
           }
 
-          // 1. Update branding in the Grounded engine
+          // 1. Update branding in the LintPDF engine
           const resp = await adminFetch(
             `/api/v1/admin/tenants/${tenantId}/branding`,
             {

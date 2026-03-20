@@ -1,10 +1,10 @@
 /**
- * Grounded Billing — Fairy Ring plugin extending stripe-kit.
+ * LintPDF Billing — Fairy Ring plugin extending stripe-kit.
  *
- * Adds Grounded-specific billing features on top of Pixie Dust's stripe-kit:
- * - Checkout + portal integration for Grounded subscription plans
+ * Adds LintPDF-specific billing features on top of Pixie Dust's stripe-kit:
+ * - Checkout + portal integration for LintPDF subscription plans
  * - Metered overage billing (per-job charges beyond plan limits)
- * - Plan sync to the Grounded engine via admin API
+ * - Plan sync to the LintPDF engine via admin API
  */
 
 import type {
@@ -110,7 +110,7 @@ export const groundedBillingPlugin: PixieDustPlugin = {
   name: "grounded-billing",
   version: "0.1.0",
   description:
-    "Grounded billing — extends stripe-kit with plans, checkout, portal, and metered overage",
+    "LintPDF billing — extends stripe-kit with plans, checkout, portal, and metered overage",
   dependencies: ["stripe-kit"],
 
   register(ctx: PluginContext): void {
@@ -307,7 +307,7 @@ export const groundedBillingPlugin: PixieDustPlugin = {
         return;
       }
 
-      // Map Stripe price to Grounded plan name
+      // Map Stripe price to LintPDF plan name
       const priceId = subscription.items?.data?.[0]?.price?.lookup_key;
       const planMap: Record<string, string> = {
         grounded_starter_monthly: "starter",
@@ -394,7 +394,7 @@ export const groundedBillingPlugin: PixieDustPlugin = {
   boot(ctx: PluginContext): void {
     const stripe = getStripe();
     if (stripe) {
-      ctx.services.logger.info("Grounded billing plugin ready");
+      ctx.services.logger.info("LintPDF billing plugin ready");
     }
   },
 

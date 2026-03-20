@@ -1,4 +1,4 @@
-"""Grounded analyzers — preflight detection modules.
+"""LintPDF analyzers — preflight detection modules.
 
 Each analyzer focuses on a specific domain (images, fonts, color, etc.)
 and consumes SemanticDocument data plus content stream events to produce

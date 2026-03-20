@@ -520,7 +520,7 @@ describe("groundedBillingPlugin", () => {
       await mod.groundedBillingPlugin.boot?.(ctx as unknown as PluginContext); // skipcq: JS-0323
 
       expect(ctx.services.logger.info).toHaveBeenCalledWith(
-        "Grounded billing plugin ready",
+        "LintPDF billing plugin ready",
       );
     });
 

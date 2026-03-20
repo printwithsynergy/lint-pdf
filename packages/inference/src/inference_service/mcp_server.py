@@ -1,4 +1,4 @@
-"""Modal MCP server for Never Grounded inference service management.
+"""Modal MCP server for LintPDF inference service management.
 
 Provides tools for deploying, monitoring, and managing the Modal inference
 service directly from Claude Code.
@@ -19,7 +19,7 @@ from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP(
     "modal-grounded",
-    description="Manage the Never Grounded Modal inference service",
+    description="Manage the LintPDF Modal inference service",
 )
 
 # Resolve project root (packages/inference)
@@ -66,7 +66,7 @@ def _run_modal(*args: str, cwd: Path | None = None) -> dict[str, Any]:
 
 @mcp.tool()
 def deploy() -> str:
-    """Deploy the Never Grounded inference service to Modal.
+    """Deploy the LintPDF inference service to Modal.
 
     Runs `modal deploy` on the inference service. This builds the container
     image, uploads the code, and creates/updates the Modal app. Returns

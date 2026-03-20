@@ -47,7 +47,7 @@ class TestSettingsDefaults:
         with patch.dict("os.environ", {}, clear=True):
             s = Settings()
             assert s.resend_api_key is None
-            assert s.email_from_address == "Grounded <noreply@thinkneverland.com>"
+            assert s.email_from_address == "LintPDF <noreply@thinkneverland.com>"
 
     def test_default_s3_settings(self) -> None:
         with patch.dict("os.environ", {}, clear=True):
@@ -61,7 +61,7 @@ class TestSettingsDefaults:
     def test_default_report_base_url(self) -> None:
         with patch.dict("os.environ", {}, clear=True):
             s = Settings()
-            assert s.report_base_url == "https://reports.grounded.dev"
+            assert s.report_base_url == "https://reports.lintpdf.com"
 
     def test_default_admin_api_key(self) -> None:
         with patch.dict("os.environ", {}, clear=True):

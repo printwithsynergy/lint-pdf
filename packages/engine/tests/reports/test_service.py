@@ -51,9 +51,9 @@ class _FakeQuery:
 class TestBrandingContext:
     def test_defaults(self) -> None:
         branding = BrandingContext()
-        assert branding.name == "Grounded"
+        assert branding.name == "LintPDF"
         assert branding.primary_color == "#1a3a7a"
-        assert branding.footer_text == "Powered by Grounded"
+        assert branding.footer_text == "Powered by LintPDF"
 
     def test_custom_branding(self) -> None:
         branding = BrandingContext(
@@ -155,7 +155,7 @@ class TestReportService:
         assert "Acme Print" in html
         assert "#ff6600" in html
         # Footer should not appear
-        assert "Powered by Grounded" not in html
+        assert "Powered by LintPDF" not in html
 
     def test_generate_no_expiry(self) -> None:
         storage = InMemoryStorage()

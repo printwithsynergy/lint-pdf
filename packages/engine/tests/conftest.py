@@ -1,4 +1,4 @@
-"""Shared test fixtures for Grounded test suite."""
+"""Shared test fixtures for LintPDF test suite."""
 
 from pathlib import Path
 

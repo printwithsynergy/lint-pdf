@@ -73,7 +73,7 @@ try:
             plan=plan,
             rate_limit_daily=limits["rate_limit_daily"],
             max_file_size_mb=limits["max_file_size_mb"],
-            contact_email=f"test-{plan.value}@nevergrounded.io",
+            contact_email=f"test-{plan.value}@lintpdf.com",
             is_active=True,
         )
         db.add(tenant)

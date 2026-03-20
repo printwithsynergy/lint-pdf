@@ -15,12 +15,12 @@ type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 
 // ---------------------------------------------------------------------------
-// Helper: proxy fetch to the Grounded engine API
+// Helper: proxy fetch to the LintPDF engine API
 // ---------------------------------------------------------------------------
 
 function engineFetch(path: string, init?: RequestInit): Promise<Response> {
   const baseUrl = (
-    process.env.GROUNDED_API_URL ?? "https://api.grounded.dev"
+    process.env.GROUNDED_API_URL ?? "https://api.lintpdf.com"
   ).replace(/\/$/, "");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -75,7 +75,7 @@ export const groundedReportsPlugin: PixieDustPlugin = {
           if (!client) {
             return {
               status: 503,
-              body: { error: "Grounded API not configured" },
+              body: { error: "LintPDF API not configured" },
             };
           }
           const job = await client.getJob(req.params.jobId);

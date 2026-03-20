@@ -9,7 +9,7 @@ from grounded.api.auth import generate_api_key, hash_api_key
 class TestApiKeyGeneration:
     def test_generate_api_key_format(self) -> None:
         key = generate_api_key()
-        assert key.startswith("grd_")
+        assert key.startswith("lpdf_")
         assert len(key) > 10
 
     def test_generate_unique_keys(self) -> None:
@@ -17,7 +17,7 @@ class TestApiKeyGeneration:
         assert len(keys) == 10  # All unique
 
     def test_hash_api_key_deterministic(self) -> None:
-        key = "grd_test_key_123"
+        key = "lpdf_test_key_123"
         assert hash_api_key(key) == hash_api_key(key)
 
     def test_hash_api_key_different_for_different_keys(self) -> None:

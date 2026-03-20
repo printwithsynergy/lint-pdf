@@ -1,7 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
-const API_BASE = process.env.API_BASE_URL ?? "https://api.nevergrounded.io";
-const WEB_BASE = process.env.WEB_BASE_URL ?? "https://nevergrounded.io";
+const API_BASE = process.env.API_BASE_URL ?? "https://api.lintpdf.com";
+const WEB_BASE = process.env.WEB_BASE_URL ?? "https://lintpdf.com";
 
 // Support HTTP proxy for sandboxed environments
 const proxyServer = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;

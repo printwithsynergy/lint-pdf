@@ -50,7 +50,7 @@ class TestCreateTenant:
         tenant, api_key = service.create_tenant("Test Corp")
         assert tenant.name == "Test Corp"
         assert tenant.plan == TenantPlan.FREE
-        assert api_key.startswith("grd_")
+        assert api_key.startswith("lpdf_")
 
     def test_create_with_plan(self, db_session: Session) -> None:
         service = TenantService(db_session)
@@ -75,7 +75,7 @@ class TestAuthenticate:
 
     def test_authenticate_invalid_key(self, db_session: Session) -> None:
         service = TenantService(db_session)
-        assert service.authenticate("grd_invalid_key") is None
+        assert service.authenticate("lpdf_invalid_key") is None
 
     def test_authenticate_inactive_tenant(self, db_session: Session) -> None:
         service = TenantService(db_session)

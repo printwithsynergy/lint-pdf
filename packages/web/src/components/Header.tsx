@@ -13,7 +13,7 @@ export function Header() {
   const { betaMode } = useBeta();
 
   const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://app.nevergrounded.io";
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
   const ctaLabel = betaMode ? "Join Waitlist" : "Get Started";
   const ctaHref = betaMode ? undefined : `${appUrl}/auth/login?plan=free`;
 
@@ -26,10 +26,10 @@ export function Header() {
             <Logo className="h-9 w-9" />
             <div className="flex flex-col leading-none">
               <span className="text-lg font-semibold tracking-tight text-brand-900">
-                Never Grounded
+                LintPDF
               </span>
               <span className="text-[9px] font-medium tracking-wide text-slate-400">
-                Built to sail. Cleared for press.
+                Every check. Every page. Every time.
               </span>
             </div>
           </Link>

@@ -2,18 +2,18 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  /* Grounded brand colors — navy blues from logo */
-  --color-brand-950: #0c1f3e;
-  --color-brand-900: #162d60;
-  --color-brand-800: #1a3a7a;
-  --color-brand-700: #215aac;
-  --color-brand-600: #3b6fb5;
-  --color-brand-500: #5395ce;
-  --color-brand-400: #78bce1;
-  --color-brand-300: #95d0eb;
-  --color-brand-200: #bce0f3;
-  --color-brand-100: #cee7f2;
-  --color-brand-50: #eef8fb;
+  /* LintPDF brand colors — sky blue */
+  --color-brand-950: #082f49;
+  --color-brand-900: #0c4a6e;
+  --color-brand-800: #075985;
+  --color-brand-700: #0369a1;
+  --color-brand-600: #0284c7;
+  --color-brand-500: #0ea5e9;
+  --color-brand-400: #38bdf8;
+  --color-brand-300: #7dd3fc;
+  --color-brand-200: #bae6fd;
+  --color-brand-100: #e0f2fe;
+  --color-brand-50: #f0f9ff;
 
   --color-success: #22c55e;
   --color-warning: #eab308;
@@ -41,7 +41,7 @@ body {
  */
 .hero-gradient {
   background-color: #ffffff;
-  background-image: linear-gradient(to bottom, #ffffff, #eef8fb4d, #ffffff);
+  background-image: linear-gradient(to bottom, #ffffff, #f0f9ff4d, #ffffff);
 }
 
 /* Code block styling */

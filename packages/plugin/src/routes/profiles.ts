@@ -1,5 +1,5 @@
 /**
- * Profile proxy routes — forward requests to the Grounded API.
+ * Profile proxy routes — forward requests to the LintPDF API.
  */
 
 import type { RouteDefinition, RouteResponse } from "@thinkneverland/pixie-dust-fairy-ring";
@@ -16,7 +16,7 @@ export function profileRoutes(): RouteDefinition[] {
       handler: async (): Promise<RouteResponse> => {
         const client = getClient();
         if (!client) {
-          return { status: 503, body: { error: "Grounded API not configured" } };
+          return { status: 503, body: { error: "LintPDF API not configured" } };
         }
         const profiles = await client.listProfiles();
         return { status: 200, body: profiles };

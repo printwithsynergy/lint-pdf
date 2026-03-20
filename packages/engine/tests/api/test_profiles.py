@@ -41,7 +41,7 @@ class TestGetProfile:
         assert response.status_code == 200
         data = response.json()
         assert data["profile_id"] == "grounded-default"
-        assert data["name"] == "Grounded Default"
+        assert data["name"] == "LintPDF Default"
         assert "thresholds" in data
         assert "checks" in data
 

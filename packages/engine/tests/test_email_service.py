@@ -68,7 +68,7 @@ class TestConfigureEmail:
             configure_email("re_key", from_address="Custom <custom@example.com>")
             assert svc._from_address == "Custom <custom@example.com>"
             # Reset
-            svc._from_address = "Grounded <noreply@thinkneverland.com>"
+            svc._from_address = "LintPDF <noreply@thinkneverland.com>"
 
 
 class TestSetEmailClient:
@@ -240,7 +240,7 @@ class TestSendReport:
             to="user@example.com",
             tenant_name="Acme Corp",
             job_id="job-001",
-            report_url="https://reports.grounded.dev/r/abc123",
+            report_url="https://reports.lintpdf.com/r/abc123",
             finding_count=0,
             passed=True,
         )
@@ -248,14 +248,14 @@ class TestSendReport:
         call_args = mock_email_client.send.call_args[0][0]
         assert "passed" in call_args["subject"]
         assert "PASS" in call_args["html"]
-        assert "https://reports.grounded.dev/r/abc123" in call_args["html"]
+        assert "https://reports.lintpdf.com/r/abc123" in call_args["html"]
 
     def test_failed_report(self, mock_email_client: MagicMock) -> None:
         send_report(
             to="user@example.com",
             tenant_name="Acme Corp",
             job_id="job-001",
-            report_url="https://reports.grounded.dev/r/abc123",
+            report_url="https://reports.lintpdf.com/r/abc123",
             finding_count=3,
             passed=False,
         )
@@ -268,7 +268,7 @@ class TestSendReport:
             to="user@example.com",
             tenant_name="Acme Corp",
             job_id="job-001",
-            report_url="https://reports.grounded.dev/r/abc",
+            report_url="https://reports.lintpdf.com/r/abc",
             finding_count=0,
             passed=True,
             brand_name="AcmePrint",

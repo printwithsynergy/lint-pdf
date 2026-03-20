@@ -1,4 +1,4 @@
-"""FastAPI application for Never Grounded inference service."""
+"""FastAPI application for LintPDF inference service."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 app = FastAPI(
-    title="Never Grounded Inference Service",
-    description="Vision inference service for Never Grounded AI features",
+    title="LintPDF Inference Service",
+    description="Vision inference service for LintPDF AI features",
     version="0.1.0",
 )
 

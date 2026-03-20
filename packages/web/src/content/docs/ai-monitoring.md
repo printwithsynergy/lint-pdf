@@ -5,7 +5,7 @@ description: "Monitor AI credit consumption, usage trends, and quality metrics w
 
 # AI Usage Monitoring
 
-Never Grounded provides detailed usage analytics for AI inspections, including per-feature breakdowns, trend analysis, and spending tracking.
+LintPDF provides detailed usage analytics for AI inspections, including per-feature breakdowns, trend analysis, and spending tracking.
 
 ## Viewing Usage
 
@@ -13,7 +13,7 @@ Fetch AI usage data for your tenant:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.nevergrounded.io/api/v1/ai/usage?start_date=2026-03-01&end_date=2026-03-16"
+  "https://api.lintpdf.com/api/v1/ai/usage?start_date=2026-03-01&end_date=2026-03-16"
 ```
 
 ### Filtering Options
@@ -55,7 +55,7 @@ The trends endpoint provides statistical process control (SPC) data for monitori
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.nevergrounded.io/api/v1/ai/usage/trends"
+  "https://api.lintpdf.com/api/v1/ai/usage/trends"
 ```
 
 ### Response
@@ -69,9 +69,9 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
       "ai_jobs": 35,
       "total_findings": 120,
       "ai_findings": 45,
-      "aground_count": 2,
-      "squall_count": 18,
-      "advisory_count": 25,
+      "error_count": 2,
+      "warning_count": 18,
+      "info_count": 25,
       "avg_findings_per_job": 2.4,
       "pass_rate": 0.82
     }
@@ -99,17 +99,17 @@ Admins can view AI usage across all tenants:
 
 ```bash
 curl -H "X-Admin-Key: YOUR_ADMIN_KEY" \
-  "https://api.nevergrounded.io/api/v1/admin/ai/usage?start_date=2026-03-01"
+  "https://api.lintpdf.com/api/v1/admin/ai/usage?start_date=2026-03-01"
 ```
 
 This returns aggregated usage grouped by tenant, useful for billing reconciliation and capacity planning.
 
 ## Spending Alerts
 
-Configure Harbor Signals for proactive credit balance notifications:
+Configure Webhooks for proactive credit balance notifications:
 
 ```bash
-curl -X POST https://api.nevergrounded.io/api/v1/harbor-signals \
+curl -X POST https://api.lintpdf.com/api/v1/webhooks \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -131,7 +131,7 @@ If a `monthly_spending_limit` is configured on your AI config, AI inspections ar
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
-  "https://api.nevergrounded.io/api/v1/ai/credits"
+  "https://api.lintpdf.com/api/v1/ai/credits"
 ```
 
 This returns your current balance, active packages, and month-to-date spending.

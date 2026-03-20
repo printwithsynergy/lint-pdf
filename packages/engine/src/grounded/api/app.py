@@ -1,4 +1,4 @@
-"""FastAPI application factory for Grounded."""
+"""FastAPI application factory for LintPDF."""
 
 from __future__ import annotations
 
@@ -84,7 +84,7 @@ def create_app() -> FastAPI:
         Configured FastAPI application instance.
     """
     app = FastAPI(
-        title="Grounded",
+        title="LintPDF",
         description="Detection-only PDF preflight engine",
         version="0.1.0",
         docs_url="/docs",

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Webhook Endpoints", () => {
-  test.describe("Grounded Engine Webhooks", () => {
+  test.describe("LintPDF Engine Webhooks", () => {
     test("rejects requests without valid signature", async ({ request }) => {
       const res = await request.post("/api/grounded/webhooks", {
         data: { event: "job.completed", jobId: "test-123" },

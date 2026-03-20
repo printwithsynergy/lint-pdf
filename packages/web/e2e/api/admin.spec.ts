@@ -163,7 +163,7 @@ test.describe("Admin API", () => {
     expect(createRes.status()).toBe(201);
     const created = await createRes.json();
     expect(created).toHaveProperty("raw_key");
-    expect(created.raw_key.startsWith("grd_")).toBe(true);
+    expect(created.raw_key.startsWith("lpdf_")).toBe(true);
     expect(created.label).toBe("playwright-test-key");
 
     // List

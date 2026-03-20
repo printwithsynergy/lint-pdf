@@ -37,7 +37,7 @@ interface AuthServiceWithInvite {
 export const groundedTeamPlugin: PixieDustPlugin = {
   name: "grounded-team",
   version: "0.1.0",
-  description: "Team member and invite management for Grounded tenants",
+  description: "Team member and invite management for LintPDF tenants",
   dependencies: ["grounded"],
 
   register(ctx: PluginContext): void {

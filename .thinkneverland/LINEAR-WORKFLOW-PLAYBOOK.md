@@ -70,11 +70,11 @@ Scopes: parser | semantic | analyzers | conformance | rules | profiles | reports
 3. Only modify files within scope
 4. Bugs outside scope: create new card, don't fix in this PR
 
-### Grounded-specific scope guidance
+### LintPDF-specific scope guidance
 - Parser module (src/parser/) changes must NOT touch analyzer code
 - Analyzer changes must NOT modify the SemanticModel dataclasses
 - Rule functions must be pure — no imports from api/, queue/, or tenants/
-- Flight Plan JSON schema changes require updating both profiles/ and the JSON schema in docs/
+- Ruleset JSON schema changes require updating both profiles/ and the JSON schema in docs/
 
 ---
 
@@ -104,7 +104,7 @@ Closes GRD-###
 
 ## CARDS REQUIRING HUMAN QA
 
-Labels: `api-endpoint`, `conformance`, `flight-plan-schema`, `security`
+Labels: `api-endpoint`, `conformance`, `ruleset-schema`, `security`
 
 After PR merge:
 1. Comment: "PR #N merged. Needs human QA on staging. Setting to QA Ready."
@@ -122,7 +122,7 @@ If card has `human-only` label:
 
 ---
 
-## GROUNDED-SPECIFIC RULES
+## LINTPDF-SPECIFIC RULES
 
 ### Inspection ID assignment
 - New checks MUST get an ID: GRD_{CATEGORY}_{NNN}
@@ -137,7 +137,7 @@ If card has `human-only` label:
 
 ### Finding severity
 - Only use: no-fly | delay | advisory
-- Default severity comes from the rule; Flight Plans can override
+- Default severity comes from the rule; Rulesets can override
 - no-fly = PDF is non-conformant (fails spec requirement)
 - delay = warning (spec recommendation or best practice)
 - advisory = informational (not a violation)

@@ -346,7 +346,7 @@ class TestCreateApiKeyRoute:
         assert resp.status_code == 201
         data = resp.json()
         assert "raw_key" in data
-        assert data["raw_key"].startswith("grd_")
+        assert data["raw_key"].startswith("lpdf_")
         assert data["label"] == "My Key"
         assert "key_prefix" in data
 

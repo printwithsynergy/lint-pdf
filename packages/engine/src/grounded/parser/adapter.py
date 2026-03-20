@@ -139,7 +139,7 @@ class ParserAdapter(ABC):
     - Object streams
     - Encrypted PDFs (password = empty string)
 
-    Implementations raise Grounded-specific exceptions:
+    Implementations raise LintPDF-specific exceptions:
     - PDFStructureError: File cannot be opened at all
     - PDFParseError: Specific object parsing fails
     - PDFStreamEncodingError: Stream decompression fails

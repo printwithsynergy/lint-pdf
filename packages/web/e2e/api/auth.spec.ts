@@ -11,7 +11,7 @@ test.describe("Authentication", () => {
 
   test("invalid API key returns 401", async ({ request }) => {
     const res = await request.get("/api/v1/jobs", {
-      headers: { Authorization: "Bearer grd_invalid_key_12345" },
+      headers: { Authorization: "Bearer lpdf_invalid_key_12345" },
     });
     expect(res.status()).toBe(401);
     const body = await res.json();

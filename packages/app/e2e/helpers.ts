@@ -5,7 +5,7 @@
 import type { APIRequestContext, Browser } from "@playwright/test";
 
 const MCP_SECRET_KEY = process.env.MCP_SECRET_KEY ?? "";
-const DEFAULT_TEST_EMAIL = "e2e-test@nevergrounded.io";
+const DEFAULT_TEST_EMAIL = "e2e-test@lintpdf.com";
 
 export interface McpAuthResult {
   success: boolean;

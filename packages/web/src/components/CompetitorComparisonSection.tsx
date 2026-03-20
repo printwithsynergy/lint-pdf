@@ -71,7 +71,7 @@ export function CompetitorComparisonSection() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-slate-900 md:text-4xl mb-4">
-            How Never Grounded compares
+            How LintPDF compares
           </h2>
           <p className="text-slate-500 max-w-2xl mx-auto">
             A detection-only API built for speed, transparency, and depth.
@@ -90,7 +90,7 @@ export function CompetitorComparisonSection() {
                     <th
                       key={c.shortName}
                       className={`py-4 px-4 text-center text-sm font-semibold ${
-                        c.shortName === "grounded"
+                        c.shortName === "lintpdf"
                           ? "bg-brand-900 text-white"
                           : "bg-slate-50 text-slate-700"
                       }`}
@@ -135,12 +135,12 @@ export function CompetitorComparisonSection() {
                       <td
                         key={c.shortName}
                         className={`py-3.5 px-4 text-center ${
-                          c.shortName === "grounded" ? "bg-brand-50/60" : ""
+                          c.shortName === "lintpdf" ? "bg-brand-50/60" : ""
                         }`}
                       >
                         <Cell
                           cell={dim.values[c.shortName]}
-                          isGrounded={c.shortName === "grounded"}
+                          isGrounded={c.shortName === "lintpdf"}
                         />
                       </td>
                     ))}

@@ -4,7 +4,7 @@ tags: [playbook, build, phases]
 phases: 9
 ---
 
-# Build Playbook — Grounded
+# Build Playbook — LintPDF
 
 ## Phase 1: Parser Layer [COMPLETE]
 - GRD-001: Project scaffold and CI setup

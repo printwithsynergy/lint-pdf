@@ -14,11 +14,11 @@ type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 
 // ---------------------------------------------------------------------------
-// Helper: proxy fetch to the Grounded engine admin API
+// Helper: proxy fetch to the LintPDF engine admin API
 // ---------------------------------------------------------------------------
 
 function adminFetch(path: string, init?: RequestInit): Promise<Response> {
-  const baseUrl = (process.env.GROUNDED_API_URL ?? "https://api.grounded.dev").replace(
+  const baseUrl = (process.env.GROUNDED_API_URL ?? "https://api.lintpdf.com").replace(
     /\/$/,
     "",
   );
@@ -40,7 +40,7 @@ function adminFetch(path: string, init?: RequestInit): Promise<Response> {
 export const groundedSiteAdminPlugin: PixieDustPlugin = {
   name: "grounded-site-admin",
   version: "0.1.0",
-  description: "Site-wide administration for Grounded — super admin only",
+  description: "Site-wide administration for LintPDF — super admin only",
   dependencies: ["grounded"],
 
   register(ctx: PluginContext): void {

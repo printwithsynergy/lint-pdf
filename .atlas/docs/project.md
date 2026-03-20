@@ -3,7 +3,7 @@ title: Project Overview
 tags: [project, stack, setup]
 ---
 
-# Grounded — PDF Preflight Engine
+# LintPDF — PDF Preflight Engine
 
 Detection-only PDF preflight engine. API-first SaaS that inspects print-ready PDFs against PDF/X-4, PDF/A, and GWG 2022 specifications. No corrections, no side effects — pure detection.
 
@@ -48,7 +48,7 @@ mypy src/                       # type check
 | Flight Plan | Preflight profile (rule composition) |
 | Flight Log | Inspection report |
 | Clear to Fly | All checks passed |
-| Grounded | Critical failures found |
+| Failed | Critical failures found |
 | No-Fly | Critical severity |
 | Radio | Webhook system |
 | Taxiing | Job in progress |

@@ -1,4 +1,4 @@
-"""Grounded parser layer — PDF parsing abstraction.
+"""LintPDF parser layer — PDF parsing abstraction.
 
 This package provides an abstract interface for PDF parsing (ParserAdapter)
 and a concrete implementation using pikepdf (PikePDFAdapter). All inspection

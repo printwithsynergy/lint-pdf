@@ -353,13 +353,13 @@ class TestDispatchWebhook:
 
             call_kwargs = mock_post.call_args
             headers = call_kwargs.kwargs.get("headers", call_kwargs[1].get("headers", {}))
-            assert headers["X-Grounded-Event"] == "job.completed"
-            assert headers["X-Grounded-Signature"].startswith("sha256=")
+            assert headers["X-LintPDF-Event"] == "job.completed"
+            assert headers["X-LintPDF-Signature"].startswith("sha256=")
 
             # Verify the signature is correct
             body = json.dumps(payload, sort_keys=True, default=str)
             expected_sig = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
-            assert headers["X-Grounded-Signature"] == f"sha256={expected_sig}"
+            assert headers["X-LintPDF-Signature"] == f"sha256={expected_sig}"
 
     def test_dispatch_failure_returns_error(self) -> None:
         with patch("httpx.post", side_effect=Exception("Connection refused")):

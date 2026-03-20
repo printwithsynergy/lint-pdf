@@ -1,5 +1,5 @@
 services:
-  # --- Grounded API ---
+  # --- LintPDF API ---
   api:
     build: .
     ports:

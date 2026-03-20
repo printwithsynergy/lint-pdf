@@ -3,9 +3,9 @@ import { getAllPosts, BLOG_CATEGORIES } from "@/lib/blog";
 import { BlogFilters } from "./BlogFilters";
 
 export const metadata: Metadata = {
-  title: "Blog — Never Grounded",
+  title: "Blog — LintPDF",
   description:
-    "Product updates, prepress tips, API guides, and industry news from the Never Grounded team.",
+    "Product updates, prepress tips, API guides, and industry news from the LintPDF team.",
 };
 
 export default function BlogPage() {
@@ -18,7 +18,7 @@ export default function BlogPage() {
           <h1 className="text-4xl font-bold text-slate-900 mb-4">Blog</h1>
           <p className="text-slate-500">
             Product updates, prepress tips, API guides, and industry news from
-            the Never Grounded team.
+            the LintPDF team.
           </p>
         </div>
 

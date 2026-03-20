@@ -73,7 +73,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("syncPlanToEngine", () => {
     it("calls engine admin API with correct URL and plan", async () => {
-      process.env.GROUNDED_API_URL = "https://engine.grounded.dev";
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com";
       process.env.GROUNDED_ADMIN_API_KEY = "admin_key_123";
       mockFetch.mockResolvedValue({ ok: true });
 
@@ -107,7 +107,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       // syncPlanToEngine should have been called
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://engine.grounded.dev/api/v1/admin/tenants/tenant_abc/plan",
+        "https://engine.lintpdf.com/api/v1/admin/tenants/tenant_abc/plan",
         expect.objectContaining({
           method: "PATCH",
           headers: expect.objectContaining({
@@ -302,7 +302,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("syncStripeIds", () => {
     it("calls engine admin API with stripe customer and subscription item IDs", async () => {
-      process.env.GROUNDED_API_URL = "https://engine.grounded.dev";
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com";
       // Return ok for both syncPlanToEngine and syncStripeIds calls
       mockFetch.mockResolvedValue({ ok: true });
 
@@ -336,7 +336,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       // Second fetch call should be syncStripeIds
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://engine.grounded.dev/api/v1/admin/tenants/t_sync/stripe",
+        "https://engine.lintpdf.com/api/v1/admin/tenants/t_sync/stripe",
         expect.objectContaining({
           method: "PATCH",
           body: JSON.stringify({
@@ -509,7 +509,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("engineAdminUrl", () => {
     it("strips trailing slash from GROUNDED_API_URL", async () => {
-      process.env.GROUNDED_API_URL = "https://engine.grounded.dev/";
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com/";
       mockFetch.mockResolvedValue({ ok: true });
 
       const ctx = mockCtx();
@@ -529,7 +529,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://engine.grounded.dev/api/v1/admin/tenants/t_slash/plan",
+        "https://engine.lintpdf.com/api/v1/admin/tenants/t_slash/plan",
         expect.anything(),
       );
     });

@@ -1,4 +1,4 @@
-# Grounded Platform — Feature & Functionality Audit
+# LintPDF Platform — Feature & Functionality Audit
 
 > **Generated:** 2026-03-17
 > **Scope:** 100% coverage of every feature, endpoint, module, and capability across all packages.
@@ -299,8 +299,8 @@
 
 | Profile | File |
 |---------|------|
-| Grounded Default | `profiles/builtin/grounded-default.json` |
-| Grounded Strict | `profiles/builtin/grounded-strict.json` |
+| LintPDF Default | `profiles/builtin/grounded-default.json` |
+| LintPDF Strict | `profiles/builtin/grounded-strict.json` |
 | Advisory Only | `profiles/builtin/grounded-advisory-only.json` |
 | GWG 2022 Coated Offset | `profiles/builtin/gwg-2022-coated-offset.json` |
 | GWG 2022 Uncoated Offset | `profiles/builtin/gwg-2022-uncoated-offset.json` |
@@ -317,7 +317,7 @@
 
 ### 1.11 Webhook System
 
-- **Signing:** HMAC-SHA256 (`X-Grounded-Signature`)
+- **Signing:** HMAC-SHA256 (`X-LintPDF-Signature`)
 - **SSRF protection:** HTTPS-only, blocked hostnames / private IPs
 - **Delivery:** Async dispatch via Celery with retry (3 attempts, exponential backoff)
 - **Filtering:** Per-tenant webhook endpoints with event type filtering

@@ -1,5 +1,5 @@
 /**
- * Usage metering plugin — extracted from the main Grounded plugin.
+ * Usage metering plugin — extracted from the main LintPDF plugin.
  */
 
 import type {
@@ -17,7 +17,7 @@ type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 export const groundedUsagePlugin: PixieDustPlugin = {
   name: "grounded-usage",
   version: "0.1.0",
-  description: "Usage metering and rate-limit visibility for Grounded preflight",
+  description: "Usage metering and rate-limit visibility for LintPDF preflight",
   dependencies: ["grounded"],
 
   register(ctx: PluginContext): void {
@@ -58,7 +58,7 @@ export const groundedUsagePlugin: PixieDustPlugin = {
         handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
           const client = getClient();
           if (!client) {
-            return { status: 503, body: { error: "Grounded API not configured" } };
+            return { status: 503, body: { error: "LintPDF API not configured" } };
           }
           const usage = await client.getUsage();
           return { status: 200, body: usage };

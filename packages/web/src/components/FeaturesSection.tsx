@@ -2,7 +2,7 @@ const features = [
   {
     title: "Detection-Only",
     description:
-      "Never Grounded finds problems — it never modifies your files. Your originals stay untouched, byte for byte. Zero risk of file damage, every time.",
+      "LintPDF finds problems — it never modifies your files. Your originals stay untouched, byte for byte. Zero risk of file damage, every time.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -22,7 +22,7 @@ const features = [
   {
     title: "API-First",
     description:
-      "One POST to Launch your file. One GET for the Captain's Log. JSON, XML, or a white-labeled PDF report with your logo. That's the entire integration.",
+      "One POST to Submit your file. One GET for the Report. JSON, XML, or a white-labeled PDF report with your logo. That's the entire integration.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -40,7 +40,7 @@ const features = [
     ),
   },
   {
-    title: "250+ Inspections",
+    title: "250+ Checks",
     description:
       "Fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, PDF/X-4, PDF/A compliance — every detail that matters for print production.",
     icon: (
@@ -60,9 +60,9 @@ const features = [
     ),
   },
   {
-    title: "White-Label Livery",
+    title: "White Label",
     description:
-      "Your logo, your colors, your brand on every PDF report. Hand Captain's Logs directly to your customers with nothing but a small footer linking back.",
+      "Your logo, your colors, your brand on every PDF report. Hand Reports directly to your customers with nothing but a small footer linking back.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -80,9 +80,9 @@ const features = [
     ),
   },
   {
-    title: "Voyage Plans",
+    title: "Rulesets",
     description:
-      "Pre-built profiles for GWG Sheetfed, GWG Digital, PDF/X-4, and Packaging workflows. Or build your own custom Voyage Plan with the exact Inspections you need.",
+      "Pre-built profiles for GWG Sheetfed, GWG Digital, PDF/X-4, and Packaging workflows. Or build your own custom Ruleset with the exact Checks you need.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -100,9 +100,9 @@ const features = [
     ),
   },
   {
-    title: "Harbor Signals",
+    title: "Webhooks",
     description:
-      "Webhook callbacks fire when your file finishes processing. Get notified the instant a Captain's Log is ready — no polling, no waiting, no wasted cycles.",
+      "Webhook callbacks fire when your file finishes processing. Get notified the instant a Report is ready — no polling, no waiting, no wasted cycles.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -122,7 +122,7 @@ const features = [
   {
     title: "Non-PDF Input Support",
     description:
-      "Submit EPS, PostScript, TIFF, JPEG, PNG, and PDF-compatible AI files. Never Grounded converts them to PDF internally and runs the full Inspection suite.",
+      "Submit EPS, PostScript, TIFF, JPEG, PNG, and PDF-compatible AI files. LintPDF converts them to PDF internally and runs the full Check suite.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -142,7 +142,7 @@ const features = [
   {
     title: "Self-Service Onboarding",
     description:
-      "Sign up, generate a Boarding Pass, and start preflighting in minutes. No sales calls, no contracts, no onboarding meetings. Transparent pricing from day one.",
+      "Sign up, generate an API Key, and start preflighting in minutes. No sales calls, no contracts, no onboarding meetings. Transparent pricing from day one.",
     icon: (
       <svg
         className="h-6 w-6"

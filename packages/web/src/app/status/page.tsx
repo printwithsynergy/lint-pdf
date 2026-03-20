@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "System Status — Never Grounded",
-  description: "The Channel — real-time system status for the Never Grounded PDF preflight engine.",
+  title: "System Status — LintPDF",
+  description: "Queue — real-time system status for the LintPDF PDF preflight engine.",
 };
 
 const systems = [
-  { name: "API", description: "REST API endpoints (Launch, Captain's Log, Voyage Plans)" },
-  { name: "The Channel", description: "File processing queue and preflight engine" },
-  { name: "Report Generation", description: "PDF, JSON, and XML Captain's Log rendering" },
-  { name: "Harbor Signals", description: "Webhook delivery and event notifications" },
-  { name: "The Bridge", description: "Dashboard and account management" },
-  { name: "Authentication", description: "Boarding Pass (API key) validation" },
+  { name: "API", description: "REST API endpoints (Submit, Report, Rulesets)" },
+  { name: "Queue", description: "File processing queue and preflight engine" },
+  { name: "Report Generation", description: "PDF, JSON, and XML Report rendering" },
+  { name: "Webhooks", description: "Webhook delivery and event notifications" },
+  { name: "Dashboard", description: "Dashboard and account management" },
+  { name: "Authentication", description: "API Key validation" },
 ];
 
 export default function StatusPage() {
@@ -20,7 +20,7 @@ export default function StatusPage() {
       <div className="mx-auto max-w-3xl px-6">
         <div className="mb-12 text-center">
           <h1 className="text-4xl font-bold text-slate-900 mb-2">System Status</h1>
-          <p className="text-sm text-brand-500 italic mb-4">The Channel</p>
+          <p className="text-sm text-brand-500 italic mb-4">Queue</p>
           <div className="inline-flex items-center gap-2 rounded-full border border-green-200 bg-green-50 px-4 py-2">
             <span className="h-2.5 w-2.5 rounded-full bg-green-500 animate-pulse" />
             <span className="text-sm font-medium text-green-800">All systems operational</span>

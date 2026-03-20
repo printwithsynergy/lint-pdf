@@ -1,17 +1,17 @@
 import { defineTheme } from "@thinkneverland/pixie-dust-theme-kit";
 
 export default defineTheme({
-  name: "grounded",
-  displayName: "Never Grounded",
+  name: "lintpdf",
+  displayName: "LintPDF",
   metadata: {
-    title: "Never Grounded — Built to sail. Cleared for press.",
+    title: "LintPDF — Every check. Every page. Every time.",
     description:
-      "Never Grounded — the Pixie Dust-powered SaaS platform by Think Neverland.",
-    themeColor: "#162d60",
+      "LintPDF — the Pixie Dust-powered SaaS platform by Think Neverland.",
+    themeColor: "#0ea5e9",
   },
   brand: {
     companyName: "Think Neverland",
-    siteUrl: "https://nevergrounded.io",
+    siteUrl: "https://lintpdf.com",
     // logoPath/faviconPath are supported at runtime but not yet in ThemeBrand type.
     ...({ logoPath: "/logo.svg", faviconPath: "/favicon.svg" } as Record<
       string,
@@ -23,9 +23,9 @@ export default defineTheme({
     mono: "JetBrains Mono",
   },
   cssVariables: {
-    "--primary": "220 63% 23%",
-    "--primary-foreground": "0 0% 98%",
-    "--accent": "207 55% 57%",
-    "--accent-foreground": "0 0% 98%",
+    "--primary": "199 89% 48%",
+    "--primary-foreground": "0 0% 100%",
+    "--accent": "199 95% 74%",
+    "--accent-foreground": "201 90% 27%",
   },
 });

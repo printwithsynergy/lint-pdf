@@ -1,5 +1,5 @@
 /**
- * HTTP client for the Grounded preflight API.
+ * HTTP client for the LintPDF preflight API.
  */
 
 import type {
@@ -34,11 +34,11 @@ export class GroundedClient {
       resp = await fetch(url, init);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`Grounded API network error: ${message}`);
+      throw new Error(`LintPDF API network error: ${message}`);
     }
     if (!resp.ok) {
       const detail = resp.statusText ? ` ${resp.statusText}` : "";
-      throw new Error(`Grounded API: ${resp.status}${detail}`);
+      throw new Error(`LintPDF API: ${resp.status}${detail}`);
     }
     return resp;
   }

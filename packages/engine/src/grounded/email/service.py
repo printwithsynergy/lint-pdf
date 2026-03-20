@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Module-level client — set via configure_email() or set_email_client()
 _resend_client: Any = None
-_from_address: str = "Grounded <noreply@thinkneverland.com>"
+_from_address: str = "LintPDF <noreply@thinkneverland.com>"
 _email_lock = threading.Lock()
 
 
@@ -63,10 +63,10 @@ def send_api_key_issued(*, to: str, tenant_name: str, api_key: str) -> EmailResu
         tenant_name: Name of the tenant organization.
         api_key: The raw API key (shown only once).
     """
-    subject = f"Your Grounded API Key — {tenant_name}"
+    subject = f"Your LintPDF API Key — {tenant_name}"
     html = f"""\
 <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-  <h2 style="color: #1e293b;">Welcome to Grounded</h2>
+  <h2 style="color: #1e293b;">Welcome to LintPDF</h2>
   <p>Your API key for <strong>{tenant_name}</strong> has been issued.</p>
   <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
     <code style="font-size: 14px; word-break: break-all;">{api_key}</code>
@@ -177,8 +177,8 @@ def send_report(
     report_url: str,
     finding_count: int,
     passed: bool,
-    brand_name: str = "Grounded",
-    brand_primary_color: str = "#1a3a7a",
+    brand_name: str = "LintPDF",
+    brand_primary_color: str = "#0ea5e9",
 ) -> EmailResult:
     """Send a preflight report email with link to hosted report.
 

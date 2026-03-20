@@ -61,7 +61,7 @@ describe("jobRoutes", () => {
         auth: {},
       } as unknown as RouteRequest); // skipcq: JS-0323
       expect(res.status).toBe(503);
-      expect(res.body).toEqual({ error: "Grounded API not configured" });
+      expect(res.body).toEqual({ error: "LintPDF API not configured" });
     });
 
     it("lists jobs with default pagination", async () => {
@@ -221,7 +221,7 @@ describe("profileRoutes", () => {
         auth: {},
       } as unknown as RouteRequest); // skipcq: JS-0323
       expect(res.status).toBe(503);
-      expect(res.body).toEqual({ error: "Grounded API not configured" });
+      expect(res.body).toEqual({ error: "LintPDF API not configured" });
     });
 
     it("returns profiles list", async () => {

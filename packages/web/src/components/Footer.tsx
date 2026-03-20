@@ -13,15 +13,15 @@ export function Footer() {
               <Logo className="h-12 w-12" />
               <div className="flex flex-col leading-tight">
                 <span className="text-2xl font-bold text-brand-900">
-                  Never Grounded
+                  LintPDF
                 </span>
                 <span className="text-xs font-medium tracking-wide text-slate-400">
-                  Built to sail. Cleared for press.
+                  Every check. Every page. Every time.
                 </span>
               </div>
             </div>
             <p className="text-sm text-slate-500 max-w-sm">
-              Detection-only PDF preflight engine. 250+ Inspections, PDF/X-4
+              Detection-only PDF preflight engine. 250+ checks, PDF/X-4
               conformance verification, zero file modifications. API-first,
               self-service pricing.
             </p>

@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% if brand and brand.name %}{{ brand.name }}{% else %}Grounded{% endif %} Preflight Report</title>
+<title>{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %} Preflight Report</title>
 <style>
   :root {
-    --primary: {% if brand and brand.primary_color %}{{ brand.primary_color }}{% else %}#1a3a7a{% endif %};
+    --primary: {% if brand and brand.primary_color %}{{ brand.primary_color }}{% else %}#0ea5e9{% endif %};
     --accent: {% if brand and brand.accent_color %}{{ brand.accent_color }}{% else %}#2563eb{% endif %};
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -52,15 +52,15 @@
 
 <div class="brand-header">
   {% if brand and brand.logo_url %}<img src="{{ brand.logo_url }}" alt="{{ brand.name }}" class="brand-logo">{% endif %}
-  <h1>{% if brand and brand.name %}{{ brand.name }}{% else %}Grounded{% endif %} Preflight Report <span class="badge">{{ pass_fail }}</span></h1>
+  <h1>{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %} Preflight Report <span class="badge">{{ pass_fail }}</span></h1>
 </div>
 <p>Profile: <strong>{{ result.profile_id }}</strong> | Job: {{ result.job_id }}</p>
 
 <div class="toolbar">
   <button onclick="filterSeverity('')" class="active" data-filter="all">All</button>
-  <button onclick="filterSeverity('aground')" data-filter="aground">Aground</button>
-  <button onclick="filterSeverity('squall')" data-filter="squall">Squall</button>
-  <button onclick="filterSeverity('advisory')" data-filter="advisory">Advisory</button>
+  <button onclick="filterSeverity('aground')" data-filter="aground">Error</button>
+  <button onclick="filterSeverity('squall')" data-filter="squall">Warning</button>
+  <button onclick="filterSeverity('advisory')" data-filter="advisory">Info</button>
   <button onclick="filterSource('ai')" data-source="ai">AI Only</button>
   <button onclick="filterSource('')" data-source="all">All Sources</button>
   <button onclick="window.print()">Print</button>
@@ -74,15 +74,15 @@
 <div class="summary-grid">
   <div class="summary-card aground">
     <div class="count">{{ summary.aground_count }}</div>
-    <div class="label">Aground</div>
+    <div class="label">Errors</div>
   </div>
   <div class="summary-card squall">
     <div class="count">{{ summary.squall_count }}</div>
-    <div class="label">Squall</div>
+    <div class="label">Warnings</div>
   </div>
   <div class="summary-card advisory">
     <div class="count">{{ summary.advisory_count }}</div>
-    <div class="label">Advisory</div>
+    <div class="label">Info</div>
   </div>
   <div class="summary-card">
     <div class="count">{{ summary.total_findings }}</div>

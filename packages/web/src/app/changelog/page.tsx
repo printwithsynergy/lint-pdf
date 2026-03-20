@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { getEntriesWithHtml } from "@/lib/changelog";
 
 export const metadata: Metadata = {
-  title: "Changelog — Never Grounded",
+  title: "Changelog — LintPDF",
   description:
-    "The Logbook — version history and release notes for the Never Grounded PDF preflight engine.",
+    "The Logbook — version history and release notes for the LintPDF PDF preflight engine.",
 };
 
 export default async function ChangelogPage() {
@@ -18,7 +18,7 @@ export default async function ChangelogPage() {
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Changelog</h1>
           <p className="text-sm text-brand-500 italic mb-4">The Logbook</p>
           <p className="text-slate-500">
-            Version history and release notes for the Never Grounded preflight
+            Version history and release notes for the LintPDF preflight
             engine and API.
           </p>
         </div>

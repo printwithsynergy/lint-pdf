@@ -64,7 +64,7 @@ class TestSpellCheckAnalyzer:
 
     def test_custom_dictionary_excludes_words(self) -> None:
         """Words in the custom dictionary should not be flagged."""
-        doc = _doc_with_text("The proooof is in NeverGrounded")
+        doc = _doc_with_text("The proooof is in LintPDF")
 
         ai_config = MagicMock()
         ai_config.custom_dictionary = ["proooof"]

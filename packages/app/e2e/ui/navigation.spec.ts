@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { createAuthenticatedContext, isMcpBackdoorAvailable } from "../helpers";
 
-const APP_BASE = process.env.APP_BASE_URL ?? "https://app.nevergrounded.io";
+const APP_BASE = process.env.APP_BASE_URL ?? "https://app.lintpdf.com";
 
 const DASHBOARD_PAGES = [
   { path: "/dashboard/account", name: "Account" },

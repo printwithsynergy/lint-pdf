@@ -42,7 +42,7 @@ export default async function DashboardLayout({
     <DashboardShell
       navItems={navItems}
       user={user}
-      brandName={branding.brandName ?? "Never Grounded"}
+      brandName={branding.brandName ?? "LintPDF"}
       brandLogoUrl={branding.brandLogoUrl}
       customCss={branding.customCss}
     >

@@ -40,7 +40,7 @@ test.describe.serial("Workflow: Onboarding & Profiles", () => {
       data: {
         email: WORKFLOW_EMAIL,
         name: "Workflow Test User",
-        company: "Grounded E2E Corp",
+        company: "LintPDF E2E Corp",
         use_case: "Automated preflight testing",
       },
     });

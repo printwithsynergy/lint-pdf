@@ -29,164 +29,108 @@ export function HeroSection() {
         </div>
       </DesktopOnly>
 
-      {/* Preflight-themed decorative graphics */}
+      {/* Lint-themed decorative graphics */}
       <DesktopOnly>
         <div
           className="absolute inset-0 pointer-events-none overflow-hidden"
           aria-hidden="true"
         >
-          {/* ── Left runway centerline dashes ── */}
-          <div className="absolute top-[10%] left-[6%] flex flex-col gap-4 opacity-[0.12]">
+          {/* ── Left code line indicators ── */}
+          <div className="absolute top-[10%] left-[6%] flex flex-col gap-3 opacity-[0.12]">
             {/* skipcq: JS-0437 — static decorative elements that never reorder */}
             {[...Array(12)].map((_, i) => (
-              <div
-                key={`l${i}`}
-                className="w-1.5 h-8 rounded-full bg-brand-900"
-              />
+              <div key={`l${i}`} className="flex items-center gap-2">
+                <div className="w-4 h-0.5 rounded-full bg-brand-900" />
+                <div
+                  className="h-0.5 rounded-full bg-brand-700"
+                  style={{ width: `${20 + ((i * 17) % 40)}px` }}
+                />
+              </div>
             ))}
           </div>
 
-          {/* ── Right runway centerline dashes ── */}
-          <div className="absolute top-[8%] right-[7%] flex flex-col gap-4 opacity-[0.10]">
+          {/* ── Right code line indicators ── */}
+          <div className="absolute top-[8%] right-[7%] flex flex-col gap-3 opacity-[0.10]">
             {/* skipcq: JS-0437 — static decorative elements that never reorder */}
             {[...Array(10)].map((_, i) => (
-              <div
-                key={`r${i}`}
-                className="w-1.5 h-8 rounded-full bg-brand-700"
-              />
+              <div key={`r${i}`} className="flex items-center gap-2">
+                <div
+                  className="h-0.5 rounded-full bg-brand-700"
+                  style={{ width: `${16 + ((i * 13) % 36)}px` }}
+                />
+              </div>
             ))}
           </div>
 
-          {/* ── Runway threshold markings (left) ── */}
-          <div className="absolute bottom-[18%] left-[4%] flex gap-2 opacity-[0.08]">
-            {/* skipcq: JS-0437 — static decorative elements that never reorder */}
-            {[...Array(4)].map((_, i) => (
-              <div
-                key={`tl${i}`}
-                className="w-2 h-14 rounded-sm bg-brand-800"
-              />
-            ))}
-          </div>
+          {/* ── Bracket pair (left) ── */}
+          <svg
+            className="absolute bottom-[18%] left-[4%] w-16 h-32 opacity-[0.08]"
+            viewBox="0 0 60 120"
+            fill="none"
+          >
+            <path
+              d="M40 10 Q 20 10, 20 30 L 20 50 Q 20 60, 10 60 Q 20 60, 20 70 L 20 90 Q 20 110, 40 110"
+              stroke="#0c4a6e"
+              strokeWidth="2"
+              fill="none"
+            />
+          </svg>
 
-          {/* ── Runway threshold markings (right) ── */}
-          <div className="absolute bottom-[25%] right-[5%] flex gap-2 opacity-[0.07]">
-            {/* skipcq: JS-0437 — static decorative elements that never reorder */}
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={`tr${i}`}
-                className="w-2 h-14 rounded-sm bg-brand-700"
-              />
-            ))}
-          </div>
+          {/* ── Bracket pair (right) ── */}
+          <svg
+            className="absolute bottom-[25%] right-[5%] w-16 h-32 opacity-[0.07]"
+            viewBox="0 0 60 120"
+            fill="none"
+          >
+            <path
+              d="M20 10 Q 40 10, 40 30 L 40 50 Q 40 60, 50 60 Q 40 60, 40 70 L 40 90 Q 40 110, 20 110"
+              stroke="#0369a1"
+              strokeWidth="2"
+              fill="none"
+            />
+          </svg>
 
-          {/* ── Compass rose (top-right) ── */}
+          {/* ── Magnifying glass / scan icon (top-right) ── */}
           <svg
             className="absolute top-[6%] right-[12%] w-40 h-40 opacity-[0.07]"
             viewBox="0 0 200 200"
             fill="none"
           >
             <circle
-              cx="100"
-              cy="100"
-              r="80"
-              stroke="#162d60"
-              strokeWidth="1.5"
-            />
-            <circle
-              cx="100"
-              cy="100"
-              r="60"
-              stroke="#3b6fb5"
-              strokeWidth="0.8"
-              strokeDasharray="4 6"
-            />
-            {/* Cardinal lines */}
-            <line
-              x1="100"
-              y1="10"
-              x2="100"
-              y2="190"
-              stroke="#162d60"
-              strokeWidth="1"
-            />
-            <line
-              x1="10"
-              y1="100"
-              x2="190"
-              y2="100"
-              stroke="#162d60"
-              strokeWidth="1"
-            />
-            {/* Ordinal lines */}
-            <line
-              x1="37"
-              y1="37"
-              x2="163"
-              y2="163"
-              stroke="#3b6fb5"
-              strokeWidth="0.6"
-            />
-            <line
-              x1="163"
-              y1="37"
-              x2="37"
-              y2="163"
-              stroke="#3b6fb5"
-              strokeWidth="0.6"
-            />
-            {/* N arrow */}
-            <polygon points="100,15 95,30 105,30" fill="#162d60" />
-          </svg>
-
-          {/* ── Altimeter / gauge arc (bottom-left) ── */}
-          <svg
-            className="absolute bottom-[8%] left-[8%] w-44 h-44 opacity-[0.08]"
-            viewBox="0 0 200 200"
-            fill="none"
-          >
-            <path
-              d="M 40 160 A 80 80 0 1 1 160 160"
-              stroke="#162d60"
+              cx="85"
+              cy="85"
+              r="55"
+              stroke="#0c4a6e"
               strokeWidth="2"
-              fill="none"
             />
-            <path
-              d="M 40 160 A 80 80 0 1 1 160 160"
-              stroke="#5395ce"
-              strokeWidth="2"
-              strokeDasharray="8 6"
-              fill="none"
-            />
-            {/* Tick marks */}
-            {[0, 30, 60, 90, 120, 150, 180].map((deg) => {
-              const rad = ((deg + 180) * Math.PI) / 180;
-              const x1 = 100 + 72 * Math.cos(rad);
-              const y1 = 100 + 72 * Math.sin(rad);
-              const x2 = 100 + 80 * Math.cos(rad);
-              const y2 = 100 + 80 * Math.sin(rad);
-              return (
-                <line
-                  key={deg}
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke="#162d60"
-                  strokeWidth="2"
-                />
-              );
-            })}
-            {/* Needle */}
             <line
-              x1="100"
-              y1="100"
-              x2="60"
-              y2="60"
-              stroke="#3b6fb5"
-              strokeWidth="2"
+              x1="125"
+              y1="125"
+              x2="170"
+              y2="170"
+              stroke="#0c4a6e"
+              strokeWidth="3"
               strokeLinecap="round"
             />
-            <circle cx="100" cy="100" r="4" fill="#162d60" />
+            {/* Scan lines inside */}
+            <line x1="55" y1="70" x2="115" y2="70" stroke="#0284c7" strokeWidth="1" strokeDasharray="4 3" />
+            <line x1="55" y1="85" x2="115" y2="85" stroke="#0284c7" strokeWidth="1" strokeDasharray="4 3" />
+            <line x1="55" y1="100" x2="100" y2="100" stroke="#0284c7" strokeWidth="1" strokeDasharray="4 3" />
+          </svg>
+
+          {/* ── Terminal / console (bottom-left) ── */}
+          <svg
+            className="absolute bottom-[8%] left-[8%] w-44 h-36 opacity-[0.08]"
+            viewBox="0 0 200 160"
+            fill="none"
+          >
+            <rect x="10" y="10" width="180" height="140" rx="8" stroke="#0c4a6e" strokeWidth="2" />
+            <line x1="10" y1="35" x2="190" y2="35" stroke="#0c4a6e" strokeWidth="1" />
+            {/* Terminal prompt */}
+            <path d="M30 55 L45 70 L30 85" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <line x1="55" y1="70" x2="100" y2="70" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="4 3" />
+            <line x1="55" y1="90" x2="120" y2="90" stroke="#0369a1" strokeWidth="1" strokeDasharray="3 4" />
+            <line x1="55" y1="110" x2="90" y2="110" stroke="#0369a1" strokeWidth="1" strokeDasharray="3 4" />
           </svg>
 
           {/* ── Checklist checkmarks (left side) ── */}
@@ -203,13 +147,13 @@ export function HeroSection() {
                   width="16"
                   height="16"
                   rx="3"
-                  stroke="#3b6fb5"
+                  stroke="#0284c7"
                   strokeWidth="1.5"
                   fill="none"
                 />
                 <path
                   d="M12 12 L15 15 L22 7"
-                  stroke="#162d60"
+                  stroke="#0c4a6e"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -220,7 +164,7 @@ export function HeroSection() {
                   y1="12"
                   x2="90"
                   y2="12"
-                  stroke="#5395ce"
+                  stroke="#0ea5e9"
                   strokeWidth="1"
                   strokeDasharray="3 2"
                 />
@@ -228,7 +172,7 @@ export function HeroSection() {
             ))}
           </svg>
 
-          {/* ── Dashed flight path arcs ── */}
+          {/* ── Dashed connection lines ── */}
           <svg
             className="absolute top-[12%] right-[22%] w-72 h-72 opacity-[0.06]"
             viewBox="0 0 200 200"
@@ -236,16 +180,11 @@ export function HeroSection() {
           >
             <path
               d="M20 180 Q 100 20, 180 100"
-              stroke="#162d60"
+              stroke="#0c4a6e"
               strokeWidth="2"
               strokeDasharray="8 10"
             />
-            {/* Tiny plane at end of arc */}
-            <polygon
-              points="178,98 185,95 185,101 178,98"
-              fill="#162d60"
-              transform="rotate(-20, 180, 100)"
-            />
+            <circle cx="180" cy="100" r="4" fill="#0c4a6e" />
           </svg>
           <svg
             className="absolute bottom-[12%] left-[18%] w-56 h-56 opacity-[0.06]"
@@ -254,78 +193,50 @@ export function HeroSection() {
           >
             <path
               d="M180 180 Q 60 80, 20 20"
-              stroke="#5395ce"
+              stroke="#0ea5e9"
               strokeWidth="2"
               strokeDasharray="8 10"
             />
-            <polygon
-              points="22,22 15,19 15,25 22,22"
-              fill="#5395ce"
-              transform="rotate(45, 20, 20)"
-            />
+            <circle cx="20" cy="20" r="4" fill="#0ea5e9" />
           </svg>
 
-          {/* ── Attitude indicator horizon line (top-left) ── */}
+          {/* ── Code block indicator (top-left) ── */}
           <svg
             className="absolute top-[5%] left-[18%] w-32 h-32 opacity-[0.06]"
             viewBox="0 0 200 200"
             fill="none"
           >
-            <circle
-              cx="100"
-              cy="100"
-              r="85"
-              stroke="#162d60"
-              strokeWidth="1.5"
-            />
-            <line
-              x1="20"
-              y1="100"
-              x2="180"
-              y2="100"
-              stroke="#3b6fb5"
-              strokeWidth="1.5"
-            />
-            {/* Wings indicator */}
-            <line
-              x1="60"
-              y1="100"
-              x2="80"
-              y2="100"
-              stroke="#162d60"
+            {/* Opening angle bracket < */}
+            <path
+              d="M100 40 L50 100 L100 160"
+              stroke="#0c4a6e"
               strokeWidth="3"
               strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
             />
+            {/* Forward slash / */}
             <line
-              x1="120"
-              y1="100"
-              x2="140"
-              y2="100"
-              stroke="#162d60"
-              strokeWidth="3"
+              x1="115"
+              y1="40"
+              x2="135"
+              y2="160"
+              stroke="#0284c7"
+              strokeWidth="2"
               strokeLinecap="round"
             />
-            <circle cx="100" cy="100" r="3" fill="#162d60" />
-            {/* Pitch lines */}
-            <line
-              x1="75"
-              y1="80"
-              x2="125"
-              y2="80"
-              stroke="#5395ce"
-              strokeWidth="0.8"
-            />
-            <line
-              x1="80"
-              y1="120"
-              x2="120"
-              y2="120"
-              stroke="#5395ce"
-              strokeWidth="0.8"
+            {/* Closing angle bracket > */}
+            <path
+              d="M150 40 L200 100 L150 160"
+              stroke="#0c4a6e"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
             />
           </svg>
 
-          {/* ── Small scattered crosshair markers ── */}
+          {/* ── Small scattered dot markers ── */}
           {[
             { top: "45%", right: "6%", size: "w-6 h-6" },
             { top: "70%", right: "15%", size: "w-5 h-5" },
@@ -334,29 +245,14 @@ export function HeroSection() {
             // skipcq: JS-0437 — static decorative elements that never reorder
           ].map((pos, i) => (
             <svg
-              key={`xhair${i}`}
+              key={`dot${i}`}
               className={`absolute ${pos.size} opacity-[0.10]`}
               style={{ top: pos.top, right: pos.right, left: pos.left }}
               viewBox="0 0 20 20"
               fill="none"
             >
-              <circle cx="10" cy="10" r="6" stroke="#3b6fb5" strokeWidth="1" />
-              <line
-                x1="10"
-                y1="2"
-                x2="10"
-                y2="18"
-                stroke="#3b6fb5"
-                strokeWidth="0.8"
-              />
-              <line
-                x1="2"
-                y1="10"
-                x2="18"
-                y2="10"
-                stroke="#3b6fb5"
-                strokeWidth="0.8"
-              />
+              <circle cx="10" cy="10" r="3" fill="#0284c7" />
+              <circle cx="10" cy="10" r="7" stroke="#0284c7" strokeWidth="0.8" />
             </svg>
           ))}
         </div>
@@ -366,7 +262,7 @@ export function HeroSection() {
         <div className="flex flex-col items-center mb-10">
           <MarketingLogo className="h-44 w-auto md:h-56" />
           <p className="mt-3 text-sm font-medium tracking-widest text-slate-400 uppercase">
-            Built to sail. Cleared for press.
+            Every check. Every page. Every time.
           </p>
         </div>
 
@@ -384,14 +280,14 @@ export function HeroSection() {
         )}
 
         <h1 className="text-4xl font-bold tracking-tight text-slate-900 md:text-6xl mb-4 leading-tight">
-          Catch what&rsquo;s off{" "}
+          Catch what&rsquo;s wrong{" "}
           <span className="bg-gradient-to-r from-brand-800 via-brand-600 to-brand-400 bg-clip-text text-transparent">
-            before it sets sail.
+            before it ships.
           </span>
         </h1>
 
         <p className="mx-auto max-w-xl text-base text-slate-400 md:text-lg mb-8 tracking-wide font-medium italic">
-          Your pre-departure checklist for every PDF.
+          Your automated preflight linter for every PDF.
         </p>
 
         <p className="mx-auto max-w-2xl text-lg text-slate-500 md:text-xl mb-10 leading-relaxed">
@@ -411,10 +307,10 @@ export function HeroSection() {
             </button>
           ) : (
             <a
-              href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.nevergrounded.io"}/auth/login?plan=free`}
+              href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com"}/auth/login?plan=free`}
               className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
             >
-              Set Sail
+              Get Started
             </a>
           )}
           <a
@@ -433,16 +329,16 @@ export function HeroSection() {
             <span className="h-3 w-3 rounded-full bg-green-500/60" />
           </div>
           <pre className="overflow-x-auto px-6 pb-6 text-left text-sm leading-relaxed text-slate-400">
-            <code>{`$ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
-    -H "Authorization: Bearer grd_..." \\
+            <code>{`$ curl -X POST https://api.lintpdf.com/api/v1/submit \\
+    -H "Authorization: Bearer lpdf_..." \\
     -F file=@brochure.pdf \\
-    -F voyage_plan=gwg-sheetfed
+    -F ruleset=gwg-sheetfed
 
 {
   "id": "f47ac10b-...",
-  "status": "underway",
-  "voyage_plan": "gwg-sheetfed",
-  "inspections": 250
+  "status": "processing",
+  "ruleset": "gwg-sheetfed",
+  "checks": 250
 }`}</code>
           </pre>
         </div>

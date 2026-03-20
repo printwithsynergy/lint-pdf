@@ -129,11 +129,11 @@ async def generate_reports(  # skipcq: PY-R1000
     # Build branding context — only apply tenant brand fields if whitelabel is enabled
     if entitlements.whitelabel_enabled:
         branding = BrandingContext(
-            name=tenant.brand_name or "Grounded",
+            name=tenant.brand_name or "LintPDF",
             logo_url=tenant.brand_logo_url,
             primary_color=tenant.brand_primary_color or "#1a3a7a",
             accent_color=tenant.brand_accent_color or "#2563eb",
-            footer_text=None if tenant.brand_hide_footer else "Powered by Grounded",
+            footer_text=None if tenant.brand_hide_footer else "Powered by LintPDF",
         )
     else:
         branding = BrandingContext()
@@ -147,7 +147,7 @@ async def generate_reports(  # skipcq: PY-R1000
         if body.branding.accent_color:
             branding.accent_color = body.branding.accent_color
         if body.branding.hide_footer is not None:
-            branding.footer_text = None if body.branding.hide_footer else "Powered by Grounded"
+            branding.footer_text = None if body.branding.hide_footer else "Powered by LintPDF"
 
     # Determine expiry
     expiry_days = body.expiry_days

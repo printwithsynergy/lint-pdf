@@ -1,77 +1,77 @@
 ---
-title: "Getting Started with the Never Grounded API"
+title: "Getting Started with the LintPDF API"
 date: "2026-03-13"
 author: "Think Neverland"
 category: "API Guides"
-excerpt: "A step-by-step guide to integrating Never Grounded into your application. From signup to your first Captain's Log in under five minutes."
+excerpt: "A step-by-step guide to integrating LintPDF into your application. From signup to your first Report in under five minutes."
 tags: ["tutorial", "api", "getting-started"]
 ---
 
-Integrating Never Grounded into your application takes three steps: sign up, get your Boarding Pass, and submit your first Launch. This guide walks through each step with working code examples.
+Integrating LintPDF into your application takes three steps: sign up, get your API Key, and submit your first file. This guide walks through each step with working code examples.
 
 ## Step 1: Create your account
 
-Head to [app.thinkneverland.com](https://app.thinkneverland.com) and create an account. The Free plan includes 50 files per month with full Inspection coverage — no credit card required.
+Head to [app.lintpdf.com](https://app.lintpdf.com) and create an account. The Free plan includes 50 files per month with full Check coverage — no credit card required.
 
-## Step 2: Generate a Boarding Pass
+## Step 2: Generate an API Key
 
-Navigate to The Bridge and open the API Keys section. Generate a new Boarding Pass. Your key will start with `grd_` — copy it and store it securely. Never expose it in client-side code or public repositories.
+Navigate to the Dashboard and open the API Keys section. Generate a new API Key. Your key will start with `lpdf_` — copy it and store it securely. Never expose it in client-side code or public repositories.
 
-## Step 3: Submit your first Launch
+## Step 3: Submit your first file
 
-The Launch endpoint accepts a file and a Voyage Plan. Here is a curl example:
+The Submit endpoint accepts a file and a Ruleset. Here is a curl example:
 
 ```bash
-curl -X POST https://api.nevergrounded.io/api/v1/launch \
-  -H "Authorization: Bearer grd_your_boarding_pass" \
+curl -X POST https://api.lintpdf.com/api/v1/submit \
+  -H "Authorization: Bearer lpdf_your_api_key" \
   -F file=@brochure.pdf \
-  -F voyage_plan=gwg-sheetfed
+  -F ruleset=gwg-sheetfed
 ```
 
-The response includes a Launch ID and a status of `underway` — your file is being processed on The Channel.
+The response includes a job ID and a status of `processing` — your file is being processed on the Queue.
 
 ```json
 {
   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "status": "underway",
-  "voyage_plan": "gwg-sheetfed",
+  "status": "processing",
+  "ruleset": "gwg-sheetfed",
   "file_name": "brochure.pdf",
   "created_at": "2026-03-15T10:30:00Z"
 }
 ```
 
-## Step 4: Retrieve the Captain's Log
+## Step 4: Retrieve the Report
 
-Once processing is complete (status changes to `docked`), retrieve the Captain's Log:
+Once processing is complete (status changes to `complete`), retrieve the Report:
 
 ```bash
-curl https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-... \
-  -H "Authorization: Bearer grd_your_boarding_pass"
+curl https://api.lintpdf.com/api/v1/reports/f47ac10b-... \
+  -H "Authorization: Bearer lpdf_your_api_key"
 ```
 
-The Captain's Log includes a verdict (`clear-to-sail` or `grounded`), a summary with finding counts by severity, and the full list of findings:
+The Report includes a verdict (`pass` or `failed`), a summary with finding counts by severity, and the full list of findings:
 
 ```json
 {
   "id": "f47ac10b-...",
-  "status": "docked",
-  "verdict": "grounded",
+  "status": "complete",
+  "verdict": "failed",
   "summary": {
     "total_findings": 2,
-    "aground": 1,
-    "squall": 1,
-    "advisory": 0
+    "error": 1,
+    "warning": 1,
+    "info": 0
   },
   "findings": [
     {
       "inspection_id": "font.not_embedded",
-      "severity": "aground",
+      "severity": "error",
       "message": "Font 'Helvetica' is not embedded",
       "page": 1
     },
     {
       "inspection_id": "color.spot_color_usage",
-      "severity": "squall",
+      "severity": "warning",
       "message": "Spot color 'PANTONE 185 C' found on page 2",
       "page": 2
     }
@@ -79,35 +79,35 @@ The Captain's Log includes a verdict (`clear-to-sail` or `grounded`), a summary 
 }
 ```
 
-## Using Harbor Signals instead of polling
+## Using Webhooks instead of polling
 
-Instead of polling for the Captain's Log, register a Harbor Signal (webhook) to receive a callback when processing completes:
+Instead of polling for the Report, register a Webhook to receive a callback when processing completes:
 
 ```bash
-curl -X POST https://api.nevergrounded.io/api/v1/harbor-signals \
-  -H "Authorization: Bearer grd_your_boarding_pass" \
+curl -X POST https://api.lintpdf.com/api/v1/webhooks \
+  -H "Authorization: Bearer lpdf_your_api_key" \
   -H "Content-Type: application/json" \
-  -d '{"url": "https://your-app.com/webhook", "events": ["launch.docked"]}'
+  -d '{"url": "https://your-app.com/webhook", "events": ["job.complete"]}'
 ```
 
-Never Grounded will POST to your endpoint the instant the Captain's Log is ready.
+LintPDF will POST to your endpoint the instant the Report is ready.
 
-## Choosing a Voyage Plan
+## Choosing a Ruleset
 
-Never Grounded includes four built-in Voyage Plans:
+LintPDF includes four built-in Rulesets:
 
-- **GWG Sheetfed** — Commercial offset, sheetfed lithography (196 Inspections)
-- **GWG Digital** — Digital printing, wide-format, variable data (180 Inspections)
-- **PDF/X-4** — ISO 15930-7 conformance (120 Inspections)
-- **Packaging** — Packaging-specific checks including barcode grading (210 Inspections)
+- **GWG Sheetfed** — Commercial offset, sheetfed lithography (196 Checks)
+- **GWG Digital** — Digital printing, wide-format, variable data (180 Checks)
+- **PDF/X-4** — ISO 15930-7 conformance (120 Checks)
+- **Packaging** — Packaging-specific checks including barcode grading (210 Checks)
 
-List all available Voyage Plans with:
+List all available Rulesets with:
 
 ```bash
-curl https://api.nevergrounded.io/api/v1/voyage-plans
+curl https://api.lintpdf.com/api/v1/rulesets
 ```
 
-Growth plans and above can create custom Voyage Plans with specific Inspections and thresholds.
+Growth plans and above can create custom Rulesets with specific Checks and thresholds.
 
 ## Next steps
 

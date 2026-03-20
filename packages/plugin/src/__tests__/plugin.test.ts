@@ -45,9 +45,9 @@ describe("groundedPlugin", () => {
   });
 
   it("registers routes, nav, pages, permissions, and custom role with valid config", async () => {
-    process.env.GROUNDED_API_URL = "https://api.grounded.dev";
+    process.env.GROUNDED_API_URL = "https://api.lintpdf.com";
     process.env.GROUNDED_WEBHOOK_SECRET = "a-very-long-test-secret";
-    process.env.GROUNDED_API_KEY = "grd_test";
+    process.env.GROUNDED_API_KEY = "lpdf_test";
 
     const mod = await import("../index");
     const ctx = mockCtx();
@@ -92,7 +92,7 @@ describe("groundedPlugin", () => {
   });
 
   it("registers 4 routes (1 webhook + 3 jobs + 1 profiles = 5)", async () => {
-    process.env.GROUNDED_API_URL = "https://api.grounded.dev";
+    process.env.GROUNDED_API_URL = "https://api.lintpdf.com";
     process.env.GROUNDED_WEBHOOK_SECRET = "a-very-long-test-secret";
 
     const mod = await import("../index");
@@ -106,7 +106,7 @@ describe("groundedPlugin", () => {
   });
 
   it("boot logs when client is ready", async () => {
-    process.env.GROUNDED_API_URL = "https://api.grounded.dev";
+    process.env.GROUNDED_API_URL = "https://api.lintpdf.com";
     process.env.GROUNDED_WEBHOOK_SECRET = "a-very-long-test-secret";
 
     const mod = await import("../index");
@@ -115,12 +115,12 @@ describe("groundedPlugin", () => {
     await mod.groundedPlugin.boot?.(ctx);
 
     expect(ctx.services.logger.info).toHaveBeenCalledWith(
-      "Grounded plugin ready",
+      "LintPDF plugin ready",
     );
   });
 
   it("shutdown clears client", async () => {
-    process.env.GROUNDED_API_URL = "https://api.grounded.dev";
+    process.env.GROUNDED_API_URL = "https://api.lintpdf.com";
     process.env.GROUNDED_WEBHOOK_SECRET = "a-very-long-test-secret";
 
     const mod = await import("../index");

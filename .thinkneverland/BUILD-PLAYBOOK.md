@@ -1,4 +1,4 @@
-# BUILD-PLAYBOOK.md — Grounded
+# BUILD-PLAYBOOK.md — LintPDF
 # Module-by-module engineering playbook for AI-assisted development.
 # Each phase maps to Linear cards. Read ATLAS-CONTEXT.md before starting.
 
@@ -20,7 +20,7 @@ Layer     Model      Stream     (5 modules) Standards  + Plans   + Queue   + Doc
 | 3 | ContentStreamInterpreter | Wk 2-3 | XL | 6-8 |
 | 4 | FontAnalyzer, ImageAnalyzer, ColorAnalyzer, TransparencyAnalyzer, OverprintAnalyzer, PageGeometryAnalyzer | Wk 3-5 | L | 10-12 |
 | 5 | PDFXValidator, PDFAValidator (veraPDF) | Wk 5-6 | L | 4-5 |
-| 6 | RuleEngine, FlightPlanLoader, ProfileRegistry | Wk 6-7 | L | 5-6 |
+| 6 | RuleEngine, RulesetLoader, ProfileRegistry | Wk 6-7 | L | 5-6 |
 | 7 | FastAPI + Celery + TenantManager + Radio | Wk 7-9 | L | 8-10 |
 | 8 | Docker + Railway + CI/CD | Wk 9-10 | M | 4-5 |
 | 9 | Docs + SDKs + QA | Wk 10-12 | M | 5-7 |
@@ -93,7 +93,7 @@ Acceptance Criteria:
 4. Tests: interface contract tests using mock implementation
 5. `mypy src/grounded/parser/ --strict` passes
 
-Reference: `grounded-research/implementation-plan.md` Module 1 for interface definition.
+Reference: `lintpdf-research/implementation-plan.md` Module 1 for interface definition.
 
 ### Module 1b: PikePDFAdapter (Concrete Implementation)
 
@@ -107,7 +107,7 @@ Acceptance Criteria:
 3. Extracts page metadata: MediaBox, CropBox, TrimBox, BleedBox, ArtBox, Rotate, UserUnit
 4. Extracts and decompresses content streams
 5. Resolves indirect references
-6. Raises Grounded-specific exceptions for all failure modes
+6. Raises LintPDF-specific exceptions for all failure modes
 7. Object graph traversal with memoization
 8. Tests against veraPDF corpus (10+ files minimum), Isartor malformed set (5+ files)
 9. Tests against linearized, incremental update, and object stream PDFs
@@ -151,7 +151,7 @@ Acceptance Criteria:
 4. `PdfPage.effective_width` and `effective_height` properties (rotation-aware)
 5. Tests: box validation, font Standard 14 detection, page dimensions with rotation
 
-Reference: `grounded-research/implementation-plan.md` Module 2 for class definitions.
+Reference: `lintpdf-research/implementation-plan.md` Module 2 for class definitions.
 
 **Card: GRD-006 — SemanticModel builder**
 
@@ -279,7 +279,7 @@ Acceptance Criteria:
 2. DPI calculation: `EffectiveDPI = pixels / (sqrt(a²+c²) / 72)` for width, `pixels / (sqrt(b²+d²) / 72)` for height
 3. Handles degenerate CTM (zero scale) gracefully
 4. Checks generated: GRD_IMG_001 (low DPI), GRD_IMG_002 (excessive DPI), GRD_IMG_003 (color space mismatch), GRD_IMG_004 (compression efficiency), GRD_IMG_005 (inline image detected)
-5. DPI thresholds configurable per Flight Plan
+5. DPI thresholds configurable per Ruleset
 6. Tests: known CTM → known DPI, rotated images, nested form images, degenerate matrix
 
 ### Module 4b: FontAnalyzer
@@ -310,7 +310,7 @@ Acceptance Criteria:
 4. DeviceRGB in CMYK workflow detection
 5. Spot color backing color validation
 6. Checks: GRD_COLOR_001 (prohibited spaces), GRD_COLOR_002 (DeviceRGB requires ICC), GRD_COLOR_003 (spot color backing), GRD_COLOR_004 (TAC exceeds limit)
-7. TAC limit configurable per Flight Plan (330 for sheetfed, 260 for web, etc.)
+7. TAC limit configurable per Ruleset (330 for sheetfed, 260 for web, etc.)
 8. Tests: known CMYK values → known TAC, prohibited spaces, ICC profile present/absent
 
 ### Module 4d: TransparencyAnalyzer
@@ -365,13 +365,13 @@ Acceptance Criteria:
 File: `src/grounded/conformance/pdfx_validator.py`
 
 Acceptance Criteria:
-1. Implements checks organized by category (see `grounded-research/09-10-11-conformance-standards.md`)
+1. Implements checks organized by category (see `lintpdf-research/09-10-11-conformance-standards.md`)
 2. File Structure & Metadata (11), Output Intent (8), Color Spaces (9), Fonts (6), Transparency (4), Page Boxes (8), Annotations (4), Encryption (2), Optional Content (3), Restricted Features (5), Graphics & Images (6), Image Compression (6), Resource Dictionaries (4), Reader & Validation (7), Variants (4)
 3. Each check has inspection ID (GRD_COMP_*), ISO clause reference, severity
 4. Reuses data from SemanticModel and ContentStreamInterpreter — does NOT re-parse
 5. Tests against veraPDF validation corpus, Isartor test suite
 
-Reference: `grounded-research/specs/iso15930-7-pdfx4.md` for full check catalog.
+Reference: `lintpdf-research/specs/iso15930-7-pdfx4.md` for full check catalog.
 
 **Card scope warning:** This card is large (92 checks). Consider splitting into sub-cards by category if it exceeds 400 lines per PR.
 
@@ -385,17 +385,17 @@ Acceptance Criteria:
 1. `VeraPDFClient` sends PDF bytes to veraPDF REST API (`POST /api/validate`)
 2. Supports PDF/A-1b, 1a, 2b, 2a, 2u, 3b, 3a, 3u, 4, 4e, 4f
 3. Parses veraPDF machine-readable XML response
-4. Maps veraPDF violations to Grounded `Finding` objects with GRD_PDFA_* IDs
+4. Maps veraPDF violations to LintPDF `Finding` objects with GRD_PDFA_* IDs
 5. Docker health check: verify veraPDF container is running before validation
 6. Timeout handling: 60-second timeout for veraPDF calls
 7. Graceful degradation: if veraPDF unavailable, report error finding (not crash)
 8. Tests: mock veraPDF responses, timeout handling, response parsing
 
-Reference: `grounded-research/09-10-11-conformance-standards.md` veraPDF integration section.
+Reference: `lintpdf-research/09-10-11-conformance-standards.md` veraPDF integration section.
 
 ---
 
-## PHASE 6: RULE ENGINE + FLIGHT PLANS
+## PHASE 6: RULE ENGINE + RULESETS
 
 ### Module 6a: Rule Engine
 
@@ -424,22 +424,22 @@ Acceptance Criteria:
 4. Each function includes `iso_clause` in decorator metadata
 5. Tests: one test per rule with both passing and failing inputs
 
-### Module 6c: Flight Plans
+### Module 6c: Rulesets
 
-**Card: GRD-022 — FlightPlanLoader and ProfileRegistry**
+**Card: GRD-022 — RulesetLoader and ProfileRegistry**
 
 Files: `src/grounded/profiles/loader.py`, `src/grounded/profiles/registry.py`, `src/grounded/profiles/schema.py`
 
 Acceptance Criteria:
-1. Flight Plan JSON schema with validation (Pydantic model)
-2. `FlightPlanLoader` loads JSON file → Profile object
+1. Ruleset JSON schema with validation (Pydantic model)
+2. `RulesetLoader` loads JSON file → Profile object
 3. Profile: rule selection, severity overrides, threshold overrides
 4. Profile inheritance (`extends` field): child overrides parent
 5. `ProfileRegistry`: register built-in profiles, look up by ID
 6. Built-in profiles: `pdfx4-standard`, at least 3 GWG 2022 variants
 7. Tests: valid profile loading, inheritance, invalid schema rejection, severity override
 
-Reference: `grounded-research/09-10-11-conformance-standards.md` Flight Plan JSON schema section.
+Reference: `lintpdf-research/09-10-11-conformance-standards.md` Ruleset JSON schema section.
 
 ---
 
@@ -454,8 +454,8 @@ Files: `src/grounded/api/app.py`, `src/grounded/api/routes/*.py`
 Acceptance Criteria:
 1. `POST /api/v1/check-in`: multipart upload (pdf_file + profile_id + optional webhook_url + metadata)
 2. Returns 202 Accepted with job_id, polling_url, estimated_wait
-3. `GET /api/v1/flight-log/{id}`: returns status (queued/taxiing/arrived) + findings when complete
-4. `GET /api/v1/flight-plans`: list available profiles
+3. `GET /api/v1/report/{id}`: returns status (queued/taxiing/arrived) + findings when complete
+4. `GET /api/v1/rulesets`: list available profiles
 5. `GET /health`: health check (DB + Redis + veraPDF)
 6. OpenAPI 3.1 auto-generated (FastAPI native)
 7. Request validation with Pydantic models
@@ -503,21 +503,21 @@ Acceptance Criteria:
 1. POST webhook to callback URL when job completes
 2. Payload: job_id, status, verdict, finding_count, report_url
 3. Exponential backoff retry: 3 attempts (1s, 5s, 25s)
-4. Signature: HMAC-SHA256 in `X-Grounded-Signature` header
+4. Signature: HMAC-SHA256 in `X-LintPDF-Signature` header
 5. Timeout: 10-second connection timeout
 6. Failed webhooks logged (not blocking)
 7. Tests: successful delivery, retry on failure, signature verification
 
 ### Module 7e: Report Generation
 
-**Card: GRD-027 — ReportGenerator (Flight Log output)**
+**Card: GRD-027 — ReportGenerator (Report output)**
 
 Files: `src/grounded/reports/generator.py`, `src/grounded/reports/*.py`
 
 Acceptance Criteria:
 1. JSON report: findings array, summary (total, by severity), metadata, profile used
 2. XML report: same structure in XML format
-3. PDF report: WeasyPrint + Jinja2 template with Grounded branding
+3. PDF report: WeasyPrint + Jinja2 template with LintPDF branding
 4. Verdict calculation: clear-to-fly (0 no-fly), grounded (1+ no-fly), delay (0 no-fly, 1+ delay)
 5. White-label support: tenant logo and colors (Livery system)
 6. Tests: each format generates valid output, verdict logic
@@ -546,10 +546,10 @@ Acceptance Criteria:
 
 Acceptance Criteria:
 1. OpenAPI 3.1 spec auto-generated and hosted
-2. Python SDK (`grounded-python`) generated from OpenAPI
+2. Python SDK (`lintpdf-python`) generated from OpenAPI
 3. Getting Started guide (5-minute onboarding)
 4. Inspection ID catalog (all GRD_* IDs with descriptions)
-5. Flight Plan authoring guide
+5. Ruleset authoring guide
 
 **Card: GRD-030 — Regression test suite**
 

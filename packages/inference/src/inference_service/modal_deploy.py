@@ -1,4 +1,4 @@
-"""Modal deployment configuration for the Never Grounded inference service.
+"""Modal deployment configuration for the LintPDF inference service.
 
 Deploy:
     modal deploy src/inference_service/modal_deploy.py

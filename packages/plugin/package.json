@@ -1,7 +1,7 @@
 {
   "name": "@thinkneverland/grounded-plugin",
   "version": "0.1.0",
-  "description": "Fairy Ring plugin for Grounded PDF preflight in Pixie Dust dashboard",
+  "description": "Fairy Ring plugin for LintPDF PDF preflight in Pixie Dust dashboard",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

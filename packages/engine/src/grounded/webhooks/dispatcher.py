@@ -91,9 +91,9 @@ class WebhookDispatcher:
 
         headers = {
             "Content-Type": "application/json",
-            "X-Grounded-Event": event,
-            "X-Grounded-Signature": signature,
-            "User-Agent": "Grounded-Webhook/0.1.0",
+            "X-LintPDF-Event": event,
+            "X-LintPDF-Signature": signature,
+            "User-Agent": "LintPDF-Webhook/0.1.0",
         }
 
         last_error = ""

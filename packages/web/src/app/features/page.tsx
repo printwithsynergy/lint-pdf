@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { AI_CATEGORIES, AI_PRESETS } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Features — Never Grounded",
+  title: "Features — LintPDF",
   description:
     "250+ rule-based checks plus 33 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, regulatory compliance, and more.",
 };
@@ -422,7 +422,7 @@ export default function FeaturesPage() {
             Everything Your PDFs Need, Checked Automatically
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-            250+ rule-based Inspections powered by a deterministic engine, plus{" "}
+            250+ rule-based checks powered by a deterministic engine, plus{" "}
             {totalAiInspections} AI-powered inspections for content quality,
             regulatory compliance, and brand verification.
           </p>
@@ -539,8 +539,8 @@ export default function FeaturesPage() {
             </h2>
             <p className="text-slate-500 max-w-3xl">
               Pre-configured inspection bundles for common use cases. Select a
-              preset in your Launch request or build custom combinations in your
-              Voyage Plan.
+              preset in your submit request or build custom combinations in your
+              Ruleset.
             </p>
           </div>
 

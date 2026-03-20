@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { Logo } from "@/components/Logo";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://app.nevergrounded.io";
+  process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
 
 type FormState = "idle" | "submitting" | "success" | "duplicate" | "error";
 
@@ -131,7 +131,7 @@ export default function BetaJoinPage() {
         ) : (
           <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-lg">
             <h1 className="text-2xl font-bold text-slate-900 mb-2 text-center">
-              Grounded is in beta
+              LintPDF is in beta
             </h1>
             <p className="text-sm text-slate-500 mb-8 text-center">
               We&rsquo;re letting people in gradually. Join the waitlist to get
@@ -193,7 +193,7 @@ export default function BetaJoinPage() {
                   htmlFor="join-usecase"
                   className="block text-sm font-medium text-slate-700 mb-1"
                 >
-                  How will you use Grounded?
+                  How will you use LintPDF?
                 </label>
                 <textarea
                   id="join-usecase"

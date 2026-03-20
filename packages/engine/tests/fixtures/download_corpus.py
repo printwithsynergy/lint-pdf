@@ -1,4 +1,4 @@
-"""Download test corpus files for Grounded regression testing.
+"""Download test corpus files for LintPDF regression testing.
 
 Downloads PDF test files from various sources:
 - veraPDF test suite (PDF/A validation corpus)
