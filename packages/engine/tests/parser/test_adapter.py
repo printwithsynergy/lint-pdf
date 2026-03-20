@@ -165,7 +165,7 @@ class TestParserAdapterInterface:
     @staticmethod
     def test_cannot_instantiate_abc() -> None:
         with pytest.raises(TypeError, match="abstract"):
-            ParserAdapter()  # type: ignore[abstract]  # skipcq: PYL-E0110
+            ParserAdapter()  # type: ignore[abstract]
 
     @staticmethod
     def test_has_required_methods() -> None:

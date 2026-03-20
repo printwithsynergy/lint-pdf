@@ -179,7 +179,7 @@ class StorageBackend:
         client.delete_object(Bucket=self._bucket_name, Key=file_key)
 
 
-_storage_instance: StorageBackend | None = None
+_storage_state: dict[str, StorageBackend | None] = {"instance": None}
 
 
 def get_storage() -> StorageBackend:
@@ -191,27 +191,25 @@ def get_storage() -> StorageBackend:
     Returns:
         Configured StorageBackend instance.
     """
-    global _storage_instance  # skipcq: PYL-W0603
-    if _storage_instance is None:
+    if _storage_state["instance"] is None:
         with _storage_lock:
-            if _storage_instance is None:
+            if _storage_state["instance"] is None:
                 from grounded.api.config import get_settings
 
                 settings = get_settings()
-                _storage_instance = StorageBackend(
+                _storage_state["instance"] = StorageBackend(
                     endpoint_url=settings.s3_endpoint_url,
                     bucket_name=settings.s3_bucket_name,
                     access_key_id=settings.s3_access_key_id,
                     secret_access_key=settings.s3_secret_access_key,
                     region=settings.s3_region,
                 )
-    return _storage_instance
+    return _storage_state["instance"]  # type: ignore[return-value]
 
 
 def set_storage(backend: StorageBackend) -> None:
     """Override the storage backend (for testing)."""
-    global _storage_instance  # skipcq: PYL-W0603
-    _storage_instance = backend
+    _storage_state["instance"] = backend
 
 
 class InMemoryStorage(StorageBackend):

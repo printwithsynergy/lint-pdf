@@ -11,6 +11,9 @@ import pytest
 
 from grounded.webhooks.dispatcher import WebhookDeliveryResult, WebhookDispatcher
 
+TEST_WEBHOOK_SECRET = "test-webhook-secret"
+TEST_WEBHOOK_SECRET_ALT = "test-webhook-secret-alt"
+
 
 class TestWebhookDeliveryResult:
     """Tests for WebhookDeliveryResult."""
@@ -60,29 +63,29 @@ class TestWebhookDispatcherSign:
     @staticmethod
     def test_sign_payload_format() -> None:
         dispatcher = WebhookDispatcher()
-        sig = dispatcher.sign_payload("mysecret", '{"key": "value"}')  # skipcq: SCT-A000
+        sig = dispatcher.sign_payload(TEST_WEBHOOK_SECRET, '{"key": "value"}')
         assert sig.startswith("sha256=")
 
     @staticmethod
     def test_sign_payload_deterministic() -> None:
         dispatcher = WebhookDispatcher()
         body = '{"test": true}'
-        sig1 = dispatcher.sign_payload("secret", body)  # skipcq: SCT-A000
-        sig2 = dispatcher.sign_payload("secret", body)  # skipcq: SCT-A000
+        sig1 = dispatcher.sign_payload(TEST_WEBHOOK_SECRET, body)
+        sig2 = dispatcher.sign_payload(TEST_WEBHOOK_SECRET, body)
         assert sig1 == sig2
 
     @staticmethod
     def test_sign_payload_different_secrets() -> None:
         dispatcher = WebhookDispatcher()
         body = '{"test": true}'
-        sig1 = dispatcher.sign_payload("secret1", body)  # skipcq: SCT-A000
-        sig2 = dispatcher.sign_payload("secret2", body)  # skipcq: SCT-A000
+        sig1 = dispatcher.sign_payload(TEST_WEBHOOK_SECRET, body)
+        sig2 = dispatcher.sign_payload(TEST_WEBHOOK_SECRET_ALT, body)
         assert sig1 != sig2
 
     @staticmethod
     def test_sign_payload_matches_manual_hmac() -> None:
         dispatcher = WebhookDispatcher()
-        secret = "webhook-secret"  # skipcq: SCT-A000 — test fixture
+        secret = TEST_WEBHOOK_SECRET
         body = '{"event": "test"}'
         expected = hmac.new(
             secret.encode("utf-8"),
@@ -106,7 +109,7 @@ class TestWebhookDispatcherDeliver:
         dispatcher = WebhookDispatcher(max_retries=0)
         result = dispatcher.deliver(
             url="https://example.com/webhook",
-            secret="test-secret",  # skipcq: SCT-A000 — test fixture
+            secret=TEST_WEBHOOK_SECRET,
             event="job.completed",
             payload={"job_id": "123"},
         )
@@ -127,7 +130,7 @@ class TestWebhookDispatcherDeliver:
         dispatcher = WebhookDispatcher(max_retries=0)
         dispatcher.deliver(
             url="https://example.com/webhook",
-            secret="test-secret",  # skipcq: SCT-A000 — test fixture
+            secret=TEST_WEBHOOK_SECRET,
             event="preflight.complete",
             payload={"data": "test"},
         )
@@ -150,7 +153,7 @@ class TestWebhookDispatcherDeliver:
         payload = {"z_key": "last", "a_key": "first"}
         dispatcher.deliver(
             url="https://example.com/webhook",
-            secret="s",  # skipcq: SCT-A000
+            secret=TEST_WEBHOOK_SECRET,
             event="test",
             payload=payload,
         )
@@ -171,7 +174,7 @@ class TestWebhookDispatcherDeliver:
         dispatcher = WebhookDispatcher(max_retries=0)
         result = dispatcher.deliver(
             url="https://example.com/webhook",
-            secret="s",  # skipcq: SCT-A000
+            secret=TEST_WEBHOOK_SECRET,
             event="test",
             payload={},
         )
@@ -187,7 +190,7 @@ class TestWebhookDispatcherDeliver:
         dispatcher = WebhookDispatcher(max_retries=0)
         result = dispatcher.deliver(
             url="https://example.com/webhook",
-            secret="s",  # skipcq: SCT-A000
+            secret=TEST_WEBHOOK_SECRET,
             event="test",
             payload={},
         )
@@ -206,7 +209,7 @@ class TestWebhookDispatcherDeliver:
         dispatcher = WebhookDispatcher(max_retries=2, base_delay=1.0)
         result = dispatcher.deliver(
             url="https://example.com/webhook",
-            secret="s",  # skipcq: SCT-A000
+            secret=TEST_WEBHOOK_SECRET,
             event="test",
             payload={},
         )
@@ -234,7 +237,7 @@ class TestWebhookDispatcherDeliver:
         dispatcher = WebhookDispatcher(max_retries=2, base_delay=0.1)
         result = dispatcher.deliver(
             url="https://example.com/webhook",
-            secret="s",  # skipcq: SCT-A000
+            secret=TEST_WEBHOOK_SECRET,
             event="test",
             payload={},
         )
@@ -254,7 +257,7 @@ class TestWebhookDispatcherDeliver:
             dispatcher = WebhookDispatcher(max_retries=0)
             result = dispatcher.deliver(
                 url="https://example.com/webhook",
-                secret="s",  # skipcq: SCT-A000
+                secret=TEST_WEBHOOK_SECRET,
                 event="test",
                 payload={},
             )
@@ -273,7 +276,7 @@ class TestWebhookDispatcherDispatchToAll:
 
         dispatcher = WebhookDispatcher(max_retries=0)
         endpoints = [
-            {"url": "https://a.com/hook", "secret": "s1", "events": []},  # skipcq: SCT-A000
+            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},  # skipcq: SCT-A000
             {"url": "https://b.com/hook", "secret": "s2", "events": []},  # skipcq: SCT-A000
         ]
 
@@ -293,7 +296,7 @@ class TestWebhookDispatcherDispatchToAll:
         endpoints = [
             {
                 "url": "https://a.com/hook",
-                "secret": "s1",  # skipcq: SCT-A000
+                "secret": TEST_WEBHOOK_SECRET,  # skipcq: SCT-A000
                 "events": ["job.completed"],
             },
             {
@@ -317,7 +320,7 @@ class TestWebhookDispatcherDispatchToAll:
 
         dispatcher = WebhookDispatcher(max_retries=0)
         endpoints = [
-            {"url": "https://a.com/hook", "secret": "s1", "events": []},  # skipcq: SCT-A000
+            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},  # skipcq: SCT-A000
         ]
 
         results = dispatcher.dispatch_to_all(endpoints, "any.event", {"data": 1})
@@ -339,7 +342,7 @@ class TestWebhookDispatcherDispatchToAll:
 
         dispatcher = WebhookDispatcher(max_retries=0)
         endpoints = [
-            {"url": "https://a.com/hook", "secret": "s1", "events": []},  # skipcq: SCT-A000
+            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},  # skipcq: SCT-A000
             {"url": "https://b.com/hook", "secret": "s2", "events": []},  # skipcq: SCT-A000
         ]
 

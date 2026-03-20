@@ -30,12 +30,13 @@ def _run_modal(*args: str, cwd: Path | None = None) -> dict[str, Any]:
     """Run a modal CLI command and return structured output."""
     cmd = [sys.executable, "-m", "modal", *args]
     try:
-        result = subprocess.run(  # skipcq: PYL-W1510 — structured result with explicit success check
+        result = subprocess.run(
             cmd,
             capture_output=True,
             text=True,
             timeout=300,
             cwd=cwd or _INFERENCE_DIR,
+            check=False,
         )
         return {
             "exit_code": result.returncode,

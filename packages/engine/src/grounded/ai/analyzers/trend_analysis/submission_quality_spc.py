@@ -191,7 +191,7 @@ class SubmissionQualitySPCAnalyzer(BaseAIAnalyzer):
         if tenant_id is None:
             return []
 
-        historical_data = _query_historical_data(tenant_id)  # skipcq: PYL-E1128
+        historical_data = _query_historical_data(tenant_id)
         if historical_data is None:
             return [
                 self._make_finding(
