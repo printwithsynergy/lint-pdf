@@ -4,7 +4,8 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const CONTACT_TO = process.env.CONTACT_EMAIL ?? "hello@thinkneverland.com";
-const FROM_ADDRESS = process.env.CONTACT_FROM ?? "LintPDF <noreply@thinkneverland.com>";
+const FROM_ADDRESS =
+  process.env.CONTACT_FROM ?? "LintPDF <noreply@thinkneverland.com>";
 
 /** Simple time-window rate limit: max 3 submissions per IP per 10 minutes. */
 const rateMap = new Map<string, number[]>();
@@ -22,8 +23,7 @@ function isRateLimited(ip: string): boolean {
 
 export async function POST(request: Request) {
   const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
   if (isRateLimited(ip)) {
     return NextResponse.json(
