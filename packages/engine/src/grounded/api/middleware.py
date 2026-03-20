@@ -14,8 +14,8 @@ from grounded.tenants.models import PLAN_LIMITS, RATE_LIMIT_WARN_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
-# Module-level Redis client — set via configure_rate_limiter()
-_redis_client: Any = None
+# Module-level container — set via configure_rate_limiter()
+_redis_state: dict[str, Any] = {"client": None}
 _redis_lock = threading.Lock()
 
 
@@ -25,24 +25,22 @@ def configure_rate_limiter(redis_url: str) -> None:
     Args:
         redis_url: Redis connection URL (e.g. redis://localhost:6379/0).
     """
-    global _redis_client  # skipcq: PYL-W0603
     with _redis_lock:
-        if _redis_client is not None:
+        if _redis_state["client"] is not None:
             return
         import redis
 
-        _redis_client = redis.Redis.from_url(redis_url, decode_responses=True)
+        _redis_state["client"] = redis.Redis.from_url(redis_url, decode_responses=True)
 
 
 def set_rate_limiter(client: Any) -> None:
     """Override the Redis client (for testing)."""
-    global _redis_client  # skipcq: PYL-W0603
-    _redis_client = client
+    _redis_state["client"] = client
 
 
 def get_redis_client() -> Any:
     """Return the current Redis client (or None if not configured)."""
-    return _redis_client
+    return _redis_state["client"]
 
 
 # Lua script for atomic increment + expire (avoids TOCTOU race on TTL)
@@ -94,7 +92,7 @@ def get_current_usage(tenant: Any) -> int:
     Returns:
         Current usage count, or 0 if Redis unavailable.
     """
-    if _redis_client is None:
+    if _redis_state["client"] is None:
         return 0
 
     tenant_id = str(tenant.id)
@@ -102,7 +100,7 @@ def get_current_usage(tenant: Any) -> int:
     rate_key = f"rate:{tenant_id}:{today}"
 
     try:
-        val = _redis_client.get(rate_key)
+        val = _redis_state["client"].get(rate_key)
         return int(val) if val is not None else 0
     except Exception:
         logger.exception("Failed to read usage from Redis")
@@ -174,7 +172,7 @@ def check_rate_limit(tenant: Any) -> UsageInfo | None:
     Raises:
         HTTPException: 429 if blocked.
     """
-    if _redis_client is None:
+    if _redis_state["client"] is None:
         return None
 
     tenant_id = str(tenant.id)
@@ -182,7 +180,7 @@ def check_rate_limit(tenant: Any) -> UsageInfo | None:
     rate_key = f"rate:{tenant_id}:{today}"
 
     try:
-        current = _redis_client.eval(_INCR_WITH_TTL_SCRIPT, 1, rate_key, 86400)
+        current = _redis_state["client"].eval(_INCR_WITH_TTL_SCRIPT, 1, rate_key, 86400)
         usage = build_usage_info(tenant, current)
 
         if usage.blocked:

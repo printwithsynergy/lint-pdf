@@ -10,6 +10,30 @@ import { getClient } from "../index";
 import { jobRoutes } from "../routes/jobs";
 import { profileRoutes } from "../routes/profiles";
 
+/** Create a mock RouteRequest with sensible defaults. */
+function createMockRequest(
+  overrides: {
+    query?: Record<string, string>;
+    params?: Record<string, string>;
+    body?: Record<string, unknown>;
+    auth?: Record<string, unknown>;
+  } = {},
+): RouteRequest {
+  return {
+    query: overrides.query ?? {},
+    params: overrides.params ?? {},
+    body: overrides.body ?? {},
+    auth: overrides.auth ?? {},
+  } as RouteRequest;
+}
+
+/** Create a mock client typed to match getClient()'s return type. */
+function createMockClient(
+  methods: Record<string, ReturnType<typeof vi.fn>>,
+): ReturnType<typeof getClient> {
+  return methods as ReturnType<typeof getClient>;
+}
+
 describe("jobRoutes", () => {
   let routes: ReturnType<typeof jobRoutes>;
 
@@ -54,14 +78,9 @@ describe("jobRoutes", () => {
         (r) => r.method === "GET" && r.path === "/jobs",
       )?.handler;
 
-      const res = await handler!({
-        query: {},
-        params: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      const res = await handler!(createMockRequest());
       expect(res.status).toBe(503);
-      expect(res.body).toEqual({ error: "Grounded API not configured" });
+      expect(res.body).toEqual({ error: "LintPDF API not configured" });
     });
 
     it("lists jobs with default pagination", async () => {
@@ -71,43 +90,39 @@ describe("jobRoutes", () => {
         page: 1,
         page_size: 20,
       };
-      const mockClient = { listJobs: vi.fn().mockResolvedValue(mockJobs) };
-      vi.mocked(getClient).mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getClient>,
-      ); // skipcq: JS-0323
+      const mockClient = createMockClient({
+        listJobs: vi.fn().mockResolvedValue(mockJobs),
+      });
+      vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes.find(
         (r) => r.method === "GET" && r.path === "/jobs",
       )?.handler;
-      const res = await handler!({
-        query: {},
-        params: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      const res = await handler!(createMockRequest());
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJobs);
-      expect(mockClient.listJobs).toHaveBeenCalledWith(1, 20);
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listJobs,
+      ).toHaveBeenCalledWith(1, 20);
     });
 
     it("lists jobs with custom pagination from query params", async () => {
-      const mockClient = { listJobs: vi.fn().mockResolvedValue({ jobs: [] }) };
-      vi.mocked(getClient).mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getClient>,
-      ); // skipcq: JS-0323
+      const mockClient = createMockClient({
+        listJobs: vi.fn().mockResolvedValue({ jobs: [] }),
+      });
+      vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes.find(
         (r) => r.method === "GET" && r.path === "/jobs",
       )?.handler;
-      await handler!({
-        query: { page: "3", page_size: "10" },
-        params: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      await handler!(
+        createMockRequest({ query: { page: "3", page_size: "10" } }),
+      );
 
-      expect(mockClient.listJobs).toHaveBeenCalledWith(3, 10);
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listJobs,
+      ).toHaveBeenCalledWith(3, 10);
     });
   });
 
@@ -118,35 +133,31 @@ describe("jobRoutes", () => {
         (r) => r.method === "GET" && r.path === "/jobs/:jobId",
       )?.handler;
 
-      const res = await handler!({
-        params: { jobId: "abc" },
-        query: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "abc" } }),
+      );
       expect(res.status).toBe(503);
     });
 
     it("returns job by ID", async () => {
       const mockJob = { job_id: "abc", status: "complete" };
-      const mockClient = { getJob: vi.fn().mockResolvedValue(mockJob) };
-      vi.mocked(getClient).mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getClient>,
-      ); // skipcq: JS-0323
+      const mockClient = createMockClient({
+        getJob: vi.fn().mockResolvedValue(mockJob),
+      });
+      vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes.find(
         (r) => r.method === "GET" && r.path === "/jobs/:jobId",
       )?.handler;
-      const res = await handler!({
-        params: { jobId: "abc" },
-        query: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "abc" } }),
+      );
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJob);
-      expect(mockClient.getJob).toHaveBeenCalledWith("abc");
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).getJob,
+      ).toHaveBeenCalledWith("abc");
     });
   });
 
@@ -157,34 +168,29 @@ describe("jobRoutes", () => {
         (r) => r.method === "DELETE" && r.path === "/jobs/:jobId",
       )?.handler;
 
-      const res = await handler!({
-        params: { jobId: "abc" },
-        query: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "abc" } }),
+      );
       expect(res.status).toBe(503);
     });
 
     it("deletes job and returns 204", async () => {
-      // skipcq: JS-W1042 — mockResolvedValue requires an explicit value
-      const mockClient = { deleteJob: vi.fn().mockResolvedValue(undefined) };
-      vi.mocked(getClient).mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getClient>,
-      ); // skipcq: JS-0323
+      const mockClient = createMockClient({
+        deleteJob: vi.fn().mockResolvedValue(undefined),
+      });
+      vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes.find(
         (r) => r.method === "DELETE" && r.path === "/jobs/:jobId",
       )?.handler;
-      const res = await handler!({
-        params: { jobId: "del_123" },
-        query: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "del_123" } }),
+      );
 
       expect(res.status).toBe(204);
-      expect(mockClient.deleteJob).toHaveBeenCalledWith("del_123");
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).deleteJob,
+      ).toHaveBeenCalledWith("del_123");
     });
   });
 });
@@ -214,36 +220,26 @@ describe("profileRoutes", () => {
       vi.mocked(getClient).mockReturnValue(null);
       const handler = routes[0].handler;
 
-      const res = await handler({
-        query: {},
-        params: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      const res = await handler(createMockRequest());
       expect(res.status).toBe(503);
-      expect(res.body).toEqual({ error: "Grounded API not configured" });
+      expect(res.body).toEqual({ error: "LintPDF API not configured" });
     });
 
     it("returns profiles list", async () => {
       const mockProfiles = { profiles: [{ id: "p1", name: "PDF/X-1a" }] };
-      const mockClient = {
+      const mockClient = createMockClient({
         listProfiles: vi.fn().mockResolvedValue(mockProfiles),
-      };
-      vi.mocked(getClient).mockReturnValue(
-        mockClient as unknown as ReturnType<typeof getClient>,
-      ); // skipcq: JS-0323
+      });
+      vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes[0].handler;
-      const res = await handler({
-        query: {},
-        params: {},
-        body: {},
-        auth: {},
-      } as unknown as RouteRequest); // skipcq: JS-0323
+      const res = await handler(createMockRequest());
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockProfiles);
-      expect(mockClient.listProfiles).toHaveBeenCalled();
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listProfiles,
+      ).toHaveBeenCalled();
     });
   });
 });

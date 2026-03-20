@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import Any
 
 from grounded.analyzers.finding import Severity
@@ -41,19 +40,22 @@ def _opacity_event(
 
 
 class TestTransparencyPresence:
-    def test_has_transparency_advisory(self) -> None:
+    @staticmethod
+    def test_has_transparency_advisory() -> None:
         f = validate_transparency(_doc(), [_opacity_event(nsa=0.5)])
         ids = [x for x in f if x.inspection_id == "PDFX4-043"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.ADVISORY
 
-    def test_no_transparency_ok(self) -> None:
+    @staticmethod
+    def test_no_transparency_ok() -> None:
         f = validate_transparency(_doc(), [_opacity_event(sa=1.0, nsa=1.0)])
         assert not [x for x in f if x.inspection_id == "PDFX4-043"]
 
 
 class TestGroupColorSpace:
-    def test_group_cs_conflicts_with_intent(self) -> None:
+    @staticmethod
+    def test_group_cs_conflicts_with_intent() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -65,7 +67,8 @@ class TestGroupColorSpace:
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_group_cs_matches_intent_ok(self) -> None:
+    @staticmethod
+    def test_group_cs_matches_intent_ok() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -77,19 +80,22 @@ class TestGroupColorSpace:
 
 
 class TestBlendModes:
-    def test_non_standard_blend_mode_aground(self) -> None:
+    @staticmethod
+    def test_non_standard_blend_mode_aground() -> None:
         f = validate_transparency(_doc(), [_opacity_event(nsa=0.5, blend_mode="CustomBlend")])
         ids = [x for x in f if x.inspection_id == "PDFX4-046"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_standard_blend_mode_ok(self) -> None:
+    @staticmethod
+    def test_standard_blend_mode_ok() -> None:
         f = validate_transparency(_doc(), [_opacity_event(nsa=0.5, blend_mode="Multiply")])
         assert not [x for x in f if x.inspection_id == "PDFX4-046"]
 
 
 class TestSoftMask:
-    def test_soft_mask_cs_advisory(self) -> None:
+    @staticmethod
+    def test_soft_mask_cs_advisory() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -102,7 +108,8 @@ class TestSoftMask:
 
 
 class TestIsolatedKnockout:
-    def test_isolated_knockout_advisory(self) -> None:
+    @staticmethod
+    def test_isolated_knockout_advisory() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -113,7 +120,8 @@ class TestIsolatedKnockout:
         assert len(ids) == 1
         assert ids[0].severity == Severity.ADVISORY
 
-    def test_isolated_only_ok(self) -> None:
+    @staticmethod
+    def test_isolated_only_ok() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),

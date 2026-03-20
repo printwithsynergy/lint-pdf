@@ -7,8 +7,7 @@ interface WaitlistModalProps {
   onClose: () => void;
 }
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://app.nevergrounded.io";
+const API_BASE = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
 
 type FormState = "idle" | "submitting" | "success" | "duplicate" | "error";
 
@@ -178,7 +177,7 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
               Join the Waitlist
             </h3>
             <p className="text-sm text-slate-500 mb-6">
-              Never Grounded is in beta. Sign up for early access.
+              LintPDF is in beta. Sign up for early access.
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -236,7 +235,7 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
                   htmlFor="wl-usecase"
                   className="block text-sm font-medium text-slate-700 mb-1"
                 >
-                  How will you use Never Grounded?
+                  How will you use LintPDF?
                 </label>
                 <textarea
                   id="wl-usecase"

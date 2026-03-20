@@ -1,5 +1,5 @@
 /**
- * TypeScript types matching the Grounded API schemas.
+ * TypeScript types matching the LintPDF API schemas.
  *
  * These mirror the Python Pydantic models in:
  * packages/engine/src/grounded/api/schemas.py
@@ -50,7 +50,7 @@ export interface VoyagePlan {
   is_builtin: boolean;
 }
 
-/** Pixie Dust webhook payload from Grounded */
+/** Pixie Dust webhook payload from LintPDF */
 export interface PixieDustPayload {
   event: "preflight.complete" | "preflight.failed";
   job_id: string;

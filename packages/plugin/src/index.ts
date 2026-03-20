@@ -1,5 +1,5 @@
 /**
- * Grounded PDF Preflight — Fairy Ring plugin for Pixie Dust.
+ * LintPDF PDF Preflight — Fairy Ring plugin for Pixie Dust.
  *
  * Core plugin: preflight job management, flight plans, and webhook ingestion.
  * Sub-plugins handle usage, waitlist, billing, reports, team, account, and site admin.
@@ -66,20 +66,20 @@ export const groundedPlugin: PixieDustPlugin = {
   register(ctx: PluginContext): void {
     if (_client !== null) {
       ctx.services.logger.warn(
-        "Grounded plugin: already registered, skipping duplicate",
+        "LintPDF plugin: already registered, skipping duplicate",
       );
       return;
     }
 
     const env = process.env as Record<string, string>;
     const parsed = groundedConfigSchema.safeParse({
-      apiUrl: env.GROUNDED_API_URL ?? "https://api.grounded.dev",
+      apiUrl: env.GROUNDED_API_URL ?? "https://api.lintpdf.com",
       webhookSecret: env.GROUNDED_WEBHOOK_SECRET ?? "",
       apiKey: env.GROUNDED_API_KEY,
     });
 
     if (!parsed.success) {
-      ctx.services.logger.warn("Grounded plugin: missing config, skipping");
+      ctx.services.logger.warn("LintPDF plugin: missing config, skipping");
       return;
     }
 
@@ -161,7 +161,7 @@ export const groundedPlugin: PixieDustPlugin = {
 
   boot(ctx: PluginContext): void {
     if (_client) {
-      ctx.services.logger.info("Grounded plugin ready");
+      ctx.services.logger.info("LintPDF plugin ready");
     }
   },
 

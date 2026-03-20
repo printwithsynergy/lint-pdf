@@ -12,13 +12,11 @@ export function Header() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const { betaMode } = useBeta();
 
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://app.nevergrounded.io";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
   const ctaLabel = betaMode ? "Join Waitlist" : "Get Started";
   const ctaHref = betaMode ? undefined : `${appUrl}/auth/login?plan=free`;
 
   return (
-    // skipcq: JS-0415
     <>
       <header className="fixed top-0 z-50 w-full border-b border-slate-200/60 bg-white">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -26,10 +24,10 @@ export function Header() {
             <Logo className="h-9 w-9" />
             <div className="flex flex-col leading-none">
               <span className="text-lg font-semibold tracking-tight text-brand-900">
-                Never Grounded
+                LintPDF
               </span>
               <span className="text-[9px] font-medium tracking-wide text-slate-400">
-                Built to sail. Cleared for press.
+                Every check. Every page. Every time.
               </span>
             </div>
           </Link>

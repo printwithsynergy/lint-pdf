@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.analyzers.metadata import MetadataAnalyzer
 from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
@@ -57,20 +56,23 @@ def _xmp_packet(
 class TestXMPMissing:
     """Test GRD_META_001: XMP metadata stream missing."""
 
-    def test_no_metadata_delay(self) -> None:
+    @staticmethod
+    def test_no_metadata_delay() -> None:
         doc = _make_document(metadata_stream=None)
         findings = MetadataAnalyzer().analyze(doc, [])
         meta = [f for f in findings if f.inspection_id == "GRD_META_001"]
         assert len(meta) == 1
         assert meta[0].severity == Severity.SQUALL
 
-    def test_with_metadata_no_finding(self) -> None:
+    @staticmethod
+    def test_with_metadata_no_finding() -> None:
         doc = _make_document(metadata_stream=_xmp_packet())
         findings = MetadataAnalyzer().analyze(doc, [])
         meta = [f for f in findings if f.inspection_id == "GRD_META_001"]
         assert len(meta) == 0
 
-    def test_no_metadata_returns_early(self) -> None:
+    @staticmethod
+    def test_no_metadata_returns_early() -> None:
         """When XMP is missing, no other META findings are generated."""
         doc = _make_document(metadata_stream=None)
         findings = MetadataAnalyzer().analyze(doc, [])
@@ -82,7 +84,8 @@ class TestXMPMissing:
 class TestTitleInconsistency:
     """Test GRD_META_002: Info dict / XMP title mismatch."""
 
-    def test_title_mismatch_advisory(self) -> None:
+    @staticmethod
+    def test_title_mismatch_advisory() -> None:
         doc = _make_document(
             metadata_stream=_xmp_packet(title="XMP Title"),
             info_dict={"/Title": "Info Title"},
@@ -94,7 +97,8 @@ class TestTitleInconsistency:
         assert "Info Title" in title[0].message
         assert "XMP Title" in title[0].message
 
-    def test_matching_titles_no_finding(self) -> None:
+    @staticmethod
+    def test_matching_titles_no_finding() -> None:
         doc = _make_document(
             metadata_stream=_xmp_packet(title="My Document"),
             info_dict={"/Title": "My Document"},
@@ -103,7 +107,8 @@ class TestTitleInconsistency:
         title = [f for f in findings if f.inspection_id == "GRD_META_002"]
         assert len(title) == 0
 
-    def test_empty_info_title_no_finding(self) -> None:
+    @staticmethod
+    def test_empty_info_title_no_finding() -> None:
         """Empty Info title does not trigger mismatch."""
         doc = _make_document(
             metadata_stream=_xmp_packet(title="XMP Title"),
@@ -113,7 +118,8 @@ class TestTitleInconsistency:
         title = [f for f in findings if f.inspection_id == "GRD_META_002"]
         assert len(title) == 0
 
-    def test_empty_xmp_title_no_finding(self) -> None:
+    @staticmethod
+    def test_empty_xmp_title_no_finding() -> None:
         """Empty XMP title does not trigger mismatch."""
         doc = _make_document(
             metadata_stream=_xmp_packet(title=""),
@@ -127,7 +133,8 @@ class TestTitleInconsistency:
 class TestTrappedKey:
     """Test GRD_META_003: Trapped key missing or Unknown."""
 
-    def test_trapped_missing_advisory(self) -> None:
+    @staticmethod
+    def test_trapped_missing_advisory() -> None:
         doc = _make_document(metadata_stream=_xmp_packet(trapped=""))
         findings = MetadataAnalyzer().analyze(doc, [])
         trapped = [f for f in findings if f.inspection_id == "GRD_META_003"]
@@ -135,20 +142,23 @@ class TestTrappedKey:
         assert trapped[0].severity == Severity.ADVISORY
         assert "missing" in trapped[0].message
 
-    def test_trapped_unknown_advisory(self) -> None:
+    @staticmethod
+    def test_trapped_unknown_advisory() -> None:
         doc = _make_document(metadata_stream=_xmp_packet(trapped="Unknown"))
         findings = MetadataAnalyzer().analyze(doc, [])
         trapped = [f for f in findings if f.inspection_id == "GRD_META_003"]
         assert len(trapped) == 1
         assert "Unknown" in trapped[0].message
 
-    def test_trapped_true_no_finding(self) -> None:
+    @staticmethod
+    def test_trapped_true_no_finding() -> None:
         doc = _make_document(metadata_stream=_xmp_packet(trapped="True"))
         findings = MetadataAnalyzer().analyze(doc, [])
         trapped = [f for f in findings if f.inspection_id == "GRD_META_003"]
         assert len(trapped) == 0
 
-    def test_trapped_false_no_finding(self) -> None:
+    @staticmethod
+    def test_trapped_false_no_finding() -> None:
         doc = _make_document(metadata_stream=_xmp_packet(trapped="False"))
         findings = MetadataAnalyzer().analyze(doc, [])
         trapped = [f for f in findings if f.inspection_id == "GRD_META_003"]
@@ -158,7 +168,8 @@ class TestTrappedKey:
 class TestPDFVersionMismatch:
     """Test GRD_META_004: PDF version mismatch."""
 
-    def test_version_mismatch_advisory(self) -> None:
+    @staticmethod
+    def test_version_mismatch_advisory() -> None:
         doc = _make_document(
             version="1.7",
             metadata_stream=_xmp_packet(pdf_version="2.0"),
@@ -170,7 +181,8 @@ class TestPDFVersionMismatch:
         assert "1.7" in ver[0].message
         assert "2.0" in ver[0].message
 
-    def test_matching_version_no_finding(self) -> None:
+    @staticmethod
+    def test_matching_version_no_finding() -> None:
         doc = _make_document(
             version="1.7",
             metadata_stream=_xmp_packet(pdf_version="1.7"),
@@ -179,7 +191,8 @@ class TestPDFVersionMismatch:
         ver = [f for f in findings if f.inspection_id == "GRD_META_004"]
         assert len(ver) == 0
 
-    def test_no_xmp_version_no_finding(self) -> None:
+    @staticmethod
+    def test_no_xmp_version_no_finding() -> None:
         """XMP without PDFVersion does not trigger GRD_META_004."""
         doc = _make_document(
             version="1.7",
@@ -189,7 +202,8 @@ class TestPDFVersionMismatch:
         ver = [f for f in findings if f.inspection_id == "GRD_META_004"]
         assert len(ver) == 0
 
-    def test_version_mismatch_details(self) -> None:
+    @staticmethod
+    def test_version_mismatch_details() -> None:
         doc = _make_document(
             version="1.5",
             metadata_stream=_xmp_packet(pdf_version="1.7"),

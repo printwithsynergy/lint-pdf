@@ -20,7 +20,7 @@ export function CTASection() {
         className="absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom right, #162d60, #1a3a7a, #0c1f3e)",
+            "linear-gradient(to bottom right, #0c4a6e, #075985, #082f49)",
         }}
       />
       <DesktopOnly>
@@ -34,7 +34,7 @@ export function CTASection() {
       </DesktopOnly>
       <div className="relative mx-auto max-w-3xl px-6 text-center">
         <h2 className="text-3xl font-bold text-white md:text-4xl mb-4">
-          {betaMode ? "Get early access" : "Ready to set sail?"}
+          {betaMode ? "Get early access" : "Ready to get started?"}
         </h2>
         <p className="text-brand-200 mb-10 text-lg">
           {betaMode
@@ -52,10 +52,10 @@ export function CTASection() {
             </button>
           ) : (
             <a
-              href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.nevergrounded.io"}/auth/login?plan=free`}
+              href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com"}/auth/login?plan=free`}
               className="rounded-xl bg-white px-8 py-3.5 text-base font-bold text-brand-900 transition-all hover:bg-brand-50 hover:shadow-xl hover:-translate-y-0.5"
             >
-              Set Sail
+              Get Started
             </a>
           )}
           <a

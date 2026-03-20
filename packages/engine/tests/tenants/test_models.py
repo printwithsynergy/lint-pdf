@@ -2,25 +2,28 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.tenants.models import PLAN_LIMITS, TenantInfo, TenantPlan
 
 
 class TestTenantPlan:
-    def test_free_plan(self) -> None:
+    @staticmethod
+    def test_free_plan() -> None:
         assert TenantPlan.FREE.value == "free"
 
-    def test_enterprise_plan(self) -> None:
+    @staticmethod
+    def test_enterprise_plan() -> None:
         assert TenantPlan.ENTERPRISE.value == "enterprise"
 
-    def test_all_plans_have_limits(self) -> None:
+    @staticmethod
+    def test_all_plans_have_limits() -> None:
         for plan in TenantPlan:
             assert plan in PLAN_LIMITS
             limits = PLAN_LIMITS[plan]
             assert "rate_limit_daily" in limits
             assert "max_file_size_mb" in limits
 
-    def test_enterprise_has_highest_limits(self) -> None:
+    @staticmethod
+    def test_enterprise_has_highest_limits() -> None:
         free_limits = PLAN_LIMITS[TenantPlan.FREE]
         enterprise_limits = PLAN_LIMITS[TenantPlan.ENTERPRISE]
         assert enterprise_limits["rate_limit_daily"] > free_limits["rate_limit_daily"]
@@ -28,7 +31,8 @@ class TestTenantPlan:
 
 
 class TestTenantInfo:
-    def test_create_tenant_info(self) -> None:
+    @staticmethod
+    def test_create_tenant_info() -> None:
         tenant = TenantInfo(
             id="test-id",
             name="Test Tenant",
@@ -42,7 +46,8 @@ class TestTenantInfo:
         assert tenant.plan == TenantPlan.FREE
         assert tenant.is_active is True
 
-    def test_default_active(self) -> None:
+    @staticmethod
+    def test_default_active() -> None:
         tenant = TenantInfo(
             id="t1",
             name="T",

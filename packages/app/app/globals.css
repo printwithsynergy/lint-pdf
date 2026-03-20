@@ -27,18 +27,18 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
-  /* Grounded brand navy palette — matches nevergrounded.io marketing site */
-  --color-brand-50: #eef8fb;
-  --color-brand-100: #cee7f2;
-  --color-brand-200: #bce0f3;
-  --color-brand-300: #95d0eb;
-  --color-brand-400: #78bce1;
-  --color-brand-500: #5395ce;
-  --color-brand-600: #3b6fb5;
-  --color-brand-700: #215aac;
-  --color-brand-800: #1a3a7a;
-  --color-brand-900: #162d60;
-  --color-brand-950: #0c1f3e;
+  /* LintPDF brand sky-blue palette — matches lintpdf.com marketing site */
+  --color-brand-50: #f0f9ff;
+  --color-brand-100: #e0f2fe;
+  --color-brand-200: #bae6fd;
+  --color-brand-300: #7dd3fc;
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9;
+  --color-brand-600: #0284c7;
+  --color-brand-700: #0369a1;
+  --color-brand-800: #075985;
+  --color-brand-900: #0c4a6e;
+  --color-brand-950: #082f49;
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -74,19 +74,19 @@
   --card-foreground: 220 30% 10%;
   --popover: 0 0% 100%;
   --popover-foreground: 220 30% 10%;
-  --primary: 220 63% 23%;
-  --primary-foreground: 0 0% 98%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 0 0% 100%;
   --secondary: 200 20% 96%;
-  --secondary-foreground: 220 30% 10%;
+  --secondary-foreground: 201 96% 32%;
   --muted: 200 20% 96%;
   --muted-foreground: 210 9% 46%;
-  --accent: 207 55% 57%;
-  --accent-foreground: 0 0% 98%;
+  --accent: 199 95% 74%;
+  --accent-foreground: 201 90% 27%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
   --border: 210 13% 91%;
   --input: 210 13% 91%;
-  --ring: 220 63% 23%;
+  --ring: 199 89% 48%;
   --radius: 0.5rem;
 }
 
@@ -97,19 +97,19 @@
   --card-foreground: 0 0% 98%;
   --popover: 220 20% 5%;
   --popover-foreground: 0 0% 98%;
-  --primary: 207 55% 57%;
-  --primary-foreground: 0 0% 98%;
+  --primary: 199 89% 48%;
+  --primary-foreground: 0 0% 100%;
   --secondary: 220 14% 14%;
   --secondary-foreground: 0 0% 98%;
   --muted: 220 14% 14%;
   --muted-foreground: 210 9% 65%;
-  --accent: 199 63% 67%;
+  --accent: 199 95% 74%;
   --accent-foreground: 0 0% 98%;
   --destructive: 0 63% 31%;
   --destructive-foreground: 0 0% 98%;
   --border: 220 14% 14%;
   --input: 220 14% 14%;
-  --ring: 207 55% 57%;
+  --ring: 199 89% 48%;
 }
 
 * {

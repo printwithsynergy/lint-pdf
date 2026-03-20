@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-# skipcq: PYL-R0201
 from grounded.ai.config import (
     add_reference_logo,
     admin_update_ai_config,
@@ -100,7 +99,7 @@ class TestUpdateAIConfig:
         self, mock_db_session: MagicMock, mock_ai_config: MagicMock, tenant_id
     ) -> None:
         mock_db_session.query.return_value.filter.return_value.first.return_value = mock_ai_config
-        words = ["NeverGrounded", "preflight", "CMYK"]
+        words = ["LintPDF", "preflight", "CMYK"]
         result = update_ai_config(tenant_id, {"custom_dictionary": words}, mock_db_session)
         assert result.custom_dictionary == words
 

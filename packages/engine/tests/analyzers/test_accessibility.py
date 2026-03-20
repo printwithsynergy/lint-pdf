@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.accessibility import AccessibilityAnalyzer
 from grounded.analyzers.finding import Severity
 from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
@@ -23,7 +22,8 @@ def _make_document(
 class TestNoStructureTree:
     """Test GRD_ACCESS_001: No structure tree."""
 
-    def test_no_struct_tree_flags(self) -> None:
+    @staticmethod
+    def test_no_struct_tree_flags() -> None:
         doc = _make_document(catalog={})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -31,7 +31,8 @@ class TestNoStructureTree:
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
-    def test_struct_tree_present_no_flag(self) -> None:
+    @staticmethod
+    def test_struct_tree_present_no_flag() -> None:
         doc = _make_document(catalog={"/StructTreeRoot": {"Type": "StructTreeRoot"}})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -42,7 +43,8 @@ class TestNoStructureTree:
 class TestNoDocumentLanguage:
     """Test GRD_ACCESS_002: No document language."""
 
-    def test_no_lang_flags(self) -> None:
+    @staticmethod
+    def test_no_lang_flags() -> None:
         doc = _make_document(catalog={})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -50,7 +52,8 @@ class TestNoDocumentLanguage:
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
-    def test_lang_present_no_flag(self) -> None:
+    @staticmethod
+    def test_lang_present_no_flag() -> None:
         doc = _make_document(catalog={"/Lang": "en-US"})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -61,7 +64,8 @@ class TestNoDocumentLanguage:
 class TestTaggedPdf:
     """Test GRD_ACCESS_003: Tagged PDF present."""
 
-    def test_tagged_pdf_flagged(self) -> None:
+    @staticmethod
+    def test_tagged_pdf_flagged() -> None:
         doc = _make_document(
             catalog={
                 "/StructTreeRoot": {"Type": "StructTreeRoot"},
@@ -74,14 +78,16 @@ class TestTaggedPdf:
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
-    def test_struct_tree_without_mark_info_no_tagged_flag(self) -> None:
+    @staticmethod
+    def test_struct_tree_without_mark_info_no_tagged_flag() -> None:
         doc = _make_document(catalog={"/StructTreeRoot": {"Type": "StructTreeRoot"}})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
         f = [f for f in findings if f.inspection_id == "GRD_ACCESS_003"]
         assert len(f) == 0
 
-    def test_mark_info_not_marked_no_flag(self) -> None:
+    @staticmethod
+    def test_mark_info_not_marked_no_flag() -> None:
         doc = _make_document(
             catalog={
                 "/StructTreeRoot": {"Type": "StructTreeRoot"},
@@ -93,7 +99,8 @@ class TestTaggedPdf:
         f = [f for f in findings if f.inspection_id == "GRD_ACCESS_003"]
         assert len(f) == 0
 
-    def test_full_accessible_doc(self) -> None:
+    @staticmethod
+    def test_full_accessible_doc() -> None:
         """Fully accessible doc: struct tree, lang, marked."""
         doc = _make_document(
             catalog={

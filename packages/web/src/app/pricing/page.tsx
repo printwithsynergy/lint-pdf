@@ -24,7 +24,6 @@ export default function PricingPage() {
   ] as const;
 
   return (
-    // skipcq: JS-0415
     <main>
       {/* Hero */}
       <section className="bg-brand-50/50 pt-20 pb-16">
@@ -34,7 +33,7 @@ export default function PricingPage() {
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
             Start free with 50 files per month. Scale as your preflight volume
-            grows. Every plan includes 250+ Inspections — the only difference is
+            grows. Every plan includes 250+ checks — the only difference is
             volume and features.
           </p>
         </div>
@@ -158,7 +157,7 @@ export default function PricingPage() {
               </span>
             </div>
             <p className="text-slate-500 max-w-2xl mx-auto">
-              Core preflight checks (250+ Inspections) are unlimited on all paid
+              Core preflight checks (250+ checks) are unlimited on all paid
               plans. AI inspections are metered separately using credits.
               Pay-per-use at{" "}
               <span className="font-semibold text-slate-700">$0.12/credit</span>{" "}
@@ -235,9 +234,9 @@ export default function PricingPage() {
               </p>
               <ul className="space-y-1 text-xs text-slate-500">
                 <li>Image quality, NSFW detection, image similarity</li>
-                <li>File classification, auto voyage plan</li>
+                <li>File classification, auto ruleset</li>
                 <li>Logo detection, safe zone violations</li>
-                <li>NL voyage plan, NL report interpret</li>
+                <li>NL ruleset, NL report interpret</li>
                 <li>Multi-language translation, text as outlines</li>
                 <li>Regulatory symbols, processing steps fallback</li>
               </ul>

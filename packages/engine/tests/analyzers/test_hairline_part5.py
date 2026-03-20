@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.analyzers.hairline import HairlineAnalyzer
 from grounded.semantic.events import PathPaintingEvent
@@ -21,7 +20,8 @@ def _make_document() -> SemanticDocument:
 class TestMultiInkThinStroke:
     """Test GRD_STROKE_004: Multi-ink thin stroke."""
 
-    def test_multi_ink_thin_stroke_flags(self) -> None:
+    @staticmethod
+    def test_multi_ink_thin_stroke_flags() -> None:
         events = [
             PathPaintingEvent(
                 operator="S",
@@ -42,7 +42,8 @@ class TestMultiInkThinStroke:
         assert len(f) == 1
         assert f[0].severity == Severity.SQUALL
 
-    def test_single_ink_thin_stroke_no_flag(self) -> None:
+    @staticmethod
+    def test_single_ink_thin_stroke_no_flag() -> None:
         events = [
             PathPaintingEvent(
                 operator="S",
@@ -62,7 +63,8 @@ class TestMultiInkThinStroke:
         f = [f for f in findings if f.inspection_id == "GRD_STROKE_004"]
         assert len(f) == 0
 
-    def test_multi_ink_thick_stroke_no_flag(self) -> None:
+    @staticmethod
+    def test_multi_ink_thick_stroke_no_flag() -> None:
         events = [
             PathPaintingEvent(
                 operator="S",
@@ -82,7 +84,8 @@ class TestMultiInkThinStroke:
         f = [f for f in findings if f.inspection_id == "GRD_STROKE_004"]
         assert len(f) == 0
 
-    def test_non_cmyk_thin_stroke_no_flag(self) -> None:
+    @staticmethod
+    def test_non_cmyk_thin_stroke_no_flag() -> None:
         events = [
             PathPaintingEvent(
                 operator="S",
@@ -106,7 +109,8 @@ class TestMultiInkThinStroke:
 class TestExcessivePathPoints:
     """Test GRD_PATH_001: Excessive path points."""
 
-    def test_many_points_flags(self) -> None:
+    @staticmethod
+    def test_many_points_flags() -> None:
         events = [
             PathPaintingEvent(
                 operator="S",
@@ -127,7 +131,8 @@ class TestExcessivePathPoints:
         assert f[0].severity == Severity.SQUALL
         assert f[0].details["point_count"] == 15000
 
-    def test_normal_points_no_flag(self) -> None:
+    @staticmethod
+    def test_normal_points_no_flag() -> None:
         events = [
             PathPaintingEvent(
                 operator="S",
@@ -146,7 +151,8 @@ class TestExcessivePathPoints:
         f = [f for f in findings if f.inspection_id == "GRD_PATH_001"]
         assert len(f) == 0
 
-    def test_exactly_10000_no_flag(self) -> None:
+    @staticmethod
+    def test_exactly_10000_no_flag() -> None:
         events = [
             PathPaintingEvent(
                 operator="S",
@@ -165,7 +171,8 @@ class TestExcessivePathPoints:
         f = [f for f in findings if f.inspection_id == "GRD_PATH_001"]
         assert len(f) == 0
 
-    def test_10001_flags(self) -> None:
+    @staticmethod
+    def test_10001_flags() -> None:
         events = [
             PathPaintingEvent(
                 operator="f",

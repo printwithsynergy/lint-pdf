@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import Any
 
 from grounded.analyzers.finding import Severity
@@ -44,19 +43,22 @@ def _doc(
 
 
 class TestXmpPresence:
-    def test_missing_xmp_aground(self) -> None:
+    @staticmethod
+    def test_missing_xmp_aground() -> None:
         f = validate_metadata(_doc(metadata_stream=None))
         ids = [x for x in f if x.inspection_id == "PDFX4-005"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_valid_xmp_ok(self) -> None:
+    @staticmethod
+    def test_valid_xmp_ok() -> None:
         f = validate_metadata(_doc())
         assert not [x for x in f if x.inspection_id == "PDFX4-005"]
 
 
 class TestPdfxVersion:
-    def test_missing_pdfx_version(self) -> None:
+    @staticmethod
+    def test_missing_pdfx_version() -> None:
         xmp = b"""<?xml version="1.0"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -71,7 +73,8 @@ class TestPdfxVersion:
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_wrong_pdfx_version(self) -> None:
+    @staticmethod
+    def test_wrong_pdfx_version() -> None:
         xmp = b"""<?xml version="1.0"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -84,13 +87,15 @@ class TestPdfxVersion:
         ids = [x for x in f if x.inspection_id == "PDFX4-006"]
         assert len(ids) == 1
 
-    def test_valid_pdfx_version(self) -> None:
+    @staticmethod
+    def test_valid_pdfx_version() -> None:
         f = validate_metadata(_doc())
         assert not [x for x in f if x.inspection_id == "PDFX4-006"]
 
 
 class TestDates:
-    def test_missing_create_date(self) -> None:
+    @staticmethod
+    def test_missing_create_date() -> None:
         xmp = b"""<?xml version="1.0"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -107,12 +112,14 @@ class TestDates:
 
 
 class TestTitleConsistency:
-    def test_title_mismatch(self) -> None:
+    @staticmethod
+    def test_title_mismatch() -> None:
         f = validate_metadata(_doc(info_dict={"/Title": "Different Title"}))
         ids = [x for x in f if x.inspection_id == "PDFX4-013"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.ADVISORY
 
-    def test_title_match(self) -> None:
+    @staticmethod
+    def test_title_match() -> None:
         f = validate_metadata(_doc(info_dict={"/Title": "Test Doc"}))
         assert not [x for x in f if x.inspection_id == "PDFX4-013"]

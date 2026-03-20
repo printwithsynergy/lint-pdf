@@ -6,7 +6,6 @@ and Redis client lifecycle management.
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -89,7 +88,8 @@ def fake_redis() -> FakeRedis:
 class TestConfigureRateLimiter:
     """Tests for configure_rate_limiter initialization."""
 
-    def test_configure_sets_client(self) -> None:
+    @staticmethod
+    def test_configure_sets_client() -> None:
         mock_redis_instance = MagicMock()
         mock_redis_mod = MagicMock()
         mock_redis_mod.Redis.from_url.return_value = mock_redis_instance
@@ -97,19 +97,22 @@ class TestConfigureRateLimiter:
             configure_rate_limiter("redis://localhost:6379/0")
             assert get_redis_client() is mock_redis_instance
 
-    def test_configure_only_runs_once(self) -> None:
+    @staticmethod
+    def test_configure_only_runs_once() -> None:
         """configure_rate_limiter is idempotent once a client is set."""
         existing = MagicMock()
         set_rate_limiter(existing)
         configure_rate_limiter("redis://localhost:6379/1")
         assert get_redis_client() is existing
 
-    def test_set_and_get(self) -> None:
+    @staticmethod
+    def test_set_and_get() -> None:
         client = MagicMock()
         set_rate_limiter(client)
         assert get_redis_client() is client
 
-    def test_set_none_clears(self) -> None:
+    @staticmethod
+    def test_set_none_clears() -> None:
         set_rate_limiter(MagicMock())
         set_rate_limiter(None)
         assert get_redis_client() is None
@@ -118,7 +121,8 @@ class TestConfigureRateLimiter:
 class TestUsageInfoProperties:
     """Tests for UsageInfo computed properties."""
 
-    def test_remaining_included_under_limit(self) -> None:
+    @staticmethod
+    def test_remaining_included_under_limit() -> None:
         usage = UsageInfo(
             used=3,
             limit=10,
@@ -133,7 +137,8 @@ class TestUsageInfoProperties:
         )
         assert usage.remaining_included == 7
 
-    def test_remaining_included_at_limit(self) -> None:
+    @staticmethod
+    def test_remaining_included_at_limit() -> None:
         usage = UsageInfo(
             used=10,
             limit=10,
@@ -148,7 +153,8 @@ class TestUsageInfoProperties:
         )
         assert usage.remaining_included == 0
 
-    def test_remaining_included_over_limit(self) -> None:
+    @staticmethod
+    def test_remaining_included_over_limit() -> None:
         usage = UsageInfo(
             used=15,
             limit=10,
@@ -163,7 +169,8 @@ class TestUsageInfoProperties:
         )
         assert usage.remaining_included == 0
 
-    def test_cap_remaining_with_cap(self) -> None:
+    @staticmethod
+    def test_cap_remaining_with_cap() -> None:
         usage = UsageInfo(
             used=15,
             limit=10,
@@ -178,7 +185,8 @@ class TestUsageInfoProperties:
         )
         assert usage.cap_remaining_cents == 50
 
-    def test_cap_remaining_no_cap(self) -> None:
+    @staticmethod
+    def test_cap_remaining_no_cap() -> None:
         usage = UsageInfo(
             used=15,
             limit=10,
@@ -193,7 +201,8 @@ class TestUsageInfoProperties:
         )
         assert usage.cap_remaining_cents is None
 
-    def test_cap_remaining_exhausted(self) -> None:
+    @staticmethod
+    def test_cap_remaining_exhausted() -> None:
         usage = UsageInfo(
             used=15,
             limit=10,
@@ -208,7 +217,8 @@ class TestUsageInfoProperties:
         )
         assert usage.cap_remaining_cents == 0
 
-    def test_warning_at_threshold(self) -> None:
+    @staticmethod
+    def test_warning_at_threshold() -> None:
         usage = UsageInfo(
             used=80,
             limit=100,
@@ -223,7 +233,8 @@ class TestUsageInfoProperties:
         )
         assert usage.warning is True
 
-    def test_no_warning_below_threshold(self) -> None:
+    @staticmethod
+    def test_no_warning_below_threshold() -> None:
         usage = UsageInfo(
             used=79,
             limit=100,
@@ -238,7 +249,8 @@ class TestUsageInfoProperties:
         )
         assert usage.warning is False
 
-    def test_blocked_no_warning(self) -> None:
+    @staticmethod
+    def test_blocked_no_warning() -> None:
         """When blocked, warning should be False."""
         usage = UsageInfo(
             used=110,
@@ -258,7 +270,8 @@ class TestUsageInfoProperties:
 class TestBuildUsageInfo:
     """Tests for build_usage_info."""
 
-    def test_under_limit(self) -> None:
+    @staticmethod
+    def test_under_limit() -> None:
         tenant = FakeTenant(rate_limit_daily=100, plan=TenantPlan.STARTER)
         usage = build_usage_info(tenant, 50)
         assert usage.used == 50
@@ -267,21 +280,24 @@ class TestBuildUsageInfo:
         assert usage.in_overage is False
         assert usage.blocked is False
 
-    def test_exactly_at_limit(self) -> None:
+    @staticmethod
+    def test_exactly_at_limit() -> None:
         tenant = FakeTenant(rate_limit_daily=100, plan=TenantPlan.FREE)
         usage = build_usage_info(tenant, 100)
         assert usage.percentage == 100
         assert usage.in_overage is False
         assert usage.blocked is False
 
-    def test_over_limit_free_plan(self) -> None:
+    @staticmethod
+    def test_over_limit_free_plan() -> None:
         tenant = FakeTenant(rate_limit_daily=10, plan=TenantPlan.FREE)
         usage = build_usage_info(tenant, 11)
         assert usage.in_overage is True
         assert usage.blocked is True
         assert usage.overage_rate_cents == 0
 
-    def test_over_limit_paid_with_overage(self) -> None:
+    @staticmethod
+    def test_over_limit_paid_with_overage() -> None:
         tenant = FakeTenant(
             rate_limit_daily=10,
             plan=TenantPlan.GROWTH,
@@ -294,7 +310,8 @@ class TestBuildUsageInfo:
         assert usage.overage_rate_cents == 10
         assert usage.overage_cost_cents == 50
 
-    def test_spending_cap_exceeded(self) -> None:
+    @staticmethod
+    def test_spending_cap_exceeded() -> None:
         tenant = FakeTenant(
             rate_limit_daily=10,
             plan=TenantPlan.STARTER,
@@ -306,7 +323,8 @@ class TestBuildUsageInfo:
         assert usage.blocked is True
         assert usage.overage_cost_cents == 40
 
-    def test_spending_cap_not_exceeded(self) -> None:
+    @staticmethod
+    def test_spending_cap_not_exceeded() -> None:
         tenant = FakeTenant(
             rate_limit_daily=10,
             plan=TenantPlan.STARTER,
@@ -317,7 +335,8 @@ class TestBuildUsageInfo:
         usage = build_usage_info(tenant, 13)
         assert usage.blocked is False
 
-    def test_overage_rate_override(self) -> None:
+    @staticmethod
+    def test_overage_rate_override() -> None:
         tenant = FakeTenant(
             rate_limit_daily=10,
             plan=TenantPlan.STARTER,
@@ -328,7 +347,8 @@ class TestBuildUsageInfo:
         assert usage.overage_rate_cents == 25
         assert usage.overage_cost_cents == 50  # 2 * 25
 
-    def test_zero_limit(self) -> None:
+    @staticmethod
+    def test_zero_limit() -> None:
         tenant = FakeTenant(rate_limit_daily=0, plan=TenantPlan.FREE)
         usage = build_usage_info(tenant, 0)
         assert usage.percentage == 100
@@ -337,12 +357,14 @@ class TestBuildUsageInfo:
 class TestCheckRateLimit:
     """Tests for check_rate_limit."""
 
-    def test_no_redis_returns_none(self) -> None:
+    @staticmethod
+    def test_no_redis_returns_none() -> None:
         tenant = FakeTenant()
         result = check_rate_limit(tenant)
         assert result is None
 
-    def test_increments_counter(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_increments_counter(fake_redis: FakeRedis) -> None:
         tenant = FakeTenant(rate_limit_daily=100)
         usage1 = check_rate_limit(tenant)
         usage2 = check_rate_limit(tenant)
@@ -351,7 +373,8 @@ class TestCheckRateLimit:
         assert usage2 is not None
         assert usage2.used == 2
 
-    def test_blocks_at_limit_free(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_blocks_at_limit_free(fake_redis: FakeRedis) -> None:
         tenant = FakeTenant(rate_limit_daily=1, plan=TenantPlan.FREE)
         check_rate_limit(tenant)  # 1 of 1
         with pytest.raises(HTTPException) as exc_info:
@@ -359,7 +382,8 @@ class TestCheckRateLimit:
         assert exc_info.value.status_code == 429
         assert "Retry-After" in exc_info.value.headers
 
-    def test_429_headers(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_429_headers(fake_redis: FakeRedis) -> None:
         tenant = FakeTenant(rate_limit_daily=1, plan=TenantPlan.FREE)
         check_rate_limit(tenant)
         with pytest.raises(HTTPException) as exc_info:
@@ -370,7 +394,8 @@ class TestCheckRateLimit:
         assert headers["X-RateLimit-Used"] == "2"
         assert headers["Retry-After"] == "86400"
 
-    def test_spending_cap_detail_message(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_spending_cap_detail_message(fake_redis: FakeRedis) -> None:
         tenant = FakeTenant(
             rate_limit_daily=2,
             plan=TenantPlan.STARTER,
@@ -385,7 +410,8 @@ class TestCheckRateLimit:
             check_rate_limit(tenant)
         assert "spending cap" in exc_info.value.detail
 
-    def test_redis_error_allows_through(self) -> None:
+    @staticmethod
+    def test_redis_error_allows_through() -> None:
         broken = MagicMock()
         broken.eval.side_effect = ConnectionError("down")
         set_rate_limiter(broken)
@@ -393,7 +419,8 @@ class TestCheckRateLimit:
         result = check_rate_limit(tenant)
         assert result is None
 
-    def test_overage_returns_usage(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_overage_returns_usage(fake_redis: FakeRedis) -> None:
         tenant = FakeTenant(
             rate_limit_daily=1,
             plan=TenantPlan.GROWTH,
@@ -405,7 +432,8 @@ class TestCheckRateLimit:
         assert usage.in_overage is True
         assert usage.blocked is False
 
-    def test_separate_tenant_counters(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_separate_tenant_counters(fake_redis: FakeRedis) -> None:
         a = FakeTenant(tenant_id="a", rate_limit_daily=5)
         b = FakeTenant(tenant_id="b", rate_limit_daily=5)
         check_rate_limit(a)
@@ -418,11 +446,13 @@ class TestCheckRateLimit:
 class TestGetCurrentUsage:
     """Tests for reading current usage count."""
 
-    def test_no_redis_returns_zero(self) -> None:
+    @staticmethod
+    def test_no_redis_returns_zero() -> None:
         tenant = FakeTenant()
         assert get_current_usage(tenant) == 0
 
-    def test_reads_without_incrementing(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_reads_without_incrementing(fake_redis: FakeRedis) -> None:
         tenant = FakeTenant(rate_limit_daily=100)
         check_rate_limit(tenant)
         check_rate_limit(tenant)
@@ -433,13 +463,15 @@ class TestGetCurrentUsage:
         count2 = get_current_usage(tenant)
         assert count2 == 2
 
-    def test_redis_error_returns_zero(self) -> None:
+    @staticmethod
+    def test_redis_error_returns_zero() -> None:
         broken = MagicMock()
         broken.get.side_effect = ConnectionError("down")
         set_rate_limiter(broken)
         tenant = FakeTenant()
         assert get_current_usage(tenant) == 0
 
-    def test_returns_zero_for_missing_key(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_returns_zero_for_missing_key(fake_redis: FakeRedis) -> None:
         tenant = FakeTenant(tenant_id="no-activity")
         assert get_current_usage(tenant) == 0

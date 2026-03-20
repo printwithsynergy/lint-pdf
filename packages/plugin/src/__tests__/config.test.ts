@@ -4,18 +4,18 @@ import { groundedConfigSchema } from "../config";
 describe("groundedConfigSchema", () => {
   it("parses valid config", () => {
     const result = groundedConfigSchema.parse({
-      apiUrl: "https://api.grounded.dev",
+      apiUrl: "https://api.lintpdf.com",
       webhookSecret: "a-long-enough-secret",
-      apiKey: "grd_abc123",
+      apiKey: "lpdf_abc123",
     });
-    expect(result.apiUrl).toBe("https://api.grounded.dev");
+    expect(result.apiUrl).toBe("https://api.lintpdf.com");
     expect(result.webhookSecret).toBe("a-long-enough-secret");
-    expect(result.apiKey).toBe("grd_abc123");
+    expect(result.apiKey).toBe("lpdf_abc123");
   });
 
   it("allows missing apiKey", () => {
     const result = groundedConfigSchema.parse({
-      apiUrl: "https://api.grounded.dev",
+      apiUrl: "https://api.lintpdf.com",
       webhookSecret: "a-long-enough-secret",
     });
     expect(result.apiKey).toBeUndefined();
@@ -33,7 +33,7 @@ describe("groundedConfigSchema", () => {
   it("rejects short webhook secret", () => {
     expect(() =>
       groundedConfigSchema.parse({
-        apiUrl: "https://api.grounded.dev",
+        apiUrl: "https://api.lintpdf.com",
         webhookSecret: "short",
       }),
     ).toThrow();

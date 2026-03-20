@@ -20,7 +20,6 @@ export function ParticleField() {
     return () => mq.removeEventListener("change", handler);
   }, []);
 
-  // skipcq: JS-0045 — useEffect legitimately returns undefined (no cleanup) or a cleanup function
   useEffect(() => {
     if (!isDesktop) return undefined;
 

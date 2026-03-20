@@ -5,7 +5,7 @@ description: "Detailed guide to regulatory compliance features: FDA, EU Food Inf
 
 # AI Regulatory Compliance
 
-Never Grounded AI inspections validate packaging artwork against major regulatory frameworks. This document covers each supported regulation, what is checked, and how findings are reported.
+LintPDF AI inspections validate packaging artwork against major regulatory frameworks. This document covers each supported regulation, what is checked, and how findings are reported.
 
 ## FDA Nutrition Facts (21 CFR 101.9)
 
@@ -13,13 +13,13 @@ The FDA regulatory category validates nutrition labeling requirements for food p
 
 ### Inspections
 
-| Inspection ID | Description | Severity |
-|---------------|-------------|----------|
-| `ai.fda.nutrition_panel` | Detects and validates Nutrition Facts panel structure | Aground |
-| `ai.fda.nutrient_order` | Validates nutrient ordering per FDA requirements | Aground |
-| `ai.fda.font_sizes` | Checks minimum font size requirements (8pt body, 13pt header) | Aground |
-| `ai.fda.serving_size` | Validates serving size declaration format and placement | Aground |
-| `ai.fda.daily_value` | Checks Percent Daily Value column presence and formatting | Squall |
+| Inspection ID            | Description                                                   | Severity |
+| ------------------------ | ------------------------------------------------------------- | -------- |
+| `ai.fda.nutrition_panel` | Detects and validates Nutrition Facts panel structure         | Error    |
+| `ai.fda.nutrient_order`  | Validates nutrient ordering per FDA requirements              | Error    |
+| `ai.fda.font_sizes`      | Checks minimum font size requirements (8pt body, 13pt header) | Error    |
+| `ai.fda.serving_size`    | Validates serving size declaration format and placement       | Error    |
+| `ai.fda.daily_value`     | Checks Percent Daily Value column presence and formatting     | Warning  |
 
 ### What Is Checked
 
@@ -43,12 +43,12 @@ The EU FIR category validates food labeling requirements for products sold in th
 
 ### Inspections
 
-| Inspection ID | Description | Severity |
-|---------------|-------------|----------|
-| `ai.eu_fir.x_height` | Validates minimum x-height for mandatory information | Aground |
-| `ai.eu_fir.allergen_emphasis` | Checks allergen typographic distinction | Aground |
-| `ai.eu_fir.nutrition_order` | Validates nutritional declaration ordering | Aground |
-| `ai.eu_fir.mandatory_fields` | Checks presence of all mandatory label fields | Aground |
+| Inspection ID                 | Description                                          | Severity |
+| ----------------------------- | ---------------------------------------------------- | -------- |
+| `ai.eu_fir.x_height`          | Validates minimum x-height for mandatory information | Error    |
+| `ai.eu_fir.allergen_emphasis` | Checks allergen typographic distinction              | Error    |
+| `ai.eu_fir.nutrition_order`   | Validates nutritional declaration ordering           | Error    |
+| `ai.eu_fir.mandatory_fields`  | Checks presence of all mandatory label fields        | Error    |
 
 ### What Is Checked
 
@@ -71,13 +71,13 @@ The GHS/CLP category validates hazard labeling requirements for chemical product
 
 ### Inspections
 
-| Inspection ID | Description | Severity |
-|---------------|-------------|----------|
-| `ai.ghs.pictogram_detect` | Detects and identifies GHS hazard pictograms | Aground |
-| `ai.ghs.pictogram_size` | Validates pictogram minimum size | Aground |
-| `ai.ghs.signal_word` | Checks signal word presence and correctness | Aground |
-| `ai.ghs.h_statements` | Validates Hazard statement presence and text | Aground |
-| `ai.ghs.p_statements` | Checks Precautionary statement presence | Squall |
+| Inspection ID             | Description                                  | Severity |
+| ------------------------- | -------------------------------------------- | -------- |
+| `ai.ghs.pictogram_detect` | Detects and identifies GHS hazard pictograms | Error    |
+| `ai.ghs.pictogram_size`   | Validates pictogram minimum size             | Error    |
+| `ai.ghs.signal_word`      | Checks signal word presence and correctness  | Error    |
+| `ai.ghs.h_statements`     | Validates Hazard statement presence and text | Error    |
+| `ai.ghs.p_statements`     | Checks Precautionary statement presence      | Warning  |
 
 ### What Is Checked
 
@@ -101,11 +101,11 @@ The Pharma category validates packaging requirements for pharmaceutical products
 
 ### Inspections
 
-| Inspection ID | Description | Severity |
-|---------------|-------------|----------|
-| `ai.pharma.serialization_area` | Detects EU FMD 2D DataMatrix serialization area | Aground |
-| `ai.pharma.braille_placeholder` | Validates Braille area presence | Squall |
-| `ai.pharma.font_compliance` | Checks font size for patient information | Aground |
+| Inspection ID                   | Description                                     | Severity |
+| ------------------------------- | ----------------------------------------------- | -------- |
+| `ai.pharma.serialization_area`  | Detects EU FMD 2D DataMatrix serialization area | Error    |
+| `ai.pharma.braille_placeholder` | Validates Braille area presence                 | Warning  |
+| `ai.pharma.font_compliance`     | Checks font size for patient information        | Error    |
 
 ### What Is Checked
 
@@ -119,4 +119,4 @@ The Pharma category validates packaging requirements for pharmaceutical products
 
 - Does not validate actual serialization data content
 - National-specific requirements beyond EU baseline are limited to DE, FR, UK, ES, IT
-- Package insert/leaflet QRD template validation is advisory-level only
+- Package insert/leaflet QRD template validation is info-level only

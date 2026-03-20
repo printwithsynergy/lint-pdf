@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import patch
 
 import pytest
@@ -73,44 +72,52 @@ def engine() -> ReportEngine:
 class TestSupportedFormats:
     """Tests for ReportEngine.supported_formats."""
 
-    def test_returns_all_formats(self) -> None:
+    @staticmethod
+    def test_returns_all_formats() -> None:
         formats = ReportEngine.supported_formats()
         assert "json" in formats
         assert "html" in formats
         assert "pdf" in formats
         assert "xml" in formats
 
-    def test_returns_list(self) -> None:
+    @staticmethod
+    def test_returns_list() -> None:
         assert isinstance(ReportEngine.supported_formats(), list)
 
 
 class TestGenerateDispatch:
     """Tests for ReportEngine.generate format routing."""
 
-    def test_unsupported_format_raises(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_unsupported_format_raises(engine: ReportEngine, sample_result) -> None:
         with pytest.raises(ValueError, match="Unsupported report format: csv"):
             engine.generate(sample_result, "csv")
 
-    def test_unsupported_format_empty_string(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_unsupported_format_empty_string(engine: ReportEngine, sample_result) -> None:
         with pytest.raises(ValueError, match="Unsupported report format"):
             engine.generate(sample_result, "")
 
-    def test_dispatches_to_json(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_dispatches_to_json(engine: ReportEngine, sample_result) -> None:
         with patch.object(engine, "to_json", return_value=b"{}") as mock:
             engine.generate(sample_result, "json")
             mock.assert_called_once_with(sample_result)
 
-    def test_dispatches_to_html(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_dispatches_to_html(engine: ReportEngine, sample_result) -> None:
         with patch.object(engine, "to_html", return_value=b"<html>") as mock:
             engine.generate(sample_result, "html")
             mock.assert_called_once_with(sample_result)
 
-    def test_dispatches_to_pdf(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_dispatches_to_pdf(engine: ReportEngine, sample_result) -> None:
         with patch.object(engine, "to_pdf", return_value=b"%PDF") as mock:
             engine.generate(sample_result, "pdf")
             mock.assert_called_once_with(sample_result)
 
-    def test_dispatches_to_xml(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_dispatches_to_xml(engine: ReportEngine, sample_result) -> None:
         with patch.object(engine, "to_xml", return_value=b"<xml>") as mock:
             engine.generate(sample_result, "xml")
             mock.assert_called_once_with(sample_result)
@@ -119,11 +126,13 @@ class TestGenerateDispatch:
 class TestToJson:
     """Tests for JSON report generation via ReportEngine."""
 
-    def test_returns_bytes(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_returns_bytes(engine: ReportEngine, sample_result) -> None:
         result = engine.to_json(sample_result)
         assert isinstance(result, bytes)
 
-    def test_valid_json(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_valid_json(engine: ReportEngine, sample_result) -> None:
         import json
 
         result = engine.to_json(sample_result)
@@ -133,7 +142,8 @@ class TestToJson:
         assert data["summary"]["passed"] is False
         assert data["summary"]["total_findings"] == 1
 
-    def test_empty_result_passes(self, engine: ReportEngine, empty_result) -> None:
+    @staticmethod
+    def test_empty_result_passes(engine: ReportEngine, empty_result) -> None:
         import json
 
         result = engine.to_json(empty_result)
@@ -141,7 +151,8 @@ class TestToJson:
         assert data["summary"]["passed"] is True
         assert data["findings"] == []
 
-    def test_findings_serialized(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_findings_serialized(engine: ReportEngine, sample_result) -> None:
         import json
 
         result = engine.to_json(sample_result)
@@ -156,11 +167,13 @@ class TestToJson:
 class TestToXml:
     """Tests for XML report generation via ReportEngine."""
 
-    def test_returns_bytes(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_returns_bytes(engine: ReportEngine, sample_result) -> None:
         result = engine.to_xml(sample_result)
         assert isinstance(result, bytes)
 
-    def test_valid_xml(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_valid_xml(engine: ReportEngine, sample_result) -> None:
         result = engine.to_xml(sample_result)
         xml_str = result.decode("utf-8")
         assert xml_str.startswith('<?xml version="1.0"')
@@ -170,7 +183,8 @@ class TestToXml:
 class TestToHtml:
     """Tests for HTML report generation via ReportEngine."""
 
-    def test_delegates_to_html_report(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_delegates_to_html_report(engine: ReportEngine, sample_result) -> None:
         with patch(
             "grounded.reports.html_report.generate_html_report", return_value=b"<html>test</html>"
         ) as mock:
@@ -182,7 +196,8 @@ class TestToHtml:
 class TestToPdf:
     """Tests for PDF report generation via ReportEngine (WeasyPrint mocked)."""
 
-    def test_delegates_to_pdf_report(self, engine: ReportEngine, sample_result) -> None:
+    @staticmethod
+    def test_delegates_to_pdf_report(engine: ReportEngine, sample_result) -> None:
         with patch(
             "grounded.reports.pdf_report.generate_pdf_report", return_value=b"%PDF-mock"
         ) as mock:

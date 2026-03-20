@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
-    """Grounded API configuration.
+    """LintPDF API configuration.
 
     All values can be overridden via environment variables.
     """
@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     verapdf_url: str = "http://localhost:8080"
 
     # API server
-    api_host: str = "0.0.0.0"  # skipcq: BAN-B104 — bind all interfaces for container deployments
+    api_host: str = "0.0.0.0"
     api_port: int = 8000
 
     # Auth
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
 
     # Email (Resend)
     resend_api_key: str | None = None
-    email_from_address: str = "Grounded <noreply@thinkneverland.com>"
+    email_from_address: str = "LintPDF <noreply@thinkneverland.com>"
 
     # S3-compatible storage (Cloudflare R2)
     s3_endpoint_url: str | None = None
@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     s3_region: str = "auto"
 
     # Report hosting
-    report_base_url: str = "https://reports.grounded.dev"
+    report_base_url: str = "https://reports.lintpdf.com"
 
     # Admin
     admin_api_key: str = ""

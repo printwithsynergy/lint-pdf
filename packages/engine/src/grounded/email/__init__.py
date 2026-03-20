@@ -1,1 +1,1 @@
-"""Email service for Grounded notifications."""
+"""Email service for LintPDF notifications."""

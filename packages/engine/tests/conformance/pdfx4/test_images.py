@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import Any
 
 from grounded.analyzers.finding import Severity
@@ -51,19 +50,22 @@ def _img_event(
 
 
 class TestLzwCompression:
-    def test_lzw_squall(self) -> None:
+    @staticmethod
+    def test_lzw_squall() -> None:
         f = validate_images(_doc(), [_img_event(filters=("LZWDecode",))])
         ids = [x for x in f if x.inspection_id == "PDFX4-079"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_flate_ok(self) -> None:
+    @staticmethod
+    def test_flate_ok() -> None:
         f = validate_images(_doc(), [_img_event(filters=("FlateDecode",))])
         assert not [x for x in f if x.inspection_id == "PDFX4-079"]
 
 
 class TestOpiReference:
-    def test_opi_aground(self) -> None:
+    @staticmethod
+    def test_opi_aground() -> None:
         f = validate_images(_doc(), [_img_event(has_opi=True)])
         ids = [x for x in f if x.inspection_id == "PDFX4-082i"]
         assert len(ids) == 1
@@ -71,7 +73,8 @@ class TestOpiReference:
 
 
 class TestAlternateImages:
-    def test_alternate_squall(self) -> None:
+    @staticmethod
+    def test_alternate_squall() -> None:
         f = validate_images(_doc(), [_img_event(has_alternate=True)])
         ids = [x for x in f if x.inspection_id == "PDFX4-083i"]
         assert len(ids) == 1
@@ -79,38 +82,44 @@ class TestAlternateImages:
 
 
 class TestColorSpaceCompat:
-    def test_rgb_image_no_rgb_intent(self) -> None:
+    @staticmethod
+    def test_rgb_image_no_rgb_intent() -> None:
         f = validate_images(_doc(), [_img_event(color_space="DeviceRGB")])
         ids = [x for x in f if x.inspection_id == "PDFX4-085"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.ADVISORY
 
-    def test_rgb_image_with_rgb_intent_ok(self) -> None:
+    @staticmethod
+    def test_rgb_image_with_rgb_intent_ok() -> None:
         intent = {"/S": "/GTS_PDFX", "/DestOutputProfile": {"/ColorSpace": "RGB"}}
         f = validate_images(_doc(output_intents=[intent]), [_img_event(color_space="DeviceRGB")])
         assert not [x for x in f if x.inspection_id == "PDFX4-085"]
 
-    def test_cmyk_image_ok(self) -> None:
+    @staticmethod
+    def test_cmyk_image_ok() -> None:
         f = validate_images(_doc(), [_img_event(color_space="DeviceCMYK")])
         assert not [x for x in f if x.inspection_id == "PDFX4-085"]
 
 
 class TestInlineImageSize:
-    def test_inline_over_4kb(self) -> None:
+    @staticmethod
+    def test_inline_over_4kb() -> None:
         # 100x100x8 = 10000 bytes > 4096
         f = validate_images(_doc(), [_img_event(is_inline=True, pixel_width=100, pixel_height=100)])
         ids = [x for x in f if x.inspection_id == "PDFX4-086"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.ADVISORY
 
-    def test_inline_under_4kb_ok(self) -> None:
+    @staticmethod
+    def test_inline_under_4kb_ok() -> None:
         # 8x8x8 = 64 bytes
         f = validate_images(_doc(), [_img_event(is_inline=True, pixel_width=8, pixel_height=8)])
         assert not [x for x in f if x.inspection_id == "PDFX4-086"]
 
 
 class TestJpeg2000:
-    def test_jpx_advisory(self) -> None:
+    @staticmethod
+    def test_jpx_advisory() -> None:
         f = validate_images(_doc(), [_img_event(filters=("JPXDecode",))])
         ids = [x for x in f if x.inspection_id == "PDFX4-087"]
         assert len(ids) == 1
@@ -118,6 +127,7 @@ class TestJpeg2000:
 
 
 class TestNoImages:
-    def test_no_events_ok(self) -> None:
+    @staticmethod
+    def test_no_events_ok() -> None:
         f = validate_images(_doc(), [])
         assert len(f) == 0

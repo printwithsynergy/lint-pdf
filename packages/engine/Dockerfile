@@ -4,7 +4,6 @@ FROM python:3.12-slim-bookworm AS builder
 WORKDIR /app
 
 # Install build dependencies for pikepdf (QPDF) and WeasyPrint
-# skipcq: DOK-DL3008 — pinning apt versions is fragile on rolling base images
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libqpdf-dev \
@@ -17,7 +16,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY packages/engine/pyproject.toml .
-# skipcq: DOK-DL3013 — pip version pinned via pyproject.toml, not Dockerfile
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir .
 
@@ -26,7 +24,6 @@ FROM python:3.12-slim-bookworm AS runtime
 
 WORKDIR /app
 
-# skipcq: DOK-DL3008 — pinning apt versions is fragile on rolling base images
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libqpdf29 \
     libpango-1.0-0 \
@@ -54,5 +51,4 @@ EXPOSE 8000
 ENV PORT=8000
 
 # Default: run API server (Railway sets $PORT dynamically)
-# skipcq: DOK-DL3025 — shell form required for $PORT variable expansion
-CMD uvicorn grounded.api.app:create_app --host 0.0.0.0 --port ${PORT} --factory
+CMD ["sh", "-c", "uvicorn grounded.api.app:create_app --host 0.0.0.0 --port ${PORT} --factory"]

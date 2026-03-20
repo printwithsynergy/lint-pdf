@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock, patch
 
 from grounded.analyzers.finding import Severity
@@ -11,7 +10,8 @@ from grounded.analyzers.finding import Severity
 class TestBrandPaletteAnalyzer:
     """Tests for brand palette compliance checking."""
 
-    def test_no_palette_configured_returns_advisory(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_no_palette_configured_returns_advisory(minimal_semantic_doc: MagicMock) -> None:
         ai_config = MagicMock()
         ai_config.brand_palette = None
 
@@ -37,7 +37,8 @@ class TestBrandPaletteAnalyzer:
         assert findings[0].severity == Severity.ADVISORY
         assert "No brand palette" in findings[0].message
 
-    def test_empty_palette_returns_advisory(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_empty_palette_returns_advisory(minimal_semantic_doc: MagicMock) -> None:
         ai_config = MagicMock()
         ai_config.brand_palette = []
 
@@ -61,7 +62,8 @@ class TestBrandPaletteAnalyzer:
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_BRAND_001"
 
-    def test_skips_when_colour_science_not_installed(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_skips_when_colour_science_not_installed(minimal_semantic_doc: MagicMock) -> None:
         with patch(
             "grounded.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
             False,
@@ -77,7 +79,8 @@ class TestBrandPaletteAnalyzer:
 
         assert findings == []
 
-    def test_none_ai_config_returns_advisory(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_none_ai_config_returns_advisory(minimal_semantic_doc: MagicMock) -> None:
         with (
             patch(
                 "grounded.ai.analyzers.color_compliance.brand_palette._HAS_COLOUR",
@@ -98,7 +101,8 @@ class TestBrandPaletteAnalyzer:
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_BRAND_001"
 
-    def test_findings_have_ai_source(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_findings_have_ai_source(minimal_semantic_doc: MagicMock) -> None:
         ai_config = MagicMock()
         ai_config.brand_palette = None
 
@@ -123,7 +127,8 @@ class TestBrandPaletteAnalyzer:
             assert f.source == "ai"
             assert f.category == "color_compliance"
 
-    def test_analyzer_metadata(self) -> None:
+    @staticmethod
+    def test_analyzer_metadata() -> None:
         from grounded.ai.analyzers.color_compliance.brand_palette import (
             BrandPaletteAnalyzer,
         )
@@ -138,7 +143,8 @@ class TestBrandPaletteAnalyzer:
 class TestParseColorValue:
     """Tests for the _parse_color_value helper."""
 
-    def test_parse_hex_6_digit(self) -> None:
+    @staticmethod
+    def test_parse_hex_6_digit() -> None:
         from grounded.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
@@ -150,7 +156,8 @@ class TestParseColorValue:
         assert abs(g - 0.0) < 0.01
         assert abs(b - 0.0) < 0.01
 
-    def test_parse_hex_3_digit(self) -> None:
+    @staticmethod
+    def test_parse_hex_3_digit() -> None:
         from grounded.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
@@ -161,7 +168,8 @@ class TestParseColorValue:
         assert abs(r - 1.0) < 0.01
         assert abs(g - 0.0) < 0.01
 
-    def test_parse_rgb(self) -> None:
+    @staticmethod
+    def test_parse_rgb() -> None:
         from grounded.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
@@ -171,7 +179,8 @@ class TestParseColorValue:
         r, _g, _b = result
         assert abs(r - 1.0) < 0.01
 
-    def test_parse_cmyk(self) -> None:
+    @staticmethod
+    def test_parse_cmyk() -> None:
         from grounded.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
@@ -182,7 +191,8 @@ class TestParseColorValue:
         assert abs(r - 1.0) < 0.01
         assert abs(g - 0.0) < 0.01
 
-    def test_parse_invalid_returns_none(self) -> None:
+    @staticmethod
+    def test_parse_invalid_returns_none() -> None:
         from grounded.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )
@@ -190,7 +200,8 @@ class TestParseColorValue:
         assert _parse_color_value("not_a_color") is None
         assert _parse_color_value("") is None
 
-    def test_parse_hex_with_whitespace(self) -> None:
+    @staticmethod
+    def test_parse_hex_with_whitespace() -> None:
         from grounded.ai.analyzers.color_compliance.brand_palette import (
             _parse_color_value,
         )

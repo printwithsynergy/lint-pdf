@@ -21,9 +21,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/voyage-plans", tags=["ai-generate"])
 
 # System prompt for NL voyage plan generation
-_SYSTEM_PROMPT = """You are an expert prepress technician generating Never Grounded preflight Voyage Plans.
+_SYSTEM_PROMPT = """You are an expert prepress technician generating LintPDF preflight Rulesets.
 
-A Voyage Plan is a JSON configuration that controls which preflight checks run on a PDF file.
+A Ruleset is a JSON configuration that controls which preflight checks run on a PDF file.
 
 Available fields:
 - name: Human-readable name

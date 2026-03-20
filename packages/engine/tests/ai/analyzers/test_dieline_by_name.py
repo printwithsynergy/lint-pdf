@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock
 
 from grounded.analyzers.finding import Severity
@@ -58,7 +57,8 @@ def _doc_with_layers(
 class TestDielineByNameAnalyzer:
     """Tests for dieline detection by layer and spot color name matching."""
 
-    def test_detects_dieline_layer(self) -> None:
+    @staticmethod
+    def test_detects_dieline_layer() -> None:
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
@@ -75,7 +75,8 @@ class TestDielineByNameAnalyzer:
         assert f.source == "ai"
         assert f.category == "dieline_detection"
 
-    def test_detects_cut_contour_spot_color(self) -> None:
+    @staticmethod
+    def test_detects_cut_contour_spot_color() -> None:
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
@@ -88,7 +89,8 @@ class TestDielineByNameAnalyzer:
         assert findings[0].inspection_id == "AI_DIE_001"
         assert "CutContour" in findings[0].message
 
-    def test_detects_die_layer_case_insensitive(self) -> None:
+    @staticmethod
+    def test_detects_die_layer_case_insensitive() -> None:
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
@@ -100,7 +102,8 @@ class TestDielineByNameAnalyzer:
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_DIE_001"
 
-    def test_detects_cut_layer(self) -> None:
+    @staticmethod
+    def test_detects_cut_layer() -> None:
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
@@ -111,7 +114,8 @@ class TestDielineByNameAnalyzer:
 
         assert len(findings) == 1
 
-    def test_detects_crease_layer(self) -> None:
+    @staticmethod
+    def test_detects_crease_layer() -> None:
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
@@ -122,7 +126,8 @@ class TestDielineByNameAnalyzer:
 
         assert len(findings) == 1
 
-    def test_no_dieline_packaging_file_returns_delay(self) -> None:
+    @staticmethod
+    def test_no_dieline_packaging_file_returns_delay() -> None:
         """Packaging file without dieline should get a DELAY severity warning."""
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
@@ -137,7 +142,8 @@ class TestDielineByNameAnalyzer:
         assert findings[0].severity == Severity.SQUALL
         assert "No die line detected" in findings[0].message
 
-    def test_no_dieline_non_packaging_returns_advisory(self) -> None:
+    @staticmethod
+    def test_no_dieline_non_packaging_returns_advisory() -> None:
         """Non-packaging file without dieline should just get an advisory."""
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
@@ -151,7 +157,8 @@ class TestDielineByNameAnalyzer:
         assert findings[0].inspection_id == "AI_DIE_003"
         assert findings[0].severity == Severity.ADVISORY
 
-    def test_detects_both_layer_and_spot_color(self) -> None:
+    @staticmethod
+    def test_detects_both_layer_and_spot_color() -> None:
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
@@ -167,7 +174,8 @@ class TestDielineByNameAnalyzer:
         f = findings[0]
         assert "layers:" in f.message or "spot colors:" in f.message
 
-    def test_deduplicates_by_name(self) -> None:
+    @staticmethod
+    def test_deduplicates_by_name() -> None:
         """Same name in layers and spot colors should appear only once."""
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
@@ -182,7 +190,8 @@ class TestDielineByNameAnalyzer:
 
         assert len(findings) == 1
 
-    def test_analyzer_metadata(self) -> None:
+    @staticmethod
+    def test_analyzer_metadata() -> None:
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
@@ -193,7 +202,8 @@ class TestDielineByNameAnalyzer:
         assert analyzer.tier == "cpu"
         assert analyzer.credits_per_run == 1
 
-    def test_findings_source_and_category(self) -> None:
+    @staticmethod
+    def test_findings_source_and_category() -> None:
         from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )

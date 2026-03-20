@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Finding, Severity
 
 
 class TestFindingSourceAndCategory:
     """Test that Finding supports source and category fields."""
 
-    def test_default_source_is_engine(self) -> None:
+    @staticmethod
+    def test_default_source_is_engine() -> None:
         f = Finding(
             inspection_id="GRD_FONT_001",
             severity=Severity.AGROUND,
@@ -17,7 +17,8 @@ class TestFindingSourceAndCategory:
         )
         assert f.source == "engine"
 
-    def test_default_category_is_empty(self) -> None:
+    @staticmethod
+    def test_default_category_is_empty() -> None:
         f = Finding(
             inspection_id="GRD_FONT_001",
             severity=Severity.AGROUND,
@@ -25,7 +26,8 @@ class TestFindingSourceAndCategory:
         )
         assert f.category == ""
 
-    def test_ai_source(self) -> None:
+    @staticmethod
+    def test_ai_source() -> None:
         f = Finding(
             inspection_id="AI_SPELL_001",
             severity=Severity.ADVISORY,
@@ -36,7 +38,8 @@ class TestFindingSourceAndCategory:
         assert f.source == "ai"
         assert f.category == "content_quality"
 
-    def test_finding_is_frozen(self) -> None:
+    @staticmethod
+    def test_finding_is_frozen() -> None:
         f = Finding(
             inspection_id="AI_BC_001",
             severity=Severity.ADVISORY,
@@ -47,7 +50,8 @@ class TestFindingSourceAndCategory:
         with __import__("pytest").raises(AttributeError):
             f.source = "engine"  # type: ignore[misc]
 
-    def test_backward_compat_no_source_kwarg(self) -> None:
+    @staticmethod
+    def test_backward_compat_no_source_kwarg() -> None:
         """Existing engine code that doesn't pass source/category should still work."""
         f = Finding(
             inspection_id="GRD_IMG_001",
@@ -62,14 +66,16 @@ class TestFindingSourceAndCategory:
         assert f.page_num == 1
         assert f.details == {"dpi": 72}
 
-    def test_all_severity_values(self) -> None:
+    @staticmethod
+    def test_all_severity_values() -> None:
         """Severity enum has exactly three members."""
         assert Severity.AGROUND == "aground"
         assert Severity.SQUALL == "squall"
         assert Severity.ADVISORY == "advisory"
         assert len(Severity) == 3
 
-    def test_finding_equality(self) -> None:
+    @staticmethod
+    def test_finding_equality() -> None:
         """Two findings with identical fields should be equal (frozen dataclass)."""
         f1 = Finding(
             inspection_id="AI_BC_001",
@@ -87,7 +93,8 @@ class TestFindingSourceAndCategory:
         )
         assert f1 == f2
 
-    def test_finding_inequality_on_source(self) -> None:
+    @staticmethod
+    def test_finding_inequality_on_source() -> None:
         f_engine = Finding(
             inspection_id="GRD_BC_001",
             severity=Severity.ADVISORY,
@@ -102,7 +109,8 @@ class TestFindingSourceAndCategory:
         )
         assert f_engine != f_ai
 
-    def test_finding_with_bbox(self) -> None:
+    @staticmethod
+    def test_finding_with_bbox() -> None:
         f = Finding(
             inspection_id="AI_BC_001",
             severity=Severity.ADVISORY,
@@ -113,7 +121,8 @@ class TestFindingSourceAndCategory:
         )
         assert f.bbox == (100.0, 200.0, 300.0, 400.0)
 
-    def test_finding_with_object_metadata(self) -> None:
+    @staticmethod
+    def test_finding_with_object_metadata() -> None:
         f = Finding(
             inspection_id="AI_LOGO_001",
             severity=Severity.SQUALL,

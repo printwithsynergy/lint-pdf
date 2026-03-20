@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -23,6 +22,7 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000000")
+TEST_WEBHOOK_SECRET = "test-webhook-secret"
 
 # Minimal valid PDF bytes
 MINIMAL_PDF = (
@@ -255,7 +255,8 @@ class TestRunPreflightPipeline:
         assert job.result_json["summary"]["total_findings"] == 3
         assert job.result_json["summary"]["passed"] is False
 
-    def test_job_not_found(self, db_session: Session, storage: InMemoryStorage) -> None:
+    @staticmethod
+    def test_job_not_found(db_session: Session, storage: InMemoryStorage) -> None:
         with (
             patch("grounded.api.database.get_db_session", return_value=db_session),
             patch("grounded.api.storage.get_storage", return_value=storage),
@@ -316,7 +317,7 @@ class TestDispatchTenantWebhooks:
                 id=uuid.uuid4(),
                 tenant_id=TENANT_ID,
                 url="https://example.com/hook",
-                secret="test-secret",  # skipcq: SCT-A000 — test fixture
+                secret=TEST_WEBHOOK_SECRET,
                 events=["job.completed"],
                 is_active=True,
             )
@@ -357,7 +358,7 @@ class TestDispatchTenantWebhooks:
                 id=uuid.uuid4(),
                 tenant_id=TENANT_ID,
                 url="https://example.com/hook",
-                secret="test-secret",  # skipcq: SCT-A000 — test fixture
+                secret=TEST_WEBHOOK_SECRET,
                 events=["job.completed"],
                 is_active=False,
             )

@@ -1,5 +1,5 @@
 {
-  "name": "Grounded Strict",
+  "name": "LintPDF Strict",
   "description": "Maximum detection with PDF/X-4 conformance. All checks enabled, tight thresholds.",
   "version": "1.0",
   "conformance": "pdfx4",

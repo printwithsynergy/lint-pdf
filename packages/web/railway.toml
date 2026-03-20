@@ -3,8 +3,8 @@ builder = "DOCKERFILE"
 dockerfilePath = "packages/web/Dockerfile"
 # NEXT_PUBLIC_ vars must be set as Railway env vars — they are
 # forwarded as Docker build args and inlined by Next.js at build time.
-# Set NEXT_PUBLIC_GROUNDED_BETA_MODE=true in Railway dashboard.
-# Set NEXT_PUBLIC_GROUNDED_API_URL=https://api.nevergrounded.io in Railway dashboard.
+# Set NEXT_PUBLIC_LINTPDF_BETA_MODE=true in Railway dashboard.
+# Set NEXT_PUBLIC_LINTPDF_API_URL=https://api.lintpdf.com in Railway dashboard.
 
 [deploy]
 numReplicas = 1

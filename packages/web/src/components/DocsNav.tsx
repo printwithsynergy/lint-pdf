@@ -6,10 +6,10 @@ const sections = [
   { id: "getting-started", label: "Getting Started" },
   { id: "authentication", label: "Authentication" },
   { id: "api-reference", label: "API Reference" },
-  { id: "voyage-plans", label: "Voyage Plans" },
-  { id: "inspections", label: "Inspections" },
+  { id: "rulesets", label: "Rulesets" },
+  { id: "inspections", label: "Checks" },
   { id: "report-formats", label: "Report Formats" },
-  { id: "harbor-signals", label: "Harbor Signals" },
+  { id: "webhooks", label: "Webhooks" },
   { id: "sdks", label: "SDKs" },
   { id: "glossary", label: "Glossary" },
   { id: "ai-getting-started", label: "AI Getting Started" },
@@ -56,8 +56,18 @@ export function DocsNav() {
           onClick={() => setMobileOpen(!mobileOpen)}
           className="flex items-center gap-2 text-sm font-medium text-slate-700"
         >
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
           Documentation
         </button>

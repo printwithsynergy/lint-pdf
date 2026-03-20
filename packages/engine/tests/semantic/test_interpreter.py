@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.semantic.events import (
     ClippingPathSetEvent,
     ColorChangedEvent,
@@ -31,7 +30,8 @@ def _make_interpreter(resources: dict | None = None, page_num: int = 1) -> Conte
 class TestGraphicsState:
     """Test q/Q state stack and cm matrix concatenation."""
 
-    def test_q_Q_stack_balance(self) -> None:
+    @staticmethod
+    def test_q_Q_stack_balance() -> None:
         interp = _make_interpreter()
         instructions = [
             ([], "q"),
@@ -40,7 +40,8 @@ class TestGraphicsState:
         interp.interpret(instructions)
         assert len(interp._state_stack) == 1
 
-    def test_q_pushes_copy(self) -> None:
+    @staticmethod
+    def test_q_pushes_copy() -> None:
         interp = _make_interpreter()
         interp.state.font_name = "F1"
         instructions = [
@@ -50,7 +51,8 @@ class TestGraphicsState:
         assert len(interp._state_stack) == 2
         assert interp.state.font_name == "F1"
 
-    def test_Q_restores_state(self) -> None:
+    @staticmethod
+    def test_Q_restores_state() -> None:
         interp = _make_interpreter()
         interp.state.font_name = "F1"
         instructions = [
@@ -62,12 +64,14 @@ class TestGraphicsState:
         interp.interpret([([], "Q")])
         assert interp.state.font_name == "F1"
 
-    def test_Q_without_q_no_crash(self) -> None:
+    @staticmethod
+    def test_Q_without_q_no_crash() -> None:
         interp = _make_interpreter()
         interp.interpret([([], "Q")])
         assert len(interp._state_stack) == 1
 
-    def test_cm_concatenates_matrix(self) -> None:
+    @staticmethod
+    def test_cm_concatenates_matrix() -> None:
         interp = _make_interpreter()
         instructions = [
             ([200, 0, 0, 300, 100, 400], "cm"),
@@ -80,7 +84,8 @@ class TestGraphicsState:
         assert interp.state.ctm.e == 100.0
         assert interp.state.ctm.f == 400.0
 
-    def test_cm_cumulative(self) -> None:
+    @staticmethod
+    def test_cm_cumulative() -> None:
         interp = _make_interpreter()
         instructions = [
             ([2, 0, 0, 2, 0, 0], "cm"),  # Scale 2x
@@ -101,7 +106,8 @@ class TestGraphicsState:
 class TestExtGState:
     """Test gs operator — opacity, blend mode, overprint."""
 
-    def test_gs_sets_opacity(self) -> None:
+    @staticmethod
+    def test_gs_sets_opacity() -> None:
         resources = {
             "/ExtGState": {
                 "/GS1": {"/CA": 0.5, "/ca": 0.8},
@@ -118,7 +124,8 @@ class TestExtGState:
         assert opacity_events[0].stroking_alpha == 0.5
         assert opacity_events[0].non_stroking_alpha == 0.8
 
-    def test_gs_sets_blend_mode(self) -> None:
+    @staticmethod
+    def test_gs_sets_blend_mode() -> None:
         resources = {
             "/ExtGState": {
                 "/GS2": {"/BM": "/Multiply"},
@@ -132,7 +139,8 @@ class TestExtGState:
         assert len(opacity_events) == 1
         assert opacity_events[0].blend_mode == "Multiply"
 
-    def test_gs_sets_overprint(self) -> None:
+    @staticmethod
+    def test_gs_sets_overprint() -> None:
         resources = {
             "/ExtGState": {
                 "/GS3": {"/OP": True, "/op": True, "/OPM": 1},
@@ -149,7 +157,8 @@ class TestExtGState:
         assert len(op_events) == 1
         assert op_events[0].overprint_mode == 1
 
-    def test_gs_unknown_name_no_crash(self) -> None:
+    @staticmethod
+    def test_gs_unknown_name_no_crash() -> None:
         interp = _make_interpreter()
         events = interp.interpret([(["/Unknown"], "gs")])
         assert len(events) == 0
@@ -161,13 +170,15 @@ class TestExtGState:
 class TestTextOperators:
     """Test text object operators."""
 
-    def test_Tf_sets_font(self) -> None:
+    @staticmethod
+    def test_Tf_sets_font() -> None:
         interp = _make_interpreter()
         interp.interpret([(["/F1", 12], "Tf")])
         assert interp.state.font_name == "F1"
         assert interp.state.font_size == 12.0
 
-    def test_Tj_emits_text_event(self) -> None:
+    @staticmethod
+    def test_Tj_emits_text_event() -> None:
         interp = _make_interpreter()
         instructions = [
             ([], "BT"),
@@ -182,7 +193,8 @@ class TestTextOperators:
         assert text_events[0].font_size == 12.0
         assert text_events[0].operator == "Tj"
 
-    def test_TJ_emits_text_event(self) -> None:
+    @staticmethod
+    def test_TJ_emits_text_event() -> None:
         interp = _make_interpreter()
         instructions = [
             ([], "BT"),
@@ -195,7 +207,8 @@ class TestTextOperators:
         assert len(text_events) == 1
         assert text_events[0].operator == "TJ"
 
-    def test_Tm_sets_text_matrix(self) -> None:
+    @staticmethod
+    def test_Tm_sets_text_matrix() -> None:
         interp = _make_interpreter()
         instructions = [
             ([], "BT"),
@@ -205,7 +218,8 @@ class TestTextOperators:
         assert interp.state.text_matrix.e == 72.0
         assert interp.state.text_matrix.f == 720.0
 
-    def test_Td_moves_text_position(self) -> None:
+    @staticmethod
+    def test_Td_moves_text_position() -> None:
         interp = _make_interpreter()
         instructions = [
             ([], "BT"),
@@ -215,7 +229,8 @@ class TestTextOperators:
         assert interp.state.text_matrix.e == 100.0
         assert interp.state.text_matrix.f == 700.0
 
-    def test_text_event_captures_color(self) -> None:
+    @staticmethod
+    def test_text_event_captures_color() -> None:
         interp = _make_interpreter()
         instructions = [
             ([1.0, 0.0, 0.0], "rg"),
@@ -237,7 +252,8 @@ class TestTextOperators:
 class TestColorOperators:
     """Test color operator handling."""
 
-    def test_rg_sets_fill_rgb(self) -> None:
+    @staticmethod
+    def test_rg_sets_fill_rgb() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([1.0, 0.0, 0.0], "rg")])
         assert interp.state.non_stroking_color_space == "DeviceRGB"
@@ -247,7 +263,8 @@ class TestColorOperators:
         assert color_events[0].stroking is False
         assert color_events[0].color_space == "DeviceRGB"
 
-    def test_RG_sets_stroke_rgb(self) -> None:
+    @staticmethod
+    def test_RG_sets_stroke_rgb() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([0.0, 1.0, 0.0], "RG")])
         assert interp.state.stroking_color_space == "DeviceRGB"
@@ -255,34 +272,40 @@ class TestColorOperators:
         assert len(color_events) == 1
         assert color_events[0].stroking is True
 
-    def test_k_sets_fill_cmyk(self) -> None:
+    @staticmethod
+    def test_k_sets_fill_cmyk() -> None:
         interp = _make_interpreter()
         interp.interpret([([0.0, 1.0, 1.0, 0.0], "k")])
         assert interp.state.non_stroking_color_space == "DeviceCMYK"
         assert interp.state.non_stroking_color == [0.0, 1.0, 1.0, 0.0]
 
-    def test_K_sets_stroke_cmyk(self) -> None:
+    @staticmethod
+    def test_K_sets_stroke_cmyk() -> None:
         interp = _make_interpreter()
         interp.interpret([([0.5, 0.5, 0.5, 0.5], "K")])
         assert interp.state.stroking_color_space == "DeviceCMYK"
 
-    def test_g_sets_fill_gray(self) -> None:
+    @staticmethod
+    def test_g_sets_fill_gray() -> None:
         interp = _make_interpreter()
         interp.interpret([([0.5], "g")])
         assert interp.state.non_stroking_color_space == "DeviceGray"
         assert interp.state.non_stroking_color == [0.5]
 
-    def test_G_sets_stroke_gray(self) -> None:
+    @staticmethod
+    def test_G_sets_stroke_gray() -> None:
         interp = _make_interpreter()
         interp.interpret([([0.8], "G")])
         assert interp.state.stroking_color_space == "DeviceGray"
 
-    def test_cs_sets_color_space(self) -> None:
+    @staticmethod
+    def test_cs_sets_color_space() -> None:
         interp = _make_interpreter()
         interp.interpret([(["/CS1"], "cs")])
         assert interp.state.non_stroking_color_space == "CS1"
 
-    def test_CS_sets_stroking_color_space(self) -> None:
+    @staticmethod
+    def test_CS_sets_stroking_color_space() -> None:
         interp = _make_interpreter()
         interp.interpret([(["/CS2"], "CS")])
         assert interp.state.stroking_color_space == "CS2"
@@ -294,7 +317,8 @@ class TestColorOperators:
 class TestDoOperator:
     """Test Do operator for images and forms."""
 
-    def test_image_xobject_emits_event(self) -> None:
+    @staticmethod
+    def test_image_xobject_emits_event() -> None:
         resources = {
             "/XObject": {
                 "/Im1": {
@@ -318,7 +342,8 @@ class TestDoOperator:
         assert img_events[0].pixel_height == 800
         assert img_events[0].ctm.a == 200.0
 
-    def test_form_xobject_emits_event(self) -> None:
+    @staticmethod
+    def test_form_xobject_emits_event() -> None:
         resources = {
             "/XObject": {
                 "/Fm1": {
@@ -336,12 +361,14 @@ class TestDoOperator:
         assert form_events[0].form_name == "Fm1"
         assert form_events[0].nesting_depth == 1
 
-    def test_unknown_xobject_no_crash(self) -> None:
+    @staticmethod
+    def test_unknown_xobject_no_crash() -> None:
         interp = _make_interpreter()
         events = interp.interpret([(["/Unknown"], "Do")])
         assert len(events) == 0
 
-    def test_image_with_soft_mask(self) -> None:
+    @staticmethod
+    def test_image_with_soft_mask() -> None:
         resources = {
             "/XObject": {
                 "/Im2": {
@@ -366,7 +393,8 @@ class TestDoOperator:
 class TestPathOperators:
     """Test path construction and painting."""
 
-    def test_stroke_path(self) -> None:
+    @staticmethod
+    def test_stroke_path() -> None:
         interp = _make_interpreter()
         instructions = [
             ([100, 200], "m"),
@@ -379,7 +407,8 @@ class TestPathOperators:
         assert path_events[0].stroke is True
         assert path_events[0].fill is False
 
-    def test_fill_path(self) -> None:
+    @staticmethod
+    def test_fill_path() -> None:
         interp = _make_interpreter()
         instructions = [
             ([0, 0, 100, 100], "re"),
@@ -392,7 +421,8 @@ class TestPathOperators:
         assert path_events[0].stroke is False
         assert path_events[0].even_odd is False
 
-    def test_fill_even_odd(self) -> None:
+    @staticmethod
+    def test_fill_even_odd() -> None:
         interp = _make_interpreter()
         instructions = [
             ([0, 0, 100, 100], "re"),
@@ -402,7 +432,8 @@ class TestPathOperators:
         path_events = [e for e in events if isinstance(e, PathPaintingEvent)]
         assert path_events[0].even_odd is True
 
-    def test_fill_and_stroke(self) -> None:
+    @staticmethod
+    def test_fill_and_stroke() -> None:
         interp = _make_interpreter()
         instructions = [
             ([0, 0, 100, 100], "re"),
@@ -413,7 +444,8 @@ class TestPathOperators:
         assert path_events[0].fill is True
         assert path_events[0].stroke is True
 
-    def test_path_captures_colors(self) -> None:
+    @staticmethod
+    def test_path_captures_colors() -> None:
         interp = _make_interpreter()
         instructions = [
             ([0.0, 1.0, 1.0, 0.0], "k"),  # Fill CMYK
@@ -426,7 +458,8 @@ class TestPathOperators:
         assert path_events[0].fill_color_space == "DeviceCMYK"
         assert path_events[0].stroke_color_space == "DeviceRGB"
 
-    def test_line_width_tracked(self) -> None:
+    @staticmethod
+    def test_line_width_tracked() -> None:
         interp = _make_interpreter()
         instructions = [
             ([0.25], "w"),
@@ -445,14 +478,16 @@ class TestPathOperators:
 class TestClippingOperators:
     """Test clipping path operators."""
 
-    def test_W_emits_event(self) -> None:
+    @staticmethod
+    def test_W_emits_event() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([], "W")])
         clip_events = [e for e in events if isinstance(e, ClippingPathSetEvent)]
         assert len(clip_events) == 1
         assert clip_events[0].even_odd is False
 
-    def test_W_star_emits_event(self) -> None:
+    @staticmethod
+    def test_W_star_emits_event() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([], "W*")])
         clip_events = [e for e in events if isinstance(e, ClippingPathSetEvent)]
@@ -465,7 +500,8 @@ class TestClippingOperators:
 class TestInlineImage:
     """Test inline image handling."""
 
-    def test_inline_image_emits_event(self) -> None:
+    @staticmethod
+    def test_inline_image_emits_event() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([], "BI_ID_EI")])
         img_events = [e for e in events if isinstance(e, ImagePlacedEvent)]
@@ -479,7 +515,8 @@ class TestInlineImage:
 class TestIntegration:
     """Integration tests: realistic content stream sequences."""
 
-    def test_typical_text_page(self) -> None:
+    @staticmethod
+    def test_typical_text_page() -> None:
         """Simulate a page with text in different fonts and colors."""
         resources = {
             "/ExtGState": {
@@ -507,7 +544,8 @@ class TestIntegration:
         assert text_events[0].font_name == "F1"
         assert text_events[1].font_name == "F2"
 
-    def test_image_with_ctm(self) -> None:
+    @staticmethod
+    def test_image_with_ctm() -> None:
         """Simulate placing an image with specific CTM."""
         resources = {
             "/XObject": {
@@ -539,7 +577,8 @@ class TestIntegration:
         # After Q, CTM should be restored to identity
         assert interp.state.ctm.is_identity()
 
-    def test_mixed_content(self) -> None:
+    @staticmethod
+    def test_mixed_content() -> None:
         """Simulate a page with text, images, and paths."""
         resources = {
             "/XObject": {
@@ -582,7 +621,8 @@ class TestIntegration:
         assert len(img_events) == 1
         assert len(text_events) == 1
 
-    def test_unrecognized_operator_no_crash(self) -> None:
+    @staticmethod
+    def test_unrecognized_operator_no_crash() -> None:
         """Unrecognized operators should be silently skipped."""
         interp = _make_interpreter()
         events = interp.interpret(
@@ -602,7 +642,8 @@ class TestIntegration:
 class TestLineStyleOperators:
     """Test line style operator handling."""
 
-    def test_J_sets_line_cap(self) -> None:
+    @staticmethod
+    def test_J_sets_line_cap() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([1], "J")])
         assert interp.state.line_cap == 1
@@ -611,7 +652,8 @@ class TestLineStyleOperators:
         assert ls_events[0].line_cap == 1
         assert ls_events[0].operator == "J"
 
-    def test_j_sets_line_join(self) -> None:
+    @staticmethod
+    def test_j_sets_line_join() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([2], "j")])
         assert interp.state.line_join == 2
@@ -619,7 +661,8 @@ class TestLineStyleOperators:
         assert len(ls_events) == 1
         assert ls_events[0].line_join == 2
 
-    def test_d_sets_dash_pattern(self) -> None:
+    @staticmethod
+    def test_d_sets_dash_pattern() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([[3.0, 2.0], 0.0], "d")])
         assert interp.state.dash_pattern == ((3.0, 2.0), 0.0)
@@ -627,13 +670,15 @@ class TestLineStyleOperators:
         assert len(ls_events) == 1
         assert ls_events[0].dash_pattern == ((3.0, 2.0), 0.0)
 
-    def test_d_solid_line(self) -> None:
+    @staticmethod
+    def test_d_solid_line() -> None:
         """Empty dash array = solid line."""
         interp = _make_interpreter()
         interp.interpret([([[], 0.0], "d")])
         assert interp.state.dash_pattern == ((), 0.0)
 
-    def test_M_sets_miter_limit(self) -> None:
+    @staticmethod
+    def test_M_sets_miter_limit() -> None:
         interp = _make_interpreter()
         events = interp.interpret([([5.0], "M")])
         assert interp.state.miter_limit == 5.0
@@ -641,19 +686,22 @@ class TestLineStyleOperators:
         assert len(ls_events) == 1
         assert ls_events[0].miter_limit == 5.0
 
-    def test_i_sets_flatness(self) -> None:
+    @staticmethod
+    def test_i_sets_flatness() -> None:
         interp = _make_interpreter()
         interp.interpret([([0.5], "i")])
         assert interp.state.flatness == 0.5
 
-    def test_i_no_event(self) -> None:
+    @staticmethod
+    def test_i_no_event() -> None:
         """Flatness does not emit a LineStyleChangedEvent."""
         interp = _make_interpreter()
         events = interp.interpret([([0.5], "i")])
         ls_events = [e for e in events if isinstance(e, LineStyleChangedEvent)]
         assert len(ls_events) == 0
 
-    def test_ri_sets_rendering_intent(self) -> None:
+    @staticmethod
+    def test_ri_sets_rendering_intent() -> None:
         interp = _make_interpreter()
         events = interp.interpret([(["/Perceptual"], "ri")])
         assert interp.state.rendering_intent == "Perceptual"
@@ -661,7 +709,8 @@ class TestLineStyleOperators:
         assert len(ls_events) == 1
         assert ls_events[0].rendering_intent == "Perceptual"
 
-    def test_line_style_in_path_event(self) -> None:
+    @staticmethod
+    def test_line_style_in_path_event() -> None:
         """Path events should carry current line style."""
         interp = _make_interpreter()
         instructions = [
@@ -679,7 +728,8 @@ class TestLineStyleOperators:
         assert path_events[0].line_join == 2
         assert path_events[0].dash_pattern == ((4.0, 2.0), 1.0)
 
-    def test_line_style_saved_restored(self) -> None:
+    @staticmethod
+    def test_line_style_saved_restored() -> None:
         """Line style should be saved/restored with q/Q."""
         interp = _make_interpreter()
         instructions = [
@@ -696,7 +746,8 @@ class TestLineStyleOperators:
 class TestExtGStateLineStyle:
     """Test gs operator line style extraction from ExtGState."""
 
-    def test_gs_sets_line_cap(self) -> None:
+    @staticmethod
+    def test_gs_sets_line_cap() -> None:
         resources = {
             "/ExtGState": {
                 "/GS1": {"/LC": 1},
@@ -706,7 +757,8 @@ class TestExtGStateLineStyle:
         interp.interpret([(["/GS1"], "gs")])
         assert interp.state.line_cap == 1
 
-    def test_gs_sets_line_join(self) -> None:
+    @staticmethod
+    def test_gs_sets_line_join() -> None:
         resources = {
             "/ExtGState": {
                 "/GS1": {"/LJ": 2},
@@ -716,7 +768,8 @@ class TestExtGStateLineStyle:
         interp.interpret([(["/GS1"], "gs")])
         assert interp.state.line_join == 2
 
-    def test_gs_sets_miter_limit(self) -> None:
+    @staticmethod
+    def test_gs_sets_miter_limit() -> None:
         resources = {
             "/ExtGState": {
                 "/GS1": {"/ML": 5.0},
@@ -726,7 +779,8 @@ class TestExtGStateLineStyle:
         interp.interpret([(["/GS1"], "gs")])
         assert interp.state.miter_limit == 5.0
 
-    def test_gs_sets_dash_pattern(self) -> None:
+    @staticmethod
+    def test_gs_sets_dash_pattern() -> None:
         resources = {
             "/ExtGState": {
                 "/GS1": {"/D": [[3.0, 2.0], 0.0]},
@@ -736,7 +790,8 @@ class TestExtGStateLineStyle:
         interp.interpret([(["/GS1"], "gs")])
         assert interp.state.dash_pattern == ((3.0, 2.0), 0.0)
 
-    def test_gs_sets_flatness(self) -> None:
+    @staticmethod
+    def test_gs_sets_flatness() -> None:
         resources = {
             "/ExtGState": {
                 "/GS1": {"/FL": 0.5},
@@ -746,7 +801,8 @@ class TestExtGStateLineStyle:
         interp.interpret([(["/GS1"], "gs")])
         assert interp.state.flatness == 0.5
 
-    def test_gs_sets_rendering_intent(self) -> None:
+    @staticmethod
+    def test_gs_sets_rendering_intent() -> None:
         resources = {
             "/ExtGState": {
                 "/GS1": {"/RI": "/AbsoluteColorimetric"},
@@ -760,7 +816,8 @@ class TestExtGStateLineStyle:
 class TestTextRenderingIntent:
     """Test that text events carry rendering intent."""
 
-    def test_text_event_default_rendering_intent(self) -> None:
+    @staticmethod
+    def test_text_event_default_rendering_intent() -> None:
         interp = _make_interpreter()
         instructions = [
             ([], "BT"),
@@ -772,7 +829,8 @@ class TestTextRenderingIntent:
         text_events = [e for e in events if isinstance(e, TextRenderedEvent)]
         assert text_events[0].rendering_intent == "RelativeColorimetric"
 
-    def test_text_event_custom_rendering_intent(self) -> None:
+    @staticmethod
+    def test_text_event_custom_rendering_intent() -> None:
         interp = _make_interpreter()
         instructions = [
             (["/Perceptual"], "ri"),

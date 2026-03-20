@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import Any
 
 from grounded.analyzers.finding import Severity
@@ -29,32 +28,37 @@ _VALID_INTENT = {
 
 
 class TestNoOutputIntent:
-    def test_missing_output_intent_aground(self) -> None:
+    @staticmethod
+    def test_missing_output_intent_aground() -> None:
         f = validate_output_intent(_doc())
         ids = [x for x in f if x.inspection_id == "PDFX4-016"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_valid_intent_no_016(self) -> None:
+    @staticmethod
+    def test_valid_intent_no_016() -> None:
         f = validate_output_intent(_doc(output_intents=[_VALID_INTENT]))
         assert not [x for x in f if x.inspection_id == "PDFX4-016"]
 
 
 class TestGtsPdfxSubtype:
-    def test_no_gts_pdfx_intent(self) -> None:
+    @staticmethod
+    def test_no_gts_pdfx_intent() -> None:
         intent = {"/S": "/GTS_PDFA1", "/OutputConditionIdentifier": "sRGB"}
         f = validate_output_intent(_doc(output_intents=[intent]))
         ids = [x for x in f if x.inspection_id == "PDFX4-017"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_valid_gts_pdfx(self) -> None:
+    @staticmethod
+    def test_valid_gts_pdfx() -> None:
         f = validate_output_intent(_doc(output_intents=[_VALID_INTENT]))
         assert not [x for x in f if x.inspection_id == "PDFX4-017"]
 
 
 class TestOutputConditionIdentifier:
-    def test_missing_oci(self) -> None:
+    @staticmethod
+    def test_missing_oci() -> None:
         intent = {"/S": "/GTS_PDFX", "/Info": "test"}
         f = validate_output_intent(_doc(output_intents=[intent]))
         ids = [x for x in f if x.inspection_id == "PDFX4-018"]
@@ -63,7 +67,8 @@ class TestOutputConditionIdentifier:
 
 
 class TestIccProfile:
-    def test_unregistered_no_profile_aground(self) -> None:
+    @staticmethod
+    def test_unregistered_no_profile_aground() -> None:
         intent = {
             "/S": "/GTS_PDFX",
             "/OutputConditionIdentifier": "CustomProfile",
@@ -74,11 +79,13 @@ class TestIccProfile:
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_registered_condition_ok(self) -> None:
+    @staticmethod
+    def test_registered_condition_ok() -> None:
         f = validate_output_intent(_doc(output_intents=[_VALID_INTENT]))
         assert not [x for x in f if x.inspection_id == "PDFX4-019"]
 
-    def test_embedded_profile_ok(self) -> None:
+    @staticmethod
+    def test_embedded_profile_ok() -> None:
         intent = {
             "/S": "/GTS_PDFX",
             "/OutputConditionIdentifier": "CustomProfile",
@@ -88,7 +95,8 @@ class TestIccProfile:
         f = validate_output_intent(_doc(output_intents=[intent]))
         assert not [x for x in f if x.inspection_id == "PDFX4-019"]
 
-    def test_icc_version_low(self) -> None:
+    @staticmethod
+    def test_icc_version_low() -> None:
         intent = {
             "/S": "/GTS_PDFX",
             "/OutputConditionIdentifier": "Custom",
@@ -100,7 +108,8 @@ class TestIccProfile:
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_icc_bad_profile_class(self) -> None:
+    @staticmethod
+    def test_icc_bad_profile_class() -> None:
         intent = {
             "/S": "/GTS_PDFX",
             "/OutputConditionIdentifier": "Custom",
@@ -114,7 +123,8 @@ class TestIccProfile:
         ids = [x for x in f if x.inspection_id == "PDFX4-021"]
         assert len(ids) == 1
 
-    def test_icc_bad_color_space(self) -> None:
+    @staticmethod
+    def test_icc_bad_color_space() -> None:
         intent = {
             "/S": "/GTS_PDFX",
             "/OutputConditionIdentifier": "Custom",
@@ -127,7 +137,8 @@ class TestIccProfile:
 
 
 class TestMultipleIntents:
-    def test_multiple_gts_pdfx_squall(self) -> None:
+    @staticmethod
+    def test_multiple_gts_pdfx_squall() -> None:
         f = validate_output_intent(_doc(output_intents=[_VALID_INTENT, _VALID_INTENT]))
         ids = [x for x in f if x.inspection_id == "PDFX4-023"]
         assert len(ids) == 1
@@ -135,7 +146,8 @@ class TestMultipleIntents:
 
 
 class TestRegistryAndInfo:
-    def test_registered_missing_registry_name(self) -> None:
+    @staticmethod
+    def test_registered_missing_registry_name() -> None:
         intent = {
             "/S": "/GTS_PDFX",
             "/OutputConditionIdentifier": "FOGRA39",
@@ -146,7 +158,8 @@ class TestRegistryAndInfo:
         assert len(ids) == 1
         assert ids[0].severity == Severity.ADVISORY
 
-    def test_missing_info_string(self) -> None:
+    @staticmethod
+    def test_missing_info_string() -> None:
         intent = {
             "/S": "/GTS_PDFX",
             "/OutputConditionIdentifier": "FOGRA39",

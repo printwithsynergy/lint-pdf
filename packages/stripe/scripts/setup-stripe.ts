@@ -1,7 +1,7 @@
 /**
  * Idempotent Stripe setup script.
  *
- * Creates products, prices, and portal configuration for Grounded.
+ * Creates products, prices, and portal configuration for LintPDF.
  * Run: npx tsx packages/stripe/scripts/setup-stripe.ts
  *
  * Requires STRIPE_SECRET_KEY environment variable.
@@ -14,7 +14,7 @@ import { resolve } from "path";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 if (!STRIPE_SECRET_KEY) {
   console.error("Error: STRIPE_SECRET_KEY environment variable is required.");
-  process.exit(1); // skipcq: JS-0263 — CLI script requires hard exit on missing config
+  process.exit(1);
 }
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -30,25 +30,25 @@ interface PlanConfig {
 
 const PLANS: PlanConfig[] = [
   {
-    name: "Grounded Free",
+    name: "LintPDF Free",
     lookup_key: "grounded_free",
     monthly_cents: 0,
     overage_cents: 0,
   },
   {
-    name: "Grounded Starter",
+    name: "LintPDF Starter",
     lookup_key: "grounded_starter",
     monthly_cents: 4900,
     overage_cents: 10,
   },
   {
-    name: "Grounded Pro",
+    name: "LintPDF Pro",
     lookup_key: "grounded_pro",
     monthly_cents: 14900,
     overage_cents: 10,
   },
   {
-    name: "Grounded Enterprise",
+    name: "LintPDF Enterprise",
     lookup_key: "grounded_enterprise",
     monthly_cents: 99900,
     overage_cents: 10,
@@ -107,7 +107,7 @@ async function findOrCreatePrice(
 }
 
 async function main() {
-  console.log("Setting up Stripe for Grounded...\n");
+  console.log("Setting up Stripe for LintPDF...\n");
 
   const ids: Record<string, string> = {};
 
@@ -151,5 +151,5 @@ async function main() {
 
 main().catch((err) => {
   console.error("Setup failed:", err);
-  process.exit(1); // skipcq: JS-0263 — CLI script requires hard exit on failure
+  process.exit(1);
 });

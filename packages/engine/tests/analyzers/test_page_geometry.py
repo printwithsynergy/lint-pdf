@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.analyzers.page_geometry import PageGeometryAnalyzer
 from grounded.semantic.events import PathPaintingEvent, TextRenderedEvent
@@ -40,7 +39,8 @@ def _make_document(
 class TestBoxPresence:
     """Test GRD_BOX_001: required boxes present."""
 
-    def test_missing_trim_box(self) -> None:
+    @staticmethod
+    def test_missing_trim_box() -> None:
         doc = _make_document(trim_box=None, bleed_box=PdfBox(5, 5, 607, 787))
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -49,7 +49,8 @@ class TestBoxPresence:
         assert len(trim_missing) == 1
         assert trim_missing[0].severity == Severity.SQUALL
 
-    def test_missing_bleed_box(self) -> None:
+    @staticmethod
+    def test_missing_bleed_box() -> None:
         doc = _make_document(trim_box=PdfBox(20, 20, 592, 772), bleed_box=None)
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -57,7 +58,8 @@ class TestBoxPresence:
         bleed_missing = [f for f in box_findings if "BleedBox" in f.message]
         assert len(bleed_missing) == 1
 
-    def test_both_boxes_present(self) -> None:
+    @staticmethod
+    def test_both_boxes_present() -> None:
         doc = _make_document(
             trim_box=PdfBox(20, 20, 592, 772),
             bleed_box=PdfBox(11.5, 11.5, 600.5, 780.5),
@@ -67,7 +69,8 @@ class TestBoxPresence:
         box_findings = [f for f in findings if f.inspection_id == "GRD_BOX_001"]
         assert len(box_findings) == 0
 
-    def test_both_missing(self) -> None:
+    @staticmethod
+    def test_both_missing() -> None:
         doc = _make_document(trim_box=None, bleed_box=None)
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -78,7 +81,8 @@ class TestBoxPresence:
 class TestBoxHierarchy:
     """Test GRD_BOX_002: box containment hierarchy."""
 
-    def test_valid_hierarchy(self) -> None:
+    @staticmethod
+    def test_valid_hierarchy() -> None:
         doc = _make_document(
             media_box=PdfBox(0, 0, 612, 792),
             crop_box=PdfBox(0, 0, 612, 792),
@@ -90,7 +94,8 @@ class TestBoxHierarchy:
         hierarchy_findings = [f for f in findings if f.inspection_id == "GRD_BOX_002"]
         assert len(hierarchy_findings) == 0
 
-    def test_crop_outside_media(self) -> None:
+    @staticmethod
+    def test_crop_outside_media() -> None:
         doc = _make_document(
             media_box=PdfBox(0, 0, 612, 792),
             crop_box=PdfBox(-10, -10, 622, 802),
@@ -101,7 +106,8 @@ class TestBoxHierarchy:
         assert len(hierarchy_findings) == 1
         assert "CropBox" in hierarchy_findings[0].message
 
-    def test_trim_outside_bleed(self) -> None:
+    @staticmethod
+    def test_trim_outside_bleed() -> None:
         doc = _make_document(
             bleed_box=PdfBox(20, 20, 592, 772),
             trim_box=PdfBox(10, 10, 602, 782),
@@ -116,7 +122,8 @@ class TestBoxHierarchy:
 class TestBleedDistance:
     """Test GRD_BOX_003: adequate bleed distance."""
 
-    def test_adequate_bleed(self) -> None:
+    @staticmethod
+    def test_adequate_bleed() -> None:
         """3mm bleed (8.5pt) on all sides."""
         doc = _make_document(
             trim_box=PdfBox(20, 20, 592, 772),
@@ -127,7 +134,8 @@ class TestBleedDistance:
         bleed_findings = [f for f in findings if f.inspection_id == "GRD_BOX_003"]
         assert len(bleed_findings) == 0
 
-    def test_inadequate_bleed(self) -> None:
+    @staticmethod
+    def test_inadequate_bleed() -> None:
         """Only 2pt bleed — below 8.5pt minimum."""
         doc = _make_document(
             trim_box=PdfBox(20, 20, 592, 772),
@@ -139,7 +147,8 @@ class TestBleedDistance:
         assert len(bleed_findings) == 1
         assert bleed_findings[0].severity == Severity.SQUALL
 
-    def test_zero_bleed(self) -> None:
+    @staticmethod
+    def test_zero_bleed() -> None:
         """TrimBox equals BleedBox — zero bleed."""
         doc = _make_document(
             trim_box=PdfBox(20, 20, 592, 772),
@@ -150,7 +159,8 @@ class TestBleedDistance:
         bleed_findings = [f for f in findings if f.inspection_id == "GRD_BOX_003"]
         assert len(bleed_findings) == 1
 
-    def test_configurable_min_bleed(self) -> None:
+    @staticmethod
+    def test_configurable_min_bleed() -> None:
         """Custom minimum bleed (5mm = ~14.17pt)."""
         doc = _make_document(
             trim_box=PdfBox(20, 20, 592, 772),
@@ -172,7 +182,8 @@ class TestBleedDistance:
 class TestMultiplePages:
     """Test analyzer works across multiple pages."""
 
-    def test_two_pages(self) -> None:
+    @staticmethod
+    def test_two_pages() -> None:
         doc = SemanticDocument(
             version="2.0",
             page_count=2,
@@ -202,7 +213,8 @@ class TestMultiplePages:
 class TestEmptyPage:
     """Test GRD_BOX_004: empty page (no content stream)."""
 
-    def test_empty_page_advisory(self) -> None:
+    @staticmethod
+    def test_empty_page_advisory() -> None:
         """Page with no content stream triggers GRD_BOX_004."""
         doc = SemanticDocument(
             version="1.7",
@@ -225,7 +237,8 @@ class TestEmptyPage:
         assert empty[0].severity == Severity.ADVISORY
         assert empty[0].page_num == 1
 
-    def test_page_with_content_no_finding(self) -> None:
+    @staticmethod
+    def test_page_with_content_no_finding() -> None:
         """Page with content stream does not trigger GRD_BOX_004."""
         doc = SemanticDocument(
             version="1.7",
@@ -246,7 +259,8 @@ class TestEmptyPage:
         empty = [f for f in findings if f.inspection_id == "GRD_BOX_004"]
         assert len(empty) == 0
 
-    def test_mixed_pages_only_empty_flagged(self) -> None:
+    @staticmethod
+    def test_mixed_pages_only_empty_flagged() -> None:
         """Only pages without content trigger GRD_BOX_004."""
         doc = SemanticDocument(
             version="1.7",
@@ -286,7 +300,8 @@ class TestEmptyPage:
 class TestContentSafetyMargin:
     """Test GRD_BOX_005: content within safety margin of trim edge."""
 
-    def _make_doc_with_trim(self) -> SemanticDocument:
+    @staticmethod
+    def _make_doc_with_trim() -> SemanticDocument:
         return SemanticDocument(
             version="2.0",
             page_count=1,
@@ -367,7 +382,8 @@ class TestContentSafetyMargin:
         f = [f for f in findings if f.inspection_id == "GRD_BOX_005"]
         assert len(f) == 1
 
-    def test_no_trim_box_no_safety_check(self) -> None:
+    @staticmethod
+    def test_no_trim_box_no_safety_check() -> None:
         """Without trim box, no safety margin check."""
         doc = SemanticDocument(
             version="2.0",
@@ -425,7 +441,8 @@ class TestContentSafetyMargin:
 class TestContentBeyondBleed:
     """Test GRD_BOX_006: content extends beyond bleed box."""
 
-    def _make_doc_with_bleed(self) -> SemanticDocument:
+    @staticmethod
+    def _make_doc_with_bleed() -> SemanticDocument:
         return SemanticDocument(
             version="2.0",
             page_count=1,
@@ -482,7 +499,8 @@ class TestContentBeyondBleed:
         f = [f for f in findings if f.inspection_id == "GRD_BOX_006"]
         assert len(f) == 0
 
-    def test_no_bleed_box_no_check(self) -> None:
+    @staticmethod
+    def test_no_bleed_box_no_check() -> None:
         doc = SemanticDocument(
             version="2.0",
             page_count=1,

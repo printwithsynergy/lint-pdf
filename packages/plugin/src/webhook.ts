@@ -1,5 +1,5 @@
 /**
- * Webhook signature validation for Grounded events.
+ * Webhook signature validation for LintPDF events.
  */
 
 import { createHmac } from "crypto";

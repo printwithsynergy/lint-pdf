@@ -1,5 +1,5 @@
 /**
- * Plugin Bootstrap — Fairy Ring integration for the Grounded app.
+ * Plugin Bootstrap — Fairy Ring integration for the LintPDF app.
  *
  * Loads and boots all registered plugins on app startup.
  * Import this file in instrumentation.ts or layout to trigger bootstrap.

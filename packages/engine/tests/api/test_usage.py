@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import TYPE_CHECKING
 
 import pytest
@@ -56,7 +55,8 @@ def fake_redis() -> FakeRedis:
 
 
 class TestUsageEndpoint:
-    def test_returns_usage_without_redis(self, client: TestClient) -> None:
+    @staticmethod
+    def test_returns_usage_without_redis(client: TestClient) -> None:
         set_rate_limiter(None)
         response = client.get("/api/v1/usage")
         assert response.status_code == 200
@@ -74,7 +74,8 @@ class TestUsageEndpoint:
         assert "blocked" in data
         assert "warning" in data
 
-    def test_returns_usage_with_redis(self, client: TestClient, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_returns_usage_with_redis(client: TestClient, fake_redis: FakeRedis) -> None:
         response = client.get("/api/v1/usage")
         assert response.status_code == 200
         data = response.json()

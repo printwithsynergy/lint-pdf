@@ -1,13 +1,13 @@
-"""Grounded exception hierarchy.
+"""LintPDF exception hierarchy.
 
-All Grounded-specific exceptions inherit from GroundedError.
+All LintPDF-specific exceptions inherit from GroundedError.
 Parser exceptions map to specific failure modes during PDF parsing.
 Validation exceptions cover semantic and rule engine issues.
 """
 
 
 class GroundedError(Exception):
-    """Base exception for all Grounded errors."""
+    """Base exception for all LintPDF errors."""
 
 
 # --- Parser Layer Exceptions ---

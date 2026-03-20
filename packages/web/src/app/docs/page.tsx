@@ -3,9 +3,9 @@ import { DocsNav } from "@/components/DocsNav";
 import { glossary } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Documentation — Never Grounded",
+  title: "Documentation — LintPDF",
   description:
-    "API reference, getting started guide, and full documentation for the Never Grounded PDF preflight engine.",
+    "API reference, getting started guide, and full documentation for the LintPDF PDF preflight engine.",
 };
 
 const methodColors: Record<string, string> = {
@@ -39,7 +39,6 @@ function Endpoint({
   response: string;
 }) {
   return (
-    // skipcq: JS-0415
     <div className="rounded-xl border border-slate-200 overflow-hidden mb-6">
       <div className="flex items-center gap-3 border-b border-slate-200 px-6 py-4 bg-slate-50">
         <span
@@ -50,7 +49,7 @@ function Endpoint({
         <code className="text-sm text-slate-800 font-mono">{path}</code>
         {auth && (
           <span className="ml-auto rounded bg-amber-500/10 px-2 py-0.5 text-xs text-amber-700 border border-amber-500/20">
-            Boarding Pass required
+            API Key required
           </span>
         )}
       </div>
@@ -75,7 +74,6 @@ function Endpoint({
 
 export default function DocsPage() {
   return (
-    // skipcq: JS-0415
     <div className="mx-auto max-w-6xl px-6 py-16 lg:flex lg:gap-12">
       <DocsNav />
 
@@ -84,7 +82,7 @@ export default function DocsPage() {
           Documentation
         </h1>
         <p className="text-slate-500 mb-12">
-          Everything you need to integrate Never Grounded into your workflow.
+          Everything you need to integrate LintPDF into your workflow.
         </p>
 
         {/* ── Getting Started ── */}
@@ -93,9 +91,8 @@ export default function DocsPage() {
             Getting Started
           </h2>
           <p className="text-slate-600 mb-6">
-            Never Grounded is a detection-only PDF preflight engine. You send a
-            file, you get a report. Three steps to your first Captain&apos;s
-            Log:
+            LintPDF is a detection-only PDF preflight engine. You send a file,
+            you get a report. Three steps to your first Report:
           </p>
 
           <div className="grid gap-6 md:grid-cols-3 mb-8">
@@ -107,12 +104,12 @@ export default function DocsPage() {
               <p className="text-sm text-slate-500">
                 Create an account at{" "}
                 <a
-                  href="https://app.nevergrounded.io"
+                  href="https://app.lintpdf.com"
                   className="text-brand-600 hover:underline"
                 >
-                  app.nevergrounded.io
+                  app.lintpdf.com
                 </a>{" "}
-                and navigate to The Bridge.
+                and navigate to Dashboard.
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 p-5">
@@ -120,12 +117,13 @@ export default function DocsPage() {
                 2
               </div>
               <h3 className="font-semibold text-slate-900 mb-1">
-                Get your Boarding Pass
+                Get your API Key
               </h3>
               <p className="text-sm text-slate-500">
-                Generate an API key from the Boarding Pass section. Your key
-                starts with{" "}
-                <code className="bg-slate-100 px-1 rounded text-xs">grd_</code>.
+                Generate an API key from the API Key section. Your key starts
+                with{" "}
+                <code className="bg-slate-100 px-1 rounded text-xs">lpdf_</code>
+                .
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 p-5">
@@ -133,25 +131,24 @@ export default function DocsPage() {
                 3
               </div>
               <h3 className="font-semibold text-slate-900 mb-1">
-                Launch your first file
+                Submit your first file
               </h3>
               <p className="text-sm text-slate-500">
-                Submit a PDF to the Launch endpoint and retrieve your
-                Captain&apos;s Log.
+                Submit a PDF to the Submit endpoint and retrieve your Report.
               </p>
             </div>
           </div>
 
           <h3 className="font-semibold text-slate-900 mb-3">Quick example</h3>
-          <CodeBlock>{`# Submit a PDF for preflight (Launch)
-curl -X POST https://api.nevergrounded.io/api/v1/launch \\
-  -H "Authorization: Bearer grd_your_boarding_pass" \\
+          <CodeBlock>{`# Submit a PDF for preflight
+curl -X POST https://api.lintpdf.com/api/v1/submit \\
+  -H "Authorization: Bearer lpdf_your_api_key" \\
   -F file=@brochure.pdf \\
-  -F voyage_plan=gwg-sheetfed
+  -F ruleset=gwg-sheetfed
 
-# Retrieve the Captain's Log
-curl https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-... \\
-  -H "Authorization: Bearer grd_your_boarding_pass"`}</CodeBlock>
+# Retrieve the Report
+curl https://api.lintpdf.com/api/v1/reports/f47ac10b-... \\
+  -H "Authorization: Bearer lpdf_your_api_key"`}</CodeBlock>
         </section>
 
         {/* ── Authentication ── */}
@@ -160,18 +157,16 @@ curl https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-... \\
             Authentication
           </h2>
           <p className="text-slate-600 mb-4">
-            Include your Boarding Pass (API key) in the{" "}
+            Include your API Key in the{" "}
             <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono">
               Authorization
             </code>{" "}
             header as a Bearer token:
           </p>
-          <CodeBlock>Authorization: Bearer grd_your_boarding_pass</CodeBlock>
+          <CodeBlock>Authorization: Bearer lpdf_your_api_key</CodeBlock>
           <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm text-amber-800">
-              <span className="font-semibold">
-                Keep your Boarding Pass secret.
-              </span>{" "}
+              <span className="font-semibold">Keep your API Key secret.</span>{" "}
               Never expose it in client-side code, public repositories, or
               browser requests. Use environment variables and server-side calls
               only.
@@ -187,27 +182,27 @@ curl https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-... \\
           <p className="text-slate-600 mb-2">
             Base URL:{" "}
             <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono">
-              https://api.nevergrounded.io
+              https://api.lintpdf.com
             </code>
           </p>
           <p className="text-slate-500 text-sm mb-8">
             All endpoints return JSON. Authenticated endpoints require a valid
-            Boarding Pass.
+            API Key.
           </p>
 
           <Endpoint
             method="POST"
-            path="/api/v1/launch"
-            description="Submit a file for preflight analysis. Accepts PDF, EPS, PostScript, TIFF, JPEG, PNG, and PDF-compatible AI files. Non-PDF files are converted internally before Inspection."
+            path="/api/v1/submit"
+            description="Submit a file for preflight analysis. Accepts PDF, EPS, PostScript, TIFF, JPEG, PNG, and PDF-compatible AI files. Non-PDF files are converted internally before checking."
             auth
-            request={`curl -X POST https://api.nevergrounded.io/api/v1/launch \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X POST https://api.lintpdf.com/api/v1/submit \\
+  -H "Authorization: Bearer lpdf_..." \\
   -F file=@document.pdf \\
-  -F voyage_plan=gwg-sheetfed`}
+  -F ruleset=gwg-sheetfed`}
             response={`{
   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "status": "underway",
-  "voyage_plan": "gwg-sheetfed",
+  "status": "processing",
+  "ruleset": "gwg-sheetfed",
   "file_name": "document.pdf",
   "created_at": "2026-03-15T10:30:00Z"
 }`}
@@ -215,41 +210,41 @@ curl https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-... \\
 
           <Endpoint
             method="GET"
-            path="/api/v1/captains-log/{id}"
-            description="Retrieve the Captain's Log for a completed preflight job. Includes summary, findings with severity levels (Aground, Squall, Advisory), and page locations."
+            path="/api/v1/reports/{id}"
+            description="Retrieve the Report for a completed preflight job. Includes summary, findings with severity levels (Error, Warning, Info), and page locations."
             auth
-            request={`curl https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-... \\
-  -H "Authorization: Bearer grd_..."`}
+            request={`curl https://api.lintpdf.com/api/v1/reports/f47ac10b-... \\
+  -H "Authorization: Bearer lpdf_..."`}
             response={`{
   "id": "f47ac10b-...",
-  "status": "docked",
-  "verdict": "aground",
-  "voyage_plan": "gwg-sheetfed",
+  "status": "complete",
+  "verdict": "error",
+  "ruleset": "gwg-sheetfed",
   "file_name": "document.pdf",
   "page_count": 4,
   "duration_ms": 1240,
   "summary": {
     "total_findings": 3,
-    "aground": 1,
-    "squall": 1,
-    "advisory": 1
+    "error": 1,
+    "warning": 1,
+    "info": 1
   },
   "findings": [
     {
       "inspection_id": "font.not_embedded",
-      "severity": "aground",
+      "severity": "error",
       "message": "Font 'Helvetica' is not embedded",
       "page": 1
     },
     {
       "inspection_id": "color.spot_color_usage",
-      "severity": "squall",
+      "severity": "warning",
       "message": "Spot color 'PANTONE 185 C' found on page 2",
       "page": 2
     },
     {
       "inspection_id": "image.low_resolution",
-      "severity": "advisory",
+      "severity": "info",
       "message": "Image at 150 DPI (minimum 300 DPI recommended)",
       "page": 3
     }
@@ -259,32 +254,32 @@ curl https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-... \\
 
           <Endpoint
             method="GET"
-            path="/api/v1/captains-log/{id}/report?format=pdf|json|xml"
-            description="Download the Captain's Log as a formatted report. PDF reports include tenant Livery (logo, colors, footer) when configured. JSON and XML are machine-readable."
+            path="/api/v1/reports/{id}/report?format=pdf|json|xml"
+            description="Download the Report as a formatted report. PDF reports include tenant White Label (logo, colors, footer) when configured. JSON and XML are machine-readable."
             auth
             request={`# PDF report (white-labeled)
 curl -o report.pdf \\
-  "https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-.../report?format=pdf" \\
-  -H "Authorization: Bearer grd_..."
+  "https://api.lintpdf.com/api/v1/reports/f47ac10b-.../report?format=pdf" \\
+  -H "Authorization: Bearer lpdf_..."
 
 # JSON report
-curl "https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-.../report?format=json" \\
-  -H "Authorization: Bearer grd_..."`}
+curl "https://api.lintpdf.com/api/v1/reports/f47ac10b-.../report?format=json" \\
+  -H "Authorization: Bearer lpdf_..."`}
             response={`200 OK
 Content-Type: application/pdf (or application/json, application/xml)
 
-# JSON format returns the same structure as GET /api/v1/captains-log/{id}
+# JSON format returns the same structure as GET /api/v1/reports/{id}
 # PDF format returns a branded, downloadable report
 # XML format returns a structured XML document`}
           />
 
           <Endpoint
             method="PUT"
-            path="/api/v1/livery"
+            path="/api/v1/white-label"
             description="Configure white-label branding for PDF reports. Upload your logo, set brand colors, and customize the footer text. Available on Scale and Enterprise plans."
             auth
-            request={`curl -X PUT https://api.nevergrounded.io/api/v1/livery \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X PUT https://api.lintpdf.com/api/v1/white-label \\
+  -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
   -d '{
     "logo_url": "https://yourcompany.com/logo.png",
@@ -293,7 +288,7 @@ Content-Type: application/pdf (or application/json, application/xml)
     "footer_text": "Preflight report generated by Acme Print Co."
   }'`}
             response={`{
-  "livery": {
+  "white_label": {
     "logo_url": "https://yourcompany.com/logo.png",
     "primary_color": "#1a365d",
     "company_name": "Acme Print Co.",
@@ -305,38 +300,38 @@ Content-Type: application/pdf (or application/json, application/xml)
 
           <Endpoint
             method="GET"
-            path="/api/v1/voyage-plans"
-            description="List available Voyage Plans (preflight profiles). Includes built-in profiles and any custom profiles created by your account."
+            path="/api/v1/rulesets"
+            description="List available Rulesets (preflight profiles). Includes built-in profiles and any custom profiles created by your account."
             auth={false}
-            request={"curl https://api.nevergrounded.io/api/v1/voyage-plans"}
+            request={"curl https://api.lintpdf.com/api/v1/rulesets"}
             response={`{
-  "voyage_plans": [
+  "rulesets": [
     {
       "id": "gwg-sheetfed",
       "name": "GWG Sheetfed",
       "description": "Ghent Workgroup sheetfed offset standard",
-      "inspections": 196,
+      "checks": 196,
       "is_builtin": true
     },
     {
       "id": "gwg-digital",
       "name": "GWG Digital",
       "description": "Ghent Workgroup digital printing standard",
-      "inspections": 180,
+      "checks": 180,
       "is_builtin": true
     },
     {
       "id": "pdfx4",
       "name": "PDF/X-4",
       "description": "ISO 15930-7 PDF/X-4 conformance",
-      "inspections": 120,
+      "checks": 120,
       "is_builtin": true
     },
     {
       "id": "packaging",
       "name": "Packaging",
       "description": "Packaging-specific checks including barcode grading",
-      "inspections": 210,
+      "checks": 210,
       "is_builtin": true
     }
   ]
@@ -345,11 +340,11 @@ Content-Type: application/pdf (or application/json, application/xml)
 
           <Endpoint
             method="POST"
-            path="/api/v1/voyage-plans"
-            description="Create a custom Voyage Plan. Select which Inspections to include and configure thresholds. Available on Growth plans and above."
+            path="/api/v1/rulesets"
+            description="Create a custom Ruleset. Select which Checks to include and configure thresholds. Available on Growth plans and above."
             auth
-            request={`curl -X POST https://api.nevergrounded.io/api/v1/voyage-plans \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X POST https://api.lintpdf.com/api/v1/rulesets \\
+  -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "My Custom Plan",
@@ -365,39 +360,37 @@ Content-Type: application/pdf (or application/json, application/xml)
   "id": "fp_custom_abc123",
   "name": "My Custom Plan",
   "description": "Custom checks for magazine production",
-  "inspections": 196,
+  "checks": 196,
   "is_builtin": false,
   "created_at": "2026-03-15T10:30:00Z"
 }`}
           />
         </section>
 
-        {/* ── Voyage Plans ── */}
-        <section id="voyage-plans" className="mb-16 scroll-mt-24">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Voyage Plans
-          </h2>
+        {/* ── Rulesets ── */}
+        <section id="rulesets" className="mb-16 scroll-mt-24">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Rulesets</h2>
           <p className="text-slate-600 mb-6">
-            A Voyage Plan is a preflight profile — a collection of Inspections
-            and thresholds that define what Never Grounded checks for. Every
-            Launch requires a Voyage Plan.
+            A Ruleset is a preflight profile — a collection of Checks and
+            thresholds that define what LintPDF checks for. Every submission
+            requires a Ruleset.
           </p>
 
           <h3 className="font-semibold text-slate-900 mb-4">
-            Built-in Voyage Plans
+            Built-in Rulesets
           </h3>
           <div className="overflow-x-auto mb-8">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b-2 border-slate-200">
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">
-                    Voyage Plan
+                    Ruleset
                   </th>
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">
                     Standard
                   </th>
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">
-                    Inspections
+                    Checks
                   </th>
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">
                     Use Case
@@ -449,26 +442,24 @@ Content-Type: application/pdf (or application/json, application/xml)
             </table>
           </div>
 
-          <h3 className="font-semibold text-slate-900 mb-3">
-            Custom Voyage Plans
-          </h3>
+          <h3 className="font-semibold text-slate-900 mb-3">Custom Rulesets</h3>
           <p className="text-slate-600 mb-4">
-            Growth, Scale, and Enterprise plans can create custom Voyage Plans.
+            Growth, Scale, and Enterprise plans can create custom Rulesets.
             Start from a built-in base and override specific thresholds, enable
-            or disable individual Inspections, and name your profile for reuse
-            across Launches.
+            or disable individual Checks, and name your profile for reuse across
+            submissions.
           </p>
         </section>
 
-        {/* ── Inspections ── */}
-        <section id="inspections" className="mb-16 scroll-mt-24">
+        {/* ── Checks ── */}
+        <section id="checks" className="mb-16 scroll-mt-24">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Inspections Reference
+            Checks Reference
           </h2>
           <p className="text-slate-600 mb-6">
-            Never Grounded runs 250+ individual Inspections across these
-            categories. Each finding in a Captain&apos;s Log references an
-            Inspection ID, severity level, and affected page.
+            LintPDF runs 250+ individual Checks across these categories. Each
+            finding in a Report references a Check ID, severity level, and
+            affected page.
           </p>
 
           {[
@@ -639,7 +630,7 @@ Content-Type: application/pdf (or application/json, application/xml)
                   <thead>
                     <tr className="border-b border-slate-200">
                       <th className="text-left py-2 px-3 text-slate-500 font-medium">
-                        Inspection ID
+                        Check ID
                       </th>
                       <th className="text-left py-2 px-3 text-slate-500 font-medium">
                         Description
@@ -664,12 +655,12 @@ Content-Type: application/pdf (or application/json, application/xml)
           ))}
 
           <p className="text-sm text-slate-500 mt-4">
-            This is a representative sample. The full Inspection suite includes
-            250+ checks. Use the{" "}
+            This is a representative sample. The full suite includes 250+
+            checks. Use the{" "}
             <code className="bg-slate-100 px-1 rounded">
-              GET /api/v1/voyage-plans
+              GET /api/v1/rulesets
             </code>{" "}
-            endpoint to see which Inspections are included in each Voyage Plan.
+            endpoint to see which Checks are included in each Ruleset.
           </p>
         </section>
 
@@ -679,7 +670,7 @@ Content-Type: application/pdf (or application/json, application/xml)
             Report Formats
           </h2>
           <p className="text-slate-600 mb-6">
-            Captain&apos;s Logs can be retrieved in three formats. Use the{" "}
+            Reports can be retrieved in three formats. Use the{" "}
             <code className="bg-slate-100 px-1 rounded text-sm font-mono">
               format
             </code>{" "}
@@ -691,22 +682,22 @@ Content-Type: application/pdf (or application/json, application/xml)
           </h3>
           <CodeBlock>{`{
   "id": "string",
-  "status": "docked",
-  "verdict": "clear-to-sail | aground",
-  "voyage_plan": "string",
+  "status": "complete",
+  "verdict": "pass | error",
+  "ruleset": "string",
   "file_name": "string",
   "page_count": "number",
   "duration_ms": "number",
   "summary": {
     "total_findings": "number",
-    "aground": "number",
-    "squall": "number",
-    "advisory": "number"
+    "error": "number",
+    "warning": "number",
+    "info": "number"
   },
   "findings": [
     {
       "inspection_id": "string",
-      "severity": "aground | squall | advisory",
+      "severity": "error | warning | info",
       "message": "string",
       "page": "number"
     }
@@ -714,11 +705,11 @@ Content-Type: application/pdf (or application/json, application/xml)
 }`}</CodeBlock>
 
           <h3 className="font-semibold text-slate-900 mt-8 mb-3">
-            PDF Reports &amp; Livery
+            PDF Reports &amp; White Label
           </h3>
           <p className="text-slate-600 mb-4">
-            PDF reports are white-labeled using your Livery configuration. Scale
-            and Enterprise plans can upload a logo, set brand colors, and
+            PDF reports are white-labeled using your White Label configuration.
+            Scale and Enterprise plans can upload a logo, set brand colors, and
             customize footer text. Reports include a summary page, detailed
             findings grouped by severity, and page-level annotations.
           </p>
@@ -730,38 +721,36 @@ Content-Type: application/pdf (or application/json, application/xml)
             XML.
           </p>
           <CodeBlock>{`<?xml version="1.0" encoding="UTF-8"?>
-<captains-log id="f47ac10b-..." status="docked" verdict="aground">
-  <voyage-plan>gwg-sheetfed</voyage-plan>
+<report id="f47ac10b-..." status="complete" verdict="error">
+  <ruleset>gwg-sheetfed</ruleset>
   <file-name>document.pdf</file-name>
-  <summary total="3" aground="1" squall="1" advisory="1" />
+  <summary total="3" error="1" warning="1" info="1" />
   <findings>
-    <finding inspection="font.not_embedded" severity="aground" page="1">
+    <finding inspection="font.not_embedded" severity="error" page="1">
       Font 'Helvetica' is not embedded
     </finding>
   </findings>
-</captains-log>`}</CodeBlock>
+</report>`}</CodeBlock>
         </section>
 
-        {/* ── Harbor Signals ── */}
-        <section id="harbor-signals" className="mb-16 scroll-mt-24">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Harbor Signals
-          </h2>
+        {/* ── Webhooks ── */}
+        <section id="webhooks" className="mb-16 scroll-mt-24">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Webhooks</h2>
           <p className="text-slate-600 mb-6">
-            Harbor Signals are webhook callbacks. Register an endpoint and Never
-            Grounded will POST event payloads when files finish processing. No
-            polling required.
+            Webhooks are webhook callbacks. Register an endpoint and LintPDF
+            will POST event payloads when files finish processing. No polling
+            required.
           </p>
 
           <h3 className="font-semibold text-slate-900 mb-3">
-            Registering a Harbor Signal
+            Registering a Webhook
           </h3>
-          <CodeBlock>{`curl -X POST https://api.nevergrounded.io/api/v1/harbor-signals \\
-  -H "Authorization: Bearer grd_..." \\
+          <CodeBlock>{`curl -X POST https://api.lintpdf.com/api/v1/webhooks \\
+  -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
   -d '{
     "url": "https://your-app.com/webhook",
-    "events": ["launch.docked", "launch.aground"]
+    "events": ["job.complete", "job.error"]
   }'`}</CodeBlock>
 
           <h3 className="font-semibold text-slate-900 mt-8 mb-3">
@@ -782,19 +771,16 @@ Content-Type: application/pdf (or application/json, application/xml)
               <tbody>
                 {[
                   [
-                    "launch.docked",
-                    "File processing complete. Includes Captain's Log summary and findings.",
+                    "job.complete",
+                    "File processing complete. Includes Report summary and findings.",
                   ],
                   [
-                    "launch.aground",
-                    "File has Aground findings. Includes Captain's Log with critical issues.",
+                    "job.error",
+                    "File has Error findings. Includes Report with critical issues.",
                   ],
+                  ["job.pass", "File passed all Checks. Pass."],
                   [
-                    "launch.clear",
-                    "File passed all Inspections. Clear to Sail.",
-                  ],
-                  [
-                    "launch.failed",
+                    "job.failed",
                     "Processing failed (corrupt file, timeout). Includes error message.",
                   ],
                   [
@@ -823,18 +809,18 @@ Content-Type: application/pdf (or application/json, application/xml)
             Webhook Payload
           </h3>
           <CodeBlock>{`{
-  "event": "launch.docked",
+  "event": "job.complete",
   "timestamp": "2026-03-15T10:30:01Z",
   "data": {
     "id": "f47ac10b-...",
-    "verdict": "aground",
-    "voyage_plan": "gwg-sheetfed",
+    "verdict": "error",
+    "ruleset": "gwg-sheetfed",
     "file_name": "document.pdf",
     "summary": {
       "total_findings": 3,
-      "aground": 1,
-      "squall": 1,
-      "advisory": 1
+      "error": 1,
+      "warning": 1,
+      "info": 1
     }
   }
 }`}</CodeBlock>
@@ -846,97 +832,94 @@ Content-Type: application/pdf (or application/json, application/xml)
             SDKs &amp; Code Examples
           </h2>
           <p className="text-slate-600 mb-8">
-            Never Grounded is a standard REST API — use any HTTP client. Here
-            are examples in popular languages.
+            LintPDF is a standard REST API — use any HTTP client. Here are
+            examples in popular languages.
           </p>
 
           <h3 className="font-semibold text-slate-900 mb-3">Python</h3>
           <CodeBlock>{`import httpx
 
 client = httpx.Client(
-    base_url="https://api.nevergrounded.io",
-    headers={"Authorization": "Bearer grd_your_boarding_pass"},
+    base_url="https://api.lintpdf.com",
+    headers={"Authorization": "Bearer lpdf_your_api_key"},
 )
 
-# Launch a PDF
+# Submit a PDF
 with open("brochure.pdf", "rb") as f:
-    resp = client.post("/api/v1/launch", files={"file": f}, data={"voyage_plan": "gwg-sheetfed"})
+    resp = client.post("/api/v1/submit", files={"file": f}, data={"ruleset": "gwg-sheetfed"})
     job = resp.json()
 
-print(f"Launch ID: {job['id']}, Status: {job['status']}")
+print(f"Job ID: {job['id']}, Status: {job['status']}")
 
-# Retrieve the Captain's Log
-captains_log = client.get(f"/api/v1/captains-log/{job['id']}").json()
+# Retrieve the Report
+report = client.get(f"/api/v1/reports/{job['id']}").json()
 
-if captains_log["verdict"] == "clear-to-sail":
-    print("Clear to Sail!")
+if report["verdict"] == "pass":
+    print("Pass!")
 else:
-    print(f"Aground: {captains_log['summary']['aground']} Aground findings")
-    for finding in captains_log["findings"]:
+    print(f"Error: {report['summary']['error']} Error findings")
+    for finding in report["findings"]:
         print(f"  [{finding['severity']}] {finding['message']} (page {finding['page']})")`}</CodeBlock>
 
           <h3 className="font-semibold text-slate-900 mt-8 mb-3">Node.js</h3>
           <CodeBlock>{`import fs from "node:fs";
 
-const API_BASE = "https://api.nevergrounded.io";
-const headers = { Authorization: "Bearer grd_your_boarding_pass" };
+const API_BASE = "https://api.lintpdf.com";
+const headers = { Authorization: "Bearer lpdf_your_api_key" };
 
-// Launch a PDF
+// Submit a PDF
 const form = new FormData();
 form.append("file", new Blob([fs.readFileSync("brochure.pdf")]));
-form.append("voyage_plan", "gwg-sheetfed");
+form.append("ruleset", "gwg-sheetfed");
 
-const job = await fetch(\`\${API_BASE}/api/v1/launch\`, {
+const job = await fetch(\`\${API_BASE}/api/v1/submit\`, {
   method: "POST",
   headers,
   body: form,
 }).then((r) => r.json());
 
-console.log("Launch ID:", job.id, "Status:", job.status);
+console.log("Job ID:", job.id, "Status:", job.status);
 
-// Retrieve the Captain's Log
-const captainsLog = await fetch(\`\${API_BASE}/api/v1/captains-log/\${job.id}\`, {
+// Retrieve the Report
+const report = await fetch(\`\${API_BASE}/api/v1/reports/\${job.id}\`, {
   headers,
 }).then((r) => r.json());
 
-console.log("Verdict:", captainsLog.verdict);`}</CodeBlock>
+console.log("Verdict:", report.verdict);`}</CodeBlock>
 
           <h3 className="font-semibold text-slate-900 mt-8 mb-3">
             PHP / Laravel
           </h3>
           <CodeBlock>{`use Illuminate\\Support\\Facades\\Http;
 
-$apiBase = 'https://api.nevergrounded.io';
-$headers = ['Authorization' => 'Bearer grd_your_boarding_pass'];
+$apiBase = 'https://api.lintpdf.com';
+$headers = ['Authorization' => 'Bearer lpdf_your_api_key'];
 
-// Launch a PDF
+// Submit a PDF
 $response = Http::withHeaders($headers)
     ->attach('file', file_get_contents('brochure.pdf'), 'brochure.pdf')
-    ->post("$apiBase/api/v1/launch", [
-        'voyage_plan' => 'gwg-sheetfed',
+    ->post("$apiBase/api/v1/submit", [
+        'ruleset' => 'gwg-sheetfed',
     ]);
 
 $job = $response->json();
 
-// Retrieve the Captain's Log
-$captainsLog = Http::withHeaders($headers)
-    ->get("$apiBase/api/v1/captains-log/{$job['id']}")
+// Retrieve the Report
+$report = Http::withHeaders($headers)
+    ->get("$apiBase/api/v1/reports/{$job['id']}")
     ->json();
 
-if ($captainsLog['verdict'] === 'clear-to-sail') {
-    echo "Clear to Sail!";
+if ($report['verdict'] === 'pass') {
+    echo "Pass!";
 } else {
-    echo "Aground: " . $captainsLog['summary']['aground'] . " Aground findings";
+    echo "Error: " . $report['summary']['error'] . " Error findings";
 }`}</CodeBlock>
         </section>
 
         {/* ── Glossary ── */}
         <section id="glossary" className="mb-16 scroll-mt-24">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">Glossary</h2>
-          <p className="text-slate-600 mb-6">
-            Never Grounded uses nautical terminology throughout the product.
-            Here is the complete reference.
-          </p>
+          <p className="text-slate-600 mb-6">LintPDF terminology reference.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -945,7 +928,7 @@ if ($captainsLog['verdict'] === 'clear-to-sail') {
                     Concept
                   </th>
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">
-                    Never Grounded Term
+                    LintPDF Term
                   </th>
                   <th className="text-left py-2 px-3 text-slate-500 font-medium">
                     Used In
@@ -982,7 +965,7 @@ if ($captainsLog['verdict'] === 'clear-to-sail') {
           </div>
           <p className="text-slate-500">
             33 AI inspections across 14 categories. Credit-based,
-            detection-only, same Captain&apos;s Log format.
+            detection-only, same Report format.
           </p>
         </div>
 
@@ -993,7 +976,7 @@ if ($captainsLog['verdict'] === 'clear-to-sail') {
           </h2>
           <p className="text-slate-600 mb-6">
             AI features are available as an invite-only alpha on all paid plans.
-            Four steps to your first AI-powered Captain&apos;s Log:
+            Four steps to your first AI-powered Report:
           </p>
 
           <div className="grid gap-6 md:grid-cols-2 mb-8">
@@ -1007,10 +990,10 @@ if ($captainsLog['verdict'] === 'clear-to-sail') {
               <p className="text-sm text-slate-500">
                 Email{" "}
                 <a
-                  href="mailto:sales@nevergrounded.io"
+                  href="mailto:sales@lintpdf.com"
                   className="text-brand-600 hover:underline"
                 >
-                  sales@nevergrounded.io
+                  sales@lintpdf.com
                 </a>{" "}
                 with your account ID and use case. We enable AI features
                 individually during alpha.
@@ -1026,7 +1009,7 @@ if ($captainsLog['verdict'] === 'clear-to-sail') {
               <p className="text-sm text-slate-500">
                 Buy credits via pay-per-use ($0.12/credit) or volume packages
                 starting at 100 credits for $10. Navigate to{" "}
-                <strong>Settings &gt; AI Billing</strong> in The Bridge.
+                <strong>Settings &gt; AI Billing</strong> in Dashboard.
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 p-5">
@@ -1058,26 +1041,26 @@ if ($captainsLog['verdict'] === 'clear-to-sail') {
                 <code className="bg-slate-100 px-1 rounded text-xs">
                   ai_categories
                 </code>{" "}
-                to your Launch request.
+                to your Submit request.
               </p>
             </div>
           </div>
 
           <h3 className="font-semibold text-slate-900 mb-3">Quick example</h3>
           <CodeBlock>{`# Submit a PDF with FDA AI preset
-curl -X POST https://api.nevergrounded.io/api/v1/launch \\
-  -H "Authorization: Bearer grd_your_boarding_pass" \\
+curl -X POST https://api.lintpdf.com/api/v1/submit \\
+  -H "Authorization: Bearer lpdf_your_api_key" \\
   -F file=@food-label.pdf \\
-  -F voyage_plan=packaging \\
+  -F ruleset=packaging \\
   -F ai_preset=fda-food
 
-# Captain's Log includes both core engine and AI findings
-curl https://api.nevergrounded.io/api/v1/captains-log/f47ac10b-... \\
-  -H "Authorization: Bearer grd_your_boarding_pass"
+# Report includes both core engine and AI findings
+curl https://api.lintpdf.com/api/v1/reports/f47ac10b-... \\
+  -H "Authorization: Bearer lpdf_your_api_key"
 
 # Check your credit balance
-curl https://api.nevergrounded.io/api/v1/ai/credits \\
-  -H "Authorization: Bearer grd_your_boarding_pass"`}</CodeBlock>
+curl https://api.lintpdf.com/api/v1/ai/credits \\
+  -H "Authorization: Bearer lpdf_your_api_key"`}</CodeBlock>
         </section>
 
         {/* ── AI Configuration ── */}
@@ -1086,8 +1069,8 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
             AI Configuration
           </h2>
           <p className="text-slate-600 mb-6">
-            AI features are configured at three levels: account defaults, Voyage
-            Plan settings, and per-request overrides.
+            AI features are configured at three levels: account defaults,
+            Ruleset settings, and per-request overrides.
           </p>
 
           <h3 className="font-semibold text-slate-900 mb-4">
@@ -1095,7 +1078,7 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
           </h3>
           <p className="text-slate-600 mb-4">
             In <strong>Settings &gt; AI Inspections</strong>, enable or disable
-            entire AI categories. These serve as defaults for all Launches.
+            entire AI categories. These serve as defaults for all submissions.
           </p>
 
           <div className="overflow-x-auto mb-8">
@@ -1228,7 +1211,7 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
           <p className="text-slate-600 mb-4">
             Set the minimum confidence score for AI findings in{" "}
             <strong>Settings &gt; AI Inspections</strong>. Default is 0.75. Only
-            findings above this threshold appear in your Captain&apos;s Log.
+            findings above this threshold appear in your Report.
           </p>
         </section>
 
@@ -1310,8 +1293,8 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
           <h3 className="font-semibold text-slate-900 mb-3">
             Checking Balance
           </h3>
-          <CodeBlock>{`curl https://api.nevergrounded.io/api/v1/ai/credits \\
-  -H "Authorization: Bearer grd_..."
+          <CodeBlock>{`curl https://api.lintpdf.com/api/v1/ai/credits \\
+  -H "Authorization: Bearer lpdf_..."
 
 # Response
 {
@@ -1325,8 +1308,8 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
           <h3 className="font-semibold text-slate-900 mt-8 mb-3">
             Auto Top-up
           </h3>
-          <CodeBlock>{`curl -X PUT https://api.nevergrounded.io/api/v1/ai/credits/auto-topup \\
-  -H "Authorization: Bearer grd_..." \\
+          <CodeBlock>{`curl -X PUT https://api.lintpdf.com/api/v1/ai/credits/auto-topup \\
+  -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
   -d '{
     "enabled": true,
@@ -1338,8 +1321,8 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
             <p className="text-sm text-amber-800">
               <span className="font-semibold">When credits run out:</span> AI
               inspections are skipped, not queued. Core engine checks continue
-              normally. The Captain&apos;s Log includes an advisory noting which
-              AI inspections were skipped.
+              normally. The Report includes an info note indicating which AI
+              inspections were skipped.
             </p>
           </div>
         </section>
@@ -1360,43 +1343,43 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.barcode.type_detection",
                   desc: "Identifies barcode symbology (EAN-13, UPC-A, Code 128, QR, DataMatrix)",
-                  severity: "Advisory",
+                  severity: "Info",
                   tier: "Text",
                 },
                 {
                   id: "ai.barcode.decode_verify",
                   desc: "Decodes barcode content and verifies against expected values",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Text",
                 },
                 {
                   id: "ai.barcode.quiet_zone",
                   desc: "Validates quiet zone dimensions around detected barcodes",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Text",
                 },
                 {
                   id: "ai.barcode.orientation",
                   desc: "Checks barcode orientation relative to packaging layout",
-                  severity: "Advisory",
+                  severity: "Info",
                   tier: "Text",
                 },
                 {
                   id: "ai.barcode.contrast",
                   desc: "Measures symbol contrast for scanner readability",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Text",
                 },
                 {
                   id: "ai.barcode.multiple_detect",
                   desc: "Detects and catalogues all barcodes in the document",
-                  severity: "Advisory",
+                  severity: "Info",
                   tier: "Text",
                 },
                 {
                   id: "ai.barcode.placement",
                   desc: "Validates barcode placement against safe zone requirements",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Text",
                 },
               ],
@@ -1407,19 +1390,19 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.content.spell_check",
                   desc: "AI-powered spell checking with custom dictionary support",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Text",
                 },
                 {
                   id: "ai.content.language_detect",
                   desc: "Identifies languages present in the document",
-                  severity: "Advisory",
+                  severity: "Info",
                   tier: "Text",
                 },
                 {
                   id: "ai.content.duplicate_detect",
                   desc: "Identifies duplicate or near-duplicate submissions",
-                  severity: "Advisory",
+                  severity: "Info",
                   tier: "Text",
                 },
               ],
@@ -1430,13 +1413,13 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.color.brand_palette",
                   desc: "Validates colors against uploaded brand palette definitions",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Text",
                 },
                 {
                   id: "ai.color.contrast_ratio",
                   desc: "WCAG-style contrast ratio checks for text readability",
-                  severity: "Advisory",
+                  severity: "Info",
                   tier: "Text",
                 },
               ],
@@ -1447,31 +1430,31 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.fda.nutrition_panel",
                   desc: "Detects and validates Nutrition Facts panel structure",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.fda.nutrient_order",
                   desc: "Validates nutrient ordering per 21 CFR 101.9",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.fda.font_sizes",
                   desc: "Checks minimum font size requirements (8pt body, 13pt header)",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.fda.serving_size",
                   desc: "Validates serving size declaration format and placement",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.fda.daily_value",
                   desc: "Checks Percent Daily Value column presence and formatting",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Vision",
                 },
               ],
@@ -1482,25 +1465,25 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.eu_fir.x_height",
                   desc: "Validates minimum x-height for mandatory information (1.2mm / 0.9mm)",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.eu_fir.allergen_emphasis",
                   desc: "Checks allergen typographic distinction in ingredients list",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.eu_fir.nutrition_order",
                   desc: "Validates nutritional declaration ordering per 1169/2011",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.eu_fir.mandatory_fields",
                   desc: "Checks presence of all mandatory label fields",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
               ],
@@ -1511,31 +1494,31 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.ghs.pictogram_detect",
                   desc: "Detects and identifies GHS hazard pictograms",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.ghs.pictogram_size",
                   desc: "Validates pictogram minimum size (1/15th label area, min 1 cm\u00B2)",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.ghs.signal_word",
                   desc: "Checks signal word presence and correctness",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.ghs.h_statements",
                   desc: "Validates Hazard statement presence and text",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.ghs.p_statements",
                   desc: "Checks Precautionary statement presence",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Vision",
                 },
               ],
@@ -1546,19 +1529,19 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.pharma.serialization_area",
                   desc: "Detects EU FMD 2D DataMatrix serialization area",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
                 {
                   id: "ai.pharma.braille_placeholder",
                   desc: "Validates Braille area presence on outer packaging",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Vision",
                 },
                 {
                   id: "ai.pharma.font_compliance",
                   desc: "Checks font size compliance for patient information",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
               ],
@@ -1569,13 +1552,13 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.brand.logo_match",
                   desc: "Compares detected logos against uploaded brand references",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Vision",
                 },
                 {
                   id: "ai.brand.palette_match",
                   desc: "Validates document colors against brand color definitions",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Text",
                 },
               ],
@@ -1586,13 +1569,13 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                 {
                   id: "ai.vision.image_quality",
                   desc: "AI visual quality assessment — blur, noise, upscaling detection",
-                  severity: "Squall",
+                  severity: "Warning",
                   tier: "Vision",
                 },
                 {
                   id: "ai.vision.nsfw_detect",
                   desc: "Content safety screening for inappropriate material",
-                  severity: "Aground",
+                  severity: "Error",
                   tier: "Vision",
                 },
               ],
@@ -1605,7 +1588,7 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                   <thead>
                     <tr className="border-b border-slate-200">
                       <th className="text-left py-2 px-3 text-slate-500 font-medium">
-                        Inspection ID
+                        Check ID
                       </th>
                       <th className="text-left py-2 px-3 text-slate-500 font-medium">
                         Description
@@ -1630,9 +1613,9 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
                         <td className="py-2 px-3">
                           <span
                             className={`rounded px-2 py-0.5 text-xs font-bold ${
-                              severity === "Aground"
+                              severity === "Error"
                                 ? "bg-red-500/10 text-red-600 border border-red-500/20"
-                                : severity === "Squall"
+                                : severity === "Warning"
                                   ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
                                   : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
                             }`}
@@ -1665,7 +1648,7 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
           <h2 className="text-2xl font-bold text-slate-900 mb-6">AI Presets</h2>
           <p className="text-slate-600 mb-6">
             Pre-built collections of AI inspections for common use cases. Use a
-            preset ID in your Launch request to run a curated set of AI
+            preset ID in your Submit request to run a curated set of AI
             inspections.
           </p>
 
@@ -1752,8 +1735,8 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
           <h3 className="font-semibold text-slate-900 mb-3">
             Listing Presets via API
           </h3>
-          <CodeBlock>{`curl https://api.nevergrounded.io/api/v1/ai/presets \\
-  -H "Authorization: Bearer grd_..."
+          <CodeBlock>{`curl https://api.lintpdf.com/api/v1/ai/presets \\
+  -H "Authorization: Bearer lpdf_..."
 
 # Response
 {
@@ -1776,7 +1759,7 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
             Regulatory Compliance Guide
           </h2>
           <p className="text-slate-600 mb-6">
-            Never Grounded validates packaging artwork against four regulatory
+            LintPDF validates packaging artwork against four regulatory
             frameworks. See the{" "}
             <a href="/compliance" className="text-brand-600 hover:underline">
               full compliance page
@@ -1836,31 +1819,31 @@ curl https://api.nevergrounded.io/api/v1/ai/credits \\
             AI API Reference
           </h2>
           <p className="text-slate-500 text-sm mb-8">
-            All AI endpoints require a valid Boarding Pass and AI features
-            enabled on your account.
+            All AI endpoints require a valid API Key and AI features enabled on
+            your account.
           </p>
 
           <Endpoint
             method="POST"
-            path="/api/v1/launch"
-            description="Submit a file with AI inspections. Include ai_preset or ai_categories alongside your standard Launch parameters."
+            path="/api/v1/submit"
+            description="Submit a file with AI inspections. Include ai_preset or ai_categories alongside your standard Submit parameters."
             auth
-            request={`curl -X POST https://api.nevergrounded.io/api/v1/launch \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X POST https://api.lintpdf.com/api/v1/submit \\
+  -H "Authorization: Bearer lpdf_..." \\
   -F file=@label.pdf \\
-  -F voyage_plan=packaging \\
+  -F ruleset=packaging \\
   -F ai_preset=fda-food
 
 # Or specify categories directly:
-curl -X POST https://api.nevergrounded.io/api/v1/launch \\
-  -H "Authorization: Bearer grd_..." \\
+curl -X POST https://api.lintpdf.com/api/v1/submit \\
+  -H "Authorization: Bearer lpdf_..." \\
   -F file=@label.pdf \\
-  -F voyage_plan=packaging \\
+  -F ruleset=packaging \\
   -F ai_categories=barcode,regulatory_fda,content_quality`}
             response={`{
   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "status": "underway",
-  "voyage_plan": "packaging",
+  "status": "processing",
+  "ruleset": "packaging",
   "ai_preset": "fda-food",
   "ai_inspections_requested": 12,
   "file_name": "label.pdf",
@@ -1873,8 +1856,8 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
             path="/api/v1/ai/credits"
             description="Retrieve your current AI credit balance, billing mode, and consumption statistics."
             auth
-            request={`curl https://api.nevergrounded.io/api/v1/ai/credits \\
-  -H "Authorization: Bearer grd_..."`}
+            request={`curl https://api.lintpdf.com/api/v1/ai/credits \\
+  -H "Authorization: Bearer lpdf_..."`}
             response={`{
   "balance": 4250,
   "billing_mode": "package",
@@ -1889,8 +1872,8 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
             path="/api/v1/ai/credits/topup"
             description="Purchase a credit package. Available packages: starter (1,000), growth (5,000), scale (25,000)."
             auth
-            request={`curl -X POST https://api.nevergrounded.io/api/v1/ai/credits/topup \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X POST https://api.lintpdf.com/api/v1/ai/credits/topup \\
+  -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
   -d '{"package": "starter"}'`}
             response={`{
@@ -1906,8 +1889,8 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
             path="/api/v1/ai/credits/auto-topup"
             description="Configure automatic credit top-up. When balance drops below threshold, the specified package is purchased automatically."
             auth
-            request={`curl -X PUT https://api.nevergrounded.io/api/v1/ai/credits/auto-topup \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X PUT https://api.lintpdf.com/api/v1/ai/credits/auto-topup \\
+  -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
   -d '{
     "enabled": true,
@@ -1928,8 +1911,8 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
             path="/api/v1/ai/presets"
             description="List all available AI presets with their included categories and inspection counts."
             auth
-            request={`curl https://api.nevergrounded.io/api/v1/ai/presets \\
-  -H "Authorization: Bearer grd_..."`}
+            request={`curl https://api.lintpdf.com/api/v1/ai/presets \\
+  -H "Authorization: Bearer lpdf_..."`}
             response={`{
   "presets": [
     {
@@ -1955,8 +1938,8 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
             path="/api/v1/ai/brand/palette"
             description="Configure your brand color palette for the ai.color.brand_palette inspection. Set approved colors and Delta E tolerance."
             auth
-            request={`curl -X PUT https://api.nevergrounded.io/api/v1/ai/brand/palette \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X PUT https://api.lintpdf.com/api/v1/ai/brand/palette \\
+  -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
   -d '{
     "colors": [
@@ -1984,8 +1967,8 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
             path="/api/v1/ai/brand/logos"
             description="Upload a reference logo for the ai.brand.logo_match inspection. Supports PNG, SVG, PDF, EPS."
             auth
-            request={`curl -X POST https://api.nevergrounded.io/api/v1/ai/brand/logos \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X POST https://api.lintpdf.com/api/v1/ai/brand/logos \\
+  -H "Authorization: Bearer lpdf_..." \\
   -F file=@logo-horizontal.png \\
   -F name="Horizontal Logo" \\
   -F variant="horizontal"`}
@@ -2005,11 +1988,11 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
             path="/api/v1/ai/brand/dictionary"
             description="Manage the custom dictionary for ai.content.spell_check. Use mode 'append' to add words or 'replace' to overwrite."
             auth
-            request={`curl -X PUT https://api.nevergrounded.io/api/v1/ai/brand/dictionary \\
-  -H "Authorization: Bearer grd_..." \\
+            request={`curl -X PUT https://api.lintpdf.com/api/v1/ai/brand/dictionary \\
+  -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
   -d '{
-    "words": ["NeverGrounded", "PreflightPro", "XtraShield"],
+    "words": ["LintPDF", "PreflightPro", "XtraShield"],
     "mode": "append"
   }'`}
             response={`{
@@ -2029,8 +2012,8 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
             AI Error Reference
           </h2>
           <p className="text-slate-600 mb-6">
-            AI-specific error codes that may appear in API responses or
-            Captain&apos;s Log advisories.
+            AI-specific error codes that may appear in API responses or Report
+            info notes.
           </p>
 
           <div className="overflow-x-auto">
@@ -2058,7 +2041,7 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
                   {
                     code: "ai.credits.depleted",
                     desc: "Credits ran out during processing — some inspections were skipped",
-                    fix: "Top up credits; skipped inspections noted in Captain's Log",
+                    fix: "Top up credits; skipped inspections noted in Report",
                   },
                   {
                     code: "ai.circuit_breaker.open",
@@ -2073,7 +2056,7 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
                   {
                     code: "ai.not_enabled",
                     desc: "AI features are not enabled on this account",
-                    fix: "Request access via sales@nevergrounded.io",
+                    fix: "Request access via sales@lintpdf.com",
                   },
                   {
                     code: "ai.preset.not_found",
@@ -2137,30 +2120,30 @@ curl -X POST https://api.nevergrounded.io/api/v1/launch \\
           <CodeBlock>{`import httpx
 
 client = httpx.Client(
-    base_url="https://api.nevergrounded.io",
-    headers={"Authorization": "Bearer grd_your_boarding_pass"},
+    base_url="https://api.lintpdf.com",
+    headers={"Authorization": "Bearer lpdf_your_api_key"},
 )
 
-# Launch with FDA AI preset
+# Submit with FDA AI preset
 with open("nutrition-label.pdf", "rb") as f:
     resp = client.post(
-        "/api/v1/launch",
+        "/api/v1/submit",
         files={"file": f},
         data={
-            "voyage_plan": "packaging",
+            "ruleset": "packaging",
             "ai_preset": "fda-food",
         },
     )
     job = resp.json()
 
-print(f"Launch ID: {job['id']}")
+print(f"Job ID: {job['id']}")
 
-# Retrieve Captain's Log
-captains_log = client.get(f"/api/v1/captains-log/{job['id']}").json()
+# Retrieve Report
+report = client.get(f"/api/v1/reports/{job['id']}").json()
 
 # Separate core and AI findings
-engine_findings = [f for f in captains_log["findings"] if f.get("source") != "ai"]
-ai_findings = [f for f in captains_log["findings"] if f.get("source") == "ai"]
+engine_findings = [f for f in report["findings"] if f.get("source") != "ai"]
+ai_findings = [f for f in report["findings"] if f.get("source") == "ai"]
 
 print(f"Core engine: {len(engine_findings)} findings")
 print(f"AI: {len(ai_findings)} findings")
@@ -2175,8 +2158,8 @@ for finding in ai_findings:
           </h3>
           <CodeBlock>{`import fs from "node:fs";
 
-const API_BASE = "https://api.nevergrounded.io";
-const headers = { Authorization: "Bearer grd_your_boarding_pass" };
+const API_BASE = "https://api.lintpdf.com";
+const headers = { Authorization: "Bearer lpdf_your_api_key" };
 
 // Check credit balance first
 const credits = await fetch(\`\${API_BASE}/api/v1/ai/credits\`, { headers })
@@ -2188,27 +2171,27 @@ if (credits.balance < 20) {
   console.warn("Low credit balance — consider topping up");
 }
 
-// Launch with GHS preset
+// Submit with GHS preset
 const form = new FormData();
 form.append("file", new Blob([fs.readFileSync("chemical-label.pdf")]));
-form.append("voyage_plan", "packaging");
+form.append("ruleset", "packaging");
 form.append("ai_preset", "ghs-chemical");
 
-const job = await fetch(\`\${API_BASE}/api/v1/launch\`, {
+const job = await fetch(\`\${API_BASE}/api/v1/submit\`, {
   method: "POST",
   headers,
   body: form,
 }).then((r) => r.json());
 
-console.log("Launch:", job.id, "AI inspections:", job.ai_inspections_requested);
+console.log("Job:", job.id, "AI inspections:", job.ai_inspections_requested);
 
-// Retrieve Captain's Log
-const captainsLog = await fetch(\`\${API_BASE}/api/v1/captains-log/\${job.id}\`, {
+// Retrieve Report
+const report = await fetch(\`\${API_BASE}/api/v1/reports/\${job.id}\`, {
   headers,
 }).then((r) => r.json());
 
 // Filter by regulatory findings
-const ghsFindings = captainsLog.findings.filter(
+const ghsFindings = report.findings.filter(
   (f) => f.category === "regulatory.ghs"
 );
 
@@ -2220,26 +2203,26 @@ ghsFindings.forEach((f) => console.log(\`  [\${f.severity}] \${f.message}\`));`}
           </h3>
           <CodeBlock>{`use Illuminate\\Support\\Facades\\Http;
 
-$apiBase = 'https://api.nevergrounded.io';
-$headers = ['Authorization' => 'Bearer grd_your_boarding_pass'];
+$apiBase = 'https://api.lintpdf.com';
+$headers = ['Authorization' => 'Bearer lpdf_your_api_key'];
 
-// Launch with brand compliance preset
+// Submit with brand compliance preset
 $response = Http::withHeaders($headers)
     ->attach('file', file_get_contents('packaging-artwork.pdf'), 'packaging-artwork.pdf')
-    ->post("$apiBase/api/v1/launch", [
-        'voyage_plan' => 'packaging',
+    ->post("$apiBase/api/v1/submit", [
+        'ruleset' => 'packaging',
         'ai_preset' => 'brand-compliance',
     ]);
 
 $job = $response->json();
 
-// Retrieve Captain's Log
-$captainsLog = Http::withHeaders($headers)
-    ->get("$apiBase/api/v1/captains-log/{$job['id']}")
+// Retrieve Report
+$report = Http::withHeaders($headers)
+    ->get("$apiBase/api/v1/reports/{$job['id']}")
     ->json();
 
 // Filter AI findings by brand category
-$brandFindings = collect($captainsLog['findings'])
+$brandFindings = collect($report['findings'])
     ->filter(fn($f) => str_starts_with($f['category'] ?? '', 'brand'))
     ->values();
 

@@ -3,7 +3,7 @@ title: Architecture
 tags: [architecture, layers, dependencies]
 ---
 
-# Grounded Architecture
+# LintPDF Architecture
 
 ## Layer Structure
 

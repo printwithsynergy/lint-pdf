@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!post) return {};
 
   return {
-    title: `${post.title} — Never Grounded Blog`,
+    title: `${post.title} — LintPDF Blog`,
     description: post.excerpt,
     openGraph: {
       title: post.title,
@@ -85,7 +85,7 @@ export default async function BlogPostPage({ params }: Props) {
         <div
           className="prose prose-slate max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-relaxed prose-p:text-slate-600 prose-a:text-brand-600 prose-a:no-underline hover:prose-a:underline prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-brand-950 prose-pre:border prose-pre:border-slate-200 prose-pre:rounded-lg prose-li:text-slate-600 prose-strong:text-slate-800"
           // nosemgrep: react-dangerouslysetinnerhtml -- content is sanitized via rehype-sanitize in lib/blog.ts
-          dangerouslySetInnerHTML={{ __html: post.htmlContent ?? "" }} // skipcq: JS-0440
+          dangerouslySetInnerHTML={{ __html: post.htmlContent ?? "" }}
         />
 
         {post.tags.length > 0 && (

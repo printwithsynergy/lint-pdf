@@ -1,5 +1,7 @@
-# ATLAS-CONTEXT.md — Grounded
+# ATLAS-CONTEXT.md — LintPDF
+
 # Project-specific knowledge for Atlas and Cyrus.
+
 # Updated by post-merge GitHub Action and Atlas design sessions.
 
 ## Architecture
@@ -46,11 +48,11 @@ src/
 │   └── gwg/                   # GWG-specific rule compositions
 │       └── gwg_rules.py
 │
-├── profiles/                  # Layer 4b: Flight Plans
-│   ├── loader.py              # FlightPlanLoader (JSON → Profile)
+├── profiles/                  # Layer 4b: Rulesets
+│   ├── loader.py              # RulesetLoader (JSON → Profile)
 │   ├── registry.py            # ProfileRegistry
-│   ├── schema.py              # Flight Plan JSON schema validation
-│   └── builtin/               # Built-in Flight Plan JSON files
+│   ├── schema.py              # Ruleset JSON schema validation
+│   └── builtin/               # Built-in Ruleset JSON files
 │       ├── pdfx4-standard.json
 │       ├── gwg-2022-sheetcmyk-cmyk.json
 │       ├── gwg-2022-webcmyk-cmyk.json
@@ -58,17 +60,17 @@ src/
 │
 ├── reports/                   # Layer 5: Output generation
 │   ├── generator.py           # ReportGenerator
-│   ├── json_report.py         # JSON Flight Log output
-│   ├── xml_report.py          # XML Flight Log output
-│   ├── pdf_report.py          # PDF Flight Log (WeasyPrint + Jinja2)
+│   ├── json_report.py         # JSON Report output
+│   ├── xml_report.py          # XML Report output
+│   ├── pdf_report.py          # PDF Report (WeasyPrint + Jinja2)
 │   └── templates/             # Jinja2 templates
 │
 ├── api/                       # Layer 6: HTTP interface
 │   ├── app.py                 # FastAPI app factory
 │   ├── routes/
 │   │   ├── checkin.py         # POST /api/v1/check-in
-│   │   ├── flight_log.py      # GET /api/v1/flight-log/{id}
-│   │   ├── profiles.py        # GET/POST /api/v1/flight-plans
+│   │   ├── report.py           # GET /api/v1/report/{id}
+│   │   ├── profiles.py        # GET/POST /api/v1/rulesets
 │   │   └── health.py          # GET /health
 │   ├── auth.py                # API key authentication
 │   ├── rate_limit.py          # Rate limiting middleware
@@ -101,36 +103,39 @@ src/
 
 **Rule functions:** Pure Python functions decorated with `@rule(analyzer=..., name=...)`. Receive analyzer output, return `List[Finding]`. Stateless, deterministic, no side effects. ISO clause reference required in metadata.
 
-**Flight Plans (profiles):** JSON files composing rules with severity overrides and thresholds. Profiles can extend base profiles. GWG 2022 has 23 variants — each is a Flight Plan JSON file with parameterized thresholds (TAC limits, resolution minimums, color binding mode).
+**Rulesets (profiles):** JSON files composing rules with severity overrides and thresholds. Profiles can extend base profiles. GWG 2022 has 23 variants — each is a Ruleset JSON file with parameterized thresholds (TAC limits, resolution minimums, color binding mode).
 
-**Finding severity:** Three levels only — no-fly (spec violation), delay (warning), advisory (informational). Default from rule; Flight Plan can override.
+**Finding severity:** Three levels only — no-fly (spec violation), delay (warning), advisory (informational). Default from rule; Ruleset can override.
 
-**Async processing:** POST /api/v1/check-in returns 202 + job_id. Celery worker processes in background. Client polls GET /api/v1/flight-log/{id} or registers webhook_url for push notification.
+**Async processing:** POST /api/v1/check-in returns 202 + job_id. Celery worker processes in background. Client polls GET /api/v1/report/{id} or registers webhook_url for push notification.
 
-**Multi-tenancy:** All database queries scoped by tenant_id. Tenant resolved from API key in middleware. Tenants can upload custom Flight Plans but NOT custom rule code (security boundary).
+**Multi-tenancy:** All database queries scoped by tenant_id. Tenant resolved from API key in middleware. Tenants can upload custom Rulesets but NOT custom rule code (security boundary).
 
-**veraPDF delegation:** PDF/A validation delegated to veraPDF running as sidecar Docker container. REST API on port 8080. Grounded calls POST /api/validate with PDF bytes + profile name, parses machine-readable XML response, maps to Finding objects.
+**veraPDF delegation:** PDF/A validation delegated to veraPDF running as sidecar Docker container. REST API on port 8080. LintPDF calls POST /api/validate with PDF bytes + profile name, parses machine-readable XML response, maps to Finding objects.
 
 ## Design tokens
 
 ### Inspection ID format
+
 `GRD_{CATEGORY}_{NNN}` — e.g., GRD_FONT_001, GRD_IMG_003, GRD_GWG_BASE_001
 
 Categories: FONT, IMG, COLOR, BOX, TRANS, OVER, COMP, STRUCT, GWG
 
 ### API status values
-| Status | Meaning |
-|--------|---------|
-| queued | Job accepted, waiting for worker |
-| taxiing | Worker processing |
-| arrived | Processing complete |
+
+| Status  | Meaning                          |
+| ------- | -------------------------------- |
+| queued  | Job accepted, waiting for worker |
+| taxiing | Worker processing                |
+| arrived | Processing complete              |
 
 ### Report verdict
-| Verdict | Meaning |
-|---------|---------|
-| clear-to-fly | Zero no-fly findings |
-| grounded | One or more no-fly findings |
-| delay | Zero no-fly, one or more delay findings |
+
+| Verdict      | Meaning                                 |
+| ------------ | --------------------------------------- |
+| clear-to-fly | Zero no-fly findings                    |
+| grounded     | One or more no-fly findings             |
+| delay        | Zero no-fly, one or more delay findings |
 
 ## Known constraints
 
@@ -139,7 +144,7 @@ Categories: FONT, IMG, COLOR, BOX, TRANS, OVER, COMP, STRUCT, GWG
 - Content stream interpreter is CPU-bound — Celery worker concurrency limited by CPU cores
 - 500MB file size limit (Railway memory constraint)
 - PostgreSQL JSONB for findings storage — indexed on inspection_id and severity
-- Flight Plan JSON schema must be backward-compatible across versions
+- Ruleset JSON schema must be backward-compatible across versions
 - Never import from api/, queue/, or tenants/ inside rules/ — rules must be pure
 - Never modify input PDF bytes — detection-only philosophy is non-negotiable
 

@@ -13,7 +13,6 @@ Tests cover:
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import io
 
 import pikepdf
@@ -133,23 +132,27 @@ def pdf_with_content() -> bytes:
 class TestOpen:
     """Test PikePDFAdapter.open()."""
 
-    def test_open_valid_pdf(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_open_valid_pdf(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         assert isinstance(doc, PdfDocument)
         assert doc.page_count == 1
         assert doc.is_encrypted is False
         assert doc.version  # Non-empty version string
 
-    def test_open_multi_page(self, adapter: PikePDFAdapter, multi_page_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_open_multi_page(adapter: PikePDFAdapter, multi_page_pdf_bytes: bytes) -> None:
         doc = adapter.open(multi_page_pdf_bytes)
         assert doc.page_count == 3
         assert len(doc.pages) == 3
 
-    def test_open_invalid_bytes_raises_structure_error(self, adapter: PikePDFAdapter) -> None:
+    @staticmethod
+    def test_open_invalid_bytes_raises_structure_error(adapter: PikePDFAdapter) -> None:
         with pytest.raises(PDFStructureError, match="Failed to open PDF"):
             adapter.open(b"not a pdf at all")
 
-    def test_open_empty_bytes_raises_structure_error(self, adapter: PikePDFAdapter) -> None:
+    @staticmethod
+    def test_open_empty_bytes_raises_structure_error(adapter: PikePDFAdapter) -> None:
         with pytest.raises(PDFStructureError):
             adapter.open(b"")
 
@@ -160,16 +163,19 @@ class TestOpen:
         with pytest.raises(PDFStructureError):
             adapter.open(truncated)
 
-    def test_version_extracted(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_version_extracted(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         # pikepdf creates PDFs as version 1.x or 2.x
         assert doc.version.startswith(("1.", "2."))
 
-    def test_catalog_populated(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_catalog_populated(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         assert isinstance(doc.catalog, dict)
 
-    def test_trailer_populated(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_trailer_populated(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         assert isinstance(doc.trailer, dict)
 
@@ -188,13 +194,15 @@ class TestPageExtraction:
         assert doc.pages[1].page_num == 2
         assert doc.pages[2].page_num == 3
 
-    def test_media_box_extracted(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_media_box_extracted(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         page = doc.pages[0]
         assert page.media_box is not None
         assert page.media_box == (0.0, 0.0, 612.0, 792.0)
 
-    def test_optional_boxes(self, adapter: PikePDFAdapter, multi_page_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_optional_boxes(adapter: PikePDFAdapter, multi_page_pdf_bytes: bytes) -> None:
         doc = adapter.open(multi_page_pdf_bytes)
 
         # Page 1: only MediaBox
@@ -207,18 +215,21 @@ class TestPageExtraction:
         assert doc.pages[1].bleed_box is not None
         assert doc.pages[1].trim_box == (20.0, 20.0, 592.0, 772.0)
 
-    def test_rotation_extracted(self, adapter: PikePDFAdapter, multi_page_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_rotation_extracted(adapter: PikePDFAdapter, multi_page_pdf_bytes: bytes) -> None:
         doc = adapter.open(multi_page_pdf_bytes)
         assert doc.pages[0].rotate == 0
         assert doc.pages[2].rotate == 90
 
-    def test_get_page_by_number(self, adapter: PikePDFAdapter, multi_page_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_get_page_by_number(adapter: PikePDFAdapter, multi_page_pdf_bytes: bytes) -> None:
         doc = adapter.open(multi_page_pdf_bytes)
         page2 = adapter.get_page(doc, 2)
         assert page2.page_num == 2
         assert page2.trim_box is not None
 
-    def test_get_page_out_of_range(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_get_page_out_of_range(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         with pytest.raises(IndexError, match="out of range"):
             adapter.get_page(doc, 0)
@@ -232,7 +243,8 @@ class TestPageExtraction:
 class TestContentStream:
     """Test content stream extraction."""
 
-    def test_blank_page_returns_empty(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_blank_page_returns_empty(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         content = adapter.get_content_stream(doc.pages[0])
         # Blank page may have empty or minimal content
@@ -293,7 +305,8 @@ class TestResources:
         assert isinstance(resources, dict)
         assert "/Font" in resources
 
-    def test_resources_from_blank_page(self, adapter: PikePDFAdapter) -> None:
+    @staticmethod
+    def test_resources_from_blank_page(adapter: PikePDFAdapter) -> None:
         # Create a page with no resources
         pdf = pikepdf.Pdf.new()
         page = pikepdf.Page(
@@ -317,17 +330,20 @@ class TestResources:
 class TestObjectResolution:
     """Test object retrieval and reference resolution."""
 
-    def test_get_page_tree(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_get_page_tree(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         page_tree = adapter.get_page_tree(doc)
         assert isinstance(page_tree, dict)
 
-    def test_get_catalog(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_get_catalog(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         catalog = adapter.get_catalog(doc)
         assert isinstance(catalog, dict)
 
-    def test_get_page_parent_chain(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_get_page_parent_chain(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         doc = adapter.open(real_pdf_bytes)
         chain = adapter.get_page_parent_chain(doc.pages[0])
         assert isinstance(chain, list)
@@ -341,7 +357,8 @@ class TestObjectResolution:
 class TestErrorHandling:
     """Test error paths and graceful failures."""
 
-    def test_ensure_open_raises_without_open(self) -> None:
+    @staticmethod
+    def test_ensure_open_raises_without_open() -> None:
         adapter = PikePDFAdapter()
         with pytest.raises(PDFParseError, match="No PDF is currently open"):
             adapter._ensure_open()
@@ -363,13 +380,15 @@ class TestErrorHandling:
         with pytest.raises(PDFObjectNotFoundError, match="Cannot parse"):
             adapter.resolve_reference(doc, "not_a_ref")
 
-    def test_close_releases_resources(self, adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_close_releases_resources(adapter: PikePDFAdapter, real_pdf_bytes: bytes) -> None:
         adapter.open(real_pdf_bytes)
         adapter.close()
         assert adapter._pdf is None
         assert adapter._pdf_bytes is None
 
-    def test_close_idempotent(self, adapter: PikePDFAdapter) -> None:
+    @staticmethod
+    def test_close_idempotent(adapter: PikePDFAdapter) -> None:
         adapter.close()  # Should not raise
         adapter.close()  # Still should not raise
 
@@ -380,7 +399,8 @@ class TestErrorHandling:
 class TestIntegration:
     """Integration tests covering full open → extract → close flow."""
 
-    def test_full_flow_single_page(self, adapter: PikePDFAdapter, pdf_with_content: bytes) -> None:
+    @staticmethod
+    def test_full_flow_single_page(adapter: PikePDFAdapter, pdf_with_content: bytes) -> None:
         """Open PDF → extract pages → get content → get resources → parse → close."""
         # Open
         doc = adapter.open(pdf_with_content)

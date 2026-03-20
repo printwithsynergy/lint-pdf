@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import Any
 
 from grounded.analyzers.finding import Severity
@@ -25,7 +24,8 @@ def _doc(font_resources: dict[str, Any] | None = None) -> SemanticDocument:
 
 
 class TestFontEmbedding:
-    def test_not_embedded_aground(self) -> None:
+    @staticmethod
+    def test_not_embedded_aground() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "TrueType",
@@ -38,7 +38,8 @@ class TestFontEmbedding:
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_embedded_ok(self) -> None:
+    @staticmethod
+    def test_embedded_ok() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "TrueType",
@@ -49,7 +50,8 @@ class TestFontEmbedding:
         f = validate_fonts(_doc(fonts))
         assert not [x for x in f if x.inspection_id == "PDFX4-036"]
 
-    def test_cid_font_not_embedded(self) -> None:
+    @staticmethod
+    def test_cid_font_not_embedded() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "Type0",
@@ -68,7 +70,8 @@ class TestFontEmbedding:
 
 
 class TestTrueTypeEmbedding:
-    def test_truetype_missing_fontfile2(self) -> None:
+    @staticmethod
+    def test_truetype_missing_fontfile2() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "TrueType",
@@ -80,7 +83,8 @@ class TestTrueTypeEmbedding:
         ids = [x for x in f if x.inspection_id == "PDFX4-037"]
         assert len(ids) == 1
 
-    def test_truetype_fontfile3_opentype_ok(self) -> None:
+    @staticmethod
+    def test_truetype_fontfile3_opentype_ok() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "TrueType",
@@ -93,14 +97,16 @@ class TestTrueTypeEmbedding:
 
 
 class TestType3Font:
-    def test_type3_no_charprocs(self) -> None:
+    @staticmethod
+    def test_type3_no_charprocs() -> None:
         fonts = {"/F1": {"/Subtype": "Type3", "/BaseFont": "Custom"}}
         f = validate_fonts(_doc(fonts))
         ids = [x for x in f if x.inspection_id == "PDFX4-038"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_type3_with_charprocs_ok(self) -> None:
+    @staticmethod
+    def test_type3_with_charprocs_ok() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "Type3",
@@ -113,7 +119,8 @@ class TestType3Font:
 
 
 class TestCIDToGIDMap:
-    def test_missing_cidtogidmap(self) -> None:
+    @staticmethod
+    def test_missing_cidtogidmap() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "Type0",
@@ -131,7 +138,8 @@ class TestCIDToGIDMap:
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_cidtogidmap_present_ok(self) -> None:
+    @staticmethod
+    def test_cidtogidmap_present_ok() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "Type0",
@@ -150,7 +158,8 @@ class TestCIDToGIDMap:
 
 
 class TestExternalRef:
-    def test_external_font_ref(self) -> None:
+    @staticmethod
+    def test_external_font_ref() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "Type1",
@@ -165,14 +174,16 @@ class TestExternalRef:
 
 
 class TestMissingDescriptor:
-    def test_no_descriptor_squall(self) -> None:
+    @staticmethod
+    def test_no_descriptor_squall() -> None:
         fonts = {"/F1": {"/Subtype": "Type1", "/BaseFont": "Helvetica"}}
         f = validate_fonts(_doc(fonts))
         ids = [x for x in f if x.inspection_id == "PDFX4-041"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_type3_no_descriptor_ok(self) -> None:
+    @staticmethod
+    def test_type3_no_descriptor_ok() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "Type3",
@@ -185,7 +196,8 @@ class TestMissingDescriptor:
 
 
 class TestEmptyFontProgram:
-    def test_empty_font_program_aground(self) -> None:
+    @staticmethod
+    def test_empty_font_program_aground() -> None:
         fonts = {
             "/F1": {
                 "/Subtype": "Type1",

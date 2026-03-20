@@ -9,9 +9,9 @@ describe("GroundedClient", () => {
 
   beforeEach(() => {
     client = new GroundedClient({
-      apiUrl: "https://api.grounded.dev",
+      apiUrl: "https://api.lintpdf.com",
       webhookSecret: "test-secret-long-enough",
-      apiKey: "grd_test",
+      apiKey: "lpdf_test",
     });
     mockFetch.mockReset();
   });
@@ -23,20 +23,23 @@ describe("GroundedClient", () => {
     const result = await client.getJob("abc");
     expect(result).toEqual(job);
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://api.grounded.dev/api/v1/jobs/abc",
+      "https://api.lintpdf.com/api/v1/jobs/abc",
       expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: "Bearer grd_test" }),
+        headers: expect.objectContaining({ Authorization: "Bearer lpdf_test" }),
       }),
     );
   });
 
   it("listJobs sends pagination params", async () => {
     const list = { jobs: [], total: 0, page: 2, page_size: 10 };
-    mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve(list) });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(list),
+    });
 
     await client.listJobs(2, 10);
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://api.grounded.dev/api/v1/jobs?page=2&page_size=10",
+      "https://api.lintpdf.com/api/v1/jobs?page=2&page_size=10",
       expect.anything(),
     );
   });
@@ -46,25 +49,28 @@ describe("GroundedClient", () => {
 
     await client.deleteJob("abc");
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://api.grounded.dev/api/v1/jobs/abc",
+      "https://api.lintpdf.com/api/v1/jobs/abc",
       expect.objectContaining({ method: "DELETE" }),
     );
   });
 
   it("listProfiles calls correct endpoint", async () => {
     const profiles = { profiles: [] };
-    mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve(profiles) });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(profiles),
+    });
 
     const result = await client.listProfiles();
     expect(result).toEqual(profiles);
     expect(mockFetch).toHaveBeenCalledWith(
-      "https://api.grounded.dev/api/v1/profiles",
+      "https://api.lintpdf.com/api/v1/profiles",
       expect.anything(),
     );
   });
 
   it("throws on non-ok response", async () => {
     mockFetch.mockResolvedValue({ ok: false, status: 500 });
-    await expect(client.getJob("abc")).rejects.toThrow("Grounded API: 500");
+    await expect(client.getJob("abc")).rejects.toThrow("LintPDF API: 500");
   });
 });

@@ -132,7 +132,7 @@ def _do_seed(db: Session) -> dict[str, Any]:
             plan=plan,
             rate_limit_daily=limits.get("rate_limit_daily", 10),
             max_file_size_mb=limits.get("max_file_size_mb", 25),
-            contact_email=f"test-{plan.value}@nevergrounded.io",
+            contact_email=f"test-{plan.value}@lintpdf.com",
             is_active=True,
         )
         db.add(tenant)

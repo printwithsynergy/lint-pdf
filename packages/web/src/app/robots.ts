@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://nevergrounded.io/sitemap.xml",
+    sitemap: "https://lintpdf.com/sitemap.xml",
   };
 }

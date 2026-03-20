@@ -126,4 +126,4 @@ def test_api_app_creates() -> None:
     from grounded.api.app import create_app
 
     app = create_app()
-    assert app.title == "Grounded"
+    assert app.title == "LintPDF"

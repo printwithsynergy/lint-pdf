@@ -1,4 +1,4 @@
-"""SQLAlchemy database models for Grounded API."""
+"""SQLAlchemy database models for LintPDF API."""
 
 from __future__ import annotations
 

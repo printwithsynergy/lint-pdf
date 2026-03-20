@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
@@ -112,22 +111,26 @@ def _seed_report_token(
 
 
 class TestGenerateReportsRoute:
-    def test_invalid_job_id_format(self, client: TestClient) -> None:
+    @staticmethod
+    def test_invalid_job_id_format(client: TestClient) -> None:
         resp = client.post("/api/v1/jobs/bad-uuid/reports")
         assert resp.status_code == 422
 
-    def test_job_not_found(self, client: TestClient) -> None:
+    @staticmethod
+    def test_job_not_found(client: TestClient) -> None:
         fake = str(uuid.uuid4())
         resp = client.post(f"/api/v1/jobs/{fake}/reports")
         assert resp.status_code == 404
 
-    def test_job_not_completed_409(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_job_not_completed_409(client: TestClient, db_session: Session) -> None:
         job = _seed_pending_job(db_session)
         resp = client.post(f"/api/v1/jobs/{job.id}/reports")
         assert resp.status_code == 409
         assert "not completed" in resp.json()["detail"].lower()
 
-    def test_generate_success(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_generate_success(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         mock_result = MagicMock()
         mock_result.reports = [
@@ -163,16 +166,19 @@ class TestGenerateReportsRoute:
 
 
 class TestListReportsRoute:
-    def test_invalid_job_id(self, client: TestClient) -> None:
+    @staticmethod
+    def test_invalid_job_id(client: TestClient) -> None:
         resp = client.get("/api/v1/jobs/not-uuid/reports")
         assert resp.status_code == 422
 
-    def test_empty_list(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_empty_list(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         data = client.get(f"/api/v1/jobs/{job.id}/reports").json()
         assert data["reports"] == []
 
-    def test_lists_tokens(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_lists_tokens(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         _seed_report_token(db_session, job.id, fmt="html", token="tok_html")
         _seed_report_token(db_session, job.id, fmt="pdf", token="tok_pdf")
@@ -182,7 +188,8 @@ class TestListReportsRoute:
         assert "tok_html" in tokens
         assert "tok_pdf" in tokens
 
-    def test_report_fields(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_report_fields(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         _seed_report_token(db_session, job.id, fmt="html", token="tok_fields")
         report = client.get(f"/api/v1/jobs/{job.id}/reports").json()["reports"][0]
@@ -198,7 +205,8 @@ class TestListReportsRoute:
 
 
 class TestRevokeReportRoute:
-    def test_revoke_success(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_revoke_success(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         _seed_report_token(db_session, job.id, token="tok_revoke")
         resp = client.delete(f"/api/v1/jobs/{job.id}/reports/tok_revoke")
@@ -206,7 +214,8 @@ class TestRevokeReportRoute:
         # Token should be gone
         assert db_session.query(ReportToken).filter_by(token="tok_revoke").first() is None
 
-    def test_revoke_not_found(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_revoke_not_found(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         resp = client.delete(f"/api/v1/jobs/{job.id}/reports/no-such-token")
         assert resp.status_code == 404
@@ -218,11 +227,13 @@ class TestRevokeReportRoute:
 
 
 class TestServeHtmlReportRoute:
-    def test_not_found(self, client: TestClient) -> None:
+    @staticmethod
+    def test_not_found(client: TestClient) -> None:
         resp = client.get("/r/nonexistent-token")
         assert resp.status_code == 404
 
-    def test_expired_report_410(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_expired_report_410(client: TestClient, db_session: Session) -> None:
         """Expired tokens should return 410 Gone.
 
         SQLite strips timezone info, so we monkeypatch datetime.now in the
@@ -255,7 +266,8 @@ class TestServeHtmlReportRoute:
         resp = client.get("/r/tok_pdf_only")
         assert resp.status_code == 404
 
-    def test_serve_html_success(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_serve_html_success(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         # Use no_expiry=True to avoid timezone comparison issues on SQLite
         _seed_report_token(db_session, job.id, fmt="html", token="tok_html_ok", no_expiry=True)
@@ -270,7 +282,8 @@ class TestServeHtmlReportRoute:
         assert resp.status_code == 200
         assert b"<html>Report</html>" in resp.content
 
-    def test_increments_access_count(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_increments_access_count(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         _seed_report_token(db_session, job.id, fmt="html", token="tok_count", no_expiry=True)
         from grounded.api.storage import get_storage
@@ -300,7 +313,8 @@ class TestServePdfReportRoute:
     expected behavior via the HTML route's format checking.
     """
 
-    def test_not_found(self, client: TestClient) -> None:
+    @staticmethod
+    def test_not_found(client: TestClient) -> None:
         resp = client.get("/r/nonexistent.pdf")
         assert resp.status_code == 404
 

@@ -1,1 +1,1 @@
-"""AI-powered preflight features for Never Grounded."""
+"""AI-powered preflight features for LintPDF."""

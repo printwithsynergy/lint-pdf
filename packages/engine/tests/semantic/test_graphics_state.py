@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import math
 
 from grounded.semantic.graphics_state import GraphicsState, TransformationMatrix
@@ -13,21 +12,25 @@ from grounded.semantic.graphics_state import GraphicsState, TransformationMatrix
 class TestTransformationMatrix:
     """Test matrix operations per ISO 32000-2 §8.3.4."""
 
-    def test_identity(self) -> None:
+    @staticmethod
+    def test_identity() -> None:
         m = TransformationMatrix()
         assert m.is_identity() is True
         assert m.a == 1.0
         assert m.d == 1.0
 
-    def test_identity_factory(self) -> None:
+    @staticmethod
+    def test_identity_factory() -> None:
         m = TransformationMatrix.identity()
         assert m.is_identity() is True
 
-    def test_non_identity(self) -> None:
+    @staticmethod
+    def test_non_identity() -> None:
         m = TransformationMatrix(a=2.0, d=2.0)
         assert m.is_identity() is False
 
-    def test_multiply_identity(self) -> None:
+    @staticmethod
+    def test_multiply_identity() -> None:
         """Identity x any = any."""
         m = TransformationMatrix(a=2, b=0, c=0, d=3, e=100, f=200)
         result = TransformationMatrix.identity().multiply(m)
@@ -36,7 +39,8 @@ class TestTransformationMatrix:
         assert result.e == 100.0
         assert result.f == 200.0
 
-    def test_multiply_any_by_identity(self) -> None:
+    @staticmethod
+    def test_multiply_any_by_identity() -> None:
         """Any x identity = any."""
         m = TransformationMatrix(a=2, b=0, c=0, d=3, e=100, f=200)
         result = m.multiply(TransformationMatrix.identity())
@@ -45,7 +49,8 @@ class TestTransformationMatrix:
         assert result.e == 100.0
         assert result.f == 200.0
 
-    def test_multiply_scale(self) -> None:
+    @staticmethod
+    def test_multiply_scale() -> None:
         """Scale(2,3) x Scale(4,5) = Scale(8,15)."""
         s1 = TransformationMatrix.scaling(2, 3)
         s2 = TransformationMatrix.scaling(4, 5)
@@ -55,7 +60,8 @@ class TestTransformationMatrix:
         assert result.e == 0.0
         assert result.f == 0.0
 
-    def test_multiply_translation(self) -> None:
+    @staticmethod
+    def test_multiply_translation() -> None:
         """Translation(10,20) x Translation(30,40) = Translation(40,60)."""
         t1 = TransformationMatrix.translation(10, 20)
         t2 = TransformationMatrix.translation(30, 40)
@@ -65,7 +71,8 @@ class TestTransformationMatrix:
         assert result.a == 1.0
         assert result.d == 1.0
 
-    def test_multiply_scale_then_translate(self) -> None:
+    @staticmethod
+    def test_multiply_scale_then_translate() -> None:
         """Scale(2,2) x Translate(10,20) should translate by 10,20 in scaled space."""
         scale = TransformationMatrix.scaling(2, 2)
         translate = TransformationMatrix.translation(10, 20)
@@ -78,26 +85,30 @@ class TestTransformationMatrix:
         assert result.e == 10.0
         assert result.f == 20.0
 
-    def test_extract_scale_identity(self) -> None:
+    @staticmethod
+    def test_extract_scale_identity() -> None:
         m = TransformationMatrix()
         sx, sy = m.extract_scale()
         assert sx == 1.0
         assert sy == 1.0
 
-    def test_extract_scale_known(self) -> None:
+    @staticmethod
+    def test_extract_scale_known() -> None:
         m = TransformationMatrix(a=3, b=0, c=0, d=4, e=0, f=0)
         sx, sy = m.extract_scale()
         assert sx == 3.0
         assert sy == 4.0
 
-    def test_extract_scale_rotation(self) -> None:
+    @staticmethod
+    def test_extract_scale_rotation() -> None:
         """90-degree rotation should have scale factors ≈ 1.0."""
         m = TransformationMatrix.rotation(90)
         sx, sy = m.extract_scale()
         assert abs(sx - 1.0) < 1e-10
         assert abs(sy - 1.0) < 1e-10
 
-    def test_extract_scale_scaled_rotation(self) -> None:
+    @staticmethod
+    def test_extract_scale_scaled_rotation() -> None:
         """Rotation x Scale(2,3) should extract sx~2, sy~3."""
         rot = TransformationMatrix.rotation(45)
         scale = TransformationMatrix.scaling(2, 3)
@@ -106,41 +117,48 @@ class TestTransformationMatrix:
         assert abs(sx - 2.0) < 1e-10
         assert abs(sy - 3.0) < 1e-10
 
-    def test_transform_point_identity(self) -> None:
+    @staticmethod
+    def test_transform_point_identity() -> None:
         m = TransformationMatrix()
         x, y = m.transform_point(100, 200)
         assert x == 100.0
         assert y == 200.0
 
-    def test_transform_point_translation(self) -> None:
+    @staticmethod
+    def test_transform_point_translation() -> None:
         m = TransformationMatrix.translation(50, 100)
         x, y = m.transform_point(10, 20)
         assert x == 60.0
         assert y == 120.0
 
-    def test_transform_point_scaling(self) -> None:
+    @staticmethod
+    def test_transform_point_scaling() -> None:
         m = TransformationMatrix.scaling(2, 3)
         x, y = m.transform_point(10, 20)
         assert x == 20.0
         assert y == 60.0
 
-    def test_transform_point_rotation_90(self) -> None:
+    @staticmethod
+    def test_transform_point_rotation_90() -> None:
         """Rotating (1, 0) by 90° should give approximately (0, 1)."""
         m = TransformationMatrix.rotation(90)
         x, y = m.transform_point(1, 0)
         assert abs(x - 0.0) < 1e-10
         assert abs(y - 1.0) < 1e-10
 
-    def test_rotation_factory(self) -> None:
+    @staticmethod
+    def test_rotation_factory() -> None:
         m = TransformationMatrix.rotation(0)
         assert m.is_identity()
 
-    def test_rotation_180(self) -> None:
+    @staticmethod
+    def test_rotation_180() -> None:
         m = TransformationMatrix.rotation(180)
         assert abs(m.a - (-1)) < 1e-10
         assert abs(m.d - (-1)) < 1e-10
 
-    def test_known_image_ctm(self) -> None:
+    @staticmethod
+    def test_known_image_ctm() -> None:
         """Typical image placement: cm 200 0 0 300 100 400.
         Image is 200pt wide, 300pt tall, placed at (100, 400)."""
         m = TransformationMatrix(a=200, b=0, c=0, d=300, e=100, f=400)
@@ -148,7 +166,8 @@ class TestTransformationMatrix:
         assert sx == 200.0
         assert sy == 300.0
 
-    def test_skew_matrix_scale(self) -> None:
+    @staticmethod
+    def test_skew_matrix_scale() -> None:
         """Skewed matrix: a=200, b=50, c=30, d=300."""
         m = TransformationMatrix(a=200, b=50, c=30, d=300, e=0, f=0)
         sx, sy = m.extract_scale()
@@ -164,7 +183,8 @@ class TestTransformationMatrix:
 class TestGraphicsState:
     """Test GraphicsState creation and copy."""
 
-    def test_default_state(self) -> None:
+    @staticmethod
+    def test_default_state() -> None:
         gs = GraphicsState()
         assert gs.ctm.is_identity()
         assert gs.stroking_color_space == "DeviceGray"
@@ -178,7 +198,8 @@ class TestGraphicsState:
         assert gs.font_size == 0.0
         assert gs.line_width == 1.0
 
-    def test_copy_is_independent(self) -> None:
+    @staticmethod
+    def test_copy_is_independent() -> None:
         """Copy should produce a fully independent state."""
         gs = GraphicsState()
         gs.ctm = TransformationMatrix(a=2, b=0, c=0, d=3, e=10, f=20)
@@ -201,7 +222,8 @@ class TestGraphicsState:
         assert copy.stroking_color == [1.0, 0.0, 0.0]
         assert copy.font_name == "F1"
 
-    def test_copy_preserves_all_fields(self) -> None:
+    @staticmethod
+    def test_copy_preserves_all_fields() -> None:
         gs = GraphicsState(
             stroking_color_space="DeviceCMYK",
             stroking_color=[0.0, 1.0, 1.0, 0.0],
@@ -244,7 +266,8 @@ class TestGraphicsState:
         assert copy.horizontal_scaling == 110.0
         assert copy.line_width == 0.5
 
-    def test_copy_text_matrix_independent(self) -> None:
+    @staticmethod
+    def test_copy_text_matrix_independent() -> None:
         gs = GraphicsState()
         gs.text_matrix = TransformationMatrix(a=2, b=0, c=0, d=2, e=50, f=100)
 
@@ -255,7 +278,8 @@ class TestGraphicsState:
 
     # --- Line style fields ---
 
-    def test_default_line_style(self) -> None:
+    @staticmethod
+    def test_default_line_style() -> None:
         gs = GraphicsState()
         assert gs.line_cap == 0
         assert gs.line_join == 0
@@ -264,7 +288,8 @@ class TestGraphicsState:
         assert gs.flatness == 0.0
         assert gs.rendering_intent == "RelativeColorimetric"
 
-    def test_copy_preserves_line_style(self) -> None:
+    @staticmethod
+    def test_copy_preserves_line_style() -> None:
         gs = GraphicsState(
             line_cap=1,
             line_join=2,
@@ -282,7 +307,8 @@ class TestGraphicsState:
         assert copy.flatness == 0.5
         assert copy.rendering_intent == "AbsoluteColorimetric"
 
-    def test_copy_line_style_independent(self) -> None:
+    @staticmethod
+    def test_copy_line_style_independent() -> None:
         gs = GraphicsState()
         gs.line_cap = 2
         gs.rendering_intent = "Perceptual"

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import pytest
 
 from grounded.semantic.events import (
@@ -23,13 +22,15 @@ from grounded.semantic.graphics_state import TransformationMatrix
 class TestContentStreamEvent:
     """Test base event creation."""
 
-    def test_create_base_event(self) -> None:
+    @staticmethod
+    def test_create_base_event() -> None:
         event = ContentStreamEvent(operator="q", page_num=1, operator_index=0)
         assert event.operator == "q"
         assert event.page_num == 1
         assert event.operator_index == 0
 
-    def test_frozen(self) -> None:
+    @staticmethod
+    def test_frozen() -> None:
         event = ContentStreamEvent(operator="q", page_num=1, operator_index=0)
         with pytest.raises(AttributeError):
             event.operator = "Q"  # type: ignore[misc]
@@ -38,7 +39,8 @@ class TestContentStreamEvent:
 class TestImagePlacedEvent:
     """Test ImagePlacedEvent creation."""
 
-    def test_create(self) -> None:
+    @staticmethod
+    def test_create() -> None:
         ctm = TransformationMatrix(a=200, b=0, c=0, d=300, e=100, f=400)
         event = ImagePlacedEvent(
             operator="Do",
@@ -55,7 +57,8 @@ class TestImagePlacedEvent:
         assert event.pixel_width == 1000
         assert event.ctm.a == 200.0
 
-    def test_inline_image(self) -> None:
+    @staticmethod
+    def test_inline_image() -> None:
         event = ImagePlacedEvent(
             operator="BI_ID_EI",
             page_num=1,
@@ -68,7 +71,8 @@ class TestImagePlacedEvent:
         )
         assert event.is_inline is True
 
-    def test_frozen(self) -> None:
+    @staticmethod
+    def test_frozen() -> None:
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -85,7 +89,8 @@ class TestImagePlacedEvent:
 class TestTextRenderedEvent:
     """Test TextRenderedEvent creation."""
 
-    def test_create(self) -> None:
+    @staticmethod
+    def test_create() -> None:
         event = TextRenderedEvent(
             operator="Tj",
             page_num=1,
@@ -102,7 +107,8 @@ class TestTextRenderedEvent:
         assert event.font_size == 12.0
         assert event.text_matrix.e == 72.0
 
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         event = TextRenderedEvent(
             operator="Tj",
             page_num=1,
@@ -120,7 +126,8 @@ class TestTextRenderedEvent:
 class TestColorChangedEvent:
     """Test ColorChangedEvent creation."""
 
-    def test_fill_color(self) -> None:
+    @staticmethod
+    def test_fill_color() -> None:
         event = ColorChangedEvent(
             operator="rg",
             page_num=1,
@@ -133,7 +140,8 @@ class TestColorChangedEvent:
         assert event.color_space == "DeviceRGB"
         assert event.color_values == (1.0, 0.0, 0.0)
 
-    def test_stroke_color(self) -> None:
+    @staticmethod
+    def test_stroke_color() -> None:
         event = ColorChangedEvent(
             operator="K",
             page_num=1,
@@ -149,7 +157,8 @@ class TestColorChangedEvent:
 class TestOpacityChangedEvent:
     """Test OpacityChangedEvent creation."""
 
-    def test_create(self) -> None:
+    @staticmethod
+    def test_create() -> None:
         event = OpacityChangedEvent(
             operator="gs",
             page_num=1,
@@ -162,7 +171,8 @@ class TestOpacityChangedEvent:
         assert event.non_stroking_alpha == 0.8
         assert event.blend_mode == "Multiply"
 
-    def test_partial_update(self) -> None:
+    @staticmethod
+    def test_partial_update() -> None:
         event = OpacityChangedEvent(
             operator="gs",
             page_num=1,
@@ -177,7 +187,8 @@ class TestOpacityChangedEvent:
 class TestOverprintChangedEvent:
     """Test OverprintChangedEvent creation."""
 
-    def test_create(self) -> None:
+    @staticmethod
+    def test_create() -> None:
         event = OverprintChangedEvent(
             operator="gs",
             page_num=1,
@@ -189,7 +200,8 @@ class TestOverprintChangedEvent:
         assert event.overprint_stroking is True
         assert event.overprint_mode == 1
 
-    def test_partial_update(self) -> None:
+    @staticmethod
+    def test_partial_update() -> None:
         event = OverprintChangedEvent(
             operator="gs",
             page_num=1,
@@ -204,7 +216,8 @@ class TestOverprintChangedEvent:
 class TestFormXObjectEnteredEvent:
     """Test FormXObjectEnteredEvent creation."""
 
-    def test_create(self) -> None:
+    @staticmethod
+    def test_create() -> None:
         event = FormXObjectEnteredEvent(
             operator="Do",
             page_num=1,
@@ -222,7 +235,8 @@ class TestFormXObjectEnteredEvent:
 class TestPathPaintingEvent:
     """Test PathPaintingEvent creation."""
 
-    def test_fill_only(self) -> None:
+    @staticmethod
+    def test_fill_only() -> None:
         event = PathPaintingEvent(
             operator="f",
             page_num=1,
@@ -236,7 +250,8 @@ class TestPathPaintingEvent:
         assert event.stroke is False
         assert event.even_odd is False
 
-    def test_fill_and_stroke(self) -> None:
+    @staticmethod
+    def test_fill_and_stroke() -> None:
         event = PathPaintingEvent(
             operator="B",
             page_num=1,
@@ -247,7 +262,8 @@ class TestPathPaintingEvent:
         assert event.fill is True
         assert event.stroke is True
 
-    def test_even_odd_fill(self) -> None:
+    @staticmethod
+    def test_even_odd_fill() -> None:
         event = PathPaintingEvent(
             operator="f*",
             page_num=1,
@@ -262,7 +278,8 @@ class TestPathPaintingEvent:
 class TestClippingPathSetEvent:
     """Test ClippingPathSetEvent creation."""
 
-    def test_winding(self) -> None:
+    @staticmethod
+    def test_winding() -> None:
         event = ClippingPathSetEvent(
             operator="W",
             page_num=1,
@@ -270,7 +287,8 @@ class TestClippingPathSetEvent:
         )
         assert event.even_odd is False
 
-    def test_even_odd(self) -> None:
+    @staticmethod
+    def test_even_odd() -> None:
         event = ClippingPathSetEvent(
             operator="W*",
             page_num=1,
@@ -283,7 +301,8 @@ class TestClippingPathSetEvent:
 class TestLineStyleChangedEvent:
     """Test LineStyleChangedEvent creation."""
 
-    def test_create_line_cap(self) -> None:
+    @staticmethod
+    def test_create_line_cap() -> None:
         event = LineStyleChangedEvent(
             operator="J",
             page_num=1,
@@ -296,7 +315,8 @@ class TestLineStyleChangedEvent:
         assert event.miter_limit is None
         assert event.rendering_intent is None
 
-    def test_create_line_join(self) -> None:
+    @staticmethod
+    def test_create_line_join() -> None:
         event = LineStyleChangedEvent(
             operator="j",
             page_num=1,
@@ -305,7 +325,8 @@ class TestLineStyleChangedEvent:
         )
         assert event.line_join == 2
 
-    def test_create_dash_pattern(self) -> None:
+    @staticmethod
+    def test_create_dash_pattern() -> None:
         event = LineStyleChangedEvent(
             operator="d",
             page_num=1,
@@ -314,7 +335,8 @@ class TestLineStyleChangedEvent:
         )
         assert event.dash_pattern == ((3.0, 2.0), 0.0)
 
-    def test_create_miter_limit(self) -> None:
+    @staticmethod
+    def test_create_miter_limit() -> None:
         event = LineStyleChangedEvent(
             operator="M",
             page_num=1,
@@ -323,7 +345,8 @@ class TestLineStyleChangedEvent:
         )
         assert event.miter_limit == 5.0
 
-    def test_create_rendering_intent(self) -> None:
+    @staticmethod
+    def test_create_rendering_intent() -> None:
         event = LineStyleChangedEvent(
             operator="ri",
             page_num=1,
@@ -332,7 +355,8 @@ class TestLineStyleChangedEvent:
         )
         assert event.rendering_intent == "Perceptual"
 
-    def test_frozen(self) -> None:
+    @staticmethod
+    def test_frozen() -> None:
         event = LineStyleChangedEvent(
             operator="J",
             page_num=1,
@@ -346,7 +370,8 @@ class TestLineStyleChangedEvent:
 class TestPathPaintingEventLineStyle:
     """Test PathPaintingEvent line style fields."""
 
-    def test_line_style_defaults(self) -> None:
+    @staticmethod
+    def test_line_style_defaults() -> None:
         event = PathPaintingEvent(
             operator="S",
             page_num=1,
@@ -358,7 +383,8 @@ class TestPathPaintingEventLineStyle:
         assert event.line_join == 0
         assert event.dash_pattern == ((), 0.0)
 
-    def test_line_style_custom(self) -> None:
+    @staticmethod
+    def test_line_style_custom() -> None:
         event = PathPaintingEvent(
             operator="S",
             page_num=1,
@@ -379,7 +405,8 @@ class TestPathPaintingEventLineStyle:
 class TestTextRenderedEventRenderingIntent:
     """Test TextRenderedEvent rendering_intent field."""
 
-    def test_default_rendering_intent(self) -> None:
+    @staticmethod
+    def test_default_rendering_intent() -> None:
         event = TextRenderedEvent(
             operator="Tj",
             page_num=1,
@@ -391,7 +418,8 @@ class TestTextRenderedEventRenderingIntent:
         )
         assert event.rendering_intent == "RelativeColorimetric"
 
-    def test_custom_rendering_intent(self) -> None:
+    @staticmethod
+    def test_custom_rendering_intent() -> None:
         event = TextRenderedEvent(
             operator="Tj",
             page_num=1,

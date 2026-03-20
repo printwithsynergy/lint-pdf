@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 class BrandingContext:
     """White-label branding for report rendering."""
 
-    name: str = "Grounded"
+    name: str = "LintPDF"
     logo_url: str | None = None
     primary_color: str = "#1a3a7a"
     accent_color: str = "#2563eb"
-    footer_text: str | None = "Powered by Grounded"
+    footer_text: str | None = "Powered by LintPDF"
     pdf_download_url: str | None = None
     report_url: str | None = None
 
@@ -47,7 +47,7 @@ class ReportService:
         formats: list[str] | None = None,
         expiry_days: int | None = None,
         branding: BrandingContext | None = None,
-        report_base_url: str = "https://reports.grounded.dev",
+        report_base_url: str = "https://reports.lintpdf.com",
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 

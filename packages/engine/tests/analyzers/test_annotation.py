@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.annotation import AnnotationAnalyzer
 from grounded.analyzers.finding import Severity
 from grounded.semantic.model import (
@@ -37,7 +36,8 @@ def _make_document(
 class TestPrintableAnnotationInTrim:
     """Test GRD_ANNOT_001: printable annotation inside trim area."""
 
-    def test_printable_in_trim_delay(self) -> None:
+    @staticmethod
+    def test_printable_in_trim_delay() -> None:
         """Printable FreeText annotation inside trim triggers GRD_ANNOT_001."""
         annot = PdfAnnotation(
             subtype="FreeText",
@@ -52,7 +52,8 @@ class TestPrintableAnnotationInTrim:
         assert len(pa) == 1
         assert pa[0].severity == Severity.SQUALL
 
-    def test_printable_outside_trim_no_finding(self) -> None:
+    @staticmethod
+    def test_printable_outside_trim_no_finding() -> None:
         """Printable annotation outside trim does not trigger GRD_ANNOT_001."""
         annot = PdfAnnotation(
             subtype="FreeText",
@@ -66,7 +67,8 @@ class TestPrintableAnnotationInTrim:
         pa = [f for f in findings if f.inspection_id == "GRD_ANNOT_001"]
         assert len(pa) == 0
 
-    def test_non_printable_no_finding(self) -> None:
+    @staticmethod
+    def test_non_printable_no_finding() -> None:
         """Non-printable annotation does not trigger GRD_ANNOT_001."""
         annot = PdfAnnotation(
             subtype="FreeText",
@@ -80,7 +82,8 @@ class TestPrintableAnnotationInTrim:
         pa = [f for f in findings if f.inspection_id == "GRD_ANNOT_001"]
         assert len(pa) == 0
 
-    def test_printable_details(self) -> None:
+    @staticmethod
+    def test_printable_details() -> None:
         annot = PdfAnnotation(
             subtype="FreeText",
             rect=PdfBox(100, 100, 200, 200),
@@ -98,7 +101,8 @@ class TestPrintableAnnotationInTrim:
 class TestMultimediaAnnotation:
     """Test GRD_ANNOT_002: multimedia annotation detection."""
 
-    def test_sound_annotation(self) -> None:
+    @staticmethod
+    def test_sound_annotation() -> None:
         annot = PdfAnnotation(subtype="Sound", page_num=1)
         doc = _make_document(annotations=[annot])
         findings = AnnotationAnalyzer().analyze(doc, [])
@@ -106,28 +110,32 @@ class TestMultimediaAnnotation:
         assert len(mm) == 1
         assert mm[0].severity == Severity.AGROUND
 
-    def test_movie_annotation(self) -> None:
+    @staticmethod
+    def test_movie_annotation() -> None:
         annot = PdfAnnotation(subtype="Movie", page_num=1)
         doc = _make_document(annotations=[annot])
         findings = AnnotationAnalyzer().analyze(doc, [])
         mm = [f for f in findings if f.inspection_id == "GRD_ANNOT_002"]
         assert len(mm) == 1
 
-    def test_richmedia_annotation(self) -> None:
+    @staticmethod
+    def test_richmedia_annotation() -> None:
         annot = PdfAnnotation(subtype="RichMedia", page_num=1)
         doc = _make_document(annotations=[annot])
         findings = AnnotationAnalyzer().analyze(doc, [])
         mm = [f for f in findings if f.inspection_id == "GRD_ANNOT_002"]
         assert len(mm) == 1
 
-    def test_3d_annotation(self) -> None:
+    @staticmethod
+    def test_3d_annotation() -> None:
         annot = PdfAnnotation(subtype="3D", page_num=1)
         doc = _make_document(annotations=[annot])
         findings = AnnotationAnalyzer().analyze(doc, [])
         mm = [f for f in findings if f.inspection_id == "GRD_ANNOT_002"]
         assert len(mm) == 1
 
-    def test_text_annotation_not_multimedia(self) -> None:
+    @staticmethod
+    def test_text_annotation_not_multimedia() -> None:
         annot = PdfAnnotation(subtype="Text", page_num=1)
         doc = _make_document(annotations=[annot])
         findings = AnnotationAnalyzer().analyze(doc, [])
@@ -138,7 +146,8 @@ class TestMultimediaAnnotation:
 class TestLinkAnnotation:
     """Test GRD_ANNOT_003: link annotation detection."""
 
-    def test_link_advisory(self) -> None:
+    @staticmethod
+    def test_link_advisory() -> None:
         annot = PdfAnnotation(subtype="Link", page_num=1)
         doc = _make_document(annotations=[annot])
         findings = AnnotationAnalyzer().analyze(doc, [])
@@ -146,7 +155,8 @@ class TestLinkAnnotation:
         assert len(lnk) == 1
         assert lnk[0].severity == Severity.ADVISORY
 
-    def test_non_link_no_finding(self) -> None:
+    @staticmethod
+    def test_non_link_no_finding() -> None:
         annot = PdfAnnotation(
             subtype="Text",
             rect=PdfBox(100, 100, 200, 200),
@@ -161,7 +171,8 @@ class TestLinkAnnotation:
 class TestStampAnnotation:
     """Test GRD_ANNOT_004: stamp annotation detection."""
 
-    def test_stamp_advisory(self) -> None:
+    @staticmethod
+    def test_stamp_advisory() -> None:
         annot = PdfAnnotation(
             subtype="Stamp",
             rect=PdfBox(100, 100, 200, 200),
@@ -173,7 +184,8 @@ class TestStampAnnotation:
         assert len(stp) == 1
         assert stp[0].severity == Severity.ADVISORY
 
-    def test_non_stamp_no_finding(self) -> None:
+    @staticmethod
+    def test_non_stamp_no_finding() -> None:
         annot = PdfAnnotation(subtype="Link", page_num=1)
         doc = _make_document(annotations=[annot])
         findings = AnnotationAnalyzer().analyze(doc, [])
@@ -184,7 +196,8 @@ class TestStampAnnotation:
 class TestNonPrintingAnnotation:
     """Test GRD_ANNOT_005: non-printing annotation in trim area."""
 
-    def test_non_printing_in_trim_advisory(self) -> None:
+    @staticmethod
+    def test_non_printing_in_trim_advisory() -> None:
         """Non-printing, non-hidden Text annotation in trim triggers GRD_ANNOT_005."""
         annot = PdfAnnotation(
             subtype="Text",
@@ -198,7 +211,8 @@ class TestNonPrintingAnnotation:
         assert len(np_f) == 1
         assert np_f[0].severity == Severity.ADVISORY
 
-    def test_hidden_annotation_no_finding(self) -> None:
+    @staticmethod
+    def test_hidden_annotation_no_finding() -> None:
         """Hidden annotation does not trigger GRD_ANNOT_005."""
         annot = PdfAnnotation(
             subtype="Text",
@@ -211,7 +225,8 @@ class TestNonPrintingAnnotation:
         np_f = [f for f in findings if f.inspection_id == "GRD_ANNOT_005"]
         assert len(np_f) == 0
 
-    def test_link_excluded(self) -> None:
+    @staticmethod
+    def test_link_excluded() -> None:
         """Non-printing Link annotation does not trigger GRD_ANNOT_005."""
         annot = PdfAnnotation(
             subtype="Link",
@@ -224,7 +239,8 @@ class TestNonPrintingAnnotation:
         np_f = [f for f in findings if f.inspection_id == "GRD_ANNOT_005"]
         assert len(np_f) == 0
 
-    def test_popup_excluded(self) -> None:
+    @staticmethod
+    def test_popup_excluded() -> None:
         """Non-printing Popup annotation does not trigger GRD_ANNOT_005."""
         annot = PdfAnnotation(
             subtype="Popup",
@@ -237,7 +253,8 @@ class TestNonPrintingAnnotation:
         np_f = [f for f in findings if f.inspection_id == "GRD_ANNOT_005"]
         assert len(np_f) == 0
 
-    def test_outside_trim_no_finding(self) -> None:
+    @staticmethod
+    def test_outside_trim_no_finding() -> None:
         """Non-printing annotation outside trim does not trigger GRD_ANNOT_005."""
         annot = PdfAnnotation(
             subtype="Text",
@@ -254,7 +271,8 @@ class TestNonPrintingAnnotation:
 class TestAnnotationNoAnnotations:
     """Test analyzer with no annotations."""
 
-    def test_empty_annotations_no_findings(self) -> None:
+    @staticmethod
+    def test_empty_annotations_no_findings() -> None:
         doc = _make_document(annotations=[])
         findings = AnnotationAnalyzer().analyze(doc, [])
         annot_ids = {f.inspection_id for f in findings if f.inspection_id.startswith("GRD_ANNOT_")}

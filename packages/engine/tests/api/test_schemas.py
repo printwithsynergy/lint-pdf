@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 from datetime import UTC, datetime
 
@@ -34,18 +33,21 @@ from grounded.api.schemas import (
 
 
 class TestHealthResponse:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         h = HealthResponse(status="ok")
         assert h.status == "ok"
         assert h.service == "grounded"
 
-    def test_custom_service(self) -> None:
+    @staticmethod
+    def test_custom_service() -> None:
         h = HealthResponse(status="ok", service="custom")
         assert h.service == "custom"
 
 
 class TestStatusResponse:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         s = StatusResponse(status="ok")
         assert s.version == "0.1.0"
         assert s.database == "unknown"
@@ -53,7 +55,8 @@ class TestStatusResponse:
         assert s.queue_depth == 0
         assert s.worker_count == 0
 
-    def test_all_fields(self) -> None:
+    @staticmethod
+    def test_all_fields() -> None:
         s = StatusResponse(
             status="degraded",
             database="connected",
@@ -71,14 +74,16 @@ class TestStatusResponse:
 
 
 class TestJobCreateResponse:
-    def test_basic(self) -> None:
+    @staticmethod
+    def test_basic() -> None:
         uid = uuid.uuid4()
         r = JobCreateResponse(job_id=uid)
         assert r.job_id == uid
         assert r.status == "pending"
         assert r.message == "Job submitted successfully"
 
-    def test_serialization(self) -> None:
+    @staticmethod
+    def test_serialization() -> None:
         uid = uuid.uuid4()
         r = JobCreateResponse(job_id=uid)
         d = r.model_dump(mode="json")
@@ -86,12 +91,14 @@ class TestJobCreateResponse:
 
 
 class TestFindingResponse:
-    def test_minimal(self) -> None:
+    @staticmethod
+    def test_minimal() -> None:
         f = FindingResponse(inspection_id="INK001", severity="aground", message="Bad ink")
         assert f.page_num is None
         assert f.details is None
 
-    def test_with_details(self) -> None:
+    @staticmethod
+    def test_with_details() -> None:
         f = FindingResponse(
             inspection_id="RES001",
             severity="advisory",
@@ -104,7 +111,8 @@ class TestFindingResponse:
 
 
 class TestJobSummaryResponse:
-    def test_all_fields(self) -> None:
+    @staticmethod
+    def test_all_fields() -> None:
         s = JobSummaryResponse(
             total_findings=5,
             aground_count=1,
@@ -119,7 +127,8 @@ class TestJobSummaryResponse:
 
 
 class TestJobResponse:
-    def test_pending_job(self) -> None:
+    @staticmethod
+    def test_pending_job() -> None:
         now = datetime.now(UTC)
         r = JobResponse(
             job_id=uuid.uuid4(),
@@ -133,7 +142,8 @@ class TestJobResponse:
         assert r.findings is None
         assert r.page_count is None
 
-    def test_complete_job(self) -> None:
+    @staticmethod
+    def test_complete_job() -> None:
         now = datetime.now(UTC)
         r = JobResponse(
             job_id=uuid.uuid4(),
@@ -158,7 +168,8 @@ class TestJobResponse:
         assert r.summary.passed is True
         assert r.findings == []
 
-    def test_failed_job(self) -> None:
+    @staticmethod
+    def test_failed_job() -> None:
         r = JobResponse(
             job_id=uuid.uuid4(),
             status="failed",
@@ -172,11 +183,13 @@ class TestJobResponse:
 
 
 class TestJobListResponse:
-    def test_empty(self) -> None:
+    @staticmethod
+    def test_empty() -> None:
         r = JobListResponse(jobs=[], total=0, page=1, page_size=20)
         assert r.total == 0
 
-    def test_with_jobs(self) -> None:
+    @staticmethod
+    def test_with_jobs() -> None:
         now = datetime.now(UTC)
         jobs = [
             JobResponse(
@@ -199,13 +212,15 @@ class TestJobListResponse:
 
 
 class TestProfileSummaryResponse:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         p = ProfileSummaryResponse(profile_id="test", name="Test")
         assert p.workflow == "CMYK"
         assert p.is_builtin is True
         assert p.description == ""
 
-    def test_custom_profile(self) -> None:
+    @staticmethod
+    def test_custom_profile() -> None:
         p = ProfileSummaryResponse(
             profile_id="custom",
             name="Custom",
@@ -217,50 +232,58 @@ class TestProfileSummaryResponse:
 
 
 class TestProfileCreateRequest:
-    def test_valid_kebab_case(self) -> None:
+    @staticmethod
+    def test_valid_kebab_case() -> None:
         r = ProfileCreateRequest(
             profile_id="my-custom-profile",
             voyage_plan={"name": "Test"},
         )
         assert r.profile_id == "my-custom-profile"
 
-    def test_rejects_uppercase(self) -> None:
+    @staticmethod
+    def test_rejects_uppercase() -> None:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(
                 profile_id="MyProfile",
                 voyage_plan={"name": "Bad"},
             )
 
-    def test_rejects_spaces(self) -> None:
+    @staticmethod
+    def test_rejects_spaces() -> None:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(
                 profile_id="has spaces",
                 voyage_plan={"name": "Bad"},
             )
 
-    def test_rejects_empty(self) -> None:
+    @staticmethod
+    def test_rejects_empty() -> None:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(profile_id="", voyage_plan={"name": "Bad"})
 
-    def test_rejects_single_char(self) -> None:
+    @staticmethod
+    def test_rejects_single_char() -> None:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(profile_id="x", voyage_plan={"name": "Bad"})
 
-    def test_rejects_leading_hyphen(self) -> None:
+    @staticmethod
+    def test_rejects_leading_hyphen() -> None:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(
                 profile_id="-leading",
                 voyage_plan={"name": "Bad"},
             )
 
-    def test_rejects_trailing_hyphen(self) -> None:
+    @staticmethod
+    def test_rejects_trailing_hyphen() -> None:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(
                 profile_id="trailing-",
                 voyage_plan={"name": "Bad"},
             )
 
-    def test_allows_numbers(self) -> None:
+    @staticmethod
+    def test_allows_numbers() -> None:
         r = ProfileCreateRequest(
             profile_id="profile-v2",
             voyage_plan={"name": "V2"},
@@ -269,13 +292,15 @@ class TestProfileCreateRequest:
 
 
 class TestProfileCreateResponse:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         r = ProfileCreateResponse(profile_id="test-id")
         assert r.message == "Profile created successfully"
 
 
 class TestProfileDetailResponse:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         r = ProfileDetailResponse(profile_id="test", name="Test")
         assert r.version == "1.0"
         assert r.is_builtin is True
@@ -284,7 +309,8 @@ class TestProfileDetailResponse:
 
 
 class TestProfileListResponse:
-    def test_empty(self) -> None:
+    @staticmethod
+    def test_empty() -> None:
         r = ProfileListResponse(profiles=[])
         assert r.profiles == []
 
@@ -295,13 +321,15 @@ class TestProfileListResponse:
 
 
 class TestWebhookCreateRequest:
-    def test_with_url_only(self) -> None:
+    @staticmethod
+    def test_with_url_only() -> None:
         r = WebhookCreateRequest(url="https://example.com/hook")
         assert r.url == "https://example.com/hook"
         assert "job.completed" in r.events
         assert "job.failed" in r.events
 
-    def test_custom_events(self) -> None:
+    @staticmethod
+    def test_custom_events() -> None:
         r = WebhookCreateRequest(
             url="https://example.com/hook",
             events=["job.completed"],
@@ -310,7 +338,8 @@ class TestWebhookCreateRequest:
 
 
 class TestWebhookResponse:
-    def test_all_fields(self) -> None:
+    @staticmethod
+    def test_all_fields() -> None:
         now = datetime.now(UTC)
         r = WebhookResponse(
             id=uuid.uuid4(),
@@ -323,19 +352,22 @@ class TestWebhookResponse:
 
 
 class TestWebhookUpdateRequest:
-    def test_all_none_by_default(self) -> None:
+    @staticmethod
+    def test_all_none_by_default() -> None:
         r = WebhookUpdateRequest()
         assert r.url is None
         assert r.events is None
         assert r.is_active is None
 
-    def test_partial_update(self) -> None:
+    @staticmethod
+    def test_partial_update() -> None:
         r = WebhookUpdateRequest(is_active=False)
         assert r.is_active is False
         assert r.url is None
 
 
 class TestWebhookListResponse:
-    def test_empty(self) -> None:
+    @staticmethod
+    def test_empty() -> None:
         r = WebhookListResponse(webhooks=[])
         assert r.webhooks == []

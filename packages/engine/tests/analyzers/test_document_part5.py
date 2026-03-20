@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.document import DocumentAnalyzer
 from grounded.analyzers.finding import Severity
 from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
@@ -27,7 +26,8 @@ def _make_document(
 class TestLinearizedPdf:
     """Test GRD_DOC_005: Linearized PDF detected."""
 
-    def test_linearized_in_catalog_flags(self) -> None:
+    @staticmethod
+    def test_linearized_in_catalog_flags() -> None:
         doc = _make_document(catalog={"/Linearized": "1.0"})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -35,14 +35,16 @@ class TestLinearizedPdf:
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
-    def test_linearized_in_trailer_flags(self) -> None:
+    @staticmethod
+    def test_linearized_in_trailer_flags() -> None:
         doc = _make_document(trailer={"/Linearized": "1.0"})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
         f = [f for f in findings if f.inspection_id == "GRD_DOC_005"]
         assert len(f) == 1
 
-    def test_not_linearized_no_flag(self) -> None:
+    @staticmethod
+    def test_not_linearized_no_flag() -> None:
         doc = _make_document()
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -53,7 +55,8 @@ class TestLinearizedPdf:
 class TestIncrementalUpdates:
     """Test GRD_DOC_006: Incremental updates detected."""
 
-    def test_prev_in_trailer_flags(self) -> None:
+    @staticmethod
+    def test_prev_in_trailer_flags() -> None:
         doc = _make_document(trailer={"/Prev": 12345})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -61,7 +64,8 @@ class TestIncrementalUpdates:
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
-    def test_no_prev_no_flag(self) -> None:
+    @staticmethod
+    def test_no_prev_no_flag() -> None:
         doc = _make_document(trailer={})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -72,7 +76,8 @@ class TestIncrementalUpdates:
 class TestFileSizeThreshold:
     """Test GRD_DOC_007: File size exceeds threshold."""
 
-    def test_large_file_flags(self) -> None:
+    @staticmethod
+    def test_large_file_flags() -> None:
         size = 600 * 1024 * 1024  # 600 MB
         doc = _make_document(info_dict={"/Title": "Big", "/FileSize": str(size)})
         analyzer = DocumentAnalyzer()
@@ -82,7 +87,8 @@ class TestFileSizeThreshold:
         assert f[0].severity == Severity.ADVISORY
         assert f[0].details["file_size_bytes"] == size
 
-    def test_small_file_no_flag(self) -> None:
+    @staticmethod
+    def test_small_file_no_flag() -> None:
         size = 10 * 1024 * 1024  # 10 MB
         doc = _make_document(info_dict={"/Title": "Small", "/FileSize": str(size)})
         analyzer = DocumentAnalyzer()
@@ -90,7 +96,8 @@ class TestFileSizeThreshold:
         f = [f for f in findings if f.inspection_id == "GRD_DOC_007"]
         assert len(f) == 0
 
-    def test_custom_threshold(self) -> None:
+    @staticmethod
+    def test_custom_threshold() -> None:
         size = 50 * 1024 * 1024  # 50 MB
         doc = _make_document(info_dict={"/Title": "Med", "/FileSize": str(size)})
         analyzer = DocumentAnalyzer(max_file_size_bytes=30 * 1024 * 1024)
@@ -98,14 +105,16 @@ class TestFileSizeThreshold:
         f = [f for f in findings if f.inspection_id == "GRD_DOC_007"]
         assert len(f) == 1
 
-    def test_no_file_size_no_flag(self) -> None:
+    @staticmethod
+    def test_no_file_size_no_flag() -> None:
         doc = _make_document(info_dict={"/Title": "NoSize"})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
         f = [f for f in findings if f.inspection_id == "GRD_DOC_007"]
         assert len(f) == 0
 
-    def test_invalid_file_size_no_flag(self) -> None:
+    @staticmethod
+    def test_invalid_file_size_no_flag() -> None:
         doc = _make_document(info_dict={"/Title": "Bad", "/FileSize": "not_a_number"})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])

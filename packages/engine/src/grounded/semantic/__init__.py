@@ -1,4 +1,4 @@
-"""Grounded semantic layer — enriched PDF document model.
+"""LintPDF semantic layer — enriched PDF document model.
 
 This package provides:
 - SemanticModel classes (PdfBox, PdfFont, PdfColorSpace, PdfImage, SemanticPage, SemanticDocument)

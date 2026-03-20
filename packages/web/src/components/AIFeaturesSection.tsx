@@ -42,7 +42,7 @@ const aiHighlights = [
   {
     title: "Brand Palette Check",
     description:
-      "Upload your brand colors and reference logos. Never Grounded validates every file against your brand guidelines before it reaches production.",
+      "Upload your brand colors and reference logos. LintPDF validates every file against your brand guidelines before it reaches production.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -83,7 +83,6 @@ const aiHighlights = [
 
 export function AIFeaturesSection() {
   return (
-    // skipcq: JS-0415
     <section className="py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">
@@ -97,7 +96,7 @@ export function AIFeaturesSection() {
           </div>
           <p className="text-slate-500 max-w-2xl mx-auto">
             33 AI inspections across 14 categories. Credit-based,
-            detection-only, same Captain&apos;s Log format.
+            detection-only, same Report format.
           </p>
         </div>
 

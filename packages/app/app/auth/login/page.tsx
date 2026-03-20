@@ -32,7 +32,7 @@ function LoginContent() {
   useEffect(() => {
     const plan = searchParams.get("plan");
     if (plan) {
-      sessionStorage.setItem("grounded_signup_plan", plan);
+      sessionStorage.setItem("lintpdf_signup_plan", plan);
     }
   }, [searchParams]);
 
@@ -45,9 +45,9 @@ function LoginContent() {
   }, []);
 
   const getPostAuthRedirect = useCallback(() => {
-    const plan = sessionStorage.getItem("grounded_signup_plan");
+    const plan = sessionStorage.getItem("lintpdf_signup_plan");
     if (plan) {
-      sessionStorage.removeItem("grounded_signup_plan");
+      sessionStorage.removeItem("lintpdf_signup_plan");
       return `/dashboard/billing/checkout?plan=${encodeURIComponent(plan)}`;
     }
     return "/dashboard";
@@ -210,13 +210,13 @@ function LoginContent() {
       <div className="relative z-10 w-full max-w-[420px]">
         {/* Branding — logo + wordmark matching marketing header */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <img src="/logo.png" alt="Never Grounded" className="h-12 w-12" />
+          <img src="/logo.png" alt="LintPDF" className="h-12 w-12" />
           <div className="flex flex-col items-center leading-none">
             <span className="text-xl font-semibold tracking-tight text-brand-900">
-              Never Grounded
+              LintPDF
             </span>
             <span className="mt-1 text-[10px] font-medium tracking-wide text-slate-400">
-              Built to sail. Cleared for press.
+              Lint your PDFs before they ship.
             </span>
           </div>
         </div>

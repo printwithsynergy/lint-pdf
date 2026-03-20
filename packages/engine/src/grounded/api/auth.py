@@ -30,7 +30,7 @@ def hash_api_key(api_key: str) -> str:
 
 def generate_api_key() -> str:
     """Generate a cryptographically secure API key."""
-    return f"grd_{secrets.token_urlsafe(32)}"
+    return f"lpdf_{secrets.token_urlsafe(32)}"
 
 
 def _extract_api_key(authorization: str | None) -> str | None:

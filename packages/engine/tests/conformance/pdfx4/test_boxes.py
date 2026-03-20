@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.conformance.pdfx4._boxes import validate_boxes
 from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
@@ -18,7 +17,8 @@ def _doc(pages: list[SemanticPage] | None = None) -> SemanticDocument:
 
 
 class TestMediaBox:
-    def test_mediabox_required(self) -> None:
+    @staticmethod
+    def test_mediabox_required() -> None:
         page = SemanticPage.__new__(SemanticPage)
         object.__setattr__(page, "page_num", 1)
         object.__setattr__(page, "media_box", None)
@@ -42,14 +42,16 @@ class TestMediaBox:
 
 
 class TestTrimOrArtBox:
-    def test_neither_trim_nor_art(self) -> None:
+    @staticmethod
+    def test_neither_trim_nor_art() -> None:
         page = SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792))
         f = validate_boxes(_doc(pages=[page]))
         ids = [x for x in f if x.inspection_id == "PDFX4-050"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_trim_present_ok(self) -> None:
+    @staticmethod
+    def test_trim_present_ok() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -60,7 +62,8 @@ class TestTrimOrArtBox:
 
 
 class TestTrimArtConflict:
-    def test_both_different_squall(self) -> None:
+    @staticmethod
+    def test_both_different_squall() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -72,7 +75,8 @@ class TestTrimArtConflict:
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_both_same_ok(self) -> None:
+    @staticmethod
+    def test_both_same_ok() -> None:
         box = PdfBox(10, 10, 602, 782)
         page = SemanticPage(
             page_num=1,
@@ -85,7 +89,8 @@ class TestTrimArtConflict:
 
 
 class TestBleedBoxNesting:
-    def test_bleed_outside_media(self) -> None:
+    @staticmethod
+    def test_bleed_outside_media() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -98,7 +103,8 @@ class TestBleedBoxNesting:
 
 
 class TestTrimBoxNesting:
-    def test_trim_outside_bleed(self) -> None:
+    @staticmethod
+    def test_trim_outside_bleed() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -111,7 +117,8 @@ class TestTrimBoxNesting:
 
 
 class TestCropBoxNesting:
-    def test_crop_outside_media(self) -> None:
+    @staticmethod
+    def test_crop_outside_media() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -124,7 +131,8 @@ class TestCropBoxNesting:
 
 
 class TestArtBoxNesting:
-    def test_art_outside_trim(self) -> None:
+    @staticmethod
+    def test_art_outside_trim() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),

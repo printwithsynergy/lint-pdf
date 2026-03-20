@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
 from grounded.semantic.graphics_state import TransformationMatrix
 
@@ -10,19 +9,22 @@ from grounded.semantic.graphics_state import TransformationMatrix
 class TestPrepressStateChangedEvent:
     """Test PrepressStateChangedEvent."""
 
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         event = PrepressStateChangedEvent(operator="gs", page_num=1, operator_index=0)
         assert event.has_halftone is False
         assert event.has_transfer_function is False
         assert event.has_bg_ucr is False
 
-    def test_halftone(self) -> None:
+    @staticmethod
+    def test_halftone() -> None:
         event = PrepressStateChangedEvent(
             operator="gs", page_num=1, operator_index=0, has_halftone=True
         )
         assert event.has_halftone is True
 
-    def test_transfer_function(self) -> None:
+    @staticmethod
+    def test_transfer_function() -> None:
         event = PrepressStateChangedEvent(
             operator="gs",
             page_num=1,
@@ -31,13 +33,15 @@ class TestPrepressStateChangedEvent:
         )
         assert event.has_transfer_function is True
 
-    def test_bg_ucr(self) -> None:
+    @staticmethod
+    def test_bg_ucr() -> None:
         event = PrepressStateChangedEvent(
             operator="gs", page_num=1, operator_index=0, has_bg_ucr=True
         )
         assert event.has_bg_ucr is True
 
-    def test_frozen(self) -> None:
+    @staticmethod
+    def test_frozen() -> None:
         event = PrepressStateChangedEvent(operator="gs", page_num=1, operator_index=0)
         try:
             event.has_halftone = True  # type: ignore[misc]
@@ -49,7 +53,8 @@ class TestPrepressStateChangedEvent:
 class TestImagePlacedEventEnrichment:
     """Test has_opi and has_alternate fields on ImagePlacedEvent."""
 
-    def test_defaults_false(self) -> None:
+    @staticmethod
+    def test_defaults_false() -> None:
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -62,7 +67,8 @@ class TestImagePlacedEventEnrichment:
         assert event.has_opi is False
         assert event.has_alternate is False
 
-    def test_has_opi(self) -> None:
+    @staticmethod
+    def test_has_opi() -> None:
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -75,7 +81,8 @@ class TestImagePlacedEventEnrichment:
         )
         assert event.has_opi is True
 
-    def test_has_alternate(self) -> None:
+    @staticmethod
+    def test_has_alternate() -> None:
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,

@@ -2,24 +2,23 @@ import type { Metadata } from "next";
 import { getEntriesWithHtml } from "@/lib/changelog";
 
 export const metadata: Metadata = {
-  title: "Changelog — Never Grounded",
+  title: "Changelog — LintPDF",
   description:
-    "The Logbook — version history and release notes for the Never Grounded PDF preflight engine.",
+    "The Logbook — version history and release notes for the LintPDF PDF preflight engine.",
 };
 
 export default async function ChangelogPage() {
   const entries = await getEntriesWithHtml();
 
   return (
-    // skipcq: JS-0415
     <main className="py-16">
       <div className="mx-auto max-w-3xl px-6">
         <div className="mb-12">
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Changelog</h1>
           <p className="text-sm text-brand-500 italic mb-4">The Logbook</p>
           <p className="text-slate-500">
-            Version history and release notes for the Never Grounded preflight
-            engine and API.
+            Version history and release notes for the LintPDF preflight engine
+            and API.
           </p>
         </div>
 
@@ -53,7 +52,7 @@ export default async function ChangelogPage() {
               <div
                 className="prose prose-sm prose-slate max-w-none prose-headings:font-semibold prose-h3:text-base prose-h3:mt-6 prose-h3:mb-2 prose-p:text-slate-600 prose-li:text-slate-600 prose-strong:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded prose-code:text-xs prose-code:font-mono prose-code:before:content-none prose-code:after:content-none"
                 // nosemgrep: react-dangerouslysetinnerhtml -- content is sanitized via rehype-sanitize in lib/changelog.ts
-                dangerouslySetInnerHTML={{ __html: entry.htmlContent ?? "" }} // skipcq: JS-0440
+                dangerouslySetInnerHTML={{ __html: entry.htmlContent ?? "" }}
               />
             </article>
           ))}

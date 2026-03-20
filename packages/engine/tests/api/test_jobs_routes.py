@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 from datetime import UTC, datetime
 from io import BytesIO
@@ -69,7 +68,8 @@ def _seed_job(
 class TestSubmitJobValidation:
     """Validation rules enforced on upload."""
 
-    def test_non_pdf_extension_rejected(self, client: TestClient) -> None:
+    @staticmethod
+    def test_non_pdf_extension_rejected(client: TestClient) -> None:
         resp = client.post(
             "/api/v1/jobs",
             files={"file": ("image.png", BytesIO(b"%PDF-1.4 fake"), "image/png")},
@@ -77,7 +77,8 @@ class TestSubmitJobValidation:
         assert resp.status_code == 422
         assert "not allowed" in resp.json()["detail"].lower()
 
-    def test_empty_file_rejected(self, client: TestClient) -> None:
+    @staticmethod
+    def test_empty_file_rejected(client: TestClient) -> None:
         resp = client.post(
             "/api/v1/jobs",
             files={"file": ("test.pdf", BytesIO(b""), "application/pdf")},
@@ -85,7 +86,8 @@ class TestSubmitJobValidation:
         assert resp.status_code == 422
         assert "empty" in resp.json()["detail"].lower()
 
-    def test_non_pdf_content_rejected(self, client: TestClient) -> None:
+    @staticmethod
+    def test_non_pdf_content_rejected(client: TestClient) -> None:
         resp = client.post(
             "/api/v1/jobs",
             files={"file": ("test.pdf", BytesIO(b"not a pdf content"), "application/pdf")},
@@ -108,7 +110,8 @@ class TestSubmitJobValidation:
         )
         assert resp.status_code == 413
 
-    def test_no_filename_rejected(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_no_filename_rejected(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         """Filename that does not end with .pdf should be rejected."""
         resp = client.post(
             "/api/v1/jobs",
@@ -120,7 +123,8 @@ class TestSubmitJobValidation:
 class TestSubmitJobSuccess:
     """Happy-path submission tests."""
 
-    def test_returns_202_with_job_id(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_returns_202_with_job_id(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         resp = _submit(client, minimal_pdf_bytes)
         assert resp.status_code == 202
         data = resp.json()
@@ -128,28 +132,33 @@ class TestSubmitJobSuccess:
         # Validate it is a valid UUID
         uuid.UUID(data["job_id"])
 
-    def test_status_is_pending(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_status_is_pending(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         data = _submit(client, minimal_pdf_bytes).json()
         assert data["status"] == "pending"
 
-    def test_message_present(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_message_present(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         data = _submit(client, minimal_pdf_bytes).json()
         assert "message" in data
 
-    def test_custom_profile_id(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_custom_profile_id(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         resp = _submit(client, minimal_pdf_bytes, profile="grounded-strict")
         assert resp.status_code == 202
         job_id = resp.json()["job_id"]
         detail = client.get(f"/api/v1/jobs/{job_id}").json()
         assert detail["profile_id"] == "grounded-strict"
 
-    def test_celery_task_dispatched(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_celery_task_dispatched(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         from grounded.queue import tasks
 
         _submit(client, minimal_pdf_bytes)
         tasks.run_preflight.apply_async.assert_called()
 
-    def test_pdf_stored(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_pdf_stored(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         """The uploaded file should be persisted in in-memory storage."""
         from grounded.api.storage import get_storage
 
@@ -171,7 +180,8 @@ class TestSubmitJobRateLimitHeaders:
         resp = _submit(client, minimal_pdf_bytes)
         assert "X-RateLimit-Limit" not in resp.headers
 
-    def test_rate_headers_with_redis(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_rate_headers_with_redis(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         """When Redis is available, rate limit headers should be present."""
         from grounded.api.middleware import set_rate_limiter
         from tests.api.test_usage import FakeRedis
@@ -194,7 +204,8 @@ class TestSubmitJobRateLimitHeaders:
 
 
 class TestGetJob:
-    def test_pending_job(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_pending_job(client: TestClient, db_session: Session) -> None:
         job = _seed_job(db_session, status=JobStatus.PENDING)
         resp = client.get(f"/api/v1/jobs/{job.id}")
         assert resp.status_code == 200
@@ -254,7 +265,8 @@ class TestGetJob:
         assert "aground" in severities
         assert "advisory" in severities
 
-    def test_failed_job_shows_error(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_failed_job_shows_error(client: TestClient, db_session: Session) -> None:
         job = _seed_job(
             db_session,
             status=JobStatus.FAILED,
@@ -264,16 +276,19 @@ class TestGetJob:
         assert data["status"] == "failed"
         assert data["error_message"] == "Parser crashed"
 
-    def test_nonexistent_job_404(self, client: TestClient) -> None:
+    @staticmethod
+    def test_nonexistent_job_404(client: TestClient) -> None:
         fake_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
         resp = client.get(f"/api/v1/jobs/{fake_id}")
         assert resp.status_code == 404
 
-    def test_invalid_uuid_format(self, client: TestClient) -> None:
+    @staticmethod
+    def test_invalid_uuid_format(client: TestClient) -> None:
         resp = client.get("/api/v1/jobs/not-a-uuid")
         assert resp.status_code == 422
 
-    def test_tenant_isolation(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_tenant_isolation(client: TestClient, db_session: Session) -> None:
         """A job belonging to a different tenant must not be visible."""
         other_tenant_id = uuid.UUID("99999999-9999-9999-9999-999999999999")
         job = Job(
@@ -300,21 +315,24 @@ class TestGetJob:
 
 
 class TestListJobs:
-    def test_empty_list(self, client: TestClient) -> None:
+    @staticmethod
+    def test_empty_list(client: TestClient) -> None:
         data = client.get("/api/v1/jobs").json()
         assert data["total"] == 0
         assert data["jobs"] == []
         assert data["page"] == 1
         assert data["page_size"] == 20
 
-    def test_returns_seeded_jobs(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_returns_seeded_jobs(client: TestClient, db_session: Session) -> None:
         _seed_job(db_session, file_name="a.pdf")
         _seed_job(db_session, file_name="b.pdf")
         data = client.get("/api/v1/jobs").json()
         assert data["total"] == 2
         assert len(data["jobs"]) == 2
 
-    def test_pagination_first_page(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_pagination_first_page(client: TestClient, db_session: Session) -> None:
         for i in range(7):
             _seed_job(db_session, file_name=f"file{i}.pdf")
         data = client.get("/api/v1/jobs?page=1&page_size=3").json()
@@ -323,29 +341,34 @@ class TestListJobs:
         assert data["page"] == 1
         assert data["page_size"] == 3
 
-    def test_pagination_second_page(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_pagination_second_page(client: TestClient, db_session: Session) -> None:
         for i in range(7):
             _seed_job(db_session, file_name=f"file{i}.pdf")
         data = client.get("/api/v1/jobs?page=2&page_size=3").json()
         assert len(data["jobs"]) == 3
 
-    def test_pagination_last_page(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_pagination_last_page(client: TestClient, db_session: Session) -> None:
         for i in range(7):
             _seed_job(db_session, file_name=f"file{i}.pdf")
         data = client.get("/api/v1/jobs?page=3&page_size=3").json()
         assert len(data["jobs"]) == 1
 
-    def test_page_size_clamped_to_100(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_page_size_clamped_to_100(client: TestClient, db_session: Session) -> None:
         _seed_job(db_session)
         data = client.get("/api/v1/jobs?page_size=999").json()
         assert data["page_size"] == 100
 
-    def test_page_clamped_to_1(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_page_clamped_to_1(client: TestClient, db_session: Session) -> None:
         _seed_job(db_session)
         data = client.get("/api/v1/jobs?page=0").json()
         assert data["page"] == 1
 
-    def test_ordered_by_created_desc(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_ordered_by_created_desc(client: TestClient, db_session: Session) -> None:
         _seed_job(db_session, file_name="older.pdf")
         _seed_job(db_session, file_name="newer.pdf")
         data = client.get("/api/v1/jobs").json()
@@ -359,21 +382,25 @@ class TestListJobs:
 
 
 class TestDeleteJob:
-    def test_delete_existing_job(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_delete_existing_job(client: TestClient, db_session: Session) -> None:
         job = _seed_job(db_session)
         resp = client.delete(f"/api/v1/jobs/{job.id}")
         assert resp.status_code == 204
         # Verify gone
         assert client.get(f"/api/v1/jobs/{job.id}").status_code == 404
 
-    def test_delete_nonexistent_404(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_nonexistent_404(client: TestClient) -> None:
         fake = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
         assert client.delete(f"/api/v1/jobs/{fake}").status_code == 404
 
-    def test_delete_invalid_uuid(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_invalid_uuid(client: TestClient) -> None:
         assert client.delete("/api/v1/jobs/bad-id").status_code == 422
 
-    def test_delete_reduces_total_count(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_delete_reduces_total_count(client: TestClient, db_session: Session) -> None:
         j1 = _seed_job(db_session, file_name="a.pdf")
         _seed_job(db_session, file_name="b.pdf")
         client.delete(f"/api/v1/jobs/{j1.id}")

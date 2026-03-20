@@ -24,40 +24,58 @@ import {
   listInvoices,
 } from "@thinkneverland/pixie-dust-stripe-kit";
 
-describe("groundedBillingPlugin", () => {
-  function mockCtx() {
-    return {
-      addRoutes: vi.fn(),
-      addNavItem: vi.fn(),
-      addPage: vi.fn(),
-      addPermission: vi.fn(),
-      addRole: vi.fn(),
-      addPublicPath: vi.fn(),
-      on: vi.fn(),
-      emit: vi.fn(),
-      services: {
-        logger: {
-          info: vi.fn(),
-          warn: vi.fn(),
-          error: vi.fn(),
-          debug: vi.fn(),
-        },
-        db: {
-          subscription: { findFirst: vi.fn() },
-          stripeCustomer: { findFirst: vi.fn() },
-        },
-        auth: {},
-        config: {},
+/** Create a mock context object with all required service stubs. */
+function createMockContext() {
+  return {
+    addRoutes: vi.fn(),
+    addNavItem: vi.fn(),
+    addPage: vi.fn(),
+    addPermission: vi.fn(),
+    addRole: vi.fn(),
+    addPublicPath: vi.fn(),
+    on: vi.fn(),
+    emit: vi.fn(),
+    services: {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
       },
-    };
-  }
+      db: {
+        subscription: { findFirst: vi.fn() },
+        stripeCustomer: { findFirst: vi.fn() },
+      },
+      auth: {},
+      config: {},
+    },
+  };
+}
 
-  let ctx: ReturnType<typeof mockCtx>;
+/** Cast a mock context to PluginContext for use with plugin methods. */
+function asPluginContext(
+  ctx: ReturnType<typeof createMockContext>,
+): PluginContext {
+  return ctx as PluginContext;
+}
+
+/** Create a mock Stripe instance (empty object satisfying the return type). */
+function createMockStripeInstance(): ReturnType<typeof getStripe> {
+  return {} as ReturnType<typeof getStripe>;
+}
+
+/** Create a null Stripe instance (simulating unconfigured Stripe). */
+function createNullStripeInstance(): ReturnType<typeof getStripe> {
+  return null as ReturnType<typeof getStripe>;
+}
+
+describe("groundedBillingPlugin", () => {
+  let ctx: ReturnType<typeof createMockContext>;
 
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
-    ctx = mockCtx();
+    ctx = createMockContext();
   });
 
   // ── Registration tests ──────────────────────────────────────
@@ -65,7 +83,7 @@ describe("groundedBillingPlugin", () => {
   describe("register", () => {
     it("registers billing:manage permission for ADMIN and OWNER", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.addPermission).toHaveBeenCalledWith("billing:manage", [
         "ADMIN",
@@ -75,7 +93,7 @@ describe("groundedBillingPlugin", () => {
 
     it("registers Billing nav item in admin section", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.addNavItem).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -91,7 +109,7 @@ describe("groundedBillingPlugin", () => {
 
     it("registers billing pages", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.addPage).toHaveBeenCalledTimes(2);
       expect(ctx.addPage).toHaveBeenCalledWith(
@@ -104,7 +122,7 @@ describe("groundedBillingPlugin", () => {
 
     it("registers routes under /api/grounded/billing", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.addRoutes).toHaveBeenCalledTimes(1);
       const [prefix, routes] = ctx.addRoutes.mock.calls[0];
@@ -114,7 +132,7 @@ describe("groundedBillingPlugin", () => {
 
     it("registers 4 webhook event listeners", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.on).toHaveBeenCalledTimes(4);
       expect(ctx.on).toHaveBeenCalledWith(
@@ -148,7 +166,7 @@ describe("groundedBillingPlugin", () => {
   describe("route handlers", () => {
     async function getRouteHandler(method: string, path: string) {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
       const [, routes] = ctx.addRoutes.mock.calls[0];
       const route = routes.find(
         (r: { method: string; path: string }) =>
@@ -159,9 +177,7 @@ describe("groundedBillingPlugin", () => {
 
     describe("POST /checkout", () => {
       it("returns 503 when Stripe is not configured", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          null as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createNullStripeInstance());
         const handler = await getRouteHandler("POST", "/checkout");
 
         const res = await handler({
@@ -174,9 +190,7 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("returns 401 when tenant context is missing", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          {} as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
         const handler = await getRouteHandler("POST", "/checkout");
 
         const res = await handler({
@@ -188,15 +202,13 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("creates checkout session and returns session ID and URL", async () => {
-        const mockStripeInstance = {} as unknown as ReturnType<
-          typeof getStripe
-        >; // skipcq: JS-0323
+        const mockStripeInstance = createMockStripeInstance();
         vi.mocked(getStripe).mockReturnValue(mockStripeInstance);
         vi.mocked(findOrCreateCustomer).mockResolvedValue("cus_123");
         vi.mocked(createCheckoutSession).mockResolvedValue({
           id: "cs_123",
           url: "https://checkout.stripe.com/session",
-        } as unknown as Awaited<ReturnType<typeof createCheckoutSession>>); // skipcq: JS-0323
+        } as Awaited<ReturnType<typeof createCheckoutSession>>);
 
         const handler = await getRouteHandler("POST", "/checkout");
         const res = await handler({
@@ -227,9 +239,7 @@ describe("groundedBillingPlugin", () => {
 
     describe("POST /portal", () => {
       it("returns 503 when Stripe is not configured", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          null as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createNullStripeInstance());
         const handler = await getRouteHandler("POST", "/portal");
 
         const res = await handler({
@@ -241,9 +251,7 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("returns 401 when tenant context is missing", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          {} as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
         const handler = await getRouteHandler("POST", "/portal");
 
         const res = await handler({
@@ -255,13 +263,11 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("creates portal session and returns URL", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          {} as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
         vi.mocked(findOrCreateCustomer).mockResolvedValue("cus_456");
         vi.mocked(createPortalSession).mockResolvedValue({
           url: "https://billing.stripe.com/portal",
-        } as unknown as Awaited<ReturnType<typeof createPortalSession>>); // skipcq: JS-0323
+        } as Awaited<ReturnType<typeof createPortalSession>>);
 
         const handler = await getRouteHandler("POST", "/portal");
         const res = await handler({
@@ -276,9 +282,7 @@ describe("groundedBillingPlugin", () => {
 
     describe("GET /subscription", () => {
       it("returns 503 when Stripe is not configured", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          null as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createNullStripeInstance());
         const handler = await getRouteHandler("GET", "/subscription");
 
         const res = await handler({ auth: { tenantId: "t1" } });
@@ -286,9 +290,7 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("returns 401 when tenant context is missing", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          {} as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
         const handler = await getRouteHandler("GET", "/subscription");
 
         const res = await handler({ auth: {} });
@@ -296,9 +298,7 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("returns free plan when no subscription exists", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          {} as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
         ctx.services.db.subscription.findFirst.mockResolvedValue(null);
 
         const handler = await getRouteHandler("GET", "/subscription");
@@ -309,9 +309,7 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("returns subscription when it exists", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          {} as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
         const sub = { plan: "growth", status: "active", tenantId: "t1" };
         ctx.services.db.subscription.findFirst.mockResolvedValue(sub);
 
@@ -325,9 +323,7 @@ describe("groundedBillingPlugin", () => {
 
     describe("GET /invoices", () => {
       it("returns 503 when Stripe is not configured", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          null as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createNullStripeInstance());
         const handler = await getRouteHandler("GET", "/invoices");
 
         const res = await handler({ auth: { tenantId: "t1" } });
@@ -335,9 +331,7 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("returns empty array when no customer exists", async () => {
-        vi.mocked(getStripe).mockReturnValue(
-          {} as unknown as ReturnType<typeof getStripe>,
-        ); // skipcq: JS-0323
+        vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
         ctx.services.db.stripeCustomer.findFirst.mockResolvedValue(null);
 
         const handler = await getRouteHandler("GET", "/invoices");
@@ -348,14 +342,14 @@ describe("groundedBillingPlugin", () => {
       });
 
       it("returns invoices when customer exists", async () => {
-        const stripeInstance = {} as unknown as ReturnType<typeof getStripe>; // skipcq: JS-0323
+        const stripeInstance = createMockStripeInstance();
         vi.mocked(getStripe).mockReturnValue(stripeInstance);
         ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
           stripeCustomerId: "cus_789",
         });
         const invoiceData = [{ id: "inv_1" }, { id: "inv_2" }];
         vi.mocked(listInvoices).mockResolvedValue(
-          invoiceData as unknown as Awaited<ReturnType<typeof listInvoices>>,
+          invoiceData as Awaited<ReturnType<typeof listInvoices>>,
         );
 
         const handler = await getRouteHandler("GET", "/invoices");
@@ -379,7 +373,7 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:customer.subscription.updated", () => {
       it("does nothing when subscription data is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
@@ -390,7 +384,7 @@ describe("groundedBillingPlugin", () => {
 
       it("does nothing when customer ID is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
@@ -401,7 +395,7 @@ describe("groundedBillingPlugin", () => {
 
       it("logs warning when no tenant found for customer", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
@@ -428,7 +422,7 @@ describe("groundedBillingPlugin", () => {
 
       it("handles customer as object with id property", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
@@ -452,7 +446,7 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:customer.subscription.deleted", () => {
       it("does nothing when subscription data is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.deleted",
         );
@@ -463,7 +457,7 @@ describe("groundedBillingPlugin", () => {
 
       it("does nothing when no tenant found", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.deleted",
         );
@@ -481,7 +475,7 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:invoice.payment_failed", () => {
       it("logs warning with event ID", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler("stripe:invoice.payment_failed");
 
         await handler({ id: "evt_123" });
@@ -496,7 +490,7 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:invoice.payment_succeeded", () => {
       it("logs info with event ID", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler("stripe:invoice.payment_succeeded");
 
         await handler({ id: "evt_456" });
@@ -513,23 +507,19 @@ describe("groundedBillingPlugin", () => {
 
   describe("boot", () => {
     it("logs ready message when Stripe is configured", async () => {
-      vi.mocked(getStripe).mockReturnValue(
-        {} as unknown as ReturnType<typeof getStripe>,
-      ); // skipcq: JS-0323
+      vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
       const mod = await import("../src/index.js");
-      await mod.groundedBillingPlugin.boot?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      await mod.groundedBillingPlugin.boot?.(asPluginContext(ctx));
 
       expect(ctx.services.logger.info).toHaveBeenCalledWith(
-        "Grounded billing plugin ready",
+        "LintPDF billing plugin ready",
       );
     });
 
     it("does not log when Stripe is not configured", async () => {
-      vi.mocked(getStripe).mockReturnValue(
-        null as unknown as ReturnType<typeof getStripe>,
-      ); // skipcq: JS-0323
+      vi.mocked(getStripe).mockReturnValue(createNullStripeInstance());
       const mod = await import("../src/index.js");
-      await mod.groundedBillingPlugin.boot?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      await mod.groundedBillingPlugin.boot?.(asPluginContext(ctx));
 
       expect(ctx.services.logger.info).not.toHaveBeenCalled();
     });

@@ -1,4 +1,4 @@
-"""Grounded profiles - Voyage Plan configuration and preflight orchestration."""
+"""LintPDF profiles - Ruleset configuration and preflight orchestration."""
 
 from grounded.profiles.orchestrator import PreflightOrchestrator, PreflightResult, PreflightSummary
 from grounded.profiles.registry import ProfileNotFoundError, ProfileRegistry

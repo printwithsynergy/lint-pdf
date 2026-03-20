@@ -1,17 +1,17 @@
 import { z } from "zod";
 
 /**
- * Configuration schema for the Grounded plugin.
+ * Configuration schema for the LintPDF plugin.
  * Validated at plugin registration time.
  */
 export const groundedConfigSchema = z.object({
-  /** Base URL of the Grounded API (e.g. https://api.grounded.thinkneverland.com) */
+  /** Base URL of the LintPDF API (e.g. https://api.lintpdf.com) */
   apiUrl: z.string().url(),
 
-  /** HMAC secret for verifying webhook signatures from Grounded */
+  /** HMAC secret for verifying webhook signatures from LintPDF */
   webhookSecret: z.string().min(16),
 
-  /** API key for authenticating with Grounded (stored per-tenant) */
+  /** API key for authenticating with LintPDF (stored per-tenant) */
   apiKey: z.string().optional(),
 });
 

@@ -1,6 +1,6 @@
 """PikePDFAdapter — Concrete PDF parser implementation using pikepdf (QPDF).
 
-This is the only file in Grounded that imports pikepdf directly. All other
+This is the only file in LintPDF that imports pikepdf directly. All other
 modules depend on the ParserAdapter interface.
 
 pikepdf provides:
@@ -137,7 +137,7 @@ class PikePDFAdapter(ParserAdapter):
     """Concrete ParserAdapter implementation using pikepdf (QPDF).
 
     This adapter wraps pikepdf operations and translates all objects
-    to Grounded's normalized data structures. It is the only module
+    to LintPDF's normalized data structures. It is the only module
     that directly imports pikepdf.
 
     Usage:

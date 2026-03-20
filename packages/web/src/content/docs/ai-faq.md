@@ -1,6 +1,6 @@
 ---
 title: "AI FAQ"
-description: "Frequently asked questions about Never Grounded AI inspections."
+description: "Frequently asked questions about LintPDF AI inspections."
 ---
 
 # AI FAQ
@@ -13,11 +13,11 @@ AI credits are the billing unit for AI-powered inspections. Text-tier inspection
 
 ### How do I enable AI features?
 
-AI features are in invite-only alpha. Email sales@nevergrounded.io with your account ID and use case. Once enabled, configure AI categories in The Bridge under Settings > AI Inspections.
+AI features are in invite-only alpha. Email sales@lintpdf.com with your account ID and use case. Once enabled, configure AI categories in the Dashboard under Settings > AI Inspections.
 
 ### Do AI features replace the core engine?
 
-No. The core engine runs 250+ deterministic, rule-based inspections and is not affected by AI features. AI inspections run alongside core engine checks and produce additional findings in the same Captain's Log. The `source` field distinguishes them.
+No. The core engine runs 250+ deterministic, rule-based checks and is not affected by AI features. AI inspections run alongside core engine checks and produce additional findings in the same Report. The `source` field distinguishes them.
 
 ### Which plans support AI features?
 
@@ -35,17 +35,18 @@ No. Credits purchased through packages never expire. Pay-per-use credits are bil
 
 ### What happens when I run out of credits?
 
-AI inspections are skipped. Core engine inspections continue normally. The Captain's Log includes an advisory noting which AI inspections were skipped. Configure the `ai.credits.depleted` Harbor Signal to be notified.
+AI inspections are skipped. Core engine checks continue normally. The Report includes an info noting which AI inspections were skipped. Configure the `ai.credits.depleted` Webhook to be notified.
 
 ### Can I set a spending limit?
 
 Yes. For pay-per-use billing, set a monthly spending cap in Settings > AI Billing. When the cap is reached, AI inspections are skipped for the remainder of the billing cycle.
 
-## Inspections
+## Checks
 
 ### Why did my AI check fail?
 
 Common reasons:
+
 - **Insufficient credits**: Your credit balance was zero. Purchase credits or enable auto top-up.
 - **Circuit breaker tripped**: Vision capacity was constrained. Vision inspections are temporarily skipped. Retry in a few minutes.
 - **Category not enabled**: The AI category for the requested inspection is not enabled on your account. Enable it in Settings > AI Inspections.
@@ -78,9 +79,9 @@ Navigate to Settings > AI Brand > Logos. Upload reference versions of your logos
 
 Yes. Navigate to Settings > AI Brand > Dictionary. Add brand names, product names, and technical terms. These words will not be flagged by the spell check inspection. See the AI Brand Configuration guide for limits by plan.
 
-### How do I use AI presets in my Voyage Plan?
+### How do I use AI presets in my Ruleset?
 
-Include `ai_preset` in your Launch request or configure AI categories in a custom Voyage Plan. See the AI Voyage Plans guide for details.
+Include `ai_preset` in your Submit request or configure AI categories in a custom Ruleset. See the AI Rulesets guide for details.
 
 ## Technical
 
@@ -88,14 +89,14 @@ Include `ai_preset` in your Launch request or configure AI categories in a custo
 
 Text-tier inspections run text-based analysis (spell check, barcode decode, palette matching) with sub-second latency at 1 credit each. Vision-tier inspections run vision-based analysis (regulatory panels, logo matching, image quality) with 1-5 second latency at 2 credits each.
 
-### Does AI processing affect my Launch latency?
+### Does AI processing affect my Submit latency?
 
-AI inspections run in parallel with core engine checks. Text-tier inspections add minimal latency. Vision-tier inspections may add 1-5 seconds depending on complexity. The core engine portion of your Captain's Log is available as soon as core processing completes, even if AI inspections are still running.
+AI inspections run in parallel with core engine checks. Text-tier inspections add minimal latency. Vision-tier inspections may add 1-5 seconds depending on complexity. The core engine portion of your Report is available as soon as core processing completes, even if AI inspections are still running.
 
 ### Are AI findings included in PDF reports?
 
 Yes. AI findings appear in PDF, JSON, and XML reports alongside core engine findings. In PDF reports, AI findings are marked with an "AI" badge.
 
-### Can I use AI features via the API only (no Bridge)?
+### Can I use AI features via the API only (no Dashboard)?
 
-Yes. All AI features are available via the API. The Bridge provides a UI for configuration, but everything can be done programmatically.
+Yes. All AI features are available via the API. The Dashboard provides a UI for configuration, but everything can be done programmatically.

@@ -50,7 +50,7 @@ export async function GET(req: Request) {
   });
 
   const appConfig = getConfig();
-  const appName = appConfig.appName ?? "Never Grounded";
+  const appName = appConfig.appName ?? "LintPDF";
   const logoUrl = `${env.APP_URL}/logo-dark.svg`;
 
   const html = `<!DOCTYPE html>

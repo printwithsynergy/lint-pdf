@@ -1,5 +1,5 @@
 /**
- * Grounded logo — uses the compact SVG logo file.
+ * LintPDF logo — uses the compact SVG logo file.
  * For hero/marketing contexts, use the marketing logo via <img>.
  *
  * Plain <img> tags are used instead of next/image to avoid
@@ -9,21 +9,13 @@
 /* eslint-disable @next/next/no-img-element */
 
 export function Logo({ className = "h-8 w-8" }: { className?: string }) {
-  return (
-    <img
-      src="/logo.png"
-      alt="Never Grounded"
-      className={className}
-    />
-  );
+  return <img src="/logo.png" alt="LintPDF" className={className} />;
 }
 
-export function MarketingLogo({ className = "h-40 w-auto" }: { className?: string }) {
-  return (
-    <img
-      src="/logo-marketing.png"
-      alt="Never Grounded"
-      className={className}
-    />
-  );
+export function MarketingLogo({
+  className = "h-40 w-auto",
+}: {
+  className?: string;
+}) {
+  return <img src="/logo-marketing.png" alt="LintPDF" className={className} />;
 }

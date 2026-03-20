@@ -376,8 +376,8 @@ def dispatch_webhook(
             content=body,
             headers={
                 "Content-Type": "application/json",
-                "X-Grounded-Event": event,
-                "X-Grounded-Signature": f"sha256={signature}",
+                "X-LintPDF-Event": event,
+                "X-LintPDF-Signature": f"sha256={signature}",
             },
             timeout=10.0,
         )

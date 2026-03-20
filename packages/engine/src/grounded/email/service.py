@@ -10,9 +10,11 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Module-level client — set via configure_email() or set_email_client()
-_resend_client: Any = None
-_from_address: str = "Grounded <noreply@thinkneverland.com>"
+# Module-level container — set via configure_email() or set_email_client()
+_email_state: dict[str, Any] = {
+    "client": None,
+    "from_address": "LintPDF <noreply@thinkneverland.com>",
+}
 _email_lock = threading.Lock()
 
 
@@ -23,27 +25,25 @@ def configure_email(api_key: str, *, from_address: str | None = None) -> None:
         api_key: Resend API key.
         from_address: Sender address override.
     """
-    global _resend_client, _from_address  # skipcq: PYL-W0603
     with _email_lock:
-        if _resend_client is not None:
+        if _email_state["client"] is not None:
             return
         import resend
 
         resend.api_key = api_key
-        _resend_client = resend.Emails
+        _email_state["client"] = resend.Emails
         if from_address:
-            _from_address = from_address
+            _email_state["from_address"] = from_address
 
 
 def set_email_client(client: Any) -> None:
     """Override the email client (for testing)."""
-    global _resend_client  # skipcq: PYL-W0603
-    _resend_client = client
+    _email_state["client"] = client
 
 
 def get_email_client() -> Any:
     """Return the current email client."""
-    return _resend_client
+    return _email_state["client"]
 
 
 @dataclass
@@ -63,10 +63,10 @@ def send_api_key_issued(*, to: str, tenant_name: str, api_key: str) -> EmailResu
         tenant_name: Name of the tenant organization.
         api_key: The raw API key (shown only once).
     """
-    subject = f"Your Grounded API Key — {tenant_name}"
+    subject = f"Your LintPDF API Key — {tenant_name}"
     html = f"""\
 <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
-  <h2 style="color: #1e293b;">Welcome to Grounded</h2>
+  <h2 style="color: #1e293b;">Welcome to LintPDF</h2>
   <p>Your API key for <strong>{tenant_name}</strong> has been issued.</p>
   <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
     <code style="font-size: 14px; word-break: break-all;">{api_key}</code>
@@ -177,8 +177,8 @@ def send_report(
     report_url: str,
     finding_count: int,
     passed: bool,
-    brand_name: str = "Grounded",
-    brand_primary_color: str = "#1a3a7a",
+    brand_name: str = "LintPDF",
+    brand_primary_color: str = "#0ea5e9",
 ) -> EmailResult:
     """Send a preflight report email with link to hosted report.
 
@@ -234,14 +234,14 @@ def _send(*, to: str, subject: str, html: str) -> EmailResult:
         logger.warning("Invalid email address rejected: %s", to)
         return EmailResult(success=False, error="Invalid email address")
 
-    if _resend_client is None:
+    if _email_state["client"] is None:
         logger.warning("Email client not configured — skipping send to %s", to)
         return EmailResult(success=False, error="Email client not configured")
 
     try:
-        result = _resend_client.send(
+        result = _email_state["client"].send(
             {
-                "from": _from_address,
+                "from": _email_state["from_address"],
                 "to": [to],
                 "subject": subject,
                 "html": html,

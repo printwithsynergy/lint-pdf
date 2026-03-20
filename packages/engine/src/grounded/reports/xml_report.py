@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # nosemgrep: use-defused-xml — output-only XML generation, no parsing of external XML
-from xml.etree.ElementTree import Element, SubElement, tostring  # skipcq: BAN-B405
+from xml.etree.ElementTree import Element, SubElement, tostring
 
 if TYPE_CHECKING:
     from grounded.profiles.orchestrator import PreflightResult

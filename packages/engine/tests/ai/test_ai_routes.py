@@ -152,7 +152,7 @@ class TestAIConfigRoutes:
         from grounded.api.ai_schemas import DictionaryUpdateRequest
         from grounded.api.routes.ai_config import set_custom_dictionary
 
-        request = DictionaryUpdateRequest(words=["NeverGrounded", "CMYK", "preflight"])
+        request = DictionaryUpdateRequest(words=["LintPDF", "CMYK", "preflight"])
 
         with (
             patch("grounded.ai.access.check_ai_access", return_value=mock_ai_config),

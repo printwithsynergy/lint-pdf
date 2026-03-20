@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 from typing import TYPE_CHECKING
 
@@ -42,28 +41,33 @@ def _seed_custom_profile(
 
 
 class TestListProfilesRoute:
-    def test_returns_200(self, client: TestClient) -> None:
+    @staticmethod
+    def test_returns_200(client: TestClient) -> None:
         assert client.get("/api/v1/profiles").status_code == 200
 
-    def test_contains_builtins(self, client: TestClient) -> None:
+    @staticmethod
+    def test_contains_builtins(client: TestClient) -> None:
         data = client.get("/api/v1/profiles").json()
         ids = [p["profile_id"] for p in data["profiles"]]
         assert "grounded-default" in ids
         assert "grounded-strict" in ids
 
-    def test_builtins_marked_as_builtin(self, client: TestClient) -> None:
+    @staticmethod
+    def test_builtins_marked_as_builtin(client: TestClient) -> None:
         data = client.get("/api/v1/profiles").json()
         for p in data["profiles"]:
             if p["profile_id"].startswith("grounded-"):
                 assert p["is_builtin"] is True
 
-    def test_includes_custom_profiles(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_includes_custom_profiles(client: TestClient, db_session: Session) -> None:
         _seed_custom_profile(db_session, "custom-listed")
         data = client.get("/api/v1/profiles").json()
         ids = [p["profile_id"] for p in data["profiles"]]
         assert "custom-listed" in ids
 
-    def test_custom_profiles_not_builtin(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_custom_profiles_not_builtin(client: TestClient, db_session: Session) -> None:
         _seed_custom_profile(db_session, "custom-flag")
         data = client.get("/api/v1/profiles").json()
         custom = [p for p in data["profiles"] if p["profile_id"] == "custom-flag"]
@@ -86,7 +90,8 @@ class TestListProfilesRoute:
         # Should still succeed, but broken profile is skipped
         assert "custom-broken" not in ids
 
-    def test_profile_summary_fields(self, client: TestClient) -> None:
+    @staticmethod
+    def test_profile_summary_fields(client: TestClient) -> None:
         data = client.get("/api/v1/profiles").json()
         p = data["profiles"][0]
         for field in ("profile_id", "name", "workflow", "is_builtin"):
@@ -99,7 +104,8 @@ class TestListProfilesRoute:
 
 
 class TestGetProfileRoute:
-    def test_builtin_profile_detail(self, client: TestClient) -> None:
+    @staticmethod
+    def test_builtin_profile_detail(client: TestClient) -> None:
         resp = client.get("/api/v1/profiles/grounded-default")
         assert resp.status_code == 200
         data = resp.json()
@@ -108,18 +114,21 @@ class TestGetProfileRoute:
         assert "checks" in data
         assert "thresholds" in data
 
-    def test_custom_profile_detail(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_custom_profile_detail(client: TestClient, db_session: Session) -> None:
         _seed_custom_profile(db_session, "custom-detail", name="Detail Profile")
         data = client.get("/api/v1/profiles/custom-detail").json()
         assert data["profile_id"] == "custom-detail"
         assert data["name"] == "Detail Profile"
         assert data["is_builtin"] is False
 
-    def test_not_found_404(self, client: TestClient) -> None:
+    @staticmethod
+    def test_not_found_404(client: TestClient) -> None:
         resp = client.get("/api/v1/profiles/nonexistent-xyz")
         assert resp.status_code == 404
 
-    def test_strict_profile_has_conformance(self, client: TestClient) -> None:
+    @staticmethod
+    def test_strict_profile_has_conformance(client: TestClient) -> None:
         data = client.get("/api/v1/profiles/grounded-strict").json()
         assert data["conformance"] == "pdfx4"
 
@@ -130,7 +139,8 @@ class TestGetProfileRoute:
 
 
 class TestCreateProfileRoute:
-    def test_create_success(self, client: TestClient) -> None:
+    @staticmethod
+    def test_create_success(client: TestClient) -> None:
         resp = client.post(
             "/api/v1/profiles",
             json={
@@ -141,7 +151,8 @@ class TestCreateProfileRoute:
         assert resp.status_code == 201
         assert resp.json()["profile_id"] == "custom-new-one"
 
-    def test_created_profile_retrievable(self, client: TestClient) -> None:
+    @staticmethod
+    def test_created_profile_retrievable(client: TestClient) -> None:
         client.post(
             "/api/v1/profiles",
             json={
@@ -153,7 +164,8 @@ class TestCreateProfileRoute:
         assert resp.status_code == 200
         assert resp.json()["name"] == "Get Check"
 
-    def test_overwrite_existing_custom(self, client: TestClient) -> None:
+    @staticmethod
+    def test_overwrite_existing_custom(client: TestClient) -> None:
         """Re-posting the same profile_id should update, not conflict."""
         client.post(
             "/api/v1/profiles",
@@ -173,7 +185,8 @@ class TestCreateProfileRoute:
         data = client.get("/api/v1/profiles/custom-overwrite").json()
         assert data["name"] == "V2"
 
-    def test_cannot_overwrite_builtin_409(self, client: TestClient) -> None:
+    @staticmethod
+    def test_cannot_overwrite_builtin_409(client: TestClient) -> None:
         resp = client.post(
             "/api/v1/profiles",
             json={
@@ -184,7 +197,8 @@ class TestCreateProfileRoute:
         assert resp.status_code == 409
         assert "built-in" in resp.json()["detail"].lower()
 
-    def test_invalid_profile_id_format(self, client: TestClient) -> None:
+    @staticmethod
+    def test_invalid_profile_id_format(client: TestClient) -> None:
         resp = client.post(
             "/api/v1/profiles",
             json={
@@ -194,7 +208,8 @@ class TestCreateProfileRoute:
         )
         assert resp.status_code == 422
 
-    def test_invalid_voyage_plan(self, client: TestClient) -> None:
+    @staticmethod
+    def test_invalid_voyage_plan(client: TestClient) -> None:
         resp = client.post(
             "/api/v1/profiles",
             json={
@@ -204,7 +219,8 @@ class TestCreateProfileRoute:
         )
         assert resp.status_code == 422
 
-    def test_single_char_profile_id_rejected(self, client: TestClient) -> None:
+    @staticmethod
+    def test_single_char_profile_id_rejected(client: TestClient) -> None:
         """Profile ID pattern requires at least two characters."""
         resp = client.post(
             "/api/v1/profiles",
@@ -219,23 +235,27 @@ class TestCreateProfileRoute:
 
 
 class TestDeleteProfileRoute:
-    def test_delete_custom_profile(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_delete_custom_profile(client: TestClient, db_session: Session) -> None:
         _seed_custom_profile(db_session, "custom-del-me")
         resp = client.delete("/api/v1/profiles/custom-del-me")
         assert resp.status_code == 204
         # Verify gone
         assert client.get("/api/v1/profiles/custom-del-me").status_code == 404
 
-    def test_delete_builtin_forbidden(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_builtin_forbidden(client: TestClient) -> None:
         resp = client.delete("/api/v1/profiles/grounded-default")
         assert resp.status_code == 403
         assert "built-in" in resp.json()["detail"].lower()
 
-    def test_delete_nonexistent_404(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_nonexistent_404(client: TestClient) -> None:
         resp = client.delete("/api/v1/profiles/no-such-profile")
         assert resp.status_code == 404
 
-    def test_delete_then_recreate(self, client: TestClient, db_session: Session) -> None:
+    @staticmethod
+    def test_delete_then_recreate(client: TestClient, db_session: Session) -> None:
         _seed_custom_profile(db_session, "custom-reuse")
         client.delete("/api/v1/profiles/custom-reuse")
         resp = client.post(

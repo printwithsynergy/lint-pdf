@@ -12,7 +12,7 @@ export default async function ApiKeysPage() {
     <main className="p-8">
       <h1 className="font-display text-2xl font-bold">API Keys</h1>
       <p className="mt-2 text-muted-foreground">
-        Manage your API keys for the Grounded engine.
+        Manage your API keys for the LintPDF engine.
       </p>
     </main>
   );

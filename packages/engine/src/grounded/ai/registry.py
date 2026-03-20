@@ -92,15 +92,14 @@ def get_available_features() -> list[dict[str, str]]:
     ]
 
 
-_registered = False
+_registry_state: dict[str, bool] = {"registered": False}
 
 
 def _ensure_registered() -> None:
     """Ensure all AI analyzer modules have been imported (lazy registration)."""
-    global _registered  # skipcq: PYL-W0603
-    if _registered:
+    if _registry_state["registered"]:
         return
-    _registered = True
+    _registry_state["registered"] = True
 
     # Import all analyzer modules to trigger @register_ai_analyzer decorators
     try:

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.analyzers.transparency import TransparencyAnalyzer
 from grounded.semantic.events import (
@@ -26,7 +25,8 @@ def _make_document() -> SemanticDocument:
 class TestBlendModes:
     """Test GRD_TRANS_001: risky blend mode detection."""
 
-    def test_safe_blend_mode_no_finding(self) -> None:
+    @staticmethod
+    def test_safe_blend_mode_no_finding() -> None:
         event = OpacityChangedEvent(
             operator="gs",
             page_num=1,
@@ -38,7 +38,8 @@ class TestBlendModes:
         blend_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_001"]
         assert len(blend_findings) == 0
 
-    def test_risky_blend_mode_delay(self) -> None:
+    @staticmethod
+    def test_risky_blend_mode_delay() -> None:
         event = OpacityChangedEvent(
             operator="gs",
             page_num=1,
@@ -51,7 +52,8 @@ class TestBlendModes:
         assert len(blend_findings) == 1
         assert blend_findings[0].severity == Severity.SQUALL
 
-    def test_normal_blend_mode_ok(self) -> None:
+    @staticmethod
+    def test_normal_blend_mode_ok() -> None:
         event = OpacityChangedEvent(
             operator="gs",
             page_num=1,
@@ -63,7 +65,8 @@ class TestBlendModes:
         blend_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_001"]
         assert len(blend_findings) == 0
 
-    def test_all_risky_modes(self) -> None:
+    @staticmethod
+    def test_all_risky_modes() -> None:
         """All 8 risky blend modes should trigger findings."""
         risky = [
             "HardLight",
@@ -78,7 +81,8 @@ class TestBlendModes:
         for mode in risky:
             assert TransparencyAnalyzer.is_risky_blend_mode(mode), f"{mode} should be risky"
 
-    def test_all_safe_modes(self) -> None:
+    @staticmethod
+    def test_all_safe_modes() -> None:
         """All 8 safe blend modes should not trigger findings."""
         safe = [
             "Normal",
@@ -97,7 +101,8 @@ class TestBlendModes:
 class TestTransparencyOverprintConflict:
     """Test GRD_TRANS_002: transparency + overprint conflict."""
 
-    def test_conflict_detected(self) -> None:
+    @staticmethod
+    def test_conflict_detected() -> None:
         events = [
             OpacityChangedEvent(
                 operator="gs",
@@ -118,7 +123,8 @@ class TestTransparencyOverprintConflict:
         assert len(conflict_findings) == 1
         assert conflict_findings[0].severity == Severity.SQUALL
 
-    def test_no_conflict_without_transparency(self) -> None:
+    @staticmethod
+    def test_no_conflict_without_transparency() -> None:
         events = [
             OverprintChangedEvent(
                 operator="gs",
@@ -132,7 +138,8 @@ class TestTransparencyOverprintConflict:
         conflict_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_002"]
         assert len(conflict_findings) == 0
 
-    def test_no_conflict_without_overprint(self) -> None:
+    @staticmethod
+    def test_no_conflict_without_overprint() -> None:
         events = [
             OpacityChangedEvent(
                 operator="gs",
@@ -150,7 +157,8 @@ class TestTransparencyOverprintConflict:
 class TestSoftMask:
     """Test GRD_TRANS_003: soft mask detection."""
 
-    def test_soft_mask_advisory(self) -> None:
+    @staticmethod
+    def test_soft_mask_advisory() -> None:
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -167,7 +175,8 @@ class TestSoftMask:
         assert len(mask_findings) == 1
         assert mask_findings[0].severity == Severity.ADVISORY
 
-    def test_no_soft_mask_ok(self) -> None:
+    @staticmethod
+    def test_no_soft_mask_ok() -> None:
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -187,7 +196,8 @@ class TestSoftMask:
 class TestTransparencyGroupNonCMYK:
     """Test GRD_TRANS_005: transparency group with non-CMYK color space."""
 
-    def test_rgb_group_advisory(self) -> None:
+    @staticmethod
+    def test_rgb_group_advisory() -> None:
         """Transparency group with DeviceRGB triggers GRD_TRANS_005."""
         doc = SemanticDocument(
             version="2.0",
@@ -208,7 +218,8 @@ class TestTransparencyGroupNonCMYK:
         assert grp_findings[0].severity == Severity.ADVISORY
         assert "DeviceRGB" in grp_findings[0].message
 
-    def test_cmyk_group_no_finding(self) -> None:
+    @staticmethod
+    def test_cmyk_group_no_finding() -> None:
         """Transparency group with DeviceCMYK does not trigger GRD_TRANS_005."""
         doc = SemanticDocument(
             version="2.0",
@@ -227,7 +238,8 @@ class TestTransparencyGroupNonCMYK:
         grp_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_005"]
         assert len(grp_findings) == 0
 
-    def test_no_group_no_finding(self) -> None:
+    @staticmethod
+    def test_no_group_no_finding() -> None:
         """No transparency group does not trigger GRD_TRANS_005."""
         doc = _make_document()
         analyzer = TransparencyAnalyzer()
@@ -235,7 +247,8 @@ class TestTransparencyGroupNonCMYK:
         grp_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_005"]
         assert len(grp_findings) == 0
 
-    def test_empty_cs_no_finding(self) -> None:
+    @staticmethod
+    def test_empty_cs_no_finding() -> None:
         """Transparency group with empty /CS does not trigger GRD_TRANS_005."""
         doc = SemanticDocument(
             version="2.0",
@@ -258,7 +271,8 @@ class TestTransparencyGroupNonCMYK:
 class TestKnockoutTransparencyGroup:
     """Test GRD_TRANS_006: knockout transparency group."""
 
-    def test_knockout_group_advisory(self) -> None:
+    @staticmethod
+    def test_knockout_group_advisory() -> None:
         """Knockout transparency group triggers GRD_TRANS_006."""
         doc = SemanticDocument(
             version="2.0",
@@ -279,7 +293,8 @@ class TestKnockoutTransparencyGroup:
         assert ko_findings[0].severity == Severity.ADVISORY
         assert ko_findings[0].details["knockout"] is True
 
-    def test_non_knockout_group_no_finding(self) -> None:
+    @staticmethod
+    def test_non_knockout_group_no_finding() -> None:
         """Non-knockout transparency group does not trigger GRD_TRANS_006."""
         doc = SemanticDocument(
             version="2.0",
@@ -298,7 +313,8 @@ class TestKnockoutTransparencyGroup:
         ko_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_006"]
         assert len(ko_findings) == 0
 
-    def test_no_group_no_knockout_finding(self) -> None:
+    @staticmethod
+    def test_no_group_no_knockout_finding() -> None:
         """No transparency group does not trigger GRD_TRANS_006."""
         doc = _make_document()
         analyzer = TransparencyAnalyzer()
@@ -306,7 +322,8 @@ class TestKnockoutTransparencyGroup:
         ko_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_006"]
         assert len(ko_findings) == 0
 
-    def test_knockout_and_non_cmyk_both_fire(self) -> None:
+    @staticmethod
+    def test_knockout_and_non_cmyk_both_fire() -> None:
         """A group with both knockout and non-CMYK triggers both findings."""
         doc = SemanticDocument(
             version="2.0",
@@ -330,7 +347,8 @@ class TestKnockoutTransparencyGroup:
 class TestShadingPatternBanding:
     """Test GRD_TRANS_007: shading pattern with banding risk."""
 
-    def test_shading_detected(self) -> None:
+    @staticmethod
+    def test_shading_detected() -> None:
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
@@ -350,7 +368,8 @@ class TestShadingPatternBanding:
         assert f[0].severity == Severity.ADVISORY
         assert f[0].details["shading_count"] == 1
 
-    def test_multiple_shadings(self) -> None:
+    @staticmethod
+    def test_multiple_shadings() -> None:
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
@@ -374,7 +393,8 @@ class TestShadingPatternBanding:
         assert len(f) == 1
         assert f[0].details["shading_count"] == 2
 
-    def test_no_shading_no_flag(self) -> None:
+    @staticmethod
+    def test_no_shading_no_flag() -> None:
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
@@ -392,7 +412,8 @@ class TestShadingPatternBanding:
         f = [f for f in findings if f.inspection_id == "GRD_TRANS_007"]
         assert len(f) == 0
 
-    def test_empty_shading_dict_no_flag(self) -> None:
+    @staticmethod
+    def test_empty_shading_dict_no_flag() -> None:
         doc = SemanticDocument(
             version="2.0",
             page_count=1,

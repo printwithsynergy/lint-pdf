@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock
 
 import pytest
@@ -37,7 +36,8 @@ def fake_emails() -> FakeEmails:
 
 
 class TestSendApiKeyIssued:
-    def test_sends_email(self, fake_emails: FakeEmails) -> None:
+    @staticmethod
+    def test_sends_email(fake_emails: FakeEmails) -> None:
         result = send_api_key_issued(
             to="dev@example.com",
             tenant_name="Acme Corp",
@@ -51,7 +51,8 @@ class TestSendApiKeyIssued:
         assert "Acme Corp" in call["subject"]
         assert "gnd_abc123" in call["html"]
 
-    def test_contains_save_warning(self, fake_emails: FakeEmails) -> None:
+    @staticmethod
+    def test_contains_save_warning(fake_emails: FakeEmails) -> None:
         send_api_key_issued(
             to="dev@example.com",
             tenant_name="Test",
@@ -62,7 +63,8 @@ class TestSendApiKeyIssued:
 
 
 class TestSendJobComplete:
-    def test_sends_with_findings(self, fake_emails: FakeEmails) -> None:
+    @staticmethod
+    def test_sends_with_findings(fake_emails: FakeEmails) -> None:
         result = send_job_complete(
             to="dev@example.com",
             tenant_name="Acme Corp",
@@ -75,7 +77,8 @@ class TestSendJobComplete:
         assert "5 issue(s)" in call["subject"]
         assert "brochure.pdf" in call["html"]
 
-    def test_sends_with_zero_findings(self, fake_emails: FakeEmails) -> None:
+    @staticmethod
+    def test_sends_with_zero_findings(fake_emails: FakeEmails) -> None:
         send_job_complete(
             to="dev@example.com",
             tenant_name="Acme Corp",
@@ -88,7 +91,8 @@ class TestSendJobComplete:
 
 
 class TestSendRateLimitWarning:
-    def test_sends_warning(self, fake_emails: FakeEmails) -> None:
+    @staticmethod
+    def test_sends_warning(fake_emails: FakeEmails) -> None:
         result = send_rate_limit_warning(
             to="dev@example.com",
             tenant_name="Acme Corp",
@@ -101,7 +105,8 @@ class TestSendRateLimitWarning:
         assert "90" in call["html"]
         assert "100" in call["html"]
 
-    def test_100_percent(self, fake_emails: FakeEmails) -> None:
+    @staticmethod
+    def test_100_percent(fake_emails: FakeEmails) -> None:
         send_rate_limit_warning(
             to="dev@example.com",
             tenant_name="Test",
@@ -112,7 +117,8 @@ class TestSendRateLimitWarning:
 
 
 class TestEmailClientNotConfigured:
-    def test_returns_failure(self) -> None:
+    @staticmethod
+    def test_returns_failure() -> None:
         set_email_client(None)
         result = send_api_key_issued(
             to="dev@example.com",
@@ -124,7 +130,8 @@ class TestEmailClientNotConfigured:
 
 
 class TestEmailSendFailure:
-    def test_returns_failure_on_exception(self) -> None:
+    @staticmethod
+    def test_returns_failure_on_exception() -> None:
         broken = MagicMock()
         broken.send.side_effect = RuntimeError("Network error")
         set_email_client(broken)
@@ -140,11 +147,13 @@ class TestEmailSendFailure:
 
 
 class TestGetEmailClient:
-    def test_returns_none_by_default(self) -> None:
+    @staticmethod
+    def test_returns_none_by_default() -> None:
         set_email_client(None)
         assert get_email_client() is None
 
-    def test_returns_set_client(self) -> None:
+    @staticmethod
+    def test_returns_set_client() -> None:
         mock = MagicMock()
         set_email_client(mock)
         assert get_email_client() is mock
@@ -152,11 +161,13 @@ class TestGetEmailClient:
 
 
 class TestEmailResult:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         result = EmailResult(success=True)
         assert result.email_id is None
         assert result.error is None
 
-    def test_with_id(self) -> None:
+    @staticmethod
+    def test_with_id() -> None:
         result = EmailResult(success=True, email_id="msg-123")
         assert result.email_id == "msg-123"

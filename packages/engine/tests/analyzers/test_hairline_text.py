@@ -5,7 +5,6 @@ Tests invisible text, white text, registration text, and small multi-ink text.
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.analyzers.hairline import HairlineAnalyzer
 from grounded.semantic.events import TextRenderedEvent
@@ -48,7 +47,8 @@ def _text_event(
 class TestInvisibleText:
     """Test GRD_TEXT_003: invisible text (rendering mode 3)."""
 
-    def test_invisible_text_advisory(self) -> None:
+    @staticmethod
+    def test_invisible_text_advisory() -> None:
         """Rendering mode 3 triggers GRD_TEXT_003."""
         event = _text_event(rendering_mode=3)
         analyzer = HairlineAnalyzer()
@@ -58,7 +58,8 @@ class TestInvisibleText:
         assert inv[0].severity == Severity.ADVISORY
         assert inv[0].object_type == "text"
 
-    def test_visible_text_no_finding(self) -> None:
+    @staticmethod
+    def test_visible_text_no_finding() -> None:
         """Rendering mode 0 (normal fill) does not trigger GRD_TEXT_003."""
         event = _text_event(rendering_mode=0)
         analyzer = HairlineAnalyzer()
@@ -66,7 +67,8 @@ class TestInvisibleText:
         inv = [f for f in findings if f.inspection_id == "GRD_TEXT_003"]
         assert len(inv) == 0
 
-    def test_stroke_text_no_finding(self) -> None:
+    @staticmethod
+    def test_stroke_text_no_finding() -> None:
         """Rendering mode 1 (stroke) does not trigger GRD_TEXT_003."""
         event = _text_event(rendering_mode=1)
         analyzer = HairlineAnalyzer()
@@ -74,7 +76,8 @@ class TestInvisibleText:
         inv = [f for f in findings if f.inspection_id == "GRD_TEXT_003"]
         assert len(inv) == 0
 
-    def test_invisible_text_details(self) -> None:
+    @staticmethod
+    def test_invisible_text_details() -> None:
         event = _text_event(rendering_mode=3)
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
@@ -87,7 +90,8 @@ class TestInvisibleText:
 class TestWhiteText:
     """Test GRD_TEXT_004: white text detection."""
 
-    def test_white_gray_text(self) -> None:
+    @staticmethod
+    def test_white_gray_text() -> None:
         """DeviceGray 1.0 triggers GRD_TEXT_004."""
         event = _text_event(color_space="DeviceGray", color_values=(1.0,))
         analyzer = HairlineAnalyzer()
@@ -96,7 +100,8 @@ class TestWhiteText:
         assert len(wt) == 1
         assert wt[0].severity == Severity.ADVISORY
 
-    def test_white_rgb_text(self) -> None:
+    @staticmethod
+    def test_white_rgb_text() -> None:
         """DeviceRGB 1,1,1 triggers GRD_TEXT_004."""
         event = _text_event(color_space="DeviceRGB", color_values=(1.0, 1.0, 1.0))
         analyzer = HairlineAnalyzer()
@@ -104,7 +109,8 @@ class TestWhiteText:
         wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
         assert len(wt) == 1
 
-    def test_white_cmyk_text(self) -> None:
+    @staticmethod
+    def test_white_cmyk_text() -> None:
         """DeviceCMYK 0,0,0,0 triggers GRD_TEXT_004."""
         event = _text_event(color_space="DeviceCMYK", color_values=(0.0, 0.0, 0.0, 0.0))
         analyzer = HairlineAnalyzer()
@@ -112,7 +118,8 @@ class TestWhiteText:
         wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
         assert len(wt) == 1
 
-    def test_black_text_no_finding(self) -> None:
+    @staticmethod
+    def test_black_text_no_finding() -> None:
         """Black text does not trigger GRD_TEXT_004."""
         event = _text_event(color_space="DeviceGray", color_values=(0.0,))
         analyzer = HairlineAnalyzer()
@@ -120,7 +127,8 @@ class TestWhiteText:
         wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
         assert len(wt) == 0
 
-    def test_dark_gray_no_finding(self) -> None:
+    @staticmethod
+    def test_dark_gray_no_finding() -> None:
         """Dark gray text (0.5) does not trigger GRD_TEXT_004."""
         event = _text_event(color_space="DeviceGray", color_values=(0.5,))
         analyzer = HairlineAnalyzer()
@@ -128,7 +136,8 @@ class TestWhiteText:
         wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
         assert len(wt) == 0
 
-    def test_white_text_page_num(self) -> None:
+    @staticmethod
+    def test_white_text_page_num() -> None:
         event = _text_event(color_space="DeviceGray", color_values=(1.0,), page_num=5)
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
@@ -139,7 +148,8 @@ class TestWhiteText:
 class TestRegistrationText:
     """Test GRD_TEXT_005: text on registration color."""
 
-    def test_registration_text_delay(self) -> None:
+    @staticmethod
+    def test_registration_text_delay() -> None:
         """All CMYK at 100% triggers GRD_TEXT_005."""
         event = _text_event(
             color_space="DeviceCMYK",
@@ -151,7 +161,8 @@ class TestRegistrationText:
         assert len(reg) == 1
         assert reg[0].severity == Severity.SQUALL
 
-    def test_near_registration_triggers(self) -> None:
+    @staticmethod
+    def test_near_registration_triggers() -> None:
         """Near-100% values (within tolerance) trigger GRD_TEXT_005."""
         event = _text_event(
             color_space="DeviceCMYK",
@@ -162,7 +173,8 @@ class TestRegistrationText:
         reg = [f for f in findings if f.inspection_id == "GRD_TEXT_005"]
         assert len(reg) == 1
 
-    def test_black_only_no_registration(self) -> None:
+    @staticmethod
+    def test_black_only_no_registration() -> None:
         """100% K only does not trigger GRD_TEXT_005."""
         event = _text_event(
             color_space="DeviceCMYK",
@@ -173,7 +185,8 @@ class TestRegistrationText:
         reg = [f for f in findings if f.inspection_id == "GRD_TEXT_005"]
         assert len(reg) == 0
 
-    def test_rgb_text_no_registration(self) -> None:
+    @staticmethod
+    def test_rgb_text_no_registration() -> None:
         """Non-CMYK text does not trigger GRD_TEXT_005."""
         event = _text_event(
             color_space="DeviceRGB",
@@ -184,7 +197,8 @@ class TestRegistrationText:
         reg = [f for f in findings if f.inspection_id == "GRD_TEXT_005"]
         assert len(reg) == 0
 
-    def test_registration_text_details(self) -> None:
+    @staticmethod
+    def test_registration_text_details() -> None:
         event = _text_event(
             color_space="DeviceCMYK",
             color_values=(1.0, 1.0, 1.0, 1.0),
@@ -200,7 +214,8 @@ class TestRegistrationText:
 class TestSmallMultiInkText:
     """Test GRD_TEXT_006: small multi-ink text."""
 
-    def test_small_multi_ink_delay(self) -> None:
+    @staticmethod
+    def test_small_multi_ink_delay() -> None:
         """7pt CMYK text with >1 ink triggers GRD_TEXT_006."""
         event = _text_event(
             font_size=7.0,
@@ -213,7 +228,8 @@ class TestSmallMultiInkText:
         assert len(mi) == 1
         assert mi[0].severity == Severity.SQUALL
 
-    def test_large_multi_ink_no_finding(self) -> None:
+    @staticmethod
+    def test_large_multi_ink_no_finding() -> None:
         """10pt CMYK text with >1 ink does not trigger GRD_TEXT_006 (above 8pt)."""
         event = _text_event(
             font_size=10.0,
@@ -225,7 +241,8 @@ class TestSmallMultiInkText:
         mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
         assert len(mi) == 0
 
-    def test_small_single_ink_no_finding(self) -> None:
+    @staticmethod
+    def test_small_single_ink_no_finding() -> None:
         """7pt K-only text does not trigger GRD_TEXT_006."""
         event = _text_event(
             font_size=7.0,
@@ -237,7 +254,8 @@ class TestSmallMultiInkText:
         mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
         assert len(mi) == 0
 
-    def test_small_rgb_no_finding(self) -> None:
+    @staticmethod
+    def test_small_rgb_no_finding() -> None:
         """Small RGB text does not trigger GRD_TEXT_006 (not CMYK)."""
         event = _text_event(
             font_size=6.0,
@@ -249,7 +267,8 @@ class TestSmallMultiInkText:
         mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
         assert len(mi) == 0
 
-    def test_effective_size_with_scaling(self) -> None:
+    @staticmethod
+    def test_effective_size_with_scaling() -> None:
         """12pt text scaled down to 6pt effective triggers GRD_TEXT_006."""
         event = _text_event(
             font_size=12.0,
@@ -262,7 +281,8 @@ class TestSmallMultiInkText:
         mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
         assert len(mi) == 1
 
-    def test_multi_ink_details(self) -> None:
+    @staticmethod
+    def test_multi_ink_details() -> None:
         event = _text_event(
             font_size=6.0,
             color_space="DeviceCMYK",

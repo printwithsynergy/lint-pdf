@@ -1,5 +1,5 @@
 {
-  "name": "Grounded Advisory Only",
+  "name": "LintPDF Advisory Only",
   "description": "Non-blocking profile. All checks run but severity capped at advisory.",
   "version": "1.0",
   "conformance": null,

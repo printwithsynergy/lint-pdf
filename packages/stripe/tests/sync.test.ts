@@ -21,35 +21,43 @@ vi.mock("../src/metered.js", () => ({
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+/** Create a mock PluginContext with all required service stubs. */
+function createMockContext() {
+  return {
+    addRoutes: vi.fn(),
+    addNavItem: vi.fn(),
+    addPage: vi.fn(),
+    addPermission: vi.fn(),
+    addRole: vi.fn(),
+    addPublicPath: vi.fn(),
+    on: vi.fn(),
+    emit: vi.fn(),
+    services: {
+      logger: {
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+      },
+      db: {
+        subscription: { findFirst: vi.fn() },
+        stripeCustomer: { findFirst: vi.fn() },
+      },
+      auth: {},
+      config: {},
+    },
+  };
+}
+
+/** Cast a mock context to PluginContext for use with plugin methods. */
+function asPluginContext(
+  ctx: ReturnType<typeof createMockContext>,
+): PluginContext {
+  return ctx as PluginContext;
+}
+
 describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
   const originalEnv = { ...process.env };
-
-  function mockCtx() {
-    return {
-      addRoutes: vi.fn(),
-      addNavItem: vi.fn(),
-      addPage: vi.fn(),
-      addPermission: vi.fn(),
-      addRole: vi.fn(),
-      addPublicPath: vi.fn(),
-      on: vi.fn(),
-      emit: vi.fn(),
-      services: {
-        logger: {
-          info: vi.fn(),
-          warn: vi.fn(),
-          error: vi.fn(),
-          debug: vi.fn(),
-        },
-        db: {
-          subscription: { findFirst: vi.fn() },
-          stripeCustomer: { findFirst: vi.fn() },
-        },
-        auth: {},
-        config: {},
-      },
-    };
-  }
 
   beforeEach(() => {
     vi.resetModules();
@@ -64,7 +72,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
   });
 
   function getWebhookHandler(
-    ctx: ReturnType<typeof mockCtx>,
+    ctx: ReturnType<typeof createMockContext>,
     eventName: string,
   ) {
     const call = ctx.on.mock.calls.find((c: unknown[]) => c[0] === eventName);
@@ -73,13 +81,13 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("syncPlanToEngine", () => {
     it("calls engine admin API with correct URL and plan", async () => {
-      process.env.GROUNDED_API_URL = "https://engine.grounded.dev";
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com";
       process.env.GROUNDED_ADMIN_API_KEY = "admin_key_123";
       mockFetch.mockResolvedValue({ ok: true });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "tenant_abc",
@@ -107,7 +115,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       // syncPlanToEngine should have been called
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://engine.grounded.dev/api/v1/admin/tenants/tenant_abc/plan",
+        "https://engine.lintpdf.com/api/v1/admin/tenants/tenant_abc/plan",
         expect.objectContaining({
           method: "PATCH",
           headers: expect.objectContaining({
@@ -122,9 +130,9 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
     it("uses default localhost URL when GROUNDED_API_URL is not set", async () => {
       mockFetch.mockResolvedValue({ ok: true });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "tenant_xyz",
@@ -159,9 +167,9 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
     it("maps plan lookup keys correctly", async () => {
       mockFetch.mockResolvedValue({ ok: true });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t1",
@@ -224,9 +232,9 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
     it("defaults to free plan for unknown lookup key", async () => {
       mockFetch.mockResolvedValue({ ok: true });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t1",
@@ -262,9 +270,9 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
         statusText: "Internal Server Error",
       });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t1",
@@ -302,13 +310,13 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("syncStripeIds", () => {
     it("calls engine admin API with stripe customer and subscription item IDs", async () => {
-      process.env.GROUNDED_API_URL = "https://engine.grounded.dev";
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com";
       // Return ok for both syncPlanToEngine and syncStripeIds calls
       mockFetch.mockResolvedValue({ ok: true });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_sync",
@@ -336,7 +344,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       // Second fetch call should be syncStripeIds
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://engine.grounded.dev/api/v1/admin/tenants/t_sync/stripe",
+        "https://engine.lintpdf.com/api/v1/admin/tenants/t_sync/stripe",
         expect.objectContaining({
           method: "PATCH",
           body: JSON.stringify({
@@ -357,9 +365,9 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
           statusText: "Forbidden",
         }); // syncStripeIds
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_fail",
@@ -400,9 +408,9 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
       delete process.env.GROUNDED_ADMIN_API_KEY;
       mockFetch.mockResolvedValue({ ok: true });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_nokey",
@@ -441,9 +449,9 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
     it("syncs plan to free when subscription is deleted", async () => {
       mockFetch.mockResolvedValue({ ok: true });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_deleted",
@@ -479,9 +487,9 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
         statusText: "Internal Server Error",
       });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_fail_down",
@@ -509,12 +517,12 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("engineAdminUrl", () => {
     it("strips trailing slash from GROUNDED_API_URL", async () => {
-      process.env.GROUNDED_API_URL = "https://engine.grounded.dev/";
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com/";
       mockFetch.mockResolvedValue({ ok: true });
 
-      const ctx = mockCtx();
+      const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx as unknown as PluginContext); // skipcq: JS-0323
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_slash",
@@ -529,7 +537,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
       });
 
       expect(mockFetch).toHaveBeenCalledWith(
-        "https://engine.grounded.dev/api/v1/admin/tenants/t_slash/plan",
+        "https://engine.lintpdf.com/api/v1/admin/tenants/t_slash/plan",
         expect.anything(),
       );
     });

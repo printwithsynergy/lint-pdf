@@ -1,17 +1,17 @@
 ---
 title: "AI Brand Configuration"
-description: "Setting up brand palette, uploading reference logos, and configuring custom dictionaries for AI inspections."
+description: "Setting up brand palette, uploading reference logos, and configuring custom dictionaries for AI checks."
 ---
 
 # AI Brand Configuration
 
-Never Grounded AI inspections can validate files against your brand guidelines. Configure your brand palette, upload reference logos, and maintain a custom dictionary for spell checking.
+LintPDF AI checks can validate files against your brand guidelines. Configure your brand palette, upload reference logos, and maintain a custom dictionary for spell checking.
 
 ## Brand Palette
 
 Define your approved brand colors so the `ai.color.brand_palette` inspection can flag off-brand color usage.
 
-### Via The Bridge
+### Via Dashboard
 
 Navigate to **Settings > AI Brand > Color Palette** and add your brand colors as hex values with optional names:
 
@@ -22,8 +22,8 @@ Navigate to **Settings > AI Brand > Color Palette** and add your brand colors as
 ### Via API
 
 ```bash
-curl -X PUT https://api.nevergrounded.io/api/v1/ai/brand/palette \
-  -H "Authorization: Bearer grd_..." \
+curl -X PUT https://api.lintpdf.com/api/v1/ai/brand/palette \
+  -H "Authorization: Bearer lpdf_..." \
   -H "Content-Type: application/json" \
   -d '{
     "colors": [
@@ -41,17 +41,17 @@ The `tolerance` field sets the maximum Delta E (CIE2000) difference allowed befo
 
 Upload reference versions of your logos so the `ai.brand.logo_match` inspection can verify logo usage in submitted files.
 
-### Via The Bridge
+### Via Dashboard
 
 Navigate to **Settings > AI Brand > Logos** and upload your reference logo files. Supported formats: PNG, SVG, PDF, EPS.
 
-Upload multiple variations if needed (horizontal, stacked, icon-only, reversed, etc.). Never Grounded will match detected logos against all uploaded references.
+Upload multiple variations if needed (horizontal, stacked, icon-only, reversed, etc.). LintPDF will match detected logos against all uploaded references.
 
 ### Via API
 
 ```bash
-curl -X POST https://api.nevergrounded.io/api/v1/ai/brand/logos \
-  -H "Authorization: Bearer grd_..." \
+curl -X POST https://api.lintpdf.com/api/v1/ai/brand/logos \
+  -H "Authorization: Bearer lpdf_..." \
   -F file=@logo-horizontal.png \
   -F name="Horizontal Logo" \
   -F variant="horizontal"
@@ -69,19 +69,19 @@ When the `ai.brand.logo_match` inspection runs, it:
 
 Add brand-specific words, product names, and technical terms to your custom dictionary so the `ai.content.spell_check` inspection does not flag them as misspellings.
 
-### Via The Bridge
+### Via Dashboard
 
 Navigate to **Settings > AI Brand > Dictionary** and add words one per line or upload a text file.
 
 ### Via API
 
 ```bash
-curl -X PUT https://api.nevergrounded.io/api/v1/ai/brand/dictionary \
-  -H "Authorization: Bearer grd_..." \
+curl -X PUT https://api.lintpdf.com/api/v1/ai/brand/dictionary \
+  -H "Authorization: Bearer lpdf_..." \
   -H "Content-Type: application/json" \
   -d '{
     "words": [
-      "NeverGrounded",
+      "LintPDF",
       "PreflightPro",
       "XtraShield",
       "BioClean"
@@ -94,9 +94,9 @@ Use `mode: "replace"` to overwrite the entire dictionary or `mode: "append"` to 
 
 ### Dictionary Limits
 
-| Plan | Max Words |
-|------|-----------|
-| Starter | 500 |
-| Growth | 2,000 |
-| Scale | 10,000 |
+| Plan       | Max Words |
+| ---------- | --------- |
+| Starter    | 500       |
+| Growth     | 2,000     |
+| Scale      | 10,000    |
 | Enterprise | Unlimited |

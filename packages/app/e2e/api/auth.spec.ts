@@ -22,7 +22,7 @@ test.describe("Auth API", () => {
     test("rejects invalid MCP secret key", async ({ request }) => {
       const res = await request.post("/api/auth/mcp-backdoor", {
         data: {
-          email: "test@nevergrounded.io",
+          email: "test@lintpdf.com",
           mcpSecretKey: "wrong-key-value",
         },
       });
@@ -34,7 +34,7 @@ test.describe("Auth API", () => {
 
     test("rejects missing fields", async ({ request }) => {
       const res = await request.post("/api/auth/mcp-backdoor", {
-        data: { email: "test@nevergrounded.io" },
+        data: { email: "test@lintpdf.com" },
       });
 
       expect(res.status()).toBe(400);

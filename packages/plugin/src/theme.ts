@@ -1,30 +1,30 @@
 /**
- * Grounded theme definition using Pixie Dust Theme Kit.
+ * LintPDF theme definition using Pixie Dust Theme Kit.
  *
- * Defines the Never Grounded brand identity for the Pixie Dust dashboard.
+ * Defines the LintPDF brand identity for the Pixie Dust dashboard.
  * Per-tenant branding for white-label customization remains in the
  * tenant model (brand_name, brand_logo_url, brand_primary_color, etc.).
  */
 
 import { defineTheme } from "@thinkneverland/pixie-dust-theme-kit";
 
-export const groundedTheme = defineTheme({
-  name: "grounded",
-  displayName: "Never Grounded",
+export const lintpdfTheme = defineTheme({
+  name: "lintpdf",
+  displayName: "LintPDF",
   metadata: {
-    title: "Never Grounded — Built to sail. Cleared for press.",
+    title: "LintPDF — Every check. Every page. Every time.",
     description:
-      "Never Grounded — the Pixie Dust-powered SaaS platform by Think Neverland.",
-    themeColor: "#162d60",
+      "LintPDF — the Pixie Dust-powered SaaS platform by Think Neverland.",
+    themeColor: "#0ea5e9",
   },
   brand: {
     companyName: "Think Neverland",
-    siteUrl: "https://nevergrounded.io",
+    siteUrl: "https://lintpdf.com",
   },
   cssVariables: {
-    "--primary": "220 63% 23%",
-    "--primary-foreground": "0 0% 98%",
-    "--accent": "207 55% 57%",
-    "--accent-foreground": "0 0% 98%",
+    "--primary": "199 89% 48%",
+    "--primary-foreground": "0 0% 100%",
+    "--accent": "199 95% 74%",
+    "--accent-foreground": "201 90% 27%",
   },
 });

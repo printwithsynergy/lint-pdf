@@ -1,88 +1,84 @@
 /**
- * Never Grounded brand constants — single source of truth for all pages.
+ * LintPDF brand constants — single source of truth for all pages.
  */
 
 // ── Brand Language Glossary ─────────────────────────────────
 export const glossary = [
-  {
-    concept: "Pass status",
-    term: "Clear to Sail",
-    usage: "Reports, API responses, UI",
-  },
-  {
-    concept: "Fail status",
-    term: "Aground",
-    usage: "Reports, API responses, UI",
-  },
-  { concept: "Dashboard", term: "The Bridge", usage: "Navigation, docs" },
+  { concept: "Pass status", term: "Pass", usage: "Reports, API responses, UI" },
+  { concept: "Fail status", term: "Fail", usage: "Reports, API responses, UI" },
+  { concept: "Dashboard", term: "Dashboard", usage: "Navigation, docs" },
   {
     concept: "Preflight checklist/profile",
-    term: "Voyage Plan",
+    term: "Ruleset",
     usage: "Docs, API, pricing",
   },
-  { concept: "Report output", term: "Captain's Log", usage: "Docs, API" },
-  { concept: "Audit history", term: "Logbook", usage: "Docs, dashboard" },
-  { concept: "Blocker/critical issue", term: "Reef", usage: "Reports" },
-  { concept: "User role (admin)", term: "Captain", usage: "Dashboard, docs" },
-  { concept: "User role (standard)", term: "Crew", usage: "Dashboard, docs" },
+  { concept: "Report output", term: "Report", usage: "Docs, API" },
+  { concept: "Audit history", term: "Audit Log", usage: "Docs, dashboard" },
+  { concept: "Blocker/critical issue", term: "Blocker", usage: "Reports" },
+  { concept: "User role (admin)", term: "Admin", usage: "Dashboard, docs" },
+  { concept: "User role (standard)", term: "Member", usage: "Dashboard, docs" },
   {
     concept: "Notifications/webhooks",
-    term: "Harbor Signals",
+    term: "Webhooks",
     usage: "Docs, settings",
   },
-  { concept: "Webhook callbacks", term: "Radio", usage: "API docs" },
-  { concept: "API keys", term: "Boarding Pass", usage: "Dashboard, docs" },
+  { concept: "Webhook callbacks", term: "Callbacks", usage: "API docs" },
+  { concept: "API keys", term: "API Key", usage: "Dashboard, docs" },
+  { concept: "Individual checks", term: "Checks", usage: "Docs, API, reports" },
+  { concept: "Severity: critical", term: "Error", usage: "Reports, API" },
+  { concept: "Severity: warning", term: "Warning", usage: "Reports, API" },
+  { concept: "Severity: info", term: "Info", usage: "Reports, API" },
   {
-    concept: "Individual checks",
-    term: "Inspections",
-    usage: "Docs, API, reports",
+    concept: "White-label tenants",
+    term: "Workspaces",
+    usage: "Pricing, docs",
   },
-  { concept: "Severity: critical", term: "Aground", usage: "Reports, API" },
-  { concept: "Severity: warning", term: "Squall", usage: "Reports, API" },
-  { concept: "Severity: info", term: "Advisory", usage: "Reports, API" },
-  { concept: "White-label tenants", term: "Fleets", usage: "Pricing, docs" },
-  { concept: "Tenant onboarding", term: "Fleet Registration", usage: "Docs" },
+  { concept: "Tenant onboarding", term: "Workspace Setup", usage: "Docs" },
   {
     concept: "Tenant branding config",
-    term: "Livery",
+    term: "White Label",
     usage: "Dashboard, docs",
   },
-  { concept: "File submission", term: "Launch", usage: "API docs" },
-  { concept: "Processing queue", term: "The Channel", usage: "Status, docs" },
-  { concept: "Processing in progress", term: "Underway", usage: "Status, API" },
-  { concept: "Processing complete", term: "Docked", usage: "Status, API" },
+  { concept: "File submission", term: "Submit", usage: "API docs" },
+  { concept: "Processing queue", term: "Queue", usage: "Status, docs" },
+  {
+    concept: "Processing in progress",
+    term: "Processing",
+    usage: "Status, API",
+  },
+  { concept: "Processing complete", term: "Complete", usage: "Status, API" },
 ] as const;
 
 // ── API Endpoints ───────────────────────────────────────────
 export const apiEndpoints = [
   {
     method: "POST",
-    path: "/api/v1/launch",
+    path: "/api/v1/submit",
     description: "Submit a PDF for preflight",
   },
   {
     method: "GET",
-    path: "/api/v1/captains-log/{id}",
+    path: "/api/v1/reports/{id}",
     description: "Get preflight results",
   },
   {
     method: "GET",
-    path: "/api/v1/captains-log/{id}/report?format=pdf|json|xml",
+    path: "/api/v1/reports/{id}/export?format=pdf|json|xml",
     description: "Download report",
   },
   {
     method: "PUT",
-    path: "/api/v1/livery",
+    path: "/api/v1/white-label",
     description: "Configure white-label branding",
   },
   {
     method: "GET",
-    path: "/api/v1/voyage-plans",
+    path: "/api/v1/rulesets",
     description: "List available preflight profiles",
   },
   {
     method: "POST",
-    path: "/api/v1/voyage-plans",
+    path: "/api/v1/rulesets",
     description: "Create custom profile",
   },
 ] as const;
@@ -109,9 +105,9 @@ export const pricingTiers: PricingTier[] = [
     description: "Get started with basic preflight.",
     features: [
       "50 files per month",
-      "Basic Voyage Plan",
+      "Basic Ruleset",
       "JSON output only",
-      "250+ Inspections",
+      "250+ Checks",
       "Community support",
     ],
     cta: "Start Free",
@@ -126,9 +122,9 @@ export const pricingTiers: PricingTier[] = [
     description: "For small teams and freelancers.",
     features: [
       "500 files per month",
-      "All Voyage Plans",
+      "All Rulesets",
       "PDF, JSON & XML reports",
-      "250+ Inspections",
+      "250+ Checks",
       "Email support",
     ],
     cta: "Get Started",
@@ -143,10 +139,10 @@ export const pricingTiers: PricingTier[] = [
     description: "For production workflows.",
     features: [
       "5,000 files per month",
-      "Custom Voyage Plans",
+      "Custom Rulesets",
       "PDF, JSON & XML reports",
-      "Harbor Signals (webhooks)",
-      "250+ Inspections",
+      "Webhooks",
+      "250+ Checks",
       "Priority support",
     ],
     cta: "Get Started",
@@ -161,10 +157,10 @@ export const pricingTiers: PricingTier[] = [
     description: "For high-volume operations.",
     features: [
       "25,000 files per month",
-      "Fleet (white-label / Livery)",
-      "Custom Voyage Plans",
-      "Priority Channel processing",
-      "Harbor Signals (webhooks)",
+      "White Label",
+      "Custom Rulesets",
+      "Priority Queue",
+      "Webhooks",
       "PDF, JSON & XML reports",
     ],
     cta: "Get Started",
@@ -179,8 +175,8 @@ export const pricingTiers: PricingTier[] = [
     description: "SLA, dedicated infrastructure, custom integrations.",
     features: [
       "Unlimited files",
-      "Full white-label / Livery",
-      "Custom Voyage Plans",
+      "Full White Label",
+      "Custom Rulesets",
       "Dedicated infrastructure",
       "SLA & onboarding",
       "Custom integrations",
@@ -211,7 +207,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
     enterprise: "Unlimited",
   },
   {
-    name: "Inspections",
+    name: "Checks",
     free: "250+",
     starter: "250+",
     growth: "250+",
@@ -219,7 +215,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
     enterprise: "250+",
   },
   {
-    name: "Voyage Plans",
+    name: "Rulesets",
     free: "Basic",
     starter: "All built-in",
     growth: "Custom",
@@ -235,7 +231,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
     enterprise: "PDF, JSON, XML",
   },
   {
-    name: "White-label (Livery)",
+    name: "White Label",
     free: false,
     starter: false,
     growth: false,
@@ -243,7 +239,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
     enterprise: true,
   },
   {
-    name: "Harbor Signals (webhooks)",
+    name: "Webhooks",
     free: false,
     starter: false,
     growth: true,
@@ -251,7 +247,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
     enterprise: true,
   },
   {
-    name: "Priority Channel",
+    name: "Priority Queue",
     free: false,
     starter: false,
     growth: false,
@@ -302,7 +298,7 @@ export interface ComparisonDimension {
 }
 
 export const competitors: Competitor[] = [
-  { name: "Never Grounded", shortName: "grounded" },
+  { name: "LintPDF", shortName: "lintpdf" },
   { name: "Enfocus PitStop", shortName: "pitstop" },
   { name: "Callas pdfToolbox", shortName: "pdftoolbox" },
   { name: "pdfRest", shortName: "pdfrest" },
@@ -313,7 +309,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
   {
     label: "Philosophy",
     values: {
-      grounded: { type: "highlight", value: "Detection-only" },
+      lintpdf: { type: "highlight", value: "Detection-only" },
       pitstop: { type: "text", value: "Inspect + correct" },
       pdftoolbox: { type: "text", value: "Inspect + correct" },
       pdfrest: { type: "text", value: "Inspect + correct" },
@@ -323,7 +319,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
   {
     label: "Public pricing",
     values: {
-      grounded: { type: "boolean", value: true },
+      lintpdf: { type: "boolean", value: true },
       pitstop: { type: "boolean", value: false },
       pdftoolbox: { type: "boolean", value: false },
       pdfrest: { type: "boolean", value: true },
@@ -333,7 +329,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
   {
     label: "Free tier",
     values: {
-      grounded: { type: "highlight", value: "50 files / mo" },
+      lintpdf: { type: "highlight", value: "50 files / mo" },
       pitstop: { type: "text", value: "None" },
       pdftoolbox: { type: "text", value: "None" },
       pdfrest: { type: "text", value: "300 calls / mo" },
@@ -344,7 +340,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
     label: "Time to first preflight",
     tooltip: "From signup to running your first file",
     values: {
-      grounded: { type: "highlight", value: "~5 minutes" },
+      lintpdf: { type: "highlight", value: "~5 minutes" },
       pitstop: { type: "text", value: "30+ minutes" },
       pdftoolbox: { type: "text", value: "Days (OEM)" },
       pdfrest: { type: "text", value: "~5 minutes" },
@@ -354,7 +350,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
   {
     label: "Inspection depth",
     values: {
-      grounded: { type: "highlight", value: "250+ checks" },
+      lintpdf: { type: "highlight", value: "250+ checks" },
       pitstop: { type: "text", value: "Advanced" },
       pdftoolbox: { type: "text", value: "Advanced" },
       pdfrest: { type: "text", value: "Basic" },
@@ -366,7 +362,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
     tooltip:
       "Barcode decode, regulatory compliance, image quality, brand checks",
     values: {
-      grounded: { type: "highlight", value: "33 AI checks" },
+      lintpdf: { type: "highlight", value: "33 AI checks" },
       pitstop: { type: "boolean", value: false },
       pdftoolbox: { type: "text", value: "Barcode only" },
       pdfrest: { type: "boolean", value: false },
@@ -376,7 +372,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
   {
     label: "White-label reports",
     values: {
-      grounded: { type: "boolean", value: true },
+      lintpdf: { type: "boolean", value: true },
       pitstop: { type: "boolean", value: false },
       pdftoolbox: { type: "text", value: "OEM only" },
       pdfrest: { type: "boolean", value: false },
@@ -387,7 +383,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
     label: "API integration",
     tooltip: "Number of API calls to complete a preflight",
     values: {
-      grounded: { type: "highlight", value: "2 calls" },
+      lintpdf: { type: "highlight", value: "2 calls" },
       pitstop: { type: "text", value: "3+ calls" },
       pdftoolbox: { type: "text", value: "3+ calls" },
       pdfrest: { type: "text", value: "2–3 calls" },
@@ -397,7 +393,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
   {
     label: "Self-service signup",
     values: {
-      grounded: { type: "boolean", value: true },
+      lintpdf: { type: "boolean", value: true },
       pitstop: { type: "boolean", value: false },
       pdftoolbox: { type: "boolean", value: false },
       pdfrest: { type: "boolean", value: true },
@@ -411,7 +407,7 @@ export const pricingFaq = [
   {
     question: "What counts as a file?",
     answer:
-      "Each PDF, EPS, PostScript, TIFF, JPEG, PNG, or AI file submitted via the Launch endpoint counts as one file toward your monthly limit.",
+      "Each PDF, EPS, PostScript, TIFF, JPEG, PNG, or AI file submitted via the Submit endpoint counts as one file toward your monthly limit.",
   },
   {
     question: "What happens when I exceed my monthly limit?",
@@ -429,34 +425,34 @@ export const pricingFaq = [
       "Not yet, but annual plans with a discount are on our roadmap. Contact sales@thinkneverland.com if you need annual invoicing now.",
   },
   {
-    question: "What is a Voyage Plan?",
+    question: "What is a Ruleset?",
     answer:
-      "A Voyage Plan is a preflight profile — a collection of Inspections and thresholds that define what Never Grounded checks for. Built-in Voyage Plans include GWG Sheetfed, GWG Digital, PDF/X-4, and Packaging. Growth plans and above can create custom Voyage Plans.",
+      "A Ruleset is a preflight profile — a collection of Checks and thresholds that define what LintPDF checks for. Built-in Rulesets include GWG Sheetfed, GWG Digital, PDF/X-4, and Packaging. Growth plans and above can create custom Rulesets.",
   },
   {
-    question: "What are Harbor Signals?",
+    question: "Do you support webhooks?",
     answer:
-      "Harbor Signals are webhook callbacks. When a file finishes processing (Docked), Never Grounded sends a POST request to your configured endpoint with the Captain's Log results. No polling required.",
+      "Yes. When a file finishes processing (Complete), LintPDF sends a POST request to your configured endpoint with the Report results via webhook callbacks. No polling required.",
   },
   {
-    question: "What is Livery (white-label)?",
+    question: "What is White Label?",
     answer:
-      "Livery lets you brand PDF reports with your own logo, colors, and footer text. Your customers see your brand, not ours. Available on Scale and Enterprise plans.",
+      "White Label lets you brand PDF reports with your own logo, colors, and footer text. Your customers see your brand, not ours. Available on Scale and Enterprise plans.",
   },
   {
     question: "Is there a free trial for paid plans?",
     answer:
-      "The Free plan is your trial — 50 files per month with full Inspection coverage. When you need more volume or features, upgrade to a paid plan.",
+      "The Free plan is your trial — 50 files per month with full Check coverage. When you need more volume or features, upgrade to a paid plan.",
   },
   {
-    question: "How do I get my Boarding Pass (API key)?",
+    question: "How do I get my API key?",
     answer:
-      "Join the waitlist to get early access. Once onboarded, navigate to The Bridge and generate a Boarding Pass from the API Keys section. You can create multiple keys per account.",
+      "Join the waitlist to get early access. Once onboarded, navigate to the Dashboard and generate an API Key from the API Keys section. You can create multiple keys per account.",
   },
   {
-    question: "Does Never Grounded modify my files?",
+    question: "Does LintPDF modify my files?",
     answer:
-      "Never. Never Grounded is detection-only. We inspect your files and report findings. Your originals are never touched, altered, or re-saved. Zero risk of file damage.",
+      "Never. LintPDF is detection-only. We inspect your files and report findings. Your originals are never touched, altered, or re-saved. Zero risk of file damage.",
   },
 ];
 
@@ -490,7 +486,7 @@ export const inputFormats = [
 export const outputFormats = [
   {
     format: "PDF",
-    description: "White-labeled with tenant Livery (logo, colors, footer)",
+    description: "White-labeled (logo, colors, footer)",
   },
   { format: "JSON", description: "Structured, machine-readable" },
   { format: "XML", description: "Legacy integration support" },
@@ -752,7 +748,7 @@ export const AI_CATEGORIES: AICategory[] = [
     id: "document_classification",
     name: "Document Classification",
     description:
-      "Automatic document type classification and Voyage Plan suggestion.",
+      "Automatic document type classification and Ruleset suggestion.",
     inspections: [
       {
         id: "ai.document_classification.classify",
@@ -764,9 +760,9 @@ export const AI_CATEGORIES: AICategory[] = [
       },
       {
         id: "ai.document_classification.auto_voyage_plan",
-        name: "Auto Voyage Plan",
+        name: "Auto Ruleset",
         description:
-          "Suggest optimal Voyage Plan based on detected document characteristics",
+          "Suggest optimal Ruleset based on detected document characteristics",
         tier: "vision",
         credits: 2,
       },
@@ -812,8 +808,8 @@ export const AI_CATEGORIES: AICategory[] = [
     inspections: [
       {
         id: "ai.nlp.voyage_plan",
-        name: "NL Voyage Plan",
-        description: "Create Voyage Plans from natural language descriptions",
+        name: "NL Ruleset",
+        description: "Create Rulesets from natural language descriptions",
         tier: "vision",
         credits: 2,
       },
@@ -821,7 +817,7 @@ export const AI_CATEGORIES: AICategory[] = [
         id: "ai.nlp.report_interpret",
         name: "NL Report Interpret",
         description:
-          "Plain-English summaries and explanations of Captain's Log findings",
+          "Plain-English summaries and explanations of Report findings",
         tier: "vision",
         credits: 2,
       },

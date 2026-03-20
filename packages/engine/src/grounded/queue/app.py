@@ -1,4 +1,4 @@
-"""Celery application configuration for Grounded worker."""
+"""Celery application configuration for LintPDF worker."""
 
 from __future__ import annotations
 

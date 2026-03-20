@@ -1,8 +1,12 @@
 /**
- * Job proxy routes — forward requests to the Grounded API.
+ * Job proxy routes — forward requests to the LintPDF API.
  */
 
-import type { RouteDefinition, RouteRequest, RouteResponse } from "@thinkneverland/pixie-dust-fairy-ring";
+import type {
+  RouteDefinition,
+  RouteRequest,
+  RouteResponse,
+} from "@thinkneverland/pixie-dust-fairy-ring";
 import { getClient } from "../index";
 
 export function jobRoutes(): RouteDefinition[] {
@@ -16,7 +20,7 @@ export function jobRoutes(): RouteDefinition[] {
       handler: async (req: RouteRequest): Promise<RouteResponse> => {
         const client = getClient();
         if (!client) {
-          return { status: 503, body: { error: "Grounded API not configured" } };
+          return { status: 503, body: { error: "LintPDF API not configured" } };
         }
         const page = Number(req.query.page ?? "1");
         const pageSize = Number(req.query.page_size ?? "20");
@@ -33,7 +37,7 @@ export function jobRoutes(): RouteDefinition[] {
       handler: async (req: RouteRequest): Promise<RouteResponse> => {
         const client = getClient();
         if (!client) {
-          return { status: 503, body: { error: "Grounded API not configured" } };
+          return { status: 503, body: { error: "LintPDF API not configured" } };
         }
         const job = await client.getJob(req.params.jobId);
         return { status: 200, body: job };
@@ -48,7 +52,7 @@ export function jobRoutes(): RouteDefinition[] {
       handler: async (req: RouteRequest): Promise<RouteResponse> => {
         const client = getClient();
         if (!client) {
-          return { status: 503, body: { error: "Grounded API not configured" } };
+          return { status: 503, body: { error: "LintPDF API not configured" } };
         }
         await client.deleteJob(req.params.jobId);
         return { status: 204 };

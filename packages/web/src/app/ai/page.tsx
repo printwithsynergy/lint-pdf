@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "AI-Powered Preflight — Never Grounded",
+  title: "AI-Powered Preflight — LintPDF",
   description:
     "33 AI inspections across barcode detection, regulatory compliance, content quality, brand verification, and more. Invite-only alpha.",
 };
@@ -15,46 +15,46 @@ const aiCategories = [
         id: "ai.barcode.type_detection",
         description:
           "Identifies barcode symbology (EAN-13, UPC-A, Code 128, QR, DataMatrix, etc.)",
-        severity: "Advisory",
+        severity: "Info",
         tier: "Text",
       },
       {
         id: "ai.barcode.decode_verify",
         description:
           "Decodes barcode content and verifies against expected values",
-        severity: "Aground",
+        severity: "Error",
         tier: "Text",
       },
       {
         id: "ai.barcode.quiet_zone",
         description: "Validates quiet zone dimensions around detected barcodes",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Text",
       },
       {
         id: "ai.barcode.orientation",
         description: "Checks barcode orientation relative to packaging layout",
-        severity: "Advisory",
+        severity: "Info",
         tier: "Text",
       },
       {
         id: "ai.barcode.contrast",
         description: "Measures symbol contrast for scanner readability",
-        severity: "Aground",
+        severity: "Error",
         tier: "Text",
       },
       {
         id: "ai.barcode.multiple_detect",
         description:
           "Detects and catalogues all barcodes present in the document",
-        severity: "Advisory",
+        severity: "Info",
         tier: "Text",
       },
       {
         id: "ai.barcode.placement",
         description:
           "Validates barcode placement against safe zone requirements",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Text",
       },
     ],
@@ -66,19 +66,19 @@ const aiCategories = [
       {
         id: "ai.content.spell_check",
         description: "AI-powered spell checking with custom dictionary support",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Text",
       },
       {
         id: "ai.content.language_detect",
         description: "Identifies languages present in the document",
-        severity: "Advisory",
+        severity: "Info",
         tier: "Text",
       },
       {
         id: "ai.content.duplicate_detect",
         description: "Identifies duplicate or near-duplicate submissions",
-        severity: "Advisory",
+        severity: "Info",
         tier: "Text",
       },
     ],
@@ -91,13 +91,13 @@ const aiCategories = [
         id: "ai.color.brand_palette",
         description:
           "Validates colors against uploaded brand palette definitions",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Text",
       },
       {
         id: "ai.color.contrast_ratio",
         description: "WCAG-style contrast ratio checks for text readability",
-        severity: "Advisory",
+        severity: "Info",
         tier: "Text",
       },
     ],
@@ -110,32 +110,32 @@ const aiCategories = [
         id: "ai.fda.nutrition_panel",
         description:
           "Detects and validates FDA Nutrition Facts panel structure",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.fda.nutrient_order",
         description: "Validates nutrient ordering per 21 CFR 101.9",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.fda.font_sizes",
         description: "Checks minimum font size requirements for label elements",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.fda.serving_size",
         description: "Validates serving size declaration format and placement",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.fda.daily_value",
         description:
           "Checks Percent Daily Value column presence and formatting",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Vision",
       },
     ],
@@ -148,27 +148,27 @@ const aiCategories = [
         id: "ai.eu_fir.x_height",
         description:
           "Validates minimum x-height for mandatory information (1.2mm / 0.9mm)",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.eu_fir.allergen_emphasis",
         description:
           "Checks allergen typographic distinction in ingredients list",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.eu_fir.nutrition_order",
         description:
           "Validates nutritional declaration ordering per Regulation 1169/2011",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.eu_fir.mandatory_fields",
         description: "Checks presence of all mandatory label fields",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
     ],
@@ -180,34 +180,34 @@ const aiCategories = [
       {
         id: "ai.ghs.pictogram_detect",
         description: "Detects and identifies GHS hazard pictograms",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.ghs.pictogram_size",
         description:
           "Validates pictogram minimum size (1/15th label area, min 1 cm²)",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.ghs.signal_word",
         description:
           "Checks signal word ('Danger' or 'Warning') presence and correctness",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.ghs.h_statements",
         description:
           "Validates presence and text of required Hazard statements",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.ghs.p_statements",
         description: "Checks Precautionary statements presence",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Vision",
       },
     ],
@@ -219,19 +219,19 @@ const aiCategories = [
       {
         id: "ai.pharma.serialization_area",
         description: "Detects EU FMD 2D DataMatrix serialization area",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
       {
         id: "ai.pharma.braille_placeholder",
         description: "Validates Braille area presence on outer packaging",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Vision",
       },
       {
         id: "ai.pharma.font_compliance",
         description: "Checks font size compliance for patient information",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
     ],
@@ -244,14 +244,14 @@ const aiCategories = [
         id: "ai.brand.logo_match",
         description:
           "Compares detected logos against uploaded brand references",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Vision",
       },
       {
         id: "ai.brand.palette_match",
         description:
           "Validates document colors against brand color definitions",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Text",
       },
     ],
@@ -264,13 +264,13 @@ const aiCategories = [
         id: "ai.vision.image_quality",
         description:
           "AI visual quality assessment — blur, noise, upscaling detection",
-        severity: "Squall",
+        severity: "Warning",
         tier: "Vision",
       },
       {
         id: "ai.vision.nsfw_detect",
         description: "Content safety screening for inappropriate material",
-        severity: "Aground",
+        severity: "Error",
         tier: "Vision",
       },
     ],
@@ -337,7 +337,6 @@ export default function AIPage() {
   );
 
   return (
-    // skipcq: JS-0415
     <main>
       {/* Hero */}
       <section className="bg-brand-50/50 pt-20 pb-16">
@@ -358,9 +357,8 @@ export default function AIPage() {
           </p>
           <p className="text-base text-slate-400 max-w-2xl mx-auto">
             {totalInspections} AI inspections across {aiCategories.length}{" "}
-            categories. Credit-based, detection-only, same Captain&apos;s Log
-            format. Tenant-scoped. AI findings sit alongside core engine
-            findings with a{" "}
+            categories. Credit-based, detection-only, same Report format.
+            Tenant-scoped. AI findings sit alongside core engine findings with a{" "}
             <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-slate-600">
               source: &quot;ai&quot;
             </code>{" "}
@@ -427,7 +425,6 @@ export default function AIPage() {
           <h2 className="text-2xl font-bold text-slate-900 mb-8">
             Full Inspection Reference
           </h2>
-          {/* skipcq: JS-0415 */}
           {aiCategories.map((cat) => (
             <div key={cat.name} className="mb-8">
               <h3 className="font-semibold text-slate-900 mb-3">{cat.name}</h3>
@@ -463,9 +460,9 @@ export default function AIPage() {
                         <td className="py-2 px-3">
                           <span
                             className={`rounded px-2 py-0.5 text-xs font-bold ${
-                              insp.severity === "Aground"
+                              insp.severity === "Error"
                                 ? "bg-red-500/10 text-red-600 border border-red-500/20"
-                                : insp.severity === "Squall"
+                                : insp.severity === "Warning"
                                   ? "bg-amber-500/10 text-amber-600 border border-amber-500/20"
                                   : "bg-blue-500/10 text-blue-600 border border-blue-500/20"
                             }`}
@@ -498,11 +495,11 @@ export default function AIPage() {
       <section className="py-16">
         <div className="mx-auto max-w-4xl px-6">
           <h2 className="text-2xl font-bold text-slate-900 mb-4">
-            AI Findings in Your Captain&apos;s Log
+            AI Findings in Your Report
           </h2>
           <p className="text-slate-500 mb-6">
             AI findings appear alongside core engine findings in the same
-            Captain&apos;s Log. The{" "}
+            Report. The{" "}
             <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono">
               source
             </code>{" "}
@@ -511,13 +508,13 @@ export default function AIPage() {
           </p>
           <CodeBlock>{`{
   "inspection_id": "ai.fda.nutrient_order",
-  "severity": "aground",
+  "severity": "error",
   "message": "Nutrient 'Trans Fat' appears after 'Cholesterol' — FDA requires Trans Fat immediately after Saturated Fat",
   "page": 1,
   "source": "ai",
   "category": "regulatory.fda",
   "credits_consumed": 1,
-  "model_version": "nevergrounded-compliance-v1",
+  "model_version": "lintpdf-compliance-v1",
   "confidence": 0.97
 }`}</CodeBlock>
         </div>
@@ -530,8 +527,8 @@ export default function AIPage() {
             Pre-built AI Presets
           </h2>
           <p className="text-slate-500 mb-8">
-            Select a preset when submitting a Launch to run a curated set of AI
-            inspections. Or build your own combination in a custom Voyage Plan.
+            Select a preset when submitting a job to run a curated set of AI
+            inspections. Or build your own combination in a custom Ruleset.
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
@@ -784,7 +781,7 @@ export default function AIPage() {
             and we will get you set up.
           </p>
           <a
-            href="mailto:sales@nevergrounded.io?subject=AI%20Preflight%20Access%20Request"
+            href="mailto:sales@lintpdf.com?subject=AI%20Preflight%20Access%20Request"
             className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5 inline-block"
           >
             Request Access
@@ -792,10 +789,10 @@ export default function AIPage() {
           <p className="mt-4 text-sm text-slate-400">
             Or email{" "}
             <a
-              href="mailto:sales@nevergrounded.io"
+              href="mailto:sales@lintpdf.com"
               className="text-brand-600 hover:underline"
             >
-              sales@nevergrounded.io
+              sales@lintpdf.com
             </a>{" "}
             directly.
           </p>
