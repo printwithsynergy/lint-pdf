@@ -22,14 +22,9 @@ export function Header() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <Link href="/" className="flex items-center gap-2.5">
             <Logo className="h-9 w-9" />
-            <div className="flex flex-col leading-none">
-              <span className="text-lg font-semibold tracking-tight text-brand-900">
-                LintPDF
-              </span>
-              <span className="text-[9px] font-medium tracking-wide text-slate-400">
-                Preflights you won&apos;t hate.
-              </span>
-            </div>
+            <span className="text-lg font-semibold tracking-tight text-brand-900">
+              LintPDF
+            </span>
           </Link>
 
           {/* Desktop nav */}

@@ -12,14 +12,9 @@ export function Footer() {
           <div className="md:col-span-2">
             <div className="flex items-center gap-3 mb-4">
               <Logo className="h-12 w-12" />
-              <div className="flex flex-col leading-tight">
-                <span className="text-2xl font-bold text-brand-900">
-                  LintPDF
-                </span>
-                <span className="text-xs font-medium tracking-wide text-slate-400">
-                  Preflights you won&apos;t hate.
-                </span>
-              </div>
+              <span className="text-2xl font-bold text-brand-900">
+                LintPDF
+              </span>
             </div>
             <p className="text-sm text-slate-500 max-w-sm mb-4">
               Detection-only PDF preflight engine. 250+ checks, PDF/X-4
