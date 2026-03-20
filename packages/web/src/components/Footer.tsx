@@ -15,7 +15,7 @@ export function Footer() {
                   LintPDF
                 </span>
                 <span className="text-xs font-medium tracking-wide text-slate-400">
-                  Preflight. Perfected.
+                  Preflights you won&apos;t hate.
                 </span>
               </div>
             </div>

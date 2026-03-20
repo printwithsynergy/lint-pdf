@@ -27,7 +27,7 @@ export function Header() {
                 LintPDF
               </span>
               <span className="text-[9px] font-medium tracking-wide text-slate-400">
-                Preflight. Perfected.
+                Preflights you won&apos;t hate.
               </span>
             </div>
           </Link>

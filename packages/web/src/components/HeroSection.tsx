@@ -337,8 +337,8 @@ export function HeroSection() {
       <div className="relative mx-auto max-w-5xl px-6 pt-28 pb-20 md:pt-36 md:pb-28 text-center min-w-0">
         <div className="flex flex-col items-center mb-10">
           <MarketingLogo className="h-44 w-auto md:h-56" />
-          <p className="mt-3 text-sm font-medium tracking-widest text-slate-400 uppercase">
-            Preflight. Perfected.
+          <p className="mt-3 text-sm font-medium tracking-wide text-slate-400">
+            Preflights you won&apos;t hate.
           </p>
         </div>
 
