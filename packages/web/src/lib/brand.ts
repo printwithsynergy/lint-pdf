@@ -308,9 +308,9 @@ export const competitors: Competitor[] = [
 export const comparisonDimensions: ComparisonDimension[] = [
   {
     label: "Starting price",
-    tooltip: "Lowest publicly available plan",
+    tooltip: "Lowest publicly available plan — LintPDF bills per file, not per API call",
     values: {
-      lintpdf: { type: "highlight", value: "Free / $29 mo" },
+      lintpdf: { type: "highlight", value: "Free (per file)" },
       pitstop: { type: "text", value: "~$2,500 / yr" },
       pdftoolbox: { type: "text", value: "Contact sales" },
       pdfrest: { type: "text", value: "$49 / mo" },
