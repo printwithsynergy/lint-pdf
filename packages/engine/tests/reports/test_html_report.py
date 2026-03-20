@@ -15,7 +15,7 @@ class TestHtmlReport:
     def test_generates_html(self, sample_result: PreflightResult) -> None:
         report_bytes = generate_html_report(sample_result)
         html = report_bytes.decode("utf-8")
-        assert "<!DOCTYPE html>" in html
+        assert "<!doctype html>" in html
         assert "</html>" in html
 
     def test_includes_pass_fail_badge(self, sample_result: PreflightResult) -> None:

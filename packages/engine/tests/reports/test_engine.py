@@ -29,7 +29,7 @@ class TestReportEngine:
     def test_generate_html(self, sample_result: PreflightResult) -> None:
         engine = ReportEngine()
         report = engine.generate(sample_result, "html")
-        assert b"<!DOCTYPE html>" in report
+        assert b"<!doctype html>" in report
 
     def test_generate_unsupported_format(self, sample_result: PreflightResult) -> None:
         engine = ReportEngine()
