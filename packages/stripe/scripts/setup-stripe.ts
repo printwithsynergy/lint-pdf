@@ -14,7 +14,7 @@ import { resolve } from "path";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 if (!STRIPE_SECRET_KEY) {
   console.error("Error: STRIPE_SECRET_KEY environment variable is required.");
-  process.exit(1); // skipcq: JS-0263 — CLI script requires hard exit on missing config
+  process.exit(1);
 }
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -151,5 +151,5 @@ async function main() {
 
 main().catch((err) => {
   console.error("Setup failed:", err);
-  process.exit(1); // skipcq: JS-0263 — CLI script requires hard exit on failure
+  process.exit(1);
 });

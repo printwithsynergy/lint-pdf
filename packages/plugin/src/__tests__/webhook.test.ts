@@ -72,6 +72,6 @@ describe("parseWebhookEvent", () => {
   it("returns null for non-object", () => {
     expect(parseWebhookEvent("string")).toBeNull();
     expect(parseWebhookEvent(null)).toBeNull();
-    expect(parseWebhookEvent(undefined)).toBeNull(); // skipcq: JS-W1042 — explicitly testing undefined input
+    expect(parseWebhookEvent(undefined)).toBeNull();
   });
 });

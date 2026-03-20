@@ -52,7 +52,7 @@ export default async function ChangelogPage() {
               <div
                 className="prose prose-sm prose-slate max-w-none prose-headings:font-semibold prose-h3:text-base prose-h3:mt-6 prose-h3:mb-2 prose-p:text-slate-600 prose-li:text-slate-600 prose-strong:text-slate-800 prose-code:bg-slate-100 prose-code:px-1 prose-code:rounded prose-code:text-xs prose-code:font-mono prose-code:before:content-none prose-code:after:content-none"
                 // nosemgrep: react-dangerouslysetinnerhtml -- content is sanitized via rehype-sanitize in lib/changelog.ts
-                dangerouslySetInnerHTML={{ __html: entry.htmlContent ?? "" }} // skipcq: JS-0440
+                dangerouslySetInnerHTML={{ __html: entry.htmlContent ?? "" }}
               />
             </article>
           ))}
