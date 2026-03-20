@@ -74,7 +74,12 @@ describe("groundedBillingPlugin", () => {
   // Helper to access mock functions on the context
   function mockServices() {
     return (ctx as Record<string, unknown>).services as {
-      logger: { info: ReturnType<typeof vi.fn>; warn: ReturnType<typeof vi.fn>; error: ReturnType<typeof vi.fn>; debug: ReturnType<typeof vi.fn> };
+      logger: {
+        info: ReturnType<typeof vi.fn>;
+        warn: ReturnType<typeof vi.fn>;
+        error: ReturnType<typeof vi.fn>;
+        debug: ReturnType<typeof vi.fn>;
+      };
       db: {
         subscription: { findFirst: ReturnType<typeof vi.fn> };
         stripeCustomer: { findFirst: ReturnType<typeof vi.fn> };
@@ -102,10 +107,10 @@ describe("groundedBillingPlugin", () => {
       const mod = await import("../src/index.js");
       mod.groundedBillingPlugin.register?.(ctx);
 
-      expect(mockCtxFns().addPermission).toHaveBeenCalledWith("billing:manage", [
-        "ADMIN",
-        "OWNER",
-      ]);
+      expect(mockCtxFns().addPermission).toHaveBeenCalledWith(
+        "billing:manage",
+        ["ADMIN", "OWNER"],
+      );
     });
 
     it("registers Billing nav item in admin section", async () => {
@@ -383,7 +388,9 @@ describe("groundedBillingPlugin", () => {
 
   describe("webhook handlers", () => {
     function getWebhookHandler(eventName: string) {
-      const call = mockCtxFns().on.mock.calls.find((c: unknown[]) => c[0] === eventName);
+      const call = mockCtxFns().on.mock.calls.find(
+        (c: unknown[]) => c[0] === eventName,
+      );
       return call?.[1];
     }
 
@@ -396,7 +403,9 @@ describe("groundedBillingPlugin", () => {
         );
 
         await handler({ data: {} });
-        expect(mockServices().db.stripeCustomer.findFirst).not.toHaveBeenCalled();
+        expect(
+          mockServices().db.stripeCustomer.findFirst,
+        ).not.toHaveBeenCalled();
       });
 
       it("does nothing when customer ID is missing", async () => {
@@ -407,7 +416,9 @@ describe("groundedBillingPlugin", () => {
         );
 
         await handler({ data: { object: { customer: null } } });
-        expect(mockServices().db.stripeCustomer.findFirst).not.toHaveBeenCalled();
+        expect(
+          mockServices().db.stripeCustomer.findFirst,
+        ).not.toHaveBeenCalled();
       });
 
       it("logs warning when no tenant found for customer", async () => {
@@ -454,9 +465,11 @@ describe("groundedBillingPlugin", () => {
           },
         });
 
-        expect(mockServices().db.stripeCustomer.findFirst).toHaveBeenCalledWith({
-          where: { stripeCustomerId: "cus_obj_123" },
-        });
+        expect(mockServices().db.stripeCustomer.findFirst).toHaveBeenCalledWith(
+          {
+            where: { stripeCustomerId: "cus_obj_123" },
+          },
+        );
       });
     });
 
@@ -469,7 +482,9 @@ describe("groundedBillingPlugin", () => {
         );
 
         await handler({ data: {} });
-        expect(mockServices().db.stripeCustomer.findFirst).not.toHaveBeenCalled();
+        expect(
+          mockServices().db.stripeCustomer.findFirst,
+        ).not.toHaveBeenCalled();
       });
 
       it("does nothing when no tenant found", async () => {
