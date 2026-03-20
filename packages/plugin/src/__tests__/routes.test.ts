@@ -11,12 +11,14 @@ import { jobRoutes } from "../routes/jobs";
 import { profileRoutes } from "../routes/profiles";
 
 /** Create a mock RouteRequest with sensible defaults. */
-function createMockRequest(overrides: {
-  query?: Record<string, string>;
-  params?: Record<string, string>;
-  body?: Record<string, unknown>;
-  auth?: Record<string, unknown>;
-} = {}): RouteRequest {
+function createMockRequest(
+  overrides: {
+    query?: Record<string, string>;
+    params?: Record<string, string>;
+    body?: Record<string, unknown>;
+    auth?: Record<string, unknown>;
+  } = {},
+): RouteRequest {
   return {
     query: overrides.query ?? {},
     params: overrides.params ?? {},
@@ -26,7 +28,9 @@ function createMockRequest(overrides: {
 }
 
 /** Create a mock client typed to match getClient()'s return type. */
-function createMockClient(methods: Record<string, ReturnType<typeof vi.fn>>): ReturnType<typeof getClient> {
+function createMockClient(
+  methods: Record<string, ReturnType<typeof vi.fn>>,
+): ReturnType<typeof getClient> {
   return methods as ReturnType<typeof getClient>;
 }
 
@@ -86,7 +90,9 @@ describe("jobRoutes", () => {
         page: 1,
         page_size: 20,
       };
-      const mockClient = createMockClient({ listJobs: vi.fn().mockResolvedValue(mockJobs) });
+      const mockClient = createMockClient({
+        listJobs: vi.fn().mockResolvedValue(mockJobs),
+      });
       vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes.find(
@@ -96,19 +102,27 @@ describe("jobRoutes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJobs);
-      expect((mockClient as Record<string, ReturnType<typeof vi.fn>>).listJobs).toHaveBeenCalledWith(1, 20);
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listJobs,
+      ).toHaveBeenCalledWith(1, 20);
     });
 
     it("lists jobs with custom pagination from query params", async () => {
-      const mockClient = createMockClient({ listJobs: vi.fn().mockResolvedValue({ jobs: [] }) });
+      const mockClient = createMockClient({
+        listJobs: vi.fn().mockResolvedValue({ jobs: [] }),
+      });
       vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes.find(
         (r) => r.method === "GET" && r.path === "/jobs",
       )?.handler;
-      await handler!(createMockRequest({ query: { page: "3", page_size: "10" } }));
+      await handler!(
+        createMockRequest({ query: { page: "3", page_size: "10" } }),
+      );
 
-      expect((mockClient as Record<string, ReturnType<typeof vi.fn>>).listJobs).toHaveBeenCalledWith(3, 10);
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listJobs,
+      ).toHaveBeenCalledWith(3, 10);
     });
   });
 
@@ -119,23 +133,31 @@ describe("jobRoutes", () => {
         (r) => r.method === "GET" && r.path === "/jobs/:jobId",
       )?.handler;
 
-      const res = await handler!(createMockRequest({ params: { jobId: "abc" } }));
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "abc" } }),
+      );
       expect(res.status).toBe(503);
     });
 
     it("returns job by ID", async () => {
       const mockJob = { job_id: "abc", status: "complete" };
-      const mockClient = createMockClient({ getJob: vi.fn().mockResolvedValue(mockJob) });
+      const mockClient = createMockClient({
+        getJob: vi.fn().mockResolvedValue(mockJob),
+      });
       vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes.find(
         (r) => r.method === "GET" && r.path === "/jobs/:jobId",
       )?.handler;
-      const res = await handler!(createMockRequest({ params: { jobId: "abc" } }));
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "abc" } }),
+      );
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJob);
-      expect((mockClient as Record<string, ReturnType<typeof vi.fn>>).getJob).toHaveBeenCalledWith("abc");
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).getJob,
+      ).toHaveBeenCalledWith("abc");
     });
   });
 
@@ -146,21 +168,29 @@ describe("jobRoutes", () => {
         (r) => r.method === "DELETE" && r.path === "/jobs/:jobId",
       )?.handler;
 
-      const res = await handler!(createMockRequest({ params: { jobId: "abc" } }));
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "abc" } }),
+      );
       expect(res.status).toBe(503);
     });
 
     it("deletes job and returns 204", async () => {
-      const mockClient = createMockClient({ deleteJob: vi.fn().mockResolvedValue(undefined) });
+      const mockClient = createMockClient({
+        deleteJob: vi.fn().mockResolvedValue(undefined),
+      });
       vi.mocked(getClient).mockReturnValue(mockClient);
 
       const handler = routes.find(
         (r) => r.method === "DELETE" && r.path === "/jobs/:jobId",
       )?.handler;
-      const res = await handler!(createMockRequest({ params: { jobId: "del_123" } }));
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "del_123" } }),
+      );
 
       expect(res.status).toBe(204);
-      expect((mockClient as Record<string, ReturnType<typeof vi.fn>>).deleteJob).toHaveBeenCalledWith("del_123");
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).deleteJob,
+      ).toHaveBeenCalledWith("del_123");
     });
   });
 });
@@ -207,7 +237,9 @@ describe("profileRoutes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockProfiles);
-      expect((mockClient as Record<string, ReturnType<typeof vi.fn>>).listProfiles).toHaveBeenCalled();
+      expect(
+        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listProfiles,
+      ).toHaveBeenCalled();
     });
   });
 });
