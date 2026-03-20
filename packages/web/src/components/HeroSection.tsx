@@ -18,9 +18,9 @@ const RIGHT_CODE_LINES = Array.from({ length: 10 }, (_, i) => ({
 }));
 
 const TAGLINES: { lines: string[] }[] = [
+  { lines: ["Preflights You", "Won't Hate."] },
   { lines: ["Every Byte. Every Page.", "Zero Mercy."] },
-  { lines: ["Preflights you", "won't hate."] },
-  { lines: ["Catch it before", "press does."] },
+  { lines: ["Catch It Before", "Press Does."] },
 ];
 
 function RotatingTagline() {
