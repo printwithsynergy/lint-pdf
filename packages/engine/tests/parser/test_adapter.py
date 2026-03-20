@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import pytest
 
 from grounded.parser.adapter import (
@@ -17,7 +16,8 @@ from grounded.parser.adapter import (
 class TestPdfStream:
     """Test PdfStream dataclass."""
 
-    def test_create_stream(self) -> None:
+    @staticmethod
+    def test_create_stream() -> None:
         stream = PdfStream(
             dictionary={"/Type": "/XObject", "/Length": 100},
             data=b"stream content",
@@ -28,7 +28,8 @@ class TestPdfStream:
         assert stream.compression_filter is None
         assert stream.object_number == 0
 
-    def test_create_compressed_stream(self) -> None:
+    @staticmethod
+    def test_create_compressed_stream() -> None:
         stream = PdfStream(
             dictionary={"/Filter": "/FlateDecode"},
             data=b"decompressed data",
@@ -41,7 +42,8 @@ class TestPdfStream:
         assert stream.compression_filter == "/FlateDecode"
         assert stream.object_number == 5
 
-    def test_stream_is_frozen(self) -> None:
+    @staticmethod
+    def test_stream_is_frozen() -> None:
         stream = PdfStream(dictionary={}, data=b"", is_compressed=False)
         with pytest.raises(AttributeError):
             stream.data = b"new"  # type: ignore[misc]
@@ -50,7 +52,8 @@ class TestPdfStream:
 class TestPdfObject:
     """Test PdfObject dataclass."""
 
-    def test_create_dict_object(self) -> None:
+    @staticmethod
+    def test_create_dict_object() -> None:
         obj = PdfObject(
             object_number=1,
             generation_number=0,
@@ -62,7 +65,8 @@ class TestPdfObject:
         assert obj.is_indirect is True
         assert obj.obj_type == "dict"
 
-    def test_create_array_object(self) -> None:
+    @staticmethod
+    def test_create_array_object() -> None:
         obj = PdfObject(
             object_number=2,
             generation_number=0,
@@ -73,7 +77,8 @@ class TestPdfObject:
         assert obj.obj_type == "array"
         assert obj.value == [1, 2, 3]
 
-    def test_frozen(self) -> None:
+    @staticmethod
+    def test_frozen() -> None:
         obj = PdfObject(
             object_number=1,
             generation_number=0,
@@ -88,7 +93,8 @@ class TestPdfObject:
 class TestPdfPage:
     """Test PdfPage dataclass."""
 
-    def test_create_page_minimal(self) -> None:
+    @staticmethod
+    def test_create_page_minimal() -> None:
         page = PdfPage(
             page_num=1,
             page_dict={"/Type": "/Page"},
@@ -100,7 +106,8 @@ class TestPdfPage:
         assert page.rotate == 0
         assert page.user_unit == 1.0
 
-    def test_create_page_full(self) -> None:
+    @staticmethod
+    def test_create_page_full() -> None:
         page = PdfPage(
             page_num=3,
             page_dict={"/Type": "/Page"},
@@ -120,7 +127,8 @@ class TestPdfPage:
 class TestPdfDocument:
     """Test PdfDocument dataclass."""
 
-    def test_create_document_minimal(self) -> None:
+    @staticmethod
+    def test_create_document_minimal() -> None:
         doc = PdfDocument(
             version="1.7",
             page_count=1,
@@ -134,7 +142,8 @@ class TestPdfDocument:
         assert doc.output_intents == []
         assert doc.metadata_stream is None
 
-    def test_create_document_with_pages(self) -> None:
+    @staticmethod
+    def test_create_document_with_pages() -> None:
         pages = [
             PdfPage(page_num=1, page_dict={}, media_box=(0, 0, 612, 792)),
             PdfPage(page_num=2, page_dict={}, media_box=(0, 0, 612, 792)),
@@ -153,11 +162,13 @@ class TestPdfDocument:
 class TestParserAdapterInterface:
     """Verify ParserAdapter cannot be instantiated directly."""
 
-    def test_cannot_instantiate_abc(self) -> None:
+    @staticmethod
+    def test_cannot_instantiate_abc() -> None:
         with pytest.raises(TypeError, match="abstract"):
             ParserAdapter()  # type: ignore[abstract]  # skipcq: PYL-E0110
 
-    def test_has_required_methods(self) -> None:
+    @staticmethod
+    def test_has_required_methods() -> None:
         """Verify all required abstract methods exist."""
         required_methods = [
             "open",

@@ -9,7 +9,6 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    // skipcq: JS-0415
     <main>
       {/* Hero */}
       <section className="bg-brand-50/50 pt-20 pb-16">

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-# skipcq: PYL-R0201
 from grounded.ai.config import (
     add_reference_logo,
     admin_update_ai_config,

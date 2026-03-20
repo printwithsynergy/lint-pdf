@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import pytest
 
 from grounded.api.config import Settings
@@ -40,7 +39,8 @@ def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 class TestSettings:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         settings = Settings()
         assert settings.api_host == "0.0.0.0"
         assert settings.api_port == 8000
@@ -48,11 +48,13 @@ class TestSettings:
         assert settings.s3_bucket_name == "grounded-uploads"
         assert settings.redis_url == "redis://localhost:6379/0"
 
-    def test_max_upload_size_bytes(self) -> None:
+    @staticmethod
+    def test_max_upload_size_bytes() -> None:
         settings = Settings(max_upload_size_mb=50)
         assert settings.max_upload_size_bytes == 50 * 1024 * 1024
 
-    def test_s3_defaults(self) -> None:
+    @staticmethod
+    def test_s3_defaults() -> None:
         settings = Settings()
         assert settings.s3_endpoint_url is None
         assert settings.s3_access_key_id is None

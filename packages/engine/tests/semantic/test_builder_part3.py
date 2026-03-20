@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock
 
 from grounded.parser.adapter import PdfDocument, PdfPage
@@ -46,7 +45,8 @@ def _make_document(
 class TestTrailerThreading:
     """Test that trailer is threaded from PdfDocument to SemanticDocument."""
 
-    def test_trailer_passed_through(self) -> None:
+    @staticmethod
+    def test_trailer_passed_through() -> None:
         adapter = _make_adapter()
         builder = SemanticModelBuilder(adapter)
         trailer = {"/Size": 42, "/ID": ["abc", "def"]}
@@ -54,7 +54,8 @@ class TestTrailerThreading:
         sem_doc = builder.build(doc)
         assert sem_doc.trailer == trailer
 
-    def test_empty_trailer(self) -> None:
+    @staticmethod
+    def test_empty_trailer() -> None:
         adapter = _make_adapter()
         builder = SemanticModelBuilder(adapter)
         doc = _make_document()
@@ -65,14 +66,16 @@ class TestTrailerThreading:
 class TestAnnotationExtraction:
     """Test annotation extraction from page dict."""
 
-    def test_no_annots(self) -> None:
+    @staticmethod
+    def test_no_annots() -> None:
         adapter = _make_adapter()
         builder = SemanticModelBuilder(adapter)
         doc = _make_document()
         sem_doc = builder.build(doc)
         assert sem_doc.pages[0].annotations == []
 
-    def test_annots_extracted(self) -> None:
+    @staticmethod
+    def test_annots_extracted() -> None:
         adapter = _make_adapter()
         adapter.get_resources.return_value = {}
 
@@ -96,7 +99,8 @@ class TestAnnotationExtraction:
         assert annots[1].subtype == "Link"
         assert annots[1].is_printable is False
 
-    def test_annot_with_swapped_rect(self) -> None:
+    @staticmethod
+    def test_annot_with_swapped_rect() -> None:
         """Rects with inverted coordinates should be normalized."""
         adapter = _make_adapter()
         page_dict = {
@@ -114,7 +118,8 @@ class TestAnnotationExtraction:
         assert annot.rect.x0 == 10
         assert annot.rect.x1 == 100
 
-    def test_annot_without_subtype_skipped(self) -> None:
+    @staticmethod
+    def test_annot_without_subtype_skipped() -> None:
         adapter = _make_adapter()
         page_dict = {
             "/Annots": [
@@ -127,7 +132,8 @@ class TestAnnotationExtraction:
         sem_doc = builder.build(doc)
         assert sem_doc.pages[0].annotations == []
 
-    def test_annot_with_contents(self) -> None:
+    @staticmethod
+    def test_annot_with_contents() -> None:
         adapter = _make_adapter()
         page_dict = {
             "/Annots": [
@@ -144,14 +150,16 @@ class TestAnnotationExtraction:
 class TestTransparencyGroupExtraction:
     """Test transparency group extraction from page dict."""
 
-    def test_no_group(self) -> None:
+    @staticmethod
+    def test_no_group() -> None:
         adapter = _make_adapter()
         builder = SemanticModelBuilder(adapter)
         doc = _make_document()
         sem_doc = builder.build(doc)
         assert sem_doc.pages[0].transparency_group is None
 
-    def test_transparency_group_extracted(self) -> None:
+    @staticmethod
+    def test_transparency_group_extracted() -> None:
         adapter = _make_adapter()
         page_dict = {
             "/Group": {
@@ -171,7 +179,8 @@ class TestTransparencyGroupExtraction:
         assert group["/CS"] == "/DeviceCMYK"
         assert group["/I"] is True
 
-    def test_non_transparency_group_ignored(self) -> None:
+    @staticmethod
+    def test_non_transparency_group_ignored() -> None:
         adapter = _make_adapter()
         page_dict = {
             "/Group": {"/S": "/SomeOtherType"},

@@ -39,7 +39,6 @@ function Endpoint({
   response: string;
 }) {
   return (
-    // skipcq: JS-0415
     <div className="rounded-xl border border-slate-200 overflow-hidden mb-6">
       <div className="flex items-center gap-3 border-b border-slate-200 px-6 py-4 bg-slate-50">
         <span
@@ -75,7 +74,6 @@ function Endpoint({
 
 export default function DocsPage() {
   return (
-    // skipcq: JS-0415
     <div className="mx-auto max-w-6xl px-6 py-16 lg:flex lg:gap-12">
       <DocsNav />
 

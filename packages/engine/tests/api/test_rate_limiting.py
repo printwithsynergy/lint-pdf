@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
@@ -55,7 +54,8 @@ class FakeRedis:
             self.expire(key, ttl)
         return current
 
-    def ping(self) -> bool:
+    @staticmethod
+    def ping() -> bool:
         return True
 
 
@@ -91,14 +91,16 @@ def fake_redis() -> FakeRedis:
 class TestCheckRateLimit:
     """Tests for the check_rate_limit dependency function."""
 
-    def test_no_redis_allows_request(self) -> None:
+    @staticmethod
+    def test_no_redis_allows_request() -> None:
         """When Redis is not configured, check_rate_limit is a no-op."""
         set_rate_limiter(None)
         tenant = FakeTenant()
         result = check_rate_limit(tenant)
         assert result is None
 
-    def test_under_limit_passes(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_under_limit_passes(fake_redis: FakeRedis) -> None:
         """Requests under the daily limit should pass."""
         tenant = FakeTenant(rate_limit_daily=5)
         usage = check_rate_limit(tenant)
@@ -110,7 +112,8 @@ class TestCheckRateLimit:
         assert usage2 is not None
         assert usage2.used == 2
 
-    def test_free_plan_hard_blocks_at_limit(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_free_plan_hard_blocks_at_limit(fake_redis: FakeRedis) -> None:
         """Free plan has no overages — blocks immediately at limit."""
         from fastapi import HTTPException
 
@@ -121,7 +124,8 @@ class TestCheckRateLimit:
             check_rate_limit(tenant)  # 3 of 2 — BLOCKED
         assert exc_info.value.status_code == 429
 
-    def test_paid_plan_without_overage_blocks_at_limit(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_paid_plan_without_overage_blocks_at_limit(fake_redis: FakeRedis) -> None:
         """Paid plan with overage_enabled=False blocks at limit."""
         from fastapi import HTTPException
 
@@ -132,7 +136,8 @@ class TestCheckRateLimit:
             check_rate_limit(tenant)
         assert exc_info.value.status_code == 429
 
-    def test_paid_plan_with_overage_allows_past_limit(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_paid_plan_with_overage_allows_past_limit(fake_redis: FakeRedis) -> None:
         """Paid plan with overage_enabled=True continues past limit."""
         tenant = FakeTenant(rate_limit_daily=3, plan=TenantPlan.STARTER, overage_enabled=True)
         for _ in range(3):
@@ -146,7 +151,8 @@ class TestCheckRateLimit:
         assert usage.overage_rate_cents == 10
         assert usage.overage_cost_cents == 10
 
-    def test_overage_spending_cap(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_overage_spending_cap(fake_redis: FakeRedis) -> None:
         """Spending cap blocks when overage cost exceeds cap."""
         from fastapi import HTTPException
 
@@ -168,7 +174,8 @@ class TestCheckRateLimit:
         assert exc_info.value.status_code == 429
         assert "spending cap" in exc_info.value.detail
 
-    def test_overage_rate_override(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_overage_rate_override(fake_redis: FakeRedis) -> None:
         """Per-tenant rate override takes precedence over plan default."""
         tenant = FakeTenant(
             rate_limit_daily=2,
@@ -183,7 +190,8 @@ class TestCheckRateLimit:
         assert usage.overage_rate_cents == 25
         assert usage.overage_cost_cents == 25
 
-    def test_redis_error_allows_request(self) -> None:
+    @staticmethod
+    def test_redis_error_allows_request() -> None:
         """When Redis raises an error, request should pass through."""
         broken_redis = MagicMock()
         broken_redis.eval.side_effect = ConnectionError("Redis down")
@@ -193,7 +201,8 @@ class TestCheckRateLimit:
         assert result is None
         set_rate_limiter(None)
 
-    def test_different_tenants_have_separate_counters(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_different_tenants_have_separate_counters(fake_redis: FakeRedis) -> None:
         """Each tenant has its own rate limit counter."""
         tenant_a = FakeTenant(tenant_id="tenant-a", rate_limit_daily=1)
         tenant_b = FakeTenant(tenant_id="tenant-b", rate_limit_daily=1)
@@ -202,7 +211,8 @@ class TestCheckRateLimit:
         assert usage_a is not None and usage_a.used == 1
         assert usage_b is not None and usage_b.used == 1
 
-    def test_returns_usage_info(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_returns_usage_info(fake_redis: FakeRedis) -> None:
         """check_rate_limit returns UsageInfo with correct fields."""
         tenant = FakeTenant(rate_limit_daily=100, plan=TenantPlan.GROWTH)
         usage = check_rate_limit(tenant)
@@ -216,7 +226,8 @@ class TestCheckRateLimit:
         assert usage.overage_count == 0
         assert usage.overage_cost_cents == 0
 
-    def test_rate_limit_on_job_submit(self, client: TestClient, minimal_pdf_bytes: bytes) -> None:
+    @staticmethod
+    def test_rate_limit_on_job_submit(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         """Rate limiting is applied on job submission endpoint."""
         set_rate_limiter(None)
         from io import BytesIO
@@ -231,7 +242,8 @@ class TestCheckRateLimit:
 class TestBuildUsageInfo:
     """Tests for building UsageInfo from tenant and count."""
 
-    def test_free_plan_no_overage(self) -> None:
+    @staticmethod
+    def test_free_plan_no_overage() -> None:
         tenant = FakeTenant(rate_limit_daily=10, plan=TenantPlan.FREE)
         usage = build_usage_info(tenant, 5)
         assert usage.limit == 10
@@ -240,14 +252,16 @@ class TestBuildUsageInfo:
         assert not usage.in_overage
         assert not usage.blocked
 
-    def test_starter_plan_in_overage_blocked_without_opt_in(self) -> None:
+    @staticmethod
+    def test_starter_plan_in_overage_blocked_without_opt_in() -> None:
         tenant = FakeTenant(rate_limit_daily=100, plan=TenantPlan.STARTER, overage_enabled=False)
         usage = build_usage_info(tenant, 105)
         assert usage.in_overage is True
         assert usage.blocked is True  # Not opted in
         assert usage.overage_count == 5
 
-    def test_starter_plan_in_overage_allowed_with_opt_in(self) -> None:
+    @staticmethod
+    def test_starter_plan_in_overage_allowed_with_opt_in() -> None:
         tenant = FakeTenant(rate_limit_daily=100, plan=TenantPlan.STARTER, overage_enabled=True)
         usage = build_usage_info(tenant, 105)
         assert usage.in_overage is True
@@ -255,23 +269,27 @@ class TestBuildUsageInfo:
         assert usage.overage_count == 5
         assert usage.overage_cost_cents == 50  # 5 * 10 cents
 
-    def test_warning_at_80_pct(self) -> None:
+    @staticmethod
+    def test_warning_at_80_pct() -> None:
         tenant = FakeTenant(rate_limit_daily=100, plan=TenantPlan.GROWTH)
         usage = build_usage_info(tenant, 80)
         assert usage.warning is True
 
-    def test_no_warning_below_80(self) -> None:
+    @staticmethod
+    def test_no_warning_below_80() -> None:
         tenant = FakeTenant(rate_limit_daily=100, plan=TenantPlan.GROWTH)
         usage = build_usage_info(tenant, 79)
         assert usage.warning is False
 
-    def test_blocked_has_no_warning(self) -> None:
+    @staticmethod
+    def test_blocked_has_no_warning() -> None:
         tenant = FakeTenant(rate_limit_daily=10, plan=TenantPlan.FREE)
         usage = build_usage_info(tenant, 11)
         assert usage.blocked is True
         assert usage.warning is False
 
-    def test_cap_remaining(self) -> None:
+    @staticmethod
+    def test_cap_remaining() -> None:
         tenant = FakeTenant(
             rate_limit_daily=10,
             plan=TenantPlan.STARTER,
@@ -283,7 +301,8 @@ class TestBuildUsageInfo:
         assert usage.overage_cost_cents == 30
         assert usage.cap_remaining_cents == 70
 
-    def test_cap_remaining_none_when_no_cap(self) -> None:
+    @staticmethod
+    def test_cap_remaining_none_when_no_cap() -> None:
         tenant = FakeTenant(rate_limit_daily=10, plan=TenantPlan.STARTER, overage_enabled=True)
         usage = build_usage_info(tenant, 13)
         assert usage.cap_remaining_cents is None
@@ -292,12 +311,14 @@ class TestBuildUsageInfo:
 class TestGetCurrentUsage:
     """Tests for reading usage without incrementing."""
 
-    def test_returns_zero_without_redis(self) -> None:
+    @staticmethod
+    def test_returns_zero_without_redis() -> None:
         set_rate_limiter(None)
         tenant = FakeTenant()
         assert get_current_usage(tenant) == 0
 
-    def test_reads_current_count(self, fake_redis: FakeRedis) -> None:
+    @staticmethod
+    def test_reads_current_count(fake_redis: FakeRedis) -> None:
         tenant = FakeTenant(rate_limit_daily=100)
         # Increment a few times first
         check_rate_limit(tenant)
@@ -311,21 +332,25 @@ class TestGetCurrentUsage:
 class TestFakeRedis:
     """Unit tests for the FakeRedis helper."""
 
-    def test_incr_creates_key(self) -> None:
+    @staticmethod
+    def test_incr_creates_key() -> None:
         redis = FakeRedis()
         assert redis.incr("key") == 1
         assert redis.incr("key") == 2
 
-    def test_expire_sets_ttl(self) -> None:
+    @staticmethod
+    def test_expire_sets_ttl() -> None:
         redis = FakeRedis()
         redis.expire("key", 86400)
         assert redis._ttls["key"] == 86400
 
-    def test_get_nonexistent(self) -> None:
+    @staticmethod
+    def test_get_nonexistent() -> None:
         redis = FakeRedis()
         assert redis.get("missing") is None
 
-    def test_eval_script(self) -> None:
+    @staticmethod
+    def test_eval_script() -> None:
         redis = FakeRedis()
         result = redis.eval("script", 1, "mykey", 86400)
         assert result == 1
@@ -333,11 +358,13 @@ class TestFakeRedis:
         result2 = redis.eval("script", 1, "mykey", 86400)
         assert result2 == 2
 
-    def test_set_nx_first_time(self) -> None:
+    @staticmethod
+    def test_set_nx_first_time() -> None:
         redis = FakeRedis()
         assert redis.set("key", "1", nx=True, ex=86400) is True
 
-    def test_set_nx_already_exists(self) -> None:
+    @staticmethod
+    def test_set_nx_already_exists() -> None:
         redis = FakeRedis()
         redis.set("key", "1", nx=True, ex=86400)
         assert redis.set("key", "1", nx=True, ex=86400) is None

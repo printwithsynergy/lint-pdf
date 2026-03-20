@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import hashlib
 import hmac
 import json
@@ -22,39 +21,48 @@ def celery_app():
 class TestCeleryAppCreation:
     """Tests for Celery app configuration."""
 
-    def test_creates_app(self, celery_app) -> None:
+    @staticmethod
+    def test_creates_app(celery_app) -> None:
         assert celery_app.main == "grounded"
 
-    def test_json_serializer(self, celery_app) -> None:
+    @staticmethod
+    def test_json_serializer(celery_app) -> None:
         assert celery_app.conf.task_serializer == "json"
         assert celery_app.conf.result_serializer == "json"
         assert celery_app.conf.accept_content == ["json"]
 
-    def test_utc_timezone(self, celery_app) -> None:
+    @staticmethod
+    def test_utc_timezone(celery_app) -> None:
         assert celery_app.conf.timezone == "UTC"
         assert celery_app.conf.enable_utc is True
 
-    def test_task_time_limits(self, celery_app) -> None:
+    @staticmethod
+    def test_task_time_limits(celery_app) -> None:
         assert celery_app.conf.task_time_limit == 600
         assert celery_app.conf.task_soft_time_limit == 540
 
-    def test_worker_prefetch_one(self, celery_app) -> None:
+    @staticmethod
+    def test_worker_prefetch_one(celery_app) -> None:
         assert celery_app.conf.worker_prefetch_multiplier == 1
 
-    def test_acks_late(self, celery_app) -> None:
+    @staticmethod
+    def test_acks_late(celery_app) -> None:
         assert celery_app.conf.task_acks_late is True
 
-    def test_max_tasks_per_child(self, celery_app) -> None:
+    @staticmethod
+    def test_max_tasks_per_child(celery_app) -> None:
         assert celery_app.conf.worker_max_tasks_per_child == 25
 
-    def test_beat_schedule_has_cleanup(self, celery_app) -> None:
+    @staticmethod
+    def test_beat_schedule_has_cleanup(celery_app) -> None:
         schedule = celery_app.conf.beat_schedule
         assert "cleanup-expired-reports" in schedule
         task_conf = schedule["cleanup-expired-reports"]
         assert task_conf["task"] == "grounded.queue.tasks.cleanup_expired_reports"
         assert task_conf["schedule"] == 86400.0
 
-    def test_broker_url_from_arg(self) -> None:
+    @staticmethod
+    def test_broker_url_from_arg() -> None:
         app = create_celery_app(broker_url="redis://custom:6380/1")
         assert "redis://custom:6380/1" in str(app.conf.broker_url)
 
@@ -62,7 +70,8 @@ class TestCeleryAppCreation:
 class TestWorkerInit:
     """Tests for the worker_init signal handler."""
 
-    def test_on_worker_init_calls_init_db(self) -> None:
+    @staticmethod
+    def test_on_worker_init_calls_init_db() -> None:
         """_on_worker_init should initialize the database."""
         with (
             patch("grounded.api.database.init_db") as mock_init_db,
@@ -73,7 +82,8 @@ class TestWorkerInit:
             _on_worker_init()
             mock_init_db.assert_called_once_with("postgresql://test:5432/testdb")
 
-    def test_on_worker_init_uses_default_url(self) -> None:
+    @staticmethod
+    def test_on_worker_init_uses_default_url() -> None:
         """_on_worker_init should use default database URL if env var is not set."""
         import os
 
@@ -89,7 +99,8 @@ class TestWorkerInit:
                 "postgresql://grounded:grounded@localhost:5432/grounded"
             )
 
-    def test_worker_module_exports_app(self) -> None:
+    @staticmethod
+    def test_worker_module_exports_app() -> None:
         """The worker module should export the celery app."""
         from grounded.queue.worker import app
 
@@ -99,19 +110,22 @@ class TestWorkerInit:
 class TestRunPreflightTask:
     """Tests for the run_preflight Celery task."""
 
-    def test_task_is_registered(self) -> None:
+    @staticmethod
+    def test_task_is_registered() -> None:
         """run_preflight should be registered as a Celery task."""
         from grounded.queue.tasks import run_preflight
 
         assert run_preflight.name == "grounded.preflight.run"
 
-    def test_task_retry_config(self) -> None:
+    @staticmethod
+    def test_task_retry_config() -> None:
         from grounded.queue.tasks import run_preflight
 
         assert run_preflight.max_retries == 2
         assert run_preflight.default_retry_delay == 10
 
-    def test_task_time_limits(self) -> None:
+    @staticmethod
+    def test_task_time_limits() -> None:
         from grounded.queue.tasks import run_preflight
 
         assert run_preflight.time_limit == 300
@@ -277,12 +291,14 @@ class TestRunPreflightTask:
 class TestCleanupExpiredReports:
     """Tests for the cleanup_expired_reports task."""
 
-    def test_task_is_registered(self) -> None:
+    @staticmethod
+    def test_task_is_registered() -> None:
         from grounded.queue.tasks import cleanup_expired_reports
 
         assert cleanup_expired_reports.name == "grounded.queue.tasks.cleanup_expired_reports"
 
-    def test_cleanup_returns_count(self) -> None:
+    @staticmethod
+    def test_cleanup_returns_count() -> None:
         mock_db = MagicMock()
         mock_storage = MagicMock()
         mock_service = MagicMock()
@@ -303,18 +319,21 @@ class TestCleanupExpiredReports:
 class TestDispatchWebhook:
     """Tests for the dispatch_webhook task."""
 
-    def test_task_is_registered(self) -> None:
+    @staticmethod
+    def test_task_is_registered() -> None:
         from grounded.queue.tasks import dispatch_webhook
 
         assert dispatch_webhook.name == "grounded.webhook.dispatch"
 
-    def test_task_retry_config(self) -> None:
+    @staticmethod
+    def test_task_retry_config() -> None:
         from grounded.queue.tasks import dispatch_webhook
 
         assert dispatch_webhook.max_retries == 3
         assert dispatch_webhook.default_retry_delay == 5
 
-    def test_successful_dispatch(self) -> None:
+    @staticmethod
+    def test_successful_dispatch() -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.raise_for_status.return_value = None
@@ -334,7 +353,8 @@ class TestDispatchWebhook:
         assert result["event"] == "job.completed"
         assert result["status_code"] == 200
 
-    def test_dispatch_sends_hmac_signature(self) -> None:
+    @staticmethod
+    def test_dispatch_sends_hmac_signature() -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.raise_for_status.return_value = None
@@ -361,7 +381,8 @@ class TestDispatchWebhook:
             expected_sig = hmac.new(secret.encode(), body.encode(), hashlib.sha256).hexdigest()
             assert headers["X-LintPDF-Signature"] == f"sha256={expected_sig}"
 
-    def test_dispatch_failure_returns_error(self) -> None:
+    @staticmethod
+    def test_dispatch_failure_returns_error() -> None:
         with patch("httpx.post", side_effect=Exception("Connection refused")):
             from grounded.queue.tasks import dispatch_webhook
 
@@ -379,7 +400,8 @@ class TestDispatchWebhook:
 class TestDispatchTenantWebhooks:
     """Tests for the _dispatch_tenant_webhooks helper."""
 
-    def test_dispatches_to_active_endpoints(self) -> None:
+    @staticmethod
+    def test_dispatches_to_active_endpoints() -> None:
         from grounded.queue.tasks import _dispatch_tenant_webhooks
 
         mock_db = MagicMock()
@@ -394,7 +416,8 @@ class TestDispatchTenantWebhooks:
             _dispatch_tenant_webhooks(mock_db, "tenant-123", "job.completed", {"job_id": "abc"})
             mock_dispatch.delay.assert_called_once()
 
-    def test_filters_by_event_type(self) -> None:
+    @staticmethod
+    def test_filters_by_event_type() -> None:
         from grounded.queue.tasks import _dispatch_tenant_webhooks
 
         mock_db = MagicMock()
@@ -409,7 +432,8 @@ class TestDispatchTenantWebhooks:
             _dispatch_tenant_webhooks(mock_db, "tenant-123", "job.completed", {"job_id": "abc"})
             mock_dispatch.delay.assert_not_called()
 
-    def test_matching_event_dispatches(self) -> None:
+    @staticmethod
+    def test_matching_event_dispatches() -> None:
         from grounded.queue.tasks import _dispatch_tenant_webhooks
 
         mock_db = MagicMock()

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.document import DocumentAnalyzer
 from grounded.analyzers.finding import Severity
 from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
@@ -24,7 +23,8 @@ def _make_document(
 
 
 class TestEncryption:
-    def test_encrypted_aground(self) -> None:
+    @staticmethod
+    def test_encrypted_aground() -> None:
         doc = _make_document(is_encrypted=True)
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
@@ -33,7 +33,8 @@ class TestEncryption:
         assert f is not None
         assert f.severity == Severity.AGROUND
 
-    def test_not_encrypted_clean(self) -> None:
+    @staticmethod
+    def test_not_encrypted_clean() -> None:
         doc = _make_document(is_encrypted=False)
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
@@ -41,13 +42,15 @@ class TestEncryption:
 
 
 class TestMissingTitle:
-    def test_no_title_advisory(self) -> None:
+    @staticmethod
+    def test_no_title_advisory() -> None:
         doc = _make_document(info_dict={})
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
         assert "GRD_DOC_003" in ids
 
-    def test_with_title_clean(self) -> None:
+    @staticmethod
+    def test_with_title_clean() -> None:
         doc = _make_document(info_dict={"/Title": "My Document"})
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
@@ -55,7 +58,8 @@ class TestMissingTitle:
 
 
 class TestMixedPageSizes:
-    def test_mixed_sizes_advisory(self) -> None:
+    @staticmethod
+    def test_mixed_sizes_advisory() -> None:
         pages = [
             SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792)),  # Letter
             SemanticPage(page_num=2, media_box=PdfBox(0, 0, 595, 842)),  # A4
@@ -65,7 +69,8 @@ class TestMixedPageSizes:
         ids = [f.inspection_id for f in findings]
         assert "GRD_DOC_001" in ids
 
-    def test_same_sizes_clean(self) -> None:
+    @staticmethod
+    def test_same_sizes_clean() -> None:
         pages = [
             SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792)),
             SemanticPage(page_num=2, media_box=PdfBox(0, 0, 612, 792)),
@@ -75,7 +80,8 @@ class TestMixedPageSizes:
         ids = [f.inspection_id for f in findings]
         assert "GRD_DOC_001" not in ids
 
-    def test_single_page_no_check(self) -> None:
+    @staticmethod
+    def test_single_page_no_check() -> None:
         doc = _make_document()
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
@@ -83,7 +89,8 @@ class TestMixedPageSizes:
 
 
 class TestInconsistentRotation:
-    def test_inconsistent_rotation_advisory(self) -> None:
+    @staticmethod
+    def test_inconsistent_rotation_advisory() -> None:
         pages = [
             SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792), rotate=0),
             SemanticPage(page_num=2, media_box=PdfBox(0, 0, 612, 792), rotate=90),
@@ -93,7 +100,8 @@ class TestInconsistentRotation:
         ids = [f.inspection_id for f in findings]
         assert "GRD_DOC_002" in ids
 
-    def test_consistent_rotation_clean(self) -> None:
+    @staticmethod
+    def test_consistent_rotation_clean() -> None:
         pages = [
             SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792), rotate=90),
             SemanticPage(page_num=2, media_box=PdfBox(0, 0, 612, 792), rotate=90),

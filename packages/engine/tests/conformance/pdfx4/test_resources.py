@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.conformance.pdfx4._resources import validate_resources
 from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
@@ -18,7 +17,8 @@ def _doc(pages: list[SemanticPage] | None = None) -> SemanticDocument:
 
 
 class TestNullXObject:
-    def test_null_xobject_aground(self) -> None:
+    @staticmethod
+    def test_null_xobject_aground() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -29,7 +29,8 @@ class TestNullXObject:
         assert len(ids) == 1
         assert ids[0].severity == Severity.AGROUND
 
-    def test_valid_xobject_ok(self) -> None:
+    @staticmethod
+    def test_valid_xobject_ok() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -40,7 +41,8 @@ class TestNullXObject:
 
 
 class TestNullFont:
-    def test_null_font_aground(self) -> None:
+    @staticmethod
+    def test_null_font_aground() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -53,7 +55,8 @@ class TestNullFont:
 
 
 class TestNullColorSpace:
-    def test_null_colorspace_aground(self) -> None:
+    @staticmethod
+    def test_null_colorspace_aground() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -66,7 +69,8 @@ class TestNullColorSpace:
 
 
 class TestNullExtGState:
-    def test_null_extgstate_aground(self) -> None:
+    @staticmethod
+    def test_null_extgstate_aground() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -79,7 +83,8 @@ class TestNullExtGState:
 
 
 class TestResourcePresence:
-    def test_content_no_resources_advisory(self) -> None:
+    @staticmethod
+    def test_content_no_resources_advisory() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -90,7 +95,8 @@ class TestResourcePresence:
         assert len(ids) == 1
         assert ids[0].severity == Severity.ADVISORY
 
-    def test_no_content_no_finding(self) -> None:
+    @staticmethod
+    def test_no_content_no_finding() -> None:
         page = SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792))
         f = validate_resources(_doc(pages=[page]))
         assert not [x for x in f if x.inspection_id == "PDFX4-092"]

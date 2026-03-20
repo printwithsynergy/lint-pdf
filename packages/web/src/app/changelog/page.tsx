@@ -11,7 +11,6 @@ export default async function ChangelogPage() {
   const entries = await getEntriesWithHtml();
 
   return (
-    // skipcq: JS-0415
     <main className="py-16">
       <div className="mx-auto max-w-3xl px-6">
         <div className="mb-12">

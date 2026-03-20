@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import Any
 
 from grounded.analyzers.finding import Severity
@@ -37,13 +36,15 @@ def _color_event(color_space: str, page_num: int = 1) -> ColorChangedEvent:
 
 
 class TestCalibratedProhibited:
-    def test_calgray_delay(self) -> None:
+    @staticmethod
+    def test_calgray_delay() -> None:
         f = validate_color(_doc(), [_color_event("CalGray")])
         ids = [x for x in f if x.inspection_id == "PDFX4-026"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_calrgb_delay(self) -> None:
+    @staticmethod
+    def test_calrgb_delay() -> None:
         f = validate_color(_doc(), [_color_event("CalRGB")])
         ids = [x for x in f if x.inspection_id == "PDFX4-027"]
         assert len(ids) == 1
@@ -51,18 +52,21 @@ class TestCalibratedProhibited:
 
 
 class TestDeviceRgb:
-    def test_device_rgb_no_intent_delay(self) -> None:
+    @staticmethod
+    def test_device_rgb_no_intent_delay() -> None:
         f = validate_color(_doc(), [_color_event("DeviceRGB")])
         ids = [x for x in f if x.inspection_id == "PDFX4-028"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_device_rgb_with_rgb_intent_ok(self) -> None:
+    @staticmethod
+    def test_device_rgb_with_rgb_intent_ok() -> None:
         intent = {"/S": "/GTS_PDFX", "/DestOutputProfile": {"/ColorSpace": "RGB"}}
         f = validate_color(_doc(output_intents=[intent]), [_color_event("DeviceRGB")])
         assert not [x for x in f if x.inspection_id == "PDFX4-028"]
 
-    def test_device_rgb_with_default_rgb_ok(self) -> None:
+    @staticmethod
+    def test_device_rgb_with_default_rgb_ok() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -73,20 +77,23 @@ class TestDeviceRgb:
 
 
 class TestDeviceCmyk:
-    def test_device_cmyk_no_intent_advisory(self) -> None:
+    @staticmethod
+    def test_device_cmyk_no_intent_advisory() -> None:
         f = validate_color(_doc(), [_color_event("DeviceCMYK")])
         ids = [x for x in f if x.inspection_id == "PDFX4-029"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.ADVISORY
 
-    def test_device_cmyk_with_cmyk_intent_ok(self) -> None:
+    @staticmethod
+    def test_device_cmyk_with_cmyk_intent_ok() -> None:
         intent = {"/S": "/GTS_PDFX", "/DestOutputProfile": {"/ColorSpace": "CMYK"}}
         f = validate_color(_doc(output_intents=[intent]), [_color_event("DeviceCMYK")])
         assert not [x for x in f if x.inspection_id == "PDFX4-029"]
 
 
 class TestDeviceGray:
-    def test_device_gray_no_intent_advisory(self) -> None:
+    @staticmethod
+    def test_device_gray_no_intent_advisory() -> None:
         f = validate_color(_doc(), [_color_event("DeviceGray")])
         ids = [x for x in f if x.inspection_id == "PDFX4-030"]
         assert len(ids) == 1
@@ -94,7 +101,8 @@ class TestDeviceGray:
 
 
 class TestIccBased:
-    def test_bad_component_count(self) -> None:
+    @staticmethod
+    def test_bad_component_count() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -104,7 +112,8 @@ class TestIccBased:
         ids = [x for x in f if x.inspection_id == "PDFX4-031"]
         assert len(ids) == 1
 
-    def test_valid_components_ok(self) -> None:
+    @staticmethod
+    def test_valid_components_ok() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -115,7 +124,8 @@ class TestIccBased:
 
 
 class TestSeparation:
-    def test_inconsistent_alternates(self) -> None:
+    @staticmethod
+    def test_inconsistent_alternates() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -132,7 +142,8 @@ class TestSeparation:
 
 
 class TestDeviceN:
-    def test_devicen_advisory(self) -> None:
+    @staticmethod
+    def test_devicen_advisory() -> None:
         page = SemanticPage(
             page_num=1,
             media_box=PdfBox(0, 0, 612, 792),
@@ -145,7 +156,8 @@ class TestDeviceN:
 
 
 class TestLab:
-    def test_lab_advisory(self) -> None:
+    @staticmethod
+    def test_lab_advisory() -> None:
         f = validate_color(_doc(), [_color_event("Lab")])
         ids = [x for x in f if x.inspection_id == "PDFX4-034"]
         assert len(ids) == 1
@@ -153,7 +165,8 @@ class TestLab:
 
 
 class TestRenderingIntent:
-    def test_invalid_rendering_intent(self) -> None:
+    @staticmethod
+    def test_invalid_rendering_intent() -> None:
         event = TextRenderedEvent(
             operator="Tj",
             page_num=1,
@@ -168,7 +181,8 @@ class TestRenderingIntent:
         ids = [x for x in f if x.inspection_id == "PDFX4-035"]
         assert len(ids) == 1
 
-    def test_valid_rendering_intent_ok(self) -> None:
+    @staticmethod
+    def test_valid_rendering_intent_ok() -> None:
         event = TextRenderedEvent(
             operator="Tj",
             page_num=1,

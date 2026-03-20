@@ -7,12 +7,21 @@ import { ParticleField } from "./ParticleField";
 import { useBeta } from "./BetaContext";
 import { WaitlistModal } from "./WaitlistModal";
 
+const LEFT_CODE_LINES = Array.from({ length: 12 }, (_, i) => ({
+  id: `left-line-${i + 1}`,
+  width: 20 + ((i * 17) % 40),
+}));
+
+const RIGHT_CODE_LINES = Array.from({ length: 10 }, (_, i) => ({
+  id: `right-line-${i + 1}`,
+  width: 16 + ((i * 13) % 36),
+}));
+
 export function HeroSection() {
   const { betaMode } = useBeta();
   const [waitlistOpen, setWaitlistOpen] = useState(false);
 
   return (
-    // skipcq: JS-0415
     <section className="relative overflow-hidden hero-gradient min-h-[90vh] flex items-center">
       {/* Animated particle pixie dust */}
       <ParticleField />
@@ -37,13 +46,12 @@ export function HeroSection() {
         >
           {/* ── Left code line indicators ── */}
           <div className="absolute top-[10%] left-[6%] flex flex-col gap-3 opacity-[0.12]">
-            {[...Array(12)].map((_, i) => (
-              // skipcq: JS-0437 — static decorative elements that never reorder
-              <div key={`l${i}`} className="flex items-center gap-2">
+            {LEFT_CODE_LINES.map((line) => (
+              <div key={line.id} className="flex items-center gap-2">
                 <div className="w-4 h-0.5 rounded-full bg-brand-900" />
                 <div
                   className="h-0.5 rounded-full bg-brand-700"
-                  style={{ width: `${20 + ((i * 17) % 40)}px` }}
+                  style={{ width: `${line.width}px` }}
                 />
               </div>
             ))}
@@ -51,12 +59,11 @@ export function HeroSection() {
 
           {/* ── Right code line indicators ── */}
           <div className="absolute top-[8%] right-[7%] flex flex-col gap-3 opacity-[0.10]">
-            {[...Array(10)].map((_, i) => (
-              // skipcq: JS-0437 — static decorative elements that never reorder
-              <div key={`r${i}`} className="flex items-center gap-2">
+            {RIGHT_CODE_LINES.map((line) => (
+              <div key={line.id} className="flex items-center gap-2">
                 <div
                   className="h-0.5 rounded-full bg-brand-700"
-                  style={{ width: `${16 + ((i * 13) % 36)}px` }}
+                  style={{ width: `${line.width}px` }}
                 />
               </div>
             ))}

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import pytest
 from pydantic import ValidationError
 
@@ -10,7 +9,8 @@ from grounded.profiles.schema import CheckConfig, ThresholdConfig, VoyagePlan
 
 
 class TestThresholdConfig:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         t = ThresholdConfig()
         assert t.min_dpi == 150.0
         assert t.tac_limit == 300.0
@@ -18,38 +18,44 @@ class TestThresholdConfig:
         assert t.hairline_threshold == 0.25
         assert t.safety_margin_mm == 3.0
 
-    def test_custom_values(self) -> None:
+    @staticmethod
+    def test_custom_values() -> None:
         t = ThresholdConfig(min_dpi=300.0, tac_limit=280.0)
         assert t.min_dpi == 300.0
         assert t.tac_limit == 280.0
 
-    def test_negative_dpi_rejected(self) -> None:
+    @staticmethod
+    def test_negative_dpi_rejected() -> None:
         with pytest.raises(ValidationError):
             ThresholdConfig(min_dpi=-1.0)
 
 
 class TestCheckConfig:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         c = CheckConfig()
         assert "GRD_*" in c.enabled
         assert "PDFX4-*" in c.enabled
         assert len(c.disabled) == 0
         assert len(c.severity_overrides) == 0
 
-    def test_custom_disabled(self) -> None:
+    @staticmethod
+    def test_custom_disabled() -> None:
         c = CheckConfig(disabled=["GRD_IMG_002"])
         assert "GRD_IMG_002" in c.disabled
 
 
 class TestVoyagePlan:
-    def test_minimal(self) -> None:
+    @staticmethod
+    def test_minimal() -> None:
         fp = VoyagePlan(name="Test")
         assert fp.name == "Test"
         assert fp.conformance is None
         assert fp.workflow == "CMYK"
         assert fp.version == "1.0"
 
-    def test_full(self) -> None:
+    @staticmethod
+    def test_full() -> None:
         fp = VoyagePlan(
             name="Full",
             description="Full profile",
@@ -60,7 +66,8 @@ class TestVoyagePlan:
         assert fp.conformance == "pdfx4"
         assert fp.thresholds.min_dpi == 300.0
 
-    def test_json_round_trip(self) -> None:
+    @staticmethod
+    def test_json_round_trip() -> None:
         fp = VoyagePlan(name="Test", conformance="pdfx4")
         data = fp.model_dump()
         fp2 = VoyagePlan.model_validate(data)
@@ -69,13 +76,15 @@ class TestVoyagePlan:
 
 
 class TestCheckEnabled:
-    def test_default_enables_all_grd(self) -> None:
+    @staticmethod
+    def test_default_enables_all_grd() -> None:
         fp = VoyagePlan(name="Test")
         assert fp.is_check_enabled("GRD_IMG_001")
         assert fp.is_check_enabled("GRD_FONT_003")
         assert fp.is_check_enabled("PDFX4-001")
 
-    def test_disabled_overrides_enabled(self) -> None:
+    @staticmethod
+    def test_disabled_overrides_enabled() -> None:
         fp = VoyagePlan(
             name="Test",
             checks=CheckConfig(disabled=["GRD_IMG_002"]),
@@ -83,14 +92,16 @@ class TestCheckEnabled:
         assert not fp.is_check_enabled("GRD_IMG_002")
         assert fp.is_check_enabled("GRD_IMG_001")
 
-    def test_ignore_severity_disables(self) -> None:
+    @staticmethod
+    def test_ignore_severity_disables() -> None:
         fp = VoyagePlan(
             name="Test",
             checks=CheckConfig(severity_overrides={"GRD_IMG_005": "ignore"}),
         )
         assert not fp.is_check_enabled("GRD_IMG_005")
 
-    def test_pattern_matching(self) -> None:
+    @staticmethod
+    def test_pattern_matching() -> None:
         fp = VoyagePlan(
             name="Test",
             checks=CheckConfig(enabled=["GRD_IMG_*"], disabled=[]),
@@ -98,7 +109,8 @@ class TestCheckEnabled:
         assert fp.is_check_enabled("GRD_IMG_001")
         assert not fp.is_check_enabled("GRD_FONT_001")
 
-    def test_disable_pattern(self) -> None:
+    @staticmethod
+    def test_disable_pattern() -> None:
         fp = VoyagePlan(
             name="Test",
             checks=CheckConfig(disabled=["PDFX4-*"]),
@@ -108,11 +120,13 @@ class TestCheckEnabled:
 
 
 class TestSeverityOverride:
-    def test_no_override_returns_none(self) -> None:
+    @staticmethod
+    def test_no_override_returns_none() -> None:
         fp = VoyagePlan(name="Test")
         assert fp.get_severity_override("GRD_IMG_001") is None
 
-    def test_override_returns_value(self) -> None:
+    @staticmethod
+    def test_override_returns_value() -> None:
         fp = VoyagePlan(
             name="Test",
             checks=CheckConfig(severity_overrides={"GRD_IMG_001": "advisory"}),

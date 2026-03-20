@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.conformance.pdfx4 import PdfX4Validator
 from grounded.semantic.model import PdfAnnotation, PdfBox, SemanticDocument, SemanticPage
@@ -55,14 +54,16 @@ def _compliant_doc() -> SemanticDocument:
 
 
 class TestPdfX4ValidatorIntegration:
-    def test_compliant_doc_minimal_findings(self) -> None:
+    @staticmethod
+    def test_compliant_doc_minimal_findings() -> None:
         validator = PdfX4Validator()
         findings = validator.validate(_compliant_doc(), [])
         # A well-formed doc should have no AGROUND findings
         aground = [f for f in findings if f.severity == Severity.AGROUND]
         assert len(aground) == 0
 
-    def test_encrypted_doc_aground(self) -> None:
+    @staticmethod
+    def test_encrypted_doc_aground() -> None:
         doc = _compliant_doc()
         doc.is_encrypted = True
         validator = PdfX4Validator()
@@ -70,7 +71,8 @@ class TestPdfX4ValidatorIntegration:
         aground = [f for f in findings if f.severity == Severity.AGROUND]
         assert any(f.inspection_id == "PDFX4-063" for f in aground)
 
-    def test_missing_xmp_aground(self) -> None:
+    @staticmethod
+    def test_missing_xmp_aground() -> None:
         doc = _compliant_doc()
         doc.metadata_stream = None
         validator = PdfX4Validator()
@@ -78,7 +80,8 @@ class TestPdfX4ValidatorIntegration:
         aground = [f for f in findings if f.severity == Severity.AGROUND]
         assert any(f.inspection_id == "PDFX4-005" for f in aground)
 
-    def test_old_version_aground(self) -> None:
+    @staticmethod
+    def test_old_version_aground() -> None:
         doc = _compliant_doc()
         doc.version = "1.4"
         validator = PdfX4Validator()
@@ -86,7 +89,8 @@ class TestPdfX4ValidatorIntegration:
         aground = [f for f in findings if f.severity == Severity.AGROUND]
         assert any(f.inspection_id == "PDFX4-001" for f in aground)
 
-    def test_prohibited_annotation_aground(self) -> None:
+    @staticmethod
+    def test_prohibited_annotation_aground() -> None:
         doc = _compliant_doc()
         doc.pages[0].annotations = [PdfAnnotation(subtype="Sound", page_num=1)]
         validator = PdfX4Validator()
@@ -94,7 +98,8 @@ class TestPdfX4ValidatorIntegration:
         aground = [f for f in findings if f.severity == Severity.AGROUND]
         assert any(f.inspection_id == "PDFX4-057" for f in aground)
 
-    def test_no_output_intent_aground(self) -> None:
+    @staticmethod
+    def test_no_output_intent_aground() -> None:
         doc = _compliant_doc()
         doc.output_intents = []
         validator = PdfX4Validator()
@@ -102,7 +107,8 @@ class TestPdfX4ValidatorIntegration:
         aground = [f for f in findings if f.severity == Severity.AGROUND]
         assert any(f.inspection_id == "PDFX4-016" for f in aground)
 
-    def test_no_trim_no_art_aground(self) -> None:
+    @staticmethod
+    def test_no_trim_no_art_aground() -> None:
         doc = _compliant_doc()
         doc.pages[0].trim_box = None
         doc.pages[0].art_box = None
@@ -111,7 +117,8 @@ class TestPdfX4ValidatorIntegration:
         aground = [f for f in findings if f.severity == Severity.AGROUND]
         assert any(f.inspection_id == "PDFX4-050" for f in aground)
 
-    def test_all_check_ids_prefixed(self) -> None:
+    @staticmethod
+    def test_all_check_ids_prefixed() -> None:
         validator = PdfX4Validator()
         findings = validator.validate(_compliant_doc(), [])
         for f in findings:

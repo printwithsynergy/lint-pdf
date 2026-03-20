@@ -54,7 +54,6 @@ export default function BetaJoinPage() {
   );
 
   return (
-    // skipcq: JS-0415
     <div className="min-h-[80vh] flex items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">

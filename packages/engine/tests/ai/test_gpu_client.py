@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import time
 from unittest.mock import MagicMock, patch
 
@@ -14,34 +13,40 @@ from grounded.ai.gpu_client import CircuitBreaker, GPUInferenceClient, GPUServic
 class TestCircuitBreaker:
     """Tests for CircuitBreaker state machine."""
 
-    def test_starts_closed(self) -> None:
+    @staticmethod
+    def test_starts_closed() -> None:
         cb = CircuitBreaker()
         assert cb.state == "closed"
 
-    def test_stays_closed_below_threshold(self) -> None:
+    @staticmethod
+    def test_stays_closed_below_threshold() -> None:
         cb = CircuitBreaker(failure_threshold=3)
         cb.record_failure()
         cb.record_failure()
         assert cb.state == "closed"
 
-    def test_opens_after_threshold_failures(self) -> None:
+    @staticmethod
+    def test_opens_after_threshold_failures() -> None:
         cb = CircuitBreaker(failure_threshold=3)
         cb.record_failure()
         cb.record_failure()
         cb.record_failure()
         assert cb.state == "open"
 
-    def test_check_raises_when_open(self) -> None:
+    @staticmethod
+    def test_check_raises_when_open() -> None:
         cb = CircuitBreaker(failure_threshold=1)
         cb.record_failure()
         with pytest.raises(GPUServiceUnavailableError):
             cb.check()
 
-    def test_check_passes_when_closed(self) -> None:
+    @staticmethod
+    def test_check_passes_when_closed() -> None:
         cb = CircuitBreaker()
         cb.check()  # Should not raise
 
-    def test_resets_to_closed_on_success(self) -> None:
+    @staticmethod
+    def test_resets_to_closed_on_success() -> None:
         cb = CircuitBreaker(failure_threshold=2)
         cb.record_failure()
         cb.record_failure()
@@ -51,7 +56,8 @@ class TestCircuitBreaker:
         assert cb.state == "closed"
         cb.check()  # Should not raise
 
-    def test_transitions_to_half_open_after_recovery_timeout(self) -> None:
+    @staticmethod
+    def test_transitions_to_half_open_after_recovery_timeout() -> None:
         cb = CircuitBreaker(
             failure_threshold=1,
             recovery_timeout_seconds=0.1,
@@ -62,7 +68,8 @@ class TestCircuitBreaker:
         time.sleep(0.15)
         assert cb.state == "half_open"
 
-    def test_failures_outside_window_are_discarded(self) -> None:
+    @staticmethod
+    def test_failures_outside_window_are_discarded() -> None:
         cb = CircuitBreaker(
             failure_threshold=2,
             failure_window_seconds=0.1,
@@ -77,7 +84,8 @@ class TestCircuitBreaker:
 class TestGPUInferenceClient:
     """Tests for GPUInferenceClient with mocked httpx."""
 
-    def test_assess_image_quality(self) -> None:
+    @staticmethod
+    def test_assess_image_quality() -> None:
         with patch("httpx.Client") as mock_client_cls:
             mock_response = MagicMock()
             mock_response.json.return_value = {"score": 72.5, "model": "musiq"}
@@ -90,7 +98,8 @@ class TestGPUInferenceClient:
             assert result["score"] == 72.5
             mock_client_cls.return_value.post.assert_called_once()
 
-    def test_classify_document(self) -> None:
+    @staticmethod
+    def test_classify_document() -> None:
         with patch("httpx.Client") as mock_client_cls:
             mock_response = MagicMock()
             mock_response.json.return_value = {
@@ -105,7 +114,8 @@ class TestGPUInferenceClient:
 
             assert result["class"] == "packaging_artwork"
 
-    def test_detect_logos_with_references(self) -> None:
+    @staticmethod
+    def test_detect_logos_with_references() -> None:
         with patch("httpx.Client") as mock_client_cls:
             mock_response = MagicMock()
             mock_response.json.return_value = {"logos": [{"label": "brand", "confidence": 0.95}]}
@@ -120,7 +130,8 @@ class TestGPUInferenceClient:
 
             assert len(result["logos"]) == 1
 
-    def test_translate_text(self) -> None:
+    @staticmethod
+    def test_translate_text() -> None:
         with patch("httpx.Client") as mock_client_cls:
             mock_response = MagicMock()
             mock_response.json.return_value = {
@@ -137,7 +148,8 @@ class TestGPUInferenceClient:
             assert result["translated_text"] == "Bonjour"
             mock_client_cls.return_value.post.assert_called_once()
 
-    def test_health_check_success(self) -> None:
+    @staticmethod
+    def test_health_check_success() -> None:
         with patch("httpx.Client") as mock_client_cls:
             mock_response = MagicMock()
             mock_response.status_code = 200
@@ -146,14 +158,16 @@ class TestGPUInferenceClient:
             client = GPUInferenceClient("http://gpu:8080")
             assert client.health_check() is True
 
-    def test_health_check_failure(self) -> None:
+    @staticmethod
+    def test_health_check_failure() -> None:
         with patch("httpx.Client") as mock_client_cls:
             mock_client_cls.return_value.get.side_effect = ConnectionError("down")
 
             client = GPUInferenceClient("http://gpu:8080")
             assert client.health_check() is False
 
-    def test_circuit_breaker_opens_after_consecutive_failures(self) -> None:
+    @staticmethod
+    def test_circuit_breaker_opens_after_consecutive_failures() -> None:
         import httpx
 
         with patch("httpx.Client") as mock_client_cls:
@@ -173,7 +187,8 @@ class TestGPUInferenceClient:
             # No HTTP call should have been made because circuit is open
             mock_client_cls.return_value.post.assert_not_called()
 
-    def test_circuit_breaker_resets_after_success(self) -> None:
+    @staticmethod
+    def test_circuit_breaker_resets_after_success() -> None:
         import httpx
 
         with patch("httpx.Client") as mock_client_cls:
@@ -198,7 +213,8 @@ class TestGPUInferenceClient:
             result = client.assess_image_quality(b"img")
             assert result["score"] == 80
 
-    def test_trailing_slash_stripped_from_base_url(self) -> None:
+    @staticmethod
+    def test_trailing_slash_stripped_from_base_url() -> None:
         with patch("httpx.Client"):
             client = GPUInferenceClient("http://gpu:8080/")
             assert client._base_url == "http://gpu:8080"

@@ -10,9 +10,11 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-# Module-level client — set via configure_email() or set_email_client()
-_resend_client: Any = None
-_from_address: str = "LintPDF <noreply@thinkneverland.com>"
+# Module-level container — set via configure_email() or set_email_client()
+_email_state: dict[str, Any] = {
+    "client": None,
+    "from_address": "LintPDF <noreply@thinkneverland.com>",
+}
 _email_lock = threading.Lock()
 
 
@@ -23,27 +25,25 @@ def configure_email(api_key: str, *, from_address: str | None = None) -> None:
         api_key: Resend API key.
         from_address: Sender address override.
     """
-    global _resend_client, _from_address  # skipcq: PYL-W0603
     with _email_lock:
-        if _resend_client is not None:
+        if _email_state["client"] is not None:
             return
         import resend
 
         resend.api_key = api_key
-        _resend_client = resend.Emails
+        _email_state["client"] = resend.Emails
         if from_address:
-            _from_address = from_address
+            _email_state["from_address"] = from_address
 
 
 def set_email_client(client: Any) -> None:
     """Override the email client (for testing)."""
-    global _resend_client  # skipcq: PYL-W0603
-    _resend_client = client
+    _email_state["client"] = client
 
 
 def get_email_client() -> Any:
     """Return the current email client."""
-    return _resend_client
+    return _email_state["client"]
 
 
 @dataclass
@@ -234,14 +234,14 @@ def _send(*, to: str, subject: str, html: str) -> EmailResult:
         logger.warning("Invalid email address rejected: %s", to)
         return EmailResult(success=False, error="Invalid email address")
 
-    if _resend_client is None:
+    if _email_state["client"] is None:
         logger.warning("Email client not configured — skipping send to %s", to)
         return EmailResult(success=False, error="Email client not configured")
 
     try:
-        result = _resend_client.send(
+        result = _email_state["client"].send(
             {
-                "from": _from_address,
+                "from": _email_state["from_address"],
                 "to": [to],
                 "subject": subject,
                 "html": html,

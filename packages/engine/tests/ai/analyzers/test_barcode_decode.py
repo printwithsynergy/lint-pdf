@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock, patch
 
 from grounded.analyzers.finding import Severity
@@ -11,7 +10,8 @@ from grounded.analyzers.finding import Severity
 class TestBarcodeDecode:
     """Tests for BarcodeDecode analyzer with mocked image rendering and pyzbar."""
 
-    def test_returns_empty_when_pyzbar_unavailable(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_returns_empty_when_pyzbar_unavailable(minimal_semantic_doc: MagicMock) -> None:
         with patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", False):
             from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
@@ -20,7 +20,8 @@ class TestBarcodeDecode:
 
         assert findings == []
 
-    def test_returns_empty_when_pil_unavailable(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_returns_empty_when_pil_unavailable(minimal_semantic_doc: MagicMock) -> None:
         with patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PIL", False):
             from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
@@ -29,7 +30,8 @@ class TestBarcodeDecode:
 
         assert findings == []
 
-    def test_decodes_barcode_from_rendered_page(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_decodes_barcode_from_rendered_page(minimal_semantic_doc: MagicMock) -> None:
         # Mock pyzbar decoded item
         mock_item = MagicMock()
         mock_item.type = "EAN13"
@@ -75,7 +77,8 @@ class TestBarcodeDecode:
         assert f.details["symbology"] == "EAN-13"
         assert f.details["decoded_data"] == "5901234123457"
 
-    def test_no_barcodes_produces_advisory(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_no_barcodes_produces_advisory(minimal_semantic_doc: MagicMock) -> None:
         fake_png = b"\x89PNG_fake"
 
         with (
@@ -100,7 +103,8 @@ class TestBarcodeDecode:
         assert len(findings) == 1
         assert "No barcodes detected" in findings[0].message
 
-    def test_rendering_failure_returns_empty(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_rendering_failure_returns_empty(minimal_semantic_doc: MagicMock) -> None:
         with (
             patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
             patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
@@ -116,7 +120,8 @@ class TestBarcodeDecode:
 
         assert findings == []
 
-    def test_analyzer_metadata(self) -> None:
+    @staticmethod
+    def test_analyzer_metadata() -> None:
         from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
         analyzer = BarcodeDecode()

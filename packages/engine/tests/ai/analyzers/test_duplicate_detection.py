@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock, patch
 
 from grounded.analyzers.finding import Severity
@@ -27,7 +26,8 @@ class TestDuplicateDetectionAnalyzer:
 
         assert findings == []
 
-    def test_returns_empty_when_pil_unavailable(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_returns_empty_when_pil_unavailable(minimal_semantic_doc: MagicMock) -> None:
         with patch(
             "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
             False,
@@ -41,7 +41,8 @@ class TestDuplicateDetectionAnalyzer:
 
         assert findings == []
 
-    def test_single_page_returns_empty(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_single_page_returns_empty(minimal_semantic_doc: MagicMock) -> None:
         """Duplicate detection requires at least 2 pages."""
         fake_png = b"\x89PNG_fake"
 
@@ -68,7 +69,8 @@ class TestDuplicateDetectionAnalyzer:
 
         assert findings == []
 
-    def test_detects_near_duplicate_pages(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_detects_near_duplicate_pages(minimal_semantic_doc: MagicMock) -> None:
         """Two pages with identical hashes should be flagged."""
         fake_png = b"\x89PNG_fake"
 
@@ -112,7 +114,8 @@ class TestDuplicateDetectionAnalyzer:
         assert "near-duplicates" in findings[0].message
         assert findings[0].details["similarity_pct"] == 100.0
 
-    def test_no_duplicates_when_hashes_differ(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_no_duplicates_when_hashes_differ(minimal_semantic_doc: MagicMock) -> None:
         fake_png = b"\x89PNG_fake"
 
         mock_hash1 = MagicMock()
@@ -150,7 +153,8 @@ class TestDuplicateDetectionAnalyzer:
 
         assert len(findings) == 0
 
-    def test_rendering_failure_returns_empty(self, minimal_semantic_doc: MagicMock) -> None:
+    @staticmethod
+    def test_rendering_failure_returns_empty(minimal_semantic_doc: MagicMock) -> None:
         with (
             patch(
                 "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
@@ -174,7 +178,8 @@ class TestDuplicateDetectionAnalyzer:
 
         assert findings == []
 
-    def test_analyzer_metadata(self) -> None:
+    @staticmethod
+    def test_analyzer_metadata() -> None:
         from grounded.ai.analyzers.content_quality.duplicate_detection import (
             DuplicateDetectionAnalyzer,
         )

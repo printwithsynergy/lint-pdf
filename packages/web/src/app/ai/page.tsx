@@ -337,7 +337,6 @@ export default function AIPage() {
   );
 
   return (
-    // skipcq: JS-0415
     <main>
       {/* Hero */}
       <section className="bg-brand-50/50 pt-20 pb-16">
@@ -426,7 +425,6 @@ export default function AIPage() {
           <h2 className="text-2xl font-bold text-slate-900 mb-8">
             Full Inspection Reference
           </h2>
-          {/* skipcq: JS-0415 */}
           {aiCategories.map((cat) => (
             <div key={cat.name} className="mb-8">
               <h3 className="font-semibold text-slate-900 mb-3">{cat.name}</h3>

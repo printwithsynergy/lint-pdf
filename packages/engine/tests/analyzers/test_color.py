@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.color import ColorAnalyzer
 from grounded.analyzers.finding import Severity
 from grounded.semantic.events import (
@@ -41,7 +40,8 @@ def _make_document(
 class TestTACCalculation:
     """Test GRD_COLOR_004: TAC calculation."""
 
-    def test_tac_within_limit(self) -> None:
+    @staticmethod
+    def test_tac_within_limit() -> None:
         """C=50% M=40% Y=40% K=20% = 150% TAC — within 300% limit."""
         event = PathPaintingEvent(
             operator="f",
@@ -57,7 +57,8 @@ class TestTACCalculation:
         tac_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_004"]
         assert len(tac_findings) == 0
 
-    def test_tac_exceeds_limit(self) -> None:
+    @staticmethod
+    def test_tac_exceeds_limit() -> None:
         """C=100% M=80% Y=70% K=100% = 350% TAC — exceeds 300%."""
         event = PathPaintingEvent(
             operator="f",
@@ -75,7 +76,8 @@ class TestTACCalculation:
         assert tac_findings[0].severity == Severity.SQUALL
         assert tac_findings[0].details["tac"] == 350.0
 
-    def test_tac_stroke_color(self) -> None:
+    @staticmethod
+    def test_tac_stroke_color() -> None:
         """TAC check also applies to stroke colors."""
         event = PathPaintingEvent(
             operator="S",
@@ -92,7 +94,8 @@ class TestTACCalculation:
         assert len(tac_findings) == 1
         assert tac_findings[0].details["tac"] == 400.0
 
-    def test_tac_non_cmyk_ignored(self) -> None:
+    @staticmethod
+    def test_tac_non_cmyk_ignored() -> None:
         """TAC check only applies to DeviceCMYK."""
         event = PathPaintingEvent(
             operator="f",
@@ -108,7 +111,8 @@ class TestTACCalculation:
         tac_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_004"]
         assert len(tac_findings) == 0
 
-    def test_configurable_tac_limit(self) -> None:
+    @staticmethod
+    def test_configurable_tac_limit() -> None:
         """TAC limit is configurable (web offset = 260%)."""
         event = PathPaintingEvent(
             operator="f",
@@ -149,7 +153,8 @@ class TestTACCalculation:
 class TestProhibitedSpaces:
     """Test GRD_COLOR_001: prohibited color spaces."""
 
-    def test_calgray_prohibited(self) -> None:
+    @staticmethod
+    def test_calgray_prohibited() -> None:
         event = ColorChangedEvent(
             operator="cs",
             page_num=1,
@@ -164,7 +169,8 @@ class TestProhibitedSpaces:
         assert len(prohibited) == 1
         assert prohibited[0].severity == Severity.AGROUND
 
-    def test_calrgb_prohibited(self) -> None:
+    @staticmethod
+    def test_calrgb_prohibited() -> None:
         event = ColorChangedEvent(
             operator="cs",
             page_num=1,
@@ -178,7 +184,8 @@ class TestProhibitedSpaces:
         prohibited = [f for f in findings if f.inspection_id == "GRD_COLOR_001"]
         assert len(prohibited) == 1
 
-    def test_device_cmyk_not_prohibited(self) -> None:
+    @staticmethod
+    def test_device_cmyk_not_prohibited() -> None:
         event = ColorChangedEvent(
             operator="k",
             page_num=1,
@@ -192,7 +199,8 @@ class TestProhibitedSpaces:
         prohibited = [f for f in findings if f.inspection_id == "GRD_COLOR_001"]
         assert len(prohibited) == 0
 
-    def test_prohibited_from_page_resources(self) -> None:
+    @staticmethod
+    def test_prohibited_from_page_resources() -> None:
         """Prohibited spaces detected in page resource definitions."""
         doc = _make_document(
             color_spaces={
@@ -208,7 +216,8 @@ class TestProhibitedSpaces:
 class TestDeviceRGBWithoutICC:
     """Test GRD_COLOR_002: DeviceRGB without ICC profile."""
 
-    def test_device_rgb_no_icc(self) -> None:
+    @staticmethod
+    def test_device_rgb_no_icc() -> None:
         doc = _make_document(
             color_spaces={
                 "DefaultRGB": PdfColorSpace(
@@ -229,7 +238,8 @@ class TestDeviceRGBWithoutICC:
 class TestSpotColorBacking:
     """Test GRD_COLOR_003: spot color without alternate."""
 
-    def test_separation_no_alternate(self) -> None:
+    @staticmethod
+    def test_separation_no_alternate() -> None:
         doc = _make_document(
             color_spaces={
                 "Pantone123": PdfColorSpace(
@@ -245,7 +255,8 @@ class TestSpotColorBacking:
         spot_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_003"]
         assert len(spot_findings) == 1
 
-    def test_separation_with_alternate_ok(self) -> None:
+    @staticmethod
+    def test_separation_with_alternate_ok() -> None:
         doc = _make_document(
             color_spaces={
                 "Pantone123": PdfColorSpace(
@@ -391,7 +402,8 @@ class TestKnockoutBlack:
 class TestPureKFill:
     """Test GRD_COLOR_010: pure K-only on large fill."""
 
-    def test_pure_k_fill_advisory(self) -> None:
+    @staticmethod
+    def test_pure_k_fill_advisory() -> None:
         """80% K-only fill triggers GRD_COLOR_010."""
         event = PathPaintingEvent(
             operator="f",
@@ -409,7 +421,8 @@ class TestPureKFill:
         assert pk[0].severity == Severity.ADVISORY
         assert pk[0].details["k_percent"] == 80.0
 
-    def test_low_k_no_finding(self) -> None:
+    @staticmethod
+    def test_low_k_no_finding() -> None:
         """40% K-only fill does not trigger (below 50% threshold)."""
         event = PathPaintingEvent(
             operator="f",
@@ -425,7 +438,8 @@ class TestPureKFill:
         pk = [f for f in findings if f.inspection_id == "GRD_COLOR_010"]
         assert len(pk) == 0
 
-    def test_rich_black_no_pure_k_finding(self) -> None:
+    @staticmethod
+    def test_rich_black_no_pure_k_finding() -> None:
         """Rich black fill does not trigger GRD_COLOR_010."""
         event = PathPaintingEvent(
             operator="f",
@@ -441,7 +455,8 @@ class TestPureKFill:
         pk = [f for f in findings if f.inspection_id == "GRD_COLOR_010"]
         assert len(pk) == 0
 
-    def test_stroke_only_no_finding(self) -> None:
+    @staticmethod
+    def test_stroke_only_no_finding() -> None:
         """K-only stroke (not fill) does not trigger GRD_COLOR_010."""
         event = PathPaintingEvent(
             operator="S",
@@ -461,7 +476,8 @@ class TestPureKFill:
 class TestSpotColorConflicts:
     """Test GRD_COLOR_011: spot color name conflict detection."""
 
-    def test_conflicting_alternates(self) -> None:
+    @staticmethod
+    def test_conflicting_alternates() -> None:
         """Same colorant with different alternates triggers GRD_COLOR_011."""
         doc = SemanticDocument(
             version="2.0",
@@ -503,7 +519,8 @@ class TestSpotColorConflicts:
         assert sc[0].severity == Severity.SQUALL
         assert "PANTONE 485 C" in sc[0].message
 
-    def test_same_alternates_no_conflict(self) -> None:
+    @staticmethod
+    def test_same_alternates_no_conflict() -> None:
         """Same colorant with same alternate does not trigger GRD_COLOR_011."""
         alt = PdfColorSpace(name=None, cs_type="DeviceCMYK", components=4)
         doc = SemanticDocument(
@@ -544,7 +561,8 @@ class TestSpotColorConflicts:
         sc = [f for f in findings if f.inspection_id == "GRD_COLOR_011"]
         assert len(sc) == 0
 
-    def test_no_spots_no_conflict(self) -> None:
+    @staticmethod
+    def test_no_spots_no_conflict() -> None:
         """Document with no spot colors does not trigger GRD_COLOR_011."""
         doc = _make_document()
         analyzer = ColorAnalyzer()

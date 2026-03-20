@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.barcode import BarcodeAnalyzer
 from grounded.analyzers.finding import Severity
 from grounded.semantic.events import PathPaintingEvent
@@ -36,7 +35,8 @@ def _narrow_stroke(page_num: int = 1, index: int = 0, width: float = 0.5) -> Pat
 class TestBarcodePatternDetection:
     """Test GRD_BARCODE_001: Potential barcode pattern on page."""
 
-    def test_many_narrow_strokes_flags_barcode(self) -> None:
+    @staticmethod
+    def test_many_narrow_strokes_flags_barcode() -> None:
         events = [_narrow_stroke(index=i) for i in range(25)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
@@ -46,42 +46,48 @@ class TestBarcodePatternDetection:
         assert barcode[0].page_num == 1
         assert barcode[0].details["narrow_stroke_count"] == 25
 
-    def test_below_threshold_no_flag(self) -> None:
+    @staticmethod
+    def test_below_threshold_no_flag() -> None:
         events = [_narrow_stroke(index=i) for i in range(15)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
         barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
         assert len(barcode) == 0
 
-    def test_exactly_at_threshold(self) -> None:
+    @staticmethod
+    def test_exactly_at_threshold() -> None:
         events = [_narrow_stroke(index=i) for i in range(20)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
         barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
         assert len(barcode) == 1
 
-    def test_custom_threshold(self) -> None:
+    @staticmethod
+    def test_custom_threshold() -> None:
         events = [_narrow_stroke(index=i) for i in range(10)]
         analyzer = BarcodeAnalyzer(min_narrow_strokes=5)
         findings = analyzer.analyze(_make_document(), events)
         barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
         assert len(barcode) == 1
 
-    def test_wide_strokes_ignored(self) -> None:
+    @staticmethod
+    def test_wide_strokes_ignored() -> None:
         events = [_narrow_stroke(index=i, width=2.0) for i in range(30)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
         barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
         assert len(barcode) == 0
 
-    def test_custom_narrow_width(self) -> None:
+    @staticmethod
+    def test_custom_narrow_width() -> None:
         events = [_narrow_stroke(index=i, width=1.5) for i in range(25)]
         analyzer = BarcodeAnalyzer(narrow_stroke_width=2.0)
         findings = analyzer.analyze(_make_document(), events)
         barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
         assert len(barcode) == 1
 
-    def test_fill_only_paths_ignored(self) -> None:
+    @staticmethod
+    def test_fill_only_paths_ignored() -> None:
         events = [
             PathPaintingEvent(
                 operator="f",
@@ -100,7 +106,8 @@ class TestBarcodePatternDetection:
         barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
         assert len(barcode) == 0
 
-    def test_multiple_pages_flagged_independently(self) -> None:
+    @staticmethod
+    def test_multiple_pages_flagged_independently() -> None:
         doc = SemanticDocument(
             version="2.0",
             page_count=2,
@@ -119,7 +126,8 @@ class TestBarcodePatternDetection:
         pages = {f.page_num for f in barcode}
         assert pages == {1, 2}
 
-    def test_zero_width_strokes_excluded(self) -> None:
+    @staticmethod
+    def test_zero_width_strokes_excluded() -> None:
         """Zero-width strokes should not count (condition is 0 < width < threshold)."""
         events = [_narrow_stroke(index=i, width=0.0) for i in range(30)]
         analyzer = BarcodeAnalyzer()

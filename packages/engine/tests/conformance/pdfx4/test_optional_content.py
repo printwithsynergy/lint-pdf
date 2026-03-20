@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import Any
 
 from grounded.analyzers.finding import Severity
@@ -21,13 +20,15 @@ def _doc(catalog: dict[str, Any] | None = None) -> SemanticDocument:
 
 
 class TestNoOcProperties:
-    def test_no_oc_properties_ok(self) -> None:
+    @staticmethod
+    def test_no_oc_properties_ok() -> None:
         f = validate_optional_content(_doc())
         assert len(f) == 0
 
 
 class TestMissingDefaultConfig:
-    def test_missing_d_delay(self) -> None:
+    @staticmethod
+    def test_missing_d_delay() -> None:
         f = validate_optional_content(_doc(catalog={"/OCProperties": {}}))
         ids = [x for x in f if x.inspection_id == "PDFX4-066"]
         assert len(ids) == 1
@@ -35,7 +36,8 @@ class TestMissingDefaultConfig:
 
 
 class TestBaseState:
-    def test_base_state_off_delay(self) -> None:
+    @staticmethod
+    def test_base_state_off_delay() -> None:
         f = validate_optional_content(
             _doc(
                 catalog={
@@ -50,7 +52,8 @@ class TestBaseState:
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_base_state_on_ok(self) -> None:
+    @staticmethod
+    def test_base_state_on_ok() -> None:
         f = validate_optional_content(
             _doc(
                 catalog={
@@ -63,7 +66,8 @@ class TestBaseState:
         )
         assert not [x for x in f if x.inspection_id == "PDFX4-067"]
 
-    def test_base_state_default_on(self) -> None:
+    @staticmethod
+    def test_base_state_default_on() -> None:
         f = validate_optional_content(
             _doc(
                 catalog={
@@ -78,7 +82,8 @@ class TestBaseState:
 
 
 class TestOffLayers:
-    def test_layers_off_advisory(self) -> None:
+    @staticmethod
+    def test_layers_off_advisory() -> None:
         f = validate_optional_content(
             _doc(
                 catalog={
@@ -95,13 +100,15 @@ class TestOffLayers:
 
 
 class TestOcgsArray:
-    def test_empty_ocgs_delay(self) -> None:
+    @staticmethod
+    def test_empty_ocgs_delay() -> None:
         f = validate_optional_content(_doc(catalog={"/OCProperties": {"/D": {}, "/OCGs": []}}))
         ids = [x for x in f if x.inspection_id == "PDFX4-069"]
         assert len(ids) == 1
         assert ids[0].severity == Severity.SQUALL
 
-    def test_ocgs_present_ok(self) -> None:
+    @staticmethod
+    def test_ocgs_present_ok() -> None:
         f = validate_optional_content(
             _doc(
                 catalog={
@@ -116,7 +123,8 @@ class TestOcgsArray:
 
 
 class TestAsTriggers:
-    def test_as_triggers_delay(self) -> None:
+    @staticmethod
+    def test_as_triggers_delay() -> None:
         f = validate_optional_content(
             _doc(
                 catalog={

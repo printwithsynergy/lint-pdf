@@ -22,99 +22,104 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# Lazy-loaded model singletons
+# Lazy-loaded model singletons via ModelRegistry
 # ---------------------------------------------------------------------------
 
-_image_quality_model: Any = None
-_classifier: Any = None
-_logo_detector: Any = None
-_nsfw_detector: Any = None
-_object_detector: Any = None
-_embedder: Any = None
-_ocr_engine: Any = None
-_symbol_detector: Any = None
-_translator: Any = None
+
+class _ModelRegistry:
+    """Container for lazy-loaded model singletons, avoiding module-level globals."""
+
+    def __init__(self) -> None:
+        self._models: dict[str, Any] = {}
+
+    def _get(self, key: str, factory: type) -> Any:
+        if key not in self._models:
+            self._models[key] = factory()
+        return self._models[key]
+
+    def get_image_quality_model(self):
+        from inference_service.models.image_quality import ImageQualityModel
+
+        return self._get("image_quality", ImageQualityModel)
+
+    def get_classifier(self):
+        from inference_service.models.classifier import DocumentClassifier
+
+        return self._get("classifier", DocumentClassifier)
+
+    def get_logo_detector(self):
+        from inference_service.models.logo_detector import LogoDetector
+
+        return self._get("logo_detector", LogoDetector)
+
+    def get_nsfw_detector(self):
+        from inference_service.models.nsfw_detector import NSFWDetector
+
+        return self._get("nsfw_detector", NSFWDetector)
+
+    def get_object_detector(self):
+        from inference_service.models.object_detector import ObjectDetector
+
+        return self._get("object_detector", ObjectDetector)
+
+    def get_embedder(self):
+        from inference_service.models.embedder import ImageEmbedder
+
+        return self._get("embedder", ImageEmbedder)
+
+    def get_ocr_engine(self):
+        from inference_service.models.ocr import OCREngine
+
+        return self._get("ocr_engine", OCREngine)
+
+    def get_symbol_detector(self):
+        from inference_service.models.symbol_detector import SymbolDetector
+
+        return self._get("symbol_detector", SymbolDetector)
+
+    def get_translator(self):
+        from inference_service.models.translator import Translator
+
+        return self._get("translator", Translator)
+
+
+_registry = _ModelRegistry()
 
 
 def _get_image_quality_model():
-    global _image_quality_model  # skipcq: PYL-W0603
-    if _image_quality_model is None:
-        from inference_service.models.image_quality import ImageQualityModel
-
-        _image_quality_model = ImageQualityModel()
-    return _image_quality_model
+    return _registry.get_image_quality_model()
 
 
 def _get_classifier():
-    global _classifier  # skipcq: PYL-W0603
-    if _classifier is None:
-        from inference_service.models.classifier import DocumentClassifier
-
-        _classifier = DocumentClassifier()
-    return _classifier
+    return _registry.get_classifier()
 
 
 def _get_logo_detector():
-    global _logo_detector  # skipcq: PYL-W0603
-    if _logo_detector is None:
-        from inference_service.models.logo_detector import LogoDetector
-
-        _logo_detector = LogoDetector()
-    return _logo_detector
+    return _registry.get_logo_detector()
 
 
 def _get_nsfw_detector():
-    global _nsfw_detector  # skipcq: PYL-W0603
-    if _nsfw_detector is None:
-        from inference_service.models.nsfw_detector import NSFWDetector
-
-        _nsfw_detector = NSFWDetector()
-    return _nsfw_detector
+    return _registry.get_nsfw_detector()
 
 
 def _get_object_detector():
-    global _object_detector  # skipcq: PYL-W0603
-    if _object_detector is None:
-        from inference_service.models.object_detector import ObjectDetector
-
-        _object_detector = ObjectDetector()
-    return _object_detector
+    return _registry.get_object_detector()
 
 
 def _get_embedder():
-    global _embedder  # skipcq: PYL-W0603
-    if _embedder is None:
-        from inference_service.models.embedder import ImageEmbedder
-
-        _embedder = ImageEmbedder()
-    return _embedder
+    return _registry.get_embedder()
 
 
 def _get_ocr_engine():
-    global _ocr_engine  # skipcq: PYL-W0603
-    if _ocr_engine is None:
-        from inference_service.models.ocr import OCREngine
-
-        _ocr_engine = OCREngine()
-    return _ocr_engine
+    return _registry.get_ocr_engine()
 
 
 def _get_symbol_detector():
-    global _symbol_detector  # skipcq: PYL-W0603
-    if _symbol_detector is None:
-        from inference_service.models.symbol_detector import SymbolDetector
-
-        _symbol_detector = SymbolDetector()
-    return _symbol_detector
+    return _registry.get_symbol_detector()
 
 
 def _get_translator():
-    global _translator  # skipcq: PYL-W0603
-    if _translator is None:
-        from inference_service.models.translator import Translator
-
-        _translator = Translator()
-    return _translator
+    return _registry.get_translator()
 
 
 # ---------------------------------------------------------------------------

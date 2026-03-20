@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import TYPE_CHECKING
 
 import pytest
@@ -78,14 +77,16 @@ def admin_client() -> Generator[TestClient, None, None]:
 
 
 class TestAdminPlanUpdate:
-    def test_requires_admin_key(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_requires_admin_key(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             "/api/v1/admin/tenants/11111111-1111-1111-1111-111111111111/plan",
             json={"plan": "growth"},
         )
         assert resp.status_code == 401
 
-    def test_wrong_key(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_wrong_key(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             "/api/v1/admin/tenants/11111111-1111-1111-1111-111111111111/plan",
             json={"plan": "growth"},
@@ -93,7 +94,8 @@ class TestAdminPlanUpdate:
         )
         assert resp.status_code == 401
 
-    def test_success(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_success(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             "/api/v1/admin/tenants/11111111-1111-1111-1111-111111111111/plan",
             json={"plan": "growth"},
@@ -104,7 +106,8 @@ class TestAdminPlanUpdate:
         assert data["updated"] is True
         assert data["plan"] == "growth"
 
-    def test_invalid_plan(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_invalid_plan(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             "/api/v1/admin/tenants/11111111-1111-1111-1111-111111111111/plan",
             json={"plan": "invalid"},
@@ -112,7 +115,8 @@ class TestAdminPlanUpdate:
         )
         assert resp.status_code == 422
 
-    def test_not_found(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_not_found(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             "/api/v1/admin/tenants/99999999-9999-9999-9999-999999999999/plan",
             json={"plan": "growth"},
@@ -122,7 +126,8 @@ class TestAdminPlanUpdate:
 
 
 class TestAdminStripeUpdate:
-    def test_set_stripe_ids(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_set_stripe_ids(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             "/api/v1/admin/tenants/11111111-1111-1111-1111-111111111111/stripe",
             json={

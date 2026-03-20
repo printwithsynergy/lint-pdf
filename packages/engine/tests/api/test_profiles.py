@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -10,14 +9,16 @@ if TYPE_CHECKING:
 
 
 class TestListProfiles:
-    def test_list_profiles(self, client: TestClient) -> None:
+    @staticmethod
+    def test_list_profiles(client: TestClient) -> None:
         response = client.get("/api/v1/profiles")
         assert response.status_code == 200
         data = response.json()
         assert "profiles" in data
         assert len(data["profiles"]) >= 9  # 9 builtins
 
-    def test_list_profiles_has_expected_builtins(self, client: TestClient) -> None:
+    @staticmethod
+    def test_list_profiles_has_expected_builtins(client: TestClient) -> None:
         response = client.get("/api/v1/profiles")
         data = response.json()
         profile_ids = [p["profile_id"] for p in data["profiles"]]
@@ -25,7 +26,8 @@ class TestListProfiles:
         assert "grounded-strict" in profile_ids
         assert "gwg-2022-coated-offset" in profile_ids
 
-    def test_profile_has_required_fields(self, client: TestClient) -> None:
+    @staticmethod
+    def test_profile_has_required_fields(client: TestClient) -> None:
         response = client.get("/api/v1/profiles")
         data = response.json()
         profile = data["profiles"][0]
@@ -36,7 +38,8 @@ class TestListProfiles:
 
 
 class TestGetProfile:
-    def test_get_builtin_profile(self, client: TestClient) -> None:
+    @staticmethod
+    def test_get_builtin_profile(client: TestClient) -> None:
         response = client.get("/api/v1/profiles/grounded-default")
         assert response.status_code == 200
         data = response.json()
@@ -45,20 +48,23 @@ class TestGetProfile:
         assert "thresholds" in data
         assert "checks" in data
 
-    def test_get_strict_profile(self, client: TestClient) -> None:
+    @staticmethod
+    def test_get_strict_profile(client: TestClient) -> None:
         response = client.get("/api/v1/profiles/grounded-strict")
         assert response.status_code == 200
         data = response.json()
         assert data["conformance"] == "pdfx4"
         assert data["thresholds"]["min_dpi"] == 300.0
 
-    def test_get_missing_profile_404(self, client: TestClient) -> None:
+    @staticmethod
+    def test_get_missing_profile_404(client: TestClient) -> None:
         response = client.get("/api/v1/profiles/nonexistent-profile")
         assert response.status_code == 404
 
 
 class TestCreateProfile:
-    def test_create_custom_profile(self, client: TestClient) -> None:
+    @staticmethod
+    def test_create_custom_profile(client: TestClient) -> None:
         response = client.post(
             "/api/v1/profiles",
             json={
@@ -74,7 +80,8 @@ class TestCreateProfile:
         data = response.json()
         assert data["profile_id"] == "custom-test-profile"
 
-    def test_created_profile_is_accessible(self, client: TestClient) -> None:
+    @staticmethod
+    def test_created_profile_is_accessible(client: TestClient) -> None:
         client.post(
             "/api/v1/profiles",
             json={
@@ -86,7 +93,8 @@ class TestCreateProfile:
         assert response.status_code == 200
         assert response.json()["name"] == "Accessible"
 
-    def test_create_invalid_voyage_plan(self, client: TestClient) -> None:
+    @staticmethod
+    def test_create_invalid_voyage_plan(client: TestClient) -> None:
         response = client.post(
             "/api/v1/profiles",
             json={
@@ -96,7 +104,8 @@ class TestCreateProfile:
         )
         assert response.status_code == 422
 
-    def test_create_invalid_profile_id(self, client: TestClient) -> None:
+    @staticmethod
+    def test_create_invalid_profile_id(client: TestClient) -> None:
         response = client.post(
             "/api/v1/profiles",
             json={
@@ -108,7 +117,8 @@ class TestCreateProfile:
 
 
 class TestDeleteProfile:
-    def test_delete_custom_profile(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_custom_profile(client: TestClient) -> None:
         # Create first
         client.post(
             "/api/v1/profiles",
@@ -120,10 +130,12 @@ class TestDeleteProfile:
         response = client.delete("/api/v1/profiles/custom-to-delete")
         assert response.status_code == 204
 
-    def test_delete_builtin_forbidden(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_builtin_forbidden(client: TestClient) -> None:
         response = client.delete("/api/v1/profiles/grounded-default")
         assert response.status_code == 403
 
-    def test_delete_nonexistent_404(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_nonexistent_404(client: TestClient) -> None:
         response = client.delete("/api/v1/profiles/nonexistent-profile")
         assert response.status_code == 404

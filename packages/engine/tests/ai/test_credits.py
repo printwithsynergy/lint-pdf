@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -81,7 +80,8 @@ class TestGetCreditBalance:
 class TestCheckAICredits:
     """Tests for check_ai_credits (raises 402 when insufficient)."""
 
-    def test_raises_402_when_no_config(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_raises_402_when_no_config(mock_db_session: MagicMock, tenant_id) -> None:
         from grounded.ai.credits import check_ai_credits
 
         mock_db_session.query.return_value.filter.return_value.first.return_value = None
@@ -124,7 +124,8 @@ class TestCheckAICredits:
             assert exc_info.value.status_code == 402
             assert "Insufficient" in exc_info.value.detail
 
-    def test_passes_pay_per_use_under_limit(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_passes_pay_per_use_under_limit(mock_db_session: MagicMock, tenant_id) -> None:
         from grounded.ai.credits import check_ai_credits
 
         config = MagicMock()
@@ -140,7 +141,8 @@ class TestCheckAICredits:
             )
             check_ai_credits(tenant_id, 5, mock_db_session)  # Should not raise
 
-    def test_raises_402_pay_per_use_over_limit(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_raises_402_pay_per_use_over_limit(mock_db_session: MagicMock, tenant_id) -> None:
         from grounded.ai.credits import check_ai_credits
 
         config = MagicMock()
@@ -159,7 +161,8 @@ class TestCheckAICredits:
             assert exc_info.value.status_code == 402
             assert "spending limit" in exc_info.value.detail
 
-    def test_passes_pay_per_use_no_limit(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_passes_pay_per_use_no_limit(mock_db_session: MagicMock, tenant_id) -> None:
         """Pay-per-use with no spending limit should always pass."""
         from grounded.ai.credits import check_ai_credits
 
@@ -174,7 +177,8 @@ class TestCheckAICredits:
 class TestDeductCredits:
     """Tests for deduct_credits."""
 
-    def test_deduct_from_oldest_package_first(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_deduct_from_oldest_package_first(mock_db_session: MagicMock, tenant_id) -> None:
         from grounded.ai.credits import deduct_credits
 
         config = MagicMock()
@@ -215,7 +219,8 @@ class TestDeductCredits:
         mock_db_session.add.assert_called_once()
         mock_db_session.flush.assert_called_once()
 
-    def test_skips_expired_packages(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_skips_expired_packages(mock_db_session: MagicMock, tenant_id) -> None:
         from grounded.ai.credits import deduct_credits
 
         config = MagicMock()
@@ -251,7 +256,8 @@ class TestDeductCredits:
         assert pkg_expired.credits_remaining == 50
         assert pkg_valid.credits_remaining == 5
 
-    def test_pay_per_use_logs_cost(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_pay_per_use_logs_cost(mock_db_session: MagicMock, tenant_id) -> None:
         from grounded.ai.credits import deduct_credits
 
         config = MagicMock()
@@ -301,7 +307,8 @@ class TestDeductCredits:
 class TestCheckSpendingLimit:
     """Edge cases for monthly spending limit enforcement."""
 
-    def test_exact_limit_boundary(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_exact_limit_boundary(mock_db_session: MagicMock, tenant_id) -> None:
         """Spending exactly at the limit (but not over) should pass."""
         from grounded.ai.credits import check_ai_credits
 
@@ -319,7 +326,8 @@ class TestCheckSpendingLimit:
             )
             check_ai_credits(tenant_id, 1, mock_db_session)  # Should not raise
 
-    def test_one_cent_over_limit(self, mock_db_session: MagicMock, tenant_id) -> None:
+    @staticmethod
+    def test_one_cent_over_limit(mock_db_session: MagicMock, tenant_id) -> None:
         """Exceeding the limit by any amount should raise 402."""
         from grounded.ai.credits import check_ai_credits
 

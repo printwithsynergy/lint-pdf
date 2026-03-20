@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.analyzers.hairline import HairlineAnalyzer
 from grounded.semantic.events import PathPaintingEvent, TextRenderedEvent
@@ -55,14 +54,16 @@ def _text_event(
 
 
 class TestZeroWidthStroke:
-    def test_zero_width_aground(self) -> None:
+    @staticmethod
+    def test_zero_width_aground() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.0)])
         assert len(findings) == 1
         assert findings[0].inspection_id == "GRD_STROKE_002"
         assert findings[0].severity == Severity.AGROUND
 
-    def test_negative_width_aground(self) -> None:
+    @staticmethod
+    def test_negative_width_aground() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(-0.1)])
         ids = [f.inspection_id for f in findings]
@@ -70,19 +71,22 @@ class TestZeroWidthStroke:
 
 
 class TestHairlineStroke:
-    def test_hairline_delay(self) -> None:
+    @staticmethod
+    def test_hairline_delay() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.1)])
         ids = [f.inspection_id for f in findings]
         assert "GRD_STROKE_001" in ids
 
-    def test_above_threshold_no_finding(self) -> None:
+    @staticmethod
+    def test_above_threshold_no_finding() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.5)])
         ids = [f.inspection_id for f in findings]
         assert "GRD_STROKE_001" not in ids
 
-    def test_custom_threshold(self) -> None:
+    @staticmethod
+    def test_custom_threshold() -> None:
         analyzer = HairlineAnalyzer(hairline_threshold=0.5)
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.3)])
         ids = [f.inspection_id for f in findings]
@@ -90,19 +94,22 @@ class TestHairlineStroke:
 
 
 class TestButtCapThinStroke:
-    def test_butt_cap_advisory(self) -> None:
+    @staticmethod
+    def test_butt_cap_advisory() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.3, line_cap=0)])
         ids = [f.inspection_id for f in findings]
         assert "GRD_STROKE_003" in ids
 
-    def test_round_cap_no_finding(self) -> None:
+    @staticmethod
+    def test_round_cap_no_finding() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.3, line_cap=1)])
         ids = [f.inspection_id for f in findings]
         assert "GRD_STROKE_003" not in ids
 
-    def test_thick_stroke_no_finding(self) -> None:
+    @staticmethod
+    def test_thick_stroke_no_finding() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(1.0, line_cap=0)])
         ids = [f.inspection_id for f in findings]
@@ -110,33 +117,38 @@ class TestButtCapThinStroke:
 
 
 class TestSmallText:
-    def test_small_text_advisory(self) -> None:
+    @staticmethod
+    def test_small_text_advisory() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_text_event(5.0)])
         assert len(findings) == 1
         assert findings[0].inspection_id == "GRD_TEXT_001"
         assert findings[0].severity == Severity.ADVISORY
 
-    def test_very_small_text_delay(self) -> None:
+    @staticmethod
+    def test_very_small_text_delay() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_text_event(3.0)])
         assert len(findings) == 1
         assert findings[0].inspection_id == "GRD_TEXT_002"
         assert findings[0].severity == Severity.SQUALL
 
-    def test_normal_text_no_finding(self) -> None:
+    @staticmethod
+    def test_normal_text_no_finding() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_text_event(12.0)])
         assert len(findings) == 0
 
-    def test_scaled_text_effective_size(self) -> None:
+    @staticmethod
+    def test_scaled_text_effective_size() -> None:
         """12pt text at 0.25 CTM scale = 3pt effective → very small."""
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_text_event(12.0, ctm_scale=0.25)])
         assert len(findings) == 1
         assert findings[0].inspection_id == "GRD_TEXT_002"
 
-    def test_object_type_set(self) -> None:
+    @staticmethod
+    def test_object_type_set() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_text_event(3.0)])
         assert findings[0].object_type == "text"

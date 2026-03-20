@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -10,7 +9,8 @@ if TYPE_CHECKING:
 
 
 class TestCreateWebhook:
-    def test_create_webhook(self, client: TestClient) -> None:
+    @staticmethod
+    def test_create_webhook(client: TestClient) -> None:
         response = client.post(
             "/api/v1/webhooks",
             json={
@@ -25,7 +25,8 @@ class TestCreateWebhook:
         assert data["is_active"] is True
         assert "id" in data
 
-    def test_create_webhook_default_events(self, client: TestClient) -> None:
+    @staticmethod
+    def test_create_webhook_default_events(client: TestClient) -> None:
         response = client.post(
             "/api/v1/webhooks",
             json={"url": "https://example.com/hook"},
@@ -37,13 +38,15 @@ class TestCreateWebhook:
 
 
 class TestListWebhooks:
-    def test_list_empty(self, client: TestClient) -> None:
+    @staticmethod
+    def test_list_empty(client: TestClient) -> None:
         response = client.get("/api/v1/webhooks")
         assert response.status_code == 200
         data = response.json()
         assert data["webhooks"] == []
 
-    def test_list_after_create(self, client: TestClient) -> None:
+    @staticmethod
+    def test_list_after_create(client: TestClient) -> None:
         client.post(
             "/api/v1/webhooks",
             json={"url": "https://example.com/hook1"},
@@ -58,7 +61,8 @@ class TestListWebhooks:
 
 
 class TestUpdateWebhook:
-    def test_update_url(self, client: TestClient) -> None:
+    @staticmethod
+    def test_update_url(client: TestClient) -> None:
         create = client.post(
             "/api/v1/webhooks",
             json={"url": "https://example.com/old"},
@@ -71,7 +75,8 @@ class TestUpdateWebhook:
         assert response.status_code == 200
         assert response.json()["url"] == "https://example.com/new"
 
-    def test_update_events(self, client: TestClient) -> None:
+    @staticmethod
+    def test_update_events(client: TestClient) -> None:
         create = client.post(
             "/api/v1/webhooks",
             json={"url": "https://example.com/hook"},
@@ -84,7 +89,8 @@ class TestUpdateWebhook:
         assert response.status_code == 200
         assert response.json()["events"] == ["job.completed"]
 
-    def test_update_deactivate(self, client: TestClient) -> None:
+    @staticmethod
+    def test_update_deactivate(client: TestClient) -> None:
         create = client.post(
             "/api/v1/webhooks",
             json={"url": "https://example.com/hook"},
@@ -97,14 +103,16 @@ class TestUpdateWebhook:
         assert response.status_code == 200
         assert response.json()["is_active"] is False
 
-    def test_update_nonexistent_404(self, client: TestClient) -> None:
+    @staticmethod
+    def test_update_nonexistent_404(client: TestClient) -> None:
         response = client.patch(
             "/api/v1/webhooks/00000000-0000-0000-0000-000000000000",
             json={"url": "https://example.com/new"},
         )
         assert response.status_code == 404
 
-    def test_update_invalid_url_rejected(self, client: TestClient) -> None:
+    @staticmethod
+    def test_update_invalid_url_rejected(client: TestClient) -> None:
         create = client.post(
             "/api/v1/webhooks",
             json={"url": "https://example.com/hook"},
@@ -118,7 +126,8 @@ class TestUpdateWebhook:
 
 
 class TestDeleteWebhook:
-    def test_delete_webhook(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_webhook(client: TestClient) -> None:
         create = client.post(
             "/api/v1/webhooks",
             json={"url": "https://example.com/hook"},
@@ -131,6 +140,7 @@ class TestDeleteWebhook:
         list_resp = client.get("/api/v1/webhooks")
         assert len(list_resp.json()["webhooks"]) == 0
 
-    def test_delete_nonexistent(self, client: TestClient) -> None:
+    @staticmethod
+    def test_delete_nonexistent(client: TestClient) -> None:
         response = client.delete("/api/v1/webhooks/00000000-0000-0000-0000-000000000000")
         assert response.status_code == 404

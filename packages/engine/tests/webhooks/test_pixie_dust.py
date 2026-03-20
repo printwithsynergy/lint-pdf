@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -82,7 +81,8 @@ class _UsageInfo:
 class TestFormatPixieDustPayload:
     """Tests for format_pixie_dust_payload."""
 
-    def test_basic_structure(self) -> None:
+    @staticmethod
+    def test_basic_structure() -> None:
         result = _PreflightResult()
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
 
@@ -93,18 +93,21 @@ class TestFormatPixieDustPayload:
         assert payload["badge"] == "pass"
         assert payload["duration_ms"] == 500
 
-    def test_pass_badge(self) -> None:
+    @staticmethod
+    def test_pass_badge() -> None:
         result = _PreflightResult(summary=_Summary(passed=True))
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
         assert payload["badge"] == "pass"
 
-    def test_fail_badge(self) -> None:
+    @staticmethod
+    def test_fail_badge() -> None:
         result = _PreflightResult(summary=_Summary(passed=False))
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
         assert payload["badge"] == "fail"
         assert payload["passed"] is False
 
-    def test_summary_section(self) -> None:
+    @staticmethod
+    def test_summary_section() -> None:
         result = _PreflightResult(
             summary=_Summary(
                 total_findings=10,
@@ -124,7 +127,8 @@ class TestFormatPixieDustPayload:
         assert payload["summary"]["pages"] == 4
         assert payload["summary"]["file_size_bytes"] == 2048
 
-    def test_document_section(self) -> None:
+    @staticmethod
+    def test_document_section() -> None:
         result = _PreflightResult(
             metadata={
                 "pdf_version": "1.7",
@@ -138,7 +142,8 @@ class TestFormatPixieDustPayload:
         assert payload["document"]["encrypted"] is False
         assert payload["document"]["conformance"] == "PDF/X-4"
 
-    def test_document_section_missing_metadata(self) -> None:
+    @staticmethod
+    def test_document_section_missing_metadata() -> None:
         result = _PreflightResult(metadata={})
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
 
@@ -146,7 +151,8 @@ class TestFormatPixieDustPayload:
         assert payload["document"]["encrypted"] is False
         assert payload["document"]["conformance"] is None
 
-    def test_findings_grouped_by_severity(self) -> None:
+    @staticmethod
+    def test_findings_grouped_by_severity() -> None:
         findings = [
             _Finding(
                 inspection_id="GRD_FONT_001",
@@ -174,7 +180,8 @@ class TestFormatPixieDustPayload:
         assert len(payload["findings"]["squall"]) == 1
         assert len(payload["findings"]["advisory"]) == 1
 
-    def test_finding_structure(self) -> None:
+    @staticmethod
+    def test_finding_structure() -> None:
         findings = [
             _Finding(
                 inspection_id="GRD_FONT_001",
@@ -193,7 +200,8 @@ class TestFormatPixieDustPayload:
         assert finding["page"] == 3
         assert finding["object"] == "F1"
 
-    def test_empty_findings(self) -> None:
+    @staticmethod
+    def test_empty_findings() -> None:
         result = _PreflightResult(findings=[])
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
 
@@ -201,7 +209,8 @@ class TestFormatPixieDustPayload:
         assert payload["findings"]["squall"] == []
         assert payload["findings"]["advisory"] == []
 
-    def test_multiple_findings_same_severity(self) -> None:
+    @staticmethod
+    def test_multiple_findings_same_severity() -> None:
         findings = [
             _Finding(severity=_Severity.ADVISORY, inspection_id="GRD_A"),
             _Finding(severity=_Severity.ADVISORY, inspection_id="GRD_B"),
@@ -212,12 +221,14 @@ class TestFormatPixieDustPayload:
 
         assert len(payload["findings"]["advisory"]) == 3
 
-    def test_no_usage_by_default(self) -> None:
+    @staticmethod
+    def test_no_usage_by_default() -> None:
         result = _PreflightResult()
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
         assert "usage" not in payload
 
-    def test_usage_included_when_provided(self) -> None:
+    @staticmethod
+    def test_usage_included_when_provided() -> None:
         result = _PreflightResult()
         usage = _UsageInfo(used=50, limit=100)
         payload = format_pixie_dust_payload(result, usage=usage)  # type: ignore[arg-type]
@@ -231,7 +242,8 @@ class TestFormatPixieDustPayload:
         assert payload["usage"]["overage_count"] == 0
         assert payload["usage"]["overage_cost_cents"] == 0
 
-    def test_usage_in_overage(self) -> None:
+    @staticmethod
+    def test_usage_in_overage() -> None:
         result = _PreflightResult()
         usage = _UsageInfo(
             used=105,
@@ -248,7 +260,8 @@ class TestFormatPixieDustPayload:
         assert payload["usage"]["overage_count"] == 5
         assert payload["usage"]["overage_cost_cents"] == 50
 
-    def test_usage_with_cap(self) -> None:
+    @staticmethod
+    def test_usage_with_cap() -> None:
         result = _PreflightResult()
         usage = _UsageInfo(
             used=105,
@@ -267,7 +280,8 @@ class TestFormatPixieDustPayload:
 class TestFormatPixieDustError:
     """Tests for format_pixie_dust_error."""
 
-    def test_basic_structure(self) -> None:
+    @staticmethod
+    def test_basic_structure() -> None:
         payload = format_pixie_dust_error("job-456", "File corrupt")
 
         assert payload["event"] == "preflight.failed"
@@ -276,20 +290,24 @@ class TestFormatPixieDustError:
         assert payload["badge"] == "error"
         assert payload["error"] == "File corrupt"
 
-    def test_error_message_preserved(self) -> None:
+    @staticmethod
+    def test_error_message_preserved() -> None:
         msg = "PDF parsing failed: unexpected EOF at byte 12345"
         payload = format_pixie_dust_error("j1", msg)
         assert payload["error"] == msg
 
-    def test_empty_error_message(self) -> None:
+    @staticmethod
+    def test_empty_error_message() -> None:
         payload = format_pixie_dust_error("j1", "")
         assert payload["error"] == ""
 
-    def test_no_usage_by_default(self) -> None:
+    @staticmethod
+    def test_no_usage_by_default() -> None:
         payload = format_pixie_dust_error("j1", "err")
         assert "usage" not in payload
 
-    def test_usage_included_when_provided(self) -> None:
+    @staticmethod
+    def test_usage_included_when_provided() -> None:
         usage = _UsageInfo(used=95, limit=100, percentage=95)
         payload = format_pixie_dust_error("j1", "err", usage=usage)  # type: ignore[arg-type]
         assert "usage" in payload
@@ -300,7 +318,8 @@ class TestFormatPixieDustError:
 class TestFormatUsageSection:
     """Tests for format_usage_section."""
 
-    def test_basic(self) -> None:
+    @staticmethod
+    def test_basic() -> None:
         usage = _UsageInfo()
         section = format_usage_section(usage)  # type: ignore[arg-type]
         assert section["used"] == 50
@@ -314,12 +333,14 @@ class TestFormatUsageSection:
         assert section["overage_rate_cents"] == 10
         assert section["overage_cost_cents"] == 0
 
-    def test_warning_state(self) -> None:
+    @staticmethod
+    def test_warning_state() -> None:
         usage = _UsageInfo(used=85, percentage=85)
         section = format_usage_section(usage)  # type: ignore[arg-type]
         assert section["warning"] is True
 
-    def test_overage_fields(self) -> None:
+    @staticmethod
+    def test_overage_fields() -> None:
         usage = _UsageInfo(
             used=110,
             limit=100,

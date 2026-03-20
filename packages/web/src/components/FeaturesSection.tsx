@@ -163,7 +163,6 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    // skipcq: JS-0415
     <section id="features" className="bg-brand-50/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">

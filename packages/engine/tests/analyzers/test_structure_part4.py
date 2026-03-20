@@ -5,7 +5,6 @@ Tests XFA forms and tagged PDF detection.
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.analyzers.structure import StructureAnalyzer
 from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
@@ -24,7 +23,8 @@ def _make_document(catalog: dict | None = None) -> SemanticDocument:
 class TestXFAForms:
     """Test GRD_STRUCT_006: XFA forms detection."""
 
-    def test_xfa_detected(self) -> None:
+    @staticmethod
+    def test_xfa_detected() -> None:
         """AcroForm with /XFA triggers GRD_STRUCT_006."""
         doc = _make_document({"/AcroForm": {"/XFA": ["some", "xfa", "data"]}})
         findings = StructureAnalyzer().analyze(doc, [])
@@ -32,28 +32,32 @@ class TestXFAForms:
         assert len(xfa) == 1
         assert xfa[0].severity == Severity.AGROUND
 
-    def test_xfa_dict_value(self) -> None:
+    @staticmethod
+    def test_xfa_dict_value() -> None:
         """XFA with dict value also triggers."""
         doc = _make_document({"/AcroForm": {"/XFA": {"/data": "stream"}}})
         findings = StructureAnalyzer().analyze(doc, [])
         xfa = [f for f in findings if f.inspection_id == "GRD_STRUCT_006"]
         assert len(xfa) == 1
 
-    def test_acroform_without_xfa_no_finding(self) -> None:
+    @staticmethod
+    def test_acroform_without_xfa_no_finding() -> None:
         """AcroForm without /XFA does not trigger GRD_STRUCT_006."""
         doc = _make_document({"/AcroForm": {"/Fields": [{}]}})
         findings = StructureAnalyzer().analyze(doc, [])
         xfa = [f for f in findings if f.inspection_id == "GRD_STRUCT_006"]
         assert len(xfa) == 0
 
-    def test_no_acroform_no_finding(self) -> None:
+    @staticmethod
+    def test_no_acroform_no_finding() -> None:
         """No AcroForm does not trigger GRD_STRUCT_006."""
         doc = _make_document({})
         findings = StructureAnalyzer().analyze(doc, [])
         xfa = [f for f in findings if f.inspection_id == "GRD_STRUCT_006"]
         assert len(xfa) == 0
 
-    def test_xfa_none_no_finding(self) -> None:
+    @staticmethod
+    def test_xfa_none_no_finding() -> None:
         """AcroForm with /XFA=None does not trigger GRD_STRUCT_006."""
         doc = _make_document({"/AcroForm": {"/XFA": None}})
         findings = StructureAnalyzer().analyze(doc, [])
@@ -64,7 +68,8 @@ class TestXFAForms:
 class TestTaggedPDF:
     """Test GRD_STRUCT_007: tagged PDF (structure tree)."""
 
-    def test_mark_info_detected(self) -> None:
+    @staticmethod
+    def test_mark_info_detected() -> None:
         """/MarkInfo in catalog triggers GRD_STRUCT_007."""
         doc = _make_document({"/MarkInfo": {"/Marked": True}})
         findings = StructureAnalyzer().analyze(doc, [])
@@ -73,7 +78,8 @@ class TestTaggedPDF:
         assert tag[0].severity == Severity.ADVISORY
         assert tag[0].details["has_mark_info"] is True
 
-    def test_struct_tree_root_detected(self) -> None:
+    @staticmethod
+    def test_struct_tree_root_detected() -> None:
         """/StructTreeRoot in catalog triggers GRD_STRUCT_007."""
         doc = _make_document({"/StructTreeRoot": {"/Type": "/StructTreeRoot"}})
         findings = StructureAnalyzer().analyze(doc, [])
@@ -81,7 +87,8 @@ class TestTaggedPDF:
         assert len(tag) == 1
         assert tag[0].details["has_struct_tree"] is True
 
-    def test_both_mark_and_tree(self) -> None:
+    @staticmethod
+    def test_both_mark_and_tree() -> None:
         """Both /MarkInfo and /StructTreeRoot produce one finding."""
         doc = _make_document(
             {
@@ -95,7 +102,8 @@ class TestTaggedPDF:
         assert tag[0].details["has_mark_info"] is True
         assert tag[0].details["has_struct_tree"] is True
 
-    def test_no_tagging_no_finding(self) -> None:
+    @staticmethod
+    def test_no_tagging_no_finding() -> None:
         """Empty catalog does not trigger GRD_STRUCT_007."""
         doc = _make_document({})
         findings = StructureAnalyzer().analyze(doc, [])

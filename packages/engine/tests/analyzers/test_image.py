@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import math
 
 from grounded.analyzers.finding import Severity
@@ -59,7 +58,8 @@ def _make_document() -> SemanticDocument:
 class TestDPICalculation:
     """Test effective DPI calculation from CTM."""
 
-    def test_known_dpi(self) -> None:
+    @staticmethod
+    def test_known_dpi() -> None:
         """200pt wide display for 1000px image = 360 DPI."""
         event = _make_image_event(
             pixel_width=1000,
@@ -74,7 +74,8 @@ class TestDPICalculation:
         assert abs(result.dpi_y - 192.0) < 0.1
         assert result.dpi_effective == min(result.dpi_x, result.dpi_y)
 
-    def test_identity_matrix_dpi(self) -> None:
+    @staticmethod
+    def test_identity_matrix_dpi() -> None:
         """Identity CTM: 1pt display. 100px image = 7200 DPI."""
         event = _make_image_event(
             pixel_width=100,
@@ -86,7 +87,8 @@ class TestDPICalculation:
         assert abs(result.dpi_x - 7200.0) < 0.1
         assert abs(result.dpi_y - 7200.0) < 0.1
 
-    def test_rotated_image_dpi(self) -> None:
+    @staticmethod
+    def test_rotated_image_dpi() -> None:
         """90-degree rotation: a=0, b=300, c=-200, d=0."""
         event = _make_image_event(
             pixel_width=1000,
@@ -100,7 +102,8 @@ class TestDPICalculation:
         assert abs(result.dpi_x - 360.0) < 0.1
         assert abs(result.dpi_y - 192.0) < 0.1
 
-    def test_degenerate_ctm(self) -> None:
+    @staticmethod
+    def test_degenerate_ctm() -> None:
         """Zero-scale CTM should return invalid."""
         event = _make_image_event(
             ctm=TransformationMatrix(a=0, b=0, c=0, d=0, e=100, f=200),
@@ -109,7 +112,8 @@ class TestDPICalculation:
         assert not result.is_valid
         assert result.dpi_x == float("inf")
 
-    def test_scaled_image(self) -> None:
+    @staticmethod
+    def test_scaled_image() -> None:
         """72pt display = 1 inch. 300px = 300 DPI."""
         event = _make_image_event(
             pixel_width=300,
@@ -121,7 +125,8 @@ class TestDPICalculation:
         assert abs(result.dpi_x - 300.0) < 0.1
         assert abs(result.dpi_y - 300.0) < 0.1
 
-    def test_skewed_image(self) -> None:
+    @staticmethod
+    def test_skewed_image() -> None:
         """Skew matrix: a=100, b=50, c=30, d=200."""
         event = _make_image_event(
             pixel_width=500,
@@ -141,7 +146,8 @@ class TestDPICalculation:
 class TestImageAnalyzerFindings:
     """Test ImageAnalyzer finding generation."""
 
-    def test_low_dpi_finding(self) -> None:
+    @staticmethod
+    def test_low_dpi_finding() -> None:
         """Image below min DPI threshold triggers GRD_IMG_001."""
         # 72pt display, 100px = 100 DPI (below 150 default)
         event = _make_image_event(
@@ -155,7 +161,8 @@ class TestImageAnalyzerFindings:
         assert len(img_findings) == 1
         assert img_findings[0].severity == Severity.SQUALL
 
-    def test_excessive_dpi_finding(self) -> None:
+    @staticmethod
+    def test_excessive_dpi_finding() -> None:
         """Image above max DPI threshold triggers GRD_IMG_002."""
         # 72pt display, 1000px = 1000 DPI (above 600 default)
         event = _make_image_event(
@@ -169,7 +176,8 @@ class TestImageAnalyzerFindings:
         assert len(img_findings) == 1
         assert img_findings[0].severity == Severity.ADVISORY
 
-    def test_acceptable_dpi_no_finding(self) -> None:
+    @staticmethod
+    def test_acceptable_dpi_no_finding() -> None:
         """Image within range generates no DPI findings."""
         # 72pt display, 300px = 300 DPI
         event = _make_image_event(
@@ -182,7 +190,8 @@ class TestImageAnalyzerFindings:
         dpi_findings = [f for f in findings if f.inspection_id in ("GRD_IMG_001", "GRD_IMG_002")]
         assert len(dpi_findings) == 0
 
-    def test_no_compression_finding(self) -> None:
+    @staticmethod
+    def test_no_compression_finding() -> None:
         """ASCII-only filter triggers GRD_IMG_004."""
         event = _make_image_event(filters=("ASCIIHexDecode",))
         analyzer = ImageAnalyzer()
@@ -190,7 +199,8 @@ class TestImageAnalyzerFindings:
         comp_findings = [f for f in findings if f.inspection_id == "GRD_IMG_004"]
         assert len(comp_findings) == 1
 
-    def test_real_compression_no_finding(self) -> None:
+    @staticmethod
+    def test_real_compression_no_finding() -> None:
         """FlateDecode does not trigger GRD_IMG_004."""
         event = _make_image_event(filters=("FlateDecode",))
         analyzer = ImageAnalyzer()
@@ -198,7 +208,8 @@ class TestImageAnalyzerFindings:
         comp_findings = [f for f in findings if f.inspection_id == "GRD_IMG_004"]
         assert len(comp_findings) == 0
 
-    def test_inline_image_finding(self) -> None:
+    @staticmethod
+    def test_inline_image_finding() -> None:
         """Inline image triggers GRD_IMG_005."""
         event = _make_image_event(is_inline=True)
         analyzer = ImageAnalyzer()
@@ -206,7 +217,8 @@ class TestImageAnalyzerFindings:
         inline_findings = [f for f in findings if f.inspection_id == "GRD_IMG_005"]
         assert len(inline_findings) == 1
 
-    def test_degenerate_ctm_no_dpi_findings(self) -> None:
+    @staticmethod
+    def test_degenerate_ctm_no_dpi_findings() -> None:
         """Degenerate CTM skips DPI findings (invalid result)."""
         event = _make_image_event(
             ctm=TransformationMatrix(a=0, b=0, c=0, d=0, e=0, f=0),
@@ -220,20 +232,23 @@ class TestImageAnalyzerFindings:
 class TestColorSpaceMismatch:
     """Test GRD_IMG_003 color space mismatch check."""
 
-    def test_rgb_in_cmyk_workflow(self) -> None:
+    @staticmethod
+    def test_rgb_in_cmyk_workflow() -> None:
         event = _make_image_event(color_space="DeviceRGB")
         analyzer = ImageAnalyzer()
         finding = analyzer.check_color_space_mismatch(event, "CMYK")
         assert finding is not None
         assert finding.inspection_id == "GRD_IMG_003"
 
-    def test_cmyk_in_cmyk_workflow_ok(self) -> None:
+    @staticmethod
+    def test_cmyk_in_cmyk_workflow_ok() -> None:
         event = _make_image_event(color_space="DeviceCMYK")
         analyzer = ImageAnalyzer()
         finding = analyzer.check_color_space_mismatch(event, "CMYK")
         assert finding is None
 
-    def test_cmyk_in_rgb_workflow(self) -> None:
+    @staticmethod
+    def test_cmyk_in_rgb_workflow() -> None:
         event = _make_image_event(color_space="DeviceCMYK")
         analyzer = ImageAnalyzer()
         finding = analyzer.check_color_space_mismatch(event, "RGB")
@@ -244,7 +259,8 @@ class TestColorSpaceMismatch:
 class TestLZWCompression:
     """Test GRD_IMG_007: LZW compression detection."""
 
-    def test_lzw_triggers_delay(self) -> None:
+    @staticmethod
+    def test_lzw_triggers_delay() -> None:
         """LZWDecode filter triggers GRD_IMG_007."""
         event = _make_image_event(filters=("LZWDecode",))
         analyzer = ImageAnalyzer()
@@ -253,7 +269,8 @@ class TestLZWCompression:
         assert len(lzw_findings) == 1
         assert lzw_findings[0].severity == Severity.SQUALL
 
-    def test_lzw_with_other_filters(self) -> None:
+    @staticmethod
+    def test_lzw_with_other_filters() -> None:
         """LZWDecode combined with other filters still triggers."""
         event = _make_image_event(filters=("LZWDecode", "ASCIIHexDecode"))
         analyzer = ImageAnalyzer()
@@ -261,7 +278,8 @@ class TestLZWCompression:
         lzw_findings = [f for f in findings if f.inspection_id == "GRD_IMG_007"]
         assert len(lzw_findings) == 1
 
-    def test_flate_no_lzw_finding(self) -> None:
+    @staticmethod
+    def test_flate_no_lzw_finding() -> None:
         """FlateDecode does not trigger GRD_IMG_007."""
         event = _make_image_event(filters=("FlateDecode",))
         analyzer = ImageAnalyzer()
@@ -269,7 +287,8 @@ class TestLZWCompression:
         lzw_findings = [f for f in findings if f.inspection_id == "GRD_IMG_007"]
         assert len(lzw_findings) == 0
 
-    def test_lzw_details_contain_filters(self) -> None:
+    @staticmethod
+    def test_lzw_details_contain_filters() -> None:
         event = _make_image_event(filters=("LZWDecode",), image_name="Im5")
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
@@ -282,7 +301,8 @@ class TestLZWCompression:
 class TestJPEG2000:
     """Test GRD_IMG_008: JPEG2000 image detection."""
 
-    def test_jpx_triggers_advisory(self) -> None:
+    @staticmethod
+    def test_jpx_triggers_advisory() -> None:
         """JPXDecode filter triggers GRD_IMG_008."""
         event = _make_image_event(filters=("JPXDecode",))
         analyzer = ImageAnalyzer()
@@ -291,7 +311,8 @@ class TestJPEG2000:
         assert len(jpx_findings) == 1
         assert jpx_findings[0].severity == Severity.ADVISORY
 
-    def test_dcte_no_jpx_finding(self) -> None:
+    @staticmethod
+    def test_dcte_no_jpx_finding() -> None:
         """DCTDecode (JPEG) does not trigger GRD_IMG_008."""
         event = _make_image_event(filters=("DCTDecode",))
         analyzer = ImageAnalyzer()
@@ -299,7 +320,8 @@ class TestJPEG2000:
         jpx_findings = [f for f in findings if f.inspection_id == "GRD_IMG_008"]
         assert len(jpx_findings) == 0
 
-    def test_jpx_page_num_in_message(self) -> None:
+    @staticmethod
+    def test_jpx_page_num_in_message() -> None:
         event = _make_image_event(filters=("JPXDecode",), page_num=3)
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
@@ -311,7 +333,8 @@ class TestJPEG2000:
 class TestSixteenBitImage:
     """Test GRD_IMG_009: 16-bit image detection."""
 
-    def test_16bit_triggers_advisory(self) -> None:
+    @staticmethod
+    def test_16bit_triggers_advisory() -> None:
         """bits_per_component=16 triggers GRD_IMG_009."""
         event16 = ImagePlacedEvent(
             operator="Do",
@@ -331,7 +354,8 @@ class TestSixteenBitImage:
         assert bit_findings[0].severity == Severity.ADVISORY
         assert bit_findings[0].details["bits_per_component"] == 16
 
-    def test_8bit_no_finding(self) -> None:
+    @staticmethod
+    def test_8bit_no_finding() -> None:
         """bits_per_component=8 does not trigger GRD_IMG_009."""
         event = ImagePlacedEvent(
             operator="Do",
@@ -349,7 +373,8 @@ class TestSixteenBitImage:
         bit_findings = [f for f in findings if f.inspection_id == "GRD_IMG_009"]
         assert len(bit_findings) == 0
 
-    def test_1bit_no_finding(self) -> None:
+    @staticmethod
+    def test_1bit_no_finding() -> None:
         """bits_per_component=1 (bitmap) does not trigger GRD_IMG_009."""
         event = ImagePlacedEvent(
             operator="Do",
@@ -371,7 +396,8 @@ class TestSixteenBitImage:
 class TestOPIReference:
     """Test GRD_IMG_010: OPI reference detection."""
 
-    def test_opi_triggers_aground(self) -> None:
+    @staticmethod
+    def test_opi_triggers_aground() -> None:
         """has_opi=True triggers GRD_IMG_010."""
         event = ImagePlacedEvent(
             operator="Do",
@@ -389,7 +415,8 @@ class TestOPIReference:
         assert len(opi_findings) == 1
         assert opi_findings[0].severity == Severity.AGROUND
 
-    def test_no_opi_no_finding(self) -> None:
+    @staticmethod
+    def test_no_opi_no_finding() -> None:
         """has_opi=False does not trigger GRD_IMG_010."""
         event = _make_image_event()
         analyzer = ImageAnalyzer()
@@ -397,7 +424,8 @@ class TestOPIReference:
         opi_findings = [f for f in findings if f.inspection_id == "GRD_IMG_010"]
         assert len(opi_findings) == 0
 
-    def test_opi_object_metadata(self) -> None:
+    @staticmethod
+    def test_opi_object_metadata() -> None:
         event = ImagePlacedEvent(
             operator="Do",
             page_num=2,
@@ -419,7 +447,8 @@ class TestOPIReference:
 class TestAlternateImages:
     """Test GRD_IMG_011: Alternate images detection."""
 
-    def test_alternate_triggers_delay(self) -> None:
+    @staticmethod
+    def test_alternate_triggers_delay() -> None:
         """has_alternate=True triggers GRD_IMG_011."""
         event = ImagePlacedEvent(
             operator="Do",
@@ -437,7 +466,8 @@ class TestAlternateImages:
         assert len(alt_findings) == 1
         assert alt_findings[0].severity == Severity.SQUALL
 
-    def test_no_alternate_no_finding(self) -> None:
+    @staticmethod
+    def test_no_alternate_no_finding() -> None:
         """has_alternate=False does not trigger GRD_IMG_011."""
         event = _make_image_event()
         analyzer = ImageAnalyzer()
@@ -445,7 +475,8 @@ class TestAlternateImages:
         alt_findings = [f for f in findings if f.inspection_id == "GRD_IMG_011"]
         assert len(alt_findings) == 0
 
-    def test_alternate_details(self) -> None:
+    @staticmethod
+    def test_alternate_details() -> None:
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,

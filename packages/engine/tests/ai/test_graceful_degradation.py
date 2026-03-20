@@ -8,7 +8,6 @@ Verifies that:
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -38,7 +37,8 @@ class TestGPUUnavailableProducesAdvisory:
     """When the GPU service is down, AI analyzers should produce advisory findings
     rather than crashing the pipeline."""
 
-    def test_circuit_breaker_open_returns_advisory_finding(self) -> None:
+    @staticmethod
+    def test_circuit_breaker_open_returns_advisory_finding() -> None:
         """An AI analyzer that uses the GPU client should handle GPUServiceUnavailableError
         and the orchestrator should catch any exceptions gracefully."""
         fp = VoyagePlan(
@@ -74,7 +74,8 @@ class TestGPUUnavailableProducesAdvisory:
 class TestRuleBasedFindingsUnaffected:
     """Engine (rule-based) findings should be produced regardless of GPU state."""
 
-    def test_engine_findings_present_despite_gpu_failure(self) -> None:
+    @staticmethod
+    def test_engine_findings_present_despite_gpu_failure() -> None:
         """Even when AI analyzers fail, engine analyzers should produce findings."""
         font = PdfFont(
             name="F1",
@@ -114,7 +115,8 @@ class TestRuleBasedFindingsUnaffected:
 class TestCircuitBreakerIntegration:
     """Integration-level tests for circuit breaker behavior."""
 
-    def test_circuit_opens_after_three_failures(self) -> None:
+    @staticmethod
+    def test_circuit_opens_after_three_failures() -> None:
         cb = CircuitBreaker(failure_threshold=3, failure_window_seconds=60.0)
         assert cb.state == "closed"
 
@@ -128,7 +130,8 @@ class TestCircuitBreakerIntegration:
         with pytest.raises(GPUServiceUnavailableError):
             cb.check()
 
-    def test_successful_probe_closes_circuit(self) -> None:
+    @staticmethod
+    def test_successful_probe_closes_circuit() -> None:
         cb = CircuitBreaker(failure_threshold=2)
         cb.record_failure()
         cb.record_failure()
@@ -140,7 +143,8 @@ class TestCircuitBreakerIntegration:
         # Should not raise
         cb.check()
 
-    def test_multiple_analyzers_share_client_breaker(self) -> None:
+    @staticmethod
+    def test_multiple_analyzers_share_client_breaker() -> None:
         """All GPU method calls on a single client share the same circuit breaker."""
         import httpx
 

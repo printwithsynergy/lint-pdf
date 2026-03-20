@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -18,6 +17,9 @@ from grounded.email.service import (
     send_report,
     set_email_client,
 )
+
+TEST_RESEND_API_KEY = "re_test_key_123"
+TEST_API_KEY = "gnd_live_abc123"
 
 
 @pytest.fixture(autouse=True)
@@ -40,7 +42,8 @@ def mock_email_client() -> MagicMock:
 class TestConfigureEmail:
     """Tests for configure_email initialization."""
 
-    def test_configure_sets_client(self) -> None:
+    @staticmethod
+    def test_configure_sets_client() -> None:
         """configure_email should initialize the Resend client."""
         import grounded.email.service as svc
 
@@ -48,17 +51,19 @@ class TestConfigureEmail:
         mock_resend = MagicMock()
         mock_resend.Emails = MagicMock()
         with patch.dict("sys.modules", {"resend": mock_resend}):
-            configure_email("re_test_key_123")  # skipcq: SCT-A000 — test fixture
-            assert mock_resend.api_key == "re_test_key_123"  # skipcq: SCT-A000
+            configure_email(TEST_RESEND_API_KEY)
+            assert mock_resend.api_key == TEST_RESEND_API_KEY
             assert get_email_client() is mock_resend.Emails
 
-    def test_configure_only_runs_once(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_configure_only_runs_once(mock_email_client: MagicMock) -> None:
         """configure_email should be idempotent once initialized."""
         original = get_email_client()
         configure_email("re_different_key")
         assert get_email_client() is original
 
-    def test_configure_custom_from_address(self) -> None:
+    @staticmethod
+    def test_configure_custom_from_address() -> None:
         """configure_email should accept a custom from address."""
         import grounded.email.service as svc
 
@@ -74,12 +79,14 @@ class TestConfigureEmail:
 class TestSetEmailClient:
     """Tests for set_email_client (test injection)."""
 
-    def test_set_and_get(self) -> None:
+    @staticmethod
+    def test_set_and_get() -> None:
         client = MagicMock()
         set_email_client(client)
         assert get_email_client() is client
 
-    def test_set_none_clears(self) -> None:
+    @staticmethod
+    def test_set_none_clears() -> None:
         set_email_client(MagicMock())
         set_email_client(None)
         assert get_email_client() is None
@@ -88,11 +95,12 @@ class TestSetEmailClient:
 class TestSendApiKeyIssued:
     """Tests for send_api_key_issued."""
 
-    def test_success(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_success(mock_email_client: MagicMock) -> None:
         result = send_api_key_issued(
             to="user@example.com",
             tenant_name="Acme Corp",
-            api_key="gnd_live_abc123",  # skipcq: SCT-A000 — test fixture
+            api_key=TEST_API_KEY,
         )
         assert result.success is True
         assert result.email_id == "email_abc123"
@@ -102,33 +110,36 @@ class TestSendApiKeyIssued:
         call_args = mock_email_client.send.call_args[0][0]
         assert call_args["to"] == ["user@example.com"]
         assert "Acme Corp" in call_args["subject"]
-        assert "gnd_live_abc123" in call_args["html"]  # skipcq: SCT-A000
+        assert TEST_API_KEY in call_args["html"]
 
-    def test_no_client_configured(self) -> None:
+    @staticmethod
+    def test_no_client_configured() -> None:
         result = send_api_key_issued(
             to="user@example.com",
             tenant_name="Acme Corp",
-            api_key="gnd_live_abc123",  # skipcq: SCT-A000 — test fixture
+            api_key=TEST_API_KEY,
         )
         assert result.success is False
         assert result.error == "Email client not configured"
 
-    def test_invalid_email_rejected(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_invalid_email_rejected(mock_email_client: MagicMock) -> None:
         result = send_api_key_issued(
             to="not-an-email",
             tenant_name="Acme Corp",
-            api_key="gnd_live_abc123",  # skipcq: SCT-A000 — test fixture
+            api_key=TEST_API_KEY,
         )
         assert result.success is False
         assert result.error == "Invalid email address"
         mock_email_client.send.assert_not_called()
 
-    def test_send_failure(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_send_failure(mock_email_client: MagicMock) -> None:
         mock_email_client.send.side_effect = Exception("API error")
         result = send_api_key_issued(
             to="user@example.com",
             tenant_name="Acme Corp",
-            api_key="gnd_live_abc123",  # skipcq: SCT-A000 — test fixture
+            api_key=TEST_API_KEY,
         )
         assert result.success is False
         assert result.error == "Send failed"
@@ -137,7 +148,8 @@ class TestSendApiKeyIssued:
 class TestSendJobComplete:
     """Tests for send_job_complete."""
 
-    def test_no_findings(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_no_findings(mock_email_client: MagicMock) -> None:
         result = send_job_complete(
             to="user@example.com",
             tenant_name="Acme Corp",
@@ -149,7 +161,8 @@ class TestSendJobComplete:
         call_args = mock_email_client.send.call_args[0][0]
         assert "passed" in call_args["subject"]
 
-    def test_with_findings(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_with_findings(mock_email_client: MagicMock) -> None:
         result = send_job_complete(
             to="user@example.com",
             tenant_name="Acme Corp",
@@ -162,7 +175,8 @@ class TestSendJobComplete:
         assert "5 issue(s)" in call_args["subject"]
         assert "brochure.pdf" in call_args["subject"]
 
-    def test_html_contains_job_details(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_html_contains_job_details(mock_email_client: MagicMock) -> None:
         send_job_complete(
             to="user@example.com",
             tenant_name="Acme Corp",
@@ -179,7 +193,8 @@ class TestSendJobComplete:
 class TestSendRateLimitWarning:
     """Tests for send_rate_limit_warning."""
 
-    def test_percentage_calculation(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_percentage_calculation(mock_email_client: MagicMock) -> None:
         result = send_rate_limit_warning(
             to="admin@example.com",
             tenant_name="Acme Corp",
@@ -190,7 +205,8 @@ class TestSendRateLimitWarning:
         call_args = mock_email_client.send.call_args[0][0]
         assert "80%" in call_args["subject"]
 
-    def test_zero_limit_shows_100_percent(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_zero_limit_shows_100_percent(mock_email_client: MagicMock) -> None:
         send_rate_limit_warning(
             to="admin@example.com",
             tenant_name="Acme Corp",
@@ -200,7 +216,8 @@ class TestSendRateLimitWarning:
         call_args = mock_email_client.send.call_args[0][0]
         assert "100%" in call_args["subject"]
 
-    def test_html_contains_usage_info(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_html_contains_usage_info(mock_email_client: MagicMock) -> None:
         send_rate_limit_warning(
             to="admin@example.com",
             tenant_name="Acme Corp",
@@ -216,7 +233,8 @@ class TestSendRateLimitWarning:
 class TestSendOverageStarted:
     """Tests for send_overage_started."""
 
-    def test_dollar_formatting(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_dollar_formatting(mock_email_client: MagicMock) -> None:
         result = send_overage_started(
             to="billing@example.com",
             tenant_name="Acme Corp",
@@ -235,7 +253,8 @@ class TestSendOverageStarted:
 class TestSendReport:
     """Tests for send_report."""
 
-    def test_passed_report(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_passed_report(mock_email_client: MagicMock) -> None:
         result = send_report(
             to="user@example.com",
             tenant_name="Acme Corp",
@@ -250,7 +269,8 @@ class TestSendReport:
         assert "PASS" in call_args["html"]
         assert "https://reports.lintpdf.com/r/abc123" in call_args["html"]
 
-    def test_failed_report(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_failed_report(mock_email_client: MagicMock) -> None:
         send_report(
             to="user@example.com",
             tenant_name="Acme Corp",
@@ -263,7 +283,8 @@ class TestSendReport:
         assert "3 issue(s)" in call_args["subject"]
         assert "FAIL" in call_args["html"]
 
-    def test_custom_branding(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_custom_branding(mock_email_client: MagicMock) -> None:
         send_report(
             to="user@example.com",
             tenant_name="Acme Corp",
@@ -316,7 +337,8 @@ class TestEmailValidation:
             "name123@test.io",
         ],
     )
-    def test_valid_emails_accepted(self, mock_email_client: MagicMock, valid_email: str) -> None:
+    @staticmethod
+    def test_valid_emails_accepted(mock_email_client: MagicMock, valid_email: str) -> None:
         result = send_api_key_issued(
             to=valid_email,
             tenant_name="Test",
@@ -330,19 +352,22 @@ class TestEmailValidation:
 class TestEmailResult:
     """Tests for the EmailResult dataclass."""
 
-    def test_success_result(self) -> None:
+    @staticmethod
+    def test_success_result() -> None:
         r = EmailResult(success=True, email_id="abc123")
         assert r.success is True
         assert r.email_id == "abc123"
         assert r.error is None
 
-    def test_failure_result(self) -> None:
+    @staticmethod
+    def test_failure_result() -> None:
         r = EmailResult(success=False, error="Something failed")
         assert r.success is False
         assert r.email_id is None
         assert r.error == "Something failed"
 
-    def test_send_returns_none_email_id_on_non_dict(self, mock_email_client: MagicMock) -> None:
+    @staticmethod
+    def test_send_returns_none_email_id_on_non_dict(mock_email_client: MagicMock) -> None:
         """If the Resend API returns a non-dict, email_id should be None."""
         mock_email_client.send.return_value = "not-a-dict"
         result = send_api_key_issued(

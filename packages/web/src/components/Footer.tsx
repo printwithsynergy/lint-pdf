@@ -4,7 +4,6 @@ import { footerGroups } from "@/lib/navigation";
 
 export function Footer() {
   return (
-    // skipcq: JS-0415
     <footer className="border-t border-slate-200 bg-white">
       <div className="mx-auto max-w-6xl px-6 py-12">
         <div className="grid gap-8 md:grid-cols-5">

@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     verapdf_url: str = "http://localhost:8080"
 
     # API server
-    api_host: str = "0.0.0.0"  # skipcq: BAN-B104 — bind all interfaces for container deployments
+    api_host: str = "0.0.0.0"
     api_port: int = 8000
 
     # Auth

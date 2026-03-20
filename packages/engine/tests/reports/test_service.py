@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 
 from grounded.api.storage import InMemoryStorage
@@ -49,13 +48,15 @@ class _FakeQuery:
 
 
 class TestBrandingContext:
-    def test_defaults(self) -> None:
+    @staticmethod
+    def test_defaults() -> None:
         branding = BrandingContext()
         assert branding.name == "LintPDF"
         assert branding.primary_color == "#1a3a7a"
         assert branding.footer_text == "Powered by LintPDF"
 
-    def test_custom_branding(self) -> None:
+    @staticmethod
+    def test_custom_branding() -> None:
         branding = BrandingContext(
             name="Custom Corp",
             logo_url="https://example.com/logo.png",
@@ -67,7 +68,8 @@ class TestBrandingContext:
 
 
 class TestReportService:
-    def _make_result_json(self) -> dict:
+    @staticmethod
+    def _make_result_json() -> dict:
         return {
             "job_id": str(uuid.uuid4()),
             "profile_id": "grounded-default",

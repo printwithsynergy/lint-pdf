@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.conformance.xmp import XmpMetadata
 
 _SAMPLE_XMP = b"""\
@@ -36,7 +35,8 @@ _SAMPLE_XMP = b"""\
 class TestXmpMetadataFromBytes:
     """Test XmpMetadata.from_bytes() parsing."""
 
-    def test_parse_full_xmp(self) -> None:
+    @staticmethod
+    def test_parse_full_xmp() -> None:
         xmp = XmpMetadata.from_bytes(_SAMPLE_XMP)
         assert xmp.pdfx_version == "PDF/X-4"
         assert xmp.pdfx_conformance == "PDF/X-4"
@@ -47,21 +47,25 @@ class TestXmpMetadataFromBytes:
         assert xmp.title == "Test Document Title"
         assert xmp.trapped == "False"
 
-    def test_empty_bytes(self) -> None:
+    @staticmethod
+    def test_empty_bytes() -> None:
         xmp = XmpMetadata.from_bytes(b"")
         assert xmp.pdfx_version == ""
         assert xmp.title == ""
 
-    def test_invalid_xml(self) -> None:
+    @staticmethod
+    def test_invalid_xml() -> None:
         xmp = XmpMetadata.from_bytes(b"<not valid xml")
         assert xmp.pdfx_version == ""
 
-    def test_null_padded(self) -> None:
+    @staticmethod
+    def test_null_padded() -> None:
         padded = _SAMPLE_XMP + b"\x00" * 100
         xmp = XmpMetadata.from_bytes(padded)
         assert xmp.pdfx_version == "PDF/X-4"
 
-    def test_minimal_xmp(self) -> None:
+    @staticmethod
+    def test_minimal_xmp() -> None:
         minimal = b"""\
 <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">
@@ -77,12 +81,14 @@ class TestXmpMetadataFromBytes:
         assert xmp.trapped == "True"
         assert xmp.title == ""
 
-    def test_raw_properties_populated(self) -> None:
+    @staticmethod
+    def test_raw_properties_populated() -> None:
         xmp = XmpMetadata.from_bytes(_SAMPLE_XMP)
         assert "pdf:PDFVersion" in xmp.raw_properties
         assert "xmp:CreatorTool" in xmp.raw_properties
 
-    def test_pdfx_old_namespace(self) -> None:
+    @staticmethod
+    def test_pdfx_old_namespace() -> None:
         """Test GTS_PDFXVersion in the older pdfx namespace."""
         old_ns = b"""\
 <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
@@ -98,7 +104,8 @@ class TestXmpMetadataFromBytes:
         xmp = XmpMetadata.from_bytes(old_ns)
         assert xmp.pdfx_version == "PDF/X-1a:2003"
 
-    def test_frozen(self) -> None:
+    @staticmethod
+    def test_frozen() -> None:
         xmp = XmpMetadata.from_bytes(_SAMPLE_XMP)
         try:
             xmp.title = "New Title"  # type: ignore[misc]

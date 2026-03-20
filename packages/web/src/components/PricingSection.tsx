@@ -10,7 +10,6 @@ export function PricingSection() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
 
   return (
-    // skipcq: JS-0415
     <section id="pricing" className="bg-brand-50/50 py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">

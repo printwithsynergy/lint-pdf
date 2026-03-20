@@ -6,7 +6,6 @@ merges AI findings with engine findings, and tags AI findings correctly.
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from unittest.mock import MagicMock, patch
 
 from grounded.analyzers.finding import Finding, Severity
@@ -50,7 +49,8 @@ def _ai_finding(
 class TestOrchestratorWithAI:
     """Tests for AI analyzer integration in orchestrator."""
 
-    def test_ai_disabled_produces_no_ai_findings(self) -> None:
+    @staticmethod
+    def test_ai_disabled_produces_no_ai_findings() -> None:
         fp = VoyagePlan(
             name="Test",
             ai=AIFeatureConfig(enabled=False),
@@ -61,7 +61,8 @@ class TestOrchestratorWithAI:
         ai_findings = [f for f in result.findings if f.source == "ai"]
         assert len(ai_findings) == 0
 
-    def test_ai_enabled_runs_analyzers(self) -> None:
+    @staticmethod
+    def test_ai_enabled_runs_analyzers() -> None:
         fp = VoyagePlan(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["all"]),
@@ -87,7 +88,8 @@ class TestOrchestratorWithAI:
         assert result.metadata["ai_findings_count"] == 1
         mock_analyzer.analyze.assert_called_once()
 
-    def test_ai_findings_merged_with_engine_findings(self) -> None:
+    @staticmethod
+    def test_ai_findings_merged_with_engine_findings() -> None:
         fp = VoyagePlan(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["barcode"]),
@@ -122,7 +124,8 @@ class TestOrchestratorWithAI:
         assert result.metadata["ai_enabled"] is True
         assert result.metadata["ai_findings_count"] == 1
 
-    def test_ai_analyzer_exception_caught(self) -> None:
+    @staticmethod
+    def test_ai_analyzer_exception_caught() -> None:
         """If an AI analyzer throws, it should not crash the pipeline."""
         fp = VoyagePlan(
             name="Test",
@@ -149,7 +152,8 @@ class TestOrchestratorWithAI:
         assert result.metadata["ai_findings_count"] == 0
         assert isinstance(result, PreflightResult)
 
-    def test_ai_findings_have_correct_source_and_category(self) -> None:
+    @staticmethod
+    def test_ai_findings_have_correct_source_and_category() -> None:
         fp = VoyagePlan(
             name="Test",
             ai=AIFeatureConfig(enabled=True, features=["spell_check"]),
@@ -184,7 +188,8 @@ class TestOrchestratorWithAI:
         assert ai_findings[0].source == "ai"
         assert ai_findings[0].category == "content_quality"
 
-    def test_ai_import_error_handled_gracefully(self) -> None:
+    @staticmethod
+    def test_ai_import_error_handled_gracefully() -> None:
         """If AI modules are not installed, pipeline should still succeed."""
         fp = VoyagePlan(
             name="Test",

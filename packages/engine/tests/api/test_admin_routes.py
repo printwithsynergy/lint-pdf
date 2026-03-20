@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 from typing import TYPE_CHECKING
 
@@ -93,19 +92,23 @@ def _headers():
 
 
 class TestAdminAuth:
-    def test_no_key_returns_401(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_no_key_returns_401(admin_client: TestClient) -> None:
         resp = admin_client.get("/api/v1/admin/tenants")
         assert resp.status_code == 401
 
-    def test_wrong_key_returns_401(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_wrong_key_returns_401(admin_client: TestClient) -> None:
         resp = admin_client.get("/api/v1/admin/tenants", headers={"X-Admin-Key": "wrong"})
         assert resp.status_code == 401
 
-    def test_correct_key_passes(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_correct_key_passes(admin_client: TestClient) -> None:
         resp = admin_client.get("/api/v1/admin/tenants", headers=_headers())
         assert resp.status_code == 200
 
-    def test_admin_not_configured_503(self, admin_client: TestClient, monkeypatch) -> None:
+    @staticmethod
+    def test_admin_not_configured_503(admin_client: TestClient, monkeypatch) -> None:
         monkeypatch.setenv("GROUNDED_ADMIN_API_KEY", "")
         resp = admin_client.get("/api/v1/admin/tenants", headers={"X-Admin-Key": "something"})
         assert resp.status_code == 503
@@ -117,7 +120,8 @@ class TestAdminAuth:
 
 
 class TestUpdatePlanRoute:
-    def test_update_to_pro(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_update_to_pro(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{TENANT_ID}/plan",
             json={"plan": "growth"},
@@ -128,7 +132,8 @@ class TestUpdatePlanRoute:
         assert data["updated"] is True
         assert data["plan"] == "growth"
 
-    def test_update_to_enterprise(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_update_to_enterprise(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{TENANT_ID}/plan",
             json={"plan": "enterprise"},
@@ -137,7 +142,8 @@ class TestUpdatePlanRoute:
         assert resp.status_code == 200
         assert resp.json()["plan"] == "enterprise"
 
-    def test_invalid_plan_422(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_invalid_plan_422(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{TENANT_ID}/plan",
             json={"plan": "nonexistent"},
@@ -145,7 +151,8 @@ class TestUpdatePlanRoute:
         )
         assert resp.status_code == 422
 
-    def test_tenant_not_found_404(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_tenant_not_found_404(admin_client: TestClient) -> None:
         fake = "99999999-9999-9999-9999-999999999999"
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{fake}/plan",
@@ -154,7 +161,8 @@ class TestUpdatePlanRoute:
         )
         assert resp.status_code == 404
 
-    def test_overage_settings_updated(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_overage_settings_updated(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{TENANT_ID}/plan",
             json={
@@ -166,7 +174,8 @@ class TestUpdatePlanRoute:
         )
         assert resp.status_code == 200
 
-    def test_invalid_uuid_422(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_invalid_uuid_422(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             "/api/v1/admin/tenants/bad-uuid/plan",
             json={"plan": "growth"},
@@ -181,7 +190,8 @@ class TestUpdatePlanRoute:
 
 
 class TestUpdateStripeRoute:
-    def test_set_stripe_ids(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_set_stripe_ids(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{TENANT_ID}/stripe",
             json={
@@ -193,7 +203,8 @@ class TestUpdateStripeRoute:
         assert resp.status_code == 200
         assert resp.json()["updated"] is True
 
-    def test_partial_update(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_partial_update(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{TENANT_ID}/stripe",
             json={"stripe_customer_id": "cus_only"},
@@ -201,7 +212,8 @@ class TestUpdateStripeRoute:
         )
         assert resp.status_code == 200
 
-    def test_tenant_not_found(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_tenant_not_found(admin_client: TestClient) -> None:
         fake = "99999999-9999-9999-9999-999999999999"
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{fake}/stripe",
@@ -217,12 +229,14 @@ class TestUpdateStripeRoute:
 
 
 class TestListTenantsRoute:
-    def test_list_tenants(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_list_tenants(admin_client: TestClient) -> None:
         data = admin_client.get("/api/v1/admin/tenants", headers=_headers()).json()
         assert data["total"] >= 1
         assert len(data["tenants"]) >= 1
 
-    def test_tenant_detail_fields(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_tenant_detail_fields(admin_client: TestClient) -> None:
         t = admin_client.get("/api/v1/admin/tenants", headers=_headers()).json()["tenants"][0]
         for field in (
             "id",
@@ -236,7 +250,8 @@ class TestListTenantsRoute:
         ):
             assert field in t
 
-    def test_pagination(self, admin_client: TestClient, admin_db: Session) -> None:
+    @staticmethod
+    def test_pagination(admin_client: TestClient, admin_db: Session) -> None:
         # Add a second tenant
         t2 = Tenant(
             id=TENANT_ID_2,
@@ -262,12 +277,14 @@ class TestListTenantsRoute:
 
 
 class TestGetTenantRoute:
-    def test_get_detail(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_get_detail(admin_client: TestClient) -> None:
         data = admin_client.get(f"/api/v1/admin/tenants/{TENANT_ID}", headers=_headers()).json()
         assert data["id"] == str(TENANT_ID)
         assert data["name"] == "Org One"
 
-    def test_not_found(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_not_found(admin_client: TestClient) -> None:
         fake = "99999999-9999-9999-9999-999999999999"
         resp = admin_client.get(f"/api/v1/admin/tenants/{fake}", headers=_headers())
         assert resp.status_code == 404
@@ -279,7 +296,8 @@ class TestGetTenantRoute:
 
 
 class TestUpdateTenantStatusRoute:
-    def test_deactivate(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_deactivate(admin_client: TestClient) -> None:
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{TENANT_ID}/status",
             json={"is_active": False},
@@ -288,7 +306,8 @@ class TestUpdateTenantStatusRoute:
         assert resp.status_code == 200
         assert resp.json()["updated"] is True
 
-    def test_reactivate(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_reactivate(admin_client: TestClient) -> None:
         admin_client.patch(
             f"/api/v1/admin/tenants/{TENANT_ID}/status",
             json={"is_active": False},
@@ -301,7 +320,8 @@ class TestUpdateTenantStatusRoute:
         )
         assert resp.status_code == 200
 
-    def test_not_found(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_not_found(admin_client: TestClient) -> None:
         fake = "99999999-9999-9999-9999-999999999999"
         resp = admin_client.patch(
             f"/api/v1/admin/tenants/{fake}/status",
@@ -317,13 +337,15 @@ class TestUpdateTenantStatusRoute:
 
 
 class TestListApiKeysRoute:
-    def test_list_empty(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_list_empty(admin_client: TestClient) -> None:
         data = admin_client.get(
             f"/api/v1/admin/tenants/{TENANT_ID}/keys", headers=_headers()
         ).json()
         assert data["keys"] == []
 
-    def test_list_after_create(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_list_after_create(admin_client: TestClient) -> None:
         admin_client.post(
             f"/api/v1/admin/tenants/{TENANT_ID}/keys",
             json={"label": "Key A"},
@@ -337,7 +359,8 @@ class TestListApiKeysRoute:
 
 
 class TestCreateApiKeyRoute:
-    def test_create_key(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_create_key(admin_client: TestClient) -> None:
         resp = admin_client.post(
             f"/api/v1/admin/tenants/{TENANT_ID}/keys",
             json={"label": "My Key"},
@@ -350,7 +373,8 @@ class TestCreateApiKeyRoute:
         assert data["label"] == "My Key"
         assert "key_prefix" in data
 
-    def test_create_key_default_label(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_create_key_default_label(admin_client: TestClient) -> None:
         resp = admin_client.post(
             f"/api/v1/admin/tenants/{TENANT_ID}/keys",
             json={},
@@ -359,7 +383,8 @@ class TestCreateApiKeyRoute:
         assert resp.status_code == 201
         assert resp.json()["label"] == "Default"
 
-    def test_create_key_for_nonexistent_tenant(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_create_key_for_nonexistent_tenant(admin_client: TestClient) -> None:
         fake = "99999999-9999-9999-9999-999999999999"
         resp = admin_client.post(
             f"/api/v1/admin/tenants/{fake}/keys",
@@ -368,7 +393,8 @@ class TestCreateApiKeyRoute:
         )
         assert resp.status_code == 404
 
-    def test_raw_key_only_returned_once(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_raw_key_only_returned_once(admin_client: TestClient) -> None:
         """The raw key is in the create response but not in the list response."""
         create = admin_client.post(
             f"/api/v1/admin/tenants/{TENANT_ID}/keys",
@@ -384,7 +410,8 @@ class TestCreateApiKeyRoute:
 
 
 class TestRevokeApiKeyRoute:
-    def test_revoke_key(self, admin_client: TestClient, admin_db: Session) -> None:
+    @staticmethod
+    def test_revoke_key(admin_client: TestClient, admin_db: Session) -> None:
         create = admin_client.post(
             f"/api/v1/admin/tenants/{TENANT_ID}/keys",
             json={"label": "Revokable"},
@@ -403,7 +430,8 @@ class TestRevokeApiKeyRoute:
         ).json()
         assert len(listed["keys"]) == 0
 
-    def test_revoke_nonexistent_404(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_revoke_nonexistent_404(admin_client: TestClient) -> None:
         fake_key = "99999999-9999-9999-9999-999999999999"
         resp = admin_client.delete(
             f"/api/v1/admin/tenants/{TENANT_ID}/keys/{fake_key}",
@@ -418,12 +446,14 @@ class TestRevokeApiKeyRoute:
 
 
 class TestAdminListJobsRoute:
-    def test_list_empty(self, admin_client: TestClient) -> None:
+    @staticmethod
+    def test_list_empty(admin_client: TestClient) -> None:
         data = admin_client.get("/api/v1/admin/jobs", headers=_headers()).json()
         assert data["total"] == 0
         assert data["jobs"] == []
 
-    def test_list_with_jobs(self, admin_client: TestClient, admin_db: Session) -> None:
+    @staticmethod
+    def test_list_with_jobs(admin_client: TestClient, admin_db: Session) -> None:
         from datetime import UTC, datetime
 
         job = Job(
@@ -443,7 +473,8 @@ class TestAdminListJobsRoute:
         assert data["total"] == 1
         assert data["jobs"][0]["tenant_name"] == "Org One"
 
-    def test_pagination(self, admin_client: TestClient, admin_db: Session) -> None:
+    @staticmethod
+    def test_pagination(admin_client: TestClient, admin_db: Session) -> None:
         from datetime import UTC, datetime
 
         for i in range(5):
@@ -469,7 +500,8 @@ class TestAdminListJobsRoute:
         assert data["total"] == 5
         assert len(data["jobs"]) == 2
 
-    def test_job_summary_fields(self, admin_client: TestClient, admin_db: Session) -> None:
+    @staticmethod
+    def test_job_summary_fields(admin_client: TestClient, admin_db: Session) -> None:
         from datetime import UTC, datetime
 
         admin_db.add(

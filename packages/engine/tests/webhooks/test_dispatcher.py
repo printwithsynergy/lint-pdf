@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import hashlib
 import hmac
 import json
@@ -16,7 +15,8 @@ from grounded.webhooks.dispatcher import WebhookDeliveryResult, WebhookDispatche
 class TestWebhookDeliveryResult:
     """Tests for WebhookDeliveryResult."""
 
-    def test_default_values(self) -> None:
+    @staticmethod
+    def test_default_values() -> None:
         result = WebhookDeliveryResult(url="https://example.com", event="test")
         assert result.url == "https://example.com"
         assert result.event == "test"
@@ -24,7 +24,8 @@ class TestWebhookDeliveryResult:
         assert result.success is False
         assert result.error == ""
 
-    def test_success_result(self) -> None:
+    @staticmethod
+    def test_success_result() -> None:
         result = WebhookDeliveryResult(
             url="https://example.com",
             event="job.completed",
@@ -34,7 +35,8 @@ class TestWebhookDeliveryResult:
         assert result.success is True
         assert result.status_code == 200
 
-    def test_error_result(self) -> None:
+    @staticmethod
+    def test_error_result() -> None:
         result = WebhookDeliveryResult(
             url="https://example.com",
             event="job.failed",
@@ -44,7 +46,8 @@ class TestWebhookDeliveryResult:
         assert result.success is False
         assert result.error == "Connection refused"
 
-    def test_slots(self) -> None:
+    @staticmethod
+    def test_slots() -> None:
         result = WebhookDeliveryResult(url="https://example.com", event="test")
         assert hasattr(result, "__slots__")
         with pytest.raises(AttributeError):
@@ -54,26 +57,30 @@ class TestWebhookDeliveryResult:
 class TestWebhookDispatcherSign:
     """Tests for HMAC-SHA256 signing."""
 
-    def test_sign_payload_format(self) -> None:
+    @staticmethod
+    def test_sign_payload_format() -> None:
         dispatcher = WebhookDispatcher()
         sig = dispatcher.sign_payload("mysecret", '{"key": "value"}')  # skipcq: SCT-A000
         assert sig.startswith("sha256=")
 
-    def test_sign_payload_deterministic(self) -> None:
+    @staticmethod
+    def test_sign_payload_deterministic() -> None:
         dispatcher = WebhookDispatcher()
         body = '{"test": true}'
         sig1 = dispatcher.sign_payload("secret", body)  # skipcq: SCT-A000
         sig2 = dispatcher.sign_payload("secret", body)  # skipcq: SCT-A000
         assert sig1 == sig2
 
-    def test_sign_payload_different_secrets(self) -> None:
+    @staticmethod
+    def test_sign_payload_different_secrets() -> None:
         dispatcher = WebhookDispatcher()
         body = '{"test": true}'
         sig1 = dispatcher.sign_payload("secret1", body)  # skipcq: SCT-A000
         sig2 = dispatcher.sign_payload("secret2", body)  # skipcq: SCT-A000
         assert sig1 != sig2
 
-    def test_sign_payload_matches_manual_hmac(self) -> None:
+    @staticmethod
+    def test_sign_payload_matches_manual_hmac() -> None:
         dispatcher = WebhookDispatcher()
         secret = "webhook-secret"  # skipcq: SCT-A000 — test fixture
         body = '{"event": "test"}'
@@ -90,7 +97,8 @@ class TestWebhookDispatcherDeliver:
     """Tests for deliver method."""
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_successful_delivery(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_successful_delivery(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_post.return_value = mock_response
@@ -110,7 +118,8 @@ class TestWebhookDispatcherDeliver:
         mock_post.assert_called_once()
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_delivery_sends_correct_headers(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_delivery_sends_correct_headers(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_post.return_value = mock_response
@@ -131,7 +140,8 @@ class TestWebhookDispatcherDeliver:
         assert headers["User-Agent"] == "LintPDF-Webhook/0.1.0"
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_delivery_sends_sorted_json(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_delivery_sends_sorted_json(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_post.return_value = mock_response
@@ -152,7 +162,8 @@ class TestWebhookDispatcherDeliver:
         assert keys == sorted(keys)
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_delivery_failure_http_error(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_delivery_failure_http_error(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_post.return_value = mock_response
@@ -169,7 +180,8 @@ class TestWebhookDispatcherDeliver:
         assert "HTTP 500" in result.error
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_delivery_failure_exception(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_delivery_failure_exception(mock_post: MagicMock) -> None:
         mock_post.side_effect = ConnectionError("Connection refused")
 
         dispatcher = WebhookDispatcher(max_retries=0)
@@ -185,7 +197,8 @@ class TestWebhookDispatcherDeliver:
 
     @patch("time.sleep")
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_retry_with_backoff(self, mock_post: MagicMock, mock_sleep: MagicMock) -> None:
+    @staticmethod
+    def test_retry_with_backoff(mock_post: MagicMock, mock_sleep: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 500
         mock_post.return_value = mock_response
@@ -231,7 +244,8 @@ class TestWebhookDispatcherDeliver:
         assert mock_post.call_count == 2
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_accepts_2xx_and_3xx(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_accepts_2xx_and_3xx(mock_post: MagicMock) -> None:
         for status in [200, 201, 204, 301, 302]:
             mock_response = MagicMock()
             mock_response.status_code = status
@@ -251,7 +265,8 @@ class TestWebhookDispatcherDispatchToAll:
     """Tests for dispatch_to_all method."""
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_dispatch_to_multiple_endpoints(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_dispatch_to_multiple_endpoints(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_post.return_value = mock_response
@@ -268,7 +283,8 @@ class TestWebhookDispatcherDispatchToAll:
         assert all(r.success for r in results)
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_filters_by_subscribed_events(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_filters_by_subscribed_events(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_post.return_value = mock_response
@@ -293,7 +309,8 @@ class TestWebhookDispatcherDispatchToAll:
         assert results[0].url == "https://a.com/hook"
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_empty_events_subscribes_to_all(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_empty_events_subscribes_to_all(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_post.return_value = mock_response
@@ -307,13 +324,15 @@ class TestWebhookDispatcherDispatchToAll:
 
         assert len(results) == 1
 
-    def test_empty_endpoints(self) -> None:
+    @staticmethod
+    def test_empty_endpoints() -> None:
         dispatcher = WebhookDispatcher()
         results = dispatcher.dispatch_to_all([], "test", {})
         assert results == []
 
     @patch("grounded.webhooks.dispatcher.httpx.post")
-    def test_partial_failure(self, mock_post: MagicMock) -> None:
+    @staticmethod
+    def test_partial_failure(mock_post: MagicMock) -> None:
         ok_response = MagicMock()
         ok_response.status_code = 200
         mock_post.side_effect = [ok_response, ConnectionError("fail")]

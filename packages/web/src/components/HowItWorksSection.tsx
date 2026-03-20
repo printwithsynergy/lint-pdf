@@ -24,7 +24,6 @@ const steps = [
 
 export function HowItWorksSection() {
   return (
-    // skipcq: JS-0415
     <section id="how-it-works" className="bg-white py-24">
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">

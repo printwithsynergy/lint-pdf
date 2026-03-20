@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 from grounded.analyzers.finding import Severity
 from grounded.analyzers.overprint import OverprintAnalyzer
 from grounded.semantic.events import (
@@ -25,7 +24,8 @@ def _make_document() -> SemanticDocument:
 class TestOverprintOnNonCMYK:
     """Test GRD_OVER_001: overprint on non-CMYK color space."""
 
-    def test_overprint_on_rgb(self) -> None:
+    @staticmethod
+    def test_overprint_on_rgb() -> None:
         events = [
             OverprintChangedEvent(
                 operator="gs",
@@ -48,7 +48,8 @@ class TestOverprintOnNonCMYK:
         assert len(op_findings) == 1
         assert op_findings[0].severity == Severity.SQUALL
 
-    def test_overprint_on_cmyk_ok(self) -> None:
+    @staticmethod
+    def test_overprint_on_cmyk_ok() -> None:
         events = [
             OverprintChangedEvent(
                 operator="gs",
@@ -70,7 +71,8 @@ class TestOverprintOnNonCMYK:
         op_findings = [f for f in findings if f.inspection_id == "GRD_OVER_001"]
         assert len(op_findings) == 0
 
-    def test_overprint_on_gray_ok(self) -> None:
+    @staticmethod
+    def test_overprint_on_gray_ok() -> None:
         """DeviceGray with overprint is acceptable."""
         events = [
             OverprintChangedEvent(
@@ -93,7 +95,8 @@ class TestOverprintOnNonCMYK:
         op_findings = [f for f in findings if f.inspection_id == "GRD_OVER_001"]
         assert len(op_findings) == 0
 
-    def test_no_overprint_rgb_ok(self) -> None:
+    @staticmethod
+    def test_no_overprint_rgb_ok() -> None:
         """RGB without overprint does not trigger GRD_OVER_001."""
         events = [
             ColorChangedEvent(
@@ -114,7 +117,8 @@ class TestOverprintOnNonCMYK:
 class TestOPMZero:
     """Test GRD_OVER_002: OPM=0 with DeviceCMYK."""
 
-    def test_opm0_cmyk_delay(self) -> None:
+    @staticmethod
+    def test_opm0_cmyk_delay() -> None:
         events = [
             ColorChangedEvent(
                 operator="k",
@@ -138,7 +142,8 @@ class TestOPMZero:
         assert len(opm_findings) == 1
         assert opm_findings[0].severity == Severity.SQUALL
 
-    def test_opm1_cmyk_ok(self) -> None:
+    @staticmethod
+    def test_opm1_cmyk_ok() -> None:
         events = [
             ColorChangedEvent(
                 operator="k",
@@ -165,7 +170,8 @@ class TestOPMZero:
 class TestOverprintWithTransparency:
     """Test GRD_OVER_003: overprint with transparency."""
 
-    def test_overprint_transparency_conflict(self) -> None:
+    @staticmethod
+    def test_overprint_transparency_conflict() -> None:
         events = [
             OpacityChangedEvent(
                 operator="gs",
@@ -185,7 +191,8 @@ class TestOverprintWithTransparency:
         conflict_findings = [f for f in findings if f.inspection_id == "GRD_OVER_003"]
         assert len(conflict_findings) == 1
 
-    def test_overprint_no_transparency_ok(self) -> None:
+    @staticmethod
+    def test_overprint_no_transparency_ok() -> None:
         events = [
             OverprintChangedEvent(
                 operator="gs",

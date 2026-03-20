@@ -17,7 +17,6 @@ export function Header() {
   const ctaHref = betaMode ? undefined : `${appUrl}/auth/login?plan=free`;
 
   return (
-    // skipcq: JS-0415
     <>
       <header className="fixed top-0 z-50 w-full border-b border-slate-200/60 bg-white">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-# skipcq: PYL-R0201
 import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -255,7 +254,8 @@ class TestRunPreflightPipeline:
         assert job.result_json["summary"]["total_findings"] == 3
         assert job.result_json["summary"]["passed"] is False
 
-    def test_job_not_found(self, db_session: Session, storage: InMemoryStorage) -> None:
+    @staticmethod
+    def test_job_not_found(db_session: Session, storage: InMemoryStorage) -> None:
         with (
             patch("grounded.api.database.get_db_session", return_value=db_session),
             patch("grounded.api.storage.get_storage", return_value=storage),
