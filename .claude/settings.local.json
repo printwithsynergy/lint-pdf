@@ -69,5 +69,20 @@
       "WebFetch(domain:docplayer.net)",
       "WebFetch(domain:docs.railway.com)"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CMD=$(jq -r '.tool_input.command' < /dev/stdin); echo \"$CMD\" | grep -q '^git push' || exit 0; echo '--- Pre-push checks ---'; cd /home/user/lint-pdf && npm run lint 2>&1; LINT=$?; npm run typecheck 2>&1; TC=$?; if [ $LINT -ne 0 ] || [ $TC -ne 0 ]; then echo '{\"decision\":\"block\",\"reason\":\"Pre-push checks failed. Fix lint/typecheck errors before pushing.\"}'; else echo '{\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"additionalContext\":\"Pre-push lint and typecheck passed.\"}}'; fi",
+            "timeout": 300,
+            "statusMessage": "Running pre-push checks (lint + typecheck)..."
+          }
+        ]
+      }
+    ]
   }
 }
