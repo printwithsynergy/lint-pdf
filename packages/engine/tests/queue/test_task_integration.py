@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from sqlalchemy.orm import Session
 
 TENANT_ID = uuid.UUID("00000000-0000-0000-0000-000000000000")
+TEST_WEBHOOK_SECRET = "test-webhook-secret"
 
 # Minimal valid PDF bytes
 MINIMAL_PDF = (
@@ -316,7 +317,7 @@ class TestDispatchTenantWebhooks:
                 id=uuid.uuid4(),
                 tenant_id=TENANT_ID,
                 url="https://example.com/hook",
-                secret="test-secret",  # skipcq: SCT-A000 — test fixture
+                secret=TEST_WEBHOOK_SECRET,
                 events=["job.completed"],
                 is_active=True,
             )
@@ -357,7 +358,7 @@ class TestDispatchTenantWebhooks:
                 id=uuid.uuid4(),
                 tenant_id=TENANT_ID,
                 url="https://example.com/hook",
-                secret="test-secret",  # skipcq: SCT-A000 — test fixture
+                secret=TEST_WEBHOOK_SECRET,
                 events=["job.completed"],
                 is_active=False,
             )
