@@ -111,9 +111,7 @@ export function CompetitorComparisonSection() {
                     <td className="py-3.5 px-5 text-sm font-medium text-slate-700">
                       {dim.label}
                       {dim.tooltip && (
-                        <span
-                          className="ml-1 inline-block text-slate-300 cursor-help relative group/tip"
-                        >
+                        <span className="ml-1 inline-block text-slate-300 cursor-help relative group/tip">
                           <svg
                             className="h-3.5 w-3.5 inline"
                             fill="none"
