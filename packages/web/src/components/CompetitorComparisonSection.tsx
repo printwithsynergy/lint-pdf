@@ -73,7 +73,8 @@ export function CompetitorComparisonSection() {
             The only detection-only preflight API
           </h2>
           <p className="text-slate-500 max-w-2xl mx-auto">
-            More checks, lower cost, zero file modifications. See how LintPDF stacks up.
+            More checks, lower cost, zero file modifications. See how LintPDF
+            stacks up.
           </p>
         </div>
 
