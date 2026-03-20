@@ -1,22 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Background: sky blue rounded square -->
-  <rect width="512" height="512" rx="96" fill="#0ea5e9"/>
-
-  <!-- Left bracket [ -->
-  <path d="M190 130 H135 V382 H190"
-        stroke="#ffffff" stroke-width="30"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-  <!-- Right bracket ] -->
-  <path d="M322 130 H377 V382 H322"
-        stroke="#ffffff" stroke-width="30"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-  <!-- Document text lines -->
-  <line x1="215" y1="222" x2="340" y2="222"
-        stroke="#7dd3fc" stroke-width="24" stroke-linecap="round"/>
-  <line x1="215" y1="262" x2="340" y2="262"
-        stroke="#7dd3fc" stroke-width="24" stroke-linecap="round"/>
-  <line x1="215" y1="302" x2="318" y2="302"
-        stroke="#7dd3fc" stroke-width="24" stroke-linecap="round"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>LintPDF-style bracket logo</title>
+  <desc>Vector recreation of the uploaded flat bracket logo.</desc>
+  <!-- Background -->
+  <rect x="18" y="18" width="988" height="988" rx="165" fill="#1FA0DB"/>
+  <!-- Center content area -->
+  <!-- Brackets -->
+  <path d="M210 270
+           C210 236 236 210 270 210
+           H358
+           C380 210 398 228 398 250
+           C398 272 380 290 358 290
+           H266
+           V734
+           H358
+           C380 734 398 752 398 774
+           C398 796 380 814 358 814
+           H270
+           C236 814 210 788 210 754
+           V270Z"
+        fill="#F2F2F2"/>
+  <path d="M814 270
+           C814 236 788 210 754 210
+           H666
+           C644 210 626 228 626 250
+           C626 272 644 290 666 290
+           H758
+           V734
+           H666
+           C644 734 626 752 626 774
+           C626 796 644 814 666 814
+           H754
+           C788 814 814 788 814 754
+           V270Z"
+        fill="#F2F2F2"/>
+  <!-- Text lines -->
+  <rect x="347" y="356" width="330" height="36" rx="18" fill="#8ED1F0"/>
+  <rect x="392" y="455" width="240" height="36" rx="18" fill="#8ED1F0"/>
+  <rect x="366" y="554" width="294" height="36" rx="18" fill="#8ED1F0"/>
 </svg>

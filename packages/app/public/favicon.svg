@@ -1,22 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Background -->
-  <rect width="32" height="32" rx="6" fill="#0ea5e9"/>
-
-  <!-- Left bracket [ -->
-  <path d="M12 8 H8.5 V24 H12"
-        stroke="#fff" stroke-width="2.2"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-  <!-- Right bracket ] -->
-  <path d="M20 8 H23.5 V24 H20"
-        stroke="#fff" stroke-width="2.2"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-
-  <!-- Text lines -->
-  <line x1="13.5" y1="13.5" x2="21" y2="13.5"
-        stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round"/>
-  <line x1="13.5" y1="16.5" x2="21" y2="16.5"
-        stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round"/>
-  <line x1="13.5" y1="19.5" x2="19.5" y2="19.5"
-        stroke="#7dd3fc" stroke-width="1.8" stroke-linecap="round"/>
+  <rect width="32" height="32" rx="5" fill="#1FA0DB"/>
+  <path d="M6.5 8.4 C6.5 7.3 7.3 6.5 8.4 6.5 H11.1 C11.8 6.5 12.4 7.1 12.4 7.8 C12.4 8.5 11.8 9 11.1 9 H8.3 V23 H11.1 C11.8 23 12.4 23.5 12.4 24.2 C12.4 24.9 11.8 25.5 11.1 25.5 H8.4 C7.3 25.5 6.5 24.7 6.5 23.6 V8.4Z" fill="#F2F2F2"/>
+  <path d="M25.5 8.4 C25.5 7.3 24.7 6.5 23.6 6.5 H20.9 C20.2 6.5 19.6 7.1 19.6 7.8 C19.6 8.5 20.2 9 20.9 9 H23.7 V23 H20.9 C20.2 23 19.6 23.5 19.6 24.2 C19.6 24.9 20.2 25.5 20.9 25.5 H23.6 C24.7 25.5 25.5 24.7 25.5 23.6 V8.4Z" fill="#F2F2F2"/>
+  <rect x="10.8" y="11.1" width="10.3" height="1.1" rx="0.55" fill="#8ED1F0"/>
+  <rect x="12.2" y="14.2" width="7.5" height="1.1" rx="0.55" fill="#8ED1F0"/>
+  <rect x="11.4" y="17.3" width="9.2" height="1.1" rx="0.55" fill="#8ED1F0"/>
 </svg>

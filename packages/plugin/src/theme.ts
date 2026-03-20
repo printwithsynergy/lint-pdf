@@ -12,7 +12,7 @@ export const lintpdfTheme = defineTheme({
   name: "lintpdf",
   displayName: "LintPDF",
   metadata: {
-    title: "LintPDF — Every check. Every page. Every time.",
+    title: "LintPDF — Preflight. Perfected.",
     description:
       "LintPDF — the Pixie Dust-powered SaaS platform by Think Neverland.",
     themeColor: "#0ea5e9",

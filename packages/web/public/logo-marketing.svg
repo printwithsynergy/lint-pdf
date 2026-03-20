@@ -1,22 +1,182 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Background: sky blue rounded square -->
-  <rect width="512" height="512" rx="96" fill="#0ea5e9"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1400" height="1500" viewBox="0 0 1400 1500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>LintPDF Marketing Logo — Print Proof</title>
+  <desc>The LintPDF bracket logo presented as a print proof sheet with registration marks, CMYK color bars, crop marks, and measurement ruler.</desc>
+  <defs>
+    <!-- Icon background gradient (3D effect) -->
+    <linearGradient id="iconBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7CBAE8"/>
+      <stop offset="100%" stop-color="#4A8CD5"/>
+    </linearGradient>
+    <!-- Glossy highlight -->
+    <linearGradient id="gloss" x1="0.5" y1="0" x2="0.5" y2="0.6">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Drop shadow for icon -->
+    <filter id="iconShadow" x="-5%" y="-3%" width="110%" height="115%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#1a365d" flood-opacity="0.18"/>
+    </filter>
+    <!-- Subtle noise texture -->
+    <filter id="noise" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch" result="n"/>
+      <feColorMatrix type="saturate" values="0" in="n" result="gn"/>
+      <feBlend in="SourceGraphic" in2="gn" mode="multiply"/>
+    </filter>
+  </defs>
 
-  <!-- Left bracket [ -->
-  <path d="M190 130 H135 V382 H190"
-        stroke="#ffffff" stroke-width="30"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- ═══════════════════════════════════════════
+       CROP MARKS — thin lines at icon trim corners
+       ═══════════════════════════════════════════ -->
+  <g stroke="#666" stroke-width="1.5" fill="none">
+    <!-- Top-left -->
+    <line x1="160" y1="140" x2="160" y2="100"/>
+    <line x1="140" y1="160" x2="100" y2="160"/>
+    <!-- Top-right -->
+    <line x1="1240" y1="140" x2="1240" y2="100"/>
+    <line x1="1260" y1="160" x2="1300" y2="160"/>
+    <!-- Bottom-left -->
+    <line x1="160" y1="1220" x2="160" y2="1260"/>
+    <line x1="140" y1="1200" x2="100" y2="1200"/>
+    <!-- Bottom-right -->
+    <line x1="1240" y1="1220" x2="1240" y2="1260"/>
+    <line x1="1260" y1="1200" x2="1300" y2="1200"/>
+  </g>
 
-  <!-- Right bracket ] -->
-  <path d="M322 130 H377 V382 H322"
-        stroke="#ffffff" stroke-width="30"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- ═══════════════════════════════════════════
+       REGISTRATION MARKS — circles with crosshairs
+       ═══════════════════════════════════════════ -->
+  <g stroke="#333" stroke-width="1.5" fill="none">
+    <!-- Top-left -->
+    <circle cx="80" cy="80" r="16"/>
+    <line x1="56" y1="80" x2="104" y2="80"/>
+    <line x1="80" y1="56" x2="80" y2="104"/>
+    <!-- Top-right -->
+    <circle cx="1320" cy="80" r="16"/>
+    <line x1="1296" y1="80" x2="1344" y2="80"/>
+    <line x1="1320" y1="56" x2="1320" y2="104"/>
+    <!-- Bottom-left -->
+    <circle cx="80" cy="1420" r="16"/>
+    <line x1="56" y1="1420" x2="104" y2="1420"/>
+    <line x1="80" y1="1396" x2="80" y2="1444"/>
+    <!-- Bottom-right -->
+    <circle cx="1320" cy="1420" r="16"/>
+    <line x1="1296" y1="1420" x2="1344" y2="1420"/>
+    <line x1="1320" y1="1396" x2="1320" y2="1444"/>
+  </g>
 
-  <!-- Document text lines -->
-  <line x1="215" y1="222" x2="340" y2="222"
-        stroke="#7dd3fc" stroke-width="24" stroke-linecap="round"/>
-  <line x1="215" y1="262" x2="340" y2="262"
-        stroke="#7dd3fc" stroke-width="24" stroke-linecap="round"/>
-  <line x1="215" y1="302" x2="318" y2="302"
-        stroke="#7dd3fc" stroke-width="24" stroke-linecap="round"/>
+  <!-- ═══════════════════════════════════════════
+       CMYK COLOR BAR — top right
+       ═══════════════════════════════════════════ -->
+  <g>
+    <rect x="820" y="50" width="60" height="30" rx="2" fill="#00AEEF"/>
+    <rect x="890" y="50" width="60" height="30" rx="2" fill="#2E3192"/>
+    <rect x="960" y="50" width="60" height="30" rx="2" fill="#EC008C"/>
+    <rect x="1030" y="50" width="60" height="30" rx="2" fill="#FFF200"/>
+    <rect x="1100" y="50" width="60" height="30" rx="2" fill="#000000"/>
+    <rect x="1170" y="50" width="60" height="30" rx="2" fill="#808080"/>
+  </g>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN ICON — 3D glossy version with chromatic aberration
+       ═══════════════════════════════════════════ -->
+  <g filter="url(#iconShadow)">
+    <!-- Icon background -->
+    <rect x="180" y="180" width="1040" height="1040" rx="170" fill="url(#iconBg)"/>
+    <!-- Gloss overlay -->
+    <rect x="180" y="180" width="1040" height="1040" rx="170" fill="url(#gloss)"/>
+  </g>
+
+  <!-- Chromatic aberration — colored bracket offsets -->
+  <!-- Yellow/green offset (bottom-left) -->
+  <g opacity="0.5" transform="translate(-4, 4)">
+    <path d="M410 470 C410 436 436 410 470 410 H558 C580 410 598 428 598 450 C598 472 580 490 558 490 H466 V934 H558 C580 934 598 952 598 974 C598 996 580 1014 558 1014 H470 C436 1014 410 988 410 954 V470Z" fill="#CDDC39"/>
+    <path d="M1014 470 C1014 436 988 410 954 410 H866 C844 410 826 428 826 450 C826 472 844 490 866 490 H958 V934 H866 C844 934 826 952 826 974 C826 996 844 1014 866 1014 H954 C988 1014 1014 988 1014 954 V470Z" fill="#CDDC39"/>
+  </g>
+  <!-- Magenta/red offset (top-right) -->
+  <g opacity="0.4" transform="translate(4, -3)">
+    <path d="M410 470 C410 436 436 410 470 410 H558 C580 410 598 428 598 450 C598 472 580 490 558 490 H466 V934 H558 C580 934 598 952 598 974 C598 996 580 1014 558 1014 H470 C436 1014 410 988 410 954 V470Z" fill="#E91E63"/>
+    <path d="M1014 470 C1014 436 988 410 954 410 H866 C844 410 826 428 826 450 C826 472 844 490 866 490 H958 V934 H866 C844 934 826 952 826 974 C826 996 844 1014 866 1014 H954 C988 1014 1014 988 1014 954 V470Z" fill="#E91E63"/>
+  </g>
+  <!-- Orange offset (bottom-right) -->
+  <g opacity="0.35" transform="translate(3, 3)">
+    <path d="M410 470 C410 436 436 410 470 410 H558 C580 410 598 428 598 450 C598 472 580 490 558 490 H466 V934 H558 C580 934 598 952 598 974 C598 996 580 1014 558 1014 H470 C436 1014 410 988 410 954 V470Z" fill="#FF9800"/>
+    <path d="M1014 470 C1014 436 988 410 954 410 H866 C844 410 826 428 826 450 C826 472 844 490 866 490 H958 V934 H866 C844 934 826 952 826 974 C826 996 844 1014 866 1014 H954 C988 1014 1014 988 1014 954 V470Z" fill="#FF9800"/>
+  </g>
+
+  <!-- Main white brackets -->
+  <path d="M410 470
+           C410 436 436 410 470 410
+           H558
+           C580 410 598 428 598 450
+           C598 472 580 490 558 490
+           H466
+           V934
+           H558
+           C580 934 598 952 598 974
+           C598 996 580 1014 558 1014
+           H470
+           C436 1014 410 988 410 954
+           V470Z"
+        fill="#F2F2F2"/>
+  <path d="M1014 470
+           C1014 436 988 410 954 410
+           H866
+           C844 410 826 428 826 450
+           C826 472 844 490 866 490
+           H958
+           V934
+           H866
+           C844 934 826 952 826 974
+           C826 996 844 1014 866 1014
+           H954
+           C988 1014 1014 988 1014 954
+           V470Z"
+        fill="#F2F2F2"/>
+
+  <!-- Text lines with subtle glow -->
+  <rect x="547" y="556" width="330" height="36" rx="18" fill="#ffffff" opacity="0.9"/>
+  <rect x="592" y="655" width="240" height="36" rx="18" fill="#ffffff" opacity="0.9"/>
+  <rect x="566" y="754" width="294" height="36" rx="18" fill="#ffffff" opacity="0.9"/>
+
+  <!-- ═══════════════════════════════════════════
+       RULER — bottom center
+       ═══════════════════════════════════════════ -->
+  <g stroke="#555" fill="#555" font-family="system-ui, sans-serif" font-size="22">
+    <!-- Ruler baseline -->
+    <line x1="460" y1="1320" x2="940" y2="1320" stroke-width="1.5"/>
+    <!-- Major ticks + labels (representing cm) -->
+    <line x1="940" y1="1300" x2="940" y2="1320" stroke-width="1.5"/>
+    <text x="940" y="1295" text-anchor="middle">0</text>
+    <line x1="844" y1="1305" x2="844" y2="1320" stroke-width="1"/>
+    <text x="844" y="1295" text-anchor="middle" font-size="18">0.5</text>
+    <line x1="748" y1="1300" x2="748" y2="1320" stroke-width="1.5"/>
+    <text x="748" y="1295" text-anchor="middle">1</text>
+    <line x1="652" y1="1300" x2="652" y2="1320" stroke-width="1.5"/>
+    <text x="652" y="1295" text-anchor="middle">2</text>
+    <line x1="556" y1="1300" x2="556" y2="1320" stroke-width="1.5"/>
+    <text x="556" y="1295" text-anchor="middle">3</text>
+    <line x1="460" y1="1300" x2="460" y2="1320" stroke-width="1.5"/>
+    <!-- Minor ticks -->
+    <line x1="796" y1="1310" x2="796" y2="1320" stroke-width="1"/>
+    <line x1="892" y1="1310" x2="892" y2="1320" stroke-width="1"/>
+    <line x1="700" y1="1310" x2="700" y2="1320" stroke-width="1"/>
+    <line x1="604" y1="1310" x2="604" y2="1320" stroke-width="1"/>
+    <line x1="508" y1="1310" x2="508" y2="1320" stroke-width="1"/>
+  </g>
+
+  <!-- Barcode-style marks under ruler -->
+  <g fill="#555">
+    <rect x="460" y="1340" width="3" height="30"/>
+    <rect x="470" y="1340" width="2" height="20"/>
+    <rect x="478" y="1340" width="4" height="30"/>
+    <rect x="488" y="1340" width="2" height="20"/>
+    <rect x="496" y="1340" width="3" height="30"/>
+    <rect x="506" y="1340" width="5" height="20"/>
+    <rect x="516" y="1340" width="2" height="30"/>
+    <rect x="524" y="1340" width="3" height="20"/>
+    <rect x="534" y="1340" width="4" height="30"/>
+    <rect x="544" y="1340" width="2" height="20"/>
+    <rect x="552" y="1340" width="3" height="30"/>
+  </g>
 </svg>

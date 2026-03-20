@@ -15,7 +15,7 @@ export function Footer() {
                   LintPDF
                 </span>
                 <span className="text-xs font-medium tracking-wide text-slate-400">
-                  Every check. Every page. Every time.
+                  Preflight. Perfected.
                 </span>
               </div>
             </div>

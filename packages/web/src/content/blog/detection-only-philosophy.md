@@ -35,4 +35,4 @@ LintPDF gives you the detection layer. Correction, when it is needed, should hap
 
 Detection is the foundation. It is the one step in a preflight workflow that has zero risk of damaging customer files. Start with detection, review the findings, then decide how to handle each issue in the context of your specific production workflow.
 
-Every check. Every page. Every time.
+Preflight. Perfected.
