@@ -3,12 +3,21 @@
   <!-- Subtle background glow -->
   <circle cx="400" cy="300" r="300" fill="#e0f2fe" opacity="0.3"/>
   <circle cx="800" cy="300" r="250" fill="#bae6fd" opacity="0.2"/>
+  <!-- Logo icon (scaled from 1024→88px) -->
+  <g transform="translate(556, 100) scale(0.0859375)">
+    <rect x="18" y="18" width="988" height="988" rx="165" fill="#1FA0DB"/>
+    <path d="M210 270 C210 236 236 210 270 210 H358 C380 210 398 228 398 250 C398 272 380 290 358 290 H266 V734 H358 C380 734 398 752 398 774 C398 796 380 814 358 814 H270 C236 814 210 788 210 754 V270Z" fill="#F2F2F2"/>
+    <path d="M814 270 C814 236 788 210 754 210 H666 C644 210 626 228 626 250 C626 272 644 290 666 290 H758 V734 H666 C644 734 626 752 626 774 C626 796 644 814 666 814 H754 C788 814 814 788 814 754 V270Z" fill="#F2F2F2"/>
+    <rect x="347" y="356" width="330" height="36" rx="18" fill="#8ED1F0"/>
+    <rect x="392" y="455" width="240" height="36" rx="18" fill="#8ED1F0"/>
+    <rect x="366" y="554" width="294" height="36" rx="18" fill="#8ED1F0"/>
+  </g>
   <!-- Text -->
-  <text x="600" y="260" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" font-weight="700" fill="#0c4a6e">LintPDF</text>
-  <text x="600" y="320" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#0ea5e9">PDF Preflight API</text>
-  <text x="600" y="380" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#64748b">250+ checks · PDF/X-4 · Zero modifications</text>
+  <text x="600" y="240" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" font-weight="700" fill="#0c4a6e">LintPDF</text>
+  <text x="600" y="300" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#0ea5e9">PDF Preflight API</text>
+  <text x="600" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#64748b">250+ checks · PDF/X-4 · Zero modifications</text>
   <!-- lintpdf.com -->
-  <text x="600" y="440" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#0284c7">lintpdf.com</text>
+  <text x="600" y="420" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#0284c7">lintpdf.com</text>
   <!-- Think Neverland -->
   <text x="600" y="580" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" fill="#94a3b8">Think Neverland</text>
 </svg>

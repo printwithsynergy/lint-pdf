@@ -307,23 +307,14 @@ export const competitors: Competitor[] = [
 
 export const comparisonDimensions: ComparisonDimension[] = [
   {
-    label: "Philosophy",
+    label: "Starting price",
+    tooltip: "Lowest publicly available plan",
     values: {
-      lintpdf: { type: "highlight", value: "Detection-only" },
-      pitstop: { type: "text", value: "Inspect + correct" },
-      pdftoolbox: { type: "text", value: "Inspect + correct" },
-      pdfrest: { type: "text", value: "Inspect + correct" },
-      convertapi: { type: "text", value: "Correction-focused" },
-    },
-  },
-  {
-    label: "Public pricing",
-    values: {
-      lintpdf: { type: "boolean", value: true },
-      pitstop: { type: "boolean", value: false },
-      pdftoolbox: { type: "boolean", value: false },
-      pdfrest: { type: "boolean", value: true },
-      convertapi: { type: "boolean", value: true },
+      lintpdf: { type: "highlight", value: "Free / $29 mo" },
+      pitstop: { type: "text", value: "~$2,500 / yr" },
+      pdftoolbox: { type: "text", value: "Contact sales" },
+      pdfrest: { type: "text", value: "$49 / mo" },
+      convertapi: { type: "text", value: "$11 / mo" },
     },
   },
   {
@@ -337,32 +328,22 @@ export const comparisonDimensions: ComparisonDimension[] = [
     },
   },
   {
-    label: "Time to first preflight",
-    tooltip: "From signup to running your first file",
+    label: "Preflight checks",
+    tooltip: "Number of distinct inspections run per file",
     values: {
-      lintpdf: { type: "highlight", value: "~5 minutes" },
-      pitstop: { type: "text", value: "30+ minutes" },
-      pdftoolbox: { type: "text", value: "Days (OEM)" },
-      pdfrest: { type: "text", value: "~5 minutes" },
-      convertapi: { type: "text", value: "~10 minutes" },
+      lintpdf: { type: "highlight", value: "250+" },
+      pitstop: { type: "text", value: "~200" },
+      pdftoolbox: { type: "text", value: "~180" },
+      pdfrest: { type: "text", value: "~30" },
+      convertapi: { type: "text", value: "~10" },
     },
   },
   {
-    label: "Inspection depth",
-    values: {
-      lintpdf: { type: "highlight", value: "250+ checks" },
-      pitstop: { type: "text", value: "Advanced" },
-      pdftoolbox: { type: "text", value: "Advanced" },
-      pdfrest: { type: "text", value: "Basic" },
-      convertapi: { type: "text", value: "Limited" },
-    },
-  },
-  {
-    label: "AI-powered inspections",
+    label: "AI inspections",
     tooltip:
-      "Barcode decode, regulatory compliance, image quality, brand checks",
+      "Barcode decode, regulatory compliance, image quality, brand verification, spell check",
     values: {
-      lintpdf: { type: "highlight", value: "33 AI checks" },
+      lintpdf: { type: "highlight", value: "33 across 14 categories" },
       pitstop: { type: "boolean", value: false },
       pdftoolbox: { type: "text", value: "Barcode only" },
       pdfrest: { type: "boolean", value: false },
@@ -370,7 +351,41 @@ export const comparisonDimensions: ComparisonDimension[] = [
     },
   },
   {
+    label: "Time to first preflight",
+    tooltip: "From signup to running your first file",
+    values: {
+      lintpdf: { type: "highlight", value: "< 5 min" },
+      pitstop: { type: "text", value: "30+ min (install)" },
+      pdftoolbox: { type: "text", value: "Days (OEM license)" },
+      pdfrest: { type: "text", value: "~5 min" },
+      convertapi: { type: "text", value: "~10 min" },
+    },
+  },
+  {
+    label: "API calls per preflight",
+    tooltip: "Number of HTTP requests to submit a file and retrieve its report",
+    values: {
+      lintpdf: { type: "highlight", value: "2 (submit + report)" },
+      pitstop: { type: "text", value: "3+" },
+      pdftoolbox: { type: "text", value: "3+" },
+      pdfrest: { type: "text", value: "2–3" },
+      convertapi: { type: "text", value: "2+" },
+    },
+  },
+  {
+    label: "Report formats",
+    tooltip: "Output formats for preflight results",
+    values: {
+      lintpdf: { type: "highlight", value: "JSON, XML, PDF" },
+      pitstop: { type: "text", value: "PDF only" },
+      pdftoolbox: { type: "text", value: "PDF, XML" },
+      pdfrest: { type: "text", value: "JSON" },
+      convertapi: { type: "text", value: "JSON" },
+    },
+  },
+  {
     label: "White-label reports",
+    tooltip: "Brand PDF reports with your logo, colors, and footer",
     values: {
       lintpdf: { type: "boolean", value: true },
       pitstop: { type: "boolean", value: false },
@@ -380,14 +395,25 @@ export const comparisonDimensions: ComparisonDimension[] = [
     },
   },
   {
-    label: "API integration",
-    tooltip: "Number of API calls to complete a preflight",
+    label: "Non-PDF inputs",
+    tooltip: "EPS, PostScript, TIFF, JPEG, PNG, AI files accepted",
     values: {
-      lintpdf: { type: "highlight", value: "2 calls" },
-      pitstop: { type: "text", value: "3+ calls" },
-      pdftoolbox: { type: "text", value: "3+ calls" },
-      pdfrest: { type: "text", value: "2–3 calls" },
-      convertapi: { type: "text", value: "2+ calls" },
+      lintpdf: { type: "highlight", value: "7 formats" },
+      pitstop: { type: "text", value: "PDF only" },
+      pdftoolbox: { type: "text", value: "PDF, PS, EPS" },
+      pdfrest: { type: "text", value: "PDF only" },
+      convertapi: { type: "text", value: "40+ (conversion)" },
+    },
+  },
+  {
+    label: "Detection-only",
+    tooltip: "Inspects without modifying your files — zero risk of corruption",
+    values: {
+      lintpdf: { type: "boolean", value: true },
+      pitstop: { type: "boolean", value: false },
+      pdftoolbox: { type: "boolean", value: false },
+      pdfrest: { type: "boolean", value: false },
+      convertapi: { type: "boolean", value: false },
     },
   },
   {

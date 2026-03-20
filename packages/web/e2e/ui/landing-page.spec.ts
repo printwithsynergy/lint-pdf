@@ -6,7 +6,7 @@ test.describe("Landing Page", () => {
   });
 
   test("page loads with correct title", async ({ page }) => {
-    await expect(page).toHaveTitle(/Grounded/i);
+    await expect(page).toHaveTitle(/LintPDF/i);
   });
 
   test("header renders with navigation", async ({ page }) => {

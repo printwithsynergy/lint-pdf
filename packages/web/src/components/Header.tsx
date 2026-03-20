@@ -27,7 +27,7 @@ export function Header() {
                 LintPDF
               </span>
               <span className="text-[9px] font-medium tracking-wide text-slate-400">
-                Every check. Every page. Every time.
+                Preflights you won&apos;t hate.
               </span>
             </div>
           </Link>

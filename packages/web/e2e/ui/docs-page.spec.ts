@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Documentation Page", () => {
   test("docs page loads", async ({ page }) => {
     await page.goto("/docs");
-    await expect(page).toHaveTitle(/Grounded/i);
+    await expect(page).toHaveTitle(/LintPDF/i);
   });
 
   test("docs page has content", async ({ page }) => {

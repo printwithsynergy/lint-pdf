@@ -42,10 +42,10 @@ function XIcon() {
 
 function Cell({
   cell,
-  isGrounded,
+  isLintPDF,
 }: {
   cell: CompetitorCellValue;
-  isGrounded: boolean;
+  isLintPDF: boolean;
 }) {
   if (cell.type === "boolean") {
     return cell.value ? <CheckIcon /> : <XIcon />;
@@ -57,7 +57,7 @@ function Cell({
   }
   return (
     <span
-      className={`text-sm ${isGrounded ? "text-brand-700 font-semibold" : "text-slate-600"}`}
+      className={`text-sm ${isLintPDF ? "text-brand-700 font-semibold" : "text-slate-600"}`}
     >
       {cell.value}
     </span>
@@ -70,10 +70,11 @@ export function CompetitorComparisonSection() {
       <div className="mx-auto max-w-6xl px-6">
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold text-slate-900 md:text-4xl mb-4">
-            How LintPDF compares
+            The only detection-only preflight API
           </h2>
           <p className="text-slate-500 max-w-2xl mx-auto">
-            A detection-only API built for speed, transparency, and depth.
+            More checks, lower cost, zero file modifications. See how LintPDF
+            stacks up.
           </p>
         </div>
 
@@ -139,7 +140,7 @@ export function CompetitorComparisonSection() {
                       >
                         <Cell
                           cell={dim.values[c.shortName]}
-                          isGrounded={c.shortName === "lintpdf"}
+                          isLintPDF={c.shortName === "lintpdf"}
                         />
                       </td>
                     ))}
