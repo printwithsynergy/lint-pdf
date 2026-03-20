@@ -12,8 +12,7 @@ export function Header() {
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const { betaMode } = useBeta();
 
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
   const ctaLabel = betaMode ? "Join Waitlist" : "Get Started";
   const ctaHref = betaMode ? undefined : `${appUrl}/auth/login?plan=free`;
 

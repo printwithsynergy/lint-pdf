@@ -56,12 +56,12 @@ Core preflight checks remain unlimited on paid plans. AI checks are metered sepa
 
 Credits can be purchased pay-per-use at $0.12/credit or in volume packages:
 
-| Package | Credits | Price | Per Credit |
-|---------|---------|-------|------------|
-| Starter | 100 | $10 | $0.10 |
-| Growth | 500 | $40 | $0.08 |
-| Scale | 2,000 | $120 | $0.06 |
-| Enterprise | 10,000 | $500 | $0.05 |
+| Package    | Credits | Price | Per Credit |
+| ---------- | ------- | ----- | ---------- |
+| Starter    | 100     | $10   | $0.10      |
+| Growth     | 500     | $40   | $0.08      |
+| Scale      | 2,000   | $120  | $0.06      |
+| Enterprise | 10,000  | $500  | $0.05      |
 
 Credits never expire. Credit balance is visible in the Dashboard and exposed via the API. You can set low-balance alerts via Webhooks.
 

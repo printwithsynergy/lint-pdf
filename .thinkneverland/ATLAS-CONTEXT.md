@@ -1,5 +1,7 @@
 # ATLAS-CONTEXT.md — LintPDF
+
 # Project-specific knowledge for Atlas and Cyrus.
+
 # Updated by post-merge GitHub Action and Atlas design sessions.
 
 ## Architecture
@@ -114,23 +116,26 @@ src/
 ## Design tokens
 
 ### Inspection ID format
+
 `GRD_{CATEGORY}_{NNN}` — e.g., GRD_FONT_001, GRD_IMG_003, GRD_GWG_BASE_001
 
 Categories: FONT, IMG, COLOR, BOX, TRANS, OVER, COMP, STRUCT, GWG
 
 ### API status values
-| Status | Meaning |
-|--------|---------|
-| queued | Job accepted, waiting for worker |
-| taxiing | Worker processing |
-| arrived | Processing complete |
+
+| Status  | Meaning                          |
+| ------- | -------------------------------- |
+| queued  | Job accepted, waiting for worker |
+| taxiing | Worker processing                |
+| arrived | Processing complete              |
 
 ### Report verdict
-| Verdict | Meaning |
-|---------|---------|
-| clear-to-fly | Zero no-fly findings |
-| grounded | One or more no-fly findings |
-| delay | Zero no-fly, one or more delay findings |
+
+| Verdict      | Meaning                                 |
+| ------------ | --------------------------------------- |
+| clear-to-fly | Zero no-fly findings                    |
+| grounded     | One or more no-fly findings             |
+| delay        | Zero no-fly, one or more delay findings |
 
 ## Known constraints
 

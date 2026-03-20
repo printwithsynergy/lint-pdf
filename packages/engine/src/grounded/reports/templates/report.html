@@ -1,172 +1,258 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %} Preflight Report</title>
-<style>
-  :root {
-    --primary: {% if brand and brand.primary_color %}{{ brand.primary_color }}{% else %}#0ea5e9{% endif %};
-    --accent: {% if brand and brand.accent_color %}{{ brand.accent_color }}{% else %}#2563eb{% endif %};
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; line-height: 1.5; max-width: 960px; margin: 0 auto; padding: 24px; }
-  h1 { font-size: 24px; margin-bottom: 8px; color: var(--primary); }
-  h2 { font-size: 18px; margin: 24px 0 12px; border-bottom: 2px solid #e5e5e5; padding-bottom: 4px; }
-  h3 { font-size: 15px; margin: 16px 0 8px; cursor: pointer; user-select: none; }
-  h3:hover { color: var(--accent); }
-  .brand-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-  .brand-logo { max-height: 40px; max-width: 160px; }
-  .badge { display: inline-block; padding: 4px 16px; border-radius: 4px; color: white; font-weight: bold; font-size: 14px; background-color: {{ badge_color }}; }
-  .toolbar { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
-  .toolbar button, .toolbar a { padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; font-size: 13px; text-decoration: none; color: #374151; }
-  .toolbar button:hover, .toolbar a:hover { background: #f3f4f6; }
-  .toolbar .active { background: var(--accent); color: white; border-color: var(--accent); }
-  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
-  .summary-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; text-align: center; }
-  .summary-card .count { font-size: 28px; font-weight: bold; }
-  .summary-card .label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
-  .aground .count { color: #dc2626; }
-  .squall .count { color: #ea580c; }
-  .advisory .count { color: #2563eb; }
-  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-  th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-  th { background: #f9fafb; font-weight: 600; }
-  .severity-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
-  .severity-aground { background: #fef2f2; color: #dc2626; }
-  .severity-squall { background: #fff7ed; color: #ea580c; }
-  .severity-advisory { background: #eff6ff; color: #2563eb; }
-  .source-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-left: 4px; }
-  .source-ai { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-  .source-engine { background: #f9fafb; color: #6b7280; border: 1px solid #e5e7eb; }
-  .meta-table td:first-child { font-weight: 600; width: 180px; }
-  .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e5e5; font-size: 11px; color: #9ca3af; }
-  .search-box { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; margin: 8px 0; }
-  .collapsible { overflow: hidden; transition: max-height 0.2s ease-out; }
-  .hidden { display: none; }
-  @media (max-width: 640px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
-  @media print { body { max-width: 100%; padding: 12px; } .toolbar { display: none; } .search-box { display: none; } }
-</style>
-</head>
-<body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>
+      {% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %}
+      Preflight Report
+    </title>
+    <style>
+      :root {
+        --primary: {% if brand and brand.primary_color %}{{ brand.primary_color }}{% else %}#0ea5e9{% endif %};
+        --accent: {% if brand and brand.accent_color %}{{ brand.accent_color }}{% else %}#2563eb{% endif %};
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; line-height: 1.5; max-width: 960px; margin: 0 auto; padding: 24px; }
+      h1 { font-size: 24px; margin-bottom: 8px; color: var(--primary); }
+      h2 { font-size: 18px; margin: 24px 0 12px; border-bottom: 2px solid #e5e5e5; padding-bottom: 4px; }
+      h3 { font-size: 15px; margin: 16px 0 8px; cursor: pointer; user-select: none; }
+      h3:hover { color: var(--accent); }
+      .brand-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+      .brand-logo { max-height: 40px; max-width: 160px; }
+      .badge { display: inline-block; padding: 4px 16px; border-radius: 4px; color: white; font-weight: bold; font-size: 14px; background-color: {{ badge_color }}; }
+      .toolbar { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+      .toolbar button, .toolbar a { padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; font-size: 13px; text-decoration: none; color: #374151; }
+      .toolbar button:hover, .toolbar a:hover { background: #f3f4f6; }
+      .toolbar .active { background: var(--accent); color: white; border-color: var(--accent); }
+      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+      .summary-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; text-align: center; }
+      .summary-card .count { font-size: 28px; font-weight: bold; }
+      .summary-card .label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
+      .aground .count { color: #dc2626; }
+      .squall .count { color: #ea580c; }
+      .advisory .count { color: #2563eb; }
+      table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+      th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+      th { background: #f9fafb; font-weight: 600; }
+      .severity-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
+      .severity-aground { background: #fef2f2; color: #dc2626; }
+      .severity-squall { background: #fff7ed; color: #ea580c; }
+      .severity-advisory { background: #eff6ff; color: #2563eb; }
+      .source-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-left: 4px; }
+      .source-ai { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+      .source-engine { background: #f9fafb; color: #6b7280; border: 1px solid #e5e7eb; }
+      .meta-table td:first-child { font-weight: 600; width: 180px; }
+      .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e5e5; font-size: 11px; color: #9ca3af; }
+      .search-box { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; margin: 8px 0; }
+      .collapsible { overflow: hidden; transition: max-height 0.2s ease-out; }
+      .hidden { display: none; }
+      @media (max-width: 640px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media print { body { max-width: 100%; padding: 12px; } .toolbar { display: none; } .search-box { display: none; } }
+    </style>
+  </head>
+  <body>
+    <div class="brand-header">
+      {% if brand and brand.logo_url %}<img
+        src="{{ brand.logo_url }}"
+        alt="{{ brand.name }}"
+        class="brand-logo"
+      />{% endif %}
+      <h1>
+        {% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif
+        %} Preflight Report <span class="badge">{{ pass_fail }}</span>
+      </h1>
+    </div>
+    <p>
+      Profile: <strong>{{ result.profile_id }}</strong> | Job: {{ result.job_id
+      }}
+    </p>
 
-<div class="brand-header">
-  {% if brand and brand.logo_url %}<img src="{{ brand.logo_url }}" alt="{{ brand.name }}" class="brand-logo">{% endif %}
-  <h1>{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %} Preflight Report <span class="badge">{{ pass_fail }}</span></h1>
-</div>
-<p>Profile: <strong>{{ result.profile_id }}</strong> | Job: {{ result.job_id }}</p>
+    <div class="toolbar">
+      <button onclick="filterSeverity('')" class="active" data-filter="all">
+        All
+      </button>
+      <button onclick="filterSeverity('aground')" data-filter="aground">
+        Error
+      </button>
+      <button onclick="filterSeverity('squall')" data-filter="squall">
+        Warning
+      </button>
+      <button onclick="filterSeverity('advisory')" data-filter="advisory">
+        Info
+      </button>
+      <button onclick="filterSource('ai')" data-source="ai">AI Only</button>
+      <button onclick="filterSource('')" data-source="all">All Sources</button>
+      <button onclick="window.print()">Print</button>
+      {# nosemgrep: var-in-href -- URL validated to start with https://,
+      http://, or / #} {% if brand and brand.pdf_download_url and
+      (brand.pdf_download_url.startswith('https://') or
+      brand.pdf_download_url.startswith('http://') or
+      brand.pdf_download_url.startswith('/')) %}<a
+        href="{{ brand.pdf_download_url }}"
+        >Download PDF</a
+      >{% endif %}
+    </div>
 
-<div class="toolbar">
-  <button onclick="filterSeverity('')" class="active" data-filter="all">All</button>
-  <button onclick="filterSeverity('aground')" data-filter="aground">Error</button>
-  <button onclick="filterSeverity('squall')" data-filter="squall">Warning</button>
-  <button onclick="filterSeverity('advisory')" data-filter="advisory">Info</button>
-  <button onclick="filterSource('ai')" data-source="ai">AI Only</button>
-  <button onclick="filterSource('')" data-source="all">All Sources</button>
-  <button onclick="window.print()">Print</button>
-  {# nosemgrep: var-in-href -- URL validated to start with https://, http://, or / #}
-  {% if brand and brand.pdf_download_url and (brand.pdf_download_url.startswith('https://') or brand.pdf_download_url.startswith('http://') or brand.pdf_download_url.startswith('/')) %}<a href="{{ brand.pdf_download_url }}">Download PDF</a>{% endif %}
-</div>
+    <input
+      type="text"
+      class="search-box"
+      placeholder="Search findings by check ID or message..."
+      oninput="searchFindings(this.value)"
+    />
 
-<input type="text" class="search-box" placeholder="Search findings by check ID or message..." oninput="searchFindings(this.value)">
+    <h2>Summary</h2>
+    <div class="summary-grid">
+      <div class="summary-card aground">
+        <div class="count">{{ summary.aground_count }}</div>
+        <div class="label">Errors</div>
+      </div>
+      <div class="summary-card squall">
+        <div class="count">{{ summary.squall_count }}</div>
+        <div class="label">Warnings</div>
+      </div>
+      <div class="summary-card advisory">
+        <div class="count">{{ summary.advisory_count }}</div>
+        <div class="label">Info</div>
+      </div>
+      <div class="summary-card">
+        <div class="count">{{ summary.total_findings }}</div>
+        <div class="label">Total</div>
+      </div>
+    </div>
 
-<h2>Summary</h2>
-<div class="summary-grid">
-  <div class="summary-card aground">
-    <div class="count">{{ summary.aground_count }}</div>
-    <div class="label">Errors</div>
-  </div>
-  <div class="summary-card squall">
-    <div class="count">{{ summary.squall_count }}</div>
-    <div class="label">Warnings</div>
-  </div>
-  <div class="summary-card advisory">
-    <div class="count">{{ summary.advisory_count }}</div>
-    <div class="label">Info</div>
-  </div>
-  <div class="summary-card">
-    <div class="count">{{ summary.total_findings }}</div>
-    <div class="label">Total</div>
-  </div>
-</div>
+    <h2>Document Info</h2>
+    <table class="meta-table">
+      <tr>
+        <td>PDF Version</td>
+        <td>{{ metadata.get('pdf_version', 'N/A') }}</td>
+      </tr>
+      <tr>
+        <td>Pages</td>
+        <td>{{ summary.page_count }}</td>
+      </tr>
+      <tr>
+        <td>File Size</td>
+        <td>{{ "%.1f"|format(summary.file_size_bytes / 1048576) }} MB</td>
+      </tr>
+      <tr>
+        <td>Encrypted</td>
+        <td>{{ 'Yes' if metadata.get('is_encrypted') else 'No' }}</td>
+      </tr>
+      <tr>
+        <td>Conformance</td>
+        <td>{{ metadata.get('conformance') or 'None' }}</td>
+      </tr>
+      <tr>
+        <td>Duration</td>
+        <td>{{ result.duration_ms }} ms</td>
+      </tr>
+    </table>
 
-<h2>Document Info</h2>
-<table class="meta-table">
-  <tr><td>PDF Version</td><td>{{ metadata.get('pdf_version', 'N/A') }}</td></tr>
-  <tr><td>Pages</td><td>{{ summary.page_count }}</td></tr>
-  <tr><td>File Size</td><td>{{ "%.1f"|format(summary.file_size_bytes / 1048576) }} MB</td></tr>
-  <tr><td>Encrypted</td><td>{{ 'Yes' if metadata.get('is_encrypted') else 'No' }}</td></tr>
-  <tr><td>Conformance</td><td>{{ metadata.get('conformance') or 'None' }}</td></tr>
-  <tr><td>Duration</td><td>{{ result.duration_ms }} ms</td></tr>
-</table>
+    {% if result.findings %}
+    <h2>Findings</h2>
 
-{% if result.findings %}
-<h2>Findings</h2>
+    {% for page_num, page_findings in findings_by_page.items() %}
+    <h3 class="page-header" onclick="toggleSection(this)">
+      {% if page_num > 0 %}Page {{ page_num }}{% else %}Document Level{% endif
+      %}
+      <span style="font-size: 12px; color: #9ca3af"
+        >({{ page_findings|length }})</span
+      >
+    </h3>
+    <div class="collapsible">
+      <table class="findings-table">
+        <thead>
+          <tr>
+            <th>Check</th>
+            <th>Severity</th>
+            <th>Message</th>
+            <th>Object</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in page_findings %}
+          <tr
+            class="finding-row"
+            data-severity="{{ f.severity }}"
+            data-source="{{ f.source|default('engine') }}"
+            data-search="{{ f.inspection_id }} {{ f.message }}"
+          >
+            <td>
+              <code>{{ f.inspection_id }}</code>{% if f.source|default('engine')
+              == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}
+            </td>
+            <td>
+              <span
+                class="severity-tag severity-{{ f.severity }}"
+                onclick="filterSeverity('{{ f.severity }}')"
+                >{{ f.severity }}</span
+              >
+            </td>
+            <td>
+              {{ f.message }}{% if f.category %}
+              <span style="font-size: 11px; color: #9ca3af"
+                >[{{ f.category }}]</span
+              >{% endif %}
+            </td>
+            <td>{{ f.object_id or '' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %} {% else %}
+    <h2>Findings</h2>
+    <p>No findings detected. The document passed all enabled checks.</p>
+    {% endif %} {% if brand and brand.footer_text %}
+    <div class="footer">{{ brand.footer_text }}</div>
+    {% endif %}
 
-{% for page_num, page_findings in findings_by_page.items() %}
-<h3 class="page-header" onclick="toggleSection(this)">
-  {% if page_num > 0 %}Page {{ page_num }}{% else %}Document Level{% endif %}
-  <span style="font-size: 12px; color: #9ca3af;">({{ page_findings|length }})</span>
-</h3>
-<div class="collapsible">
-<table class="findings-table">
-  <thead>
-    <tr><th>Check</th><th>Severity</th><th>Message</th><th>Object</th></tr>
-  </thead>
-  <tbody>
-    {% for f in page_findings %}
-    <tr class="finding-row" data-severity="{{ f.severity }}" data-source="{{ f.source|default('engine') }}" data-search="{{ f.inspection_id }} {{ f.message }}">
-      <td><code>{{ f.inspection_id }}</code>{% if f.source|default('engine') == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}</td>
-      <td><span class="severity-tag severity-{{ f.severity }}" onclick="filterSeverity('{{ f.severity }}')">{{ f.severity }}</span></td>
-      <td>{{ f.message }}{% if f.category %} <span style="font-size:11px;color:#9ca3af;">[{{ f.category }}]</span>{% endif %}</td>
-      <td>{{ f.object_id or '' }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
-</div>
-{% endfor %}
-
-{% else %}
-<h2>Findings</h2>
-<p>No findings detected. The document passed all enabled checks.</p>
-{% endif %}
-
-{% if brand and brand.footer_text %}
-<div class="footer">{{ brand.footer_text }}</div>
-{% endif %}
-
-<script>
-function filterSeverity(sev) {
-  document.querySelectorAll('.toolbar button').forEach(function(b) {
-    b.classList.toggle('active', b.getAttribute('data-filter') === (sev || 'all'));
-  });
-  document.querySelectorAll('.finding-row').forEach(function(row) {
-    row.classList.toggle('hidden', sev && row.getAttribute('data-severity') !== sev);
-  });
-}
-function filterSource(src) {
-  document.querySelectorAll('.toolbar button[data-source]').forEach(function(b) {
-    b.classList.toggle('active', b.getAttribute('data-source') === (src || 'all'));
-  });
-  document.querySelectorAll('.finding-row').forEach(function(row) {
-    row.classList.toggle('hidden', src && row.getAttribute('data-source') !== src);
-  });
-}
-function searchFindings(query) {
-  var q = query.toLowerCase();
-  document.querySelectorAll('.finding-row').forEach(function(row) {
-    var text = (row.getAttribute('data-search') || '').toLowerCase();
-    row.classList.toggle('hidden', q && text.indexOf(q) === -1);
-  });
-}
-function toggleSection(header) {
-  var section = header.nextElementSibling;
-  if (section && section.classList.contains('collapsible')) {
-    section.style.display = section.style.display === 'none' ? '' : 'none';
-  }
-}
-</script>
-
-</body>
+    <script>
+      function filterSeverity(sev) {
+        document.querySelectorAll(".toolbar button").forEach(function (b) {
+          b.classList.toggle(
+            "active",
+            b.getAttribute("data-filter") === (sev || "all"),
+          );
+        });
+        document.querySelectorAll(".finding-row").forEach(function (row) {
+          row.classList.toggle(
+            "hidden",
+            sev && row.getAttribute("data-severity") !== sev,
+          );
+        });
+      }
+      function filterSource(src) {
+        document
+          .querySelectorAll(".toolbar button[data-source]")
+          .forEach(function (b) {
+            b.classList.toggle(
+              "active",
+              b.getAttribute("data-source") === (src || "all"),
+            );
+          });
+        document.querySelectorAll(".finding-row").forEach(function (row) {
+          row.classList.toggle(
+            "hidden",
+            src && row.getAttribute("data-source") !== src,
+          );
+        });
+      }
+      function searchFindings(query) {
+        var q = query.toLowerCase();
+        document.querySelectorAll(".finding-row").forEach(function (row) {
+          var text = (row.getAttribute("data-search") || "").toLowerCase();
+          row.classList.toggle("hidden", q && text.indexOf(q) === -1);
+        });
+      }
+      function toggleSection(header) {
+        var section = header.nextElementSibling;
+        if (section && section.classList.contains("collapsible")) {
+          section.style.display =
+            section.style.display === "none" ? "" : "none";
+        }
+      }
+    </script>
+  </body>
 </html>

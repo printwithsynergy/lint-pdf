@@ -46,6 +46,7 @@ Yes. For pay-per-use billing, set a monthly spending cap in Settings > AI Billin
 ### Why did my AI check fail?
 
 Common reasons:
+
 - **Insufficient credits**: Your credit balance was zero. Purchase credits or enable auto top-up.
 - **Circuit breaker tripped**: Vision capacity was constrained. Vision inspections are temporarily skipped. Retry in a few minutes.
 - **Category not enabled**: The AI category for the requested inspection is not enabled on your account. Enable it in Settings > AI Inspections.

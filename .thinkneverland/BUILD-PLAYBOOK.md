@@ -1,5 +1,7 @@
 # BUILD-PLAYBOOK.md — LintPDF
+
 # Module-by-module engineering playbook for AI-assisted development.
+
 # Each phase maps to Linear cards. Read ATLAS-CONTEXT.md before starting.
 
 ---
@@ -13,17 +15,17 @@ Layer     Model      Stream     (5 modules) Standards  + Plans   + Queue   + Doc
                      Interp.
 ```
 
-| Phase | Modules | Est. Week | Complexity | Cards |
-|-------|---------|-----------|------------|-------|
-| 1 | ParserAdapter + PikePDFAdapter | Wk 1 | M | 3-4 |
-| 2 | SemanticModel | Wk 2 | L | 4-5 |
-| 3 | ContentStreamInterpreter | Wk 2-3 | XL | 6-8 |
-| 4 | FontAnalyzer, ImageAnalyzer, ColorAnalyzer, TransparencyAnalyzer, OverprintAnalyzer, PageGeometryAnalyzer | Wk 3-5 | L | 10-12 |
-| 5 | PDFXValidator, PDFAValidator (veraPDF) | Wk 5-6 | L | 4-5 |
-| 6 | RuleEngine, RulesetLoader, ProfileRegistry | Wk 6-7 | L | 5-6 |
-| 7 | FastAPI + Celery + TenantManager + Radio | Wk 7-9 | L | 8-10 |
-| 8 | Docker + Railway + CI/CD | Wk 9-10 | M | 4-5 |
-| 9 | Docs + SDKs + QA | Wk 10-12 | M | 5-7 |
+| Phase | Modules                                                                                                   | Est. Week | Complexity | Cards |
+| ----- | --------------------------------------------------------------------------------------------------------- | --------- | ---------- | ----- |
+| 1     | ParserAdapter + PikePDFAdapter                                                                            | Wk 1      | M          | 3-4   |
+| 2     | SemanticModel                                                                                             | Wk 2      | L          | 4-5   |
+| 3     | ContentStreamInterpreter                                                                                  | Wk 2-3    | XL         | 6-8   |
+| 4     | FontAnalyzer, ImageAnalyzer, ColorAnalyzer, TransparencyAnalyzer, OverprintAnalyzer, PageGeometryAnalyzer | Wk 3-5    | L          | 10-12 |
+| 5     | PDFXValidator, PDFAValidator (veraPDF)                                                                    | Wk 5-6    | L          | 4-5   |
+| 6     | RuleEngine, RulesetLoader, ProfileRegistry                                                                | Wk 6-7    | L          | 5-6   |
+| 7     | FastAPI + Celery + TenantManager + Radio                                                                  | Wk 7-9    | L          | 8-10  |
+| 8     | Docker + Railway + CI/CD                                                                                  | Wk 9-10   | M          | 4-5   |
+| 9     | Docs + SDKs + QA                                                                                          | Wk 10-12  | M          | 5-7   |
 
 ---
 
@@ -34,6 +36,7 @@ Layer     Model      Stream     (5 modules) Standards  + Plans   + Queue   + Doc
 **Card: GRD-001 — Project scaffold and CI setup**
 
 Acceptance Criteria:
+
 1. Python package at `src/grounded/` with `__init__.py`, `py.typed`
 2. `pyproject.toml` with dependencies: pikepdf, fastapi, celery, redis, psycopg2-binary, weasyprint, jinja2, pydantic, httpx
 3. Dev dependencies: pytest, pytest-asyncio, ruff, mypy, coverage
@@ -64,6 +67,7 @@ src/grounded/
 ```
 
 **Exception hierarchy:**
+
 ```python
 class GroundedError(Exception): ...
 class PDFStructureError(GroundedError): ...
@@ -87,6 +91,7 @@ class RuleRegistrationError(GroundedError): ...
 File: `src/grounded/parser/adapter.py`
 
 Acceptance Criteria:
+
 1. `ParserAdapter` ABC with methods: `open()`, `get_page()`, `get_catalog()`, `get_content_stream()`, `get_resources()`, `resolve_reference()`, `get_page_tree()`
 2. Dataclasses: `PdfStream`, `PdfObject`, `PdfDocument`, `PdfPage`
 3. All methods have type hints and docstrings with ISO references
@@ -102,6 +107,7 @@ Reference: `lintpdf-research/implementation-plan.md` Module 1 for interface defi
 File: `src/grounded/parser/pikepdf_adapter.py`
 
 Acceptance Criteria:
+
 1. `PikePDFAdapter` implements all `ParserAdapter` methods
 2. Opens PDFs from bytes using `pikepdf.Pdf.open(BytesIO(...))`
 3. Extracts page metadata: MediaBox, CropBox, TrimBox, BleedBox, ArtBox, Rotate, UserUnit
@@ -116,6 +122,7 @@ Acceptance Criteria:
 Dependencies: pikepdf
 
 **Key implementation notes:**
+
 - Use `pikepdf.Pdf.open()` not `pikepdf.open()` (the latter is deprecated)
 - Access pages via `pdf.pages[index]` (0-indexed, but our PdfPage is 1-indexed)
 - Content stream: `page.get('/Contents')` — may be array or single stream
@@ -127,6 +134,7 @@ Dependencies: pikepdf
 **Card: GRD-004 — Test corpus download and fixtures**
 
 Acceptance Criteria:
+
 1. `tests/fixtures/download_corpus.py` script to fetch veraPDF test suite + Isartor files
 2. `tests/conftest.py` fixtures: `sample_pdf_bytes`, `malformed_pdf_bytes`, `linearized_pdf_bytes`
 3. `tests/corpus/` directory (gitignored) with downloaded test files
@@ -145,6 +153,7 @@ Acceptance Criteria:
 File: `src/grounded/semantic/model.py`
 
 Acceptance Criteria:
+
 1. Dataclasses: `PdfBox`, `PdfFont`, `PdfColorSpace`, `PdfImage`, `PdfPage` (enriched), `PdfDocument` (enriched)
 2. `PdfBox` with validation (`x0 < x1`, `y0 < y1`), `contains_point()`, `area()`
 3. `PdfFont.is_standard_14()` method
@@ -158,6 +167,7 @@ Reference: `lintpdf-research/implementation-plan.md` Module 2 for class definiti
 File: `src/grounded/semantic/builder.py`
 
 Acceptance Criteria:
+
 1. `SemanticModelBuilder` class with `build(ParserAdapter, PdfDocument) → PdfDocument` (enriched)
 2. Resolves resource inheritance by walking page tree ancestors
 3. Extracts and normalizes fonts (embedding status, subsetting, encoding)
@@ -167,6 +177,7 @@ Acceptance Criteria:
 7. Tests: 3-level page tree inheritance, box hierarchy validation, font extraction from resources
 
 **Inheritance algorithm** (ISO 32000-2 §7.7.3.4):
+
 - Inheritable properties: Resources, MediaBox, CropBox, Rotate
 - Walk `/Parent` chain until property found or root reached
 - MediaBox MUST exist somewhere in chain — raise `InvalidPageError` if missing
@@ -185,6 +196,7 @@ This is the most complex module. Split into multiple cards.
 File: `src/grounded/semantic/graphics_state.py`
 
 Acceptance Criteria:
+
 1. `TransformationMatrix` with `multiply()` and `extract_scale()` methods
 2. Matrix multiplication matches ISO 32000-2 §8.3.4 formula
 3. `GraphicsState` dataclass with all fields (CTM, color, opacity, blend mode, overprint, font, clipping)
@@ -198,6 +210,7 @@ Acceptance Criteria:
 File: `src/grounded/semantic/events.py`
 
 Acceptance Criteria:
+
 1. Base class `ContentStreamEvent` with `operator`, `page_num`, `operator_index`
 2. Event dataclasses: `ImagePlacedEvent`, `TextRenderedEvent`, `ColorChangedEvent`, `OpacityChangedEvent`, `OverprintModeChangedEvent`, `TransparencyGroupEnteredEvent`, `FormXObjectEnteredEvent`, `PathPaintingEvent`, `ClippingPathSetEvent`
 3. All events are frozen dataclasses (immutable after creation)
@@ -210,6 +223,7 @@ Acceptance Criteria:
 File: `src/grounded/semantic/interpreter.py`
 
 Acceptance Criteria:
+
 1. `ContentStreamInterpreter` class with `interpret(page, resources) → List[ContentStreamEvent]`
 2. Uses `pikepdf.parse_content_stream()` for tokenization (MVP approach)
 3. Implements all 18 CRITICAL operators: q, Q, cm, gs, Do, Tf, Tj, TJ, BT, ET, Tm, sc/scn, SC/SCN, cs/CS, rg/RG, k/K, g/G, BI/ID/EI
@@ -226,6 +240,7 @@ Acceptance Criteria:
 14. Tests: one test per CRITICAL operator, state stack balance, CTM math
 
 **Operator dispatch pattern:**
+
 ```python
 OPERATOR_HANDLERS = {
     'q': self.handle_q,
@@ -245,6 +260,7 @@ OPERATOR_HANDLERS = {
 **Card: GRD-010 — Form XObject recursion with cycle detection** `opus`
 
 Acceptance Criteria:
+
 1. When `Do` references Form XObject: save state (q), apply form Matrix to CTM, interpret form stream, restore state (Q)
 2. Merge form Resources with page Resources (form overrides page)
 3. Cycle detection via visited set of `(obj_number, gen_number)` tuples
@@ -257,10 +273,11 @@ Acceptance Criteria:
 **Card: GRD-011 — ContentStreamInterpreter IMPORTANT operators**
 
 Acceptance Criteria:
+
 1. Path construction: m, l, c, v, y, h, re — track current path points for bounding box
-2. Path painting: S, s, f, F, f*, B, B*, b, b*, n — emit PathPaintingEvent with fill/stroke flags
-3. Clipping: W, W* — emit ClippingPathSetEvent
-4. Text positioning: Td, TD, T* — update text matrix
+2. Path painting: S, s, f, F, f*, B, B*, b, b\*, n — emit PathPaintingEvent with fill/stroke flags
+3. Clipping: W, W\* — emit ClippingPathSetEvent
+4. Text positioning: Td, TD, T\* — update text matrix
 5. Text showing: ', " — emit TextRenderedEvent (same as Tj but with line advance)
 6. Tests: path bounding box calculation, clipping event, text position tracking
 
@@ -275,6 +292,7 @@ Acceptance Criteria:
 File: `src/grounded/analyzers/image.py`
 
 Acceptance Criteria:
+
 1. `ImageAnalyzer` processes `ImagePlacedEvent` list from interpreter
 2. DPI calculation: `EffectiveDPI = pixels / (sqrt(a²+c²) / 72)` for width, `pixels / (sqrt(b²+d²) / 72)` for height
 3. Handles degenerate CTM (zero scale) gracefully
@@ -289,6 +307,7 @@ Acceptance Criteria:
 File: `src/grounded/analyzers/font.py`
 
 Acceptance Criteria:
+
 1. 10 checks: GRD_FONT_001 through GRD_FONT_010
 2. Embedding detection via FontDescriptor → FontFile/FontFile2/FontFile3
 3. Subsetting detection via 6-char prefix + "+"
@@ -304,6 +323,7 @@ Acceptance Criteria:
 File: `src/grounded/analyzers/color.py`
 
 Acceptance Criteria:
+
 1. TAC (Total Area Coverage) calculation for CMYK: sum of C+M+Y+K percentages
 2. Prohibited color space detection (Lab, CalGray, CalRGB in PDF/X-4 context)
 3. ICC profile presence validation
@@ -320,6 +340,7 @@ Acceptance Criteria:
 File: `src/grounded/analyzers/transparency.py`
 
 Acceptance Criteria:
+
 1. Risky blend mode detection (8 safe: Normal, Multiply, Screen, Overlay, Darken, Lighten, ColorDodge, ColorBurn; 8 risky: HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity)
 2. Transparency + overprint conflict detection
 3. Soft mask validation
@@ -334,6 +355,7 @@ Acceptance Criteria:
 File: `src/grounded/analyzers/overprint.py`
 
 Acceptance Criteria:
+
 1. OPM interaction analysis: OP, op, OPM flag combinations
 2. Overprint on non-CMYK color space detection (potential rendering differences)
 3. Overprint with transparency interaction flagging
@@ -347,6 +369,7 @@ Acceptance Criteria:
 File: `src/grounded/analyzers/page_geometry.py`
 
 Acceptance Criteria:
+
 1. Box presence validation: TrimBox and BleedBox required for print
 2. Box hierarchy: BleedBox ≥ TrimBox, all within MediaBox
 3. Bleed distance calculation (BleedBox - TrimBox on each side)
@@ -365,9 +388,10 @@ Acceptance Criteria:
 File: `src/grounded/conformance/pdfx_validator.py`
 
 Acceptance Criteria:
+
 1. Implements checks organized by category (see `lintpdf-research/09-10-11-conformance-standards.md`)
 2. File Structure & Metadata (11), Output Intent (8), Color Spaces (9), Fonts (6), Transparency (4), Page Boxes (8), Annotations (4), Encryption (2), Optional Content (3), Restricted Features (5), Graphics & Images (6), Image Compression (6), Resource Dictionaries (4), Reader & Validation (7), Variants (4)
-3. Each check has inspection ID (GRD_COMP_*), ISO clause reference, severity
+3. Each check has inspection ID (GRD*COMP*\*), ISO clause reference, severity
 4. Reuses data from SemanticModel and ContentStreamInterpreter — does NOT re-parse
 5. Tests against veraPDF validation corpus, Isartor test suite
 
@@ -382,10 +406,11 @@ Reference: `lintpdf-research/specs/iso15930-7-pdfx4.md` for full check catalog.
 File: `src/grounded/conformance/pdfa_validator.py` + `src/grounded/conformance/verapdf_client.py`
 
 Acceptance Criteria:
+
 1. `VeraPDFClient` sends PDF bytes to veraPDF REST API (`POST /api/validate`)
 2. Supports PDF/A-1b, 1a, 2b, 2a, 2u, 3b, 3a, 3u, 4, 4e, 4f
 3. Parses veraPDF machine-readable XML response
-4. Maps veraPDF violations to LintPDF `Finding` objects with GRD_PDFA_* IDs
+4. Maps veraPDF violations to LintPDF `Finding` objects with GRD*PDFA*\* IDs
 5. Docker health check: verify veraPDF container is running before validation
 6. Timeout handling: 60-second timeout for veraPDF calls
 7. Graceful degradation: if veraPDF unavailable, report error finding (not crash)
@@ -404,6 +429,7 @@ Reference: `lintpdf-research/09-10-11-conformance-standards.md` veraPDF integrat
 Files: `src/grounded/rules/registry.py`, `src/grounded/rules/decorators.py`, `src/grounded/rules/finding.py`
 
 Acceptance Criteria:
+
 1. `Finding` dataclass: inspection_id, severity (no-fly/delay/advisory), message, page_num, bbox, details, iso_clause
 2. `@rule(analyzer=..., name=..., iso_clause=...)` decorator
 3. `RuleRegistry` with `register()`, `get_rules_for_analyzer()`, `get_all_rules()`
@@ -418,6 +444,7 @@ Acceptance Criteria:
 Files: `src/grounded/rules/builtin/*.py`
 
 Acceptance Criteria:
+
 1. All 17 MVP checks implemented as pure functions (see synthesis.md §6)
 2. Each function: receives analyzer output, returns `List[Finding]`
 3. No imports from api/, queue/, or tenants/
@@ -431,6 +458,7 @@ Acceptance Criteria:
 Files: `src/grounded/profiles/loader.py`, `src/grounded/profiles/registry.py`, `src/grounded/profiles/schema.py`
 
 Acceptance Criteria:
+
 1. Ruleset JSON schema with validation (Pydantic model)
 2. `RulesetLoader` loads JSON file → Profile object
 3. Profile: rule selection, severity overrides, threshold overrides
@@ -452,6 +480,7 @@ Reference: `lintpdf-research/09-10-11-conformance-standards.md` Ruleset JSON sch
 Files: `src/grounded/api/app.py`, `src/grounded/api/routes/*.py`
 
 Acceptance Criteria:
+
 1. `POST /api/v1/check-in`: multipart upload (pdf_file + profile_id + optional webhook_url + metadata)
 2. Returns 202 Accepted with job_id, polling_url, estimated_wait
 3. `GET /api/v1/report/{id}`: returns status (queued/taxiing/arrived) + findings when complete
@@ -469,6 +498,7 @@ Acceptance Criteria:
 Files: `src/grounded/queue/worker.py`, `src/grounded/queue/tasks.py`
 
 Acceptance Criteria:
+
 1. `inspect_pdf` Celery task: receives job_id, profile_id, pdf_path
 2. Pipeline: parse → build semantic model → interpret content streams → run analyzers → evaluate rules → generate report
 3. Updates job status in PostgreSQL (queued → taxiing → arrived)
@@ -485,6 +515,7 @@ Acceptance Criteria:
 Files: `src/grounded/tenants/manager.py`, `src/grounded/tenants/models.py`, `src/grounded/api/auth.py`
 
 Acceptance Criteria:
+
 1. API key authentication via `X-API-Key` header or `api_key` query param
 2. Tenant resolution from API key → tenant_id
 3. All database queries scoped by tenant_id
@@ -500,6 +531,7 @@ Acceptance Criteria:
 Files: `src/grounded/webhooks/radio.py`, `src/grounded/webhooks/retry.py`
 
 Acceptance Criteria:
+
 1. POST webhook to callback URL when job completes
 2. Payload: job_id, status, verdict, finding_count, report_url
 3. Exponential backoff retry: 3 attempts (1s, 5s, 25s)
@@ -515,6 +547,7 @@ Acceptance Criteria:
 Files: `src/grounded/reports/generator.py`, `src/grounded/reports/*.py`
 
 Acceptance Criteria:
+
 1. JSON report: findings array, summary (total, by severity), metadata, profile used
 2. XML report: same structure in XML format
 3. PDF report: WeasyPrint + Jinja2 template with LintPDF branding
@@ -529,6 +562,7 @@ Acceptance Criteria:
 **Card: GRD-028 — Docker + Railway deployment**
 
 Acceptance Criteria:
+
 1. Multi-stage Dockerfile (builder + runtime)
 2. `docker-compose.yml` for local dev (api, worker, redis, postgres, verapdf)
 3. Railway `railway.toml` or `Procfile` for deployment
@@ -545,15 +579,17 @@ Acceptance Criteria:
 **Card: GRD-029 — API documentation and SDK generation**
 
 Acceptance Criteria:
+
 1. OpenAPI 3.1 spec auto-generated and hosted
 2. Python SDK (`lintpdf-python`) generated from OpenAPI
 3. Getting Started guide (5-minute onboarding)
-4. Inspection ID catalog (all GRD_* IDs with descriptions)
+4. Inspection ID catalog (all GRD\_\* IDs with descriptions)
 5. Ruleset authoring guide
 
 **Card: GRD-030 — Regression test suite**
 
 Acceptance Criteria:
+
 1. End-to-end test: upload PDF → poll → verify findings
 2. Test corpus regression: known PDFs produce known findings
 3. Performance benchmarks: 10MB PDF <10s, 100MB PDF <30s
@@ -576,14 +612,14 @@ When creating Linear cards from this playbook:
 
 ## RESEARCH REFERENCE MAP
 
-| Module | Primary Research File | ADR |
-|--------|----------------------|-----|
-| Parser | implementation-plan.md §Module 1 | ADR-001 |
-| SemanticModel | implementation-plan.md §Module 2 | — |
-| ContentStreamInterpreter | implementation-plan.md §Module 3 (algorithms) | ADR-002 |
-| Analyzers (all) | 03-content-streams-graphics-state.md, 04-color-spaces.md, 05-font-technology.md, 06-images.md, 07-08-transparency-overprint.md | — |
-| PDF/X-4 | specs/iso15930-7-pdfx4.md (92 checks) | — |
-| PDF/A | 09-10-11-conformance-standards.md §PDF/A | ADR-005 |
-| GWG | 09-10-11-conformance-standards.md §GWG, specs/gwg-2022-specification.md | ADR-006 |
-| Rules + Profiles | implementation-plan.md §Module 6-7, synthesis.md §5-6 | ADR-003 |
-| API + Queue | synthesis.md §API, implementation-plan.md §Module 9-10 | ADR-004 |
+| Module                   | Primary Research File                                                                                                          | ADR     |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| Parser                   | implementation-plan.md §Module 1                                                                                               | ADR-001 |
+| SemanticModel            | implementation-plan.md §Module 2                                                                                               | —       |
+| ContentStreamInterpreter | implementation-plan.md §Module 3 (algorithms)                                                                                  | ADR-002 |
+| Analyzers (all)          | 03-content-streams-graphics-state.md, 04-color-spaces.md, 05-font-technology.md, 06-images.md, 07-08-transparency-overprint.md | —       |
+| PDF/X-4                  | specs/iso15930-7-pdfx4.md (92 checks)                                                                                          | —       |
+| PDF/A                    | 09-10-11-conformance-standards.md §PDF/A                                                                                       | ADR-005 |
+| GWG                      | 09-10-11-conformance-standards.md §GWG, specs/gwg-2022-specification.md                                                        | ADR-006 |
+| Rules + Profiles         | implementation-plan.md §Module 6-7, synthesis.md §5-6                                                                          | ADR-003 |
+| API + Queue              | synthesis.md §API, implementation-plan.md §Module 9-10                                                                         | ADR-004 |

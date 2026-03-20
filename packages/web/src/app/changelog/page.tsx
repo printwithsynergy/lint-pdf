@@ -18,8 +18,8 @@ export default async function ChangelogPage() {
           <h1 className="text-4xl font-bold text-slate-900 mb-2">Changelog</h1>
           <p className="text-sm text-brand-500 italic mb-4">The Logbook</p>
           <p className="text-slate-500">
-            Version history and release notes for the LintPDF preflight
-            engine and API.
+            Version history and release notes for the LintPDF preflight engine
+            and API.
           </p>
         </div>
 

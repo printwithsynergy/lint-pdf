@@ -32,7 +32,10 @@ describe("GroundedClient", () => {
 
   it("listJobs sends pagination params", async () => {
     const list = { jobs: [], total: 0, page: 2, page_size: 10 };
-    mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve(list) });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(list),
+    });
 
     await client.listJobs(2, 10);
     expect(mockFetch).toHaveBeenCalledWith(
@@ -53,7 +56,10 @@ describe("GroundedClient", () => {
 
   it("listProfiles calls correct endpoint", async () => {
     const profiles = { profiles: [] };
-    mockFetch.mockResolvedValue({ ok: true, json: () => Promise.resolve(profiles) });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(profiles),
+    });
 
     const result = await client.listProfiles();
     expect(result).toEqual(profiles);

@@ -18,7 +18,9 @@ test.describe("Authentication", () => {
     expect(body.detail).toContain("Invalid API key");
   });
 
-  test("valid API key returns 200 on protected endpoint", async ({ request }) => {
+  test("valid API key returns 200 on protected endpoint", async ({
+    request,
+  }) => {
     const apiKey = getAnyTenantKey();
     test.skip(!apiKey, "No test credentials available");
 

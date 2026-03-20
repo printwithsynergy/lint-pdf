@@ -18,9 +18,9 @@ export default function AboutPage() {
             Built by prepress veterans
           </h1>
           <p className="text-lg text-slate-500">
-            LintPDF exists because the print industry deserves better
-            tooling. Comprehensive preflight, modern API, transparent pricing —
-            no sales calls required.
+            LintPDF exists because the print industry deserves better tooling.
+            Comprehensive preflight, modern API, transparent pricing — no sales
+            calls required.
           </p>
         </div>
       </section>
@@ -48,17 +48,17 @@ export default function AboutPage() {
             press.
           </p>
           <p className="text-slate-600 mb-4 leading-relaxed">
-            We built LintPDF because the preflight tools available today
-            fall into two camps: enterprise software that requires a sales call
-            and a six-figure contract, or developer APIs that check a few boxes
-            but miss the depth that real print production demands. Neither
-            option works for the 45,000+ web-to-print platforms worldwide that
-            need automated, comprehensive PDF validation at scale.
+            We built LintPDF because the preflight tools available today fall
+            into two camps: enterprise software that requires a sales call and a
+            six-figure contract, or developer APIs that check a few boxes but
+            miss the depth that real print production demands. Neither option
+            works for the 45,000+ web-to-print platforms worldwide that need
+            automated, comprehensive PDF validation at scale.
           </p>
           <p className="text-slate-600 leading-relaxed">
-            LintPDF fills that gap. Comprehensive print preflight,
-            delivered through a REST API, with self-service signup and
-            transparent per-file pricing. The Stripe for PDF preflight.
+            LintPDF fills that gap. Comprehensive print preflight, delivered
+            through a REST API, with self-service signup and transparent
+            per-file pricing. The Stripe for PDF preflight.
           </p>
         </div>
       </section>
@@ -70,10 +70,10 @@ export default function AboutPage() {
             Detection-only by design
           </h2>
           <p className="text-slate-600 mb-4 leading-relaxed">
-            LintPDF is detection-only. We inspect your files and report
-            what we find. We never modify, re-save, or alter your originals.
-            This is not a limitation — it is a deliberate product decision and
-            one of our strongest selling points.
+            LintPDF is detection-only. We inspect your files and report what we
+            find. We never modify, re-save, or alter your originals. This is not
+            a limitation — it is a deliberate product decision and one of our
+            strongest selling points.
           </p>
           <p className="text-slate-600 mb-4 leading-relaxed">
             Automated PDF correction sounds appealing until a tool re-renders
@@ -83,9 +83,9 @@ export default function AboutPage() {
             letting a human decide how to resolve it.
           </p>
           <p className="text-slate-600 leading-relaxed">
-            LintPDF gives you the information. You make the decisions.
-            Your files stay exactly as they were — byte for byte, every time.
-            Zero risk of file damage, zero surprises on press.
+            LintPDF gives you the information. You make the decisions. Your
+            files stay exactly as they were — byte for byte, every time. Zero
+            risk of file damage, zero surprises on press.
           </p>
         </div>
       </section>
@@ -97,17 +97,17 @@ export default function AboutPage() {
             Open standards commitment
           </h2>
           <p className="text-slate-600 mb-6 leading-relaxed">
-            LintPDF validates against the standards that the print
-            industry relies on. We do not invent our own criteria — we implement
-            the specifications that ISO, the Ghent Workgroup, and the PDF
+            LintPDF validates against the standards that the print industry
+            relies on. We do not invent our own criteria — we implement the
+            specifications that ISO, the Ghent Workgroup, and the PDF
             Association have spent decades refining.
           </p>
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <h3 className="font-semibold text-slate-900 mb-2">ISO 32000-2</h3>
               <p className="text-sm text-slate-500">
-                The PDF 2.0 specification. LintPDF supports all PDF
-                versions through 2.0.
+                The PDF 2.0 specification. LintPDF supports all PDF versions
+                through 2.0.
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-5">
@@ -144,8 +144,8 @@ export default function AboutPage() {
             See what LintPDF can detect
           </h2>
           <p className="text-slate-500 mb-8">
-            250+ checks across fonts, color spaces, images, transparency,
-            page geometry, compliance, and barcodes.
+            250+ checks across fonts, color spaces, images, transparency, page
+            geometry, compliance, and barcodes.
           </p>
           <Link
             href="/docs"

@@ -96,13 +96,7 @@ export function HeroSection() {
             viewBox="0 0 200 200"
             fill="none"
           >
-            <circle
-              cx="85"
-              cy="85"
-              r="55"
-              stroke="#0c4a6e"
-              strokeWidth="2"
-            />
+            <circle cx="85" cy="85" r="55" stroke="#0c4a6e" strokeWidth="2" />
             <line
               x1="125"
               y1="125"
@@ -113,9 +107,33 @@ export function HeroSection() {
               strokeLinecap="round"
             />
             {/* Scan lines inside */}
-            <line x1="55" y1="70" x2="115" y2="70" stroke="#0284c7" strokeWidth="1" strokeDasharray="4 3" />
-            <line x1="55" y1="85" x2="115" y2="85" stroke="#0284c7" strokeWidth="1" strokeDasharray="4 3" />
-            <line x1="55" y1="100" x2="100" y2="100" stroke="#0284c7" strokeWidth="1" strokeDasharray="4 3" />
+            <line
+              x1="55"
+              y1="70"
+              x2="115"
+              y2="70"
+              stroke="#0284c7"
+              strokeWidth="1"
+              strokeDasharray="4 3"
+            />
+            <line
+              x1="55"
+              y1="85"
+              x2="115"
+              y2="85"
+              stroke="#0284c7"
+              strokeWidth="1"
+              strokeDasharray="4 3"
+            />
+            <line
+              x1="55"
+              y1="100"
+              x2="100"
+              y2="100"
+              stroke="#0284c7"
+              strokeWidth="1"
+              strokeDasharray="4 3"
+            />
           </svg>
 
           {/* ── Terminal / console (bottom-left) ── */}
@@ -124,13 +142,59 @@ export function HeroSection() {
             viewBox="0 0 200 160"
             fill="none"
           >
-            <rect x="10" y="10" width="180" height="140" rx="8" stroke="#0c4a6e" strokeWidth="2" />
-            <line x1="10" y1="35" x2="190" y2="35" stroke="#0c4a6e" strokeWidth="1" />
+            <rect
+              x="10"
+              y="10"
+              width="180"
+              height="140"
+              rx="8"
+              stroke="#0c4a6e"
+              strokeWidth="2"
+            />
+            <line
+              x1="10"
+              y1="35"
+              x2="190"
+              y2="35"
+              stroke="#0c4a6e"
+              strokeWidth="1"
+            />
             {/* Terminal prompt */}
-            <path d="M30 55 L45 70 L30 85" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <line x1="55" y1="70" x2="100" y2="70" stroke="#0284c7" strokeWidth="1.5" strokeDasharray="4 3" />
-            <line x1="55" y1="90" x2="120" y2="90" stroke="#0369a1" strokeWidth="1" strokeDasharray="3 4" />
-            <line x1="55" y1="110" x2="90" y2="110" stroke="#0369a1" strokeWidth="1" strokeDasharray="3 4" />
+            <path
+              d="M30 55 L45 70 L30 85"
+              stroke="#0ea5e9"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+            <line
+              x1="55"
+              y1="70"
+              x2="100"
+              y2="70"
+              stroke="#0284c7"
+              strokeWidth="1.5"
+              strokeDasharray="4 3"
+            />
+            <line
+              x1="55"
+              y1="90"
+              x2="120"
+              y2="90"
+              stroke="#0369a1"
+              strokeWidth="1"
+              strokeDasharray="3 4"
+            />
+            <line
+              x1="55"
+              y1="110"
+              x2="90"
+              y2="110"
+              stroke="#0369a1"
+              strokeWidth="1"
+              strokeDasharray="3 4"
+            />
           </svg>
 
           {/* ── Checklist checkmarks (left side) ── */}
@@ -252,7 +316,13 @@ export function HeroSection() {
               fill="none"
             >
               <circle cx="10" cy="10" r="3" fill="#0284c7" />
-              <circle cx="10" cy="10" r="7" stroke="#0284c7" strokeWidth="0.8" />
+              <circle
+                cx="10"
+                cy="10"
+                r="7"
+                stroke="#0284c7"
+                strokeWidth="0.8"
+              />
             </svg>
           ))}
         </div>

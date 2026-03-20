@@ -41,8 +41,16 @@ export const footerGroups: FooterGroup[] = [
     title: "Company",
     links: [
       { href: "/about", label: "About" },
-      { href: "https://thinkneverland.com", label: "Think Neverland", external: true },
-      { href: "https://github.com/thinkneverland/lint-pdf", label: "GitHub", external: true },
+      {
+        href: "https://thinkneverland.com",
+        label: "Think Neverland",
+        external: true,
+      },
+      {
+        href: "https://github.com/thinkneverland/lint-pdf",
+        label: "GitHub",
+        external: true,
+      },
     ],
   },
 ];

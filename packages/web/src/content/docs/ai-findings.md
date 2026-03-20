@@ -32,29 +32,29 @@ Every finding in a Report includes a `source` field:
 
 AI findings include additional metadata beyond core engine findings:
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `source` | string | Always `"ai"` for AI findings |
-| `category` | string | AI category (e.g., `"regulatory.fda"`, `"barcode"`, `"content_quality"`) |
-| `confidence` | number | Model confidence score (0.0 to 1.0) |
-| `credits_consumed` | number | Credits consumed for this inspection (1 for Text, 2 for Vision) |
-| `model_version` | string | Model version that produced the finding |
+| Field              | Type   | Description                                                              |
+| ------------------ | ------ | ------------------------------------------------------------------------ |
+| `source`           | string | Always `"ai"` for AI findings                                            |
+| `category`         | string | AI category (e.g., `"regulatory.fda"`, `"barcode"`, `"content_quality"`) |
+| `confidence`       | number | Model confidence score (0.0 to 1.0)                                      |
+| `credits_consumed` | number | Credits consumed for this inspection (1 for Text, 2 for Vision)          |
+| `model_version`    | string | Model version that produced the finding                                  |
 
 ## Categories
 
 AI findings are grouped into categories:
 
-| Category | Prefix | Description |
-|----------|--------|-------------|
-| Barcode Detection | `ai.barcode.*` | Barcode identification, decode, and validation |
-| Content Quality | `ai.content.*` | Spell check, language, duplicate detection |
-| Color Compliance | `ai.color.*` | Brand palette, contrast ratio |
-| Regulatory: FDA | `ai.fda.*` | FDA nutrition and labeling |
-| Regulatory: EU | `ai.eu_fir.*` | EU Food Information Regulation |
-| Regulatory: GHS/CLP | `ai.ghs.*` | Chemical labeling |
-| Regulatory: Pharma | `ai.pharma.*` | Pharmaceutical packaging |
-| Brand Verification | `ai.brand.*` | Logo and palette matching |
-| Visual Quality | `ai.vision.*` | Image quality, content safety |
+| Category            | Prefix         | Description                                    |
+| ------------------- | -------------- | ---------------------------------------------- |
+| Barcode Detection   | `ai.barcode.*` | Barcode identification, decode, and validation |
+| Content Quality     | `ai.content.*` | Spell check, language, duplicate detection     |
+| Color Compliance    | `ai.color.*`   | Brand palette, contrast ratio                  |
+| Regulatory: FDA     | `ai.fda.*`     | FDA nutrition and labeling                     |
+| Regulatory: EU      | `ai.eu_fir.*`  | EU Food Information Regulation                 |
+| Regulatory: GHS/CLP | `ai.ghs.*`     | Chemical labeling                              |
+| Regulatory: Pharma  | `ai.pharma.*`  | Pharmaceutical packaging                       |
+| Brand Verification  | `ai.brand.*`   | Logo and palette matching                      |
+| Visual Quality      | `ai.vision.*`  | Image quality, content safety                  |
 
 ## Severity Levels
 
@@ -71,16 +71,20 @@ AI findings use the same three severity levels as core engine findings:
 Filter findings by source in your code:
 
 ```javascript
-const report = await fetch(`${API_BASE}/api/v1/reports/${id}`, { headers }).then(r => r.json());
+const report = await fetch(`${API_BASE}/api/v1/reports/${id}`, {
+  headers,
+}).then((r) => r.json());
 
 // AI findings only
-const aiFindings = report.findings.filter(f => f.source === "ai");
+const aiFindings = report.findings.filter((f) => f.source === "ai");
 
 // Core engine findings only
-const engineFindings = report.findings.filter(f => f.source === "engine");
+const engineFindings = report.findings.filter((f) => f.source === "engine");
 
 // AI findings by category
-const fdaFindings = report.findings.filter(f => f.category === "regulatory.fda");
+const fdaFindings = report.findings.filter(
+  (f) => f.category === "regulatory.fda",
+);
 ```
 
 ### In the Report Summary

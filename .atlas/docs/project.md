@@ -42,17 +42,17 @@ mypy src/                       # type check
 
 ## Brand Language
 
-| Term | Meaning |
-|------|---------|
-| Check-In | Upload endpoint (POST /api/v1/check-in) |
-| Flight Plan | Preflight profile (rule composition) |
-| Flight Log | Inspection report |
-| Clear to Fly | All checks passed |
-| Failed | Critical failures found |
-| No-Fly | Critical severity |
-| Radio | Webhook system |
-| Taxiing | Job in progress |
-| Arrived | Job complete |
+| Term         | Meaning                                 |
+| ------------ | --------------------------------------- |
+| Check-In     | Upload endpoint (POST /api/v1/check-in) |
+| Flight Plan  | Preflight profile (rule composition)    |
+| Flight Log   | Inspection report                       |
+| Clear to Fly | All checks passed                       |
+| Failed       | Critical failures found                 |
+| No-Fly       | Critical severity                       |
+| Radio        | Webhook system                          |
+| Taxiing      | Job in progress                         |
+| Arrived      | Job complete                            |
 
 ## Inspection ID Format
 

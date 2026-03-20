@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { Logo } from "@/components/Logo";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
+const API_BASE = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
 
 type FormState = "idle" | "submitting" | "success" | "duplicate" | "error";
 

@@ -2,7 +2,10 @@
  * Profile proxy routes — forward requests to the LintPDF API.
  */
 
-import type { RouteDefinition, RouteResponse } from "@thinkneverland/pixie-dust-fairy-ring";
+import type {
+  RouteDefinition,
+  RouteResponse,
+} from "@thinkneverland/pixie-dust-fairy-ring";
 import { getClient } from "../index";
 
 export function profileRoutes(): RouteDefinition[] {

@@ -31,9 +31,7 @@ export function HowItWorksSection() {
           <h2 className="text-3xl font-bold text-slate-900 md:text-4xl mb-4">
             How it works
           </h2>
-          <p className="text-slate-500">
-            Three steps from Submit to Report.
-          </p>
+          <p className="text-slate-500">Three steps from Submit to Report.</p>
         </div>
 
         <div className="grid gap-8 md:gap-12 md:grid-cols-3">

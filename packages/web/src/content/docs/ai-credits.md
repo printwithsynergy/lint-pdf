@@ -11,9 +11,9 @@ AI inspections in LintPDF are metered using a credit system. Core preflight chec
 
 Each AI inspection consumes credits when it runs:
 
-| Tier | Cost | Examples |
-|------|------|----------|
-| Text | 1 credit | Spell check, language detection, barcode decode, palette matching, duplicate detection |
+| Tier   | Cost      | Examples                                                                                                 |
+| ------ | --------- | -------------------------------------------------------------------------------------------------------- |
+| Text   | 1 credit  | Spell check, language detection, barcode decode, palette matching, duplicate detection                   |
 | Vision | 2 credits | FDA panel analysis, EU compliance, GHS pictogram detection, logo matching, NSFW screening, image quality |
 
 Credits are consumed per-inspection, per-file. If you run 5 Text inspections and 3 Vision inspections on a single file, that file consumes 5 + 6 = 11 credits.
@@ -31,12 +31,12 @@ Credits are consumed per-inspection, per-file. If you run 5 Text inspections and
 
 Volume discounts for predictable usage:
 
-| Package | Credits | Price | Per Credit | Savings |
-|---------|---------|-------|------------|---------|
-| Starter | 100 | $10 | $0.10 | Save 17% |
-| Growth | 500 | $40 | $0.08 | Save 33% |
-| Scale | 2,000 | $120 | $0.06 | Save 50% |
-| Enterprise | 10,000 | $500 | $0.05 | Save 58% |
+| Package    | Credits | Price | Per Credit | Savings  |
+| ---------- | ------- | ----- | ---------- | -------- |
+| Starter    | 100     | $10   | $0.10      | Save 17% |
+| Growth     | 500     | $40   | $0.08      | Save 33% |
+| Scale      | 2,000   | $120  | $0.06      | Save 50% |
+| Enterprise | 10,000  | $500  | $0.05      | Save 58% |
 
 Credits from packages never expire. You can purchase multiple packages to stack credits.
 

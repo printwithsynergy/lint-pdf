@@ -9,21 +9,13 @@
 /* eslint-disable @next/next/no-img-element */
 
 export function Logo({ className = "h-8 w-8" }: { className?: string }) {
-  return (
-    <img
-      src="/logo.png"
-      alt="LintPDF"
-      className={className}
-    />
-  );
+  return <img src="/logo.png" alt="LintPDF" className={className} />;
 }
 
-export function MarketingLogo({ className = "h-40 w-auto" }: { className?: string }) {
-  return (
-    <img
-      src="/logo-marketing.png"
-      alt="LintPDF"
-      className={className}
-    />
-  );
+export function MarketingLogo({
+  className = "h-40 w-auto",
+}: {
+  className?: string;
+}) {
+  return <img src="/logo-marketing.png" alt="LintPDF" className={className} />;
 }

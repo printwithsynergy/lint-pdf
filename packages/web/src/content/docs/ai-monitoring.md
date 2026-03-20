@@ -18,12 +18,12 @@ curl -H "Authorization: Bearer YOUR_API_KEY" \
 
 ### Filtering Options
 
-| Parameter      | Description                              | Example                |
-|----------------|------------------------------------------|------------------------|
-| `start_date`   | Start of date range (ISO 8601)           | `2026-03-01`           |
-| `end_date`     | End of date range (ISO 8601)             | `2026-03-16`           |
-| `category`     | Filter by AI category                    | `barcode_detection`    |
-| `feature`      | Filter by specific feature               | `barcode_decode`       |
+| Parameter    | Description                    | Example             |
+| ------------ | ------------------------------ | ------------------- |
+| `start_date` | Start of date range (ISO 8601) | `2026-03-01`        |
+| `end_date`   | End of date range (ISO 8601)   | `2026-03-16`        |
+| `category`   | Filter by AI category          | `barcode_detection` |
+| `feature`    | Filter by specific feature     | `barcode_decode`    |
 
 ### Response
 
@@ -120,12 +120,12 @@ curl -X POST https://api.lintpdf.com/api/v1/webhooks \
 
 Available AI-specific events:
 
-| Event | Description |
-|-------|-------------|
-| `ai.credits.low` | Credit balance dropped below 20% of last package purchase |
-| `ai.credits.depleted` | Credit balance reached zero — AI inspections will be skipped |
-| `ai.circuit_breaker.open` | Vision circuit breaker tripped — Vision inspections temporarily unavailable |
-| `ai.circuit_breaker.close` | Vision circuit breaker reset — Vision inspections available again |
+| Event                      | Description                                                                 |
+| -------------------------- | --------------------------------------------------------------------------- |
+| `ai.credits.low`           | Credit balance dropped below 20% of last package purchase                   |
+| `ai.credits.depleted`      | Credit balance reached zero — AI inspections will be skipped                |
+| `ai.circuit_breaker.open`  | Vision circuit breaker tripped — Vision inspections temporarily unavailable |
+| `ai.circuit_breaker.close` | Vision circuit breaker reset — Vision inspections available again           |
 
 If a `monthly_spending_limit` is configured on your AI config, AI inspections are skipped when the limit is reached. Core engine checks continue normally. Monitor your spending via the credits endpoint:
 

@@ -358,9 +358,8 @@ export default function AIPage() {
           </p>
           <p className="text-base text-slate-400 max-w-2xl mx-auto">
             {totalInspections} AI inspections across {aiCategories.length}{" "}
-            categories. Credit-based, detection-only, same Report
-            format. Tenant-scoped. AI findings sit alongside core engine
-            findings with a{" "}
+            categories. Credit-based, detection-only, same Report format.
+            Tenant-scoped. AI findings sit alongside core engine findings with a{" "}
             <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-slate-600">
               source: &quot;ai&quot;
             </code>{" "}

@@ -94,9 +94,9 @@ Use `mode: "replace"` to overwrite the entire dictionary or `mode: "append"` to 
 
 ### Dictionary Limits
 
-| Plan | Max Words |
-|------|-----------|
-| Starter | 500 |
-| Growth | 2,000 |
-| Scale | 10,000 |
+| Plan       | Max Words |
+| ---------- | --------- |
+| Starter    | 500       |
+| Growth     | 2,000     |
+| Scale      | 10,000    |
 | Enterprise | Unlimited |

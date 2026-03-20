@@ -12,7 +12,10 @@ import type { GroundedPluginConfig } from "../config";
 import type { PixieDustPayload } from "../types";
 import { validateWebhookSignature } from "../webhook";
 
-export function webhookRoutes(config: GroundedPluginConfig, ctx: PluginContext): RouteDefinition[] {
+export function webhookRoutes(
+  config: GroundedPluginConfig,
+  ctx: PluginContext,
+): RouteDefinition[] {
   return [
     {
       method: "POST",
@@ -21,7 +24,8 @@ export function webhookRoutes(config: GroundedPluginConfig, ctx: PluginContext):
       description: "Receive LintPDF webhook events (HMAC-signed)",
       handler: async (req: RouteRequest): Promise<RouteResponse> => {
         const signature = req.headers["x-grounded-signature"] ?? "";
-        const body = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+        const body =
+          typeof req.body === "string" ? req.body : JSON.stringify(req.body);
 
         if (!validateWebhookSignature(body, signature, config.webhookSecret)) {
           ctx.services.logger.warn("LintPDF webhook: invalid signature");
@@ -42,8 +46,13 @@ export function webhookRoutes(config: GroundedPluginConfig, ctx: PluginContext):
 
         const hookName = eventMap[payload.event];
         if (!hookName) {
-          ctx.services.logger.warn(`LintPDF webhook: unknown event type '${payload.event}'`);
-          return { status: 422, body: { error: `Unknown event type: ${payload.event}` } };
+          ctx.services.logger.warn(
+            `LintPDF webhook: unknown event type '${payload.event}'`,
+          );
+          return {
+            status: 422,
+            body: { error: `Unknown event type: ${payload.event}` },
+          };
         }
 
         await ctx.emit(hookName, payload);

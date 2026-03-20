@@ -58,7 +58,10 @@ export const groundedUsagePlugin: PixieDustPlugin = {
         handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
           const client = getClient();
           if (!client) {
-            return { status: 503, body: { error: "LintPDF API not configured" } };
+            return {
+              status: 503,
+              body: { error: "LintPDF API not configured" },
+            };
           }
           const usage = await client.getUsage();
           return { status: 200, body: usage };

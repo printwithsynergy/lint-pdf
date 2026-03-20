@@ -93,8 +93,8 @@ export default function DocsPage() {
             Getting Started
           </h2>
           <p className="text-slate-600 mb-6">
-            LintPDF is a detection-only PDF preflight engine. You send a
-            file, you get a report. Three steps to your first Report:
+            LintPDF is a detection-only PDF preflight engine. You send a file,
+            you get a report. Three steps to your first Report:
           </p>
 
           <div className="grid gap-6 md:grid-cols-3 mb-8">
@@ -122,9 +122,10 @@ export default function DocsPage() {
                 Get your API Key
               </h3>
               <p className="text-sm text-slate-500">
-                Generate an API key from the API Key section. Your key
-                starts with{" "}
-                <code className="bg-slate-100 px-1 rounded text-xs">lpdf_</code>.
+                Generate an API key from the API Key section. Your key starts
+                with{" "}
+                <code className="bg-slate-100 px-1 rounded text-xs">lpdf_</code>
+                .
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 p-5">
@@ -135,8 +136,7 @@ export default function DocsPage() {
                 Submit your first file
               </h3>
               <p className="text-sm text-slate-500">
-                Submit a PDF to the Submit endpoint and retrieve your
-                Report.
+                Submit a PDF to the Submit endpoint and retrieve your Report.
               </p>
             </div>
           </div>
@@ -168,9 +168,7 @@ curl https://api.lintpdf.com/api/v1/reports/f47ac10b-... \\
           <CodeBlock>Authorization: Bearer lpdf_your_api_key</CodeBlock>
           <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
             <p className="text-sm text-amber-800">
-              <span className="font-semibold">
-                Keep your API Key secret.
-              </span>{" "}
+              <span className="font-semibold">Keep your API Key secret.</span>{" "}
               Never expose it in client-side code, public repositories, or
               browser requests. Use environment variables and server-side calls
               only.
@@ -373,13 +371,11 @@ Content-Type: application/pdf (or application/json, application/xml)
 
         {/* ── Rulesets ── */}
         <section id="rulesets" className="mb-16 scroll-mt-24">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Rulesets
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Rulesets</h2>
           <p className="text-slate-600 mb-6">
-            A Ruleset is a preflight profile — a collection of Checks
-            and thresholds that define what LintPDF checks for. Every
-            submission requires a Ruleset.
+            A Ruleset is a preflight profile — a collection of Checks and
+            thresholds that define what LintPDF checks for. Every submission
+            requires a Ruleset.
           </p>
 
           <h3 className="font-semibold text-slate-900 mb-4">
@@ -448,14 +444,12 @@ Content-Type: application/pdf (or application/json, application/xml)
             </table>
           </div>
 
-          <h3 className="font-semibold text-slate-900 mb-3">
-            Custom Rulesets
-          </h3>
+          <h3 className="font-semibold text-slate-900 mb-3">Custom Rulesets</h3>
           <p className="text-slate-600 mb-4">
             Growth, Scale, and Enterprise plans can create custom Rulesets.
             Start from a built-in base and override specific thresholds, enable
-            or disable individual Checks, and name your profile for reuse
-            across submissions.
+            or disable individual Checks, and name your profile for reuse across
+            submissions.
           </p>
         </section>
 
@@ -465,9 +459,9 @@ Content-Type: application/pdf (or application/json, application/xml)
             Checks Reference
           </h2>
           <p className="text-slate-600 mb-6">
-            LintPDF runs 250+ individual Checks across these
-            categories. Each finding in a Report references a
-            Check ID, severity level, and affected page.
+            LintPDF runs 250+ individual Checks across these categories. Each
+            finding in a Report references a Check ID, severity level, and
+            affected page.
           </p>
 
           {[
@@ -663,8 +657,8 @@ Content-Type: application/pdf (or application/json, application/xml)
           ))}
 
           <p className="text-sm text-slate-500 mt-4">
-            This is a representative sample. The full suite includes
-            250+ checks. Use the{" "}
+            This is a representative sample. The full suite includes 250+
+            checks. Use the{" "}
             <code className="bg-slate-100 px-1 rounded">
               GET /api/v1/rulesets
             </code>{" "}
@@ -716,8 +710,8 @@ Content-Type: application/pdf (or application/json, application/xml)
             PDF Reports &amp; White Label
           </h3>
           <p className="text-slate-600 mb-4">
-            PDF reports are white-labeled using your White Label configuration. Scale
-            and Enterprise plans can upload a logo, set brand colors, and
+            PDF reports are white-labeled using your White Label configuration.
+            Scale and Enterprise plans can upload a logo, set brand colors, and
             customize footer text. Reports include a summary page, detailed
             findings grouped by severity, and page-level annotations.
           </p>
@@ -743,13 +737,11 @@ Content-Type: application/pdf (or application/json, application/xml)
 
         {/* ── Webhooks ── */}
         <section id="webhooks" className="mb-16 scroll-mt-24">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">
-            Webhooks
-          </h2>
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Webhooks</h2>
           <p className="text-slate-600 mb-6">
             Webhooks are webhook callbacks. Register an endpoint and LintPDF
-            will POST event payloads when files finish processing. No
-            polling required.
+            will POST event payloads when files finish processing. No polling
+            required.
           </p>
 
           <h3 className="font-semibold text-slate-900 mb-3">
@@ -788,10 +780,7 @@ Content-Type: application/pdf (or application/json, application/xml)
                     "job.error",
                     "File has Error findings. Includes Report with critical issues.",
                   ],
-                  [
-                    "job.pass",
-                    "File passed all Checks. Pass.",
-                  ],
+                  ["job.pass", "File passed all Checks. Pass."],
                   [
                     "job.failed",
                     "Processing failed (corrupt file, timeout). Includes error message.",
@@ -845,8 +834,8 @@ Content-Type: application/pdf (or application/json, application/xml)
             SDKs &amp; Code Examples
           </h2>
           <p className="text-slate-600 mb-8">
-            LintPDF is a standard REST API — use any HTTP client. Here
-            are examples in popular languages.
+            LintPDF is a standard REST API — use any HTTP client. Here are
+            examples in popular languages.
           </p>
 
           <h3 className="font-semibold text-slate-900 mb-3">Python</h3>
@@ -932,9 +921,7 @@ if ($report['verdict'] === 'pass') {
         {/* ── Glossary ── */}
         <section id="glossary" className="mb-16 scroll-mt-24">
           <h2 className="text-2xl font-bold text-slate-900 mb-6">Glossary</h2>
-          <p className="text-slate-600 mb-6">
-            LintPDF terminology reference.
-          </p>
+          <p className="text-slate-600 mb-6">LintPDF terminology reference.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
@@ -1084,8 +1071,8 @@ curl https://api.lintpdf.com/api/v1/ai/credits \\
             AI Configuration
           </h2>
           <p className="text-slate-600 mb-6">
-            AI features are configured at three levels: account defaults, Ruleset
-            settings, and per-request overrides.
+            AI features are configured at three levels: account defaults,
+            Ruleset settings, and per-request overrides.
           </p>
 
           <h3 className="font-semibold text-slate-900 mb-4">
@@ -1336,8 +1323,8 @@ curl https://api.lintpdf.com/api/v1/ai/credits \\
             <p className="text-sm text-amber-800">
               <span className="font-semibold">When credits run out:</span> AI
               inspections are skipped, not queued. Core engine checks continue
-              normally. The Report includes an info note indicating which
-              AI inspections were skipped.
+              normally. The Report includes an info note indicating which AI
+              inspections were skipped.
             </p>
           </div>
         </section>
@@ -1834,8 +1821,8 @@ curl https://api.lintpdf.com/api/v1/ai/credits \\
             AI API Reference
           </h2>
           <p className="text-slate-500 text-sm mb-8">
-            All AI endpoints require a valid API Key and AI features
-            enabled on your account.
+            All AI endpoints require a valid API Key and AI features enabled on
+            your account.
           </p>
 
           <Endpoint
@@ -2027,8 +2014,8 @@ curl -X POST https://api.lintpdf.com/api/v1/submit \\
             AI Error Reference
           </h2>
           <p className="text-slate-600 mb-6">
-            AI-specific error codes that may appear in API responses or
-            Report info notes.
+            AI-specific error codes that may appear in API responses or Report
+            info notes.
           </p>
 
           <div className="overflow-x-auto">

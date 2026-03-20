@@ -11,15 +11,15 @@ AI checks integrate with the existing Ruleset system. Use pre-built AI presets, 
 
 Seven pre-built AI presets are available:
 
-| Preset | ID | Checks | Description |
-|--------|----|--------|-------------|
-| FDA Food | `fda-food` | 12 | All FDA nutrition and labeling checks |
-| EU Food | `eu-food` | 10 | EU FIR 1169/2011 compliance checks |
-| Pharma EU | `pharma-eu` | 9 | EU FMD, Braille, font compliance |
-| GHS Chemical | `ghs-chemical` | 12 | GHS/CLP hazard labeling compliance |
-| Packaging QC | `packaging-qc` | 14 | Barcode, content quality, visual checks |
-| Brand Compliance | `brand-compliance` | 7 | Logo verification, palette matching |
-| Full AI Scan | `full-ai` | 33 | All AI checks |
+| Preset           | ID                 | Checks | Description                             |
+| ---------------- | ------------------ | ------ | --------------------------------------- |
+| FDA Food         | `fda-food`         | 12     | All FDA nutrition and labeling checks   |
+| EU Food          | `eu-food`          | 10     | EU FIR 1169/2011 compliance checks      |
+| Pharma EU        | `pharma-eu`        | 9      | EU FMD, Braille, font compliance        |
+| GHS Chemical     | `ghs-chemical`     | 12     | GHS/CLP hazard labeling compliance      |
+| Packaging QC     | `packaging-qc`     | 14     | Barcode, content quality, visual checks |
+| Brand Compliance | `brand-compliance` | 7      | Logo verification, palette matching     |
+| Full AI Scan     | `full-ai`          | 33     | All AI checks                           |
 
 ### Using a Preset
 
