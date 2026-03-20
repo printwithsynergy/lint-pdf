@@ -58,14 +58,13 @@ def _extract_text_per_page(document: SemanticDocument) -> dict[int, str]:
 
 
 # Singleton model holder to avoid reloading on every call
-_ft_model = None
+_ft_state: dict[str, Any] = {"model": None}
 
 
 def _get_fasttext_model() -> Any:
     """Load the fastText language identification model (lid.176.ftz)."""
-    global _ft_model  # skipcq: PYL-W0603
-    if _ft_model is not None:
-        return _ft_model
+    if _ft_state["model"] is not None:
+        return _ft_state["model"]
 
     import os
 
@@ -78,8 +77,8 @@ def _get_fasttext_model() -> Any:
 
     for path in candidates:
         if os.path.isfile(path):
-            _ft_model = fasttext.load_model(path)
-            return _ft_model
+            _ft_state["model"] = fasttext.load_model(path)
+            return _ft_state["model"]
 
     # Try downloading the compact model
     try:
@@ -90,8 +89,8 @@ def _get_fasttext_model() -> Any:
         os.makedirs(model_dir, exist_ok=True)
         model_path = os.path.join(model_dir, "lid.176.ftz")
         urllib.request.urlretrieve(url, model_path)
-        _ft_model = fasttext.load_model(model_path)
-        return _ft_model
+        _ft_state["model"] = fasttext.load_model(model_path)
+        return _ft_state["model"]
     except Exception:
         logger.debug("Could not download fastText language model")
         return None

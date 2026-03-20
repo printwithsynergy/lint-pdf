@@ -276,9 +276,7 @@ class TestWebhookDispatcherDispatchToAll:
 
         dispatcher = WebhookDispatcher(max_retries=0)
         endpoints = [
-            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},  # skipcq: SCT-A000
-            {"url": "https://b.com/hook", "secret": "s2", "events": []},  # skipcq: SCT-A000
-        ]
+            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},            {"url": "https://b.com/hook", "secret": TEST_WEBHOOK_SECRET_ALT, "events": []},        ]
 
         results = dispatcher.dispatch_to_all(endpoints, "test.event", {"data": 1})
 
@@ -296,13 +294,11 @@ class TestWebhookDispatcherDispatchToAll:
         endpoints = [
             {
                 "url": "https://a.com/hook",
-                "secret": TEST_WEBHOOK_SECRET,  # skipcq: SCT-A000
-                "events": ["job.completed"],
+                "secret": TEST_WEBHOOK_SECRET,                "events": ["job.completed"],
             },
             {
                 "url": "https://b.com/hook",
-                "secret": "s2",  # skipcq: SCT-A000
-                "events": ["job.failed"],
+                "secret": TEST_WEBHOOK_SECRET_ALT,                "events": ["job.failed"],
             },
         ]
 
@@ -320,8 +316,7 @@ class TestWebhookDispatcherDispatchToAll:
 
         dispatcher = WebhookDispatcher(max_retries=0)
         endpoints = [
-            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},  # skipcq: SCT-A000
-        ]
+            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},        ]
 
         results = dispatcher.dispatch_to_all(endpoints, "any.event", {"data": 1})
 
@@ -342,9 +337,7 @@ class TestWebhookDispatcherDispatchToAll:
 
         dispatcher = WebhookDispatcher(max_retries=0)
         endpoints = [
-            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},  # skipcq: SCT-A000
-            {"url": "https://b.com/hook", "secret": "s2", "events": []},  # skipcq: SCT-A000
-        ]
+            {"url": "https://a.com/hook", "secret": TEST_WEBHOOK_SECRET, "events": []},            {"url": "https://b.com/hook", "secret": TEST_WEBHOOK_SECRET_ALT, "events": []},        ]
 
         results = dispatcher.dispatch_to_all(endpoints, "test", {})
 
