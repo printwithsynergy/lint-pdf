@@ -6,7 +6,7 @@
     <!-- Icon background gradient (3D effect) -->
     <linearGradient id="iconBg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#93C5FD"/>
-      <stop offset="100%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#4087F7"/>
     </linearGradient>
     <!-- Glossy highlight -->
     <linearGradient id="gloss" x1="0.5" y1="0" x2="0.5" y2="0.6">
