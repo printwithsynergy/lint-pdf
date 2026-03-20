@@ -11,6 +11,8 @@ import pytest
 
 from grounded.queue.app import create_celery_app
 
+TEST_SECRET = "test-webhook-secret"
+
 
 @pytest.fixture
 def celery_app():
@@ -343,7 +345,7 @@ class TestDispatchWebhook:
 
             result = dispatch_webhook(
                 webhook_url="https://example.com/webhook",
-                webhook_secret="secret123",  # skipcq: SCT-A000 — test fixture
+                webhook_secret=TEST_SECRET,
                 event="job.completed",
                 payload={"job_id": "123", "status": "complete"},
             )
@@ -363,7 +365,7 @@ class TestDispatchWebhook:
             from grounded.queue.tasks import dispatch_webhook
 
             payload = {"job_id": "123"}
-            secret = "my-secret"  # skipcq: SCT-A000 — test fixture
+            secret = TEST_SECRET
             dispatch_webhook(
                 webhook_url="https://example.com/hook",
                 webhook_secret=secret,
@@ -388,7 +390,7 @@ class TestDispatchWebhook:
 
             result = dispatch_webhook(
                 webhook_url="https://example.com/webhook",
-                webhook_secret="secret",  # skipcq: SCT-A000 — test fixture
+                webhook_secret=TEST_SECRET,
                 event="job.failed",
                 payload={"error": "timeout"},
             )
@@ -407,7 +409,7 @@ class TestDispatchTenantWebhooks:
         mock_db = MagicMock()
         endpoint = MagicMock()
         endpoint.url = "https://example.com/hook"
-        endpoint.secret = "secret"  # skipcq: SCT-A000 — test fixture
+        endpoint.secret = TEST_SECRET
         endpoint.events = []  # empty = subscribe to all
         endpoint.is_active = True
         mock_db.query.return_value.filter.return_value.all.return_value = [endpoint]
@@ -423,7 +425,7 @@ class TestDispatchTenantWebhooks:
         mock_db = MagicMock()
         endpoint = MagicMock()
         endpoint.url = "https://example.com/hook"
-        endpoint.secret = "secret"  # skipcq: SCT-A000 — test fixture
+        endpoint.secret = TEST_SECRET
         endpoint.events = ["job.failed"]  # only subscribed to failures
         endpoint.is_active = True
         mock_db.query.return_value.filter.return_value.all.return_value = [endpoint]
@@ -439,7 +441,7 @@ class TestDispatchTenantWebhooks:
         mock_db = MagicMock()
         endpoint = MagicMock()
         endpoint.url = "https://example.com/hook"
-        endpoint.secret = "secret"  # skipcq: SCT-A000 — test fixture
+        endpoint.secret = TEST_SECRET
         endpoint.events = ["job.completed", "job.failed"]
         endpoint.is_active = True
         mock_db.query.return_value.filter.return_value.all.return_value = [endpoint]
