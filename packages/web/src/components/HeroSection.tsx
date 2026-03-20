@@ -338,7 +338,9 @@ export function HeroSection() {
         <div className="flex flex-col items-center mb-10">
           <MarketingLogo className="h-44 w-auto md:h-56" />
           <p className="mt-3 text-sm font-medium tracking-wide text-slate-400">
-            Every Byte. Every Page. Zero Mercy.
+            Every Byte. Every Page.
+            <br />
+            Zero Mercy.
           </p>
         </div>
 
