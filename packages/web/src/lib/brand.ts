@@ -308,9 +308,9 @@ export const competitors: Competitor[] = [
 export const comparisonDimensions: ComparisonDimension[] = [
   {
     label: "Starting price",
-    tooltip: "Lowest publicly available plan",
+    tooltip: "Lowest publicly available plan — LintPDF bills per file, not per API call",
     values: {
-      lintpdf: { type: "highlight", value: "Free / $29 mo" },
+      lintpdf: { type: "highlight", value: "Free (per file)" },
       pitstop: { type: "text", value: "~$2,500 / yr" },
       pdftoolbox: { type: "text", value: "Contact sales" },
       pdfrest: { type: "text", value: "$49 / mo" },
@@ -392,17 +392,6 @@ export const comparisonDimensions: ComparisonDimension[] = [
       pdftoolbox: { type: "text", value: "OEM only" },
       pdfrest: { type: "boolean", value: false },
       convertapi: { type: "boolean", value: false },
-    },
-  },
-  {
-    label: "Non-PDF inputs",
-    tooltip: "EPS, PostScript, TIFF, JPEG, PNG, AI files accepted",
-    values: {
-      lintpdf: { type: "highlight", value: "7 formats" },
-      pitstop: { type: "text", value: "PDF only" },
-      pdftoolbox: { type: "text", value: "PDF, PS, EPS" },
-      pdfrest: { type: "text", value: "PDF only" },
-      convertapi: { type: "text", value: "40+ (conversion)" },
     },
   },
   {
