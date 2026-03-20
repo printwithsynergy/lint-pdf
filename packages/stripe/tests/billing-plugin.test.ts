@@ -53,7 +53,9 @@ function createMockContext() {
 }
 
 /** Cast a mock context to PluginContext for use with plugin methods. */
-function asPluginContext(ctx: ReturnType<typeof createMockContext>): PluginContext {
+function asPluginContext(
+  ctx: ReturnType<typeof createMockContext>,
+): PluginContext {
   return ctx as PluginContext;
 }
 
