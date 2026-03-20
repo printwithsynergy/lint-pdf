@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Beta Waitlist Flow", () => {
   test("beta join page loads", async ({ page }) => {
     await page.goto("/beta/join");
-    await expect(page).toHaveTitle(/Grounded/i);
+    await expect(page).toHaveTitle(/LintPDF/i);
   });
 
   test("waitlist form is visible and has required fields", async ({ page }) => {

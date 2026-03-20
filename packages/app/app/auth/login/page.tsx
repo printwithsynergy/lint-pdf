@@ -216,7 +216,7 @@ function LoginContent() {
               LintPDF
             </span>
             <span className="mt-1 text-[10px] font-medium tracking-wide text-slate-400">
-              Lint your PDFs before they ship.
+              Lint your PDFs before they print.
             </span>
           </div>
         </div>
