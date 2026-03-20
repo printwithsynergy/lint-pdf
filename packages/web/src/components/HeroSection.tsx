@@ -302,14 +302,13 @@ export function HeroSection() {
 
           {/* ── Small scattered dot markers ── */}
           {[
-            { top: "45%", right: "6%", size: "w-6 h-6" },
-            { top: "70%", right: "15%", size: "w-5 h-5" },
-            { top: "25%", left: "22%", size: "w-5 h-5" },
-            { top: "65%", left: "6%", size: "w-4 h-4" },
-          ].map((pos, i) => (
-            // skipcq: JS-0437 — static decorative elements that never reorder
+            { id: "tr", top: "45%", right: "6%", size: "w-6 h-6" },
+            { id: "br", top: "70%", right: "15%", size: "w-5 h-5" },
+            { id: "tl", top: "25%", left: "22%", size: "w-5 h-5" },
+            { id: "bl", top: "65%", left: "6%", size: "w-4 h-4" },
+          ].map((pos) => (
             <svg
-              key={`dot${i}`}
+              key={pos.id}
               className={`absolute ${pos.size} opacity-[0.10]`}
               style={{ top: pos.top, right: pos.right, left: pos.left }}
               viewBox="0 0 20 20"
