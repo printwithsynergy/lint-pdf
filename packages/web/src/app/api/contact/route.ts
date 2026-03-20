@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const CONTACT_TO = process.env.CONTACT_EMAIL ?? "hello@thinkneverland.com";
 const FROM_ADDRESS =
   process.env.CONTACT_FROM ?? "LintPDF <noreply@thinkneverland.com>";
@@ -68,20 +66,41 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!RESEND_API_KEY) {
+    return NextResponse.json(
+      { error: "Email service is not configured." },
+      { status: 503 },
+    );
+  }
+
   try {
-    await resend.emails.send({
-      from: FROM_ADDRESS,
-      to: CONTACT_TO,
-      replyTo: email.trim(),
-      subject: `[LintPDF Contact] ${subject?.trim() || "General Inquiry"}`,
-      text: [
-        `Name: ${name?.trim() || "Not provided"}`,
-        `Email: ${email.trim()}`,
-        `Subject: ${subject?.trim() || "General Inquiry"}`,
-        "",
-        message.trim(),
-      ].join("\n"),
+    const resp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: FROM_ADDRESS,
+        to: CONTACT_TO,
+        reply_to: email.trim(),
+        subject: `[LintPDF Contact] ${subject?.trim() || "General Inquiry"}`,
+        text: [
+          `Name: ${name?.trim() || "Not provided"}`,
+          `Email: ${email.trim()}`,
+          `Subject: ${subject?.trim() || "General Inquiry"}`,
+          "",
+          message.trim(),
+        ].join("\n"),
+      }),
     });
+
+    if (!resp.ok) {
+      return NextResponse.json(
+        { error: "Failed to send message. Please try again." },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch {
