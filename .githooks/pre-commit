@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
-# Pre-commit hook — runs the same lint/type checks as CI.
+# Pre-commit hook — runs the same lint/type/test checks as CI.
 # Install: git config core.hooksPath .githooks
+#
+# Environment variables:
+#   SKIP_TESTS=1   — skip pytest / vitest suites (lint & type checks still run)
 set -euo pipefail
 
 RED='\033[0;31m'
@@ -14,20 +17,32 @@ heading() { printf "\n${YELLOW}▶ %s${NC}\n" "$1"; }
 pass()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
 fail()    { printf "${RED}  ✗ %s${NC}\n" "$1"; failed=1; }
 
+if [ "${SKIP_TESTS:-0}" = "1" ]; then
+  printf "${YELLOW}SKIP_TESTS=1 — skipping test suites${NC}\n"
+fi
+
 # Detect which packages have staged changes
 engine_changed=false
+inference_changed=false
 app_changed=false
+web_changed=false
 plugin_changed=false
 stripe_changed=false
+semgrep_files=()
 
 staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
 
 for f in $staged_files; do
   case "$f" in
-    packages/engine/*) engine_changed=true ;;
-    packages/app/*)    app_changed=true ;;
-    packages/plugin/*) plugin_changed=true ;;
-    packages/stripe/*) stripe_changed=true ;;
+    packages/engine/*)    engine_changed=true ;;
+    packages/inference/*) inference_changed=true ;;
+    packages/app/*)       app_changed=true ;;
+    packages/web/*)       web_changed=true ;;
+    packages/plugin/*)    plugin_changed=true ;;
+    packages/stripe/*)    stripe_changed=true ;;
+  esac
+  case "$f" in
+    *.py|*.ts|*.tsx|*.js|*.jsx) semgrep_files+=("$f") ;;
   esac
 done
 
@@ -41,6 +56,27 @@ if $engine_changed; then
 
   heading "Engine — mypy"
   (cd packages/engine && mypy --python-executable "$(which python)" src/) && pass "mypy" || fail "mypy"
+
+  if [ "${SKIP_TESTS:-0}" != "1" ]; then
+    heading "Engine — pytest"
+    (cd packages/engine && pytest tests/ -v --tb=short -m "not corpus and not integration") \
+      && pass "pytest" || fail "pytest"
+  fi
+fi
+
+# ── Inference checks ─────────────────────────────────────────
+if $inference_changed; then
+  heading "Inference — ruff check"
+  (cd packages/inference && ruff check src/ tests/) && pass "ruff check" || fail "ruff check"
+
+  heading "Inference — ruff format"
+  (cd packages/inference && ruff format --check src/ tests/) && pass "ruff format" || fail "ruff format"
+
+  if [ "${SKIP_TESTS:-0}" != "1" ]; then
+    heading "Inference — pytest"
+    (cd packages/inference && pytest tests/ -v --tb=short) \
+      && pass "pytest" || fail "pytest"
+  fi
 fi
 
 # ── App checks ───────────────────────────────────────────────
@@ -52,16 +88,46 @@ if $app_changed; then
   pnpm --filter @thinkneverland/grounded-app typecheck && pass "typecheck" || fail "typecheck"
 fi
 
+# ── Web checks ───────────────────────────────────────────────
+if $web_changed; then
+  heading "Web — eslint"
+  pnpm --filter @thinkneverland/grounded-web lint && pass "eslint" || fail "eslint"
+
+  heading "Web — typecheck"
+  pnpm --filter @thinkneverland/grounded-web typecheck && pass "typecheck" || fail "typecheck"
+fi
+
 # ── Plugin checks ────────────────────────────────────────────
 if $plugin_changed; then
   heading "Plugin — typecheck"
   pnpm --filter @thinkneverland/grounded-plugin typecheck && pass "typecheck" || fail "typecheck"
+
+  if [ "${SKIP_TESTS:-0}" != "1" ]; then
+    heading "Plugin — vitest"
+    pnpm --filter @thinkneverland/grounded-plugin test && pass "vitest" || fail "vitest"
+  fi
 fi
 
 # ── Stripe checks ────────────────────────────────────────────
 if $stripe_changed; then
   heading "Stripe — typecheck"
   pnpm --filter @grounded/stripe typecheck && pass "typecheck" || fail "typecheck"
+
+  if [ "${SKIP_TESTS:-0}" != "1" ]; then
+    heading "Stripe — vitest"
+    pnpm --filter @grounded/stripe test && pass "vitest" || fail "vitest"
+  fi
+fi
+
+# ── Semgrep security scan ────────────────────────────────────
+if [ ${#semgrep_files[@]} -gt 0 ]; then
+  if command -v semgrep &>/dev/null; then
+    heading "Semgrep — security scan (staged files)"
+    semgrep scan --config .semgrep.yml --quiet "${semgrep_files[@]}" \
+      && pass "semgrep" || fail "semgrep"
+  else
+    printf "\n${YELLOW}  ⚠ semgrep not installed — skipping security scan (pip install semgrep)${NC}\n"
+  fi
 fi
 
 # ── Summary ──────────────────────────────────────────────────
@@ -70,6 +136,6 @@ if [ "$failed" -ne 0 ]; then
   exit 1
 fi
 
-if $engine_changed || $app_changed || $plugin_changed || $stripe_changed; then
+if $engine_changed || $inference_changed || $app_changed || $web_changed || $plugin_changed || $stripe_changed; then
   printf "\n${GREEN}All pre-commit checks passed.${NC}\n"
 fi
