@@ -37,8 +37,8 @@ export function HeroSection() {
         >
           {/* ── Left code line indicators ── */}
           <div className="absolute top-[10%] left-[6%] flex flex-col gap-3 opacity-[0.12]">
-            {/* skipcq: JS-0437 — static decorative elements that never reorder */}
             {[...Array(12)].map((_, i) => (
+              // skipcq: JS-0437 — static decorative elements that never reorder
               <div key={`l${i}`} className="flex items-center gap-2">
                 <div className="w-4 h-0.5 rounded-full bg-brand-900" />
                 <div
@@ -51,8 +51,8 @@ export function HeroSection() {
 
           {/* ── Right code line indicators ── */}
           <div className="absolute top-[8%] right-[7%] flex flex-col gap-3 opacity-[0.10]">
-            {/* skipcq: JS-0437 — static decorative elements that never reorder */}
             {[...Array(10)].map((_, i) => (
+              // skipcq: JS-0437 — static decorative elements that never reorder
               <div key={`r${i}`} className="flex items-center gap-2">
                 <div
                   className="h-0.5 rounded-full bg-brand-700"
@@ -306,8 +306,8 @@ export function HeroSection() {
             { top: "70%", right: "15%", size: "w-5 h-5" },
             { top: "25%", left: "22%", size: "w-5 h-5" },
             { top: "65%", left: "6%", size: "w-4 h-4" },
-            // skipcq: JS-0437 — static decorative elements that never reorder
           ].map((pos, i) => (
+            // skipcq: JS-0437 — static decorative elements that never reorder
             <svg
               key={`dot${i}`}
               className={`absolute ${pos.size} opacity-[0.10]`}
