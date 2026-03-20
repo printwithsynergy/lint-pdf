@@ -24,8 +24,8 @@ import {
   listInvoices,
 } from "@thinkneverland/pixie-dust-stripe-kit";
 
-/** Create a mock PluginContext with all required service stubs. */
-function createMockContext(): PluginContext {
+/** Create a mock context object with all required service stubs. */
+function createMockContext() {
   return {
     addRoutes: vi.fn(),
     addNavItem: vi.fn(),
@@ -49,7 +49,12 @@ function createMockContext(): PluginContext {
       auth: {},
       config: {},
     },
-  } as PluginContext;
+  };
+}
+
+/** Cast a mock context to PluginContext for use with plugin methods. */
+function asPluginContext(ctx: ReturnType<typeof createMockContext>): PluginContext {
+  return ctx as PluginContext;
 }
 
 /** Create a mock Stripe instance (empty object satisfying the return type). */
@@ -63,7 +68,7 @@ function createNullStripeInstance(): ReturnType<typeof getStripe> {
 }
 
 describe("groundedBillingPlugin", () => {
-  let ctx: PluginContext;
+  let ctx: ReturnType<typeof createMockContext>;
 
   beforeEach(() => {
     vi.resetModules();
@@ -71,53 +76,24 @@ describe("groundedBillingPlugin", () => {
     ctx = createMockContext();
   });
 
-  // Helper to access mock functions on the context
-  function mockServices() {
-    return (ctx as Record<string, unknown>).services as {
-      logger: {
-        info: ReturnType<typeof vi.fn>;
-        warn: ReturnType<typeof vi.fn>;
-        error: ReturnType<typeof vi.fn>;
-        debug: ReturnType<typeof vi.fn>;
-      };
-      db: {
-        subscription: { findFirst: ReturnType<typeof vi.fn> };
-        stripeCustomer: { findFirst: ReturnType<typeof vi.fn> };
-      };
-    };
-  }
-
-  function mockCtxFns() {
-    return ctx as unknown as {
-      addRoutes: ReturnType<typeof vi.fn>;
-      addNavItem: ReturnType<typeof vi.fn>;
-      addPage: ReturnType<typeof vi.fn>;
-      addPermission: ReturnType<typeof vi.fn>;
-      addRole: ReturnType<typeof vi.fn>;
-      addPublicPath: ReturnType<typeof vi.fn>;
-      on: ReturnType<typeof vi.fn>;
-      emit: ReturnType<typeof vi.fn>;
-    };
-  }
-
   // ── Registration tests ──────────────────────────────────────
 
   describe("register", () => {
     it("registers billing:manage permission for ADMIN and OWNER", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx);
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
-      expect(mockCtxFns().addPermission).toHaveBeenCalledWith(
-        "billing:manage",
-        ["ADMIN", "OWNER"],
-      );
+      expect(ctx.addPermission).toHaveBeenCalledWith("billing:manage", [
+        "ADMIN",
+        "OWNER",
+      ]);
     });
 
     it("registers Billing nav item in admin section", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx);
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
-      expect(mockCtxFns().addNavItem).toHaveBeenCalledWith(
+      expect(ctx.addNavItem).toHaveBeenCalledWith(
         expect.objectContaining({
           label: "Billing",
           href: "/dashboard/billing",
@@ -131,45 +107,45 @@ describe("groundedBillingPlugin", () => {
 
     it("registers billing pages", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx);
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
-      expect(mockCtxFns().addPage).toHaveBeenCalledTimes(2);
-      expect(mockCtxFns().addPage).toHaveBeenCalledWith(
+      expect(ctx.addPage).toHaveBeenCalledTimes(2);
+      expect(ctx.addPage).toHaveBeenCalledWith(
         expect.objectContaining({ path: "/dashboard/billing" }),
       );
-      expect(mockCtxFns().addPage).toHaveBeenCalledWith(
+      expect(ctx.addPage).toHaveBeenCalledWith(
         expect.objectContaining({ path: "/dashboard/billing/invoices" }),
       );
     });
 
     it("registers routes under /api/grounded/billing", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx);
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
-      expect(mockCtxFns().addRoutes).toHaveBeenCalledTimes(1);
-      const [prefix, routes] = mockCtxFns().addRoutes.mock.calls[0];
+      expect(ctx.addRoutes).toHaveBeenCalledTimes(1);
+      const [prefix, routes] = ctx.addRoutes.mock.calls[0];
       expect(prefix).toBe("/api/grounded/billing");
       expect(routes.length).toBe(4);
     });
 
     it("registers 4 webhook event listeners", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx);
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
 
-      expect(mockCtxFns().on).toHaveBeenCalledTimes(4);
-      expect(mockCtxFns().on).toHaveBeenCalledWith(
+      expect(ctx.on).toHaveBeenCalledTimes(4);
+      expect(ctx.on).toHaveBeenCalledWith(
         "stripe:customer.subscription.updated",
         expect.any(Function),
       );
-      expect(mockCtxFns().on).toHaveBeenCalledWith(
+      expect(ctx.on).toHaveBeenCalledWith(
         "stripe:customer.subscription.deleted",
         expect.any(Function),
       );
-      expect(mockCtxFns().on).toHaveBeenCalledWith(
+      expect(ctx.on).toHaveBeenCalledWith(
         "stripe:invoice.payment_failed",
         expect.any(Function),
       );
-      expect(mockCtxFns().on).toHaveBeenCalledWith(
+      expect(ctx.on).toHaveBeenCalledWith(
         "stripe:invoice.payment_succeeded",
         expect.any(Function),
       );
@@ -188,8 +164,8 @@ describe("groundedBillingPlugin", () => {
   describe("route handlers", () => {
     async function getRouteHandler(method: string, path: string) {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(ctx);
-      const [, routes] = mockCtxFns().addRoutes.mock.calls[0];
+      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      const [, routes] = ctx.addRoutes.mock.calls[0];
       const route = routes.find(
         (r: { method: string; path: string }) =>
           r.method === method && r.path === path,
@@ -321,7 +297,7 @@ describe("groundedBillingPlugin", () => {
 
       it("returns free plan when no subscription exists", async () => {
         vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
-        mockServices().db.subscription.findFirst.mockResolvedValue(null);
+        ctx.services.db.subscription.findFirst.mockResolvedValue(null);
 
         const handler = await getRouteHandler("GET", "/subscription");
         const res = await handler({ auth: { tenantId: "t1" } });
@@ -333,7 +309,7 @@ describe("groundedBillingPlugin", () => {
       it("returns subscription when it exists", async () => {
         vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
         const sub = { plan: "growth", status: "active", tenantId: "t1" };
-        mockServices().db.subscription.findFirst.mockResolvedValue(sub);
+        ctx.services.db.subscription.findFirst.mockResolvedValue(sub);
 
         const handler = await getRouteHandler("GET", "/subscription");
         const res = await handler({ auth: { tenantId: "t1" } });
@@ -354,7 +330,7 @@ describe("groundedBillingPlugin", () => {
 
       it("returns empty array when no customer exists", async () => {
         vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
-        mockServices().db.stripeCustomer.findFirst.mockResolvedValue(null);
+        ctx.services.db.stripeCustomer.findFirst.mockResolvedValue(null);
 
         const handler = await getRouteHandler("GET", "/invoices");
         const res = await handler({ auth: { tenantId: "t1" } });
@@ -366,7 +342,7 @@ describe("groundedBillingPlugin", () => {
       it("returns invoices when customer exists", async () => {
         const stripeInstance = createMockStripeInstance();
         vi.mocked(getStripe).mockReturnValue(stripeInstance);
-        mockServices().db.stripeCustomer.findFirst.mockResolvedValue({
+        ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
           stripeCustomerId: "cus_789",
         });
         const invoiceData = [{ id: "inv_1" }, { id: "inv_2" }];
@@ -388,46 +364,40 @@ describe("groundedBillingPlugin", () => {
 
   describe("webhook handlers", () => {
     function getWebhookHandler(eventName: string) {
-      const call = mockCtxFns().on.mock.calls.find(
-        (c: unknown[]) => c[0] === eventName,
-      );
+      const call = ctx.on.mock.calls.find((c: unknown[]) => c[0] === eventName);
       return call?.[1];
     }
 
     describe("stripe:customer.subscription.updated", () => {
       it("does nothing when subscription data is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx);
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
 
         await handler({ data: {} });
-        expect(
-          mockServices().db.stripeCustomer.findFirst,
-        ).not.toHaveBeenCalled();
+        expect(ctx.services.db.stripeCustomer.findFirst).not.toHaveBeenCalled();
       });
 
       it("does nothing when customer ID is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx);
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
 
         await handler({ data: { object: { customer: null } } });
-        expect(
-          mockServices().db.stripeCustomer.findFirst,
-        ).not.toHaveBeenCalled();
+        expect(ctx.services.db.stripeCustomer.findFirst).not.toHaveBeenCalled();
       });
 
       it("logs warning when no tenant found for customer", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx);
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
-        mockServices().db.stripeCustomer.findFirst.mockResolvedValue(null);
+        ctx.services.db.stripeCustomer.findFirst.mockResolvedValue(null);
 
         await handler({
           data: {
@@ -442,7 +412,7 @@ describe("groundedBillingPlugin", () => {
           },
         });
 
-        expect(mockServices().logger.warn).toHaveBeenCalledWith(
+        expect(ctx.services.logger.warn).toHaveBeenCalledWith(
           "Stripe subscription update: no tenant found for customer",
           { customerId: "cus_123" },
         );
@@ -450,11 +420,11 @@ describe("groundedBillingPlugin", () => {
 
       it("handles customer as object with id property", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx);
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
-        mockServices().db.stripeCustomer.findFirst.mockResolvedValue(null);
+        ctx.services.db.stripeCustomer.findFirst.mockResolvedValue(null);
 
         await handler({
           data: {
@@ -465,54 +435,50 @@ describe("groundedBillingPlugin", () => {
           },
         });
 
-        expect(mockServices().db.stripeCustomer.findFirst).toHaveBeenCalledWith(
-          {
-            where: { stripeCustomerId: "cus_obj_123" },
-          },
-        );
+        expect(ctx.services.db.stripeCustomer.findFirst).toHaveBeenCalledWith({
+          where: { stripeCustomerId: "cus_obj_123" },
+        });
       });
     });
 
     describe("stripe:customer.subscription.deleted", () => {
       it("does nothing when subscription data is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx);
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.deleted",
         );
 
         await handler({ data: {} });
-        expect(
-          mockServices().db.stripeCustomer.findFirst,
-        ).not.toHaveBeenCalled();
+        expect(ctx.services.db.stripeCustomer.findFirst).not.toHaveBeenCalled();
       });
 
       it("does nothing when no tenant found", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx);
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.deleted",
         );
-        mockServices().db.stripeCustomer.findFirst.mockResolvedValue(null);
+        ctx.services.db.stripeCustomer.findFirst.mockResolvedValue(null);
 
         await handler({
           data: { object: { customer: "cus_unknown" } },
         });
 
         // No error logged because no customerRecord found
-        expect(mockServices().logger.error).not.toHaveBeenCalled();
+        expect(ctx.services.logger.error).not.toHaveBeenCalled();
       });
     });
 
     describe("stripe:invoice.payment_failed", () => {
       it("logs warning with event ID", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx);
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler("stripe:invoice.payment_failed");
 
         await handler({ id: "evt_123" });
 
-        expect(mockServices().logger.warn).toHaveBeenCalledWith(
+        expect(ctx.services.logger.warn).toHaveBeenCalledWith(
           "Stripe: invoice payment failed",
           { eventId: "evt_123" },
         );
@@ -522,12 +488,12 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:invoice.payment_succeeded", () => {
       it("logs info with event ID", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(ctx);
+        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler("stripe:invoice.payment_succeeded");
 
         await handler({ id: "evt_456" });
 
-        expect(mockServices().logger.info).toHaveBeenCalledWith(
+        expect(ctx.services.logger.info).toHaveBeenCalledWith(
           "Stripe: invoice payment succeeded",
           { eventId: "evt_456" },
         );
@@ -541,9 +507,9 @@ describe("groundedBillingPlugin", () => {
     it("logs ready message when Stripe is configured", async () => {
       vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
       const mod = await import("../src/index.js");
-      await mod.groundedBillingPlugin.boot?.(ctx);
+      await mod.groundedBillingPlugin.boot?.(asPluginContext(ctx));
 
-      expect(mockServices().logger.info).toHaveBeenCalledWith(
+      expect(ctx.services.logger.info).toHaveBeenCalledWith(
         "LintPDF billing plugin ready",
       );
     });
@@ -551,9 +517,9 @@ describe("groundedBillingPlugin", () => {
     it("does not log when Stripe is not configured", async () => {
       vi.mocked(getStripe).mockReturnValue(createNullStripeInstance());
       const mod = await import("../src/index.js");
-      await mod.groundedBillingPlugin.boot?.(ctx);
+      await mod.groundedBillingPlugin.boot?.(asPluginContext(ctx));
 
-      expect(mockServices().logger.info).not.toHaveBeenCalled();
+      expect(ctx.services.logger.info).not.toHaveBeenCalled();
     });
   });
 
