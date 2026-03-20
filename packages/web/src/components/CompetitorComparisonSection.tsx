@@ -112,8 +112,7 @@ export function CompetitorComparisonSection() {
                       {dim.label}
                       {dim.tooltip && (
                         <span
-                          className="ml-1 inline-block text-slate-300 cursor-help"
-                          title={dim.tooltip}
+                          className="ml-1 inline-block text-slate-300 cursor-help relative group/tip"
                         >
                           <svg
                             className="h-3.5 w-3.5 inline"
@@ -128,6 +127,10 @@ export function CompetitorComparisonSection() {
                               d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                             />
                           </svg>
+                          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 rounded-md bg-slate-800 px-3 py-2 text-xs text-white text-center opacity-0 transition-opacity group-hover/tip:opacity-100 shadow-lg z-50">
+                            {dim.tooltip}
+                            <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-800" />
+                          </span>
                         </span>
                       )}
                     </td>

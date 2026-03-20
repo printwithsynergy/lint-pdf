@@ -395,17 +395,6 @@ export const comparisonDimensions: ComparisonDimension[] = [
     },
   },
   {
-    label: "Non-PDF inputs",
-    tooltip: "EPS, PostScript, TIFF, JPEG, PNG, AI files accepted",
-    values: {
-      lintpdf: { type: "highlight", value: "7 formats" },
-      pitstop: { type: "text", value: "PDF only" },
-      pdftoolbox: { type: "text", value: "PDF, PS, EPS" },
-      pdfrest: { type: "text", value: "PDF only" },
-      convertapi: { type: "text", value: "40+ (conversion)" },
-    },
-  },
-  {
     label: "Detection-only",
     tooltip: "Inspects without modifying your files — zero risk of corruption",
     values: {

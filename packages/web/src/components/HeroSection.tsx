@@ -356,9 +356,9 @@ export function HeroSection() {
         )}
 
         <h1 className="text-4xl font-bold tracking-tight text-slate-900 md:text-6xl mb-4 leading-tight">
-          Catch what&rsquo;s wrong{" "}
+          Every Byte. Every Page.{" "}
           <span className="bg-gradient-to-r from-brand-800 via-brand-600 to-brand-400 bg-clip-text text-transparent">
-            before it prints.
+            Zero Mercy.
           </span>
         </h1>
 
