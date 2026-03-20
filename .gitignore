@@ -1,0 +1,56 @@
+# Environment
+.env
+.env.*
+!.env.example
+!.env.test
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+build/
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Testing
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+playwright-report/
+test-results/
+test-credentials.json
+
+# Test corpus (downloaded by CI)
+tests/corpus/
+
+# Dependencies
+node_modules/
+
+# Node / Build
+package-lock.json
+*.tsbuildinfo
+.next/
+.turbo/
+dist/
+
+# CLI tools
+bin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

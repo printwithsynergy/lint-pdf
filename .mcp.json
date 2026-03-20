@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "modal": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project", "packages/inference",
+        "--extra", "mcp",
+        "python", "packages/inference/src/inference_service/mcp_server.py"
+      ]
+    }
+  }
+}

@@ -1,0 +1,208 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─── Detect which packages changed ───────────────────────────
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      engine: ${{ steps.filter.outputs.engine }}
+      web: ${{ steps.filter.outputs.web }}
+      app: ${{ steps.filter.outputs.app }}
+      plugin: ${{ steps.filter.outputs.plugin }}
+      stripe: ${{ steps.filter.outputs.stripe }}
+      inference: ${{ steps.filter.outputs.inference }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            engine:
+              - 'packages/engine/**'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'packages/web/**'
+              - '.github/workflows/ci.yml'
+            plugin:
+              - 'packages/plugin/**'
+              - '.github/workflows/ci.yml'
+            stripe:
+              - 'packages/stripe/**'
+              - '.github/workflows/ci.yml'
+            app:
+              - 'packages/app/**'
+              - '.github/workflows/ci.yml'
+            inference:
+              - 'packages/inference/**'
+              - '.github/workflows/ci.yml'
+
+  # ─── Python: Engine ──────────────────────────────────────────
+  engine:
+    needs: changes
+    if: needs.changes.outputs.engine == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/engine
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Ruff check
+        run: ruff check src/ tests/
+      - name: Ruff format check
+        run: ruff format --check src/ tests/
+      - name: Mypy
+        run: mypy src/
+      - name: Run tests
+        run: pytest tests/ -v --tb=short -m "not corpus and not integration" --cov --cov-report xml:coverage.xml --cov-fail-under=0
+      - name: Report coverage to DeepSource
+        if: ${{ !cancelled() && env.DEEPSOURCE_DSN != '' && hashFiles('packages/engine/coverage.xml') != '' }}
+        run: |
+          curl -sSL https://deepsource.io/cli | sh
+          ./bin/deepsource report --analyzer test-coverage --key python --value-file packages/engine/coverage.xml
+        working-directory: ${{ github.workspace }}
+        env:
+          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
+
+  # ─── Python: Inference ───────────────────────────────────────
+  inference:
+    needs: changes
+    if: needs.changes.outputs.inference == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/inference
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Ruff check
+        run: ruff check src/ tests/
+      - name: Ruff format check
+        run: ruff format --check src/ tests/
+      - name: Run tests (ML models gracefully degrade without heavy deps)
+        run: pytest tests/ -v --tb=short --cov --cov-report xml:coverage.xml --cov-fail-under=0
+      - name: Report coverage to DeepSource
+        if: ${{ !cancelled() && env.DEEPSOURCE_DSN != '' && hashFiles('packages/inference/coverage.xml') != '' }}
+        run: |
+          curl -sSL https://deepsource.io/cli | sh
+          ./bin/deepsource report --analyzer test-coverage --key python --value-file packages/inference/coverage.xml
+        working-directory: ${{ github.workspace }}
+        env:
+          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
+
+  # ─── Node: Web ───────────────────────────────────────────────
+  web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter @thinkneverland/grounded-web lint
+      - name: Typecheck
+        run: pnpm --filter @thinkneverland/grounded-web typecheck
+      - name: Build
+        run: pnpm --filter @thinkneverland/grounded-web build
+
+  # ─── Node: Plugin ────────────────────────────────────────────
+  plugin:
+    needs: changes
+    if: needs.changes.outputs.plugin == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm --filter @thinkneverland/grounded-plugin typecheck
+      - name: Test
+        run: pnpm --filter @thinkneverland/grounded-plugin test
+      - name: Build
+        run: pnpm --filter @thinkneverland/grounded-plugin build
+
+  # ─── Node: Stripe Plugin ────────────────────────────────────
+  stripe:
+    needs: changes
+    if: needs.changes.outputs.stripe == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm --filter @grounded/stripe typecheck
+      - name: Test
+        run: pnpm --filter @grounded/stripe test
+      - name: Build
+        run: pnpm --filter @grounded/stripe build
+
+  # ─── Node: App ─────────────────────────────────────────────
+  app:
+    needs: changes
+    if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm --filter @thinkneverland/grounded-app lint
+      - name: Typecheck
+        run: pnpm --filter @thinkneverland/grounded-app typecheck
+      - name: Generate Prisma client
+        run: pnpm --filter @thinkneverland/grounded-app db:generate
+      - name: Build workspace deps
+        run: pnpm --filter @thinkneverland/grounded-plugin --filter @grounded/stripe build
+      - name: Build
+        run: pnpm --filter @thinkneverland/grounded-app build

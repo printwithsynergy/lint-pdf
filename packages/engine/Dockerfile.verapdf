@@ -1,0 +1,5 @@
+FROM verapdf/rest:latest
+
+ENV JAVA_OPTS="-Xmx512m"
+
+EXPOSE 8080

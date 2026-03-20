@@ -1,0 +1,14 @@
+{
+  "name": "EU Food Label",
+  "slug": "eu-food-label",
+  "description": "EU Food Information Regulation 1169/2011 compliance plus barcode and content checks.",
+  "features": [
+    "eu_fir_1169",
+    "barcode_decode",
+    "barcode_dimension_validation",
+    "spell_check",
+    "language_detection"
+  ],
+  "categories": ["regulatory_compliance", "barcode_detection", "content_quality"],
+  "recommended_for": ["food_packaging", "eu_market"]
+}

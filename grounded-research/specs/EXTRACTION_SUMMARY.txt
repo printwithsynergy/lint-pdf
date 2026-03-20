@@ -1,0 +1,261 @@
+================================================================================
+ISO 32000-2:2020 (PDF 2.0) - CHAPTER 8: GRAPHICS
+EXTRACTION SUMMARY FOR PREFLIGHT ANALYZER IMPLEMENTATION
+================================================================================
+
+EXTRACTION DATE: 2026-03-11
+SOURCE PDF: ISO_32000-2_sponsored-ec2.pdf (18 MB, 1020 pages)
+EXTRACTION TOOL: pdfplumber (Python)
+
+================================================================================
+EXTRACTED CONTENT RANGE
+================================================================================
+Pages: 160-307 (148 pages total)
+Output File: iso32000-2-ch8-graphics.md
+File Size: 390 KB
+Total Lines: 6,652
+Total Characters: 394,016 bytes
+
+================================================================================
+CRITICAL SECTIONS EXTRACTED
+================================================================================
+
+✓ Chapter 8: Graphics (Full)
+  ├─ 8.1 General
+  ├─ 8.2 Graphics objects
+  ├─ 8.3 Coordinate systems
+  │   ├─ 8.3.1 Introduction
+  │   ├─ 8.3.2 User space and device space
+  │   ├─ 8.3.3 Transformation matrices
+  │   └─ 8.3.4 Common transformations
+  ├─ 8.4 Graphics State
+  │   ├─ 8.4.1 Introduction
+  │   ├─ 8.4.2 Graphics state stack
+  │   ├─ 8.4.3 Graphics state parameters
+  │   │   ├─ Table 51: Device-independent parameters
+  │   │   ├─ Table 52: Device-dependent parameters
+  │   │   ├─ 8.4.3.2 Line width
+  │   │   ├─ 8.4.3.3 Line cap style
+  │   │   ├─ 8.4.3.4 Line join style
+  │   │   ├─ 8.4.3.5 Miter limit
+  │   │   ├─ 8.4.3.6 Dash pattern
+  │   │   ├─ 8.4.3.7 Rendering intent
+  │   │   └─ 8.4.3.8 Stroke adjustment
+  │   └─ 8.4.4 Graphics State Operators
+  │       ├─ Table 56: Graphics state operators (q, Q, cm, w, J, j, M, d, ri, i, gs)
+  │
+  ├─ 8.5 Path Construction and Painting
+  │   ├─ 8.5.2 Path construction operators
+  │   ├─ 8.5.3 Path-painting operators
+  │   │   └─ Table 59: Path-painting operators (S, s, f, F, f*, B, B*, b, b*, n)
+  │   └─ 8.5.4 Clipping path operators
+  │
+  ├─ 8.6 Colour Spaces (COMPLETE)
+  │   ├─ 8.6.1 Introduction
+  │   ├─ 8.6.2 Colour space families
+  │   ├─ 8.6.3 Colour space and rendering intent
+  │   ├─ 8.6.4 Device colour spaces
+  │   │   ├─ 8.6.4.1 Introduction
+  │   │   ├─ 8.6.4.2 DeviceGray colour space
+  │   │   ├─ 8.6.4.3 DeviceRGB colour space
+  │   │   └─ 8.6.4.4 DeviceCMYK colour space
+  │   ├─ 8.6.5 CIE-based colour spaces
+  │   │   ├─ 8.6.5.1 Introduction
+  │   │   ├─ 8.6.5.2 CalGray colour spaces
+  │   │   ├─ 8.6.5.3 CalRGB colour spaces
+  │   │   ├─ 8.6.5.4 Lab colour spaces
+  │   │   └─ 8.6.5.5 ICCBased colour spaces
+  │   ├─ 8.6.6 Special colour spaces
+  │   │   ├─ 8.6.6.1 Introduction
+  │   │   ├─ 8.6.6.2 Indexed colour spaces
+  │   │   ├─ 8.6.6.3 Pattern colour spaces
+  │   │   ├─ 8.6.6.4 Separation colour spaces
+  │   │   └─ 8.6.6.5 DeviceN colour spaces
+  │   └─ 8.6.7 Overprint Control (OPM 0 vs OPM 1)
+  │
+  ├─ 8.7 Patterns
+  │   ├─ 8.7.1 Introduction
+  │   ├─ 8.7.2 Tiling patterns
+  │   ├─ 8.7.3 Shading patterns
+  │   └─ 8.7.4 Pattern colour spaces
+  │
+  ├─ 8.8 Shadings
+  │   ├─ 8.8.1 Introduction
+  │   ├─ 8.8.2 Shading types
+  │   └─ 8.8.3 Shading dictionaries
+  │
+  ├─ 8.9 Images (COMPLETE)
+  │   ├─ 8.9.1 Introduction
+  │   ├─ 8.9.2 Sampled images
+  │   ├─ 8.9.3 Image dictionaries
+  │   │   └─ Table 87: Additional entries specific to an image dictionary
+  │   ├─ 8.9.4 Colour space and rendering intent
+  │   ├─ 8.9.5 Image data
+  │   ├─ 8.9.6 Alternate images
+  │   └─ 8.9.7 Inline images
+  │       └─ Table 90: Inline image operators (BI, ID, EI)
+  │
+  ├─ 8.10 Form XObjects
+  │   ├─ 8.10.1 General
+  │   ├─ 8.10.2 Form XObject resources
+  │   └─ 8.10.3 Form XObject examples
+  │
+  └─ 8.11 Optional content
+
+================================================================================
+CRITICAL TABLES EXTRACTED (ALL)
+================================================================================
+
+✓ Table 50 — Operator categories
+  Lists: General graphics state, Special graphics state, Path construction,
+         Path painting, Text, Clipping, Text showing, General graphics, Text
+         positioning, Type 3 font, Colour, Shading, Marked content, Inline image
+
+✓ Table 51 — Device-independent graphics state parameters
+  - CTM (Current Transformation Matrix)
+  - clipping path
+  - color space (stroking & non-stroking)
+  - color value (stroking & non-stroking)
+  - text state
+  - line width
+  - line cap, line join
+  - miter limit
+  - dash pattern
+  - rendering intent
+  - stroke adjustment
+  - blend mode, shape, opacity
+  - text knockout, overprint
+
+✓ Table 52 — Device-dependent graphics state parameters
+  - overprint (stroking & non-stroking)
+  - overprint mode (OPM)
+  - black generation
+  - undercolor removal
+  - transfer function
+  - halftone
+  - flatness
+  - smoothness
+
+✓ Table 56 — Graphics state operators
+  Operators: w, J, j, M, d, ri, i, gs, q, Q, cm
+  All with complete operand specifications and descriptions
+
+✓ Table 59 — Path-painting operators
+  Operators: S, s, f, F, f*, B, B*, b, b*, n
+  All with complete descriptions
+
+✓ Table 87 — Additional entries specific to an image dictionary
+  Includes: Type, Subtype, Width, Height, ColorSpace, BitsPerComponent, Intent,
+           ImageMask, Decode, DecodeParms, Intent, SMask, SMaskInData,
+           Interpolate, Name, Alternates, etc.
+
+✓ Table 90 — Inline image operators
+  - BI (begin inline image)
+  - ID (image data)
+  - EI (end inline image)
+
+================================================================================
+COLOUR SPACE COVERAGE (ALL TYPES)
+================================================================================
+
+Device Colour Spaces:
+  ✓ DeviceGray
+  ✓ DeviceRGB
+  ✓ DeviceCMYK
+
+CIE-Based Colour Spaces:
+  ✓ CalGray
+  ✓ CalRGB
+  ✓ Lab
+  ✓ ICCBased
+
+Special Colour Spaces:
+  ✓ Indexed
+  ✓ Pattern
+  ✓ Separation
+  ✓ DeviceN
+
+================================================================================
+PREFLIGHT ANALYZER RELEVANCE
+================================================================================
+
+This extraction contains ALL essential information for a PDF 2.0 preflight
+analyzer to interpret:
+
+1. GRAPHICS STATE VALIDATION
+   - All graphics state parameters (Table 51 & 52)
+   - Graphics state operators and their effects (Table 56)
+   - Graphics state stack operations (q/Q)
+   - Color space assignments
+
+2. COLOR SPACE INTERPRETATION
+   - All 10 color space types with complete specifications
+   - DeviceCMYK overprint behavior (OPM 0 vs OPM 1)
+   - Separation and DeviceN color model
+   - ICC profile integration (ICCBased)
+
+3. IMAGE AND XObject HANDLING
+   - Image dictionary structure and all entries (Table 87)
+   - Inline image syntax (BI/ID/EI operators)
+   - Form XObjects and self-contained content streams
+   - Alternate images and transparency handling
+
+4. PATH AND PAINTING OPERATIONS
+   - Path construction operators
+   - Path painting operators (Table 59)
+   - Clipping path operations
+   - Rendering intents
+
+5. TRANSFORMATION MATRICES
+   - Coordinate system definitions
+   - Current Transformation Matrix (CTM)
+   - Transformation matrix operators
+   - Common geometric transformations
+
+================================================================================
+EXTRACTION VERIFICATION
+================================================================================
+
+All 24 critical items verified present:
+  ✓ Table 50 (Operator categories)
+  ✓ Table 51 (Device-independent graphics state)
+  ✓ Table 52 (Device-dependent graphics state)
+  ✓ Table 56 (Graphics state operators)
+  ✓ Table 59 (Path-painting operators)
+  ✓ Table 87 (Image dictionary)
+  ✓ Table 90 (Inline image operators)
+  ✓ Section 8.4 (Graphics State)
+  ✓ Section 8.6 (Colour Spaces)
+  ✓ Section 8.6.7 (Overprint Control)
+  ✓ Section 8.9 (Images)
+  ✓ Section 8.10 (Form XObjects)
+  ✓ DeviceGray
+  ✓ DeviceRGB
+  ✓ DeviceCMYK
+  ✓ CalGray
+  ✓ CalRGB
+  ✓ Lab colour space
+  ✓ ICCBased
+  ✓ Indexed colour space
+  ✓ Pattern colour space
+  ✓ Separation colour space
+  ✓ DeviceN colour space
+  ✓ Inline image (BI/ID/EI)
+
+================================================================================
+USAGE NOTES
+================================================================================
+
+1. The markdown file preserves page boundaries with "--- PAGE XXX ---" markers
+   for cross-reference with the original PDF.
+
+2. All tables are preserved in their original format with complete entries.
+
+3. Code examples and EXAMPLE sections are included for operator usage reference.
+
+4. Normative and informative notes are preserved for interpretation guidance.
+
+5. For operators table references, consult Table 50 for operator categorization
+   and the specific operator tables (56, 59, 90) for detailed specifications.
+
+================================================================================

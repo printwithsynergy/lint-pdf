@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  /* Grounded brand colors — navy blues from logo */
+  --color-brand-950: #0c1f3e;
+  --color-brand-900: #162d60;
+  --color-brand-800: #1a3a7a;
+  --color-brand-700: #215aac;
+  --color-brand-600: #3b6fb5;
+  --color-brand-500: #5395ce;
+  --color-brand-400: #78bce1;
+  --color-brand-300: #95d0eb;
+  --color-brand-200: #bce0f3;
+  --color-brand-100: #cee7f2;
+  --color-brand-50: #eef8fb;
+
+  --color-success: #22c55e;
+  --color-warning: #eab308;
+  --color-danger: #ef4444;
+
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+/* Smooth scrolling for anchor links */
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/*
+ * Hero section gradient — uses a plain sRGB gradient to avoid
+ * WebKit rendering artifacts from Tailwind v4's "in oklab"
+ * gradient interpolation, which can cause black compositing
+ * rectangles on iOS Safari and other WebKit browsers.
+ */
+.hero-gradient {
+  background-color: #ffffff;
+  background-image: linear-gradient(to bottom, #ffffff, #eef8fb4d, #ffffff);
+}
+
+/* Code block styling */
+pre code {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+/* ── Mobile CSS-only particle dots ── */
+@keyframes particle-drift {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-120px) translateX(20px);
+    opacity: 0;
+  }
+}
+
+@keyframes particle-drift-alt {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+  }
+  85% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100px) translateX(-15px);
+    opacity: 0;
+  }
+}
+
+@keyframes particle-pulse {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}

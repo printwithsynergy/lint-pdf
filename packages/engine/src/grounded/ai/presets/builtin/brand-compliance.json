@@ -1,0 +1,14 @@
+{
+  "name": "Brand Compliance",
+  "slug": "brand-compliance",
+  "description": "Brand color palette verification, logo detection, spell checking, and WCAG contrast validation.",
+  "features": [
+    "brand_palette_check",
+    "logo_detection",
+    "spell_check",
+    "wcag_contrast_check",
+    "version_diff"
+  ],
+  "categories": ["color_compliance", "logo_verification", "content_quality", "file_comparison"],
+  "recommended_for": ["brand_guidelines", "marketing_materials"]
+}

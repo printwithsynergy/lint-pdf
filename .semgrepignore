@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+
+# Build artifacts
+.next/
+dist/
+*.egg-info/
+
+# Test fixtures & snapshots
+packages/engine/tests/fixtures/
+packages/web/e2e/
+
+# Alembic migration boilerplate (auto-generated)
+packages/engine/alembic/versions/
+
+# Lock files
+pnpm-lock.yaml
+uv.lock
+
+# Research docs
+grounded-research/

@@ -1,0 +1,233 @@
+"""Profile management endpoints."""
+
+from __future__ import annotations
+
+import uuid as uuid_mod
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session  # noqa: TC002
+
+from grounded.api.auth import get_current_tenant
+from grounded.api.database import get_db
+from grounded.api.models import CustomProfile, Tenant
+from grounded.api.schemas import (
+    ProfileCreateRequest,
+    ProfileCreateResponse,
+    ProfileDetailResponse,
+    ProfileListResponse,
+    ProfileSummaryResponse,
+)
+from grounded.profiles.registry import ProfileRegistry
+from grounded.profiles.schema import VoyagePlan
+
+router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
+
+# Shared registry instance for built-in profiles
+_registry = ProfileRegistry()
+
+
+def get_registry() -> ProfileRegistry:
+    """Get the profile registry. Can be overridden in tests."""
+    return _registry
+
+
+def _load_custom_profiles_from_db(db: Session, tenant_id: uuid_mod.UUID) -> list[CustomProfile]:
+    """Load custom profiles for a tenant from the database."""
+    return db.query(CustomProfile).filter(CustomProfile.tenant_id == tenant_id).all()
+
+
+@router.get("", response_model=ProfileListResponse)
+async def list_profiles(
+    db: Session = Depends(get_db),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+) -> ProfileListResponse:
+    """List all available preflight profiles (builtins + tenant's custom)."""
+    registry = get_registry()
+    profiles: list[ProfileSummaryResponse] = []
+
+    # Add built-in profiles
+    for profile_id in registry.list_profiles():
+        fp = registry.get(profile_id)
+        profiles.append(
+            ProfileSummaryResponse(
+                profile_id=profile_id,
+                name=fp.name,
+                description=fp.description,
+                conformance=fp.conformance,
+                workflow=fp.workflow,
+                is_builtin=True,
+            )
+        )
+
+    # Add tenant's custom profiles from DB
+    custom_rows = _load_custom_profiles_from_db(db, tenant.id)
+    for row in custom_rows:
+        try:
+            fp = VoyagePlan.model_validate(row.voyage_plan_json)
+            profiles.append(
+                ProfileSummaryResponse(
+                    profile_id=row.profile_id,
+                    name=fp.name,
+                    description=fp.description,
+                    conformance=fp.conformance,
+                    workflow=fp.workflow,
+                    is_builtin=False,
+                )
+            )
+        except Exception:
+            # Skip malformed custom profiles
+            pass
+
+    return ProfileListResponse(profiles=profiles)
+
+
+@router.get("/{profile_id}", response_model=ProfileDetailResponse)
+async def get_profile(
+    profile_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+) -> ProfileDetailResponse:
+    """Get detailed profile configuration."""
+    registry = get_registry()
+
+    # Check built-in profiles first
+    if registry.has(profile_id):
+        fp = registry.get(profile_id)
+        return ProfileDetailResponse(
+            profile_id=profile_id,
+            name=fp.name,
+            description=fp.description,
+            version=fp.version,
+            conformance=fp.conformance,
+            workflow=fp.workflow,
+            checks=fp.checks.model_dump(),
+            thresholds=fp.thresholds.model_dump(),
+            is_builtin=True,
+        )
+
+    # Check tenant's custom profiles in DB
+    row: CustomProfile | None = (
+        db.query(CustomProfile)
+        .filter(CustomProfile.tenant_id == tenant.id, CustomProfile.profile_id == profile_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Profile '{profile_id}' not found.",
+        )
+
+    fp = VoyagePlan.model_validate(row.voyage_plan_json)
+    return ProfileDetailResponse(
+        profile_id=profile_id,
+        name=fp.name,
+        description=fp.description,
+        version=fp.version,
+        conformance=fp.conformance,
+        workflow=fp.workflow,
+        checks=fp.checks.model_dump(),
+        thresholds=fp.thresholds.model_dump(),
+        is_builtin=False,
+    )
+
+
+@router.post("", response_model=ProfileCreateResponse, status_code=status.HTTP_201_CREATED)
+async def create_profile(
+    request: ProfileCreateRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+) -> ProfileCreateResponse:
+    """Create a custom preflight profile."""
+    registry = get_registry()
+
+    # Validate the voyage plan JSON
+    try:
+        fp = VoyagePlan.model_validate(request.voyage_plan)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid voyage plan: {e}",
+        ) from e
+
+    # Enforce tier-based restrictions on custom profiles
+    from grounded.tenants.entitlements import resolve_entitlements
+
+    entitlements = resolve_entitlements(tenant)
+
+    if not entitlements.custom_voyage_plans:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Custom Voyage Plans require Growth plan or above.",
+        )
+
+    # Prevent overwriting builtins
+    if registry.has(request.profile_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Profile '{request.profile_id}' is a built-in profile and cannot be overwritten.",
+        )
+
+    # Check for existing custom profile for this tenant
+    existing: CustomProfile | None = (
+        db.query(CustomProfile)
+        .filter(
+            CustomProfile.tenant_id == tenant.id, CustomProfile.profile_id == request.profile_id
+        )
+        .first()
+    )
+
+    # Enforce max custom profiles limit (only for new profiles, not updates)
+    if existing is None:
+        current_count = db.query(CustomProfile).filter(CustomProfile.tenant_id == tenant.id).count()
+        if current_count >= entitlements.max_custom_profiles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Custom profile limit reached ({entitlements.max_custom_profiles}). Upgrade your plan for more.",
+            )
+
+    if existing:
+        # Update existing custom profile
+        existing.voyage_plan_json = fp.model_dump(mode="json")
+        db.commit()
+    else:
+        # Create new custom profile row
+        row = CustomProfile(
+            id=uuid_mod.uuid4(),
+            tenant_id=tenant.id,
+            profile_id=request.profile_id,
+            voyage_plan_json=fp.model_dump(mode="json"),
+        )
+        db.add(row)
+        db.commit()
+
+    return ProfileCreateResponse(profile_id=request.profile_id)
+
+
+@router.delete("/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_profile(
+    profile_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+) -> None:
+    """Delete a custom profile. Built-in profiles cannot be deleted."""
+    registry = get_registry()
+
+    if registry.has(profile_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot delete built-in profiles.",
+        )
+
+    row: CustomProfile | None = (
+        db.query(CustomProfile)
+        .filter(CustomProfile.tenant_id == tenant.id, CustomProfile.profile_id == profile_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Profile '{profile_id}' not found.",
+        )
+
+    db.delete(row)
+    db.commit()

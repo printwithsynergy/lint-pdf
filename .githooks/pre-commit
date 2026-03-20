@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+# Pre-commit hook — runs the same lint/type checks as CI.
+# Install: git config core.hooksPath .githooks
+set -euo pipefail
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+failed=0
+
+heading() { printf "\n${YELLOW}▶ %s${NC}\n" "$1"; }
+pass()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
+fail()    { printf "${RED}  ✗ %s${NC}\n" "$1"; failed=1; }
+
+# Detect which packages have staged changes
+engine_changed=false
+app_changed=false
+plugin_changed=false
+stripe_changed=false
+
+staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
+
+for f in $staged_files; do
+  case "$f" in
+    packages/engine/*) engine_changed=true ;;
+    packages/app/*)    app_changed=true ;;
+    packages/plugin/*) plugin_changed=true ;;
+    packages/stripe/*) stripe_changed=true ;;
+  esac
+done
+
+# ── Engine checks ────────────────────────────────────────────
+if $engine_changed; then
+  heading "Engine — ruff check"
+  (cd packages/engine && ruff check src/ tests/) && pass "ruff check" || fail "ruff check"
+
+  heading "Engine — ruff format"
+  (cd packages/engine && ruff format --check src/ tests/) && pass "ruff format" || fail "ruff format"
+
+  heading "Engine — mypy"
+  (cd packages/engine && mypy --python-executable "$(which python)" src/) && pass "mypy" || fail "mypy"
+fi
+
+# ── App checks ───────────────────────────────────────────────
+if $app_changed; then
+  heading "App — eslint"
+  pnpm --filter @thinkneverland/grounded-app lint && pass "eslint" || fail "eslint"
+
+  heading "App — typecheck"
+  pnpm --filter @thinkneverland/grounded-app typecheck && pass "typecheck" || fail "typecheck"
+fi
+
+# ── Plugin checks ────────────────────────────────────────────
+if $plugin_changed; then
+  heading "Plugin — typecheck"
+  pnpm --filter @thinkneverland/grounded-plugin typecheck && pass "typecheck" || fail "typecheck"
+fi
+
+# ── Stripe checks ────────────────────────────────────────────
+if $stripe_changed; then
+  heading "Stripe — typecheck"
+  pnpm --filter @grounded/stripe typecheck && pass "typecheck" || fail "typecheck"
+fi
+
+# ── Summary ──────────────────────────────────────────────────
+if [ "$failed" -ne 0 ]; then
+  printf "\n${RED}Pre-commit checks failed. Fix the issues above and try again.${NC}\n"
+  exit 1
+fi
+
+if $engine_changed || $app_changed || $plugin_changed || $stripe_changed; then
+  printf "\n${GREEN}All pre-commit checks passed.${NC}\n"
+fi

@@ -1,0 +1,222 @@
+rules:
+  # ─── 1. SQL Injection via string interpolation ──────────────────
+  - id: grounded.python.sql-injection-raw-string
+    patterns:
+      - pattern: |
+          $DB.execute(f"..." % ...)
+      - pattern: |
+          $DB.execute(f"...{...}...")
+      - pattern: |
+          $DB.execute("..." + ...)
+      - pattern: |
+          $DB.execute("...".format(...))
+    message: >
+      Possible SQL injection via string interpolation in execute().
+      Use parameterized queries with bound parameters instead.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A03:2021 Injection"
+      confidence: HIGH
+
+  # ─── 2. Hardcoded secrets ───────────────────────────────────────
+  - id: grounded.python.hardcoded-secret-key
+    patterns:
+      - pattern: $VAR = "..."
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (secret_key|api_key|admin_key|password|auth_token)
+    message: >
+      Hardcoded secret detected. Read secrets from environment
+      variables or a secrets manager instead.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      confidence: MEDIUM
+
+  # ─── 3. Unsafe PDF parsing outside adapter ─────────────────────
+  - id: grounded.python.unsafe-pdf-parsing
+    pattern: pikepdf.open(...)
+    message: >
+      Direct pikepdf.open() usage detected. Use the PDF parser adapter
+      in grounded.parser to ensure consistent handling and security controls.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-20: Improper Input Validation"
+      confidence: LOW
+    paths:
+      exclude:
+        - "packages/engine/src/grounded/parser/*"
+        - "packages/engine/tests/*"
+
+  # ─── 4. SSRF via unvalidated URL in httpx calls ────────────────
+  - id: grounded.python.ssrf-unvalidated-url
+    patterns:
+      - pattern: httpx.post($URL, ...)
+      - pattern: httpx.get($URL, ...)
+      - pattern: httpx.put($URL, ...)
+      - pattern: httpx.AsyncClient().post($URL, ...)
+      - pattern: httpx.AsyncClient().get($URL, ...)
+    message: >
+      Ensure the URL passed to httpx is validated against SSRF.
+      Use the SSRF protection in grounded.webhooks.dispatcher
+      to block private IPs and restricted hostnames.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-918: Server-Side Request Forgery"
+      owasp: "A10:2021 SSRF"
+      confidence: LOW
+
+  # ─── 5. Timing-unsafe secret comparison ────────────────────────
+  - id: grounded.python.admin-key-timing-unsafe
+    patterns:
+      - pattern: $X == $SETTINGS.admin_api_key
+      - pattern: $X != $SETTINGS.admin_api_key
+      - pattern: $X == $SETTINGS.secret_key
+      - pattern: $X != $SETTINGS.secret_key
+    message: >
+      Non-constant-time comparison of a secret value. Use
+      secrets.compare_digest() to prevent timing side-channel attacks.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-208: Observable Timing Discrepancy"
+      confidence: HIGH
+
+  # ─── 6. Jinja2 without autoescape ──────────────────────────────
+  - id: grounded.python.jinja2-unescaped
+    pattern-either:
+      - pattern: jinja2.Environment(autoescape=False, ...)
+      - pattern: jinja2.Environment(...)
+    fix: jinja2.Environment(autoescape=True, ...)
+    message: >
+      Jinja2 Environment created without autoescape=True.
+      This may lead to XSS in rendered HTML templates.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting (XSS)"
+      owasp: "A03:2021 Injection"
+      confidence: MEDIUM
+    paths:
+      exclude:
+        - "packages/engine/tests/*"
+
+  # ─── 7. HTML injection in email f-strings ───────────────────────
+  - id: grounded.python.email-html-injection
+    patterns:
+      - pattern: |
+          f"...<html>...{$VAR}...</html>..."
+      - pattern: |
+          f"...<body>...{$VAR}...</body>..."
+      - pattern: |
+          f"...<div>...{$VAR}...</div>..."
+    message: >
+      User-controlled variable interpolated into HTML email template
+      without escaping. Use html.escape() on user-provided values
+      to prevent HTML injection.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-79: Cross-site Scripting (XSS)"
+      confidence: LOW
+
+  # ─── 8. Redis Lua injection ────────────────────────────────────
+  - id: grounded.python.redis-eval-injection
+    patterns:
+      - pattern: $REDIS.eval(f"...", ...)
+      - pattern: $REDIS.eval("..." + ..., ...)
+      - pattern: $REDIS.eval("...".format(...), ...)
+    message: >
+      Dynamic Redis Lua script detected. Use constant script strings
+      or Redis EVALSHA with pre-loaded scripts to prevent injection.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-94: Code Injection"
+      confidence: HIGH
+
+  # ─── 9. Unchecked admin key in TypeScript ──────────────────────
+  - id: grounded.typescript.admin-key-unchecked
+    pattern: |
+      process.env.GROUNDED_ADMIN_API_KEY
+    message: >
+      Admin API key read from environment without null/undefined check.
+      Ensure the key is validated before use to prevent auth bypass.
+    languages: [typescript, javascript]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-476: NULL Pointer Dereference"
+      confidence: LOW
+
+  # ─── 10. Dev endpoint without guard ────────────────────────────
+  - id: grounded.python.dev-endpoint-guard
+    patterns:
+      - pattern: |
+          @$ROUTER.$METHOD("/dev/...")
+          def $FUNC(...):
+              ...
+      - pattern: |
+          @$ROUTER.$METHOD("/api/v1/dev/...")
+          def $FUNC(...):
+              ...
+    message: >
+      Dev endpoint must be gated behind the GROUNDED_DEV_AUTH_ENABLED
+      feature flag. Ensure the route is conditionally registered.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-749: Exposed Dangerous Method"
+      confidence: MEDIUM
+    paths:
+      exclude:
+        - "packages/engine/tests/*"
+
+  # ─── 11. File upload without size check ────────────────────────
+  - id: grounded.python.file-upload-size-check
+    pattern: |
+      await $FILE.read()
+    message: >
+      File content read without explicit size validation.
+      Check Content-Length or limit read size to prevent
+      denial-of-service via large uploads.
+    languages: [python]
+    severity: WARNING
+    metadata:
+      category: security
+      cwe: "CWE-400: Uncontrolled Resource Consumption"
+      confidence: LOW
+
+  # ─── 12. Insecure deserialization ──────────────────────────────
+  - id: grounded.python.insecure-deserialization
+    pattern-either:
+      - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: yaml.load($DATA)
+      - pattern: yaml.load($DATA, Loader=yaml.FullLoader)
+      - pattern: eval(...)
+    message: >
+      Insecure deserialization detected. Use yaml.safe_load(),
+      avoid pickle on untrusted data, and never use eval() on
+      user-controlled input.
+    languages: [python]
+    severity: ERROR
+    metadata:
+      category: security
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A08:2021 Software and Data Integrity Failures"
+      confidence: HIGH

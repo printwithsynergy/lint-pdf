@@ -1,0 +1,15 @@
+{
+  "name": "FDA Food Label",
+  "slug": "fda-food-label",
+  "description": "FDA Nutrition Facts panel validation (21 CFR 101.9) plus barcode and content checks.",
+  "features": [
+    "fda_nutrition_facts",
+    "barcode_decode",
+    "barcode_dimension_validation",
+    "barcode_content_validation",
+    "spell_check",
+    "language_detection"
+  ],
+  "categories": ["regulatory_compliance", "barcode_detection", "content_quality"],
+  "recommended_for": ["food_packaging", "nutrition_labels"]
+}

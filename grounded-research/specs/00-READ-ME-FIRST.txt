@@ -1,0 +1,310 @@
+================================================================================
+ISO 32000-2:2020 CHAPTER 8: GRAPHICS EXTRACTION
+COMPLETE PREFLIGHT-RELEVANT CONTENT EXTRACTION
+================================================================================
+
+TASK COMPLETED: 2026-03-11 17:25 UTC
+
+================================================================================
+DELIVERABLES
+================================================================================
+
+PRIMARY OUTPUT:
+  File: iso32000-2-ch8-graphics.md
+  Size: 390 KB
+  Pages: 160-307 from original PDF (148 pages extracted)
+  Lines: 6,652
+  Format: UTF-8 Markdown with page markers
+
+SUPPORTING FILES:
+  1. CH8_GRAPHICS_INDEX.md
+     - Quick reference index of all sections
+     - Table summary with key parameters
+     - Operator quick reference
+     - Critical information for preflight analyzers
+
+  2. EXTRACTION_SUMMARY.txt
+     - Detailed extraction verification report
+     - List of all critical items found
+     - Section breakdown
+     - Usage notes
+
+  3. 00-READ-ME-FIRST.txt (this file)
+     - Overview and quick start
+     - Contents summary
+     - Navigation guide
+
+================================================================================
+WHAT'S INCLUDED
+================================================================================
+
+COMPLETE CHAPTER 8: GRAPHICS (PDF 2.0 Standard)
+
+✓ SECTION 8.1 - General
+  Introduction to graphics operators and six main groups
+
+✓ SECTION 8.2 - Graphics Objects
+  Path, Text, External Objects, Inline images, Shadings
+
+✓ SECTION 8.3 - Coordinate Systems
+  User space, device space, transformation matrices
+
+✓ SECTION 8.4 - Graphics State (CRITICAL)
+  ├─ Table 51: Device-independent parameters (15 parameters)
+  ├─ Table 52: Device-dependent parameters (8 parameters)
+  └─ Table 56: Graphics state operators (11 operators: q, Q, cm, w, J, j, M, d, ri, i, gs)
+
+✓ SECTION 8.5 - Path Construction and Painting
+  ├─ Path construction operators (m, l, c, v, y, h, re)
+  ├─ Table 59: Path-painting operators (10 operators: S, s, f, F, f*, B, B*, b, b*, n)
+  └─ Clipping path operators (W, W*)
+
+✓ SECTION 8.6 - Colour Spaces (COMPLETE - ALL 10 TYPES)
+  ├─ 8.6.4: Device Colour Spaces
+  │   ├─ DeviceGray (8.6.4.2)
+  │   ├─ DeviceRGB (8.6.4.3)
+  │   └─ DeviceCMYK (8.6.4.4)
+  ├─ 8.6.5: CIE-Based Colour Spaces
+  │   ├─ CalGray (8.6.5.2)
+  │   ├─ CalRGB (8.6.5.3)
+  │   ├─ Lab (8.6.5.4)
+  │   └─ ICCBased (8.6.5.5)
+  └─ 8.6.6: Special Colour Spaces
+      ├─ Indexed (8.6.6.2)
+      ├─ Pattern (8.6.6.3)
+      ├─ Separation (8.6.6.4)
+      └─ DeviceN (8.6.6.5)
+
+✓ SECTION 8.6.7 - Overprint Control (CRITICAL FOR PRINTING)
+  - Overprint parameter (OP): true/false
+  - Overprint Mode (OPM): 0 (default) vs 1 (non-zero)
+  - Device-dependent behavior
+  - Complete explanation of both modes
+
+✓ SECTION 8.7 - Patterns
+  Tiling patterns, shading patterns, pattern colour spaces
+
+✓ SECTION 8.8 - Shadings
+  Types 1-7 with specifications
+
+✓ SECTION 8.9 - Images (COMPLETE)
+  ├─ 8.9.1-8.9.6: Sampled images and image dictionaries
+  │   └─ Table 87: Complete image dictionary entry reference
+  │       (Type, Subtype, Width, Height, ColorSpace, BitsPerComponent,
+  │        Intent, ImageMask, Decode, DecodeParms, Interpolate,
+  │        SMask, SMaskInData, Alternates, etc.)
+  └─ 8.9.7: Inline images
+      ├─ Syntax: BI, ID, EI operators
+      ├─ Table 90: Inline image operator reference
+      └─ Restrictions and abbreviations
+
+✓ SECTION 8.10 - Form XObjects
+  Type, structure, resources, special types
+
+✓ SECTION 8.11 - Optional Content
+  Layers, OCGs, configuration dictionaries
+
+================================================================================
+CRITICAL TABLES (ALL EXTRACTED)
+================================================================================
+
+TABLE 50 — Operator Categories
+  Classification of PDF operators by function
+
+TABLE 51 — Device-Independent Graphics State Parameters
+  CTM, clipping path, color space, color, text state, line width,
+  line cap, line join, miter limit, dash pattern, rendering intent,
+  stroke adjustment, blend mode, shape, opacity, text knockout, overprint
+
+TABLE 52 — Device-Dependent Graphics State Parameters
+  Overprint, overprint mode (OPM), black generation, undercolor removal,
+  transfer function, halftone, flatness, smoothness
+
+TABLE 56 — Graphics State Operators
+  w (line width)
+  J (line cap style)
+  j (line join style)
+  M (miter limit)
+  d (dash pattern)
+  ri (rendering intent)
+  i (flatness tolerance)
+  gs (graphics state dictionary)
+  q (save state)
+  Q (restore state)
+  cm (coordinate transformation)
+
+TABLE 59 — Path-Painting Operators
+  S (stroke), s (close and stroke), f (fill), F (fill variant),
+  f* (even-odd fill), B (fill and stroke), B* (even-odd fill and stroke),
+  b (close fill and stroke), b* (close even-odd fill and stroke),
+  n (no-op path end)
+
+TABLE 87 — Image Dictionary Entries
+  Complete specification of image XObject dictionary
+  (25+ entries including Type, Width, Height, ColorSpace,
+   BitsPerComponent, Intent, ImageMask, Decode, DecodeParms,
+   Interpolate, SMask, SMaskInData, Alternates, etc.)
+
+TABLE 90 — Inline Image Operators
+  BI (begin inline image)
+  ID (image data marker)
+  EI (end inline image)
+
+================================================================================
+HOW TO USE THESE FILES
+================================================================================
+
+FOR QUICK REFERENCE:
+  Start with: CH8_GRAPHICS_INDEX.md
+  - Summary tables
+  - Operator quick reference
+  - Color space overview
+  - Critical sections highlighted
+
+FOR DETAILED INFORMATION:
+  Use: iso32000-2-ch8-graphics.md
+  - Complete specifications
+  - All parameter definitions
+  - Code examples
+  - Device behavior notes
+
+FOR EXTRACTION VERIFICATION:
+  Check: EXTRACTION_SUMMARY.txt
+  - Verification checklist
+  - All 24 critical items confirmed
+  - Page range information
+  - Section breakdown
+
+FOR NAVIGATION:
+  Each section begins with "--- PAGE XXX ---" markers
+  Cross-reference these with original PDF for precise location
+
+================================================================================
+KEY INFORMATION FOR PREFLIGHT ANALYZERS
+================================================================================
+
+1. GRAPHICS STATE VALIDATION
+   Reference: Table 51 & 52, Section 8.4
+   - Check all 23 graphics state parameters are handled
+   - Validate parameter types and value ranges
+   - Understand device-dependent vs device-independent parameters
+   - Note: OPM is critical for CMYK color handling
+
+2. COLOR SPACE INTERPRETATION
+   Reference: Section 8.6, all subsections
+   - Identify which of 10 color spaces is used
+   - Validate color component counts per space
+   - Check ICC profile presence for ICCBased
+   - Understand overprint behavior (8.6.7) for Separation/DeviceN
+
+3. OPERATOR VALIDATION
+   Reference: Table 50, 56, 59, 90
+   - Use Table 50 for operator categorization
+   - Table 56: Graphics state operators (11 total)
+   - Table 59: Path-painting operators (10 total)
+   - Table 90: Inline image operators (3 total)
+
+4. IMAGE/XOBJECT ANALYSIS
+   Reference: Section 8.9, Table 87
+   - Validate image dictionary structure
+   - Check all required entries present
+   - Understand image data encoding (Filter parameter)
+   - Note interpolation and soft mask settings
+
+5. OVERPRINT HANDLING (CRITICAL)
+   Reference: Section 8.6.7, Table 52
+   - OPM 0 (default): Zero components erase previous
+   - OPM 1: Zero components leave previous unchanged
+   - Only applies to DeviceCMYK color space
+   - Device-dependent behavior (not all devices support)
+
+================================================================================
+FILE STATISTICS
+================================================================================
+
+iso32000-2-ch8-graphics.md:
+  - Size: 390 KB
+  - Lines: 6,652
+  - Characters: 394,016
+  - Pages extracted: 160-307 (148 pages)
+  - Format: UTF-8, plain text with markdown headers
+
+CH8_GRAPHICS_INDEX.md:
+  - Comprehensive reference guide
+  - All critical sections indexed
+  - Quick-lookup tables and summaries
+  - Operator reference cards
+
+EXTRACTION_SUMMARY.txt:
+  - Verification report
+  - Critical items checklist
+  - Section inventory
+  - Color space coverage confirmation
+
+================================================================================
+CRITICAL INSIGHTS
+================================================================================
+
+1. OVERPRINT CONTROL (8.6.7)
+   Critical for print production:
+   - OP parameter: erase vs leave unchanged
+   - OPM parameter: how to handle 0 values in CMYK
+   - OPM 0 is standard; OPM 1 for non-zero overprinting
+   - Not all devices support overprinting
+
+2. GRAPHICS STATE PARAMETERS (Table 51 & 52)
+   Must be tracked in content stream interpretation:
+   - Device-independent (user-space): CTM, colors, clipping
+   - Device-dependent (output): overprint, halftone, transfer
+   - Some parameters appear in both categories
+   - Initial values provided for each parameter
+
+3. COLOR SPACES (Section 8.6)
+   All 10 types essential for preflight:
+   - Device: Gray, RGB, CMYK (3 types)
+   - CIE-based: CalGray, CalRGB, Lab, ICCBased (4 types)
+   - Special: Indexed, Pattern, Separation, DeviceN (3 types)
+   - Each has specific uses and rendering considerations
+
+4. INLINE IMAGES (8.9.7)
+   Restricted subset of image dictionary:
+   - BI/ID/EI operators mark boundaries
+   - Abbreviations permitted (W, H, CS, BPC)
+   - Limited image size (device-dependent)
+   - No DCTDecode or JPXDecode allowed
+
+5. FORM XOBJECTS (8.10)
+   Important for content organization:
+   - Self-contained content streams
+   - Encapsulation and reusability
+   - Special types: Reference, Group (transparency)
+   - Critical for handling complex documents
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+For implementation of a preflight analyzer:
+
+1. Study CH8_GRAPHICS_INDEX.md for overview
+2. Reference iso32000-2-ch8-graphics.md for detailed specifications
+3. Implement validators for each section:
+   - Graphics state parameters (Table 51 & 52)
+   - Operator sequences (Table 50, 56, 59, 90)
+   - Color space identification and validation
+   - Image dictionary structure (Table 87)
+   - Overprint control (OPM 0 vs 1) for CMYK
+4. Create test cases for each color space type
+5. Validate path painting operator sequences
+6. Test inline image parsing and handling
+7. Verify form XObject content stream handling
+
+================================================================================
+END OF SUMMARY
+================================================================================
+
+Questions? See the detailed files:
+  - iso32000-2-ch8-graphics.md (full specification)
+  - CH8_GRAPHICS_INDEX.md (quick reference)
+  - EXTRACTION_SUMMARY.txt (verification details)
+

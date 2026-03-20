@@ -1,0 +1,183 @@
+"""Pydantic schemas for API request/response models."""
+
+from __future__ import annotations
+
+import uuid  # noqa: TC003
+from datetime import datetime  # noqa: TC003
+
+from pydantic import BaseModel, Field
+
+# --- Job schemas ---
+
+
+class JobCreateResponse(BaseModel):
+    """Response after submitting a preflight job."""
+
+    job_id: uuid.UUID
+    status: str = "pending"
+    message: str = "Job submitted successfully"
+
+
+class FindingResponse(BaseModel):
+    """A single preflight finding."""
+
+    inspection_id: str
+    severity: str
+    message: str
+    page_num: int | None = None
+    details: dict[str, object] | None = None
+    source: str = "engine"
+    category: str | None = None
+
+
+class JobSummaryResponse(BaseModel):
+    """Summary statistics for a completed job."""
+
+    total_findings: int
+    aground_count: int
+    squall_count: int
+    advisory_count: int
+    passed: bool
+    page_count: int
+    file_size_bytes: int
+
+
+class JobResponse(BaseModel):
+    """Full job response with status and optional results."""
+
+    job_id: uuid.UUID
+    status: str
+    profile_id: str
+    file_name: str
+    file_size: int
+    page_count: int | None = None
+    created_at: datetime
+    completed_at: datetime | None = None
+    duration_ms: int | None = None
+    summary: JobSummaryResponse | None = None
+    findings: list[FindingResponse] | None = None
+    error_message: str | None = None
+
+
+class JobListResponse(BaseModel):
+    """Paginated list of jobs."""
+
+    jobs: list[JobResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+# --- Profile schemas ---
+
+
+class ProfileSummaryResponse(BaseModel):
+    """Summary of a preflight profile."""
+
+    profile_id: str
+    name: str
+    description: str = ""
+    conformance: str | None = None
+    workflow: str = "CMYK"
+    is_builtin: bool = True
+
+
+class ProfileListResponse(BaseModel):
+    """List of available profiles."""
+
+    profiles: list[ProfileSummaryResponse]
+
+
+class ProfileDetailResponse(BaseModel):
+    """Full profile details including thresholds."""
+
+    profile_id: str
+    name: str
+    description: str = ""
+    version: str = "1.0"
+    conformance: str | None = None
+    workflow: str = "CMYK"
+    checks: dict[str, object] = Field(default_factory=dict)
+    thresholds: dict[str, object] = Field(default_factory=dict)
+    is_builtin: bool = True
+
+
+class ProfileCreateRequest(BaseModel):
+    """Request to create a custom profile."""
+
+    profile_id: str = Field(
+        min_length=1,
+        max_length=255,
+        pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+        description="Lowercase kebab-case profile identifier.",
+    )
+    voyage_plan: dict[str, object] = Field(
+        description="Voyage Plan JSON conforming to VoyagePlan schema.",
+    )
+
+
+class ProfileCreateResponse(BaseModel):
+    """Response after creating a custom profile."""
+
+    profile_id: str
+    message: str = "Profile created successfully"
+
+
+# --- Webhook schemas ---
+
+
+class WebhookCreateRequest(BaseModel):
+    """Request to register a webhook endpoint."""
+
+    url: str = Field(max_length=2048, description="Webhook delivery URL.")
+    events: list[str] = Field(
+        default_factory=lambda: ["job.completed", "job.failed"],
+        description="Events to subscribe to.",
+    )
+
+
+class WebhookResponse(BaseModel):
+    """Webhook endpoint details."""
+
+    id: uuid.UUID
+    url: str
+    events: list[str]
+    is_active: bool
+    created_at: datetime
+
+
+class WebhookUpdateRequest(BaseModel):
+    """Request to update a webhook endpoint. All fields optional."""
+
+    url: str | None = Field(default=None, max_length=2048, description="New webhook URL.")
+    events: list[str] | None = Field(default=None, description="New event subscriptions.")
+    is_active: bool | None = Field(default=None, description="Enable or disable the webhook.")
+
+
+class WebhookListResponse(BaseModel):
+    """List of webhook endpoints."""
+
+    webhooks: list[WebhookResponse]
+
+
+# --- Health schemas ---
+
+
+class HealthResponse(BaseModel):
+    """Service health check response."""
+
+    status: str
+    service: str = "grounded"
+
+
+class StatusResponse(BaseModel):
+    """Detailed service status."""
+
+    status: str
+    service: str = "grounded"
+    version: str = "0.1.0"
+    database: str = "unknown"
+    redis: str = "unknown"
+    queue_depth: int = 0
+    queue_depths: dict[str, int] = Field(default_factory=dict)
+    worker_count: int = 0

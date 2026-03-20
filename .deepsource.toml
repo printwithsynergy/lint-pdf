@@ -1,0 +1,80 @@
+version = 1
+
+test_patterns = [
+  "packages/engine/tests/**",
+  "packages/plugin/src/__tests__/**",
+  "packages/web/e2e/**",
+  "packages/app/e2e/**",
+  "packages/inference/tests/**",
+  "packages/stripe/tests/**",
+  "**/*.test.ts",
+  "**/*.test.tsx",
+  "**/*.spec.ts",
+  "**/*.spec.tsx",
+  "**/test_*.py",
+  "**/*_test.py",
+  "**/conftest.py",
+  "**/scripts/**",
+]
+
+exclude_patterns = [
+  "**/node_modules/**",
+  "**/.next/**",
+  "**/.venv/**",
+  "**/dist/**",
+  "**/__pycache__/**",
+  "**/*.egg-info/**",
+  "packages/engine/alembic/versions/**",
+  "grounded-research/**",
+  "**/pnpm-lock.yaml",
+  "**/uv.lock",
+  "**/scripts/**",
+  "**/playwright-report/**",
+  "**/test-results/**",
+]
+
+[[analyzers]]
+name = "python"
+enabled = true
+
+  [analyzers.meta]
+  runtime_version = "3.x.x"
+  max_line_length = 120
+  skip_doc_coverage = ["magic", "init", "nonpublic"]
+
+[[analyzers]]
+name = "javascript"
+enabled = true
+
+  [analyzers.meta]
+  environment = ["nodejs", "browser"]
+  dialect = "typescript"
+  plugins = ["react"]
+  style_guide = "standard"
+
+[[analyzers]]
+name = "docker"
+enabled = true
+
+[[analyzers]]
+name = "secrets"
+enabled = true
+
+[[analyzers]]
+name = "sql"
+enabled = true
+
+  [analyzers.meta]
+  capitalisation_policy = "consistent"
+
+[[analyzers]]
+name = "test-coverage"
+enabled = false
+
+[[transformers]]
+name = "ruff"
+enabled = true
+
+[[transformers]]
+name = "prettier"
+enabled = true

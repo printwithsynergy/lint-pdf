@@ -1,0 +1,96 @@
+// ============================================
+// STRIPE — BILLING (managed by stripe-kit plugin)
+// ============================================
+
+model StripeCustomer {
+  id               String @id @default(cuid())
+  tenantId         String
+  stripeCustomerId String @unique
+  mode             String @default("standard") // "standard" | "connect"
+  createdAt        DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([stripeCustomerId])
+  @@index([mode])
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  tenantId             String
+  stripeSubscriptionId String             @unique
+  stripePriceId        String
+  stripeProductId      String?
+  status               SubscriptionStatus
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  trialEnd             DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  @@index([tenantId])
+  @@index([stripeSubscriptionId])
+  @@index([status])
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  INCOMPLETE
+  UNPAID
+}
+
+model Payment {
+  id                   String        @id @default(cuid())
+  tenantId             String
+  stripePaymentId      String        @unique
+  amount               Int
+  currency             String        @default("usd")
+  status               PaymentStatus
+  description          String?
+  connectedAccountId   String?
+  applicationFeeAmount Int?
+  metadata             Json          @default("{}")
+  createdAt            DateTime      @default(now())
+
+  @@index([tenantId])
+  @@index([stripePaymentId])
+  @@index([status])
+  @@index([connectedAccountId])
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  PENDING
+  FAILED
+  REFUNDED
+}
+
+model ConnectedAccount {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  stripeAccountId    String   @unique
+  email              String
+  businessName       String?
+  onboardingComplete Boolean  @default(false)
+  payoutsEnabled     Boolean  @default(false)
+  chargesEnabled     Boolean  @default(false)
+  feePercent         Float    @default(0.2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([stripeAccountId])
+}
+
+model WebhookEvent {
+  id            String   @id @default(cuid())
+  stripeEventId String   @unique
+  eventType     String
+  processedAt   DateTime @default(now())
+
+  @@index([stripeEventId])
+  @@index([eventType])
+}

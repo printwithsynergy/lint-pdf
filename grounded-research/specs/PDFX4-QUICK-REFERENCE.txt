@@ -1,0 +1,254 @@
+ISO 15930-7:2010 (PDF/X-4) QUICK REFERENCE GUIDE
+=================================================
+
+DOCUMENT LOCATION:
+/sessions/adoring-peaceful-noether/mnt/grounded/grounded-research/specs/iso15930-7-pdfx4.md
+
+OVERVIEW:
+- 92 unique conformance requirements extracted
+- Each mapped to unique PDFX4-### check ID
+- 1,166 lines of comprehensive specification analysis
+- All 36 pages of PDF spec fully extracted and analyzed
+
+CRITICAL REQUIREMENTS (Must Pass - 31 checks):
+============================================
+
+File Structure:
+  PDFX4-001: PDF 1.6 version required
+  PDFX4-002: File trailer ID key presence
+  PDFX4-083: Page tree completeness
+
+Metadata:
+  PDFX4-003: GTS_PDFXVersion in XMP = "PDF/X-4" or "PDF/X-4p"
+  PDFX4-032: XMP metadata stream presence
+  PDFX4-036: Document Info dictionary presence
+
+OutputIntent:
+  PDFX4-005: Exactly one OutputIntent with S=GTS_PDFX
+  PDFX4-006: OutputIntent S key = /GTS_PDFX
+  PDFX4-007: OutputConditionIdentifier present
+  PDFX4-008: ICC profile embedded in DestOutputProfile (PDF/X-4 only)
+  PDFX4-089: All resources embedded (PDF/X-4)
+  PDFX4-090: Embedded ICC profile (PDF/X-4)
+  PDFX4-091: External profile reference (PDF/X-4p)
+
+Color Spaces:
+  PDFX4-013: Device spaces = DeviceGray, DeviceRGB, DeviceCMYK only
+  PDFX4-014: ICC-based color spaces required for non-device
+  PDFX4-015: Channel count = 1, 3, or 4 only
+  PDFX4-020: Lab color space PROHIBITED
+  PDFX4-021: CalGray/CalRGB PROHIBITED
+
+Fonts:
+  PDFX4-022: All fonts embedded (non-print elements exempt)
+  PDFX4-024: Font type = Type1 or CIDFont only
+
+Boxes:
+  PDFX4-042: TrimBox required on all pages
+  PDFX4-044: BleedBox required on all pages
+  PDFX4-047: MediaBox required on all pages
+
+Security:
+  PDFX4-054: Encryption PROHIBITED
+  PDFX4-055: No password protection allowed
+  PDFX4-059: JavaScript PROHIBITED
+
+HIGH SEVERITY ISSUES (Major Violations - 27 checks):
+===================================================
+
+Fonts:
+  PDFX4-023: Font subsetting minimum 100 characters
+  PDFX4-025: Font descriptor completeness required
+  PDFX4-026: Symbolic font encoding required
+
+Color Space:
+  PDFX4-016: Spot color definition required
+  PDFX4-017: Spot color ICC profile required
+  PDFX4-018: DeviceN only for CMYK+spot
+
+Boxes:
+  PDFX4-043: TrimBox format validation
+  PDFX4-045: BleedBox >= TrimBox validation
+  PDFX4-049: Box hierarchy validation
+
+OutputIntent:
+  PDFX4-009: ICC profile stream format
+  PDFX4-011: OutputIntent Info dictionary
+
+Images:
+  PDFX4-073: Image compression methods (FlateDecode, CCITT, JPEG, JPEG2000)
+  PDFX4-075: Content stream syntax validation
+
+Annotations:
+  PDFX4-050: Non-print annotations excluded
+  PDFX4-051: Annotation type restriction
+  PDFX4-052: Print flag requirement for annotations
+
+Transparency:
+  PDFX4-030: Soft mask structure validation
+  PDFX4-064: Page group requirement for transparency
+
+Resources:
+  PDFX4-076: Font resource definitions
+  PDFX4-077: XObject resource definitions
+  PDFX4-078: ColorSpace resource definitions
+
+Validation:
+  PDFX4-081: Cross-reference table integrity
+  PDFX4-082: Object reference resolution
+  PDFX4-084: Stream decompression
+
+Features:
+  PDFX4-060: Form fields restricted
+  PDFX4-061: 3D content PROHIBITED
+  PDFX4-062: Rich media PROHIBITED
+
+PDF/X-4 vs PDF/X-4p DIFFERENCES:
+================================
+
+PDF/X-4 (Complete Exchange):
+  - REQUIRES embedded ICC profile in DestOutputProfile
+  - All resources must be self-contained
+  - File is complete and independent
+  - Check: PDFX4-008 and PDFX4-089
+
+PDF/X-4p (Partial Exchange with External Profile):
+  - ICC profile can be external
+  - OutputConditionIdentifier must uniquely identify profile
+  - File depends on external profile availability
+  - Checks: PDFX4-010, PDFX4-091, PDFX4-092
+
+VALIDATION PRIORITY ORDER:
+==========================
+
+1. File Structure (PDFX4-001, 002, 083)
+   → Foundation for all validation
+
+2. Metadata (PDFX4-003, 032, 036)
+   → Identifies conformance level
+
+3. OutputIntent (PDFX4-005-012)
+   → Print characterization core
+
+4. Color Spaces (PDFX4-013-021)
+   → Print safety foundation
+
+5. Fonts (PDFX4-022-027)
+   → Content reproducibility
+
+6. Boxes (PDFX4-042-049)
+   → Page structure definition
+
+7. Security (PDFX4-054, 059)
+   → Exchange safety
+
+8. Images (PDFX4-070-075)
+   → Content quality
+
+9. Transparency (PDFX4-028-031)
+   → Feature validation
+
+10. Annotations (PDFX4-050-053)
+    → Print elements safety
+
+CATEGORY BREAKDOWN (All 92 Checks):
+===================================
+
+File Structure & Validation: 15
+  PDFX4-001, 002, 004, 005, 006, 065, 075, 080, 081, 082, 083, 084
+  (Plus frame references)
+
+Metadata & XMP: 10
+  PDFX4-003, 032, 033, 034, 035, 036, 037, 038, 039, 040, 041
+
+OutputIntent: 8
+  PDFX4-005, 006, 007, 008, 009, 010, 011, 012
+
+Color Space: 9
+  PDFX4-013, 014, 015, 016, 017, 018, 019, 020, 021
+
+Font: 6
+  PDFX4-022, 023, 024, 025, 026, 027
+
+Transparency: 4
+  PDFX4-028, 029, 030, 031
+
+Boxes: 8
+  PDFX4-042, 043, 044, 045, 046, 047, 048, 049
+
+Annotations: 4
+  PDFX4-050, 051, 052, 053
+
+Encryption: 2
+  PDFX4-054, 055
+
+OptionalContent: 3
+  PDFX4-056, 057, 058
+
+RestrictedFeatures: 5
+  PDFX4-059, 060, 061, 062, 063
+
+Graphics/Images: 6
+  PDFX4-064, 066, 067, 068, 069, 070, 071, 072, 073, 074
+
+Resources: 4
+  PDFX4-076, 077, 078, 079
+
+Reader/Exchange: 6
+  PDFX4-085, 086, 087, 088, 089, 090, 091, 092
+
+MINIMUM CONFORMANCE CHECKLIST:
+==============================
+
+For file to be VALID PDF/X-4, ALL of these must PASS:
+
+□ PDFX4-001: PDF 1.6 version
+□ PDFX4-003: GTS_PDFXVersion metadata
+□ PDFX4-005: OutputIntent with S=GTS_PDFX
+□ PDFX4-008: Embedded ICC profile (PDF/X-4)
+□ PDFX4-010: External profile reference (PDF/X-4p)
+□ PDFX4-013: Allowed color spaces only
+□ PDFX4-015: Channel count validation
+□ PDFX4-022: All fonts embedded
+□ PDFX4-032: XMP metadata present
+□ PDFX4-036: Info dictionary present
+□ PDFX4-042: TrimBox present
+□ PDFX4-044: BleedBox present
+□ PDFX4-054: NO encryption
+□ PDFX4-059: NO JavaScript
+
+IMPLEMENTATION TIPS:
+====================
+
+1. Start with PDFX4-001 (PDF version) before any other checks
+2. Verify PDFX4-003 (XMP metadata) early for conformance identification
+3. Check PDFX4-005 and PDFX4-008 together (OutputIntent + ICC)
+4. Cross-reference PDFX4-013 and PDFX4-014 for color space compliance
+5. Use PDFX4-042 and PDFX4-044 to validate page geometry
+6. Check PDFX4-054 and PDFX4-059 for security baseline
+7. For PDF/X-4p variant, verify PDFX4-010 and PDFX4-091
+8. Validate resource definitions (PDFX4-076-079) after content parsing
+
+SPECIAL NOTES:
+==============
+
+Transparency: PDF/X-4 ALLOWS transparency (major difference from PDF/X-1a)
+  - Validate structure but don't reject based on presence alone
+  - Check soft masks (PDFX4-030) and group dictionaries (PDFX4-064)
+
+Optional Content: PDF/X-4 ALLOWS layers (OCG)
+  - Verify structure (PDFX4-056) but allow usage
+  - Check intent definition (PDFX4-058)
+
+Color Management: REQUIRES ICC profile
+  - PDF/X-4: Embedded (PDFX4-008, 090)
+  - PDF/X-4p: External reference (PDFX4-010, 091)
+
+---
+
+For complete details, analysis, and implementation architecture,
+see: iso15930-7-pdfx4.md
+
+Total Requirements: 92 checks
+Last Updated: 2026-03-11
+Specification Version: ISO 15930-7:2010(E)

@@ -1,0 +1,13 @@
+{
+  "name": "GHS Chemical",
+  "slug": "ghs-chemical",
+  "description": "GHS/CLP chemical label compliance (EU Regulation 1272/2008).",
+  "features": [
+    "ghs_clp_compliance",
+    "barcode_decode",
+    "spell_check",
+    "regulatory_symbol_detection"
+  ],
+  "categories": ["regulatory_compliance", "barcode_detection", "content_quality", "symbol_detection"],
+  "recommended_for": ["chemical_labels", "hazardous_materials"]
+}

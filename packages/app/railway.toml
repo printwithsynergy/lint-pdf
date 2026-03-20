@@ -1,0 +1,12 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "packages/app/Dockerfile"
+watchPatterns = ["packages/app/**"]
+
+[deploy]
+numReplicas = 1
+startCommand = "prisma db push --schema packages/app/prisma/schema --skip-generate --accept-data-loss 2>&1 || true && node packages/app/server.js"
+healthcheckPath = "/auth/login"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

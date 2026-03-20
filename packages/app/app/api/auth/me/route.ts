@@ -1,0 +1,52 @@
+export const dynamic = "force-dynamic";
+
+import { authenticateRequest } from "@thinkneverland/pixie-dust-auth";
+import { prisma } from "@thinkneverland/pixie-dust-database";
+import { NextResponse } from "next/server";
+
+export async function GET(req: Request) {
+  const cookieHeader = req.headers.get("cookie");
+  const auth = await authenticateRequest(prisma, cookieHeader);
+
+  if (!auth) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: auth.userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatarUrl: true,
+      isSuperAdmin: true,
+      createdAt: true,
+    },
+  });
+
+  if (!user) {
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
+
+  const tenants = await prisma.tenantUser.findMany({
+    where: { userId: user.id },
+    include: {
+      tenant: { select: { id: true, name: true, slug: true, status: true } },
+    },
+    orderBy: { joinedAt: "asc" },
+  });
+
+  return NextResponse.json({
+    authenticated: true,
+    user: {
+      ...user,
+      tenants: tenants.map((t: (typeof tenants)[number]) => ({
+        id: t.tenant.id,
+        name: t.tenant.name,
+        slug: t.tenant.slug,
+        status: t.tenant.status,
+        role: t.role,
+      })),
+    },
+  });
+}

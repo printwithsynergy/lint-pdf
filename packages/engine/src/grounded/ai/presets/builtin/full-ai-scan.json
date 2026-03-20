@@ -1,0 +1,8 @@
+{
+  "name": "Full AI Scan",
+  "slug": "full-ai-scan",
+  "description": "Every available Tier 1 and Tier 2 AI inspection enabled.",
+  "features": ["all"],
+  "categories": ["all"],
+  "recommended_for": ["comprehensive_analysis", "quality_assurance"]
+}

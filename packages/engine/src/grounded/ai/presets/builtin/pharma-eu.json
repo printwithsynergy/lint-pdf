@@ -1,0 +1,15 @@
+{
+  "name": "Pharma EU",
+  "slug": "pharma-eu",
+  "description": "European pharmaceutical packaging compliance including serialization and font validation.",
+  "features": [
+    "pharma_serialization_validation",
+    "pharma_font_compliance",
+    "barcode_decode",
+    "spell_check",
+    "language_detection",
+    "regulatory_symbol_detection"
+  ],
+  "categories": ["regulatory_compliance", "barcode_detection", "content_quality", "symbol_detection"],
+  "recommended_for": ["pharmaceutical_packaging", "eu_market"]
+}

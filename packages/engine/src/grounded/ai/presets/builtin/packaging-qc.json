@@ -1,0 +1,17 @@
+{
+  "name": "Packaging QC",
+  "slug": "packaging-qc",
+  "description": "Comprehensive packaging quality control with die line detection, barcodes, logos, and spatial analysis.",
+  "features": [
+    "dieline_by_name",
+    "barcode_decode",
+    "barcode_dimension_validation",
+    "logo_detection",
+    "safe_zone_violations",
+    "file_classification",
+    "duplicate_detection",
+    "image_quality_assessment"
+  ],
+  "categories": ["dieline_detection", "barcode_detection", "logo_verification", "spatial_analysis", "document_classification", "content_quality", "image_analysis"],
+  "recommended_for": ["packaging", "labels", "folding_cartons"]
+}

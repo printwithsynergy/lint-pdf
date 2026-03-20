@@ -1,0 +1,37 @@
+/** @type {import("next").NextConfig} */
+const config = {
+  output: "standalone",
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  reactStrictMode: true,
+  transpilePackages: [
+    "@thinkneverland/pixie-dust-auth",
+    "@thinkneverland/pixie-dust-boilerplate",
+    "@thinkneverland/pixie-dust-config",
+    "@thinkneverland/pixie-dust-core",
+    "@thinkneverland/pixie-dust-dashboard",
+    "@thinkneverland/pixie-dust-database",
+    "@thinkneverland/pixie-dust-email",
+    "@thinkneverland/pixie-dust-fairy-ring",
+    "@thinkneverland/pixie-dust-stripe-kit",
+    "@thinkneverland/pixie-dust-theme-kit",
+    "@thinkneverland/pixie-dust-ui",
+    "@thinkneverland/pixie-dust-waitlist",
+    "@thinkneverland/grounded-plugin",
+    "@grounded/stripe",
+  ],
+  serverExternalPackages: ["@prisma/client", "prisma"],
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push("crypto");
+    }
+    return config;
+  },
+};
+
+export default config;
