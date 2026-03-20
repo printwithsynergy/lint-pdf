@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DesktopOnly } from "./DesktopOnly";
 import { MarketingLogo } from "./Logo";
 import { ParticleField } from "./ParticleField";
@@ -16,6 +16,51 @@ const RIGHT_CODE_LINES = Array.from({ length: 10 }, (_, i) => ({
   id: `right-line-${i + 1}`,
   width: 16 + ((i * 13) % 36),
 }));
+
+const TAGLINES: { lines: string[] }[] = [
+  { lines: ["Every Byte. Every Page.", "Zero Mercy."] },
+  { lines: ["Preflights you", "won't hate."] },
+  { lines: ["Catch it before", "print does."] },
+];
+
+function RotatingTagline() {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+
+  const advance = useCallback(() => {
+    setVisible(false);
+    const t = setTimeout(() => {
+      setIndex((i) => (i + 1) % TAGLINES.length);
+      setVisible(true);
+    }, 600);
+    return t;
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      advance();
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [advance]);
+
+  const tagline = TAGLINES[index];
+
+  return (
+    <div className="mb-4">
+      <h1
+        className={`text-4xl font-bold tracking-tight text-slate-900 md:text-6xl leading-tight transition-all duration-500 ${
+          visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+        }`}
+      >
+        {tagline.lines[0]}
+        <br />
+        <span className="bg-gradient-to-r from-brand-800 via-brand-600 to-brand-400 bg-clip-text text-transparent">
+          {tagline.lines[1]}
+        </span>
+      </h1>
+    </div>
+  );
+}
 
 export function HeroSection() {
   const { betaMode } = useBeta();
@@ -352,17 +397,7 @@ export function HeroSection() {
           </div>
         )}
 
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900 md:text-6xl mb-4 leading-tight">
-          Every Byte. Every Page.
-          <br />
-          <span className="bg-gradient-to-r from-brand-800 via-brand-600 to-brand-400 bg-clip-text text-transparent">
-            Zero Mercy.
-          </span>
-        </h1>
-
-        <p className="mx-auto max-w-xl text-base text-slate-400 md:text-lg mb-8 tracking-wide font-medium italic">
-          Your automated preflight linter for every PDF.
-        </p>
+        <RotatingTagline />
 
         <p className="mx-auto max-w-2xl text-lg text-slate-500 md:text-xl mb-10 leading-relaxed">
           Detection-only preflight engine. Inspect color spaces, fonts, images,
