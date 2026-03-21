@@ -174,12 +174,7 @@ class EpmAnalyzer(BaseAnalyzer):
                         k_usage_pages.add(event.page_num)
 
                     # GRD_EPM_002: Pure black text
-                    if (
-                        abs(k - 1.0) < 0.01
-                        and abs(c) < 0.01
-                        and abs(m) < 0.01
-                        and abs(y) < 0.01
-                    ):
+                    if abs(k - 1.0) < 0.01 and abs(c) < 0.01 and abs(m) < 0.01 and abs(y) < 0.01:
                         pure_black_text_count += 1
                         pure_black_text_pages.add(event.page_num)
 

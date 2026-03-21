@@ -1,24 +1,35 @@
 """Tests for SpotColorAnalyzer."""
+
 from grounded.analyzers.spot_color_analyzer import SpotColorAnalyzer
 from grounded.analyzers.finding import Severity
 from grounded.semantic.model import (
-    SemanticDocument, SemanticPage, PdfBox, PdfColorSpace,
+    SemanticDocument,
+    SemanticPage,
+    PdfBox,
+    PdfColorSpace,
 )
+
 
 def _make_doc(color_spaces_by_page=None):
     pages = []
     if color_spaces_by_page:
         for i, cs_dict in enumerate(color_spaces_by_page, 1):
-            pages.append(SemanticPage(
-                page_num=i,
-                media_box=PdfBox(0, 0, 612, 792),
-                color_spaces=cs_dict,
-            ))
+            pages.append(
+                SemanticPage(
+                    page_num=i,
+                    media_box=PdfBox(0, 0, 612, 792),
+                    color_spaces=cs_dict,
+                )
+            )
     else:
         pages.append(SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792)))
     return SemanticDocument(
-        version="2.0", page_count=len(pages), is_encrypted=False, pages=pages,
+        version="2.0",
+        page_count=len(pages),
+        is_encrypted=False,
+        pages=pages,
     )
+
 
 class TestSpotColorAnalyzer:
     def test_no_spot_colors(self):
@@ -29,7 +40,9 @@ class TestSpotColorAnalyzer:
 
     def test_spot_color_inventory(self):
         cs = PdfColorSpace(
-            name="CS1", cs_type="Separation", components=1,
+            name="CS1",
+            cs_type="Separation",
+            components=1,
             colorant_names=("PANTONE 485 C",),
             alternate=PdfColorSpace(name=None, cs_type="DeviceCMYK", components=4),
         )
@@ -40,7 +53,9 @@ class TestSpotColorAnalyzer:
 
     def test_spot_color_naming_issue(self):
         cs = PdfColorSpace(
-            name="CS1", cs_type="Separation", components=1,
+            name="CS1",
+            cs_type="Separation",
+            components=1,
             colorant_names=("",),
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
@@ -50,7 +65,9 @@ class TestSpotColorAnalyzer:
 
     def test_devicen_validation(self):
         cs = PdfColorSpace(
-            name="CS1", cs_type="DeviceN", components=4,
+            name="CS1",
+            cs_type="DeviceN",
+            components=4,
             colorant_names=("Cyan", "Magenta", "Yellow", "Black"),
             alternate=PdfColorSpace(name=None, cs_type="DeviceCMYK", components=4),
         )
@@ -63,7 +80,9 @@ class TestSpotColorAnalyzer:
 
     def test_devicen_bad_structure(self):
         cs = PdfColorSpace(
-            name="CS1", cs_type="DeviceN", components=3,  # Mismatch: 2 names, 3 components
+            name="CS1",
+            cs_type="DeviceN",
+            components=3,  # Mismatch: 2 names, 3 components
             colorant_names=("Cyan", "Magenta"),
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])

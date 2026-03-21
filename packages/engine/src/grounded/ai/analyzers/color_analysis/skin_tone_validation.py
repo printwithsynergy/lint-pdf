@@ -93,17 +93,13 @@ class SkinToneValidationAnalyzer(BaseAIAnalyzer):
                 self._make_finding(
                     inspection_id="GRD_AI_SKIN_001",
                     severity=Severity.ADVISORY,
-                    message=(
-                        f"Skin tone analysis for page {page_num}: {summary}"
-                    ),
+                    message=(f"Skin tone analysis for page {page_num}: {summary}"),
                     page_num=page_num,
                     details={
                         "detections": detections,
                         "total_skin_regions": len(detections),
                         "out_of_pleasing_range": len(out_of_range),
-                        "mst_levels_found": [
-                            d.get("mst_level") for d in detections
-                        ],
+                        "mst_levels_found": [d.get("mst_level") for d in detections],
                     },
                     object_type="image",
                 )

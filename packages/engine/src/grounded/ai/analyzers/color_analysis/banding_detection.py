@@ -97,8 +97,7 @@ class BandingDetectionAnalyzer(BaseAIAnalyzer):
                         inspection_id="GRD_AI_BAND_001",
                         severity=Severity.ADVISORY,
                         message=(
-                            f"Mild banding detected on page {page_num}: "
-                            f"CAMBI score {cambi_score}"
+                            f"Mild banding detected on page {page_num}: CAMBI score {cambi_score}"
                         ),
                         page_num=page_num,
                         details={

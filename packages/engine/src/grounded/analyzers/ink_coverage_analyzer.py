@@ -68,11 +68,13 @@ class InkCoverageAnalyzer(BaseAnalyzer):
 
                         if page_num not in page_tac_data:
                             page_tac_data[page_num] = []
-                        page_tac_data[page_num].append({
-                            "color_values": list(vals),
-                            "tac": tac,
-                            "bbox": list(event.bbox) if event.bbox else None,
-                        })
+                        page_tac_data[page_num].append(
+                            {
+                                "color_values": list(vals),
+                                "tac": tac,
+                                "bbox": list(event.bbox) if event.bbox else None,
+                            }
+                        )
 
                         # Track process color channels (GRD_INK_002 / GRD_INK_003)
                         channel_names = ("C", "M", "Y", "K")
@@ -80,7 +82,10 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                             if vals[i] > 0.0:
                                 process_channels_used.add(ch_name)
                                 self._update_separation_stats(
-                                    separation_stats, ch_name, page_num, vals[i],
+                                    separation_stats,
+                                    ch_name,
+                                    page_num,
+                                    vals[i],
                                 )
 
                 # Also track CMYK stroke colors for separation stats
@@ -92,19 +97,26 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                             if vals[i] > 0.0:
                                 process_channels_used.add(ch_name)
                                 self._update_separation_stats(
-                                    separation_stats, ch_name, event.page_num, vals[i],
+                                    separation_stats,
+                                    ch_name,
+                                    event.page_num,
+                                    vals[i],
                                 )
 
                 # Track Separation color space usage on fill
                 if event.fill and event.fill_color_space == "Separation":
                     if event.fill_color_values:
                         spot_name = self._resolve_spot_name(
-                            document, event.page_num, event.fill_color_space,
+                            document,
+                            event.page_num,
+                            event.fill_color_space,
                         )
                         if spot_name:
                             spot_colors_used.add(spot_name)
                             self._update_separation_stats(
-                                separation_stats, spot_name, event.page_num,
+                                separation_stats,
+                                spot_name,
+                                event.page_num,
                                 event.fill_color_values[0] if event.fill_color_values else 0.0,
                             )
 
@@ -112,12 +124,16 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                 if event.stroke and event.stroke_color_space == "Separation":
                     if event.stroke_color_values:
                         spot_name = self._resolve_spot_name(
-                            document, event.page_num, event.stroke_color_space,
+                            document,
+                            event.page_num,
+                            event.stroke_color_space,
                         )
                         if spot_name:
                             spot_colors_used.add(spot_name)
                             self._update_separation_stats(
-                                separation_stats, spot_name, event.page_num,
+                                separation_stats,
+                                spot_name,
+                                event.page_num,
                                 event.stroke_color_values[0] if event.stroke_color_values else 0.0,
                             )
 
@@ -129,19 +145,25 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                         if event.color_values[i] > 0.0:
                             process_channels_used.add(ch_name)
                             self._update_separation_stats(
-                                separation_stats, ch_name, event.page_num,
+                                separation_stats,
+                                ch_name,
+                                event.page_num,
                                 event.color_values[i],
                             )
 
                 # Track Separation color space from color change events
                 if event.color_space == "Separation":
                     spot_name = self._resolve_spot_name(
-                        document, event.page_num, event.color_space,
+                        document,
+                        event.page_num,
+                        event.color_space,
                     )
                     if spot_name:
                         spot_colors_used.add(spot_name)
                         self._update_separation_stats(
-                            separation_stats, spot_name, event.page_num,
+                            separation_stats,
+                            spot_name,
+                            event.page_num,
                             event.color_values[0] if event.color_values else 0.0,
                         )
 

@@ -102,13 +102,9 @@ class CrossDocumentConsistencyAnalyzer(BaseAIAnalyzer):
                     result = gpu._post("/inference/extract-lab", page_images[0])
                     lab_values = result.get("lab_values", {})
                 except GPUServiceUnavailableError:
-                    logger.debug(
-                        "cross_document_consistency: GPU unavailable for Lab extraction"
-                    )
+                    logger.debug("cross_document_consistency: GPU unavailable for Lab extraction")
         except RuntimeError:
-            logger.debug(
-                "cross_document_consistency: PDF rendering backend unavailable"
-            )
+            logger.debug("cross_document_consistency: PDF rendering backend unavailable")
 
         # Build spot color inventory summary
         color_names = [sc["colorant_name"] for sc in spot_colors]

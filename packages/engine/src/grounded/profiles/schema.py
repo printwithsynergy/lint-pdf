@@ -54,7 +54,8 @@ class ThresholdConfig(BaseModel):
 
     # Color management thresholds
     target_output_condition: str = Field(
-        default="", description="Target output condition for gamut checking (e.g., 'fogra39_coated')."
+        default="",
+        description="Target output condition for gamut checking (e.g., 'fogra39_coated').",
     )
     gamut_check: bool = Field(
         default=False, description="Enable gamut boundary checking against target condition."
@@ -143,9 +144,7 @@ class ColorConfig(BaseModel):
     gamut_check: bool | None = Field(
         default=None, description="Enable/disable gamut checking override."
     )
-    epm_mode: bool | None = Field(
-        default=None, description="Enable/disable EPM mode override."
-    )
+    epm_mode: bool | None = Field(default=None, description="Enable/disable EPM mode override.")
 
 
 class VoyagePlan(BaseModel):

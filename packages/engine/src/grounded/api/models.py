@@ -384,9 +384,7 @@ class TenantColorConfig(Base):
         Numeric(6, 2), nullable=False, default=3.0
     )
     package_capacity_default: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    package_surface_area_default: Mapped[Any | None] = mapped_column(
-        Numeric(10, 2), nullable=True
-    )
+    package_surface_area_default: Mapped[Any | None] = mapped_column(Numeric(10, 2), nullable=True)
     target_market: Mapped[str | None] = mapped_column(String(50), nullable=True)
     epm_mode_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -404,9 +402,7 @@ class UserAIAccess(Base):
     """Per-user AI feature access control."""
 
     __tablename__ = "user_ai_access"
-    __table_args__ = (
-        Index("ix_user_ai_access_user_tenant", "user_id", "tenant_id", unique=True),
-    )
+    __table_args__ = (Index("ix_user_ai_access_user_tenant", "user_id", "tenant_id", unique=True),)
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False, index=True)

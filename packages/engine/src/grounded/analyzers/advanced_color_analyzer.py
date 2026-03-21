@@ -7,8 +7,9 @@ Check IDs:
     GRD_ADV_001 — Black generation profiling (GCR/UCR strategy detection)
     GRD_ADV_002 — Ink savings estimation (GCR headroom in CMYK fills)
     GRD_ADV_003 — Trapping risk analysis (small multicolor text)
-    GRD_ADV_004 — CxF/X-4 spectral validation (CxF data presence)
+    GRD_ADV_004 — CxF/X-4 spectral validation (CxF data parsing)
     GRD_ADV_005 — Rich black composition analysis (black usage classification)
+    GRD_ADV_006 — CxF spectral vs declared color Delta-E
 """
 
 from __future__ import annotations
@@ -196,8 +197,8 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 continue
 
             # Calculate effective font size
-            tm_scale_y = math.sqrt(event.text_matrix.b ** 2 + event.text_matrix.d ** 2)
-            ctm_scale_y = math.sqrt(event.ctm.b ** 2 + event.ctm.d ** 2)
+            tm_scale_y = math.sqrt(event.text_matrix.b**2 + event.text_matrix.d**2)
+            ctm_scale_y = math.sqrt(event.ctm.b**2 + event.ctm.d**2)
             effective_size = event.font_size * tm_scale_y * ctm_scale_y
 
             if effective_size >= 12.0 or effective_size <= 0:
@@ -251,45 +252,82 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
     # GRD_ADV_004 — CxF/X-4 spectral validation
     # ------------------------------------------------------------------
 
-    @staticmethod
     def _check_cxf_spectral(
+        self,
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Detect presence of CxF spectral data in output intents.
+        """Parse and validate CxF/X-4 spectral data (GRD_ADV_004).
 
-        CxF (Color Exchange Format) embeds spectral measurement data.
-        Full parsing requires XML processing; this check detects
-        presence or absence based on key names.
+        Detects CxF data in output intents, parses the XML when found,
+        and validates the spectral data structure. Also cross-references
+        CxF spot colors against document color spaces (GRD_ADV_006).
         """
-        findings: list[Finding] = []
-        cxf_found = False
+        from grounded.analyzers.cxf_parser import parse_cxf_xml
 
+        findings: list[Finding] = []
+        cxf_xml_bytes: bytes | None = None
+        cxf_hint_found = False
+
+        # Detect CxF data in output intents
         for oi in document.output_intents:
             for key in oi:
                 if "CxF" in str(key) or "cxf" in str(key).lower():
-                    cxf_found = True
+                    cxf_hint_found = True
+                    # Try to get the raw XML data
+                    val = oi.get(key)
+                    if isinstance(val, bytes):
+                        cxf_xml_bytes = val
+                    elif isinstance(val, str) and val.strip().startswith("<?xml"):
+                        cxf_xml_bytes = val.encode("utf-8")
                     break
-            if not cxf_found:
-                # Also check values for CxF references
+            if not cxf_hint_found:
                 for value in oi.values():
                     val_str = str(value)
-                    if "CxF" in val_str or "DestOutputProfileRef" in val_str:
-                        cxf_found = True
+                    if "CxF" in val_str:
+                        cxf_hint_found = True
                         break
-            if cxf_found:
+            if cxf_hint_found:
                 break
 
-        if cxf_found:
+        if not cxf_hint_found:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ADV_004",
+                    severity=Severity.ADVISORY,
+                    message="No CxF spectral data detected in output intents",
+                    details={"cxf_detected": False},
+                )
+            )
+            return findings
+
+        # If we found the hint but no parseable XML
+        if cxf_xml_bytes is None:
             findings.append(
                 Finding(
                     inspection_id="GRD_ADV_004",
                     severity=Severity.ADVISORY,
                     message=(
-                        "CxF spectral data appears to be embedded in output intents "
-                        "(full spectral validation requires XML parsing)"
+                        "CxF spectral data reference found but raw XML "
+                        "not extractable from output intents"
                     ),
+                    details={"cxf_detected": True, "parseable": False},
+                )
+            )
+            return findings
+
+        # Parse the CxF XML
+        cxf_data = parse_cxf_xml(cxf_xml_bytes)
+
+        if not cxf_data.valid:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ADV_004",
+                    severity=Severity.SQUALL,
+                    message=(f"CxF spectral data is malformed: {'; '.join(cxf_data.errors)}"),
                     details={
                         "cxf_detected": True,
+                        "valid": False,
+                        "errors": cxf_data.errors,
                     },
                 )
             )
@@ -298,12 +336,84 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 Finding(
                     inspection_id="GRD_ADV_004",
                     severity=Severity.ADVISORY,
-                    message="No CxF spectral data detected in output intents",
+                    message=(
+                        f"CxF spectral data parsed: {len(cxf_data.spot_colors)} "
+                        f"spot color(s), standard: {cxf_data.file_standard}"
+                    ),
                     details={
-                        "cxf_detected": False,
+                        "cxf_detected": True,
+                        "valid": True,
+                        "spot_color_count": len(cxf_data.spot_colors),
+                        "file_standard": cxf_data.file_standard,
+                        "spot_names": [sc.name for sc in cxf_data.spot_colors],
                     },
                 )
             )
+
+        # GRD_ADV_006 — Cross-reference CxF spots vs document spots
+        findings.extend(self._check_cxf_spot_cross_reference(document, cxf_data))
+
+        return findings
+
+    @staticmethod
+    def _check_cxf_spot_cross_reference(
+        document: SemanticDocument,
+        cxf_data: object,
+    ) -> list[Finding]:
+        """Cross-reference CxF spot colors against document color spaces (GRD_ADV_006).
+
+        For each CxF spot color, check if a matching Separation color space
+        exists in the document and compare Lab values.
+        """
+        from grounded.analyzers.cxf_parser import CxfData
+
+        findings: list[Finding] = []
+        if not isinstance(cxf_data, CxfData):
+            return findings
+
+        # Collect document spot color names
+        doc_spots: set[str] = set()
+        for page in document.pages:
+            for _cs_name, cs in page.color_spaces.items():
+                if cs.cs_type == "Separation" and cs.colorant_names:
+                    doc_spots.add(cs.colorant_names[0])
+
+        # Cross-reference
+        for cxf_spot in cxf_data.spot_colors:
+            if cxf_spot.name in doc_spots:
+                if cxf_spot.lab:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ADV_006",
+                            severity=Severity.ADVISORY,
+                            message=(
+                                f"CxF spot '{cxf_spot.name}' matches document "
+                                f"spot color — spectral Lab "
+                                f"({cxf_spot.lab[0]:.1f}, {cxf_spot.lab[1]:.1f}, "
+                                f"{cxf_spot.lab[2]:.1f})"
+                            ),
+                            details={
+                                "spot_name": cxf_spot.name,
+                                "cxf_lab": list(cxf_spot.lab),
+                                "has_spectral": cxf_spot.spectral_data is not None,
+                            },
+                        )
+                    )
+            else:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ADV_006",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"CxF defines spot color '{cxf_spot.name}' but no "
+                            f"matching Separation space found in document"
+                        ),
+                        details={
+                            "spot_name": cxf_spot.name,
+                            "document_spots": sorted(doc_spots),
+                        },
+                    )
+                )
 
         return findings
 
@@ -348,10 +458,8 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                         cmyk_samples.append((vals, "path", event.page_num, None))
             elif isinstance(event, TextRenderedEvent):
                 if event.color_space == "DeviceCMYK" and len(event.color_values) == 4:
-                    tm_scale_y = math.sqrt(
-                        event.text_matrix.b ** 2 + event.text_matrix.d ** 2
-                    )
-                    ctm_scale_y = math.sqrt(event.ctm.b ** 2 + event.ctm.d ** 2)
+                    tm_scale_y = math.sqrt(event.text_matrix.b**2 + event.text_matrix.d**2)
+                    ctm_scale_y = math.sqrt(event.ctm.b**2 + event.ctm.d**2)
                     effective_size = event.font_size * tm_scale_y * ctm_scale_y
                     cmyk_samples.append(
                         (event.color_values, "text", event.page_num, effective_size)
@@ -467,9 +575,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
 
         return findings
 
-    def _classify_black(
-        self, c: float, m: float, y: float, k: float
-    ) -> str | None:
+    def _classify_black(self, c: float, m: float, y: float, k: float) -> str | None:
         """Classify a CMYK color into a black category.
 
         Args:

@@ -11,9 +11,10 @@ Check IDs:
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from grounded.analyzers.base import BaseAnalyzer
 from grounded.analyzers.finding import Finding, Severity
@@ -25,6 +26,9 @@ if TYPE_CHECKING:
     from grounded.semantic.model import SemanticDocument
 
 logger = logging.getLogger(__name__)
+
+# Cached ImageCms transforms keyed by profile bytes hash
+_cmyk_transform_cache: dict[str, Any] = {}
 
 # sRGB to XYZ D65 matrix (IEC 61966-2-1)
 _SRGB_TO_XYZ = [
@@ -87,6 +91,105 @@ def srgb_to_lab(r: float, g: float, b: float) -> tuple[float, float, float]:
     return (l_star, a_star, b_star)
 
 
+def _cmyk_to_srgb_naive(
+    c: float,
+    m: float,
+    y: float,
+    k: float,
+) -> tuple[float, float, float]:
+    """Naive CMYK to sRGB conversion (no ICC profile)."""
+    r = (1.0 - c) * (1.0 - k)
+    g = (1.0 - m) * (1.0 - k)
+    b = (1.0 - y) * (1.0 - k)
+    return (r, g, b)
+
+
+def cmyk_to_lab(
+    c: float,
+    m: float,
+    y: float,
+    k: float,
+    icc_profile_bytes: bytes | None = None,
+) -> tuple[float, float, float]:
+    """Convert CMYK to CIELab.
+
+    If *icc_profile_bytes* is provided and Pillow/ImageCms is available,
+    performs an accurate ICC-based conversion via LittleCMS2.  Otherwise
+    falls back to a naive CMYK→sRGB→Lab approximation.
+
+    Returns:
+        (L*, a*, b*) tuple.
+    """
+    if icc_profile_bytes is not None:
+        lab = _cmyk_to_lab_via_icc(c, m, y, k, icc_profile_bytes)
+        if lab is not None:
+            return lab
+
+    # Fallback: naive conversion
+    r, g, b = _cmyk_to_srgb_naive(c, m, y, k)
+    return srgb_to_lab(r, g, b)
+
+
+def _cmyk_to_lab_via_icc(
+    c: float,
+    m: float,
+    y: float,
+    k: float,
+    profile_bytes: bytes,
+) -> tuple[float, float, float] | None:
+    """Convert CMYK to Lab using ICC profile via Pillow ImageCms.
+
+    Returns None if ImageCms is unavailable or the transform fails.
+    """
+    try:
+        import io
+        from PIL import Image, ImageCms
+    except ImportError:
+        return None
+
+    # Cache transforms by profile hash
+    profile_hash = hashlib.md5(profile_bytes).hexdigest()  # noqa: S324
+    transform = _cmyk_transform_cache.get(profile_hash)
+
+    if transform is None:
+        try:
+            cmyk_profile = ImageCms.getOpenProfile(io.BytesIO(profile_bytes))
+            lab_profile = ImageCms.createProfile("Lab")
+            transform = ImageCms.buildTransform(
+                cmyk_profile,
+                lab_profile,
+                "CMYK",
+                "Lab",
+            )
+            _cmyk_transform_cache[profile_hash] = transform
+        except Exception:
+            logger.debug("Failed to build CMYK→Lab transform", exc_info=True)
+            return None
+
+    try:
+        # ImageCms expects 0-255 CMYK values
+        c_byte = int(round(c * 255))
+        m_byte = int(round(m * 255))
+        y_byte = int(round(y * 255))
+        k_byte = int(round(k * 255))
+
+        # Create a 1×1 CMYK image and apply the transform
+        src_img = Image.new("CMYK", (1, 1), (c_byte, m_byte, y_byte, k_byte))
+        lab_img = ImageCms.applyTransform(src_img, transform)
+        pixel = lab_img.getpixel((0, 0))
+
+        # Pillow Lab mode: L is 0-100 mapped to 0-255, a/b are signed
+        # mapped to 0-255 (128 = 0).
+        l_star = pixel[0] * 100.0 / 255.0
+        a_star = pixel[1] - 128.0
+        b_star = pixel[2] - 128.0
+
+        return (l_star, a_star, b_star)
+    except Exception:
+        logger.debug("CMYK→Lab transform failed", exc_info=True)
+        return None
+
+
 class GamutAnalyzer(BaseAnalyzer):
     """Analyzer for gamut boundary checking against target output conditions.
 
@@ -96,8 +199,13 @@ class GamutAnalyzer(BaseAnalyzer):
             If empty, gamut checking is skipped with an advisory.
     """
 
-    def __init__(self, target_condition: str = "") -> None:
+    def __init__(
+        self,
+        target_condition: str = "",
+        icc_profile_bytes: bytes | None = None,
+    ) -> None:
         self.target_condition = target_condition
+        self._icc_profile_bytes = icc_profile_bytes
 
     def analyze(
         self,
@@ -150,8 +258,7 @@ class GamutAnalyzer(BaseAnalyzer):
                     inspection_id="GRD_GAMUT_001",
                     severity=Severity.ADVISORY,
                     message=(
-                        f"Gamut boundary not available for condition: "
-                        f"{self.target_condition}"
+                        f"Gamut boundary not available for condition: {self.target_condition}"
                     ),
                     details={"target_condition": self.target_condition},
                 )
@@ -203,28 +310,49 @@ class GamutAnalyzer(BaseAnalyzer):
                     )
 
             elif _is_cmyk_space(cs) and len(values) >= 4:
-                # Precise Lab conversion for CMYK requires the actual ICC
-                # profile transform; without it we can only advise.
-                findings.append(
-                    Finding(
-                        inspection_id="GRD_GAMUT_001",
-                        severity=Severity.ADVISORY,
-                        message=(
-                            f"CMYK color ({values[0]:.2f}, {values[1]:.2f}, "
-                            f"{values[2]:.2f}, {values[3]:.2f}) — precise gamut "
-                            f"check requires ICC profile transform"
-                        ),
-                        page_num=event.page_num,
-                        details={
-                            "color_space": cs,
-                            "cmyk": list(values[:4]),
-                            "condition": self.target_condition,
-                            "stroking": event.stroking,
-                            "note": "Lab conversion not available without ICC profile",
-                        },
-                        iso_clause="ISO 32000-2:2020 8.6",
-                    )
+                c_val = max(0.0, min(1.0, values[0]))
+                m_val = max(0.0, min(1.0, values[1]))
+                y_val = max(0.0, min(1.0, values[2]))
+                k_val = max(0.0, min(1.0, values[3]))
+
+                lab = cmyk_to_lab(
+                    c_val,
+                    m_val,
+                    y_val,
+                    k_val,
+                    icc_profile_bytes=self._icc_profile_bytes,
                 )
+                in_gamut = boundary.is_in_gamut(lab)
+
+                if not in_gamut:
+                    distance = boundary.distance_to_boundary(lab)
+                    conversion = "ICC profile" if self._icc_profile_bytes else "naive"
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_GAMUT_001",
+                            severity=Severity.SQUALL,
+                            message=(
+                                f"CMYK color ({c_val:.2f}, {m_val:.2f}, "
+                                f"{y_val:.2f}, {k_val:.2f}) is out of gamut "
+                                f"for {boundary.condition_name} "
+                                f"(Lab {lab[0]:.1f}, {lab[1]:.1f}, "
+                                f"{lab[2]:.1f}, distance {distance:.2f}, "
+                                f"{conversion} conversion)"
+                            ),
+                            page_num=event.page_num,
+                            details={
+                                "color_space": cs,
+                                "cmyk": [c_val, m_val, y_val, k_val],
+                                "lab": list(lab),
+                                "in_gamut": False,
+                                "boundary_distance": round(distance, 4),
+                                "condition": self.target_condition,
+                                "stroking": event.stroking,
+                                "conversion_method": conversion,
+                            },
+                            iso_clause="ISO 32000-2:2020 8.6",
+                        )
+                    )
 
         return findings
 
@@ -286,6 +414,7 @@ class GamutAnalyzer(BaseAnalyzer):
         total_rgb = 0
         out_of_gamut_rgb = 0
         total_cmyk = 0
+        out_of_gamut_cmyk = 0
         pages_with_oog: set[int] = set()
 
         for event in events:
@@ -307,6 +436,24 @@ class GamutAnalyzer(BaseAnalyzer):
 
             elif _is_cmyk_space(cs) and len(values) >= 4:
                 total_cmyk += 1
+                c_v = max(0.0, min(1.0, values[0]))
+                m_v = max(0.0, min(1.0, values[1]))
+                y_v = max(0.0, min(1.0, values[2]))
+                k_v = max(0.0, min(1.0, values[3]))
+                lab = cmyk_to_lab(
+                    c_v,
+                    m_v,
+                    y_v,
+                    k_v,
+                    icc_profile_bytes=self._icc_profile_bytes,
+                )
+                if not boundary.is_in_gamut(lab):
+                    out_of_gamut_cmyk += 1
+                    pages_with_oog.add(event.page_num)
+
+        total_oog = out_of_gamut_rgb + out_of_gamut_cmyk
+        total_colors = total_rgb + total_cmyk
+        conversion = "ICC profile" if self._icc_profile_bytes else "naive"
 
         findings.append(
             Finding(
@@ -314,14 +461,16 @@ class GamutAnalyzer(BaseAnalyzer):
                 severity=Severity.ADVISORY,
                 message=(
                     f"Gamut summary for {boundary.condition_name}: "
-                    f"{out_of_gamut_rgb}/{total_rgb} RGB colors out of gamut, "
-                    f"{total_cmyk} CMYK colors (profile transform needed)"
+                    f"{total_oog}/{total_colors} colors out of gamut "
+                    f"({out_of_gamut_rgb} RGB, {out_of_gamut_cmyk} CMYK)"
                 ),
                 details={
                     "condition": self.target_condition,
                     "total_rgb_colors": total_rgb,
                     "out_of_gamut_rgb": out_of_gamut_rgb,
                     "total_cmyk_colors": total_cmyk,
+                    "out_of_gamut_cmyk": out_of_gamut_cmyk,
+                    "cmyk_conversion_method": conversion,
                     "pages_with_out_of_gamut": sorted(pages_with_oog),
                 },
                 iso_clause="ICC.1:2022 10",

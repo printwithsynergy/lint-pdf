@@ -24,15 +24,30 @@ if TYPE_CHECKING:
     from grounded.semantic.model import SemanticDocument
 
 # Expected CMYKOGV colorant names (case-insensitive matching)
-_CMYKOGV_NAMES = frozenset({
-    "cyan", "magenta", "yellow", "black",
-    "orange", "green", "violet",
-})
+_CMYKOGV_NAMES = frozenset(
+    {
+        "cyan",
+        "magenta",
+        "yellow",
+        "black",
+        "orange",
+        "green",
+        "violet",
+    }
+)
 
 # Alternative CMYKOGV abbreviations
-_CMYKOGV_ABBREVS = frozenset({
-    "c", "m", "y", "k", "o", "g", "v",
-})
+_CMYKOGV_ABBREVS = frozenset(
+    {
+        "c",
+        "m",
+        "y",
+        "k",
+        "o",
+        "g",
+        "v",
+    }
+)
 
 # Threshold for significant ink coverage
 _SIGNIFICANT_INK = 0.05  # 5%
@@ -75,15 +90,15 @@ class EcgAnalyzer(BaseAnalyzer):
                             if page.page_num not in spot_colors[colorant]:
                                 spot_colors[colorant].append(page.page_num)
                 elif cs.cs_type == "DeviceN" and cs.colorant_names:
-                    colorant_list = [
-                        c for c in cs.colorant_names if c not in ("All", "None")
-                    ]
-                    devicen_spaces.append({
-                        "cs_name": cs_name,
-                        "colorants": colorant_list,
-                        "components": cs.components,
-                        "page_num": page.page_num,
-                    })
+                    colorant_list = [c for c in cs.colorant_names if c not in ("All", "None")]
+                    devicen_spaces.append(
+                        {
+                            "cs_name": cs_name,
+                            "colorants": colorant_list,
+                            "components": cs.components,
+                            "page_num": page.page_num,
+                        }
+                    )
                     for colorant in colorant_list:
                         if colorant not in spot_colors:
                             spot_colors[colorant] = []
@@ -96,28 +111,34 @@ class EcgAnalyzer(BaseAnalyzer):
         for event in events:
             if isinstance(event, ColorChangedEvent):
                 if event.color_space == "DeviceN" and len(event.color_values) > 4:
-                    devicen_color_events.append({
-                        "page_num": event.page_num,
-                        "color_values": event.color_values,
-                        "components": len(event.color_values),
-                    })
+                    devicen_color_events.append(
+                        {
+                            "page_num": event.page_num,
+                            "color_values": event.color_values,
+                            "components": len(event.color_values),
+                        }
+                    )
             elif isinstance(event, PathPaintingEvent):
                 if event.fill and event.fill_color_space == "DeviceN":
                     vals = event.fill_color_values
                     if len(vals) > 4:
-                        devicen_color_events.append({
-                            "page_num": event.page_num,
-                            "color_values": vals,
-                            "components": len(vals),
-                        })
+                        devicen_color_events.append(
+                            {
+                                "page_num": event.page_num,
+                                "color_values": vals,
+                                "components": len(vals),
+                            }
+                        )
                 if event.stroke and event.stroke_color_space == "DeviceN":
                     vals = event.stroke_color_values
                     if len(vals) > 4:
-                        devicen_color_events.append({
-                            "page_num": event.page_num,
-                            "color_values": vals,
-                            "components": len(vals),
-                        })
+                        devicen_color_events.append(
+                            {
+                                "page_num": event.page_num,
+                                "color_values": vals,
+                                "components": len(vals),
+                            }
+                        )
 
         # GRD_ECG_001: ECG readiness assessment
         findings.extend(self._check_ecg_readiness(spot_colors, devicen_spaces))

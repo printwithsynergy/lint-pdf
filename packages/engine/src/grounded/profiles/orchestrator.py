@@ -352,9 +352,7 @@ class PreflightOrchestrator:
             try:
                 from grounded.analyzers.gamut_analyzer import GamutAnalyzer
 
-                analyzers.append(
-                    GamutAnalyzer(target_condition=t.target_output_condition)
-                )
+                analyzers.append(GamutAnalyzer(target_condition=t.target_output_condition))
             except ImportError:
                 pass
 

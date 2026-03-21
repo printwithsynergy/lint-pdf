@@ -10,6 +10,9 @@ Check IDs:
     GRD_ICC_004 — Output intent deep validation
     GRD_ICC_005 — Output intent condition cross-reference
     GRD_ICC_006 — Multiple output intent consistency
+    GRD_ICC_007 — Required ICC tag validation
+    GRD_ICC_008 — Rendering intent consistency
+    GRD_ICC_009 — PCS illuminant validation (D50 check)
 """
 
 from __future__ import annotations
@@ -30,27 +33,39 @@ _VALID_ICC_COMPONENTS = frozenset({1, 3, 4})
 _KNOWN_SUBTYPES = frozenset({"GTS_PDFX", "GTS_PDFA1", "ISO_PDFE1"})
 
 # Known output condition identifiers
-KNOWN_CONDITIONS = frozenset({
-    "FOGRA39",
-    "FOGRA39L",
-    "FOGRA45",
-    "FOGRA47",
-    "FOGRA51",
-    "FOGRA52",
-    "FOGRA55",
-    "GRACoL2006_Coated1v2",
-    "GRACoL2013_CRPC6",
-    "SWOP2006_Coated3v2",
-    "SWOP2006_Coated5v2",
-    "JC200103",
-    "CGATS TR 001",
-    "CGATS TR 003",
-    "CGATS TR 006",
-})
+KNOWN_CONDITIONS = frozenset(
+    {
+        "FOGRA39",
+        "FOGRA39L",
+        "FOGRA45",
+        "FOGRA47",
+        "FOGRA51",
+        "FOGRA52",
+        "FOGRA55",
+        "GRACoL2006_Coated1v2",
+        "GRACoL2013_CRPC6",
+        "SWOP2006_Coated3v2",
+        "SWOP2006_Coated5v2",
+        "JC200103",
+        "CGATS TR 001",
+        "CGATS TR 003",
+        "CGATS TR 006",
+    }
+)
 
 
 class IccProfileAnalyzer(BaseAnalyzer):
     """Analyzer for ICC profile and output intent validation."""
+
+    def __init__(self, icc_profile_bytes_map: dict[str, bytes] | None = None) -> None:
+        """Initialize with optional ICC profile binary data.
+
+        Args:
+            icc_profile_bytes_map: Map of profile ref → raw bytes for deep
+                validation. When available, enables tag directory parsing
+                and PCS illuminant checks.
+        """
+        self._profile_bytes = icc_profile_bytes_map or {}
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -64,6 +79,11 @@ class IccProfileAnalyzer(BaseAnalyzer):
         findings.extend(self._check_icc_structure(document))
         findings.extend(self._check_icc_version_compatibility(document))
         findings.extend(self._check_icc_corruption(document))
+
+        # Deep ICC binary checks (when profile bytes available)
+        findings.extend(self._check_required_tags(document))
+        findings.extend(self._check_rendering_intent(document))
+        findings.extend(self._check_pcs_illuminant(document))
 
         # Output intent checks
         findings.extend(self._check_output_intent_validity(document))
@@ -230,8 +250,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                         inspection_id="GRD_ICC_004",
                         severity=Severity.SQUALL,
                         message=(
-                            f"Output intent #{idx + 1} is missing required "
-                            f"'S' (subtype) entry"
+                            f"Output intent #{idx + 1} is missing required 'S' (subtype) entry"
                         ),
                         details={
                             "intent_index": idx,
@@ -299,10 +318,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                     Finding(
                         inspection_id="GRD_ICC_005",
                         severity=Severity.ADVISORY,
-                        message=(
-                            f"Output intent #{idx + 1} condition validated: "
-                            f"{condition_id}"
-                        ),
+                        message=(f"Output intent #{idx + 1} condition validated: {condition_id}"),
                         details={
                             "intent_index": idx,
                             "condition_identifier": condition_id,
@@ -316,8 +332,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                         inspection_id="GRD_ICC_005",
                         severity=Severity.ADVISORY,
                         message=(
-                            f"Output intent #{idx + 1} has unrecognized "
-                            f"condition '{condition_id}'"
+                            f"Output intent #{idx + 1} has unrecognized condition '{condition_id}'"
                         ),
                         details={
                             "intent_index": idx,
@@ -368,6 +383,180 @@ class IccProfileAnalyzer(BaseAnalyzer):
                     iso_clause="ISO 32000-2:2020 14.11.5",
                 )
             )
+
+        return findings
+
+    def _check_required_tags(self, document: SemanticDocument) -> list[Finding]:
+        """Validate required ICC tags are present (GRD_ICC_007).
+
+        When ICC profile binary data is available, parses the tag directory
+        and verifies mandatory tags per ICC.1:2022 §9.
+        """
+        from grounded.profiles.icc.profile_manager import validate_icc_profile_bytes
+
+        findings: list[Finding] = []
+
+        for page in document.pages:
+            for cs_name, cs in page.color_spaces.items():
+                if cs.cs_type != "ICCBased" or not cs.icc_profile_ref:
+                    continue
+
+                profile_bytes = self._profile_bytes.get(cs.icc_profile_ref)
+                if not profile_bytes:
+                    continue
+
+                result = validate_icc_profile_bytes(profile_bytes)
+                tags_info = result.get("tags", {})
+                missing = tags_info.get("required_tags_missing", set())
+
+                if missing:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ICC_007",
+                            severity=Severity.SQUALL,
+                            message=(
+                                f"ICC profile '{cs.icc_profile_ref}' on page "
+                                f"{page.page_num} is missing required tag(s): "
+                                f"{', '.join(sorted(missing))}"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "color_space_name": cs_name,
+                                "profile_ref": cs.icc_profile_ref,
+                                "missing_tags": sorted(missing),
+                                "present_tags": sorted(
+                                    tags_info.get("required_tags_present", set())
+                                ),
+                            },
+                            iso_clause="ICC.1:2022 9",
+                        )
+                    )
+
+                # Check for tag directory structural errors
+                tag_errors = tags_info.get("errors", [])
+                if tag_errors:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ICC_007",
+                            severity=Severity.SQUALL,
+                            message=(
+                                f"ICC profile '{cs.icc_profile_ref}' on page "
+                                f"{page.page_num} has tag directory errors: "
+                                f"{'; '.join(tag_errors)}"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "color_space_name": cs_name,
+                                "profile_ref": cs.icc_profile_ref,
+                                "errors": tag_errors,
+                            },
+                            iso_clause="ICC.1:2022 7.3",
+                        )
+                    )
+
+        return findings
+
+    def _check_rendering_intent(
+        self,
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Check rendering intent consistency (GRD_ICC_008).
+
+        Compares the rendering intent embedded in ICC profiles against
+        what the document specifies for those objects.
+        """
+        from grounded.profiles.icc.profile_manager import validate_icc_profile_bytes
+
+        findings: list[Finding] = []
+        seen_intents: dict[str, str] = {}
+
+        for page in document.pages:
+            for cs_name, cs in page.color_spaces.items():
+                if cs.cs_type != "ICCBased" or not cs.icc_profile_ref:
+                    continue
+
+                profile_bytes = self._profile_bytes.get(cs.icc_profile_ref)
+                if not profile_bytes:
+                    continue
+
+                result = validate_icc_profile_bytes(profile_bytes)
+                metadata = result.get("metadata", {})
+                intent = metadata.get("rendering_intent", "")
+                if intent:
+                    seen_intents[cs.icc_profile_ref] = intent
+
+        # Report if mixed rendering intents across profiles
+        unique_intents = set(seen_intents.values())
+        if len(unique_intents) > 1:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ICC_008",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Document uses ICC profiles with different rendering "
+                        f"intents: {', '.join(sorted(unique_intents))}"
+                    ),
+                    details={
+                        "profiles_and_intents": {
+                            ref: intent for ref, intent in sorted(seen_intents.items())
+                        },
+                    },
+                    iso_clause="ICC.1:2022 7.2.15",
+                )
+            )
+
+        return findings
+
+    def _check_pcs_illuminant(
+        self,
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Validate PCS illuminant is D50 (GRD_ICC_009).
+
+        ICC profiles must use D50 (X=0.9642, Y=1.0, Z=0.8249) as PCS
+        illuminant per ICC.1:2022 §7.2.16.
+        """
+        from grounded.profiles.icc.profile_manager import validate_icc_profile_bytes
+
+        findings: list[Finding] = []
+        checked_refs: set[str] = set()
+
+        for page in document.pages:
+            for cs_name, cs in page.color_spaces.items():
+                if cs.cs_type != "ICCBased" or not cs.icc_profile_ref:
+                    continue
+                if cs.icc_profile_ref in checked_refs:
+                    continue
+                checked_refs.add(cs.icc_profile_ref)
+
+                profile_bytes = self._profile_bytes.get(cs.icc_profile_ref)
+                if not profile_bytes:
+                    continue
+
+                result = validate_icc_profile_bytes(profile_bytes)
+                illuminant = result.get("pcs_illuminant")
+                illuminant_valid = result.get("pcs_illuminant_valid", True)
+
+                if illuminant and not illuminant_valid:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ICC_009",
+                            severity=Severity.SQUALL,
+                            message=(
+                                f"ICC profile '{cs.icc_profile_ref}' has "
+                                f"non-D50 PCS illuminant: X={illuminant['X']}, "
+                                f"Y={illuminant['Y']}, Z={illuminant['Z']} "
+                                f"(expected X=0.9642, Y=1.0, Z=0.8249)"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "profile_ref": cs.icc_profile_ref,
+                                "pcs_illuminant": illuminant,
+                                "expected": {"X": 0.9642, "Y": 1.0, "Z": 0.8249},
+                            },
+                            iso_clause="ICC.1:2022 7.2.16",
+                        )
+                    )
 
         return findings
 

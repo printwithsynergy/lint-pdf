@@ -67,13 +67,13 @@ class TestConfigureEmail:
         """configure_email should accept a custom from address."""
         import grounded.email.service as svc
 
-        svc._resend_client = None
+        svc._email_state["client"] = None
         with patch("grounded.email.service.resend", create=True) as mock_resend:
             mock_resend.Emails = MagicMock()
             configure_email("re_key", from_address="Custom <custom@example.com>")
-            assert svc._from_address == "Custom <custom@example.com>"
+            assert svc._email_state["from_address"] == "Custom <custom@example.com>"
             # Reset
-            svc._from_address = "LintPDF <noreply@thinkneverland.com>"
+            svc._email_state["from_address"] = "LintPDF <noreply@thinkneverland.com>"
 
 
 class TestSetEmailClient:

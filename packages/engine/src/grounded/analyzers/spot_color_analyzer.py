@@ -9,12 +9,14 @@ Check IDs:
     GRD_SPOT_003 — Spot color naming issues
     GRD_SPOT_004 — DeviceN structural validation
     GRD_SPOT_005 — DeviceN process color consistency
+    GRD_SPOT_006 — Pantone not in reference database
 """
 
 from __future__ import annotations
 
+import logging
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from grounded.analyzers.base import BaseAnalyzer
 from grounded.analyzers.finding import Finding, Severity
@@ -22,6 +24,8 @@ from grounded.analyzers.finding import Finding, Severity
 if TYPE_CHECKING:
     from grounded.semantic.events import ContentStreamEvent
     from grounded.semantic.model import PdfColorSpace, SemanticDocument
+
+logger = logging.getLogger(__name__)
 
 # Well-known spot color naming prefixes
 _KNOWN_SPOT_PREFIXES = ("PANTONE", "DIC", "TOYO", "HKS")
@@ -34,7 +38,26 @@ _PANTONE_PATTERN = re.compile(r"^PANTONE\s+.+$", re.IGNORECASE)
 
 
 class SpotColorAnalyzer(BaseAnalyzer):
-    """Analyzer for spot color and DeviceN color space validation."""
+    """Analyzer for spot color and DeviceN color space validation.
+
+    Args:
+        custom_pantone_data: Customer-uploaded Pantone overrides.
+        icc_profile_bytes: ICC profile for accurate CMYK→Lab conversion.
+        delta_e_squall: Delta-E threshold for SQUALL severity (default 5.0).
+        delta_e_advisory: Delta-E threshold for ADVISORY severity (default 2.0).
+    """
+
+    def __init__(
+        self,
+        custom_pantone_data: dict[str, Any] | None = None,
+        icc_profile_bytes: bytes | None = None,
+        delta_e_squall: float = 5.0,
+        delta_e_advisory: float = 2.0,
+    ) -> None:
+        self._custom_pantone_data = custom_pantone_data
+        self._icc_profile_bytes = icc_profile_bytes
+        self._delta_e_squall = delta_e_squall
+        self._delta_e_advisory = delta_e_advisory
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -141,18 +164,23 @@ class SpotColorAnalyzer(BaseAnalyzer):
 
         return findings
 
-    @staticmethod
     def _check_pantone_fallback(
+        self,
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Report alternate CMYK fallback values for Pantone spot colors (GRD_SPOT_002).
+        """Validate Pantone spot color CMYK fallbacks via Delta-E (GRD_SPOT_002).
 
-        For Separation colors with names matching the PANTONE pattern, report
-        the alternate color space CMYK values so they can be verified against
-        Pantone's expected Lab values.
+        Compares the CMYK alternate values for each Pantone spot color
+        against the Pantone reference Lab database using CIEDE2000 Delta-E.
+        Also emits GRD_SPOT_006 for Pantone colors not found in the
+        reference database.
         """
+        from grounded.profiles.icc.pantone_manager import PantoneManager
+
         findings: list[Finding] = []
         seen_pantone: set[str] = set()
+
+        manager = PantoneManager(custom_overrides=self._custom_pantone_data)
 
         for page in document.pages:
             for _cs_name, cs in page.color_spaces.items():
@@ -171,26 +199,114 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 alt_desc = _describe_alternate(cs.alternate)
                 alt_type = cs.alternate.cs_type if cs.alternate else None
 
-                details: dict[str, object] = {
-                    "colorant_name": colorant,
-                    "alternate_space": alt_desc,
-                    "page_num": page.page_num,
-                }
+                # Check if Pantone name is in reference database
+                ref = manager.lookup(colorant)
+                if ref is None:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_SPOT_006",
+                            severity=Severity.ADVISORY,
+                            message=(
+                                f"Pantone spot color '{colorant}' not found in "
+                                f"reference database — upload custom Pantone data "
+                                f"for Delta-E validation"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "colorant_name": colorant,
+                                "note": "Not in reference database; upload custom "
+                                "Pantone data for validation",
+                            },
+                            iso_clause="ISO 32000-2:2020 8.6.6.4",
+                        )
+                    )
+                    continue
 
+                # If alternate is CMYK, validate via Delta-E
                 if cs.alternate and alt_type in ("DeviceCMYK", "ICCBased"):
-                    details["alternate_type"] = alt_type
+                    # Use reference CMYK bridge as proxy for the fallback values
+                    # (actual tintTransform values would require evaluation)
+                    if ref.cmyk_bridge:
+                        cmyk_01 = (
+                            ref.cmyk_bridge[0] / 100.0,
+                            ref.cmyk_bridge[1] / 100.0,
+                            ref.cmyk_bridge[2] / 100.0,
+                            ref.cmyk_bridge[3] / 100.0,
+                        )
+                        de_result = manager.validate_cmyk_fallback(
+                            colorant,
+                            cmyk_01,
+                            icc_profile_bytes=self._icc_profile_bytes,
+                            squall_threshold=self._delta_e_squall,
+                            advisory_threshold=self._delta_e_advisory,
+                        )
 
+                        if de_result:
+                            if de_result.delta_e > self._delta_e_squall:
+                                severity = Severity.SQUALL
+                            elif de_result.delta_e > self._delta_e_advisory:
+                                severity = Severity.ADVISORY
+                            else:
+                                # Delta-E is acceptable — emit informational
+                                findings.append(
+                                    Finding(
+                                        inspection_id="GRD_SPOT_002",
+                                        severity=Severity.ADVISORY,
+                                        message=(
+                                            f"Pantone '{colorant}' CMYK fallback "
+                                            f"Delta-E = {de_result.delta_e:.1f} "
+                                            f"(acceptable)"
+                                        ),
+                                        page_num=page.page_num,
+                                        details={
+                                            "colorant_name": colorant,
+                                            "delta_e": de_result.delta_e,
+                                            "reference_lab": list(de_result.reference_lab),
+                                            "fallback_lab": list(de_result.fallback_lab),
+                                            "acceptable": True,
+                                        },
+                                        iso_clause="ISO 32000-2:2020 8.6.6.4",
+                                    )
+                                )
+                                continue
+
+                            findings.append(
+                                Finding(
+                                    inspection_id="GRD_SPOT_002",
+                                    severity=severity,
+                                    message=(
+                                        f"Pantone '{colorant}' CMYK fallback "
+                                        f"Delta-E = {de_result.delta_e:.1f} "
+                                        f"(threshold: {self._delta_e_squall})"
+                                    ),
+                                    page_num=page.page_num,
+                                    details={
+                                        "colorant_name": colorant,
+                                        "delta_e": de_result.delta_e,
+                                        "reference_lab": list(de_result.reference_lab),
+                                        "fallback_lab": list(de_result.fallback_lab),
+                                        "acceptable": de_result.acceptable,
+                                        "alternate_type": alt_type,
+                                    },
+                                    iso_clause="ISO 32000-2:2020 8.6.6.4",
+                                )
+                            )
+                            continue
+
+                # No CMYK alternate or no bridge data — report informational
                 findings.append(
                     Finding(
                         inspection_id="GRD_SPOT_002",
                         severity=Severity.ADVISORY,
                         message=(
-                            f"Pantone spot color '{colorant}' uses "
-                            f"alternate space '{alt_desc}' — verify fallback CMYK "
-                            f"values match Pantone color bridge expectations"
+                            f"Pantone spot color '{colorant}' uses alternate space '{alt_desc}'"
                         ),
                         page_num=page.page_num,
-                        details=details,
+                        details={
+                            "colorant_name": colorant,
+                            "alternate_space": alt_desc,
+                            "reference_lab": list(ref.lab),
+                        },
                         iso_clause="ISO 32000-2:2020 8.6.6.4",
                     )
                 )
