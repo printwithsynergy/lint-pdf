@@ -29,9 +29,16 @@ _RENDERING_INTENTS = {
 # Required tags per profile class (ICC.1:2022 §9)
 _REQUIRED_TAGS_COMMON = frozenset({b"desc", b"wtpt", b"cprt"})
 _REQUIRED_TAGS_INPUT = _REQUIRED_TAGS_COMMON | frozenset({b"A2B0"})
-_REQUIRED_TAGS_DISPLAY = _REQUIRED_TAGS_COMMON | frozenset({
-    b"rXYZ", b"gXYZ", b"bXYZ", b"rTRC", b"gTRC", b"bTRC",
-})
+_REQUIRED_TAGS_DISPLAY = _REQUIRED_TAGS_COMMON | frozenset(
+    {
+        b"rXYZ",
+        b"gXYZ",
+        b"bXYZ",
+        b"rTRC",
+        b"gTRC",
+        b"bTRC",
+    }
+)
 _REQUIRED_TAGS_OUTPUT = _REQUIRED_TAGS_COMMON | frozenset({b"A2B0"})
 
 _PROFILE_CLASS_REQUIRED_TAGS: dict[str, frozenset[bytes]] = {
@@ -194,8 +201,7 @@ def extract_icc_tags(profile_bytes: bytes) -> dict[str, Any]:
     table_end = 132 + tag_count * 12
     if table_end > len(profile_bytes):
         result["errors"].append(
-            f"Tag table extends beyond file: needs {table_end} bytes, "
-            f"have {len(profile_bytes)}"
+            f"Tag table extends beyond file: needs {table_end} bytes, have {len(profile_bytes)}"
         )
         return result
 
@@ -313,7 +319,8 @@ def validate_icc_profile_bytes(profile_bytes: bytes) -> dict[str, Any]:
     # Rendering intent (byte 67)
     rendering_intent_code = profile_bytes[67] & 0x03
     rendering_intent = _RENDERING_INTENTS.get(
-        rendering_intent_code, f"Unknown ({rendering_intent_code})",
+        rendering_intent_code,
+        f"Unknown ({rendering_intent_code})",
     )
 
     # PCS illuminant (bytes 68-79: X, Y, Z as s15Fixed16Number)

@@ -82,10 +82,8 @@ def parse_cxf_xml(xml_bytes: bytes) -> CxfData:
     for spot in result.spot_colors:
         if spot.spectral_data:
             expected_count = (
-                (spot.wavelength_end - spot.wavelength_start)
-                // spot.wavelength_interval
-                + 1
-            )
+                spot.wavelength_end - spot.wavelength_start
+            ) // spot.wavelength_interval + 1
             if len(spot.spectral_data) != expected_count:
                 result.errors.append(
                     f"Spot '{spot.name}': expected {expected_count} spectral "

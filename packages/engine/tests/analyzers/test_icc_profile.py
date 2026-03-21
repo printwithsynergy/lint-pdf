@@ -1,4 +1,5 @@
 """Tests for IccProfileAnalyzer."""
+
 import struct
 
 from grounded.analyzers.icc_profile_analyzer import IccProfileAnalyzer
@@ -121,18 +122,31 @@ def _build_minimal_icc(
         # Minimal required tags for display profile
         tags = {
             b"desc": b"desc" + b"\x00" * 4 + struct.pack(">I", 5) + b"Test\x00",
-            b"wtpt": b"XYZ " + b"\x00" * 4 + struct.pack(">iii",
-                int(0.9642 * 65536), int(1.0 * 65536), int(0.8249 * 65536)),
+            b"wtpt": b"XYZ "
+            + b"\x00" * 4
+            + struct.pack(">iii", int(0.9642 * 65536), int(1.0 * 65536), int(0.8249 * 65536)),
             b"cprt": b"text" + b"\x00" * 4 + b"(c) Test\x00",
-            b"rXYZ": b"XYZ " + b"\x00" * 4 + struct.pack(">iii",
-                int(0.4361 * 65536), int(0.2225 * 65536), int(0.0139 * 65536)),
-            b"gXYZ": b"XYZ " + b"\x00" * 4 + struct.pack(">iii",
-                int(0.3851 * 65536), int(0.7169 * 65536), int(0.0971 * 65536)),
-            b"bXYZ": b"XYZ " + b"\x00" * 4 + struct.pack(">iii",
-                int(0.1431 * 65536), int(0.0606 * 65536), int(0.7141 * 65536)),
-            b"rTRC": b"curv" + b"\x00" * 4 + struct.pack(">I", 1) + struct.pack(">H", int(2.2 * 256)),
-            b"gTRC": b"curv" + b"\x00" * 4 + struct.pack(">I", 1) + struct.pack(">H", int(2.2 * 256)),
-            b"bTRC": b"curv" + b"\x00" * 4 + struct.pack(">I", 1) + struct.pack(">H", int(2.2 * 256)),
+            b"rXYZ": b"XYZ "
+            + b"\x00" * 4
+            + struct.pack(">iii", int(0.4361 * 65536), int(0.2225 * 65536), int(0.0139 * 65536)),
+            b"gXYZ": b"XYZ "
+            + b"\x00" * 4
+            + struct.pack(">iii", int(0.3851 * 65536), int(0.7169 * 65536), int(0.0971 * 65536)),
+            b"bXYZ": b"XYZ "
+            + b"\x00" * 4
+            + struct.pack(">iii", int(0.1431 * 65536), int(0.0606 * 65536), int(0.7141 * 65536)),
+            b"rTRC": b"curv"
+            + b"\x00" * 4
+            + struct.pack(">I", 1)
+            + struct.pack(">H", int(2.2 * 256)),
+            b"gTRC": b"curv"
+            + b"\x00" * 4
+            + struct.pack(">I", 1)
+            + struct.pack(">H", int(2.2 * 256)),
+            b"bTRC": b"curv"
+            + b"\x00" * 4
+            + struct.pack(">I", 1)
+            + struct.pack(">H", int(2.2 * 256)),
         }
 
     # Build header (128 bytes)
@@ -140,7 +154,7 @@ def _build_minimal_icc(
     # Size (will be filled in at the end)
     # Version
     header[8] = version_major
-    header[9] = (version_minor << 4)
+    header[9] = version_minor << 4
     # Profile class
     header[12:16] = profile_class
     # Color space
@@ -282,7 +296,9 @@ class TestIccAnalyzerNewChecks:
         }
         profile = _build_minimal_icc(tags=tags)
         cs = PdfColorSpace(
-            name="CS1", cs_type="ICCBased", components=3,
+            name="CS1",
+            cs_type="ICCBased",
+            components=3,
             icc_profile_ref="profile_1",
         )
         doc = _make_doc(color_spaces={"CS1": cs})
@@ -298,7 +314,9 @@ class TestIccAnalyzerNewChecks:
         """GRD_ICC_007 does not fire when all required tags present."""
         profile = _build_minimal_icc()
         cs = PdfColorSpace(
-            name="CS1", cs_type="ICCBased", components=3,
+            name="CS1",
+            cs_type="ICCBased",
+            components=3,
             icc_profile_ref="profile_1",
         )
         doc = _make_doc(color_spaces={"CS1": cs})
@@ -313,7 +331,9 @@ class TestIccAnalyzerNewChecks:
         """GRD_ICC_009 fires when PCS illuminant is not D50."""
         profile = _build_minimal_icc(d50_x=1.0, d50_y=1.0, d50_z=1.0)
         cs = PdfColorSpace(
-            name="CS1", cs_type="ICCBased", components=3,
+            name="CS1",
+            cs_type="ICCBased",
+            components=3,
             icc_profile_ref="profile_1",
         )
         doc = _make_doc(color_spaces={"CS1": cs})
@@ -329,7 +349,9 @@ class TestIccAnalyzerNewChecks:
         """GRD_ICC_009 does not fire with correct D50 illuminant."""
         profile = _build_minimal_icc()
         cs = PdfColorSpace(
-            name="CS1", cs_type="ICCBased", components=3,
+            name="CS1",
+            cs_type="ICCBased",
+            components=3,
             icc_profile_ref="profile_1",
         )
         doc = _make_doc(color_spaces={"CS1": cs})

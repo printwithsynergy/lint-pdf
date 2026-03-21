@@ -386,7 +386,6 @@ class IccProfileAnalyzer(BaseAnalyzer):
 
         return findings
 
-
     def _check_required_tags(self, document: SemanticDocument) -> list[Finding]:
         """Validate required ICC tags are present (GRD_ICC_007).
 
@@ -458,7 +457,8 @@ class IccProfileAnalyzer(BaseAnalyzer):
         return findings
 
     def _check_rendering_intent(
-        self, document: SemanticDocument,
+        self,
+        document: SemanticDocument,
     ) -> list[Finding]:
         """Check rendering intent consistency (GRD_ICC_008).
 
@@ -508,7 +508,8 @@ class IccProfileAnalyzer(BaseAnalyzer):
         return findings
 
     def _check_pcs_illuminant(
-        self, document: SemanticDocument,
+        self,
+        document: SemanticDocument,
     ) -> list[Finding]:
         """Validate PCS illuminant is D50 (GRD_ICC_009).
 

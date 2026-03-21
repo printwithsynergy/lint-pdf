@@ -35,7 +35,8 @@ _DEFAULT_PROFILES_DIR = Path(__file__).parent / "default_profiles"
 
 
 def _sample_cmyk_grid(
-    profile_bytes: bytes, steps: int = 11,
+    profile_bytes: bytes,
+    steps: int = 11,
 ) -> list[tuple[float, float, float]]:
     """Sample CMYK space at a regular grid and convert to Lab.
 
@@ -51,7 +52,10 @@ def _sample_cmyk_grid(
     cmyk_profile = ImageCms.getOpenProfile(io.BytesIO(profile_bytes))
     lab_profile = ImageCms.createProfile("Lab")
     transform = ImageCms.buildTransform(
-        cmyk_profile, lab_profile, "CMYK", "Lab",
+        cmyk_profile,
+        lab_profile,
+        "CMYK",
+        "Lab",
     )
 
     lab_points: list[tuple[float, float, float]] = []
@@ -94,13 +98,16 @@ def _sample_srgb_grid(steps: int = 33) -> list[tuple[float, float, float]]:
 
 
 def build_from_icc(
-    profile_path: Path, condition_slug: str, condition_name: str,
+    profile_path: Path,
+    condition_slug: str,
+    condition_name: str,
 ) -> None:
     """Build gamut mesh from an ICC profile file."""
     profile_bytes = profile_path.read_bytes()
     logger.info(
         "Sampling CMYK grid from %s (condition: %s)...",
-        profile_path.name, condition_slug,
+        profile_path.name,
+        condition_slug,
     )
 
     lab_points = _sample_cmyk_grid(profile_bytes, steps=11)
@@ -109,7 +116,8 @@ def build_from_icc(
     boundary = build_gamut_boundary_from_lab_points(condition_name, lab_points)
     logger.info(
         "Convex hull: %d vertices, volume %.0f Lab^3",
-        len(boundary.vertices), boundary.volume,
+        len(boundary.vertices),
+        boundary.volume,
     )
 
     out_path = _DEFAULT_PROFILES_DIR / f"{condition_slug}.json"
@@ -124,11 +132,13 @@ def build_srgb() -> None:
     logger.info("Collected %d Lab samples", len(lab_points))
 
     boundary = build_gamut_boundary_from_lab_points(
-        "sRGB IEC61966-2.1", lab_points,
+        "sRGB IEC61966-2.1",
+        lab_points,
     )
     logger.info(
         "Convex hull: %d vertices, volume %.0f Lab^3",
-        len(boundary.vertices), boundary.volume,
+        len(boundary.vertices),
+        boundary.volume,
     )
 
     out_path = _DEFAULT_PROFILES_DIR / "srgb.json"

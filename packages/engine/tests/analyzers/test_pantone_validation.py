@@ -29,7 +29,10 @@ def _make_doc(color_spaces_by_page=None):
     else:
         pages.append(SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792)))
     return SemanticDocument(
-        version="2.0", page_count=len(pages), is_encrypted=False, pages=pages,
+        version="2.0",
+        page_count=len(pages),
+        is_encrypted=False,
+        pages=pages,
     )
 
 
@@ -126,7 +129,9 @@ class TestSpotColorAnalyzerPantone:
             components=1,
             colorant_names=("PANTONE 485 C",),
             alternate=PdfColorSpace(
-                name=None, cs_type="DeviceCMYK", components=4,
+                name=None,
+                cs_type="DeviceCMYK",
+                components=4,
             ),
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
@@ -147,7 +152,9 @@ class TestSpotColorAnalyzerPantone:
             components=1,
             colorant_names=("PANTONE 99999 C",),
             alternate=PdfColorSpace(
-                name=None, cs_type="DeviceCMYK", components=4,
+                name=None,
+                cs_type="DeviceCMYK",
+                components=4,
             ),
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
@@ -169,7 +176,6 @@ class TestSpotColorAnalyzerPantone:
         analyzer = SpotColorAnalyzer()
         findings = analyzer.analyze(doc, [])
         pantone_findings = [
-            f for f in findings
-            if f.inspection_id in ("GRD_SPOT_002", "GRD_SPOT_006")
+            f for f in findings if f.inspection_id in ("GRD_SPOT_002", "GRD_SPOT_006")
         ]
         assert len(pantone_findings) == 0

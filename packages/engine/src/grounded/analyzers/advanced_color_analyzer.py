@@ -323,10 +323,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 Finding(
                     inspection_id="GRD_ADV_004",
                     severity=Severity.SQUALL,
-                    message=(
-                        f"CxF spectral data is malformed: "
-                        f"{'; '.join(cxf_data.errors)}"
-                    ),
+                    message=(f"CxF spectral data is malformed: {'; '.join(cxf_data.errors)}"),
                     details={
                         "cxf_detected": True,
                         "valid": False,

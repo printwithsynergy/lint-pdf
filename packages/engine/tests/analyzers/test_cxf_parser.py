@@ -66,7 +66,8 @@ class TestCxfParser:
     def test_parse_spot_color_lab(self):
         result = parse_cxf_xml(_VALID_CXF_XML)
         pantone_485 = next(
-            (sc for sc in result.spot_colors if "485" in sc.name), None,
+            (sc for sc in result.spot_colors if "485" in sc.name),
+            None,
         )
         assert pantone_485 is not None
         assert pantone_485.lab is not None
@@ -76,7 +77,8 @@ class TestCxfParser:
     def test_parse_spectral_data(self):
         result = parse_cxf_xml(_VALID_CXF_XML)
         pantone_485 = next(
-            (sc for sc in result.spot_colors if "485" in sc.name), None,
+            (sc for sc in result.spot_colors if "485" in sc.name),
+            None,
         )
         assert pantone_485 is not None
         assert pantone_485.spectral_data is not None
@@ -87,7 +89,8 @@ class TestCxfParser:
     def test_parse_reflex_blue_lab_only(self):
         result = parse_cxf_xml(_VALID_CXF_XML)
         reflex = next(
-            (sc for sc in result.spot_colors if "Reflex" in sc.name), None,
+            (sc for sc in result.spot_colors if "Reflex" in sc.name),
+            None,
         )
         assert reflex is not None
         assert reflex.lab is not None

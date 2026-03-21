@@ -215,7 +215,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                             details={
                                 "colorant_name": colorant,
                                 "note": "Not in reference database; upload custom "
-                                        "Pantone data for validation",
+                                "Pantone data for validation",
                             },
                             iso_clause="ISO 32000-2:2020 8.6.6.4",
                         )
@@ -299,8 +299,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                         inspection_id="GRD_SPOT_002",
                         severity=Severity.ADVISORY,
                         message=(
-                            f"Pantone spot color '{colorant}' uses "
-                            f"alternate space '{alt_desc}'"
+                            f"Pantone spot color '{colorant}' uses alternate space '{alt_desc}'"
                         ),
                         page_num=page.page_num,
                         details={

@@ -109,7 +109,8 @@ class TestGamutAnalyzerRgb:
         events = [_make_color_event("DeviceRGB", [1.0, 0.0, 0.0])]
         findings = analyzer.analyze(doc, events)
         advisory = [
-            f for f in findings
+            f
+            for f in findings
             if f.inspection_id == "GRD_GAMUT_001" and f.severity == Severity.ADVISORY
         ]
         assert len(advisory) >= 1
@@ -121,7 +122,8 @@ class TestGamutAnalyzerRgb:
         events = [_make_color_event("DeviceRGB", [0.5, 0.5, 0.5])]
         findings = analyzer.analyze(doc, events)
         squall = [
-            f for f in findings
+            f
+            for f in findings
             if f.inspection_id == "GRD_GAMUT_001" and f.severity == Severity.SQUALL
         ]
         assert len(squall) == 0
@@ -135,7 +137,8 @@ class TestGamutAnalyzerCmyk:
         events = [_make_color_event("DeviceCMYK", [0.0, 0.0, 0.0, 0.5])]
         findings = analyzer.analyze(doc, events)
         squall_001 = [
-            f for f in findings
+            f
+            for f in findings
             if f.inspection_id == "GRD_GAMUT_001" and f.severity == Severity.SQUALL
         ]
         # A 50% gray should be in gamut

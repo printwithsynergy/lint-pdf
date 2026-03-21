@@ -73,9 +73,7 @@ def _load_reference() -> dict[str, dict[str, Any]]:
         data = json.loads(_REFERENCE_PATH.read_text(encoding="utf-8"))
         colors = data.get("colors", {})
         # Build normalized lookup index
-        _reference_cache = {
-            _normalize_pantone_name(k): v for k, v in colors.items()
-        }
+        _reference_cache = {_normalize_pantone_name(k): v for k, v in colors.items()}
         logger.debug("Loaded %d Pantone reference colors", len(_reference_cache))
     except Exception:
         logger.exception("Failed to load Pantone reference database")
@@ -96,9 +94,7 @@ class PantoneManager:
         self._reference = _load_reference()
         self._overrides: dict[str, dict[str, Any]] = {}
         if custom_overrides:
-            self._overrides = {
-                _normalize_pantone_name(k): v for k, v in custom_overrides.items()
-            }
+            self._overrides = {_normalize_pantone_name(k): v for k, v in custom_overrides.items()}
 
     def lookup(self, name: str) -> PantoneReference | None:
         """Look up a Pantone color by name.
@@ -198,7 +194,10 @@ class PantoneManager:
         from grounded.analyzers.gamut_analyzer import cmyk_to_lab
 
         return cmyk_to_lab(
-            cmyk[0], cmyk[1], cmyk[2], cmyk[3],
+            cmyk[0],
+            cmyk[1],
+            cmyk[2],
+            cmyk[3],
             icc_profile_bytes=icc_profile_bytes,
         )
 

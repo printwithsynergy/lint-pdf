@@ -92,7 +92,10 @@ def srgb_to_lab(r: float, g: float, b: float) -> tuple[float, float, float]:
 
 
 def _cmyk_to_srgb_naive(
-    c: float, m: float, y: float, k: float,
+    c: float,
+    m: float,
+    y: float,
+    k: float,
 ) -> tuple[float, float, float]:
     """Naive CMYK to sRGB conversion (no ICC profile)."""
     r = (1.0 - c) * (1.0 - k)
@@ -313,16 +316,17 @@ class GamutAnalyzer(BaseAnalyzer):
                 k_val = max(0.0, min(1.0, values[3]))
 
                 lab = cmyk_to_lab(
-                    c_val, m_val, y_val, k_val,
+                    c_val,
+                    m_val,
+                    y_val,
+                    k_val,
                     icc_profile_bytes=self._icc_profile_bytes,
                 )
                 in_gamut = boundary.is_in_gamut(lab)
 
                 if not in_gamut:
                     distance = boundary.distance_to_boundary(lab)
-                    conversion = (
-                        "ICC profile" if self._icc_profile_bytes else "naive"
-                    )
+                    conversion = "ICC profile" if self._icc_profile_bytes else "naive"
                     findings.append(
                         Finding(
                             inspection_id="GRD_GAMUT_001",
@@ -437,7 +441,10 @@ class GamutAnalyzer(BaseAnalyzer):
                 y_v = max(0.0, min(1.0, values[2]))
                 k_v = max(0.0, min(1.0, values[3]))
                 lab = cmyk_to_lab(
-                    c_v, m_v, y_v, k_v,
+                    c_v,
+                    m_v,
+                    y_v,
+                    k_v,
                     icc_profile_bytes=self._icc_profile_bytes,
                 )
                 if not boundary.is_in_gamut(lab):
