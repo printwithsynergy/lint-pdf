@@ -20,6 +20,8 @@ Check IDs:
     GRD_COLOR_011 — Spot color name conflict (same name, different alternate)
     GRD_COLOR_012 — Minimum printing dot below threshold (scum dot risk)
     GRD_COLOR_013 — Gamut warning / out-of-gamut color (RGB in CMYK workflow)
+    GRD_COLOR_014 — Full color space inventory
+    GRD_COLOR_015 — Device-dependent color space warning
 """
 
 from __future__ import annotations
@@ -74,12 +76,23 @@ class ColorAnalyzer(BaseAnalyzer):
         seen_spaces: set[tuple[int, str]] = set()
         overprint_non_stroking = False
 
+        # GRD_COLOR_014: Color space inventory tracking
+        cs_inventory: dict[str, dict[str, int | list[int]]] = {}
+
         for event in events:
             if isinstance(event, OverprintChangedEvent):
                 if event.overprint_non_stroking is not None:
                     overprint_non_stroking = event.overprint_non_stroking
             elif isinstance(event, ColorChangedEvent):
                 findings.extend(self._check_color_event(event, seen_spaces))
+                # GRD_COLOR_014: Track color space inventory
+                cs_type = event.color_space
+                if cs_type not in cs_inventory:
+                    cs_inventory[cs_type] = {"count": 0, "pages": []}
+                cs_inventory[cs_type]["count"] += 1  # type: ignore[operator]
+                page_list: list[int] = cs_inventory[cs_type]["pages"]  # type: ignore[assignment]
+                if event.page_num not in page_list:
+                    page_list.append(event.page_num)
             elif isinstance(event, PathPaintingEvent):
                 findings.extend(self._check_path_tac(event))
                 findings.extend(self._check_registration_color(event))
@@ -188,6 +201,69 @@ class ColorAnalyzer(BaseAnalyzer):
                                         },
                                     )
                                 )
+
+        # GRD_COLOR_014: Full color space inventory
+        if cs_inventory:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_COLOR_014",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Color space inventory: {len(cs_inventory)} unique "
+                        f"color space type(s) used in document"
+                    ),
+                    details={
+                        "inventory": cs_inventory,
+                    },
+                )
+            )
+
+        # GRD_COLOR_015: Device-dependent color space warning
+        _DEVICE_DEPENDENT = {"DeviceRGB", "DeviceCMYK", "DeviceGray"}
+        if document.output_intents:
+            for page in document.pages:
+                for cs_name, cs in page.color_spaces.items():
+                    if cs.cs_type in _DEVICE_DEPENDENT:
+                        # For PDF/X-4: DeviceGray and DeviceCMYK are allowed;
+                        # DeviceRGB is not
+                        if cs.cs_type == "DeviceRGB":
+                            findings.append(
+                                Finding(
+                                    inspection_id="GRD_COLOR_015",
+                                    severity=Severity.ADVISORY,
+                                    message=(
+                                        f"Device-dependent color space '{cs.cs_type}' "
+                                        f"on page {page.page_num} with OutputIntent present "
+                                        f"(DeviceRGB is not allowed in PDF/X-4; "
+                                        f"use ICC-based alternative)"
+                                    ),
+                                    page_num=page.page_num,
+                                    details={
+                                        "color_space_name": cs_name,
+                                        "color_space_type": cs.cs_type,
+                                        "recommendation": "Use ICC-based color space",
+                                    },
+                                    iso_clause="ISO 15930-7:2010 6.2.4",
+                                )
+                            )
+                        elif cs.cs_type in ("DeviceCMYK", "DeviceGray"):
+                            findings.append(
+                                Finding(
+                                    inspection_id="GRD_COLOR_015",
+                                    severity=Severity.ADVISORY,
+                                    message=(
+                                        f"Device-dependent color space '{cs.cs_type}' "
+                                        f"on page {page.page_num} with OutputIntent present "
+                                        f"(ICC-based alternative recommended)"
+                                    ),
+                                    page_num=page.page_num,
+                                    details={
+                                        "color_space_name": cs_name,
+                                        "color_space_type": cs.cs_type,
+                                        "recommendation": "Use ICC-based color space",
+                                    },
+                                )
+                            )
 
         return findings
 

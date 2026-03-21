@@ -1,0 +1,25 @@
+{
+  "name": "GWG Web Offset",
+  "description": "GWG web offset with TAC 300% and SWOP profile.",
+  "version": "1.0",
+  "conformance": "pdfx4",
+  "workflow": "CMYK",
+  "checks": {
+    "enabled": ["GRD_*", "PDFX4-*"],
+    "disabled": [],
+    "severity_overrides": {}
+  },
+  "thresholds": {
+    "min_dpi": 250.0,
+    "max_dpi": 600.0,
+    "tac_limit": 300.0,
+    "min_bleed_mm": 3.0,
+    "hairline_threshold": 0.25,
+    "small_text_threshold": 6.0,
+    "very_small_text_threshold": 4.0,
+    "safety_margin_mm": 3.0,
+    "max_file_size_mb": 500.0,
+    "target_output_condition": "swop2006_coated",
+    "gamut_check": true
+  }
+}

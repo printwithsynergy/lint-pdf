@@ -1,0 +1,66 @@
+{
+  "fogra39_coated": {
+    "name": "FOGRA39 Coated Offset",
+    "source_data": "FOGRA39L",
+    "region": "Europe (dominant legacy)",
+    "use_case": "Coated offset",
+    "tac_limit": 330,
+    "mesh_file": "fogra39_coated.json"
+  },
+  "fogra51_premium": {
+    "name": "FOGRA51 Premium Coated",
+    "source_data": "FOGRA51",
+    "region": "Europe (current)",
+    "use_case": "Premium coated, M1",
+    "tac_limit": 330,
+    "mesh_file": "fogra51_premium.json"
+  },
+  "fogra52_uncoated": {
+    "name": "FOGRA52 Uncoated",
+    "source_data": "FOGRA52",
+    "region": "Europe",
+    "use_case": "Uncoated white",
+    "tac_limit": 300,
+    "mesh_file": "fogra52_uncoated.json"
+  },
+  "gracol2006_coated": {
+    "name": "GRACoL 2006 Coated",
+    "source_data": "GRACoL 2006 CRPC3",
+    "region": "North America",
+    "use_case": "Sheetfed coated",
+    "tac_limit": 340,
+    "mesh_file": "gracol2006_coated.json"
+  },
+  "swop2006_coated": {
+    "name": "SWOP 2006 Coated",
+    "source_data": "SWOP 2006 CRPC5",
+    "region": "North America",
+    "use_case": "Web offset",
+    "tac_limit": 300,
+    "mesh_file": "swop2006_coated.json"
+  },
+  "japancolor2001_coated": {
+    "name": "Japan Color 2001 Coated",
+    "source_data": "JC2001",
+    "region": "Japan/Asia",
+    "use_case": "Sheetfed coated",
+    "tac_limit": 350,
+    "mesh_file": "japancolor2001_coated.json"
+  },
+  "srgb": {
+    "name": "sRGB IEC61966-2.1",
+    "source_data": "ICC standard",
+    "region": "Universal",
+    "use_case": "RGB validation",
+    "tac_limit": null,
+    "mesh_file": "srgb.json"
+  },
+  "fogra55_ecg": {
+    "name": "FOGRA55 ECG (CMYKOGV)",
+    "source_data": "FOGRA55",
+    "region": "Europe",
+    "use_case": "Extended gamut",
+    "tac_limit": 300,
+    "mesh_file": "fogra55_ecg.json"
+  }
+}

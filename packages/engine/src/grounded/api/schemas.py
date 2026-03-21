@@ -57,6 +57,9 @@ class JobResponse(BaseModel):
     summary: JobSummaryResponse | None = None
     findings: list[FindingResponse] | None = None
     error_message: str | None = None
+    color_quality_score: float | None = None
+    color_quality_grade: str | None = None
+    color_score_breakdown: dict[str, float] | None = None
 
 
 class JobListResponse(BaseModel):
@@ -181,3 +184,89 @@ class StatusResponse(BaseModel):
     queue_depth: int = 0
     queue_depths: dict[str, int] = Field(default_factory=dict)
     worker_count: int = 0
+
+
+# --- Color config schemas ---
+
+
+class ColorConfigResponse(BaseModel):
+    """Tenant color management configuration."""
+
+    default_output_condition: str | None = None
+    custom_icc_profiles: list[dict[str, object]] | None = None
+    brand_palette: list[dict[str, object]] | None = None
+    custom_dictionary_words: list[str] | None = None
+    default_tac_threshold: int = 320
+    default_safe_zone_margin_mm: float = 3.0
+    package_capacity_default: str | None = None
+    package_surface_area_default: float | None = None
+    target_market: str | None = None
+    epm_mode_default: bool = False
+
+
+class ColorConfigUpdateRequest(BaseModel):
+    """Request to update color config. All fields optional."""
+
+    default_output_condition: str | None = None
+    default_tac_threshold: int | None = None
+    default_safe_zone_margin_mm: float | None = None
+    package_capacity_default: str | None = None
+    package_surface_area_default: float | None = None
+    target_market: str | None = None
+    epm_mode_default: bool | None = None
+
+
+class PaletteUpdateRequest(BaseModel):
+    """Request to update brand color palette."""
+
+    colors: list[dict[str, object]] = Field(
+        description="Array of color definitions with name, value, and thresholds."
+    )
+
+
+class GamutConditionResponse(BaseModel):
+    """Available gamut condition."""
+
+    slug: str
+    name: str
+    region: str
+    use_case: str
+    tac_limit: int | None = None
+
+
+class GamutConditionsListResponse(BaseModel):
+    """List of available gamut conditions."""
+
+    conditions: list[GamutConditionResponse]
+
+
+class IccProfileUploadResponse(BaseModel):
+    """Response after uploading an ICC profile."""
+
+    profile_id: str
+    name: str
+    color_space: str | None = None
+    version: str | None = None
+    message: str = "ICC profile uploaded successfully"
+
+
+# --- User AI access schemas ---
+
+
+class UserAIAccessResponse(BaseModel):
+    """User AI access configuration."""
+
+    user_id: uuid.UUID
+    ai_enabled: bool = False
+    personal_spending_limit: float | None = None
+    trial_enabled: bool = False
+    trial_expires_at: datetime | None = None
+
+
+class UserAIAccessUpdateRequest(BaseModel):
+    """Request to update user AI access."""
+
+    ai_enabled: bool | None = None
+    personal_spending_limit: float | None = None
+    trial_enabled: bool | None = None
+    trial_expires_at: datetime | None = None

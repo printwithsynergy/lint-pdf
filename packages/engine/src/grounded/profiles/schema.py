@@ -52,6 +52,67 @@ class ThresholdConfig(BaseModel):
     barcode_min_grade: str = Field(default="C", description="Minimum barcode grade (A/B/C/D/F).")
     barcode_quiet_zone_mm: float = Field(default=2.5, ge=0, description="Barcode quiet zone in mm.")
 
+    # Color management thresholds
+    target_output_condition: str = Field(
+        default="",
+        description="Target output condition for gamut checking (e.g., 'fogra39_coated').",
+    )
+    gamut_check: bool = Field(
+        default=False, description="Enable gamut boundary checking against target condition."
+    )
+    epm_mode: bool = Field(
+        default=False, description="Enable HP Indigo EPM (CMY-only) readiness checks."
+    )
+    ecg_mode: bool = Field(
+        default=False, description="Enable Extended Gamut (CMYKOGV) readiness checks."
+    )
+    cmy_tac_threshold: float = Field(
+        default=240.0, ge=0, description="TAC threshold for CMY-only (EPM) workflows (%)."
+    )
+    rich_black_c: float = Field(
+        default=60.0, ge=0, le=100, description="Target Cyan component for rich black (%)."
+    )
+    rich_black_m: float = Field(
+        default=40.0, ge=0, le=100, description="Target Magenta component for rich black (%)."
+    )
+    rich_black_y: float = Field(
+        default=40.0, ge=0, le=100, description="Target Yellow component for rich black (%)."
+    )
+    rich_black_k: float = Field(
+        default=100.0, ge=0, le=100, description="Target Key component for rich black (%)."
+    )
+    spot_color_delta_e_squall: float = Field(
+        default=5.0, ge=0, description="Delta-E 2000 threshold for spot color fallback squall."
+    )
+    spot_color_delta_e_advisory: float = Field(
+        default=2.0, ge=0, description="Delta-E 2000 threshold for spot color fallback advisory."
+    )
+    min_printing_dot: float = Field(
+        default=2.0, ge=0, le=100, description="Minimum printing dot percentage (scum dot risk)."
+    )
+    ecg_tac_limit: float = Field(
+        default=300.0, ge=0, description="TAC limit for ECG/CMYKOGV workflows (FOGRA55)."
+    )
+    ecg_delta_e_excellent: float = Field(
+        default=2.0, ge=0, description="Delta-E 2000 for excellent ECG spot achievability."
+    )
+    ecg_delta_e_good: float = Field(
+        default=3.0, ge=0, description="Delta-E 2000 for good ECG spot achievability."
+    )
+    ecg_delta_e_acceptable: float = Field(
+        default=5.0, ge=0, description="Delta-E 2000 for acceptable ECG spot achievability."
+    )
+    color_score_weights: dict[str, float] = Field(
+        default_factory=lambda: {
+            "color_spaces": 25.0,
+            "ink_coverage": 25.0,
+            "profiles": 20.0,
+            "spot_colors": 15.0,
+            "overprint": 15.0,
+        },
+        description="Weights for Color Quality Score categories (must sum to 100).",
+    )
+
 
 class AIFeatureConfig(BaseModel):
     """Configuration for AI-powered inspections within a Voyage Plan."""
@@ -69,6 +130,21 @@ class AIFeatureConfig(BaseModel):
         default="en",
         description="ISO 639-1 language code for AI-generated report text.",
     )
+
+
+class ColorConfig(BaseModel):
+    """Per-request color configuration overrides."""
+
+    target_condition: str = Field(
+        default="", description="Target output condition (overrides threshold)."
+    )
+    tac_threshold: float | None = Field(
+        default=None, ge=0, description="TAC threshold override (%)."
+    )
+    gamut_check: bool | None = Field(
+        default=None, description="Enable/disable gamut checking override."
+    )
+    epm_mode: bool | None = Field(default=None, description="Enable/disable EPM mode override.")
 
 
 class VoyagePlan(BaseModel):
@@ -92,6 +168,7 @@ class VoyagePlan(BaseModel):
     checks: CheckConfig = Field(default_factory=CheckConfig)
     thresholds: ThresholdConfig = Field(default_factory=ThresholdConfig)
     ai: AIFeatureConfig = Field(default_factory=AIFeatureConfig)
+    color: ColorConfig = Field(default_factory=ColorConfig)
 
     def is_check_enabled(self, check_id: str) -> bool:
         """Determine if a check ID is enabled by this voyage plan."""

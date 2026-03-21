@@ -17,11 +17,13 @@ from grounded.api.routes import (
     ai_interpret,
     ai_presets,
     ai_usage,
+    color_config,
     health,
     jobs,
     profiles,
     reports,
     usage,
+    user_ai_access,
     webhooks,
 )
 
@@ -108,6 +110,10 @@ def create_app() -> FastAPI:
     app.include_router(ai_presets.router)
     app.include_router(ai_generate.router)
     app.include_router(ai_interpret.router)
+
+    # Phase 7-8: Color config & user AI access routers
+    app.include_router(color_config.router, prefix="/api/v1")
+    app.include_router(user_ai_access.router, prefix="/api/v1")
 
     # Dev auth (impersonation) — only when explicitly enabled
     from grounded.api.config import get_settings
