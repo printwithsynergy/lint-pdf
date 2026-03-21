@@ -21,35 +21,41 @@ if TYPE_CHECKING:
     from grounded.semantic.model import SemanticDocument
 
 # G7-compatible profile identifiers
-_G7_IDENTIFIERS = frozenset({
-    "GRACoL",
-    "GRACOL",
-    "GRACoL2006",
-    "GRACoL2013",
-    "SWOP",
-    "CGATS TR 006",
-    "CGATS TR006",
-    "CGATS TR 001",
-})
+_G7_IDENTIFIERS = frozenset(
+    {
+        "GRACoL",
+        "GRACOL",
+        "GRACoL2006",
+        "GRACoL2013",
+        "SWOP",
+        "CGATS TR 006",
+        "CGATS TR006",
+        "CGATS TR 001",
+    }
+)
 
 # GRACoL-compatible profile identifiers
-_GRACOL_IDENTIFIERS = frozenset({
-    "GRACoL",
-    "GRACOL",
-    "GRACoL2006",
-    "GRACoL2013",
-    "GRACoL2006_Coated1v2",
-    "CGATS TR 006",
-    "CGATS TR006",
-})
+_GRACOL_IDENTIFIERS = frozenset(
+    {
+        "GRACoL",
+        "GRACOL",
+        "GRACoL2006",
+        "GRACoL2013",
+        "GRACoL2006_Coated1v2",
+        "CGATS TR 006",
+        "CGATS TR006",
+    }
+)
 
 # ISO 12647-2 reference condition identifiers
-_ISO_12647_IDENTIFIERS = frozenset({
-    "FOGRA39",
-    "FOGRA39L",
-    "FOGRA51",
-    "FOGRA52",
-})
+_ISO_12647_IDENTIFIERS = frozenset(
+    {
+        "FOGRA39",
+        "FOGRA39L",
+        "FOGRA51",
+        "FOGRA52",
+    }
+)
 
 # TAC limits
 _G7_TAC_LIMIT = 320.0
@@ -93,12 +99,14 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
                         # Check for light CMYK values (min dot)
                         for i, v in enumerate(vals):
                             if 0 < v < _MIN_DOT_THRESHOLD:
-                                light_fills.append({
-                                    "page_num": event.page_num,
-                                    "channel": ["C", "M", "Y", "K"][i],
-                                    "value": v,
-                                    "color_values": list(vals),
-                                })
+                                light_fills.append(
+                                    {
+                                        "page_num": event.page_num,
+                                        "channel": ["C", "M", "Y", "K"][i],
+                                        "value": v,
+                                        "color_values": list(vals),
+                                    }
+                                )
 
                 # Check stroke TAC
                 if event.stroke and event.stroke_color_space == "DeviceCMYK":
@@ -111,9 +119,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
                             max_tac_values = vals
 
         # GRD_STD_001: G7 pre-compliance
-        findings.extend(
-            self._check_g7_compliance(document, max_tac, max_tac_page, max_tac_values)
-        )
+        findings.extend(self._check_g7_compliance(document, max_tac, max_tac_page, max_tac_values))
 
         # GRD_STD_002: GRACoL compliance
         findings.extend(
@@ -159,9 +165,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         """GRD_STD_001: G7 pre-compliance readiness check."""
         findings: list[Finding] = []
 
-        matched_profile = self._find_profile_match(
-            document.output_intents, _G7_IDENTIFIERS
-        )
+        matched_profile = self._find_profile_match(document.output_intents, _G7_IDENTIFIERS)
         has_g7_profile = matched_profile is not None
         tac_compliant = max_tac <= _G7_TAC_LIMIT
 
@@ -242,9 +246,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         """GRD_STD_002: GRACoL compliance validation."""
         findings: list[Finding] = []
 
-        matched_profile = self._find_profile_match(
-            document.output_intents, _GRACOL_IDENTIFIERS
-        )
+        matched_profile = self._find_profile_match(document.output_intents, _GRACOL_IDENTIFIERS)
         has_gracol_profile = matched_profile is not None
 
         if not has_gracol_profile:
@@ -252,9 +254,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
                 Finding(
                     inspection_id="GRD_STD_002",
                     severity=Severity.SQUALL,
-                    message=(
-                        "GRACoL compliance: No GRACoL-compatible OutputIntent profile found"
-                    ),
+                    message=("GRACoL compliance: No GRACoL-compatible OutputIntent profile found"),
                     details={
                         "output_intent_count": len(document.output_intents),
                         "gracol_profile_found": False,

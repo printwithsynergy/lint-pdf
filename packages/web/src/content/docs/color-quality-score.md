@@ -15,31 +15,31 @@ The score starts at 100 and is reduced by deductions based on color-related find
 
 These cap the maximum score:
 
-| Issue | Maximum Score |
-|-------|--------------|
-| RGB in CMYK workflow | 20 |
-| Missing OutputIntent in PDF/X | 25 |
-| Corrupt ICC profiles | 30 |
+| Issue                         | Maximum Score |
+| ----------------------------- | ------------- |
+| RGB in CMYK workflow          | 20            |
+| Missing OutputIntent in PDF/X | 25            |
+| Corrupt ICC profiles          | 30            |
 
 ### Deduction Categories
 
-| Category | Weight | What's Checked |
-|----------|--------|---------------|
-| Color Spaces | 25% | Color space usage, device-dependent warnings, workflow compliance |
-| Ink Coverage | 25% | TAC limits, per-separation coverage, black generation |
-| Profiles | 20% | ICC profiles, output intent, gamut compliance |
-| Spot Colors | 15% | Naming, fallback values, DeviceN structure |
-| Overprint | 15% | Dangerous overprint patterns, registration color |
+| Category     | Weight | What's Checked                                                    |
+| ------------ | ------ | ----------------------------------------------------------------- |
+| Color Spaces | 25%    | Color space usage, device-dependent warnings, workflow compliance |
+| Ink Coverage | 25%    | TAC limits, per-separation coverage, black generation             |
+| Profiles     | 20%    | ICC profiles, output intent, gamut compliance                     |
+| Spot Colors  | 15%    | Naming, fallback values, DeviceN structure                        |
+| Overprint    | 15%    | Dangerous overprint patterns, registration color                  |
 
 ### Score Interpretation
 
-| Range | Grade | Meaning |
-|-------|-------|---------|
-| 90-100 | Excellent | Press-ready with confidence |
-| 75-89 | Good | Minor issues, likely printable |
-| 50-74 | Fair | Review needed before production |
-| 25-49 | Poor | Significant color issues |
-| 0-24 | Critical | Not suitable for production |
+| Range  | Grade     | Meaning                         |
+| ------ | --------- | ------------------------------- |
+| 90-100 | Excellent | Press-ready with confidence     |
+| 75-89  | Good      | Minor issues, likely printable  |
+| 50-74  | Fair      | Review needed before production |
+| 25-49  | Poor      | Significant color issues        |
+| 0-24   | Critical  | Not suitable for production     |
 
 ## Customizing Weights
 

@@ -45,7 +45,9 @@ async def get_color_config(
         default_safe_zone_margin_mm=float(config.default_safe_zone_margin_mm),
         package_capacity_default=config.package_capacity_default,
         package_surface_area_default=(
-            float(config.package_surface_area_default) if config.package_surface_area_default else None
+            float(config.package_surface_area_default)
+            if config.package_surface_area_default
+            else None
         ),
         target_market=config.target_market,
         epm_mode_default=config.epm_mode_default,
@@ -81,7 +83,9 @@ async def update_color_config(
         default_safe_zone_margin_mm=float(config.default_safe_zone_margin_mm),
         package_capacity_default=config.package_capacity_default,
         package_surface_area_default=(
-            float(config.package_surface_area_default) if config.package_surface_area_default else None
+            float(config.package_surface_area_default)
+            if config.package_surface_area_default
+            else None
         ),
         target_market=config.target_market,
         epm_mode_default=config.epm_mode_default,
@@ -190,7 +194,9 @@ async def set_brand_palette(
     return {"message": "Brand palette updated", "colors": len(request.colors)}
 
 
-@router.get("/{tenant_id}/color-config/gamut-conditions", response_model=GamutConditionsListResponse)
+@router.get(
+    "/{tenant_id}/color-config/gamut-conditions", response_model=GamutConditionsListResponse
+)
 async def list_gamut_conditions(
     tenant_id: uuid_mod.UUID,
     tenant: Tenant = Depends(get_current_tenant),  # noqa: B008

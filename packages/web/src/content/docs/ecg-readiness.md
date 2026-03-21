@@ -13,13 +13,13 @@ Extended Gamut (also called Expanded Color Gamut or CMYKOGV) uses 7 inks instead
 
 ## Checks
 
-| Check | Description |
-|-------|-------------|
-| GRD_ECG_001 | ECG readiness assessment with spot color inventory |
+| Check       | Description                                                 |
+| ----------- | ----------------------------------------------------------- |
+| GRD_ECG_001 | ECG readiness assessment with spot color inventory          |
 | GRD_ECG_002 | Per-spot color ECG achievability (ΔE against FOGRA55 gamut) |
-| GRD_ECG_003 | 7-channel TAC verification (300% FOGRA55 limit) |
-| GRD_ECG_004 | DeviceN colorant consistency for CMYKOGV |
-| GRD_ECG_005 | Max 3-ink build validation |
+| GRD_ECG_003 | 7-channel TAC verification (300% FOGRA55 limit)             |
+| GRD_ECG_004 | DeviceN colorant consistency for CMYKOGV                    |
+| GRD_ECG_005 | Max 3-ink build validation                                  |
 
 ## Usage
 

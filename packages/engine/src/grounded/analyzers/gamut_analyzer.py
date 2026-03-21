@@ -150,8 +150,7 @@ class GamutAnalyzer(BaseAnalyzer):
                     inspection_id="GRD_GAMUT_001",
                     severity=Severity.ADVISORY,
                     message=(
-                        f"Gamut boundary not available for condition: "
-                        f"{self.target_condition}"
+                        f"Gamut boundary not available for condition: {self.target_condition}"
                     ),
                     details={"target_condition": self.target_condition},
                 )

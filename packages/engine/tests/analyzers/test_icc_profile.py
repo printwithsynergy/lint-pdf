@@ -1,9 +1,14 @@
 """Tests for IccProfileAnalyzer."""
+
 from grounded.analyzers.icc_profile_analyzer import IccProfileAnalyzer
 from grounded.analyzers.finding import Severity
 from grounded.semantic.model import (
-    SemanticDocument, SemanticPage, PdfBox, PdfColorSpace,
+    SemanticDocument,
+    SemanticPage,
+    PdfBox,
+    PdfColorSpace,
 )
+
 
 def _make_doc(output_intents=None, color_spaces=None):
     """Build a minimal SemanticDocument for testing."""
@@ -21,6 +26,7 @@ def _make_doc(output_intents=None, color_spaces=None):
         pages=[page],
     )
 
+
 class TestIccProfileAnalyzer:
     def test_no_findings_on_clean_document(self):
         doc = _make_doc()
@@ -31,7 +37,9 @@ class TestIccProfileAnalyzer:
         assert len(icc_findings) == 0
 
     def test_valid_icc_based_color_space(self):
-        cs = PdfColorSpace(name="CS1", cs_type="ICCBased", components=4, icc_profile_ref="profile_1")
+        cs = PdfColorSpace(
+            name="CS1", cs_type="ICCBased", components=4, icc_profile_ref="profile_1"
+        )
         doc = _make_doc(color_spaces={"CS1": cs})
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -40,7 +48,9 @@ class TestIccProfileAnalyzer:
         assert len(icc_002) >= 1
 
     def test_invalid_icc_component_count(self):
-        cs = PdfColorSpace(name="CS1", cs_type="ICCBased", components=5, icc_profile_ref="profile_1")
+        cs = PdfColorSpace(
+            name="CS1", cs_type="ICCBased", components=5, icc_profile_ref="profile_1"
+        )
         doc = _make_doc(color_spaces={"CS1": cs})
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
@@ -58,9 +68,7 @@ class TestIccProfileAnalyzer:
         assert icc_003[0].severity == Severity.AGROUND
 
     def test_output_intent_validation(self):
-        doc = _make_doc(output_intents=[
-            {"S": "GTS_PDFX", "OutputConditionIdentifier": "FOGRA39"}
-        ])
+        doc = _make_doc(output_intents=[{"S": "GTS_PDFX", "OutputConditionIdentifier": "FOGRA39"}])
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
         icc_005 = [f for f in findings if f.inspection_id == "GRD_ICC_005"]
@@ -75,10 +83,12 @@ class TestIccProfileAnalyzer:
         assert icc_004[0].severity == Severity.SQUALL
 
     def test_multiple_inconsistent_output_intents(self):
-        doc = _make_doc(output_intents=[
-            {"S": "GTS_PDFX", "OutputConditionIdentifier": "FOGRA39"},
-            {"S": "GTS_PDFA1", "OutputConditionIdentifier": "sRGB"},
-        ])
+        doc = _make_doc(
+            output_intents=[
+                {"S": "GTS_PDFX", "OutputConditionIdentifier": "FOGRA39"},
+                {"S": "GTS_PDFA1", "OutputConditionIdentifier": "sRGB"},
+            ]
+        )
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
         icc_006 = [f for f in findings if f.inspection_id == "GRD_ICC_006"]

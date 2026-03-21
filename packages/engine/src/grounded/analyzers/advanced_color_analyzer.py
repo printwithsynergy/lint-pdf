@@ -196,8 +196,8 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 continue
 
             # Calculate effective font size
-            tm_scale_y = math.sqrt(event.text_matrix.b ** 2 + event.text_matrix.d ** 2)
-            ctm_scale_y = math.sqrt(event.ctm.b ** 2 + event.ctm.d ** 2)
+            tm_scale_y = math.sqrt(event.text_matrix.b**2 + event.text_matrix.d**2)
+            ctm_scale_y = math.sqrt(event.ctm.b**2 + event.ctm.d**2)
             effective_size = event.font_size * tm_scale_y * ctm_scale_y
 
             if effective_size >= 12.0 or effective_size <= 0:
@@ -348,10 +348,8 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                         cmyk_samples.append((vals, "path", event.page_num, None))
             elif isinstance(event, TextRenderedEvent):
                 if event.color_space == "DeviceCMYK" and len(event.color_values) == 4:
-                    tm_scale_y = math.sqrt(
-                        event.text_matrix.b ** 2 + event.text_matrix.d ** 2
-                    )
-                    ctm_scale_y = math.sqrt(event.ctm.b ** 2 + event.ctm.d ** 2)
+                    tm_scale_y = math.sqrt(event.text_matrix.b**2 + event.text_matrix.d**2)
+                    ctm_scale_y = math.sqrt(event.ctm.b**2 + event.ctm.d**2)
                     effective_size = event.font_size * tm_scale_y * ctm_scale_y
                     cmyk_samples.append(
                         (event.color_values, "text", event.page_num, effective_size)
@@ -467,9 +465,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
 
         return findings
 
-    def _classify_black(
-        self, c: float, m: float, y: float, k: float
-    ) -> str | None:
+    def _classify_black(self, c: float, m: float, y: float, k: float) -> str | None:
         """Classify a CMYK color into a black category.
 
         Args:

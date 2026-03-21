@@ -114,6 +114,7 @@ def validate_icc_profile_bytes(profile_bytes: bytes) -> dict[str, Any]:
     try:
         from PIL import ImageCms
         import io
+
         ImageCms.getOpenProfile(io.BytesIO(profile_bytes))
     except ImportError:
         pass

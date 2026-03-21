@@ -30,23 +30,25 @@ _VALID_ICC_COMPONENTS = frozenset({1, 3, 4})
 _KNOWN_SUBTYPES = frozenset({"GTS_PDFX", "GTS_PDFA1", "ISO_PDFE1"})
 
 # Known output condition identifiers
-KNOWN_CONDITIONS = frozenset({
-    "FOGRA39",
-    "FOGRA39L",
-    "FOGRA45",
-    "FOGRA47",
-    "FOGRA51",
-    "FOGRA52",
-    "FOGRA55",
-    "GRACoL2006_Coated1v2",
-    "GRACoL2013_CRPC6",
-    "SWOP2006_Coated3v2",
-    "SWOP2006_Coated5v2",
-    "JC200103",
-    "CGATS TR 001",
-    "CGATS TR 003",
-    "CGATS TR 006",
-})
+KNOWN_CONDITIONS = frozenset(
+    {
+        "FOGRA39",
+        "FOGRA39L",
+        "FOGRA45",
+        "FOGRA47",
+        "FOGRA51",
+        "FOGRA52",
+        "FOGRA55",
+        "GRACoL2006_Coated1v2",
+        "GRACoL2013_CRPC6",
+        "SWOP2006_Coated3v2",
+        "SWOP2006_Coated5v2",
+        "JC200103",
+        "CGATS TR 001",
+        "CGATS TR 003",
+        "CGATS TR 006",
+    }
+)
 
 
 class IccProfileAnalyzer(BaseAnalyzer):
@@ -230,8 +232,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                         inspection_id="GRD_ICC_004",
                         severity=Severity.SQUALL,
                         message=(
-                            f"Output intent #{idx + 1} is missing required "
-                            f"'S' (subtype) entry"
+                            f"Output intent #{idx + 1} is missing required 'S' (subtype) entry"
                         ),
                         details={
                             "intent_index": idx,
@@ -299,10 +300,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                     Finding(
                         inspection_id="GRD_ICC_005",
                         severity=Severity.ADVISORY,
-                        message=(
-                            f"Output intent #{idx + 1} condition validated: "
-                            f"{condition_id}"
-                        ),
+                        message=(f"Output intent #{idx + 1} condition validated: {condition_id}"),
                         details={
                             "intent_index": idx,
                             "condition_identifier": condition_id,
@@ -316,8 +314,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                         inspection_id="GRD_ICC_005",
                         severity=Severity.ADVISORY,
                         message=(
-                            f"Output intent #{idx + 1} has unrecognized "
-                            f"condition '{condition_id}'"
+                            f"Output intent #{idx + 1} has unrecognized condition '{condition_id}'"
                         ),
                         details={
                             "intent_index": idx,

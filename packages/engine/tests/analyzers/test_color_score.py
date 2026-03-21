@@ -1,6 +1,8 @@
 """Tests for Color Quality Score."""
+
 from grounded.color_score import compute_color_quality_score, ColorQualityScore
 from grounded.analyzers.finding import Finding, Severity
+
 
 class TestColorQualityScore:
     def test_perfect_score_no_findings(self):
@@ -45,6 +47,7 @@ class TestColorQualityScore:
 
     def test_grade_thresholds(self):
         from grounded.color_score import _get_grade
+
         assert _get_grade(95) == "Excellent"
         assert _get_grade(80) == "Good"
         assert _get_grade(60) == "Fair"
