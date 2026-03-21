@@ -5,7 +5,7 @@ description: "How AI credits work: pay-per-use vs packages, consumption, balance
 
 # AI Credits
 
-AI inspections in LintPDF are metered using a credit system. Core preflight checks (250+ checks) remain unlimited on all paid plans. AI credits are purchased and consumed separately.
+AI inspections in LintPDF are metered using a credit system. Core preflight checks (255+ checks) remain unlimited on all paid plans. AI credits are purchased and consumed separately.
 
 ## How Credits Are Consumed
 

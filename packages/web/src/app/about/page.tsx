@@ -143,7 +143,7 @@ export default function AboutPage() {
             See what LintPDF can detect
           </h2>
           <p className="text-slate-500 mb-8">
-            250+ checks across fonts, color spaces, images, transparency, page
+            255+ checks across fonts, color spaces, images, transparency, page
             geometry, compliance, and barcodes.
           </p>
           <Link

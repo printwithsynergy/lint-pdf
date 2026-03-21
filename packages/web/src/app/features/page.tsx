@@ -5,7 +5,7 @@ import { AI_CATEGORIES, AI_PRESETS } from "@/lib/brand";
 export const metadata: Metadata = {
   title: "Features — LintPDF",
   description:
-    "250+ rule-based checks plus 33 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, regulatory compliance, and more.",
+    "255+ rule-based checks plus 32 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, regulatory compliance, and more.",
 };
 
 const coreFeatures = [
