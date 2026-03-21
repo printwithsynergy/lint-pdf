@@ -382,7 +382,7 @@ export default function AIPage() {
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="font-semibold text-slate-900">{cat.name}</h3>
                   <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-bold text-brand-700">
-                    {cat.count}
+                    {cat.count} checks
                   </span>
                 </div>
                 <ul className="space-y-1.5">
