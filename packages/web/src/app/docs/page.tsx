@@ -964,7 +964,7 @@ if ($report['verdict'] === 'pass') {
             </span>
           </div>
           <p className="text-slate-500">
-            33 AI inspections across 14 categories. Credit-based,
+            32 AI inspections across 14 categories. Credit-based,
             detection-only, same Report format.
           </p>
         </div>
@@ -1333,7 +1333,7 @@ curl https://api.lintpdf.com/api/v1/ai/credits \\
             AI Inspections Reference
           </h2>
           <p className="text-slate-600 mb-6">
-            Complete reference for all 33 AI inspections, organized by category.
+            Complete reference for all 32 AI inspections, organized by category.
           </p>
 
           {[

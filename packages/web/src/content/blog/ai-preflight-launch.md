@@ -1,13 +1,13 @@
 ---
-title: "Introducing AI-Powered Preflight: 33 New Checks for LintPDF"
+title: "Introducing AI-Powered Preflight: 32 New Checks for LintPDF"
 date: "2026-03-16"
 author: "Think Neverland"
 category: "Product Updates"
-excerpt: "LintPDF adds 33 AI checks across 14 categories — barcode detection, regulatory compliance, content quality, image analysis, logo verification, and more. Invite-only alpha, credit-based, same Report format."
+excerpt: "LintPDF adds 32 AI checks across 14 categories — barcode detection, regulatory compliance, content quality, image analysis, logo verification, and more. Invite-only alpha, credit-based, same Report format."
 tags: ["launch", "ai", "product"]
 ---
 
-Today we are launching AI-powered preflight checks for LintPDF. This adds 33 new checks across 14 categories — barcode detection, content quality, file comparison, color compliance, trend analysis, dieline detection, regulatory compliance, image analysis, document classification, logo verification, spatial analysis, NLP interfaces, text analysis, and symbol detection.
+Today we are launching AI-powered preflight checks for LintPDF. This adds 32 new checks across 14 categories — barcode detection, content quality, file comparison, color compliance, trend analysis, dieline detection, regulatory compliance, image analysis, document classification, logo verification, spatial analysis, NLP interfaces, text analysis, and symbol detection.
 
 ## What AI Adds (and What It Does Not Replace)
 
@@ -19,7 +19,7 @@ AI findings appear in the same Report as core engine findings. The `source: "ai"
 
 ## The 14 Categories
 
-The 33 AI checks are organized into 14 categories across two processing tiers:
+The 32 AI checks are organized into 14 categories across two processing tiers:
 
 ### Text Tier (1 credit, sub-second latency)
 
@@ -75,7 +75,7 @@ We have created seven curated AI presets for common use cases:
 4. **ghs-chemical** — CLP 1272/2008 pictogram detection, signal words, and H/P statements
 5. **packaging-qc** — Barcode grading, dieline detection, safe zones, and image quality
 6. **brand-compliance** — Logo verification, brand palette enforcement, and spell checking
-7. **full-ai-scan** — All 33 checks across every category
+7. **full-ai-scan** — All 32 checks across every category
 
 Select a preset in your submission request or build custom combinations in your Ruleset.
 

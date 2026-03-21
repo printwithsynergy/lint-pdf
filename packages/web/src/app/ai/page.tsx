@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "AI-Powered Preflight — LintPDF",
   description:
-    "33 AI inspections across barcode detection, regulatory compliance, content quality, brand verification, and more. Invite-only alpha.",
+    "32 AI inspections across barcode detection, regulatory compliance, content quality, brand verification, and more. Invite-only alpha.",
 };
 
 const aiCategories = [
@@ -316,8 +316,8 @@ const presets = [
   },
   {
     name: "Full AI Scan",
-    description: "All 33 AI inspections — comprehensive analysis",
-    inspections: 33,
+    description: "All 32 AI inspections — comprehensive analysis",
+    inspections: 32,
     tier: "Vision",
   },
 ];

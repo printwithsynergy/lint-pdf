@@ -107,7 +107,7 @@ export const pricingTiers: PricingTier[] = [
       "50 files per month",
       "Basic Ruleset",
       "JSON output only",
-      "250+ Checks",
+      "255+ Checks",
       "Community support",
     ],
     cta: "Start Free",
@@ -124,7 +124,7 @@ export const pricingTiers: PricingTier[] = [
       "500 files per month",
       "All Rulesets",
       "PDF, JSON & XML reports",
-      "250+ Checks",
+      "255+ Checks",
       "Email support",
     ],
     cta: "Get Started",
@@ -142,7 +142,7 @@ export const pricingTiers: PricingTier[] = [
       "Custom Rulesets",
       "PDF, JSON & XML reports",
       "Webhooks",
-      "250+ Checks",
+      "255+ Checks",
       "Priority support",
     ],
     cta: "Get Started",
@@ -208,11 +208,11 @@ export const comparisonFeatures: ComparisonFeature[] = [
   },
   {
     name: "Checks",
-    free: "250+",
-    starter: "250+",
-    growth: "250+",
-    scale: "250+",
-    enterprise: "250+",
+    free: "255+",
+    starter: "255+",
+    growth: "255+",
+    scale: "255+",
+    enterprise: "255+",
   },
   {
     name: "Rulesets",
@@ -332,7 +332,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
     label: "Preflight checks",
     tooltip: "Number of distinct inspections run per file",
     values: {
-      lintpdf: { type: "highlight", value: "250+" },
+      lintpdf: { type: "highlight", value: "255+" },
       pitstop: { type: "text", value: "~200" },
       pdftoolbox: { type: "text", value: "~180" },
       pdfrest: { type: "text", value: "~30" },
@@ -344,7 +344,7 @@ export const comparisonDimensions: ComparisonDimension[] = [
     tooltip:
       "Barcode decode, regulatory compliance, image quality, brand verification, spell check",
     values: {
-      lintpdf: { type: "highlight", value: "33 across 14 categories" },
+      lintpdf: { type: "highlight", value: "32 across 14 categories" },
       pitstop: { type: "boolean", value: false },
       pdftoolbox: { type: "text", value: "Barcode only" },
       pdfrest: { type: "boolean", value: false },
@@ -982,7 +982,7 @@ export const AI_PRESETS: AIPreset[] = [
     id: "full-ai-scan",
     name: "Full AI Scan",
     description:
-      "Run all 33 AI inspections across every category. Maximum coverage for comprehensive preflight.",
+      "Run all 32 AI inspections across every category. Maximum coverage for comprehensive preflight.",
     categories: [
       "barcode",
       "content_quality",

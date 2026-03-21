@@ -95,7 +95,7 @@ export function AIFeaturesSection() {
             </span>
           </div>
           <p className="text-slate-500 max-w-2xl mx-auto">
-            33 AI inspections across 14 categories. Credit-based,
+            32 AI inspections across 14 categories. Credit-based,
             detection-only, same Report format.
           </p>
         </div>
