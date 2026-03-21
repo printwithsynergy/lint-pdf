@@ -2,6 +2,7 @@
 
 from grounded.ai.analyzers import (
     barcode,  # noqa: F401
+    color_analysis,  # noqa: F401
     color_compliance,  # noqa: F401
     content_quality,  # noqa: F401
     dieline_detection,  # noqa: F401

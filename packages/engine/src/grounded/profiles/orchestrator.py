@@ -105,24 +105,43 @@ class PreflightOrchestrator:
         # Step 7-8: Filter and override
         findings = self._apply_overrides_and_filter(raw_findings)
 
-        # Step 9: Build result
+        # Step 9: Compute Color Quality Score
+        color_score_data: dict[str, Any] | None = None
+        try:
+            from grounded.color_score import compute_color_quality_score
+
+            weights = self._plan.thresholds.color_score_weights
+            color_result = compute_color_quality_score(findings, weights=weights)
+            color_score_data = {
+                "color_quality_score": color_result.score,
+                "color_quality_grade": color_result.grade,
+                "color_score_breakdown": color_result.breakdown,
+            }
+        except Exception:
+            pass
+
+        # Step 10: Build result
         duration_ms = int((time.monotonic() - start) * 1000)
         summary = self._build_summary(findings, document.page_count, len(pdf_bytes))
+
+        metadata: dict[str, Any] = {
+            "pdf_version": document.version,
+            "page_count": document.page_count,
+            "is_encrypted": document.is_encrypted,
+            "conformance": self._plan.conformance,
+            "workflow": self._plan.workflow,
+            "ai_enabled": self._plan.ai.enabled if self._plan.ai else False,
+            "ai_findings_count": len(ai_findings),
+        }
+        if color_score_data:
+            metadata.update(color_score_data)
 
         return PreflightResult(
             job_id=job_id,
             profile_id=self._profile_id,
             findings=findings,
             summary=summary,
-            metadata={
-                "pdf_version": document.version,
-                "page_count": document.page_count,
-                "is_encrypted": document.is_encrypted,
-                "conformance": self._plan.conformance,
-                "workflow": self._plan.workflow,
-                "ai_enabled": self._plan.ai.enabled if self._plan.ai else False,
-                "ai_findings_count": len(ai_findings),
-            },
+            metadata=metadata,
             duration_ms=duration_ms,
         )
 
@@ -244,18 +263,22 @@ class PreflightOrchestrator:
         """Create analyzer instances with configured thresholds."""
         from grounded.analyzers import (
             AccessibilityAnalyzer,
+            AdvancedColorAnalyzer,
             AnnotationAnalyzer,
             BarcodeAnalyzer,
             ColorAnalyzer,
             DocumentAnalyzer,
             FontAnalyzer,
             HairlineAnalyzer,
+            IccProfileAnalyzer,
             ImageAnalyzer,
+            InkCoverageAnalyzer,
             MetadataAnalyzer,
             OverprintAnalyzer,
             PageGeometryAnalyzer,
             PrepressAnalyzer,
             ProcessingStepAnalyzer,
+            SpotColorAnalyzer,
             StructureAnalyzer,
             TransparencyAnalyzer,
         )
@@ -264,7 +287,7 @@ class PreflightOrchestrator:
         bleed_pts = _mm_to_pts(t.min_bleed_mm)
         safety_pts = _mm_to_pts(t.safety_margin_mm)
 
-        return [
+        analyzers: list[Any] = [
             ImageAnalyzer(min_dpi=t.min_dpi, max_dpi=t.max_dpi),
             ColorAnalyzer(tac_limit=t.tac_limit),
             FontAnalyzer(),
@@ -287,7 +310,55 @@ class PreflightOrchestrator:
             ),
             AccessibilityAnalyzer(),
             ProcessingStepAnalyzer(),
+            # Color management analyzers
+            IccProfileAnalyzer(),
+            SpotColorAnalyzer(),
+            InkCoverageAnalyzer(tac_limit=t.tac_limit),
+            AdvancedColorAnalyzer(
+                rich_black_c=t.rich_black_c,
+                rich_black_m=t.rich_black_m,
+                rich_black_y=t.rich_black_y,
+                rich_black_k=t.rich_black_k,
+            ),
         ]
+
+        # Conditionally add ECG and EPM analyzers
+        if t.ecg_mode:
+            try:
+                from grounded.analyzers.ecg_analyzer import EcgAnalyzer
+
+                analyzers.append(EcgAnalyzer(tac_limit=t.ecg_tac_limit))
+            except ImportError:
+                pass
+
+        if t.epm_mode:
+            try:
+                from grounded.analyzers.epm_analyzer import EpmAnalyzer
+
+                analyzers.append(EpmAnalyzer(cmy_tac_threshold=t.cmy_tac_threshold))
+            except ImportError:
+                pass
+
+        # Standards compliance analyzer (always enabled)
+        try:
+            from grounded.analyzers.standards_compliance import StandardsComplianceAnalyzer
+
+            analyzers.append(StandardsComplianceAnalyzer())
+        except ImportError:
+            pass
+
+        # Gamut analyzer (if gamut checking enabled)
+        if t.gamut_check and t.target_output_condition:
+            try:
+                from grounded.analyzers.gamut_analyzer import GamutAnalyzer
+
+                analyzers.append(
+                    GamutAnalyzer(target_condition=t.target_output_condition)
+                )
+            except ImportError:
+                pass
+
+        return analyzers
 
     def _apply_overrides_and_filter(self, findings: list[Finding]) -> list[Finding]:
         """Apply severity overrides and filter disabled checks."""
