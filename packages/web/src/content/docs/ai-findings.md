@@ -1,6 +1,8 @@
 ---
 title: "Reading AI Findings"
 description: "Understanding AI findings in your Report: source field, categories, severity levels, and filtering."
+section: "ai"
+order: 8
 ---
 
 # Reading AI Findings

@@ -1,6 +1,8 @@
 ---
 title: "HP Indigo EPM Readiness"
 description: "HP Indigo Enhanced Productivity Mode (CMY-only) preflight checks."
+section: "color"
+order: 5
 ---
 
 # HP Indigo EPM Readiness

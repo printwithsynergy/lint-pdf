@@ -1,6 +1,8 @@
 ---
 title: "Standards Compliance"
 description: "G7, GRACoL, and ISO 12647 readiness checking."
+section: "color"
+order: 3
 ---
 
 # Standards Compliance

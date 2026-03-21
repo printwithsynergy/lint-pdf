@@ -1,6 +1,8 @@
 ---
 title: "Color Quality Score"
 description: "Understanding and customizing the 0-100 Color Quality Score."
+section: "color"
+order: 2
 ---
 
 # Color Quality Score

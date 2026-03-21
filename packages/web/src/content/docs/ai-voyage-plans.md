@@ -1,6 +1,8 @@
 ---
 title: "AI in Rulesets"
 description: "Using AI checks in Rulesets, presets, and per-request overrides."
+section: "ai"
+order: 11
 ---
 
 # AI in Rulesets

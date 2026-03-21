@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { DesktopOnly } from "./DesktopOnly";
 import { useBeta } from "./BetaContext";
 import { WaitlistModal } from "./WaitlistModal";
@@ -58,12 +59,12 @@ export function CTASection() {
               Get Started
             </a>
           )}
-          <a
+          <Link
             href="/docs"
             className="rounded-xl border-2 border-white/20 px-8 py-3.5 text-base font-medium text-white transition-all hover:border-white/40 hover:bg-white/10"
           >
             Read the Docs
-          </a>
+          </Link>
         </div>
       </div>
 

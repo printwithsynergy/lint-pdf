@@ -1,6 +1,8 @@
 ---
 title: "Color Management"
 description: "ICC profile validation, gamut checking, ink coverage analysis, and the Color Quality Score."
+section: "color"
+order: 1
 ---
 
 # Color Management

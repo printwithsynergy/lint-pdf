@@ -1,6 +1,8 @@
 ---
 title: "Extended Gamut (ECG) Readiness"
 description: "CMYKOGV extended gamut preflight with FOGRA55 checks."
+section: "color"
+order: 4
 ---
 
 # Extended Gamut Readiness

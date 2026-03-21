@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { DesktopOnly } from "./DesktopOnly";
 import { MarketingLogo } from "./Logo";
 import { ParticleField } from "./ParticleField";
@@ -422,12 +423,12 @@ export function HeroSection() {
               Get Started
             </a>
           )}
-          <a
+          <Link
             href="/docs"
             className="rounded-xl border-2 border-slate-200 px-8 py-3.5 text-base font-medium text-slate-600 transition-all hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
           >
             View API Docs
-          </a>
+          </Link>
         </div>
 
         {/* Terminal preview */}

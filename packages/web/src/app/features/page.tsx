@@ -1,5 +1,6 @@
 import React from "react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { AI_CATEGORIES, AI_PRESETS } from "@/lib/brand";
 
 export const metadata: Metadata = {
@@ -617,12 +618,12 @@ export default function FeaturesPage() {
             >
               Explore AI Features
             </a>
-            <a
+            <Link
               href="/docs"
               className="rounded-xl border-2 border-slate-200 px-8 py-3.5 text-base font-medium text-slate-600 transition-all hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
             >
               View Documentation
-            </a>
+            </Link>
           </div>
         </div>
       </section>
