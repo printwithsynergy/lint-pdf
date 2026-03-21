@@ -1,51 +1,48 @@
 "use client";
 
-import { useState, useEffect } from "react";
-
-const sections = [
-  { id: "getting-started", label: "Getting Started" },
-  { id: "authentication", label: "Authentication" },
-  { id: "api-reference", label: "API Reference" },
-  { id: "rulesets", label: "Rulesets" },
-  { id: "inspections", label: "Checks" },
-  { id: "report-formats", label: "Report Formats" },
-  { id: "webhooks", label: "Webhooks" },
-  { id: "sdks", label: "SDKs" },
-  { id: "glossary", label: "Glossary" },
-  { id: "ai-getting-started", label: "AI Getting Started" },
-  { id: "ai-configuration", label: "AI Configuration" },
-  { id: "ai-credits", label: "AI Credits" },
-  { id: "ai-inspections", label: "AI Inspections" },
-  { id: "ai-presets", label: "AI Presets" },
-  { id: "ai-regulatory", label: "Regulatory Compliance" },
-  { id: "ai-api", label: "AI API Reference" },
-  { id: "ai-errors", label: "AI Errors" },
-  { id: "ai-examples", label: "AI Code Examples" },
-];
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { docSections } from "@/lib/doc-sections";
 
 export function DocsNav() {
-  const [active, setActive] = useState("getting-started");
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setActive(entry.target.id);
-          }
-        }
-      },
-      { rootMargin: "-80px 0px -60% 0px", threshold: 0 },
+  const currentSlug = pathname.replace("/docs/", "").replace("/docs", "");
+
+  function navLink(slug: string, label: string) {
+    const isActive = currentSlug === slug;
+    return (
+      <Link
+        key={slug}
+        href={`/docs/${slug}`}
+        onClick={() => setMobileOpen(false)}
+        className={`block rounded-md px-3 py-1.5 text-sm transition-colors ${
+          isActive
+            ? "bg-brand-50 text-brand-700 font-medium"
+            : "text-slate-500 hover:text-brand-700 hover:bg-slate-50"
+        }`}
+      >
+        {label}
+      </Link>
     );
+  }
 
-    for (const section of sections) {
-      const el = document.getElementById(section.id);
-      if (el) observer.observe(el);
-    }
-
-    return () => observer.disconnect();
-  }, []);
+  const nav = (
+    <>
+      {docSections.map((section) => (
+        <div key={section.heading} className="mb-4">
+          <h4 className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            {section.heading}
+          </h4>
+          <div className="space-y-0.5">
+            {section.items.map((item) => navLink(item.slug, item.label))}
+          </div>
+        </div>
+      ))}
+    </>
+  );
 
   return (
     <>
@@ -71,44 +68,12 @@ export function DocsNav() {
           </svg>
           Documentation
         </button>
-        {mobileOpen && (
-          <nav className="mt-3 space-y-1">
-            {sections.map((s) => (
-              <a
-                key={s.id}
-                href={`#${s.id}`}
-                onClick={() => setMobileOpen(false)}
-                className={`block rounded-md px-3 py-1.5 text-sm transition-colors ${
-                  active === s.id
-                    ? "bg-brand-50 text-brand-700 font-medium"
-                    : "text-slate-500 hover:text-brand-700"
-                }`}
-              >
-                {s.label}
-              </a>
-            ))}
-          </nav>
-        )}
+        {mobileOpen && <nav className="mt-3">{nav}</nav>}
       </div>
 
       {/* Desktop sidebar */}
-      <nav className="hidden lg:block sticky top-24 w-56 flex-shrink-0 self-start">
-        <ul className="space-y-1">
-          {sections.map((s) => (
-            <li key={s.id}>
-              <a
-                href={`#${s.id}`}
-                className={`block rounded-md px-3 py-1.5 text-sm transition-colors ${
-                  active === s.id
-                    ? "bg-brand-50 text-brand-700 font-medium"
-                    : "text-slate-500 hover:text-brand-700 hover:bg-slate-50"
-                }`}
-              >
-                {s.label}
-              </a>
-            </li>
-          ))}
-        </ul>
+      <nav className="hidden lg:block sticky top-24 w-56 flex-shrink-0 self-start max-h-[calc(100vh-8rem)] overflow-y-auto">
+        {nav}
       </nav>
     </>
   );

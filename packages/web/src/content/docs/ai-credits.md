@@ -1,6 +1,8 @@
 ---
 title: "AI Credits"
 description: "How AI credits work: pay-per-use vs packages, consumption, balance checking, and top-ups."
+section: "ai"
+order: 4
 ---
 
 # AI Credits

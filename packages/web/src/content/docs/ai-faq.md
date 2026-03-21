@@ -1,6 +1,8 @@
 ---
 title: "AI FAQ"
 description: "Frequently asked questions about LintPDF AI inspections."
+section: "ai"
+order: 12
 ---
 
 # AI FAQ

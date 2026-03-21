@@ -1,6 +1,8 @@
 ---
 title: "AI Brand Configuration"
 description: "Setting up brand palette, uploading reference logos, and configuring custom dictionaries for AI checks."
+section: "ai"
+order: 7
 ---
 
 # AI Brand Configuration

@@ -1,6 +1,8 @@
 ---
 title: "AI Setup Guide"
 description: "How to enable and configure AI-powered preflight inspections on your LintPDF account."
+section: "ai"
+order: 2
 ---
 
 # AI Setup Guide

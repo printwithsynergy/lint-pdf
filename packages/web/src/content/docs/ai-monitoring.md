@@ -1,6 +1,8 @@
 ---
 title: "AI Usage Monitoring"
 description: "Monitor AI credit consumption, usage trends, and quality metrics with built-in analytics."
+section: "ai"
+order: 10
 ---
 
 # AI Usage Monitoring

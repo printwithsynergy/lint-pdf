@@ -1,6 +1,8 @@
 ---
 title: "AI Regulatory Compliance"
 description: "Detailed guide to regulatory compliance features: FDA, EU Food Information, GHS/CLP, and Pharmaceutical packaging."
+section: "ai"
+order: 9
 ---
 
 # AI Regulatory Compliance
