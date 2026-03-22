@@ -393,8 +393,8 @@ export function HeroSection() {
         ) : (
           <div className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white/95 px-4 py-1.5 text-xs md:text-sm font-medium text-brand-700 mb-6 shadow-sm max-w-full flex-wrap justify-center">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse shrink-0" />
-            250+ preflight checks &middot; PDF/X-4 &middot; PDF/A &middot; ISO
-            15930 &middot; GWG 2022
+            500+ preflight checks &middot; PDF/X-1a &middot; PDF/X-3 &middot;
+            PDF/X-4 &middot; PDF/A &middot; ISO 15930 &middot; GWG 2022
           </div>
         )}
 
@@ -402,8 +402,8 @@ export function HeroSection() {
 
         <p className="mx-auto max-w-2xl text-lg text-slate-500 md:text-xl mb-10 leading-relaxed">
           Detection-only preflight engine. Inspect color spaces, fonts, images,
-          transparency &amp; page geometry — without ever touching a single
-          byte.
+          transparency, page geometry, packaging geometry &amp; barcodes —
+          without ever touching a single byte.
         </p>
 
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -448,7 +448,7 @@ export function HeroSection() {
   "id": "f47ac10b-...",
   "status": "processing",
   "ruleset": "gwg-sheetfed",
-  "checks": 250
+  "checks": 500
 }`}</code>
           </pre>
         </div>

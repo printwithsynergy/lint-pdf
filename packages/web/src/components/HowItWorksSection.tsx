@@ -9,16 +9,16 @@ const steps = [
   {
     number: "02",
     title: "Processing",
-    subtitle: "250+ Checks in seconds",
+    subtitle: "500+ Checks in seconds",
     description:
-      "LintPDF runs your file through the full Check suite — color spaces, fonts, images, transparency, page geometry, compliance, and more. Processing happens asynchronously on the Queue.",
+      "LintPDF runs your file through the full Check suite — color spaces, fonts, images, transparency, page geometry, packaging geometry, barcode grading, compliance, and more. Processing happens asynchronously on the Queue.",
   },
   {
     number: "03",
     title: "Report",
     subtitle: "Your preflight report",
     description:
-      "Retrieve your Report as JSON, XML, or a white-labeled PDF. Every finding includes severity, page location, and Check ID. Pass or Error — you know instantly.",
+      "Retrieve your Report as JSON, XML, or a visual annotated PDF with findings overlaid on pages. Every finding includes severity, page location, and Check ID. Pass or Error — you know instantly.",
   },
 ];
 

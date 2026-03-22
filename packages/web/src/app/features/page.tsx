@@ -6,7 +6,7 @@ import { AI_CATEGORIES, AI_PRESETS } from "@/lib/brand";
 export const metadata: Metadata = {
   title: "Features — LintPDF",
   description:
-    "255+ rule-based checks plus 32 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, regulatory compliance, and more.",
+    "500+ rule-based checks plus 32 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, packaging geometry, barcode grading, regulatory compliance, and more.",
 };
 
 const coreFeatures = [
@@ -113,7 +113,7 @@ const coreFeatures = [
   {
     title: "PDF/X & PDF/A Compliance",
     description:
-      "ISO 15930-7 (PDF/X-4) and PDF/A archival conformance. JavaScript, encryption, and prohibited feature detection.",
+      "PDF/X-1a, PDF/X-3, PDF/X-4 (ISO 15930) and PDF/A archival conformance. JavaScript, encryption, and prohibited feature detection.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -133,7 +133,7 @@ const coreFeatures = [
   {
     title: "Barcode Grading",
     description:
-      "ISO 15416 barcode grading, quiet zone validation, DPI checks, decode verification, and non-compliant color detection.",
+      "ISO 15416/15415 barcode grading for 1D and 2D codes, quiet zone validation, DPI checks, decode verification, and non-compliant color detection.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -422,7 +422,7 @@ export default function FeaturesPage() {
             Everything Your PDFs Need, Checked Automatically
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-            250+ rule-based checks powered by a deterministic engine, plus{" "}
+            500+ rule-based checks powered by a deterministic engine, plus{" "}
             {totalAiInspections} AI-powered inspections for content quality,
             regulatory compliance, and brand verification.
           </p>
@@ -437,10 +437,11 @@ export default function FeaturesPage() {
               Core Engine
             </h2>
             <p className="text-slate-500 max-w-3xl">
-              250+ rule-based checks that run on every file. Deterministic,
+              500+ rule-based checks that run on every file. Deterministic,
               fast, and thorough. Resolution, fonts, colors, transparency,
-              bleeds, barcodes, compliance, and more. Included on all plans with
-              no per-check fees.
+              bleeds, barcodes, packaging geometry, artwork comparison,
+              compliance, and more. Included on all plans with no per-check
+              fees.
             </p>
           </div>
 
