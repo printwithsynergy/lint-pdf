@@ -9,6 +9,46 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 
+class ConditionBlock(BaseModel):
+    """A conditional rule for a specific check.
+
+    When the 'when' clause matches a finding's context, the condition's
+    overrides are applied (severity, params, include/exclude).
+    """
+
+    when: dict[str, object] = Field(
+        default_factory=dict,
+        description=(
+            "Context conditions to match. Keys: page, object_type, object_id, "
+            "source, category, severity, or any details key. Values: literal "
+            "match or operator dict ({in: [...], gt: N, contains: str, ...})."
+        ),
+    )
+    severity: str | None = Field(
+        default=None, description="Override severity when condition matches."
+    )
+    params: dict[str, object] = Field(
+        default_factory=dict,
+        description="Override threshold parameters when condition matches.",
+    )
+    include: bool = Field(
+        default=True, description="Set to false to suppress findings matching this condition."
+    )
+
+
+class PerCheckConfig(BaseModel):
+    """Per-check configuration with conditional overrides."""
+
+    enabled: bool = Field(default=True, description="Whether this check is enabled.")
+    params: dict[str, object] = Field(
+        default_factory=dict, description="Default parameter overrides for this check."
+    )
+    conditions: list[ConditionBlock] = Field(
+        default_factory=list,
+        description="Ordered list of conditional rules. First match wins.",
+    )
+
+
 class CheckConfig(BaseModel):
     """Controls which checks are enabled and severity overrides."""
 
@@ -23,6 +63,10 @@ class CheckConfig(BaseModel):
     severity_overrides: dict[str, str] = Field(
         default_factory=dict,
         description='Map of check ID to severity override (e.g. {"GRD_IMG_002": "ignore"}).',
+    )
+    per_check: dict[str, PerCheckConfig] = Field(
+        default_factory=dict,
+        description="Per-check configuration with conditional overrides.",
     )
 
 
@@ -51,6 +95,9 @@ class ThresholdConfig(BaseModel):
     barcode_min_dpi: float = Field(default=300.0, ge=0, description="Minimum barcode DPI.")
     barcode_min_grade: str = Field(default="C", description="Minimum barcode grade (A/B/C/D/F).")
     barcode_quiet_zone_mm: float = Field(default=2.5, ge=0, description="Barcode quiet zone in mm.")
+    barcode_min_contrast: float = Field(
+        default=0.7, ge=0, le=1.0, description="Minimum barcode symbol contrast (0.0-1.0)."
+    )
 
     # Color management thresholds
     target_output_condition: str = Field(
@@ -91,7 +138,7 @@ class ThresholdConfig(BaseModel):
         default=2.0, ge=0, le=100, description="Minimum printing dot percentage (scum dot risk)."
     )
     ecg_tac_limit: float = Field(
-        default=300.0, ge=0, description="TAC limit for ECG/CMYKOGV workflows (FOGRA55)."
+        default=350.0, ge=0, description="TAC limit for ECG/CMYKOGV workflows (FOGRA55)."
     )
     ecg_delta_e_excellent: float = Field(
         default=2.0, ge=0, description="Delta-E 2000 for excellent ECG spot achievability."
@@ -101,6 +148,18 @@ class ThresholdConfig(BaseModel):
     )
     ecg_delta_e_acceptable: float = Field(
         default=5.0, ge=0, description="Delta-E 2000 for acceptable ECG spot achievability."
+    )
+    ecg_max_ink_per_channel: float = Field(
+        default=0.95,
+        ge=0,
+        le=1.0,
+        description="Maximum ink per individual channel for ECG workflows (0.0-1.0).",
+    )
+    epm_toner_limit: float = Field(
+        default=280.0, ge=0, description="Total toner area coverage limit for EPM digital devices (%)."
+    )
+    epm_min_line_weight: float = Field(
+        default=0.35, ge=0, description="Minimum line weight for digital press output (pt)."
     )
     color_score_weights: dict[str, float] = Field(
         default_factory=lambda: {

@@ -200,6 +200,8 @@ class ReportService:
             return self._generate_html(result_json, branding)
         if fmt == "pdf":
             return self._generate_pdf(result_json, branding)
+        if fmt == "annotated_pdf":
+            return self._generate_annotated_pdf(result_json, branding)
         return None
 
     @staticmethod
@@ -265,3 +267,34 @@ class ReportService:
         html_bytes = self._generate_html(result_json, branding)
         pdf_bytes: bytes = HTML(string=html_bytes.decode("utf-8")).write_pdf()
         return pdf_bytes
+
+    def _generate_annotated_pdf(
+        self,
+        result_json: dict[str, Any],
+        branding: BrandingContext,
+    ) -> bytes | None:
+        """Generate annotated PDF with finding overlays on original pages.
+
+        Requires the original PDF bytes to be available in storage.
+        Falls back to None if the original PDF cannot be retrieved.
+        """
+        from grounded.reports.annotated_pdf_report import generate_annotated_pdf
+
+        # Get original PDF from storage
+        file_key = result_json.get("metadata", {}).get("file_key", "")
+        if not file_key:
+            logger.warning("Cannot generate annotated PDF: no file_key in result_json")
+            return None
+
+        try:
+            pdf_bytes = self._storage.download_pdf(file_key)
+        except Exception:
+            logger.warning("Cannot generate annotated PDF: failed to download original PDF")
+            return None
+
+        findings = result_json.get("findings", [])
+        return generate_annotated_pdf(
+            pdf_bytes,
+            findings,
+            branding_name=branding.name,
+        )

@@ -8,7 +8,10 @@ Check IDs:
     GRD_STROKE_002 — Zero-width stroke
     GRD_STROKE_003 — Butt cap on thin stroke (<0.5pt)
     GRD_STROKE_004 — Multi-ink thin stroke (<0.5pt, >1 CMYK separation)
+    GRD_STROKE_005 — Invisible line art (zero opacity stroke)
+    GRD_STROKE_006 — Flatness tolerance override
     GRD_PATH_001 — Excessive path points (>10,000)
+    GRD_PATH_002 — White fill detected on paths
     GRD_TEXT_001 — Small text (<6pt effective)
     GRD_TEXT_002 — Very small text (<4pt effective)
     GRD_TEXT_003 — Invisible text (rendering mode 3)
@@ -65,10 +68,19 @@ class HairlineAnalyzer(BaseAnalyzer):
 
         findings: list[Finding] = []
 
+        white_fill_pages: set[int] = set()
+
         for event in events:
             if isinstance(event, PathPaintingEvent):
                 if event.stroke:
                     findings.extend(self._check_stroke(event))
+
+                # GRD_PATH_002: White fill detected on paths
+                if event.page_num not in white_fill_pages:
+                    result = self._check_white_fill(event)
+                    if result:
+                        findings.append(result)
+                        white_fill_pages.add(event.page_num)
 
                 # GRD_PATH_001: Excessive path points
                 if event.point_count > 10000:
@@ -186,7 +198,98 @@ class HairlineAnalyzer(BaseAnalyzer):
                     )
                 )
 
+        # GRD_STROKE_005: Invisible line art (zero opacity stroke)
+        stroke_alpha = getattr(event, "stroke_alpha", None)
+        if stroke_alpha is not None and abs(stroke_alpha) < 1e-6:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_STROKE_005",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"Invisible stroke (white/zero-opacity) on page {event.page_num} "
+                        f"(renders as white line art)"
+                    ),
+                    page_num=event.page_num,
+                    details={
+                        "stroke_alpha": stroke_alpha,
+                        "line_width": line_width,
+                    },
+                    object_type="path",
+                )
+            )
+        elif stroke_alpha is None and line_width > 0:
+            # Fallback: check if stroke is white
+            stroke_cs = getattr(event, "stroke_color_space", None)
+            stroke_cv = getattr(event, "stroke_color_values", None)
+            if (
+                stroke_cs == "DeviceGray"
+                and stroke_cv is not None
+                and len(stroke_cv) == 1
+                and all(abs(v - 1.0) < 0.01 for v in stroke_cv)
+            ):
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_STROKE_005",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"Invisible stroke (white/zero-opacity) on page {event.page_num} "
+                            f"(renders as white line art)"
+                        ),
+                        page_num=event.page_num,
+                        details={
+                            "stroke_color_space": stroke_cs,
+                            "stroke_color_values": list(stroke_cv),
+                            "line_width": line_width,
+                        },
+                        object_type="path",
+                    )
+                )
+
+        # GRD_STROKE_006: Flatness tolerance override
+        flatness = getattr(event, "flatness", None)
+        if flatness is not None and flatness != 0 and flatness != 1.0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_STROKE_006",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Non-default flatness tolerance ({flatness}) on page {event.page_num} "
+                        f"(may affect curve rendering quality)"
+                    ),
+                    page_num=event.page_num,
+                    details={
+                        "flatness": flatness,
+                    },
+                    object_type="path",
+                )
+            )
+
         return findings
+
+    def _check_white_fill(self, event: PathPaintingEvent) -> Finding | None:
+        """Check if a path has a white fill (GRD_PATH_002)."""
+        if not getattr(event, "fill", False):
+            return None
+        fill_cs = getattr(event, "fill_color_space", None)
+        fill_cv = getattr(event, "fill_color_values", None)
+        if fill_cs is None or fill_cv is None:
+            return None
+        if self._is_white_color(fill_cs, tuple(fill_cv)):
+            return Finding(
+                inspection_id="GRD_PATH_002",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"White fill path on page {event.page_num} "
+                    f"(may knock out background content)"
+                ),
+                page_num=event.page_num,
+                details={
+                    "fill_color_space": fill_cs,
+                    "fill_color_values": list(fill_cv),
+                },
+                object_type="path",
+            )
+        return None
 
     @staticmethod
     def _is_white_color(color_space: str, color_values: tuple[float, ...]) -> bool:

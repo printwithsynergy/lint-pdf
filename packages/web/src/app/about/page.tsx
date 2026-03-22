@@ -126,10 +126,21 @@ export default function AboutPage() {
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white p-5">
-              <h3 className="font-semibold text-slate-900 mb-2">ISO 15416</h3>
+              <h3 className="font-semibold text-slate-900 mb-2">
+                ISO 19005 (PDF/A)
+              </h3>
               <p className="text-sm text-slate-500">
-                Barcode print quality grading. LintPDF decodes and grades
-                barcodes per this standard.
+                PDF/A archival conformance validation for long-term document
+                preservation.
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-5">
+              <h3 className="font-semibold text-slate-900 mb-2">
+                ISO 15416 / 15415
+              </h3>
+              <p className="text-sm text-slate-500">
+                Barcode print quality grading for 1D (15416) and 2D (15415)
+                codes. LintPDF decodes and grades barcodes per these standards.
               </p>
             </div>
           </div>
@@ -143,8 +154,8 @@ export default function AboutPage() {
             See what LintPDF can detect
           </h2>
           <p className="text-slate-500 mb-8">
-            255+ checks across fonts, color spaces, images, transparency, page
-            geometry, compliance, and barcodes.
+            500+ checks across fonts, color spaces, images, transparency, page
+            geometry, packaging geometry, barcode grading, compliance, and more.
           </p>
           <Link
             href="/docs"

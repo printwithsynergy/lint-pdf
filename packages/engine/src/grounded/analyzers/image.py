@@ -25,6 +25,8 @@ Check IDs:
     GRD_IMG_013 — Alternate image detected in page resources (advisory)
     GRD_IMG_014 — Image is sheared (non-orthogonal CTM transform)
     GRD_IMG_015 — Image is significantly rotated (non-90-degree rotation)
+    GRD_IMG_016 — Image is flipped (mirrored)
+    GRD_IMG_017 — Image precise scaling percentage (extreme scaling detected)
 """
 
 from __future__ import annotations
@@ -347,6 +349,12 @@ class ImageAnalyzer(BaseAnalyzer):
         # GRD_IMG_015: Image is significantly rotated (non-90-degree)
         findings.extend(self._check_image_rotation(event))
 
+        # GRD_IMG_016: Image is flipped (mirrored)
+        findings.extend(self._check_image_flip(event))
+
+        # GRD_IMG_017: Image extreme scaling
+        findings.extend(self._check_image_scaling(event))
+
         return findings
 
     @staticmethod
@@ -437,6 +445,92 @@ class ImageAnalyzer(BaseAnalyzer):
                         "image_name": event.image_name,
                         "rotation_degrees": round(angle_deg, 1),
                         "ctm": [ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f],
+                    },
+                    object_id=event.image_name,
+                    object_type="image",
+                    iso_clause="ISO 32000-2:2020 8.3.4",
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_image_flip(event: ImagePlacedEvent) -> list[Finding]:
+        """Check for reflection (mirror/flip) in the CTM (GRD_IMG_016).
+
+        A negative determinant (a*d - b*c < 0) indicates that one axis
+        has been reflected, meaning the image is flipped/mirrored.
+        """
+        findings: list[Finding] = []
+        ctm = event.ctm
+
+        determinant = ctm.a * ctm.d - ctm.b * ctm.c
+
+        # A negative determinant means a reflection transform is present
+        if determinant < -1e-10:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_IMG_016",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Image '{event.image_name}' is flipped (mirrored) "
+                        f"on page {event.page_num} (reflection transform detected)"
+                    ),
+                    page_num=event.page_num,
+                    details={
+                        "image_name": event.image_name,
+                        "ctm": [ctm.a, ctm.b, ctm.c, ctm.d, ctm.e, ctm.f],
+                        "determinant": determinant,
+                    },
+                    object_id=event.image_name,
+                    object_type="image",
+                    iso_clause="ISO 32000-2:2020 8.3.4",
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_image_scaling(event: ImagePlacedEvent) -> list[Finding]:
+        """Check for extreme scaling of an image (GRD_IMG_017).
+
+        Flags images scaled to less than 10% or more than 1000% of their
+        original size, as these are likely errors.
+        """
+        findings: list[Finding] = []
+        ctm = event.ctm
+        sx, sy = _extract_ctm_scale(ctm)
+
+        if sx < 1e-10 or sy < 1e-10:
+            return findings
+
+        if event.pixel_width <= 0 or event.pixel_height <= 0:
+            return findings
+
+        # Scale percentage: display size vs pixel size
+        # display_inches = sx / 72, pixel_inches = pixel_width / 72
+        # scale = display_inches / pixel_inches = sx / pixel_width
+        scale_x_pct = (sx / event.pixel_width) * 100.0
+        scale_y_pct = (sy / event.pixel_height) * 100.0
+        scale_pct = max(scale_x_pct, scale_y_pct)
+
+        if scale_pct < 10.0 or scale_pct > 1000.0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_IMG_017",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Image '{event.image_name}' is scaled to {scale_pct:.0f}% "
+                        f"on page {event.page_num} (extreme scaling detected)"
+                    ),
+                    page_num=event.page_num,
+                    details={
+                        "image_name": event.image_name,
+                        "scale_x_percent": round(scale_x_pct, 1),
+                        "scale_y_percent": round(scale_y_pct, 1),
+                        "scale_percent": round(scale_pct, 1),
+                        "pixel_width": event.pixel_width,
+                        "pixel_height": event.pixel_height,
                     },
                     object_id=event.image_name,
                     object_type="image",

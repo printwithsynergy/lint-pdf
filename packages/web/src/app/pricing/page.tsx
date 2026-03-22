@@ -33,7 +33,7 @@ export default function PricingPage() {
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
             Start free with 50 files per month. Scale as your preflight volume
-            grows. Every plan includes 255+ checks — the only difference is
+            grows. Every plan includes 500+ checks — the only difference is
             volume and features.
           </p>
         </div>
@@ -157,7 +157,7 @@ export default function PricingPage() {
               </span>
             </div>
             <p className="text-slate-500 max-w-2xl mx-auto">
-              Core preflight checks (255+ checks) are unlimited on all paid
+              Core preflight checks (500+ checks) are unlimited on all paid
               plans. AI inspections are metered separately using credits.
               Pay-per-use at{" "}
               <span className="font-semibold text-slate-700">$0.12/credit</span>{" "}

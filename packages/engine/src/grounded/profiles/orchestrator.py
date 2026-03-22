@@ -97,6 +97,22 @@ class PreflightOrchestrator:
 
             validator = PdfX4Validator()
             raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfx1a", "pdfx1a2003"):
+            from grounded.conformance.pdfx1a import PdfX1aValidator
+
+            validator = PdfX1aValidator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfx3", "pdfx32003"):
+            from grounded.conformance.pdfx3 import PdfX3Validator
+
+            validator = PdfX3Validator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfa1b", "pdfa2b", "pdfa3b"):
+            from grounded.conformance.pdfa import PdfAValidator
+
+            _level_map = {"pdfa1b": "1b", "pdfa2b": "2b", "pdfa3b": "3b"}
+            validator = PdfAValidator(level=_level_map[self._plan.conformance])
+            raw_findings.extend(validator.validate(document, events, raw_findings))
 
         # Step 6: Run AI analyzers (if AI enabled in voyage plan)
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
@@ -166,6 +182,22 @@ class PreflightOrchestrator:
             from grounded.conformance.pdfx4 import PdfX4Validator
 
             validator = PdfX4Validator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfx1a", "pdfx1a2003"):
+            from grounded.conformance.pdfx1a import PdfX1aValidator
+
+            validator = PdfX1aValidator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfx3", "pdfx32003"):
+            from grounded.conformance.pdfx3 import PdfX3Validator
+
+            validator = PdfX3Validator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfa1b", "pdfa2b", "pdfa3b"):
+            from grounded.conformance.pdfa import PdfAValidator
+
+            _level_map = {"pdfa1b": "1b", "pdfa2b": "2b", "pdfa3b": "3b"}
+            validator = PdfAValidator(level=_level_map[self._plan.conformance])
             raw_findings.extend(validator.validate(document, events, raw_findings))
 
         findings = self._apply_overrides_and_filter(raw_findings)
@@ -347,6 +379,15 @@ class PreflightOrchestrator:
         except ImportError:
             pass
 
+        # Packaging analyzer (if packaging profile active)
+        if self._profile_id and "packaging" in self._profile_id:
+            try:
+                from grounded.analyzers.packaging import PackagingAnalyzer
+
+                analyzers.append(PackagingAnalyzer())
+            except ImportError:
+                pass
+
         # Gamut analyzer (if gamut checking enabled)
         if t.gamut_check and t.target_output_condition:
             try:
@@ -359,13 +400,61 @@ class PreflightOrchestrator:
         return analyzers
 
     def _apply_overrides_and_filter(self, findings: list[Finding]) -> list[Finding]:
-        """Apply severity overrides and filter disabled checks."""
+        """Apply severity overrides, conditional rules, and filter disabled checks."""
+        from grounded.rules.engine import CheckContext, evaluate_conditions
+
         result: list[Finding] = []
+        per_check = self._plan.checks.per_check
+        total_pages = self._page_count if hasattr(self, "_page_count") else 0
 
         for finding in findings:
             if not self._plan.is_check_enabled(finding.inspection_id):
                 continue
 
+            # Per-check disabled
+            check_config = per_check.get(finding.inspection_id)
+            if check_config is not None and not check_config.enabled:
+                continue
+
+            # Evaluate conditional rules
+            if check_config is not None and check_config.conditions:
+                context = CheckContext(
+                    page_num=finding.page_num,
+                    total_pages=total_pages,
+                    object_type=finding.object_type or "",
+                    object_id=finding.object_id or "",
+                    source=finding.source,
+                    category=finding.category,
+                    severity=finding.severity.value,
+                    inspection_id=finding.inspection_id,
+                    details=finding.details,
+                )
+                condition_result = evaluate_conditions(
+                    context,
+                    [c.model_dump() for c in check_config.conditions],
+                )
+                if not condition_result.include:
+                    continue
+                if condition_result.severity_override:
+                    try:
+                        new_severity = Severity(condition_result.severity_override)
+                        finding = Finding(
+                            inspection_id=finding.inspection_id,
+                            severity=new_severity,
+                            message=finding.message,
+                            page_num=finding.page_num,
+                            details=finding.details,
+                            iso_clause=finding.iso_clause,
+                            object_id=finding.object_id,
+                            object_type=finding.object_type,
+                            bbox=finding.bbox,
+                            source=finding.source,
+                            category=finding.category,
+                        )
+                    except ValueError:
+                        pass
+
+            # Legacy severity overrides (still applied after conditions)
             override = self._plan.get_severity_override(finding.inspection_id)
             if override and override != "ignore":
                 try:
@@ -383,6 +472,8 @@ class PreflightOrchestrator:
                     object_id=finding.object_id,
                     object_type=finding.object_type,
                     bbox=finding.bbox,
+                    source=finding.source,
+                    category=finding.category,
                 )
 
             result.append(finding)

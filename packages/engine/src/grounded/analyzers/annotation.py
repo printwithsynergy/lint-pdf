@@ -9,6 +9,7 @@ Check IDs:
     GRD_ANNOT_003 — Link annotation detected
     GRD_ANNOT_004 — Stamp annotation detected
     GRD_ANNOT_005 — Non-printing annotation in trim area
+    GRD_ANNOT_006 — TrapNet annotation detected
 """
 
 from __future__ import annotations
@@ -47,6 +48,23 @@ class AnnotationAnalyzer(BaseAnalyzer):
     ) -> list[Finding]:  # skipcq: PY-R1000
         """Check a single annotation."""
         findings: list[Finding] = []
+
+        # GRD_ANNOT_006: TrapNet annotation detected
+        if annot.subtype == "TrapNet":
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ANNOT_006",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"TrapNet annotation on page {annot.page_num} "
+                        f"(embedded trapping may conflict with RIP trapping settings)"
+                    ),
+                    page_num=annot.page_num,
+                    details={"subtype": "TrapNet"},
+                    iso_clause="ISO 32000-2:2020 14.11.6",
+                )
+            )
+            return findings
 
         # GRD_ANNOT_002: Multimedia annotations
         if annot.subtype in _MULTIMEDIA_SUBTYPES:

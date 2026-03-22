@@ -30,7 +30,7 @@ const jsxPages: Record<
     component: ChecksPage,
     title: "Checks Reference",
     description:
-      "255+ individual checks across fonts, colors, images, transparency, compliance, and barcodes.",
+      "500+ individual checks across fonts, colors, images, transparency, compliance, barcodes, and packaging geometry.",
   },
   "report-formats": {
     component: ReportFormatsPage,

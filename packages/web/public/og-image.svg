@@ -15,7 +15,7 @@
   <!-- Text -->
   <text x="600" y="240" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" font-weight="700" fill="#1e3a8a">LintPDF</text>
   <text x="600" y="300" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#3b82f6">PDF Preflight API</text>
-  <text x="600" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#64748b">255+ checks · PDF/X-4 · Zero modifications</text>
+  <text x="600" y="360" text-anchor="middle" font-family="system-ui, sans-serif" font-size="20" fill="#64748b">500+ checks · PDF/X-1a · PDF/X-3 · PDF/X-4 · PDF/A · Zero modifications</text>
   <!-- lintpdf.com -->
   <text x="600" y="420" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" font-weight="600" fill="#2563eb">lintpdf.com</text>
   <!-- Think Neverland -->

@@ -7,6 +7,16 @@ Check IDs:
     GRD_ACCESS_001 — No structure tree (not tagged)
     GRD_ACCESS_002 — No document language specified
     GRD_ACCESS_003 — Tagged PDF present (informational)
+    GRD_ACCESS_004 — Missing document language (/Lang in catalog)
+    GRD_ACCESS_005 — Missing alternative text on images
+    GRD_ACCESS_006 — Heading structure missing (no H1..H6)
+    GRD_ACCESS_007 — Empty table headers
+    GRD_ACCESS_008 — Missing list structure (/L, /LI, /Lbl)
+    GRD_ACCESS_009 — Artifact marking missing
+    GRD_ACCESS_010 — Reading order undefined (/StructTreeRoot without /K)
+    GRD_ACCESS_011 — Color-only information conveyed
+    GRD_ACCESS_012 — Insufficient text-background contrast
+    GRD_ACCESS_013 — Tab order not specified (/Tabs in page dict)
 """
 
 from __future__ import annotations
@@ -81,4 +91,195 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
+        # --- Additional accessibility checks (GRD_ACCESS_004–013) ---
+
+        struct_tree = catalog.get("/StructTreeRoot")
+
+        # GRD_ACCESS_004: Missing document language (/Lang in catalog)
+        lang = catalog.get("/Lang")
+        if not lang or (isinstance(lang, str) and not lang.strip()):
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ACCESS_004",
+                    severity=Severity.SQUALL,
+                    message="Document language not specified (/Lang missing or empty in catalog)",
+                    details={"lang": lang},
+                    iso_clause="ISO 14289-1:2014 7.2",
+                )
+            )
+
+        # GRD_ACCESS_005: Missing alternative text on images
+        # Check each page for images that lack /Alt in annotations or struct tree
+        for page in document.pages:
+            for img in page.images:
+                # Heuristic: if the document has a struct tree, images should
+                # have alt text.  We flag all images when the struct tree is
+                # present but we cannot verify /Alt association at this level.
+                if has_struct_tree:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ACCESS_005",
+                            severity=Severity.SQUALL,
+                            message=(
+                                f"Image '{img.name}' on page {page.page_num} may lack "
+                                f"alternative text (/Alt)"
+                            ),
+                            page_num=page.page_num,
+                            details={"image_name": img.name},
+                            iso_clause="ISO 14289-1:2014 7.3",
+                            object_id=img.name,
+                            object_type="image",
+                        )
+                    )
+
+        # Structure-tree based checks (006–010)
+        if isinstance(struct_tree, dict):
+            k_array = struct_tree.get("/K")
+
+            # GRD_ACCESS_010: Reading order undefined (/StructTreeRoot without /K)
+            if k_array is None:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ACCESS_010",
+                        severity=Severity.SQUALL,
+                        message="Reading order undefined (/StructTreeRoot has no /K children)",
+                        details={"has_k": False},
+                        iso_clause="ISO 14289-1:2014 7.1",
+                    )
+                )
+
+            # Collect structure element types from the tree
+            struct_types = self._collect_struct_types(struct_tree)
+
+            # GRD_ACCESS_006: Heading structure missing
+            heading_tags = {"/H1", "/H2", "/H3", "/H4", "/H5", "/H6", "/H"}
+            if not struct_types.intersection(heading_tags):
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ACCESS_006",
+                        severity=Severity.ADVISORY,
+                        message="No heading structure found in document (missing /H1../H6 tags)",
+                        details={"heading_tags_found": []},
+                        iso_clause="ISO 14289-1:2014 7.4",
+                    )
+                )
+
+            # GRD_ACCESS_007: Empty table headers
+            has_table = "/Table" in struct_types or "/TR" in struct_types
+            has_th = "/TH" in struct_types
+            if has_table and not has_th:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ACCESS_007",
+                        severity=Severity.SQUALL,
+                        message="Table structure found but no table header (/TH) elements present",
+                        details={"has_table": True, "has_th": False},
+                        iso_clause="ISO 14289-1:2014 7.5",
+                    )
+                )
+
+            # GRD_ACCESS_008: Missing list structure
+            has_list_items = "/LI" in struct_types or "/Lbl" in struct_types
+            has_list_container = "/L" in struct_types
+            if has_list_items and not has_list_container:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ACCESS_008",
+                        severity=Severity.ADVISORY,
+                        message="List items found without proper list container (/L) structure",
+                        details={"has_L": False, "has_LI": "/LI" in struct_types},
+                        iso_clause="ISO 14289-1:2014 7.6",
+                    )
+                )
+
+            # GRD_ACCESS_009: Artifact marking missing
+            has_artifact = "/Artifact" in struct_types
+            if not has_artifact and document.page_count > 0:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ACCESS_009",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            "No Artifact markings found in structure tree; "
+                            "decorative elements may not be properly excluded"
+                        ),
+                        details={"has_artifact": False},
+                        iso_clause="ISO 14289-1:2014 7.1",
+                    )
+                )
+
+        # GRD_ACCESS_011: Color-only information conveyed (heuristic)
+        # Flag if colored text exists without structural emphasis (/Em, /Strong)
+        if isinstance(struct_tree, dict):
+            struct_types_for_emphasis = self._collect_struct_types(struct_tree)
+            emphasis_tags = {"/Em", "/Strong"}
+            has_emphasis = bool(struct_types_for_emphasis.intersection(emphasis_tags))
+            if not has_emphasis and document.page_count > 0:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ACCESS_011",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            "No structural emphasis tags (/Em, /Strong) found; "
+                            "information may be conveyed by color alone"
+                        ),
+                        details={"has_emphasis": False},
+                        iso_clause="ISO 14289-1:2014 7.1",
+                    )
+                )
+
+        # GRD_ACCESS_012: Insufficient text-background contrast (heuristic)
+        # Without rendering, we flag if page count > 0 and no color management
+        if document.page_count > 0 and not document.output_intents:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ACCESS_012",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        "No output intents defined; text-background contrast "
+                        "cannot be verified for accessibility"
+                    ),
+                    details={"has_output_intents": False},
+                )
+            )
+
+        # GRD_ACCESS_013: Tab order not specified (/Tabs in page dict)
+        for page in document.pages:
+            tabs = page.resources.get("/Tabs")
+            if tabs is None and has_struct_tree:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ACCESS_013",
+                        severity=Severity.ADVISORY,
+                        message=f"Tab order not specified on page {page.page_num} (/Tabs missing)",
+                        page_num=page.page_num,
+                        details={"has_tabs": False},
+                        iso_clause="ISO 14289-1:2014 7.1",
+                    )
+                )
+
         return findings
+
+    @staticmethod
+    def _collect_struct_types(node: dict, *, _depth: int = 0) -> set[str]:
+        """Recursively collect structure element /S types from a struct tree node.
+
+        Limits recursion depth to avoid stack overflow on malformed trees.
+        """
+        if _depth > 100:
+            return set()
+
+        types: set[str] = set()
+        s_type = node.get("/S")
+        if isinstance(s_type, str):
+            types.add(s_type)
+
+        children = node.get("/K")
+        if isinstance(children, list):
+            for child in children:
+                if isinstance(child, dict):
+                    types.update(AccessibilityAnalyzer._collect_struct_types(child, _depth=_depth + 1))
+        elif isinstance(children, dict):
+            types.update(AccessibilityAnalyzer._collect_struct_types(children, _depth=_depth + 1))
+
+        return types

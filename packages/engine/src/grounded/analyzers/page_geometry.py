@@ -14,6 +14,9 @@ Check IDs:
     GRD_BOX_004 — Empty page (no content stream)
     GRD_BOX_005 — Content within safety margin of trim edge
     GRD_BOX_006 — Content extends beyond bleed box
+    GRD_BOX_007 — UserUnit scaling detected
+    GRD_BOX_008 — Non-standard page orientation
+    GRD_BOX_009 — Inconsistent page sizes
 """
 
 from __future__ import annotations
@@ -59,6 +62,55 @@ class PageGeometryAnalyzer(BaseAnalyzer):
 
         for page in document.pages:
             findings.extend(self._check_page(page))
+
+        # GRD_BOX_008 (document-level): Mixed page orientations
+        if len(document.pages) > 1:
+            orientations: set[str] = set()
+            for page in document.pages:
+                ref_box = page.trim_box or page.media_box
+                width = ref_box.x1 - ref_box.x0
+                height = ref_box.y1 - ref_box.y0
+                orientations.add("landscape" if width > height else "portrait")
+            if len(orientations) > 1:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_BOX_008",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            "Document has mixed page orientations "
+                            "(both portrait and landscape pages detected)"
+                        ),
+                        details={"orientations": sorted(orientations)},
+                        iso_clause="ISO 32000-2:2020 14.11.2",
+                    )
+                )
+
+        # GRD_BOX_009: Inconsistent page sizes
+        if len(document.pages) > 1:
+            page_sizes: dict[tuple[float, float], list[int]] = {}
+            for page in document.pages:
+                ref_box = page.trim_box or page.media_box
+                width = round(ref_box.x1 - ref_box.x0, 0)
+                height = round(ref_box.y1 - ref_box.y0, 0)
+                size_key = (width, height)
+                page_sizes.setdefault(size_key, []).append(page.page_num)
+            if len(page_sizes) > 1:
+                unique_sizes = [
+                    {"width_pt": w, "height_pt": h, "pages": pages}
+                    for (w, h), pages in page_sizes.items()
+                ]
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_BOX_009",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Document has inconsistent page sizes "
+                            f"({len(page_sizes)} unique sizes found "
+                            f"across {len(document.pages)} pages)"
+                        ),
+                        details={"unique_sizes": unique_sizes},
+                    )
+                )
 
         # GRD_BOX_005 / GRD_BOX_006: Content proximity to trim/bleed edges
         # Build page lookup for trim/bleed boxes
@@ -194,6 +246,39 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                     message=f"Page {page.page_num} has no content stream (empty page)",
                     page_num=page.page_num,
                     details={"page_num": page.page_num},
+                )
+            )
+
+        # GRD_BOX_007: UserUnit scaling detected
+        user_unit = getattr(page, "user_unit", 1.0)
+        if user_unit != 1.0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_BOX_007",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"Page {page.page_num} uses UserUnit={user_unit} "
+                        f"(coordinates scaled — may cause output issues in some RIPs)"
+                    ),
+                    page_num=page.page_num,
+                    details={"user_unit": user_unit},
+                    iso_clause="ISO 32000-2:2020 14.11.2",
+                )
+            )
+
+        # GRD_BOX_008: Non-standard page orientation
+        rotate = getattr(page, "rotate", 0) or 0
+        if rotate not in (0, 90, 180, 270):
+            findings.append(
+                Finding(
+                    inspection_id="GRD_BOX_008",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Page {page.page_num} has non-standard rotation ({rotate}\u00b0)"
+                    ),
+                    page_num=page.page_num,
+                    details={"rotate": rotate},
+                    iso_clause="ISO 32000-2:2020 14.11.2",
                 )
             )
 

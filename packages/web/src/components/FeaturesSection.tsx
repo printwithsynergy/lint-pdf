@@ -40,9 +40,9 @@ const features = [
     ),
   },
   {
-    title: "250+ Checks",
+    title: "500+ Checks",
     description:
-      "Fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, PDF/X-4, PDF/A compliance — every detail that matters for print production.",
+      "Fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, packaging geometry, barcode grading, PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance — every detail that matters for print production.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -80,9 +80,9 @@ const features = [
     ),
   },
   {
-    title: "Rulesets",
+    title: "Rulesets & Conditional Rules",
     description:
-      "Pre-built profiles for GWG Sheetfed, GWG Digital, PDF/X-4, and Packaging workflows. Or build your own custom Ruleset with the exact Checks you need.",
+      "Pre-built profiles for GWG Sheetfed, GWG Digital, PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A, and Packaging workflows. Conditional rule engine lets you build dynamic Rulesets with the exact logic you need.",
     icon: (
       <svg
         className="h-6 w-6"
