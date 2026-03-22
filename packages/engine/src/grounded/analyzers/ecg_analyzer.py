@@ -1031,3 +1031,5 @@ class EcgAnalyzer(BaseAnalyzer):
                         },
                     )
                 )
+
+        return findings
