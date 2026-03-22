@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lintpdf-hotfolder"
+version = "0.1.0"
+description = "Hot folder watcher for LintPDF — auto-submit files from watched directories"
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.24", "watchdog>=3.0", "click>=8.0"]
+
+[project.scripts]
+lintpdf-watch = "lintpdf_hotfolder.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-tmp-files"]
