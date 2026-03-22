@@ -13,6 +13,16 @@ Check IDs:
     GRD_EPM_006 — Image K channel dependency
     GRD_EPM_007 — Registration color in EPM mode
     GRD_EPM_008 — Gray balance risk
+    GRD_EPM_009 — EPM toner limit exceeded
+    GRD_EPM_010 — Substrate-specific ink limit
+    GRD_EPM_011 — EPM spot color fidelity warning
+    GRD_EPM_012 — EPM variable data compatibility
+    GRD_EPM_013 — EPM halftone incompatibility
+    GRD_EPM_014 — EPM ICC profile class mismatch
+    GRD_EPM_015 — EPM white ink underlayer detection
+    GRD_EPM_016 — EPM overprint simulation mode
+    GRD_EPM_017 — EPM maximum object count
+    GRD_EPM_018 — EPM minimum line weight for digital
 """
 
 from __future__ import annotations
@@ -33,16 +43,30 @@ _GRAY_BALANCE_MIN = 0.20  # 20% minimum for each channel
 # Registration color threshold
 _REGISTRATION_THRESHOLD = 0.90  # 90% — all CMYK components high
 
+# EPM digital press defaults
+_EPM_MAX_OBJECTS_PER_PAGE = 5000  # advisory threshold for RIP performance
+_EPM_MIN_LINE_WEIGHT_DEFAULT = 0.35  # pt — thinner threshold for digital
+_EPM_TONER_LIMIT_DEFAULT = 280.0  # % total toner area coverage
+
 
 class EpmAnalyzer(BaseAnalyzer):
     """Analyzer for Extended Print Mode (CMY-only) readiness.
 
     Args:
         cmy_tac_threshold: Maximum allowed CMY-only TAC percentage (default 240).
+        epm_toner_limit: Maximum total toner area coverage (default 280).
+        epm_min_line_weight: Minimum line weight for digital press (default 0.35pt).
     """
 
-    def __init__(self, cmy_tac_threshold: float = 240.0) -> None:
+    def __init__(
+        self,
+        cmy_tac_threshold: float = 240.0,
+        epm_toner_limit: float = 280.0,
+        epm_min_line_weight: float = 0.35,
+    ) -> None:
         self.cmy_tac_threshold = cmy_tac_threshold
+        self.epm_toner_limit = epm_toner_limit
+        self.epm_min_line_weight = epm_min_line_weight
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -70,9 +94,40 @@ class EpmAnalyzer(BaseAnalyzer):
         max_cmy_tac_values: tuple[float, ...] = ()
         weak_black_count = 0
         weak_black_pages: set[int] = set()
+        # Tracking for new EPM checks
+        max_total_tac = 0.0
+        max_total_tac_page = 0
+        max_total_tac_values: tuple[float, ...] = ()
+        thin_line_count = 0
+        thin_line_pages: set[int] = set()
+        object_counts_per_page: dict[int, int] = {}
+        overprint_count = 0
+        overprint_pages: set[int] = set()
+        ink_limit_count = 0
+        ink_limit_pages: set[int] = set()
 
         for event in events:
             if isinstance(event, PathPaintingEvent):
+                # Track object count per page (GRD_EPM_017)
+                object_counts_per_page[event.page_num] = (
+                    object_counts_per_page.get(event.page_num, 0) + 1
+                )
+
+                # GRD_EPM_016: Overprint detection
+                if hasattr(event, "overprint") and event.overprint:
+                    overprint_count += 1
+                    overprint_pages.add(event.page_num)
+
+                # GRD_EPM_018: Minimum line weight for digital
+                if event.stroke and hasattr(event, "line_width"):
+                    if (
+                        event.line_width is not None
+                        and event.line_width > 0
+                        and event.line_width < self.epm_min_line_weight
+                    ):
+                        thin_line_count += 1
+                        thin_line_pages.add(event.page_num)
+
                 # Process fill colors
                 if event.fill and event.fill_color_space == "DeviceCMYK":
                     vals = event.fill_color_values
@@ -90,6 +145,18 @@ class EpmAnalyzer(BaseAnalyzer):
                             max_cmy_tac = cmy_tac
                             max_cmy_tac_page = event.page_num
                             max_cmy_tac_values = vals
+
+                        # GRD_EPM_009: Total toner TAC
+                        total_tac = (c + m + y + k) * 100.0
+                        if total_tac > max_total_tac:
+                            max_total_tac = total_tac
+                            max_total_tac_page = event.page_num
+                            max_total_tac_values = vals
+
+                        # GRD_EPM_010: Substrate-specific ink limit
+                        if c > 0.95 or m > 0.95 or y > 0.95 or k > 0.95:
+                            ink_limit_count += 1
+                            ink_limit_pages.add(event.page_num)
 
                         # GRD_EPM_007: Registration color
                         if (
@@ -137,6 +204,17 @@ class EpmAnalyzer(BaseAnalyzer):
                             max_cmy_tac_page = event.page_num
                             max_cmy_tac_values = vals
 
+                        total_tac = (c + m + y + k) * 100.0
+                        if total_tac > max_total_tac:
+                            max_total_tac = total_tac
+                            max_total_tac_page = event.page_num
+                            max_total_tac_values = vals
+
+                        # GRD_EPM_010: Substrate-specific ink limit
+                        if c > 0.95 or m > 0.95 or y > 0.95 or k > 0.95:
+                            ink_limit_count += 1
+                            ink_limit_pages.add(event.page_num)
+
                         if (
                             c >= _REGISTRATION_THRESHOLD
                             and m >= _REGISTRATION_THRESHOLD
@@ -165,6 +243,11 @@ class EpmAnalyzer(BaseAnalyzer):
                                 weak_black_pages.add(event.page_num)
 
             elif isinstance(event, TextRenderedEvent):
+                # Track object count per page (GRD_EPM_017)
+                object_counts_per_page[event.page_num] = (
+                    object_counts_per_page.get(event.page_num, 0) + 1
+                )
+
                 if len(event.color_values) == 4 and event.color_space == "DeviceCMYK":
                     c, m, y, k = event.color_values
 
@@ -307,6 +390,326 @@ class EpmAnalyzer(BaseAnalyzer):
                     object_type="path",
                 )
             )
+
+        # GRD_EPM_009: EPM toner limit exceeded
+        if max_total_tac > self.epm_toner_limit:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_EPM_009",
+                    severity=Severity.AGROUND,
+                    message=(
+                        f"EPM toner limit exceeded: total toner area coverage "
+                        f"{max_total_tac:.0f}% exceeds EPM device limit "
+                        f"{self.epm_toner_limit:.0f}% on page {max_total_tac_page}"
+                    ),
+                    page_num=max_total_tac_page,
+                    details={
+                        "total_tac": max_total_tac,
+                        "epm_toner_limit": self.epm_toner_limit,
+                        "color_values": list(max_total_tac_values),
+                    },
+                )
+            )
+
+        # GRD_EPM_010: Substrate-specific ink limit
+        if ink_limit_count > 0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_EPM_010",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"EPM substrate ink limit: {ink_limit_count} object(s) with "
+                        f"individual ink channel >95% across "
+                        f"{len(ink_limit_pages)} page(s) may exceed substrate-specific "
+                        f"limits for digital devices"
+                    ),
+                    details={
+                        "ink_limit_count": ink_limit_count,
+                        "pages": sorted(ink_limit_pages),
+                        "per_channel_limit": 0.95,
+                    },
+                )
+            )
+
+        # GRD_EPM_011: EPM spot color fidelity
+        findings.extend(self._check_spot_color_fidelity(document))
+
+        # GRD_EPM_012: EPM variable data
+        findings.extend(self._check_variable_data(document))
+
+        # GRD_EPM_013: EPM halftone incompatibility
+        findings.extend(self._check_halftone_incompatibility(document))
+
+        # GRD_EPM_014: EPM ICC profile class
+        findings.extend(self._check_icc_profile_class(document))
+
+        # GRD_EPM_015: EPM white ink underlayer
+        findings.extend(self._check_white_ink_underlayer(document))
+
+        # GRD_EPM_016: EPM overprint simulation
+        findings.extend(self._check_overprint_simulation(document))
+
+        # GRD_EPM_017: EPM maximum object count
+        for page_num, count in sorted(object_counts_per_page.items()):
+            if count > _EPM_MAX_OBJECTS_PER_PAGE:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_EPM_017",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"EPM high object count: page {page_num} has {count} "
+                            f"objects (threshold {_EPM_MAX_OBJECTS_PER_PAGE}) which "
+                            f"may slow digital press RIP processing"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "object_count": count,
+                            "threshold": _EPM_MAX_OBJECTS_PER_PAGE,
+                        },
+                    )
+                )
+
+        # GRD_EPM_018: EPM minimum line weight
+        if thin_line_count > 0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_EPM_018",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"EPM thin line weight: {thin_line_count} stroked path(s) "
+                        f"have line width below {self.epm_min_line_weight}pt "
+                        f"across {len(thin_line_pages)} page(s)"
+                    ),
+                    details={
+                        "thin_line_count": thin_line_count,
+                        "epm_min_line_weight": self.epm_min_line_weight,
+                        "pages": sorted(thin_line_pages),
+                    },
+                    object_type="path",
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_spot_color_fidelity(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """GRD_EPM_011: Check for spot colors that may not reproduce on digital."""
+        findings: list[Finding] = []
+        _SPOT_PREFIXES = ("PANTONE", "HKS", "TOYO")
+        checked_colorants: set[str] = set()
+
+        for page in document.pages:
+            for _cs_name, cs in page.color_spaces.items():
+                if cs.cs_type not in ("Separation", "DeviceN"):
+                    continue
+                if not cs.colorant_names:
+                    continue
+
+                for colorant in cs.colorant_names:
+                    if colorant in checked_colorants:
+                        continue
+                    if colorant in ("All", "None"):
+                        continue
+                    upper = colorant.upper()
+                    if any(upper.startswith(prefix) for prefix in _SPOT_PREFIXES):
+                        checked_colorants.add(colorant)
+                        findings.append(
+                            Finding(
+                                inspection_id="GRD_EPM_011",
+                                severity=Severity.ADVISORY,
+                                message=(
+                                    f"EPM spot color fidelity: spot color '{colorant}' "
+                                    f"may not reproduce accurately on digital devices"
+                                ),
+                                page_num=page.page_num,
+                                details={
+                                    "colorant_name": colorant,
+                                    "color_space_type": cs.cs_type,
+                                },
+                            )
+                        )
+
+        return findings
+
+    @staticmethod
+    def _check_variable_data(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """GRD_EPM_012: Check for variable data indicators."""
+        findings: list[Finding] = []
+        catalog = document.catalog
+
+        has_af = "/AF" in catalog or "AF" in catalog
+        mark_info = catalog.get("/MarkInfo", catalog.get("MarkInfo", {}))
+        has_variable = False
+        if isinstance(mark_info, dict):
+            has_variable = bool(mark_info)
+
+        if has_af or has_variable:
+            indicators: list[str] = []
+            if has_af:
+                indicators.append("Associated Files (/AF)")
+            if has_variable:
+                indicators.append("MarkInfo")
+            findings.append(
+                Finding(
+                    inspection_id="GRD_EPM_012",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"EPM variable data: document contains variable data "
+                        f"indicators ({', '.join(indicators)})"
+                    ),
+                    details={
+                        "has_associated_files": has_af,
+                        "has_mark_info": has_variable,
+                    },
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_halftone_incompatibility(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """GRD_EPM_013: Check for custom halftone dictionaries in ExtGState."""
+        findings: list[Finding] = []
+
+        for page in document.pages:
+            resources = page.resources
+            ext_g_state = resources.get("/ExtGState", resources.get("ExtGState", {}))
+            if not isinstance(ext_g_state, dict):
+                continue
+
+            for gs_name, gs_dict in ext_g_state.items():
+                if not isinstance(gs_dict, dict):
+                    continue
+                if "/HT" in gs_dict or "HT" in gs_dict:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_EPM_013",
+                            severity=Severity.ADVISORY,
+                            message=(
+                                f"EPM halftone incompatibility: custom halftone in "
+                                f"ExtGState '{gs_name}' on page {page.page_num}; "
+                                f"digital presses use their own screening"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "ext_g_state_name": gs_name,
+                            },
+                        )
+                    )
+
+        return findings
+
+    @staticmethod
+    def _check_icc_profile_class(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """GRD_EPM_014: Check output intent ICC profile classes."""
+        findings: list[Finding] = []
+        _VALID_CLASSES = ("prtr", "mntr")
+
+        for oi in document.output_intents:
+            profile_class = oi.get("profile_class", oi.get("/ProfileClass", ""))
+            if isinstance(profile_class, str) and profile_class and profile_class not in _VALID_CLASSES:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_EPM_014",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"EPM ICC profile class mismatch: output intent has "
+                            f"profile class '{profile_class}' (expected 'prtr' or "
+                            f"'mntr'); digital presses need device-specific profiles"
+                        ),
+                        details={
+                            "profile_class": profile_class,
+                            "valid_classes": list(_VALID_CLASSES),
+                        },
+                    )
+                )
+
+        return findings
+
+    @staticmethod
+    def _check_white_ink_underlayer(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """GRD_EPM_015: Check for white ink separation color spaces."""
+        findings: list[Finding] = []
+        detected = False
+
+        for page in document.pages:
+            if detected:
+                break
+            for _cs_name, cs in page.color_spaces.items():
+                if cs.cs_type != "Separation":
+                    continue
+                if not cs.colorant_names:
+                    continue
+                colorant = cs.colorant_names[0]
+                if colorant.lower() == "white":
+                    detected = True
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_EPM_015",
+                            severity=Severity.ADVISORY,
+                            message=(
+                                f"EPM white ink underlayer: Separation color space "
+                                f"with colorant '{colorant}' detected on page "
+                                f"{page.page_num}; white ink separations are used "
+                                f"for dark substrate printing"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "colorant_name": colorant,
+                            },
+                        )
+                    )
+                    break
+
+        return findings
+
+    @staticmethod
+    def _check_overprint_simulation(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """GRD_EPM_016: Check ExtGState for overprint settings."""
+        findings: list[Finding] = []
+
+        for page in document.pages:
+            resources = page.resources
+            ext_g_state = resources.get("/ExtGState", resources.get("ExtGState", {}))
+            if not isinstance(ext_g_state, dict):
+                continue
+
+            for gs_name, gs_dict in ext_g_state.items():
+                if not isinstance(gs_dict, dict):
+                    continue
+                op_val = gs_dict.get("/OP", gs_dict.get("OP"))
+                if op_val is True:
+                    opm_val = gs_dict.get("/OPM", gs_dict.get("OPM", 0))
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_EPM_016",
+                            severity=Severity.ADVISORY,
+                            message=(
+                                f"EPM overprint simulation: ExtGState '{gs_name}' on "
+                                f"page {page.page_num} has overprint enabled "
+                                f"(OP=true, OPM={opm_val}); digital presses "
+                                f"simulate overprint"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "ext_g_state_name": gs_name,
+                                "overprint": True,
+                                "overprint_mode": opm_val,
+                            },
+                        )
+                    )
 
         return findings
 
