@@ -5,7 +5,7 @@ export default function ChecksPage() {
         Checks Reference
       </h2>
       <p className="text-slate-600 mb-6">
-        LintPDF runs 255+ individual Checks across these categories. Each
+        LintPDF runs 500+ individual Checks across these categories. Each
         finding in a Report references a Check ID, severity level, and
         affected page.
       </p>
@@ -203,7 +203,7 @@ export default function ChecksPage() {
       ))}
 
       <p className="text-sm text-slate-500 mt-4">
-        This is a representative sample. The full suite includes 255+
+        This is a representative sample. The full suite includes 500+
         checks. Use the{" "}
         <code className="bg-slate-100 px-1 rounded">
           GET /api/v1/rulesets

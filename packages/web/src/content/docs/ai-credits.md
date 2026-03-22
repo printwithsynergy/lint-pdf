@@ -7,7 +7,7 @@ order: 4
 
 # AI Credits
 
-AI inspections in LintPDF are metered using a credit system. Core preflight checks (255+ checks) remain unlimited on all paid plans. AI credits are purchased and consumed separately.
+AI inspections in LintPDF are metered using a credit system. Core preflight checks (500+ checks) remain unlimited on all paid plans. AI credits are purchased and consumed separately.
 
 ## How Credits Are Consumed
 

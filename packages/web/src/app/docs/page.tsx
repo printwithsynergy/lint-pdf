@@ -39,7 +39,7 @@ const sections = [
       {
         slug: "checks",
         title: "Checks Reference",
-        desc: "255+ checks across fonts, colors, images, and more.",
+        desc: "500+ checks across fonts, colors, images, barcodes, packaging, and more.",
       },
       {
         slug: "report-formats",
