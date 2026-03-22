@@ -22,6 +22,11 @@ Check IDs:
     GRD_COLOR_013 — Gamut warning / out-of-gamut color (RGB in CMYK workflow)
     GRD_COLOR_014 — Full color space inventory
     GRD_COLOR_015 — Device-dependent color space warning
+    GRD_COLOR_016 — Impure gray (CMY used for gray)
+    GRD_COLOR_017 — Impure black (CMY contamination on K)
+    GRD_COLOR_018 — Lab color space detected
+    GRD_COLOR_019 — Indexed color space detected
+    GRD_COLOR_020 — Default color space used
 """
 
 from __future__ import annotations
@@ -98,6 +103,8 @@ class ColorAnalyzer(BaseAnalyzer):
                 findings.extend(self._check_registration_color(event))
                 findings.extend(self._check_knockout_black(event, overprint_non_stroking))
                 findings.extend(self._check_pure_k_fill(event))
+                findings.extend(self._check_impure_gray(event))
+                findings.extend(self._check_impure_black(event))
             elif isinstance(event, TextRenderedEvent):
                 findings.extend(self._check_rich_black_text(event))
 
@@ -202,6 +209,44 @@ class ColorAnalyzer(BaseAnalyzer):
                                     )
                                 )
 
+                    # GRD_COLOR_018: Lab color space detected
+                    if cs.cs_type == "Lab":
+                        findings.append(
+                            Finding(
+                                inspection_id="GRD_COLOR_018",
+                                severity=Severity.ADVISORY,
+                                message=(
+                                    f"Lab color space '{cs_name}' used on page "
+                                    f"{page.page_num} (CIE Lab is uncommon in print workflows)"
+                                ),
+                                page_num=page.page_num,
+                                details={
+                                    "color_space_name": cs_name,
+                                    "color_space_type": cs.cs_type,
+                                },
+                                iso_clause="ISO 32000-2:2020 8.6.5.4",
+                            )
+                        )
+
+                    # GRD_COLOR_019: Indexed color space detected
+                    if cs.cs_type == "Indexed":
+                        findings.append(
+                            Finding(
+                                inspection_id="GRD_COLOR_019",
+                                severity=Severity.ADVISORY,
+                                message=(
+                                    f"Indexed color space '{cs_name}' on page "
+                                    f"{page.page_num} (limited color precision)"
+                                ),
+                                page_num=page.page_num,
+                                details={
+                                    "color_space_name": cs_name,
+                                    "color_space_type": cs.cs_type,
+                                },
+                                iso_clause="ISO 32000-2:2020 8.6.6.3",
+                            )
+                        )
+
         # GRD_COLOR_014: Full color space inventory
         if cs_inventory:
             findings.append(
@@ -264,6 +309,9 @@ class ColorAnalyzer(BaseAnalyzer):
                                     },
                                 )
                             )
+
+        # GRD_COLOR_020: Default color space overrides
+        findings.extend(self._check_default_color_spaces(document))
 
         return findings
 
@@ -503,6 +551,125 @@ class ColorAnalyzer(BaseAnalyzer):
                     object_type="path",
                 )
             )
+        return findings
+
+    @staticmethod
+    def _check_impure_gray(event: PathPaintingEvent) -> list[Finding]:
+        """Check for impure gray built from CMY instead of K-only (GRD_COLOR_016).
+
+        When C, M, Y values are approximately equal (within 5%) and all > 5%,
+        but K is low (< 10%), this is likely a gray built from CMY rather than
+        using the K channel, wasting ink and causing registration issues.
+        """
+        findings: list[Finding] = []
+        if not event.fill or event.fill_color_space != "DeviceCMYK":
+            return findings
+        vals = event.fill_color_values
+        if len(vals) != 4:
+            return findings
+        c, m, y, k = vals
+        # All CMY > 5% and K < 10%
+        if c > 0.05 and m > 0.05 and y > 0.05 and k < 0.10:
+            # Check if CMY values are approximately equal (within 5% of each other)
+            max_cmy = max(c, m, y)
+            min_cmy = min(c, m, y)
+            if (max_cmy - min_cmy) < 0.05:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_COLOR_016",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"Impure gray detected (CMY-built gray "
+                            f"C={c * 100:.0f}% M={m * 100:.0f}% "
+                            f"Y={y * 100:.0f}% K={k * 100:.0f}%) "
+                            f"on page {event.page_num}"
+                        ),
+                        page_num=event.page_num,
+                        details={
+                            "color_values": list(vals),
+                            "c_percent": c * 100.0,
+                            "m_percent": m * 100.0,
+                            "y_percent": y * 100.0,
+                            "k_percent": k * 100.0,
+                        },
+                        iso_clause="GWG 2022 6.3",
+                    )
+                )
+        return findings
+
+    @staticmethod
+    def _check_impure_black(event: PathPaintingEvent) -> list[Finding]:
+        """Check for impure black with unnecessary CMY contamination (GRD_COLOR_017).
+
+        When K > 90% but any of C, M, Y > 5%, the color has unnecessary CMY
+        contamination that wastes ink.
+        """
+        findings: list[Finding] = []
+        if not event.fill or event.fill_color_space != "DeviceCMYK":
+            return findings
+        vals = event.fill_color_values
+        if len(vals) != 4:
+            return findings
+        c, m, y, k = vals
+        if k > 0.90 and (c > 0.05 or m > 0.05 or y > 0.05):
+            findings.append(
+                Finding(
+                    inspection_id="GRD_COLOR_017",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"Impure black detected "
+                        f"(C={c * 100:.0f}% M={m * 100:.0f}% "
+                        f"Y={y * 100:.0f}% K={k * 100:.0f}%) "
+                        f"on page {event.page_num} — unnecessary CMY "
+                        f"in near-K-only color"
+                    ),
+                    page_num=event.page_num,
+                    details={
+                        "color_values": list(vals),
+                        "c_percent": c * 100.0,
+                        "m_percent": m * 100.0,
+                        "y_percent": y * 100.0,
+                        "k_percent": k * 100.0,
+                    },
+                    iso_clause="GWG 2022 6.3",
+                )
+            )
+        return findings
+
+    @staticmethod
+    def _check_default_color_spaces(document: SemanticDocument) -> list[Finding]:
+        """Check for default color space overrides (GRD_COLOR_020).
+
+        DefaultRGB, DefaultCMYK, or DefaultGray entries in page resources
+        override device color spaces and may cause unexpected color behavior.
+        """
+        findings: list[Finding] = []
+        _DEFAULT_CS_NAMES = frozenset({"/DefaultRGB", "/DefaultCMYK", "/DefaultGray"})
+
+        for page in document.pages:
+            resources = page.resources
+            color_space_res = resources.get("/ColorSpace", {})
+            if not isinstance(color_space_res, dict):
+                continue
+            for cs_key in color_space_res:
+                if cs_key in _DEFAULT_CS_NAMES:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_COLOR_020",
+                            severity=Severity.SQUALL,
+                            message=(
+                                f"Default color space override '{cs_key}' defined "
+                                f"on page {page.page_num} (may cause unexpected "
+                                f"color mapping)"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "default_color_space": cs_key,
+                            },
+                            iso_clause="ISO 32000-2:2020 8.6.5.6",
+                        )
+                    )
+
         return findings
 
     @staticmethod

@@ -14,6 +14,10 @@ Check IDs:
     GRD_STRUCT_008 — JavaScript detected in PDF (via /JS or /JavaScript actions)
     GRD_STRUCT_009 — Interactive form fields detected
     GRD_STRUCT_010 — Layer print state mismatch (screen vs print)
+    GRD_STRUCT_011 — PostScript fragments detected
+    GRD_STRUCT_012 — Bookmarks/outlines detected
+    GRD_STRUCT_013 — Embedded page thumbnails detected
+    GRD_STRUCT_014 — Non-JavaScript action detected
 """
 
 from __future__ import annotations
@@ -151,6 +155,18 @@ class StructureAnalyzer(BaseAnalyzer):
 
         # GRD_STRUCT_010: Layer print state mismatch
         findings.extend(self._check_layer_print_mismatch(catalog))
+
+        # GRD_STRUCT_011: PostScript fragments
+        findings.extend(self._check_postscript_fragments(document))
+
+        # GRD_STRUCT_012: Bookmarks/outlines
+        findings.extend(self._check_bookmarks(catalog))
+
+        # GRD_STRUCT_013: Embedded page thumbnails
+        findings.extend(self._check_page_thumbnails(document))
+
+        # GRD_STRUCT_014: Non-JavaScript actions
+        findings.extend(self._check_non_js_actions(catalog))
 
         return findings
 
@@ -372,6 +388,152 @@ class StructureAnalyzer(BaseAnalyzer):
                                 )
                             )
                             break
+
+        return findings
+
+    @staticmethod
+    def _check_postscript_fragments(document: SemanticDocument) -> list[Finding]:
+        """Check for PostScript XObject fragments on pages (GRD_STRUCT_011).
+
+        PostScript Type 1 XObjects (/Subtype /PS) are prohibited in modern
+        PDF/X print workflows.
+        """
+        findings: list[Finding] = []
+        for page in document.pages:
+            xobjects = page.resources.get("/XObject", {})
+            if not isinstance(xobjects, dict):
+                continue
+            for _name, xobj in xobjects.items():
+                if isinstance(xobj, dict) and xobj.get("/Subtype") == "/PS":
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_STRUCT_011",
+                            severity=Severity.AGROUND,
+                            message=(
+                                f"PostScript fragment (Type 1 XObject) detected on page "
+                                f"{page.page_num} (prohibited in modern PDF/X workflows)"
+                            ),
+                            page_num=page.page_num,
+                            details={"source": "xobject"},
+                            iso_clause="ISO 15930-7:2010 6.2.5",
+                        )
+                    )
+                    return findings  # One finding is enough
+        return findings
+
+    @staticmethod
+    def _check_bookmarks(catalog: dict[str, Any]) -> list[Finding]:
+        """Check for bookmarks/outlines in the document catalog (GRD_STRUCT_012)."""
+        findings: list[Finding] = []
+        outlines = catalog.get("/Outlines")
+        if not isinstance(outlines, dict):
+            return findings
+
+        has_first = outlines.get("/First") is not None
+        count = outlines.get("/Count")
+
+        if isinstance(count, int) and count > 0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_STRUCT_012",
+                    severity=Severity.ADVISORY,
+                    message=f"Document contains bookmarks/outlines ({count} entries)",
+                    details={"count": count},
+                    iso_clause="ISO 32000-2:2020 12.3.3",
+                )
+            )
+        elif has_first:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_STRUCT_012",
+                    severity=Severity.ADVISORY,
+                    message="Document contains bookmarks/outlines detected",
+                    details={"has_first": True},
+                    iso_clause="ISO 32000-2:2020 12.3.3",
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_page_thumbnails(document: SemanticDocument) -> list[Finding]:
+        """Check for embedded page thumbnails (GRD_STRUCT_013).
+
+        Embedded thumbnails are unnecessary in modern PDF and waste file size.
+        Only reports once (first page found).
+        """
+        findings: list[Finding] = []
+        for page in document.pages:
+            if page.resources.get("/Thumb") is not None:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_STRUCT_013",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Embedded page thumbnails detected (starting on page "
+                            f"{page.page_num} — increases file size unnecessarily)"
+                        ),
+                        page_num=page.page_num,
+                        details={"source": "page_resources"},
+                        iso_clause="ISO 32000-2:2020 12.3.4",
+                    )
+                )
+                return findings  # Only report once
+        return findings
+
+    @staticmethod
+    def _check_non_js_actions(catalog: dict[str, Any]) -> list[Finding]:
+        """Check for non-JavaScript actions in document catalog (GRD_STRUCT_014).
+
+        Flags action types that are problematic for print workflows:
+        /Launch, /URI, /SubmitForm, /ResetForm, /ImportData.
+        """
+        findings: list[Finding] = []
+        problematic_types = {"/Launch", "/URI", "/SubmitForm", "/ResetForm", "/ImportData"}
+
+        def _check_action(action: Any) -> str | None:
+            """Return the action type if it is a problematic non-JS action."""
+            if isinstance(action, dict):
+                action_type = action.get("/S", "")
+                if action_type in problematic_types:
+                    return action_type
+            return None
+
+        # Check /AA (Additional Actions)
+        aa = catalog.get("/AA")
+        if isinstance(aa, dict):
+            for _trigger, action in aa.items():
+                action_type = _check_action(action)
+                if action_type is not None:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_STRUCT_014",
+                            severity=Severity.SQUALL,
+                            message=(
+                                f"Non-JavaScript action '{action_type}' detected in document "
+                                f"catalog (may cause unexpected behavior in print workflow)"
+                            ),
+                            details={"action_type": action_type, "source": "/AA"},
+                            iso_clause="ISO 15930-7:2010 6.2.8",
+                        )
+                    )
+
+        # Check /OpenAction
+        open_action = catalog.get("/OpenAction")
+        action_type = _check_action(open_action)
+        if action_type is not None:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_STRUCT_014",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"Non-JavaScript action '{action_type}' detected in document "
+                        f"catalog (may cause unexpected behavior in print workflow)"
+                    ),
+                    details={"action_type": action_type, "source": "/OpenAction"},
+                    iso_clause="ISO 15930-7:2010 6.2.8",
+                )
+            )
 
         return findings
 
