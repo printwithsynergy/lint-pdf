@@ -51,6 +51,9 @@ class ThresholdConfig(BaseModel):
     barcode_min_dpi: float = Field(default=300.0, ge=0, description="Minimum barcode DPI.")
     barcode_min_grade: str = Field(default="C", description="Minimum barcode grade (A/B/C/D/F).")
     barcode_quiet_zone_mm: float = Field(default=2.5, ge=0, description="Barcode quiet zone in mm.")
+    barcode_min_contrast: float = Field(
+        default=0.7, ge=0, le=1.0, description="Minimum barcode symbol contrast (0.0-1.0)."
+    )
 
     # Color management thresholds
     target_output_condition: str = Field(

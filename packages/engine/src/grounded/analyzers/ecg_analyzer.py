@@ -10,6 +10,19 @@ Check IDs:
     GRD_ECG_003 — 7-channel TAC verification
     GRD_ECG_004 — DeviceN colorant consistency for CMYKOGV
     GRD_ECG_005 — Max 3-ink build validation
+    GRD_ECG_006 — Spot color convertible to ECG process
+    GRD_ECG_007 — ECG color out of build range
+    GRD_ECG_008 — Gray balance drift risk
+    GRD_ECG_009 — Overinking in expanded gamut
+    GRD_ECG_010 — Missing ECG characterization data
+    GRD_ECG_011 — Non-uniform ink limits
+    GRD_ECG_012 — Gamut boundary mapping required
+    GRD_ECG_013 — K-only text in ECG
+    GRD_ECG_014 — Rich black recipe for ECG
+    GRD_ECG_015 — Trap zone width recommendation
+    GRD_ECG_016 — ECG profile ICC version
+    GRD_ECG_017 — Multicolor DeviceN ordering
+    GRD_ECG_018 — Total ink limit per channel
 """
 
 from __future__ import annotations
@@ -52,16 +65,60 @@ _CMYKOGV_ABBREVS = frozenset(
 # Threshold for significant ink coverage
 _SIGNIFICANT_INK = 0.05  # 5%
 
+# Spot colors that can be replaced by ECG process colors (Orange, Green, Violet)
+_ECG_CONVERTIBLE_SPOTS = {
+    "pantone orange 021": "orange",
+    "pantone orange 021 c": "orange",
+    "pantone orange 021 u": "orange",
+    "pantone green": "green",
+    "pantone green c": "green",
+    "pantone green u": "green",
+    "pantone violet": "violet",
+    "pantone violet c": "violet",
+    "pantone violet u": "violet",
+    "pantone 021": "orange",
+    "pantone 354": "green",
+    "pantone 2685": "violet",
+}
+
+# Expected CMYKOGV ordering convention
+_CMYKOGV_ORDER = ["cyan", "magenta", "yellow", "black", "orange", "green", "violet"]
+
+# Gray balance threshold for ECG (high absolute values)
+_ECG_GRAY_HIGH_THRESHOLD = 0.60  # 60%
+_ECG_GRAY_TOLERANCE = 0.05  # 5%
+
+# Rich black ECG recipe defaults
+_ECG_RICH_BLACK_C = 0.60  # 60% Cyan
+_ECG_RICH_BLACK_M = 0.40  # 40% Magenta
+_ECG_RICH_BLACK_Y = 0.40  # 40% Yellow
+_ECG_RICH_BLACK_K = 1.00  # 100% Black
+
+# Trap zone minimum width (pt)
+_ECG_TRAP_MIN_WIDTH = 0.5  # 0.5pt
+
+# Small text threshold for K-only check (pt)
+_ECG_SMALL_TEXT_THRESHOLD = 12.0
+
 
 class EcgAnalyzer(BaseAnalyzer):
     """Analyzer for Expanded Color Gamut (ECG) printing readiness.
 
     Args:
         tac_limit: Maximum allowed 7-channel TAC percentage (default 300).
+        ecg_tac_limit: ECG-specific overinking TAC threshold (default 350).
+        ecg_max_ink_per_channel: Maximum ink per individual channel (default 0.95).
     """
 
-    def __init__(self, tac_limit: float = 300.0) -> None:
+    def __init__(
+        self,
+        tac_limit: float = 300.0,
+        ecg_tac_limit: float = 350.0,
+        ecg_max_ink_per_channel: float = 0.95,
+    ) -> None:
         self.tac_limit = tac_limit
+        self.ecg_tac_limit = ecg_tac_limit
+        self.ecg_max_ink_per_channel = ecg_max_ink_per_channel
 
     def analyze(
         self,
@@ -72,6 +129,7 @@ class EcgAnalyzer(BaseAnalyzer):
         from grounded.semantic.events import (
             ColorChangedEvent,
             PathPaintingEvent,
+            TextRenderedEvent,
         )
 
         findings: list[Finding] = []
@@ -107,6 +165,12 @@ class EcgAnalyzer(BaseAnalyzer):
 
         # Collect DeviceN color values from events for TAC and ink build checks
         devicen_color_events: list[dict[str, object]] = []
+        # Collect CMYK color events for gray balance and rich black checks
+        cmyk_color_events: list[dict[str, object]] = []
+        # Collect text events for K-only text check
+        text_events: list[dict[str, object]] = []
+        # Collect path events for trap zone width check
+        path_events: list[dict[str, object]] = []
 
         for event in events:
             if isinstance(event, ColorChangedEvent):
@@ -116,6 +180,13 @@ class EcgAnalyzer(BaseAnalyzer):
                             "page_num": event.page_num,
                             "color_values": event.color_values,
                             "components": len(event.color_values),
+                        }
+                    )
+                elif event.color_space == "DeviceCMYK" and len(event.color_values) == 4:
+                    cmyk_color_events.append(
+                        {
+                            "page_num": event.page_num,
+                            "color_values": event.color_values,
                         }
                     )
             elif isinstance(event, PathPaintingEvent):
@@ -139,6 +210,41 @@ class EcgAnalyzer(BaseAnalyzer):
                                 "components": len(vals),
                             }
                         )
+                if event.fill and event.fill_color_space == "DeviceCMYK":
+                    vals = event.fill_color_values
+                    if len(vals) == 4:
+                        cmyk_color_events.append(
+                            {
+                                "page_num": event.page_num,
+                                "color_values": vals,
+                            }
+                        )
+                if event.stroke and event.stroke_color_space == "DeviceCMYK":
+                    vals = event.stroke_color_values
+                    if len(vals) == 4:
+                        cmyk_color_events.append(
+                            {
+                                "page_num": event.page_num,
+                                "color_values": vals,
+                            }
+                        )
+                # Collect stroke width for trap zone check
+                if event.stroke and hasattr(event, "line_width"):
+                    path_events.append(
+                        {
+                            "page_num": event.page_num,
+                            "line_width": event.line_width,
+                        }
+                    )
+            elif isinstance(event, TextRenderedEvent):
+                text_events.append(
+                    {
+                        "page_num": event.page_num,
+                        "color_space": event.color_space,
+                        "color_values": event.color_values,
+                        "font_size": getattr(event, "font_size", None),
+                    }
+                )
 
         # GRD_ECG_001: ECG readiness assessment
         findings.extend(self._check_ecg_readiness(spot_colors, devicen_spaces))
@@ -154,6 +260,45 @@ class EcgAnalyzer(BaseAnalyzer):
 
         # GRD_ECG_005: Max 3-ink build validation
         findings.extend(self._check_ink_build(devicen_color_events))
+
+        # GRD_ECG_006: Spot color convertible to ECG process
+        findings.extend(self._check_spot_convertible(spot_colors))
+
+        # GRD_ECG_007: ECG color out of build range
+        findings.extend(self._check_ecg_build_range(devicen_color_events))
+
+        # GRD_ECG_008: Gray balance drift risk
+        findings.extend(self._check_gray_balance_drift(cmyk_color_events))
+
+        # GRD_ECG_009: Overinking in expanded gamut
+        findings.extend(self._check_ecg_overinking(devicen_color_events))
+
+        # GRD_ECG_010: Missing ECG characterization data
+        findings.extend(self._check_ecg_characterization(document))
+
+        # GRD_ECG_011: Non-uniform ink limits
+        findings.extend(self._check_ink_channel_limits(devicen_color_events))
+
+        # GRD_ECG_012: Gamut boundary mapping required
+        findings.extend(self._check_gamut_mapping(spot_colors))
+
+        # GRD_ECG_013: K-only text in ECG
+        findings.extend(self._check_k_only_text(text_events))
+
+        # GRD_ECG_014: Rich black recipe for ECG
+        findings.extend(self._check_rich_black_ecg(cmyk_color_events))
+
+        # GRD_ECG_015: Trap zone width recommendation
+        findings.extend(self._check_trap_zone_width(path_events))
+
+        # GRD_ECG_016: ECG profile ICC version
+        findings.extend(self._check_icc_version(document))
+
+        # GRD_ECG_017: Multicolor DeviceN ordering
+        findings.extend(self._check_devicen_ordering(devicen_spaces))
+
+        # GRD_ECG_018: Total ink limit per channel
+        findings.extend(self._check_channel_ink_limit(devicen_color_events))
 
         return findings
 
@@ -387,3 +532,502 @@ class EcgAnalyzer(BaseAnalyzer):
                 )
 
         return findings
+
+    @staticmethod
+    def _check_spot_convertible(
+        spot_colors: dict[str, list[int]],
+    ) -> list[Finding]:
+        """GRD_ECG_006: Spot color convertible to ECG process."""
+        findings: list[Finding] = []
+
+        for colorant, pages in sorted(spot_colors.items()):
+            lower_name = colorant.lower().strip()
+            ecg_process = _ECG_CONVERTIBLE_SPOTS.get(lower_name)
+            if ecg_process is not None:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ECG_006",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Spot color '{colorant}' could be replaced by ECG process "
+                            f"color '{ecg_process.upper()}' on page(s) {pages}"
+                        ),
+                        details={
+                            "colorant_name": colorant,
+                            "ecg_process_replacement": ecg_process,
+                            "pages": pages,
+                        },
+                    )
+                )
+
+        return findings
+
+    @staticmethod
+    def _check_ecg_build_range(
+        devicen_color_events: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_007: ECG color out of build range."""
+        findings: list[Finding] = []
+
+        for event_info in devicen_color_events:
+            color_values: tuple[float, ...] = event_info["color_values"]  # type: ignore[assignment]
+            page_num: int = event_info["page_num"]  # type: ignore[assignment]
+            tac = sum(color_values) * 100.0
+
+            if tac > 400.0:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ECG_007",
+                        severity=Severity.AGROUND,
+                        message=(
+                            f"ECG color out of build range: CMYK+OGV TAC {tac:.0f}% "
+                            f"exceeds maximum allowable 400% on page {page_num}"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "tac": tac,
+                            "max_ecg_tac": 400.0,
+                            "channels": len(color_values),
+                            "color_values": list(color_values),
+                        },
+                    )
+                )
+
+        return findings
+
+    @staticmethod
+    def _check_gray_balance_drift(
+        cmyk_color_events: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_008: Gray balance drift risk."""
+        findings: list[Finding] = []
+        drift_count = 0
+        drift_pages: set[int] = set()
+
+        for event_info in cmyk_color_events:
+            color_values: tuple[float, ...] = event_info["color_values"]  # type: ignore[assignment]
+            page_num: int = event_info["page_num"]  # type: ignore[assignment]
+            c, m, y, _k = color_values
+
+            # Near-equal CMY with high absolute values
+            if (
+                c > _ECG_GRAY_HIGH_THRESHOLD
+                and m > _ECG_GRAY_HIGH_THRESHOLD
+                and y > _ECG_GRAY_HIGH_THRESHOLD
+                and abs(c - m) <= _ECG_GRAY_TOLERANCE
+                and abs(c - y) <= _ECG_GRAY_TOLERANCE
+                and abs(m - y) <= _ECG_GRAY_TOLERANCE
+            ):
+                drift_count += 1
+                drift_pages.add(page_num)
+
+        if drift_count > 0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ECG_008",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"ECG gray balance drift risk: {drift_count} object(s) with "
+                        f"near-equal C/M/Y components above {_ECG_GRAY_HIGH_THRESHOLD * 100:.0f}% "
+                        f"across {len(drift_pages)} page(s) may exhibit gray balance "
+                        f"instability in ECG workflow"
+                    ),
+                    details={
+                        "drift_count": drift_count,
+                        "pages": sorted(drift_pages),
+                        "gray_high_threshold": _ECG_GRAY_HIGH_THRESHOLD,
+                        "gray_tolerance": _ECG_GRAY_TOLERANCE,
+                    },
+                )
+            )
+
+        return findings
+
+    def _check_ecg_overinking(
+        self,
+        devicen_color_events: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_009: Overinking in expanded gamut."""
+        findings: list[Finding] = []
+
+        for event_info in devicen_color_events:
+            color_values: tuple[float, ...] = event_info["color_values"]  # type: ignore[assignment]
+            page_num: int = event_info["page_num"]  # type: ignore[assignment]
+            tac = sum(color_values) * 100.0
+
+            if tac > self.ecg_tac_limit:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ECG_009",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"ECG overinking: TAC {tac:.0f}% exceeds ECG threshold "
+                            f"{self.ecg_tac_limit:.0f}% on page {page_num}"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "tac": tac,
+                            "ecg_tac_limit": self.ecg_tac_limit,
+                            "channels": len(color_values),
+                            "color_values": list(color_values),
+                        },
+                    )
+                )
+
+        return findings
+
+    @staticmethod
+    def _check_ecg_characterization(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """GRD_ECG_010: Missing ECG characterization data."""
+        findings: list[Finding] = []
+
+        # Check output intents for ECG-specific characterization references
+        ecg_references = {"fogra55", "fogra59", "cgats21-2-ecg", "ecg"}
+        has_ecg_characterization = False
+
+        if hasattr(document, "output_intents"):
+            for intent in document.output_intents:
+                condition = getattr(intent, "output_condition", "") or ""
+                info = getattr(intent, "info", "") or ""
+                registry = getattr(intent, "registry_name", "") or ""
+                combined = f"{condition} {info} {registry}".lower()
+                if any(ref in combined for ref in ecg_references):
+                    has_ecg_characterization = True
+                    break
+
+        if not has_ecg_characterization:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ECG_010",
+                    severity=Severity.SQUALL,
+                    message=(
+                        "Missing ECG characterization data: no ECG-specific output "
+                        "intent or characterization reference (e.g., FOGRA55) found "
+                        "in document metadata"
+                    ),
+                    details={
+                        "expected_references": sorted(ecg_references),
+                        "has_output_intents": hasattr(document, "output_intents"),
+                    },
+                )
+            )
+
+        return findings
+
+    def _check_ink_channel_limits(
+        self,
+        devicen_color_events: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_011: Non-uniform ink limits."""
+        findings: list[Finding] = []
+
+        for event_info in devicen_color_events:
+            color_values: tuple[float, ...] = event_info["color_values"]  # type: ignore[assignment]
+            page_num: int = event_info["page_num"]  # type: ignore[assignment]
+
+            exceeded_channels: list[int] = []
+            for i, val in enumerate(color_values):
+                if val > self.ecg_max_ink_per_channel:
+                    exceeded_channels.append(i)
+
+            if exceeded_channels:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ECG_011",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"ECG ink channel limit exceeded: channel(s) "
+                            f"{exceeded_channels} above "
+                            f"{self.ecg_max_ink_per_channel * 100:.0f}% on page {page_num}"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "exceeded_channels": exceeded_channels,
+                            "max_ink_per_channel": self.ecg_max_ink_per_channel,
+                            "color_values": list(color_values),
+                        },
+                    )
+                )
+
+        return findings
+
+    @staticmethod
+    def _check_gamut_mapping(
+        spot_colors: dict[str, list[int]],
+    ) -> list[Finding]:
+        """GRD_ECG_012: Gamut boundary mapping required."""
+        findings: list[Finding] = []
+
+        # Spot colors not in the ECG convertible set likely need gamut mapping
+        for colorant, pages in sorted(spot_colors.items()):
+            lower_name = colorant.lower().strip()
+            # Skip colors that are standard CMYKOGV or known convertible
+            if lower_name in _CMYKOGV_NAMES or lower_name in _ECG_CONVERTIBLE_SPOTS:
+                continue
+
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ECG_012",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Gamut boundary mapping required: spot color '{colorant}' "
+                        f"on page(s) {pages} may be out of ECG gamut and would need "
+                        f"gamut mapping for accurate reproduction"
+                    ),
+                    details={
+                        "colorant_name": colorant,
+                        "pages": pages,
+                    },
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_k_only_text(
+        text_events: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_013: K-only text in ECG."""
+        findings: list[Finding] = []
+        multi_ink_text_count = 0
+        multi_ink_text_pages: set[int] = set()
+
+        for event_info in text_events:
+            color_space: str = event_info["color_space"]  # type: ignore[assignment]
+            color_values: tuple[float, ...] = event_info["color_values"]  # type: ignore[assignment]
+            page_num: int = event_info["page_num"]  # type: ignore[assignment]
+            font_size = event_info.get("font_size")
+
+            # Only check small text
+            if font_size is not None and font_size > _ECG_SMALL_TEXT_THRESHOLD:
+                continue
+
+            if color_space == "DeviceCMYK" and len(color_values) == 4:
+                c, m, y, k = color_values
+                # Small text should use K-only, not multi-ink
+                if k > 0 and (c > 0.01 or m > 0.01 or y > 0.01):
+                    multi_ink_text_count += 1
+                    multi_ink_text_pages.add(page_num)
+
+        if multi_ink_text_count > 0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ECG_013",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"ECG multi-ink small text: {multi_ink_text_count} text "
+                        f"object(s) below {_ECG_SMALL_TEXT_THRESHOLD:.0f}pt use "
+                        f"multi-ink instead of K-only across "
+                        f"{len(multi_ink_text_pages)} page(s)"
+                    ),
+                    details={
+                        "multi_ink_text_count": multi_ink_text_count,
+                        "pages": sorted(multi_ink_text_pages),
+                        "small_text_threshold": _ECG_SMALL_TEXT_THRESHOLD,
+                    },
+                    object_type="text",
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_rich_black_ecg(
+        cmyk_color_events: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_014: Rich black recipe for ECG."""
+        findings: list[Finding] = []
+        bad_recipe_count = 0
+        bad_recipe_pages: set[int] = set()
+
+        for event_info in cmyk_color_events:
+            color_values: tuple[float, ...] = event_info["color_values"]  # type: ignore[assignment]
+            page_num: int = event_info["page_num"]  # type: ignore[assignment]
+            c, m, y, k = color_values
+
+            # Detect rich black (K=100% with CMY)
+            if abs(k - 1.0) < 0.01 and (c > 0.01 or m > 0.01 or y > 0.01):
+                # Check if recipe deviates from ECG recommendation
+                if (
+                    abs(c - _ECG_RICH_BLACK_C) > 0.15
+                    or abs(m - _ECG_RICH_BLACK_M) > 0.15
+                    or abs(y - _ECG_RICH_BLACK_Y) > 0.15
+                ):
+                    bad_recipe_count += 1
+                    bad_recipe_pages.add(page_num)
+
+        if bad_recipe_count > 0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ECG_014",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"ECG rich black recipe: {bad_recipe_count} object(s) use "
+                        f"non-standard rich black recipe across "
+                        f"{len(bad_recipe_pages)} page(s). ECG recommends "
+                        f"C={_ECG_RICH_BLACK_C * 100:.0f}% "
+                        f"M={_ECG_RICH_BLACK_M * 100:.0f}% "
+                        f"Y={_ECG_RICH_BLACK_Y * 100:.0f}% "
+                        f"K={_ECG_RICH_BLACK_K * 100:.0f}%"
+                    ),
+                    details={
+                        "bad_recipe_count": bad_recipe_count,
+                        "pages": sorted(bad_recipe_pages),
+                        "recommended_c": _ECG_RICH_BLACK_C,
+                        "recommended_m": _ECG_RICH_BLACK_M,
+                        "recommended_y": _ECG_RICH_BLACK_Y,
+                        "recommended_k": _ECG_RICH_BLACK_K,
+                    },
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_trap_zone_width(
+        path_events: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_015: Trap zone width recommendation."""
+        findings: list[Finding] = []
+        thin_count = 0
+        thin_pages: set[int] = set()
+
+        for event_info in path_events:
+            line_width = event_info.get("line_width")
+            page_num: int = event_info["page_num"]  # type: ignore[assignment]
+
+            if line_width is not None and line_width < _ECG_TRAP_MIN_WIDTH:
+                thin_count += 1
+                thin_pages.add(page_num)
+
+        if thin_count > 0:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ECG_015",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"ECG trap zone warning: {thin_count} path element(s) with "
+                        f"stroke width below {_ECG_TRAP_MIN_WIDTH}pt across "
+                        f"{len(thin_pages)} page(s) may need special trapping in "
+                        f"ECG workflow"
+                    ),
+                    details={
+                        "thin_element_count": thin_count,
+                        "pages": sorted(thin_pages),
+                        "trap_min_width": _ECG_TRAP_MIN_WIDTH,
+                    },
+                    object_type="path",
+                )
+            )
+
+        return findings
+
+    @staticmethod
+    def _check_icc_version(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """GRD_ECG_016: ECG profile ICC version."""
+        findings: list[Finding] = []
+
+        if hasattr(document, "output_intents"):
+            for intent in document.output_intents:
+                profile = getattr(intent, "dest_output_profile", None)
+                if profile is None:
+                    continue
+                icc_version = getattr(profile, "version", None)
+                if icc_version is not None and icc_version < 4.0:
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ECG_016",
+                            severity=Severity.SQUALL,
+                            message=(
+                                f"ECG ICC profile version {icc_version} is below "
+                                f"v4.0; ECG workflows require ICC v4 or later for "
+                                f"accurate multicolor profiling"
+                            ),
+                            details={
+                                "icc_version": icc_version,
+                                "required_minimum": 4.0,
+                            },
+                        )
+                    )
+
+        return findings
+
+    @staticmethod
+    def _check_devicen_ordering(
+        devicen_spaces: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_017: Multicolor DeviceN ordering."""
+        findings: list[Finding] = []
+
+        for dn in devicen_spaces:
+            colorants: list[str] = dn["colorants"]  # type: ignore[assignment]
+            page_num: int = dn["page_num"]  # type: ignore[assignment]
+
+            if len(colorants) != 7:
+                continue
+
+            lower_names = [c.lower() for c in colorants]
+            # Check if all expected CMYKOGV names are present
+            if set(lower_names) != _CMYKOGV_NAMES:
+                continue
+
+            # Verify ordering matches CMYKOGV convention
+            if lower_names != _CMYKOGV_ORDER:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ECG_017",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"DeviceN colorant order {colorants} on page {page_num} "
+                            f"does not follow CMYKOGV convention "
+                            f"{[n.capitalize() for n in _CMYKOGV_ORDER]}"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "cs_name": dn["cs_name"],
+                            "actual_order": colorants,
+                            "expected_order": _CMYKOGV_ORDER,
+                        },
+                    )
+                )
+
+        return findings
+
+    def _check_channel_ink_limit(
+        self,
+        devicen_color_events: list[dict[str, object]],
+    ) -> list[Finding]:
+        """GRD_ECG_018: Total ink limit per channel."""
+        findings: list[Finding] = []
+        high_ink_threshold = 0.90  # 90% advisory threshold
+
+        for event_info in devicen_color_events:
+            color_values: tuple[float, ...] = event_info["color_values"]  # type: ignore[assignment]
+            page_num: int = event_info["page_num"]  # type: ignore[assignment]
+
+            high_channels: list[int] = []
+            for i, val in enumerate(color_values):
+                if val > high_ink_threshold:
+                    high_channels.append(i)
+
+            if high_channels:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ECG_018",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"ECG high ink per channel: channel(s) {high_channels} "
+                            f"exceed {high_ink_threshold * 100:.0f}% on page {page_num}"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "high_channels": high_channels,
+                            "threshold": high_ink_threshold,
+                            "color_values": list(color_values),
+                        },
+                    )
+                )
