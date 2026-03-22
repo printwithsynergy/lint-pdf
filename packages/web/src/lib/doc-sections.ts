@@ -4,6 +4,7 @@ export const docSections = [
     items: [
       { slug: "getting-started", label: "Getting Started" },
       { slug: "authentication", label: "Authentication" },
+      { slug: "desktop-app", label: "Desktop App" },
     ],
   },
   {
@@ -61,7 +62,7 @@ export const docSections = [
       { slug: "integrations-tharstern", label: "Tharstern" },
       { slug: "integrations-printvis", label: "PrintVis" },
       { slug: "integrations-zapier-make-n8n", label: "Zapier, Make & n8n" },
-      { slug: "integrations-hot-folder", label: "Hot Folder" },
+      { slug: "integrations-hot-folder", label: "Hot Folder (CLI & Desktop)" },
     ],
   },
 ];

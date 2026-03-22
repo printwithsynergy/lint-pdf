@@ -1,5 +1,6 @@
 import { HeroSection } from "@/components/HeroSection";
 import { FeaturesSection } from "@/components/FeaturesSection";
+import { HotFolderSection } from "@/components/HotFolderSection";
 import { AIFeaturesSection } from "@/components/AIFeaturesSection";
 import { HowItWorksSection } from "@/components/HowItWorksSection";
 import { CompetitorComparisonSection } from "@/components/CompetitorComparisonSection";
@@ -11,6 +12,7 @@ export default function Home() {
     <main>
       <HeroSection />
       <FeaturesSection />
+      <HotFolderSection />
       <AIFeaturesSection />
       <HowItWorksSection />
       <CompetitorComparisonSection />

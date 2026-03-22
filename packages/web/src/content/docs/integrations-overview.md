@@ -106,12 +106,13 @@ A job passes when `aground_count` is 0.
 | Tharstern   | Indirect (AE) or direct (web services)        | [Tharstern](/docs/integrations-tharstern)     |
 | PrintVis    | Direct (D365 APIs / Power Automate)           | [PrintVis](/docs/integrations-printvis)       |
 
-### Automation & Tools
+### Desktop & Automation Tools
 
-| System              | Integration Type        | Guide                                                    |
-| ------------------- | ----------------------- | -------------------------------------------------------- |
-| Zapier / Make / n8n | Webhook + HTTP modules  | [Zapier, Make & n8n](/docs/integrations-zapier-make-n8n) |
-| Hot Folder          | Local directory watcher | [Hot Folder](/docs/integrations-hot-folder)              |
+| System              | Integration Type                                       | Guide                                                    |
+| ------------------- | ------------------------------------------------------ | -------------------------------------------------------- |
+| Desktop App         | Native GUI hot folder manager (macOS, Windows, Linux)  | [Desktop App](/docs/desktop-app)                         |
+| Hot Folder CLI      | Python CLI directory watcher for servers               | [Hot Folder](/docs/integrations-hot-folder)              |
+| Zapier / Make / n8n | Webhook + HTTP modules                                 | [Zapier, Make & n8n](/docs/integrations-zapier-make-n8n) |
 
 ## Authentication
 

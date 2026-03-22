@@ -76,9 +76,9 @@ const genericIntegrations: Integration[] = [
     href: "/docs/integrations-zapier-make-n8n",
   },
   {
-    title: "Hot Folder",
+    title: "Hot Folder CLI",
     description:
-      "Drop files in a directory, get preflight results automatically.",
+      "Python CLI that watches a directory and submits files automatically. Ideal for servers and headless environments.",
     href: "/docs/integrations-hot-folder",
   },
   {
@@ -145,6 +145,66 @@ export default function IntegrationsPage() {
             workflow — from no-code automation tools to enterprise workflow
             engines.
           </p>
+        </div>
+      </section>
+
+      {/* Desktop App — Featured */}
+      <section className="py-20">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="rounded-3xl border border-brand-200 bg-gradient-to-br from-brand-50 to-white p-8 md:p-12">
+            <div className="grid gap-8 md:grid-cols-2 items-center">
+              <div>
+                <span className="inline-block rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700 mb-4">
+                  New
+                </span>
+                <h2 className="text-3xl font-bold text-slate-900 md:text-4xl">
+                  Hot Folders Desktop App
+                </h2>
+                <p className="mt-4 text-slate-500 leading-relaxed">
+                  A native desktop app for macOS, Windows, and Linux that watches
+                  directories and preflights files automatically. Configure
+                  multiple folders, see results in real time, and run quietly in
+                  the system tray. No code required.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <Link
+                    href="/docs/desktop-app"
+                    className="rounded-xl bg-brand-900 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
+                  >
+                    Learn More
+                  </Link>
+                  <Link
+                    href="/docs/integrations-hot-folder"
+                    className="rounded-xl border-2 border-slate-200 px-6 py-3 text-sm font-medium text-slate-600 transition-all hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
+                  >
+                    Hot Folder Docs
+                  </Link>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
+                  <div className="text-2xl font-bold text-brand-600 mb-1">&infin;</div>
+                  <div className="font-medium text-slate-900">Folders</div>
+                  <div className="text-slate-400 text-xs mt-0.5">Watch unlimited directories</div>
+                </div>
+                <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
+                  <div className="text-2xl font-bold text-brand-600 mb-1">3</div>
+                  <div className="font-medium text-slate-900">Platforms</div>
+                  <div className="text-slate-400 text-xs mt-0.5">macOS, Windows, Linux</div>
+                </div>
+                <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
+                  <div className="text-2xl font-bold text-brand-600 mb-1">Live</div>
+                  <div className="font-medium text-slate-900">Results Feed</div>
+                  <div className="text-slate-400 text-xs mt-0.5">Real-time pass/fail status</div>
+                </div>
+                <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
+                  <div className="text-2xl font-bold text-brand-600 mb-1">Tray</div>
+                  <div className="font-medium text-slate-900">Background</div>
+                  <div className="text-slate-400 text-xs mt-0.5">Runs silently in system tray</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
