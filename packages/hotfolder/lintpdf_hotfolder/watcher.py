@@ -14,12 +14,19 @@ from watchdog.observers import Observer
 
 log = logging.getLogger(__name__)
 
-SUPPORTED_EXTENSIONS = frozenset({
-    ".pdf", ".eps", ".ps",
-    ".tiff", ".tif",
-    ".jpg", ".jpeg", ".png",
-    ".ai",
-})
+SUPPORTED_EXTENSIONS = frozenset(
+    {
+        ".pdf",
+        ".eps",
+        ".ps",
+        ".tiff",
+        ".tif",
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".ai",
+    }
+)
 
 
 class _StabilizationHandler(FileSystemEventHandler):
@@ -100,7 +107,9 @@ class _StabilizationHandler(FileSystemEventHandler):
             self._ready_queue.put(Path(path))
         else:
             # Size changed — restart stabilization
-            log.debug("File still changing: %s (%d -> %d)", path, expected_size, current_size)
+            log.debug(
+                "File still changing: %s (%d -> %d)", path, expected_size, current_size
+            )
             self._start_stabilization(path)
 
     def cancel_all(self) -> None:

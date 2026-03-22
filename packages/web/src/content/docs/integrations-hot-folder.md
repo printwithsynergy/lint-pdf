@@ -1,17 +1,88 @@
 ---
 title: "Hot Folder Integration"
-description: "Automatically preflight files by dropping them into a watched directory. The LintPDF hot folder monitors a local directory and submits new files to the API."
+description: "Automatically preflight files by dropping them into a watched directory. Choose the desktop app for a visual experience or the CLI for headless servers."
 section: "integrations"
 order: 11
 ---
 
 # Hot Folder Integration
 
-The LintPDF hot folder is a standalone CLI tool that monitors a local directory for new files and automatically submits them to the LintPDF API. Files are routed to pass, fail, or error directories based on preflight results.
+LintPDF hot folders let you preflight files by dropping them into a watched directory. Files are automatically submitted to the LintPDF API and routed to pass, fail, or error directories based on results.
 
-This runs on **your machine** — it's a client-side tool, not a server feature.
+Two options:
 
-## Installation
+| | **Desktop App** | **CLI** |
+|---|---|---|
+| **Best for** | Operators, prepress desks, anyone who prefers a GUI | Servers, headless environments, CI/CD |
+| **Platform** | macOS, Windows, Linux | Any platform with Python 3.10+ |
+| **Multi-folder** | Configure unlimited folders in one window | Run one instance per folder |
+| **System tray** | Runs in background with live status | Runs as a foreground process or systemd service |
+| **Results** | Live results feed with filtering | Sidecar JSON reports + log output |
+| **Install** | Download native installer | `pip install lintpdf-hotfolder` |
+
+---
+
+## Desktop App
+
+The LintPDF Hot Folders desktop app is a native application built with Tauri that provides a visual interface for managing watched directories.
+
+### Download
+
+| Platform | Download |
+|----------|----------|
+| macOS (Universal) | [LintPDF-HotFolders.dmg](#) |
+| Windows (64-bit) | [LintPDF-HotFolders.msi](#) |
+| Linux (AppImage) | [LintPDF-HotFolders.AppImage](#) |
+
+### Features
+
+- **Multiple folders** — Configure as many watched directories as you need, each with its own preflight profile and output directories
+- **Visual results feed** — See pass/fail status, finding counts (aground, squall, advisory), and job details in real time
+- **System tray** — Runs quietly in the background. Right-click the tray icon to start/stop all watchers or open the window
+- **File type filtering** — Choose which file types to watch per folder (.pdf, .eps, .tiff, .jpg, .png, .ai, etc.)
+- **Sidecar reports** — Optionally write `.lintpdf.json` reports alongside processed files
+- **Close to tray** — Closing the window keeps the app running. Quit from the tray menu when done
+
+### Quick Start
+
+1. Launch **LintPDF Hot Folders**
+2. Go to **Settings** and enter your API key
+3. Click **Add Folder** and configure:
+   - **Name** — a label for this folder (e.g., "Offset Print Jobs")
+   - **Watch Directory** — the directory to monitor
+   - **Profile** — the preflight profile to use (e.g., `gwg-sheetfed`)
+   - **Pass/Fail/Error Directories** — where to route files after preflight
+4. Click **Start** on the folder card (or **Start All** to watch everything)
+5. Drop files into the watched directory and watch results appear in the **Results** tab
+
+### Folder Configuration
+
+Each hot folder has these settings:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| Name | — | Display name for the folder |
+| Watch Directory | — | Path to monitor for new files |
+| Profile | `grounded-default` | Preflight profile ID |
+| Pass Directory | — | Move passed files here (leave empty to keep in place) |
+| Fail Directory | — | Move failed files here |
+| Error Directory | — | Move files that couldn't be processed here |
+| Write Sidecar | On | Write a `.lintpdf.json` report alongside each file |
+| Stabilization | 2s | Wait for file size to stabilize before submitting |
+| Poll Interval | 5s | How often to check job status |
+| File Extensions | All supported | Which file types to watch |
+
+### Running at Startup
+
+Enable **Launch at login** in Settings to start the app automatically when you log in. Combined with **Start minimized**, the app will begin watching immediately in the background.
+
+---
+
+## CLI Tool
+
+The CLI is ideal for headless servers, Docker containers, and scripted workflows.
+
+### Installation
 
 ```bash
 pip install lintpdf-hotfolder
@@ -24,7 +95,7 @@ cd packages/hotfolder
 pip install -e .
 ```
 
-## Quick Start
+### Quick Start
 
 ```bash
 # Watch a directory and route files based on results
@@ -46,26 +117,26 @@ Drop a PDF into `/path/to/incoming` and the tool will:
 5. Move it to `approved/` or `rejected/` based on pass/fail
 6. Write a JSON sidecar report alongside the moved file
 
-## Directory Layout
+### Directory Layout
 
 ```
-/incoming/          ← Drop files here (watched directory)
-    artwork.pdf     ← New file detected
+/incoming/          <- Drop files here (watched directory)
+    artwork.pdf     <- New file detected
 
-/approved/          ← Files that passed preflight
+/approved/          <- Files that passed preflight
     artwork.pdf
-    artwork.pdf.lintpdf.json    ← Sidecar report
+    artwork.pdf.lintpdf.json    <- Sidecar report
 
-/rejected/          ← Files that failed preflight
+/rejected/          <- Files that failed preflight
     label.pdf
     label.pdf.lintpdf.json
 
-/errors/            ← Files that couldn't be processed
+/errors/            <- Files that couldn't be processed
     corrupt.pdf
-    corrupt.pdf.lintpdf.json    ← Contains error details
+    corrupt.pdf.lintpdf.json    <- Contains error details
 ```
 
-## Command-Line Options
+### Command-Line Options
 
 ```
 Usage: lintpdf-watch [OPTIONS]
@@ -85,7 +156,7 @@ Options:
   --help                    Show this message and exit.
 ```
 
-## Configuration via Environment Variables
+### Configuration via Environment Variables
 
 ```bash
 export LINTPDF_API_KEY=lpdf_your_api_key
@@ -95,37 +166,76 @@ export LINTPDF_PROFILE=gwg-sheetfed
 lintpdf-watch --watch-dir /incoming --pass-dir /approved --fail-dir /rejected
 ```
 
+### Running as a System Service
+
+Create a systemd unit for always-on watching:
+
+```ini
+# /etc/systemd/system/lintpdf-hotfolder.service
+[Unit]
+Description=LintPDF Hot Folder Watcher
+After=network.target
+
+[Service]
+Type=simple
+User=prepress
+Environment=LINTPDF_API_KEY=lpdf_your_api_key
+ExecStart=/usr/local/bin/lintpdf-watch \
+  --watch-dir /srv/prepress/incoming \
+  --pass-dir /srv/prepress/approved \
+  --fail-dir /srv/prepress/rejected \
+  --error-dir /srv/prepress/errors \
+  --profile gwg-sheetfed
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable --now lintpdf-hotfolder
+```
+
+### Multiple Profiles
+
+Run multiple instances for different workflows:
+
+```bash
+# Offset jobs
+lintpdf-watch --watch-dir /jobs/offset --profile gwg-sheetfed --pass-dir /approved/offset &
+
+# Digital jobs
+lintpdf-watch --watch-dir /jobs/digital --profile gwg-digital --pass-dir /approved/digital &
+```
+
+Or use the desktop app, which handles multiple folders in a single window.
+
+---
+
 ## Sidecar Report Format
 
-When `--sidecar` is enabled (default), a JSON file is written alongside each processed file:
+Both the desktop app and CLI produce the same JSON sidecar format:
 
 ```json
 {
   "job_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
   "file_name": "artwork.pdf",
-  "profile_id": "gwg-sheetfed",
-  "passed": false,
+  "status": "failed",
   "summary": {
+    "passed": false,
     "aground_count": 2,
     "squall_count": 1,
-    "advisory_count": 3,
-    "total_findings": 6
+    "advisory_count": 3
   },
-  "findings": [
-    {
-      "inspection_id": "GRD_FONT_001",
-      "severity": "aground",
-      "message": "Font not embedded: Helvetica",
-      "page_num": 1
-    }
-  ],
-  "processed_at": "2025-03-22T10:15:30Z"
+  "submitted_at": "2025-03-22T10:15:30Z",
+  "completed_at": "2025-03-22T10:15:42Z"
 }
 ```
 
 ## Supported File Types
 
-The hot folder watches for these extensions:
+Both tools watch for these extensions:
 
 - `.pdf` — PDF documents
 - `.eps` — Encapsulated PostScript
@@ -135,26 +245,6 @@ The hot folder watches for these extensions:
 - `.png` — PNG images
 - `.ai` — Adobe Illustrator
 
-## File Stabilization
-
-Before submitting, the tool verifies the file is fully written by checking that the file size is stable for the configured stabilization period (default: 2 seconds). This prevents submitting partially-copied files.
-
-Increase `--stabilization` for slow network mounts (NFS, SMB):
-
-```bash
-lintpdf-watch --watch-dir /mnt/nas/incoming --stabilization 10
-```
-
-## Graceful Shutdown
-
-Press `Ctrl+C` or send `SIGTERM` to shut down cleanly. The tool will:
-
-1. Stop watching for new files
-2. Finish processing the current file (if any)
-3. Exit
-
-Files in the watch directory that haven't been submitted yet are left in place — they'll be picked up on the next start.
-
 ## Use Cases
 
 ### Prepress Hotfolder Integration
@@ -162,13 +252,13 @@ Files in the watch directory that haven't been submitted yet are left in place �
 Many prepress systems use hotfolder-based workflows. Place the LintPDF hot folder upstream:
 
 ```
-[Designer drops PDF] → /hotfolder/incoming
-    ↓
+[Designer drops PDF] -> /hotfolder/incoming
+    |
 [LintPDF hot folder watches]
-    ↓
+    |
 [Passed?]
-    ├── Yes → /hotfolder/approved → [Prepress workflow picks up]
-    └── No  → /hotfolder/rejected → [Designer notified]
+    |-- Yes -> /hotfolder/approved -> [Prepress workflow picks up]
+    |-- No  -> /hotfolder/rejected -> [Designer notified]
 ```
 
 ### ERP/MIS Output Processing
@@ -184,21 +274,23 @@ lintpdf-watch \
   --profile gwg-sheetfed
 ```
 
-### Multiple Profiles
+Or configure the same setup in the desktop app with the folder editor.
 
-Run multiple instances for different workflows:
+### Production Floor Stations
 
-```bash
-# Offset jobs
-lintpdf-watch --watch-dir /jobs/offset --profile gwg-sheetfed --pass-dir /approved/offset &
+Install the desktop app on prepress workstations. Operators can:
 
-# Digital jobs
-lintpdf-watch --watch-dir /jobs/digital --profile gwg-digital --pass-dir /approved/digital &
-```
+1. Drop files into the watched folder from their design application
+2. See pass/fail results immediately in the system tray
+3. Open the app to review finding details
+4. Retrieve approved files from the pass directory
+
+No terminal experience required.
 
 ## Tips
 
-- **Rate limits:** The hot folder respects LintPDF rate limits. If you hit a 429 response, it backs off automatically using the `Retry-After` header.
-- **Disk space:** Ensure your pass/fail/error directories have enough disk space. The tool moves (not copies) files.
-- **Monitoring:** Use `--log-level DEBUG` to see detailed processing information. In production, pipe logs to a file or log aggregator.
-- **Startup:** On startup, the tool processes files already present in the watch directory. To avoid this, ensure the directory is empty before starting.
+- **Rate limits:** Both tools respect LintPDF rate limits with automatic backoff using the `Retry-After` header.
+- **Disk space:** Files are moved (not copied). Ensure output directories have enough space.
+- **Network mounts:** Increase stabilization time to 5-10 seconds for NFS/SMB mounts where file writes are delayed.
+- **File collisions:** If a file with the same name exists in the destination, a numeric suffix is added automatically (e.g., `artwork_1.pdf`).
+- **Startup behavior:** On startup, files already in the watch directory are processed immediately. Clear the directory first to avoid re-processing.

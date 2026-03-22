@@ -46,7 +46,9 @@ export function FolderCard({
         <div className="flex items-start gap-3">
           <div
             className={`mt-0.5 rounded-lg p-2 ${
-              isActive ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
+              isActive
+                ? "bg-green-50 text-green-600"
+                : "bg-gray-100 text-gray-400"
             }`}
           >
             <FolderOpen className="h-5 w-5" />
@@ -74,7 +76,11 @@ export function FolderCard({
             } disabled:opacity-30 disabled:cursor-not-allowed`}
             title={isActive ? "Stop watching" : "Start watching"}
           >
-            {isActive ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            {isActive ? (
+              <Square className="h-4 w-4" />
+            ) : (
+              <Play className="h-4 w-4" />
+            )}
           </button>
           <button
             onClick={onEdit}

@@ -23,12 +23,7 @@ export interface AppConfig {
   launch_at_login: boolean;
 }
 
-export type JobStatus =
-  | "queued"
-  | "processing"
-  | "passed"
-  | "failed"
-  | "error";
+export type JobStatus = "queued" | "processing" | "passed" | "failed" | "error";
 
 export interface JobSummary {
   passed: boolean;

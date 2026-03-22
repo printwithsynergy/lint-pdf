@@ -56,7 +56,9 @@ def _mock_poll_response(passed: bool = True) -> httpx.Response:
                 "advisory_count": 1,
                 "total_findings": 1 if passed else 4,
             },
-            "findings": [] if passed else [
+            "findings": []
+            if passed
+            else [
                 {
                     "inspection_id": "GRD_FONT_001",
                     "severity": "aground",
@@ -65,7 +67,9 @@ def _mock_poll_response(passed: bool = True) -> httpx.Response:
                 }
             ],
         },
-        request=httpx.Request("GET", "https://api.lintpdf.com/api/v1/jobs/test-job-123"),
+        request=httpx.Request(
+            "GET", "https://api.lintpdf.com/api/v1/jobs/test-job-123"
+        ),
     )
 
 

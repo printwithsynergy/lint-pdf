@@ -50,19 +50,20 @@ function jobArrived(s, flowElement, job) {
   // Add profile_id as a form field
   // Note: Switch Scripter sends the attached file as multipart/form-data.
   // The profile_id is passed as a query parameter or additional form field.
-  httpClient.url = LINTPDF_BASE_URL + "/api/v1/jobs?profile_id=" + LINTPDF_PROFILE;
+  httpClient.url =
+    LINTPDF_BASE_URL + "/api/v1/jobs?profile_id=" + LINTPDF_PROFILE;
 
   httpClient.post();
   httpClient.waitForFinished(60);
 
   if (httpClient.finishedStatus !== HTTP.Ok || httpClient.statusCode !== 202) {
     s.log(1, "LintPDF submit failed. HTTP " + httpClient.statusCode);
-    job.sendToData(1, job.getDataset());  // Route to fail
+    job.sendToData(1, job.getDataset()); // Route to fail
     return;
   }
 
   var submitResponse = JSON.parse(
-    httpClient.getServerResponse().toString("UTF-8")
+    httpClient.getServerResponse().toString("UTF-8"),
   );
   var jobId = submitResponse.id;
   s.log(3, "LintPDF job submitted: " + jobId);
@@ -75,7 +76,11 @@ function jobArrived(s, flowElement, job) {
   var status = "pending";
   var resultData = null;
 
-  while (status !== "complete" && status !== "failed" && attempts < MAX_POLL_ATTEMPTS) {
+  while (
+    status !== "complete" &&
+    status !== "failed" &&
+    attempts < MAX_POLL_ATTEMPTS
+  ) {
     s.sleep(POLL_INTERVAL_SEC);
     attempts++;
 
@@ -85,17 +90,18 @@ function jobArrived(s, flowElement, job) {
     pollClient.get();
     pollClient.waitForFinished(30);
 
-    if (pollClient.finishedStatus === HTTP.Ok && pollClient.statusCode === 200) {
-      resultData = JSON.parse(
-        pollClient.getServerResponse().toString("UTF-8")
-      );
+    if (
+      pollClient.finishedStatus === HTTP.Ok &&
+      pollClient.statusCode === 200
+    ) {
+      resultData = JSON.parse(pollClient.getServerResponse().toString("UTF-8"));
       status = resultData.status;
     }
   }
 
   if (status !== "complete" || !resultData) {
     s.log(1, "LintPDF job did not complete. Status: " + status);
-    job.sendToData(1, job.getDataset());  // Route to fail
+    job.sendToData(1, job.getDataset()); // Route to fail
     return;
   }
 
@@ -105,17 +111,24 @@ function jobArrived(s, flowElement, job) {
   var squallCount = resultData.summary.squall_count || 0;
   var advisoryCount = resultData.summary.advisory_count || 0;
 
-  s.log(3, "LintPDF result — Passed: " + passed +
-    " | Aground: " + agroundCount +
-    " | Squall: " + squallCount +
-    " | Advisory: " + advisoryCount);
+  s.log(
+    3,
+    "LintPDF result — Passed: " +
+      passed +
+      " | Aground: " +
+      agroundCount +
+      " | Squall: " +
+      squallCount +
+      " | Advisory: " +
+      advisoryCount,
+  );
 
   job.setPrivateData("LintPDF_Passed", passed ? "true" : "false");
 
   if (passed) {
-    job.sendToData(2, job.getDataset());  // Route to pass output
+    job.sendToData(2, job.getDataset()); // Route to pass output
   } else {
-    job.sendToData(1, job.getDataset());  // Route to fail output
+    job.sendToData(1, job.getDataset()); // Route to fail output
   }
 }
 ```

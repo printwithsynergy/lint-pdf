@@ -4,7 +4,12 @@ import { FolderList } from "./pages/FolderList";
 import { FolderEdit } from "./pages/FolderEdit";
 import { Results } from "./pages/Results";
 import { Settings } from "./pages/Settings";
-import type { AppConfig, FolderConfig, JobResult, WatcherStatus } from "./lib/types";
+import type {
+  AppConfig,
+  FolderConfig,
+  JobResult,
+  WatcherStatus,
+} from "./lib/types";
 import * as api from "./lib/tauri";
 
 export type Page =
@@ -59,7 +64,7 @@ export default function App() {
 
     const unlistenStatus = api.onWatcherStatus((status) => {
       setStatuses((prev) =>
-        prev.map((s) => (s.folder_id === status.folder_id ? status : s))
+        prev.map((s) => (s.folder_id === status.folder_id ? status : s)),
       );
     });
 
@@ -79,7 +84,9 @@ export default function App() {
   }
 
   const activeCount = statuses.filter((s) => s.active).length;
-  const processingCount = jobs.filter((j) => j.status === "processing" || j.status === "queued").length;
+  const processingCount = jobs.filter(
+    (j) => j.status === "processing" || j.status === "queued",
+  ).length;
 
   return (
     <Layout

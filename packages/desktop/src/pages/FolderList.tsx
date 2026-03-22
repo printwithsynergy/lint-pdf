@@ -1,5 +1,10 @@
 import { Plus, Play, Square } from "lucide-react";
-import type { AppConfig, FolderConfig, JobResult, WatcherStatus } from "../lib/types";
+import type {
+  AppConfig,
+  FolderConfig,
+  JobResult,
+  WatcherStatus,
+} from "../lib/types";
 import { newFolderConfig } from "../lib/types";
 import { FolderCard } from "../components/FolderCard";
 import * as api from "../lib/tauri";

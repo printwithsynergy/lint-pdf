@@ -82,11 +82,11 @@ Use the **Map Data** task to extract values from the XML response into SmartName
 
 **SmartName mappings:**
 
-| SmartName | XPath |
-|-----------|-------|
-| `LintPDF_Passed` | `/job/summary/passed` |
-| `LintPDF_AgroundCount` | `/job/summary/aground_count` |
-| `LintPDF_SquallCount` | `/job/summary/squall_count` |
+| SmartName               | XPath                         |
+| ----------------------- | ----------------------------- |
+| `LintPDF_Passed`        | `/job/summary/passed`         |
+| `LintPDF_AgroundCount`  | `/job/summary/aground_count`  |
+| `LintPDF_SquallCount`   | `/job/summary/squall_count`   |
 | `LintPDF_AdvisoryCount` | `/job/summary/advisory_count` |
 | `LintPDF_TotalFindings` | `/job/summary/total_findings` |
 
@@ -200,6 +200,7 @@ else:
 ```
 
 Configure the Router after the Run Script task to check the exit code:
+
 - Exit 0 → pass
 - Exit 1 → fail (preflight issues found)
 - Exit 2 → error (timeout or API failure)

@@ -55,7 +55,9 @@ export function ResultsTable({
       <div className="flex flex-col items-center justify-center py-12 text-gray-400">
         <Clock className="h-8 w-8 mb-2" />
         <p className="text-sm">No results yet</p>
-        <p className="text-xs mt-1">Start watching a folder to see results here</p>
+        <p className="text-xs mt-1">
+          Start watching a folder to see results here
+        </p>
       </div>
     );
   }
@@ -83,9 +85,7 @@ export function ResultsTable({
                 key={job.id}
                 onClick={() => onSelect(job)}
                 className={`border-b border-gray-100 cursor-pointer transition-colors ${
-                  isSelected
-                    ? "bg-brand-50"
-                    : "hover:bg-gray-50"
+                  isSelected ? "bg-brand-50" : "hover:bg-gray-50"
                 } ${
                   job.status === "failed"
                     ? "bg-red-50/30"
@@ -108,7 +108,13 @@ export function ResultsTable({
                 </td>
                 <td className="px-3 py-2 text-center text-xs">
                   {job.summary ? (
-                    <span className={job.summary.aground_count > 0 ? "text-red-600 font-medium" : "text-gray-400"}>
+                    <span
+                      className={
+                        job.summary.aground_count > 0
+                          ? "text-red-600 font-medium"
+                          : "text-gray-400"
+                      }
+                    >
                       {job.summary.aground_count}
                     </span>
                   ) : (
@@ -117,7 +123,13 @@ export function ResultsTable({
                 </td>
                 <td className="px-3 py-2 text-center text-xs">
                   {job.summary ? (
-                    <span className={job.summary.squall_count > 0 ? "text-amber-600 font-medium" : "text-gray-400"}>
+                    <span
+                      className={
+                        job.summary.squall_count > 0
+                          ? "text-amber-600 font-medium"
+                          : "text-gray-400"
+                      }
+                    >
                       {job.summary.squall_count}
                     </span>
                   ) : (
@@ -126,7 +138,13 @@ export function ResultsTable({
                 </td>
                 <td className="px-3 py-2 text-center text-xs">
                   {job.summary ? (
-                    <span className={job.summary.advisory_count > 0 ? "text-blue-600" : "text-gray-400"}>
+                    <span
+                      className={
+                        job.summary.advisory_count > 0
+                          ? "text-blue-600"
+                          : "text-gray-400"
+                      }
+                    >
                       {job.summary.advisory_count}
                     </span>
                   ) : (

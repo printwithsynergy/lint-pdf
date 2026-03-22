@@ -161,13 +161,13 @@ EFI Pace integrates with Fiery digital front ends via JDF/JMF. Fiery JDF technol
 
 ### When to Use Each Path
 
-| Criteria | Direct | Indirect (JDF/Fiery) |
-|----------|--------|---------------------|
-| Already using Fiery + workflow engine | — | Preferred |
-| Want minimal dependencies | Preferred | — |
-| Need workflow automation beyond preflight | — | Preferred |
-| Pace Connectivity Toolkit available | Preferred | — |
-| Real-time status updates in Pace | Preferred | Depends on JDF roundtrip |
+| Criteria                                  | Direct    | Indirect (JDF/Fiery)     |
+| ----------------------------------------- | --------- | ------------------------ |
+| Already using Fiery + workflow engine     | —         | Preferred                |
+| Want minimal dependencies                 | Preferred | —                        |
+| Need workflow automation beyond preflight | —         | Preferred                |
+| Pace Connectivity Toolkit available       | Preferred | —                        |
+| Real-time status updates in Pace          | Preferred | Depends on JDF roundtrip |
 
 ## Tips
 

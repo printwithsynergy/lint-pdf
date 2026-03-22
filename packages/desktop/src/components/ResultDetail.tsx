@@ -1,10 +1,4 @@
-import {
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-  FileText,
-  X,
-} from "lucide-react";
+import { CheckCircle, XCircle, AlertTriangle, FileText, X } from "lucide-react";
 import type { JobResult } from "../lib/types";
 
 interface ResultDetailProps {
@@ -37,16 +31,24 @@ export function ResultDetail({ job, onClose }: ResultDetailProps) {
         <div>
           <span className="label">Status</span>
           <div className="flex items-center gap-1.5">
-            {job.status === "passed" && <CheckCircle className="h-4 w-4 text-green-600" />}
-            {job.status === "failed" && <XCircle className="h-4 w-4 text-red-600" />}
-            {job.status === "error" && <AlertTriangle className="h-4 w-4 text-amber-600" />}
+            {job.status === "passed" && (
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            )}
+            {job.status === "failed" && (
+              <XCircle className="h-4 w-4 text-red-600" />
+            )}
+            {job.status === "error" && (
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+            )}
             <span className="capitalize">{job.status}</span>
           </div>
         </div>
         <div>
           <span className="label">Submitted</span>
           <p className="text-xs">
-            {job.submitted_at ? new Date(job.submitted_at).toLocaleString() : "—"}
+            {job.submitted_at
+              ? new Date(job.submitted_at).toLocaleString()
+              : "—"}
           </p>
         </div>
         {job.completed_at && (
@@ -70,19 +72,25 @@ export function ResultDetail({ job, onClose }: ResultDetailProps) {
           <span className="label">Findings</span>
           <div className="flex items-center gap-6 mt-1">
             <div className="text-center">
-              <p className={`text-lg font-bold ${job.summary.aground_count > 0 ? "text-red-600" : "text-gray-300"}`}>
+              <p
+                className={`text-lg font-bold ${job.summary.aground_count > 0 ? "text-red-600" : "text-gray-300"}`}
+              >
                 {job.summary.aground_count}
               </p>
               <p className="text-xs text-gray-500">Aground</p>
             </div>
             <div className="text-center">
-              <p className={`text-lg font-bold ${job.summary.squall_count > 0 ? "text-amber-600" : "text-gray-300"}`}>
+              <p
+                className={`text-lg font-bold ${job.summary.squall_count > 0 ? "text-amber-600" : "text-gray-300"}`}
+              >
                 {job.summary.squall_count}
               </p>
               <p className="text-xs text-gray-500">Squall</p>
             </div>
             <div className="text-center">
-              <p className={`text-lg font-bold ${job.summary.advisory_count > 0 ? "text-blue-600" : "text-gray-300"}`}>
+              <p
+                className={`text-lg font-bold ${job.summary.advisory_count > 0 ? "text-blue-600" : "text-gray-300"}`}
+              >
                 {job.summary.advisory_count}
               </p>
               <p className="text-xs text-gray-500">Advisory</p>

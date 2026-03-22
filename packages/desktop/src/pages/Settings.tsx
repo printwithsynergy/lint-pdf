@@ -35,7 +35,9 @@ export function Settings({ config: initial, onSave }: SettingsProps) {
       <div className="space-y-5">
         {/* API Configuration */}
         <div className="card p-4 space-y-4">
-          <h3 className="text-sm font-medium text-gray-900">API Configuration</h3>
+          <h3 className="text-sm font-medium text-gray-900">
+            API Configuration
+          </h3>
 
           <div>
             <label className="label">API Key</label>
