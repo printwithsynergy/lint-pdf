@@ -107,6 +107,12 @@ class PreflightOrchestrator:
 
             validator = PdfX3Validator()
             raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfa1b", "pdfa2b", "pdfa3b"):
+            from grounded.conformance.pdfa import PdfAValidator
+
+            _level_map = {"pdfa1b": "1b", "pdfa2b": "2b", "pdfa3b": "3b"}
+            validator = PdfAValidator(level=_level_map[self._plan.conformance])
+            raw_findings.extend(validator.validate(document, events, raw_findings))
 
         # Step 6: Run AI analyzers (if AI enabled in voyage plan)
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
