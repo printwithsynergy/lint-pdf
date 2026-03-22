@@ -193,6 +193,12 @@ class PreflightOrchestrator:
 
             validator = PdfX3Validator()
             raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfa1b", "pdfa2b", "pdfa3b"):
+            from grounded.conformance.pdfa import PdfAValidator
+
+            _level_map = {"pdfa1b": "1b", "pdfa2b": "2b", "pdfa3b": "3b"}
+            validator = PdfAValidator(level=_level_map[self._plan.conformance])
+            raw_findings.extend(validator.validate(document, events, raw_findings))
 
         findings = self._apply_overrides_and_filter(raw_findings)
         duration_ms = int((time.monotonic() - start) * 1000)
@@ -372,6 +378,15 @@ class PreflightOrchestrator:
             analyzers.append(StandardsComplianceAnalyzer())
         except ImportError:
             pass
+
+        # Packaging analyzer (if packaging profile active)
+        if self._profile_id and "packaging" in self._profile_id:
+            try:
+                from grounded.analyzers.packaging import PackagingAnalyzer
+
+                analyzers.append(PackagingAnalyzer())
+            except ImportError:
+                pass
 
         # Gamut analyzer (if gamut checking enabled)
         if t.gamut_check and t.target_output_condition:

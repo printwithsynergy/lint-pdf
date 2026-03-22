@@ -10,6 +10,15 @@ Check IDs:
     GRD_ADV_004 — CxF/X-4 spectral validation (CxF data parsing)
     GRD_ADV_005 — Rich black composition analysis (black usage classification)
     GRD_ADV_006 — CxF spectral vs declared color Delta-E
+    GRD_ADV_007 — CxF data present (informational)
+    GRD_ADV_008 — CxF spectral range incomplete (380-730nm coverage)
+    GRD_ADV_009 — CxF measurement geometry missing
+    GRD_ADV_010 — CxF illuminant mismatch with output intent
+    GRD_ADV_011 — CxF non-standard observer angle
+    GRD_ADV_012 — Spectral vs colorimetric Delta-E exceeds threshold
+    GRD_ADV_013 — CxF color library reference detected
+    GRD_ADV_014 — CxF substrate measurement present
+    GRD_ADV_015 — CxF version compatibility check
 """
 
 from __future__ import annotations
@@ -43,11 +52,13 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         rich_black_m: float = 40.0,
         rich_black_y: float = 40.0,
         rich_black_k: float = 100.0,
+        spectral_delta_e_threshold: float = 2.0,
     ) -> None:
         self.rich_black_c = rich_black_c
         self.rich_black_m = rich_black_m
         self.rich_black_y = rich_black_y
         self.rich_black_k = rich_black_k
+        self._spectral_delta_e_threshold = spectral_delta_e_threshold
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -62,6 +73,15 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         findings.extend(self._check_trapping_risk(events))
         findings.extend(self._check_cxf_spectral(document))
         findings.extend(self._check_rich_black_composition(events))
+        findings.extend(self._check_cxf_data_present(document))
+        findings.extend(self._check_cxf_spectral_range(document))
+        findings.extend(self._check_cxf_measurement_geometry(document))
+        findings.extend(self._check_cxf_illuminant_mismatch(document))
+        findings.extend(self._check_cxf_observer_angle(document))
+        findings.extend(self._check_spectral_colorimetric_delta_e(document))
+        findings.extend(self._check_cxf_library_reference(document))
+        findings.extend(self._check_cxf_substrate_measurement(document))
+        findings.extend(self._check_cxf_version_compatibility(document))
 
         return findings
 
@@ -609,3 +629,422 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
             return "non_standard"
 
         return None
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_007 — CxF data present (informational)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_cxf_data_present(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Report when CxF spectral data is embedded in the document (GRD_ADV_007).
+
+        Scans output intents for any CxF reference and emits an
+        informational finding when detected.
+        """
+        findings: list[Finding] = []
+
+        for oi in document.output_intents:
+            for key in oi:
+                if "CxF" in str(key) or "cxf" in str(key).lower():
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ADV_007",
+                            severity=Severity.ADVISORY,
+                            message="CxF spectral data is embedded in the document",
+                            details={"cxf_key": str(key)},
+                        )
+                    )
+                    return findings
+            for value in oi.values():
+                if "CxF" in str(value):
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ADV_007",
+                            severity=Severity.ADVISORY,
+                            message="CxF spectral data is embedded in the document",
+                            details={"cxf_detected_in_value": True},
+                        )
+                    )
+                    return findings
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_008 — CxF spectral range incomplete
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_cxf_spectral_range(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Flag CxF spectral data that doesn't cover 380-730nm (GRD_ADV_008).
+
+        Parses CxF XML from output intents and checks that the wavelength
+        range spans at least 380nm to 730nm.
+        """
+        from grounded.analyzers.cxf_parser import CxfData, parse_cxf_xml
+
+        findings: list[Finding] = []
+        cxf_data = _extract_cxf_data(document)
+        if cxf_data is None or not cxf_data.valid:
+            return findings
+
+        for spot in cxf_data.spot_colors:
+            if spot.spectral_data is None:
+                continue
+
+            wavelengths = sorted(spot.spectral_data.keys())
+            if not wavelengths:
+                continue
+
+            min_wl = wavelengths[0]
+            max_wl = wavelengths[-1]
+
+            if min_wl > 380 or max_wl < 730:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ADV_008",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"CxF spectral range for '{spot.name}' is "
+                            f"{min_wl}-{max_wl}nm, does not cover "
+                            f"required 380-730nm"
+                        ),
+                        details={
+                            "spot_name": spot.name,
+                            "min_wavelength": min_wl,
+                            "max_wavelength": max_wl,
+                            "required_min": 380,
+                            "required_max": 730,
+                        },
+                    )
+                )
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_009 — CxF measurement geometry missing
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_cxf_measurement_geometry(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Flag CxF data without measurement geometry specification (GRD_ADV_009).
+
+        Checks for the presence of /MeasurementGeometry or equivalent
+        attribute in the CxF spectral data.
+        """
+        findings: list[Finding] = []
+        cxf_data = _extract_cxf_data(document)
+        if cxf_data is None or not cxf_data.valid:
+            return findings
+
+        if not cxf_data.measurement_geometry:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ADV_009",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        "CxF spectral data does not specify measurement "
+                        "geometry (e.g., 45/0, d/8)"
+                    ),
+                    details={"measurement_geometry": None},
+                )
+            )
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_010 — CxF illuminant mismatch
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_cxf_illuminant_mismatch(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Flag CxF illuminant that doesn't match output intent (GRD_ADV_010).
+
+        Compares the illuminant specified in CxF data against the
+        output intent's rendering condition illuminant.
+        """
+        findings: list[Finding] = []
+        cxf_data = _extract_cxf_data(document)
+        if cxf_data is None or not cxf_data.valid:
+            return findings
+
+        cxf_illuminant = cxf_data.illuminant
+        if not cxf_illuminant:
+            return findings
+
+        # Extract output intent illuminant from document
+        oi_illuminant: str | None = None
+        for oi in document.output_intents:
+            for key, value in oi.items():
+                key_str = str(key).lower()
+                if "illuminant" in key_str:
+                    oi_illuminant = str(value)
+                    break
+            if oi_illuminant:
+                break
+
+        if oi_illuminant and cxf_illuminant.upper() != oi_illuminant.upper():
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ADV_010",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"CxF illuminant '{cxf_illuminant}' does not match "
+                        f"output intent illuminant '{oi_illuminant}'"
+                    ),
+                    details={
+                        "cxf_illuminant": cxf_illuminant,
+                        "output_intent_illuminant": oi_illuminant,
+                    },
+                )
+            )
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_011 — CxF non-standard observer angle
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_cxf_observer_angle(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Flag non-standard observer angle in CxF data (GRD_ADV_011).
+
+        Standard observer angles are 2 degrees and 10 degrees.
+        """
+        findings: list[Finding] = []
+        cxf_data = _extract_cxf_data(document)
+        if cxf_data is None or not cxf_data.valid:
+            return findings
+
+        observer = cxf_data.observer_angle
+        if observer is None:
+            return findings
+
+        standard_angles = {2, 10}
+        if observer not in standard_angles:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ADV_011",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"CxF observer angle {observer}\u00b0 is non-standard "
+                        f"(expected 2\u00b0 or 10\u00b0)"
+                    ),
+                    details={
+                        "observer_angle": observer,
+                        "standard_angles": sorted(standard_angles),
+                    },
+                )
+            )
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_012 — Spectral vs colorimetric Delta-E exceeds threshold
+    # ------------------------------------------------------------------
+
+    def _check_spectral_colorimetric_delta_e(
+        self,
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Flag when spectral and colorimetric values diverge (GRD_ADV_012).
+
+        For CxF spot colors that have both spectral data and Lab values,
+        computes the Delta-E between spectral-derived Lab and declared Lab.
+        """
+        findings: list[Finding] = []
+        cxf_data = _extract_cxf_data(document)
+        if cxf_data is None or not cxf_data.valid:
+            return findings
+
+        for spot in cxf_data.spot_colors:
+            if spot.spectral_data is None or spot.lab is None:
+                continue
+            if spot.spectral_lab is None:
+                continue
+
+            # CIEDE2000 simplified as Euclidean for structural purposes
+            dL = spot.spectral_lab[0] - spot.lab[0]
+            da = spot.spectral_lab[1] - spot.lab[1]
+            db = spot.spectral_lab[2] - spot.lab[2]
+            delta_e = (dL**2 + da**2 + db**2) ** 0.5
+
+            if delta_e > self._spectral_delta_e_threshold:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ADV_012",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"CxF spot '{spot.name}' spectral vs colorimetric "
+                            f"Delta-E = {delta_e:.2f} exceeds threshold "
+                            f"{self._spectral_delta_e_threshold}"
+                        ),
+                        details={
+                            "spot_name": spot.name,
+                            "delta_e": delta_e,
+                            "threshold": self._spectral_delta_e_threshold,
+                            "spectral_lab": list(spot.spectral_lab),
+                            "declared_lab": list(spot.lab),
+                        },
+                    )
+                )
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_013 — CxF color library reference
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_cxf_library_reference(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Report CxF data that references a known color library (GRD_ADV_013).
+
+        Checks CxF spot color names against known library prefixes
+        (PANTONE, HKS, TOYO, DIC, RAL).
+        """
+        findings: list[Finding] = []
+        cxf_data = _extract_cxf_data(document)
+        if cxf_data is None or not cxf_data.valid:
+            return findings
+
+        known_prefixes = ("PANTONE", "HKS", "TOYO", "DIC", "RAL")
+
+        for spot in cxf_data.spot_colors:
+            upper_name = spot.name.upper()
+            for prefix in known_prefixes:
+                if upper_name.startswith(prefix):
+                    findings.append(
+                        Finding(
+                            inspection_id="GRD_ADV_013",
+                            severity=Severity.ADVISORY,
+                            message=(
+                                f"CxF spectral data references {prefix} "
+                                f"library color '{spot.name}'"
+                            ),
+                            details={
+                                "spot_name": spot.name,
+                                "library": prefix,
+                            },
+                        )
+                    )
+                    break
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_014 — CxF substrate measurement present
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_cxf_substrate_measurement(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Report when CxF data includes substrate white measurement (GRD_ADV_014).
+
+        Substrate measurements are used for paper-relative color
+        calculations and are a quality indicator for spectral data.
+        """
+        findings: list[Finding] = []
+        cxf_data = _extract_cxf_data(document)
+        if cxf_data is None or not cxf_data.valid:
+            return findings
+
+        if cxf_data.substrate_measurement:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ADV_014",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        "CxF spectral data includes substrate (paper white) "
+                        "measurement"
+                    ),
+                    details={
+                        "substrate_measurement": True,
+                    },
+                )
+            )
+
+        return findings
+
+    # ------------------------------------------------------------------
+    # GRD_ADV_015 — CxF version compatibility
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _check_cxf_version_compatibility(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Check CxF version for compatibility (GRD_ADV_015).
+
+        Validates that the CxF version is compatible with processing
+        software (supports CxF/X-4 a.k.a. CxF3).
+        """
+        findings: list[Finding] = []
+        cxf_data = _extract_cxf_data(document)
+        if cxf_data is None or not cxf_data.valid:
+            return findings
+
+        version = cxf_data.version
+        if not version:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ADV_015",
+                    severity=Severity.ADVISORY,
+                    message="CxF data does not specify a version number",
+                    details={"version": None},
+                )
+            )
+            return findings
+
+        supported_versions = {"3", "3.0", "CxF3"}
+        if version not in supported_versions:
+            findings.append(
+                Finding(
+                    inspection_id="GRD_ADV_015",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"CxF version '{version}' may not be fully "
+                        f"compatible (supported: {', '.join(sorted(supported_versions))})"
+                    ),
+                    details={
+                        "version": version,
+                        "supported_versions": sorted(supported_versions),
+                    },
+                )
+            )
+
+        return findings
+
+
+def _extract_cxf_data(document: SemanticDocument) -> object | None:
+    """Extract and parse CxF data from document output intents.
+
+    Returns a CxfData object if CxF XML is found and parseable, else None.
+    """
+    from grounded.analyzers.cxf_parser import CxfData, parse_cxf_xml
+
+    for oi in document.output_intents:
+        for key in oi:
+            if "CxF" in str(key) or "cxf" in str(key).lower():
+                val = oi.get(key)
+                if isinstance(val, bytes):
+                    return parse_cxf_xml(val)
+                if isinstance(val, str) and val.strip().startswith("<?xml"):
+                    return parse_cxf_xml(val.encode("utf-8"))
+        for value in oi.values():
+            val_str = str(value)
+            if "CxF" in val_str and val_str.strip().startswith("<?xml"):
+                return parse_cxf_xml(val_str.encode("utf-8"))
+
+    return None

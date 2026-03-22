@@ -20,6 +20,7 @@ from grounded.analyzers.image import ImageAnalysisResult, ImageAnalyzer
 from grounded.analyzers.ink_coverage_analyzer import InkCoverageAnalyzer
 from grounded.analyzers.metadata import MetadataAnalyzer
 from grounded.analyzers.overprint import OverprintAnalyzer
+from grounded.analyzers.packaging import PackagingAnalyzer
 from grounded.analyzers.page_geometry import PageGeometryAnalyzer
 from grounded.analyzers.prepress import PrepressAnalyzer
 from grounded.analyzers.processing import ProcessingStepAnalyzer
@@ -44,6 +45,7 @@ __all__ = [
     "InkCoverageAnalyzer",
     "MetadataAnalyzer",
     "OverprintAnalyzer",
+    "PackagingAnalyzer",
     "PageGeometryAnalyzer",
     "PrepressAnalyzer",
     "ProcessingStepAnalyzer",
