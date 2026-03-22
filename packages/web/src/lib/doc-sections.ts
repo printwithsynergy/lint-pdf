@@ -48,6 +48,22 @@ export const docSections = [
       { slug: "ai-examples", label: "Code Examples" },
     ],
   },
+  {
+    heading: "Integrations",
+    items: [
+      { slug: "integrations-overview", label: "Overview" },
+      { slug: "integrations-enfocus-switch", label: "Enfocus Switch" },
+      { slug: "integrations-esko-ae", label: "Esko Automation Engine" },
+      { slug: "integrations-hybrid-cloudflow", label: "Hybrid CLOUDFLOW" },
+      { slug: "integrations-label-traxx", label: "Label Traxx" },
+      { slug: "integrations-cerm", label: "CERM" },
+      { slug: "integrations-efi-pace", label: "EFI Pace" },
+      { slug: "integrations-tharstern", label: "Tharstern" },
+      { slug: "integrations-printvis", label: "PrintVis" },
+      { slug: "integrations-zapier-make-n8n", label: "Zapier, Make & n8n" },
+      { slug: "integrations-hot-folder", label: "Hot Folder" },
+    ],
+  },
 ];
 
 export const allDocSlugs = docSections.flatMap((s) =>

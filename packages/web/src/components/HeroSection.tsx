@@ -22,6 +22,7 @@ const TAGLINES: { lines: string[] }[] = [
   { lines: ["Preflights You", "Won't Hate."] },
   { lines: ["Every Byte. Every Page.", "Zero Mercy."] },
   { lines: ["Catch It Before", "Press Does."] },
+  { lines: ["Built by Print Veterans,", "For the Print Industry."] },
 ];
 
 function RotatingTagline() {
