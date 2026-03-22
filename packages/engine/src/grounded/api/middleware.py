@@ -1,14 +1,20 @@
-"""Rate limiting using Redis counters with billable overage support."""
+"""Rate limiting using Redis counters with billable overage support.
+
+Also provides idempotency key middleware and rate limit response headers.
+"""
 
 from __future__ import annotations
 
+import hashlib
+import json
 import logging
 import threading
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, Response, status
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from grounded.tenants.models import PLAN_LIMITS, RATE_LIMIT_WARN_THRESHOLD
 
@@ -228,3 +234,145 @@ def check_rate_limit(tenant: Any) -> UsageInfo | None:
     except Exception:
         logger.exception("Rate limiter error — allowing request through")
         return None
+
+
+# ---------------------------------------------------------------------------
+# Rate limit response headers
+# ---------------------------------------------------------------------------
+
+def attach_rate_limit_headers(response: Response, usage: UsageInfo) -> None:
+    """Attach standard rate limit headers to an HTTP response.
+
+    Headers set:
+        X-RateLimit-Limit: The tenant's daily request limit.
+        X-RateLimit-Remaining: Remaining requests within the included quota.
+        X-RateLimit-Reset: UTC epoch timestamp when the current window resets
+                           (midnight UTC of the next day).
+    """
+    # Compute seconds until midnight UTC
+    now = datetime.now(UTC)
+    tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Move to next day
+    tomorrow = tomorrow.replace(day=now.day + 1) if now.day < 28 else tomorrow  # rough
+    # Safer: use timedelta
+    from datetime import timedelta
+
+    end_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    reset_epoch = int(end_of_day.timestamp())
+
+    response.headers["X-RateLimit-Limit"] = str(usage.limit)
+    response.headers["X-RateLimit-Remaining"] = str(usage.remaining_included)
+    response.headers["X-RateLimit-Reset"] = str(reset_epoch)
+
+
+# ---------------------------------------------------------------------------
+# Idempotency key middleware
+# ---------------------------------------------------------------------------
+
+_IDEMPOTENCY_TTL_SECONDS = 86400  # 24 hours
+
+
+def _idempotency_cache_key(tenant_id: str, idempotency_key: str) -> str:
+    """Build the Redis key for an idempotency entry."""
+    return f"idempotency:{tenant_id}:{idempotency_key}"
+
+
+def _serialize_response(status_code: int, body: bytes, headers: dict[str, str]) -> str:
+    """Serialize a response to JSON for caching."""
+    return json.dumps(
+        {
+            "status_code": status_code,
+            "body": body.decode("utf-8", errors="replace"),
+            "headers": headers,
+        }
+    )
+
+
+def _deserialize_response(data: str) -> dict[str, Any]:
+    """Deserialize a cached response from JSON."""
+    return json.loads(data)
+
+
+class IdempotencyMiddleware(BaseHTTPMiddleware):
+    """ASGI middleware that enforces idempotency for POST requests.
+
+    When a request includes an ``Idempotency-Key`` header the middleware:
+
+    1. Checks Redis for a cached result under ``idempotency:{tenant_id}:{key}``.
+    2. If found, returns the cached response without re-executing the endpoint.
+    3. If not found, processes the request normally and caches the result
+       for 24 hours.
+
+    Requests without the header are passed through unchanged.  Non-POST
+    methods are always passed through (GET, PUT, DELETE, etc.).
+
+    The tenant ID is read from ``request.state.tenant_id``.  If the tenant
+    ID is not set (e.g., unauthenticated requests), the middleware passes
+    through without caching.
+    """
+
+    async def dispatch(
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
+        # Only apply to POST requests
+        if request.method != "POST":
+            return await call_next(request)
+
+        idempotency_key = request.headers.get("Idempotency-Key")
+        if not idempotency_key:
+            return await call_next(request)
+
+        # Require tenant context
+        tenant_id = getattr(request.state, "tenant_id", None)
+        if tenant_id is None:
+            return await call_next(request)
+
+        tenant_id = str(tenant_id)
+        redis_client = get_redis_client()
+        if redis_client is None:
+            # No Redis available — pass through
+            return await call_next(request)
+
+        cache_key = _idempotency_cache_key(tenant_id, idempotency_key)
+
+        # Check for cached result
+        try:
+            cached = redis_client.get(cache_key)
+        except Exception:
+            logger.exception("Idempotency cache read failed — processing request")
+            cached = None
+
+        if cached is not None:
+            data = _deserialize_response(cached)
+            return Response(
+                content=data["body"],
+                status_code=data["status_code"],
+                headers=data.get("headers", {}),
+            )
+
+        # Process the request
+        response = await call_next(request)
+
+        # Read the response body for caching
+        body_chunks: list[bytes] = []
+        async for chunk in response.body_iterator:  # type: ignore[attr-defined]
+            if isinstance(chunk, str):
+                body_chunks.append(chunk.encode("utf-8"))
+            else:
+                body_chunks.append(chunk)
+        body = b"".join(body_chunks)
+
+        # Cache the result
+        resp_headers = dict(response.headers)
+        serialized = _serialize_response(response.status_code, body, resp_headers)
+        try:
+            redis_client.setex(cache_key, _IDEMPOTENCY_TTL_SECONDS, serialized)
+        except Exception:
+            logger.exception("Idempotency cache write failed")
+
+        # Return a new response since we consumed the body iterator
+        return Response(
+            content=body,
+            status_code=response.status_code,
+            headers=resp_headers,
+        )
