@@ -198,11 +198,11 @@ Azure Logic Apps provides a similar no-code experience to Power Automate but run
 
 ## Comparison
 
-| Approach | Complexity | Maintenance | Best For |
-|----------|-----------|-------------|----------|
-| Power Automate | Low (no-code) | Low | Quick setup, small teams |
-| D365 OData API | Medium (code) | Medium | Custom logic, high volume |
-| Azure Logic Apps | Low (no-code) | Low | Enterprise Azure environments |
+| Approach         | Complexity    | Maintenance | Best For                      |
+| ---------------- | ------------- | ----------- | ----------------------------- |
+| Power Automate   | Low (no-code) | Low         | Quick setup, small teams      |
+| D365 OData API   | Medium (code) | Medium      | Custom logic, high volume     |
+| Azure Logic Apps | Low (no-code) | Low         | Enterprise Azure environments |
 
 ## Tips
 

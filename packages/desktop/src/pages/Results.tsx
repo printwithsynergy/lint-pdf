@@ -18,7 +18,8 @@ export function Results({ jobs, folders, onClear }: ResultsProps) {
     filter === "all"
       ? jobs
       : jobs.filter((j) => {
-          if (filter === "issues") return j.status === "failed" || j.status === "error";
+          if (filter === "issues")
+            return j.status === "failed" || j.status === "error";
           return j.status === filter;
         });
 

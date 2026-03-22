@@ -1,6 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import type { AppConfig, FolderConfig, JobResult, WatcherStatus } from "./types";
+import type {
+  AppConfig,
+  FolderConfig,
+  JobResult,
+  WatcherStatus,
+} from "./types";
 
 // Config commands
 export async function getConfig(): Promise<AppConfig> {
@@ -62,15 +67,15 @@ export async function pickDirectory(): Promise<string | null> {
 
 // Event listeners
 export function onJobUpdate(
-  callback: (job: JobResult) => void
+  callback: (job: JobResult) => void,
 ): Promise<UnlistenFn> {
   return listen<JobResult>("job-update", (event) => callback(event.payload));
 }
 
 export function onWatcherStatus(
-  callback: (status: WatcherStatus) => void
+  callback: (status: WatcherStatus) => void,
 ): Promise<UnlistenFn> {
   return listen<WatcherStatus>("watcher-status", (event) =>
-    callback(event.payload)
+    callback(event.payload),
   );
 }

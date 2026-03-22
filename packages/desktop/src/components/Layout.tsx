@@ -1,10 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  FolderOpen,
-  ClipboardList,
-  Settings,
-  Activity,
-} from "lucide-react";
+import { FolderOpen, ClipboardList, Settings, Activity } from "lucide-react";
 import type { Page } from "../App";
 
 interface LayoutProps {
@@ -15,7 +10,11 @@ interface LayoutProps {
   children: ReactNode;
 }
 
-const NAV_ITEMS: { kind: Page["kind"]; label: string; icon: typeof FolderOpen }[] = [
+const NAV_ITEMS: {
+  kind: Page["kind"];
+  label: string;
+  icon: typeof FolderOpen;
+}[] = [
   { kind: "folders", label: "Folders", icon: FolderOpen },
   { kind: "results", label: "Results", icon: ClipboardList },
   { kind: "settings", label: "Settings", icon: Settings },
@@ -62,7 +61,9 @@ export function Layout({
         {/* Sidebar nav */}
         <nav className="flex w-48 flex-col border-r border-gray-200 bg-gray-50 p-2">
           {NAV_ITEMS.map((item) => {
-            const active = page.kind === item.kind || (page.kind === "folder-edit" && item.kind === "folders");
+            const active =
+              page.kind === item.kind ||
+              (page.kind === "folder-edit" && item.kind === "folders");
             return (
               <button
                 key={item.kind}
@@ -87,7 +88,8 @@ export function Layout({
       {/* Status bar */}
       <footer className="border-t border-gray-200 bg-gray-50 px-4 py-1.5 text-xs text-gray-500">
         {activeCount} folder{activeCount !== 1 ? "s" : ""} active
-        {processingCount > 0 && ` · ${processingCount} file${processingCount !== 1 ? "s" : ""} processing`}
+        {processingCount > 0 &&
+          ` · ${processingCount} file${processingCount !== 1 ? "s" : ""} processing`}
       </footer>
     </div>
   );

@@ -25,7 +25,9 @@ export function DirectoryPicker({
     <div>
       <label className="label">
         {label}
-        {optional && <span className="text-gray-400 font-normal ml-1">(optional)</span>}
+        {optional && (
+          <span className="text-gray-400 font-normal ml-1">(optional)</span>
+        )}
       </label>
       <div className="flex gap-2">
         <input

@@ -67,7 +67,9 @@ class Submitter:
                 self._process_file(file_path)
             except Exception:
                 log.exception("Unexpected error processing %s", file_path)
-                self._move_file(file_path, self._error_dir, error_info="Unexpected processing error")
+                self._move_file(
+                    file_path, self._error_dir, error_info="Unexpected processing error"
+                )
 
     def _process_file(self, file_path: Path) -> None:
         """Submit a file to LintPDF and route based on results."""
@@ -111,7 +113,9 @@ class Submitter:
         result = self._poll_for_result(job_id, headers)
         if result is None:
             log.error("Job %s timed out for %s", job_id, file_path.name)
-            self._move_file(file_path, self._error_dir, error_info=f"Job {job_id} timed out")
+            self._move_file(
+                file_path, self._error_dir, error_info=f"Job {job_id} timed out"
+            )
             return
 
         # Route based on results
@@ -125,7 +129,9 @@ class Submitter:
             "Result for %s — %s | aground=%d squall=%d advisory=%d",
             file_path.name,
             "PASS" if passed else "FAIL",
-            aground, squall, advisory,
+            aground,
+            squall,
+            advisory,
         )
 
         dest_dir = self._pass_dir if passed else self._fail_dir
@@ -190,15 +196,22 @@ class Submitter:
 
         if error_info and self._write_sidecar:
             sidecar = dest.parent / f"{dest.name}.lintpdf.json"
-            sidecar.write_text(json.dumps({
-                "error": error_info,
-                "file_name": file_path.name,
-                "processed_at": datetime.now(timezone.utc).isoformat(),
-            }, indent=2))
+            sidecar.write_text(
+                json.dumps(
+                    {
+                        "error": error_info,
+                        "file_name": file_path.name,
+                        "processed_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                    indent=2,
+                )
+            )
 
         return dest
 
-    def _write_sidecar_report(self, dest: Path, original_name: str, result: dict) -> None:
+    def _write_sidecar_report(
+        self, dest: Path, original_name: str, result: dict
+    ) -> None:
         """Write a JSON sidecar report alongside the moved file."""
         summary = result.get("summary", {})
         sidecar_path = dest.parent / f"{dest.name}.lintpdf.json"

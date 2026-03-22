@@ -194,13 +194,13 @@ Label Traxx communicates with Esko Automation Engine and Hybrid CLOUDFLOW via JD
 
 ### When to Use Each Path
 
-| Criteria | Direct | Indirect |
-|----------|--------|----------|
-| Already using AE/CLOUDFLOW | — | Preferred |
-| Simple setup, minimal dependencies | Preferred | — |
-| Want prepress workflow integration | — | Preferred |
-| Need real-time status in Label Traxx | Preferred | Depends on JDF roundtrip |
-| Custom preflight logic per job | Preferred | Possible via workflow variables |
+| Criteria                             | Direct    | Indirect                        |
+| ------------------------------------ | --------- | ------------------------------- |
+| Already using AE/CLOUDFLOW           | —         | Preferred                       |
+| Simple setup, minimal dependencies   | Preferred | —                               |
+| Want prepress workflow integration   | —         | Preferred                       |
+| Need real-time status in Label Traxx | Preferred | Depends on JDF roundtrip        |
+| Custom preflight logic per job       | Preferred | Possible via workflow variables |
 
 ## Tips
 

@@ -78,11 +78,11 @@ curl https://api.lintpdf.com/api/v1/jobs/job_abc123 \
 
 **Severity levels:**
 
-| Severity | Meaning |
-|----------|---------|
-| `aground` | Critical — file will cause production issues |
-| `squall` | Warning — should be reviewed before production |
-| `advisory` | Informational — no action required |
+| Severity   | Meaning                                        |
+| ---------- | ---------------------------------------------- |
+| `aground`  | Critical — file will cause production issues   |
+| `squall`   | Warning — should be reviewed before production |
+| `advisory` | Informational — no action required             |
 
 A job passes when `aground_count` is 0.
 
@@ -90,28 +90,28 @@ A job passes when `aground_count` is 0.
 
 ### Prepress Workflow Engines
 
-| System | Integration Type | Guide |
-|--------|-----------------|-------|
-| Enfocus Switch | HTTP Request element or Scripter | [Enfocus Switch](/docs/integrations-enfocus-switch) |
-| Esko Automation Engine | Interact with Web Service task | [Esko AE](/docs/integrations-esko-ae) |
-| Hybrid CLOUDFLOW | REST API / custom workflow node | [Hybrid CLOUDFLOW](/docs/integrations-hybrid-cloudflow) |
+| System                 | Integration Type                 | Guide                                                   |
+| ---------------------- | -------------------------------- | ------------------------------------------------------- |
+| Enfocus Switch         | HTTP Request element or Scripter | [Enfocus Switch](/docs/integrations-enfocus-switch)     |
+| Esko Automation Engine | Interact with Web Service task   | [Esko AE](/docs/integrations-esko-ae)                   |
+| Hybrid CLOUDFLOW       | REST API / custom workflow node  | [Hybrid CLOUDFLOW](/docs/integrations-hybrid-cloudflow) |
 
 ### Print ERP / MIS
 
-| System | Integration Type | Guide |
-|--------|-----------------|-------|
+| System      | Integration Type                              | Guide                                         |
+| ----------- | --------------------------------------------- | --------------------------------------------- |
 | Label Traxx | Direct (Cloud API) or indirect (AE/CLOUDFLOW) | [Label Traxx](/docs/integrations-label-traxx) |
-| CERM | Indirect (JDF via AE/CLOUDFLOW) | [CERM](/docs/integrations-cerm) |
-| EFI Pace | Direct (API) or indirect (JDF/Fiery) | [EFI Pace](/docs/integrations-efi-pace) |
-| Tharstern | Indirect (AE) or direct (web services) | [Tharstern](/docs/integrations-tharstern) |
-| PrintVis | Direct (D365 APIs / Power Automate) | [PrintVis](/docs/integrations-printvis) |
+| CERM        | Indirect (JDF via AE/CLOUDFLOW)               | [CERM](/docs/integrations-cerm)               |
+| EFI Pace    | Direct (API) or indirect (JDF/Fiery)          | [EFI Pace](/docs/integrations-efi-pace)       |
+| Tharstern   | Indirect (AE) or direct (web services)        | [Tharstern](/docs/integrations-tharstern)     |
+| PrintVis    | Direct (D365 APIs / Power Automate)           | [PrintVis](/docs/integrations-printvis)       |
 
 ### Automation & Tools
 
-| System | Integration Type | Guide |
-|--------|-----------------|-------|
-| Zapier / Make / n8n | Webhook + HTTP modules | [Zapier, Make & n8n](/docs/integrations-zapier-make-n8n) |
-| Hot Folder | Local directory watcher | [Hot Folder](/docs/integrations-hot-folder) |
+| System              | Integration Type        | Guide                                                    |
+| ------------------- | ----------------------- | -------------------------------------------------------- |
+| Zapier / Make / n8n | Webhook + HTTP modules  | [Zapier, Make & n8n](/docs/integrations-zapier-make-n8n) |
+| Hot Folder          | Local directory watcher | [Hot Folder](/docs/integrations-hot-folder)              |
 
 ## Authentication
 

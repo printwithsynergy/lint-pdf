@@ -204,7 +204,9 @@ export function FolderEdit({
                 className="input"
                 value={folder.stabilization_secs}
                 onChange={(e) =>
-                  update({ stabilization_secs: parseFloat(e.target.value) || 2 })
+                  update({
+                    stabilization_secs: parseFloat(e.target.value) || 2,
+                  })
                 }
                 min={0.5}
                 step={0.5}

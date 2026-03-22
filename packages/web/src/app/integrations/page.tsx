@@ -47,20 +47,17 @@ const erpIntegrations: Integration[] = [
   },
   {
     title: "CERM",
-    description:
-      "JDF integration through Esko or Hybrid workflow engines.",
+    description: "JDF integration through Esko or Hybrid workflow engines.",
     href: "/docs/integrations-cerm",
   },
   {
     title: "EFI Pace",
-    description:
-      "API or JDF/Fiery workflow integration via PaceConnect.",
+    description: "API or JDF/Fiery workflow integration via PaceConnect.",
     href: "/docs/integrations-efi-pace",
   },
   {
     title: "Tharstern",
-    description:
-      "Integrate via Esko Automation Engine or direct web services.",
+    description: "Integrate via Esko Automation Engine or direct web services.",
     href: "/docs/integrations-tharstern",
   },
   {
@@ -124,9 +121,7 @@ function SectionHeader({
 }) {
   return (
     <div className="text-center mb-12">
-      <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">
-        {title}
-      </h2>
+      <h2 className="text-2xl font-bold text-slate-900 md:text-3xl">{title}</h2>
       <p className="mt-3 text-slate-500 max-w-2xl mx-auto">{subtitle}</p>
     </div>
   );

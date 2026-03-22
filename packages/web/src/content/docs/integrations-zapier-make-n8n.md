@@ -46,6 +46,7 @@ Webhooks eliminate polling. LintPDF pushes results to your automation platform w
 In your automation platform, create a new workflow with a **Webhook** trigger. Copy the webhook URL provided.
 
 **Example URLs:**
+
 - Zapier: `https://hooks.zapier.com/hooks/catch/123456/abcdef/`
 - Make: `https://hook.us1.make.com/abcdefghijk`
 - n8n: `https://your-n8n.com/webhook/lintpdf-results`
@@ -69,6 +70,7 @@ Create a separate workflow (or the first part of the same workflow) that submits
 **Trigger:** New file in Google Drive / Dropbox / S3 / email attachment / form upload
 
 **HTTP Action:**
+
 - **Method:** POST
 - **URL:** `https://api.lintpdf.com/api/v1/jobs`
 - **Headers:** `Authorization: Bearer lpdf_your_api_key`
@@ -87,6 +89,7 @@ When the job completes, LintPDF sends a POST to your webhook URL with:
 - **Body:** Full job result with summary and findings
 
 **Parse the JSON body** to extract:
+
 - `summary.passed` — boolean
 - `summary.aground_count` — critical issue count
 - `summary.squall_count` — warning count
@@ -121,6 +124,7 @@ Add a **Delay** step: wait 15–30 seconds (adjust based on typical file size).
 HTTP GET to `https://api.lintpdf.com/api/v1/jobs/{job_id}` with auth header.
 
 **Check `status` field:**
+
 - If `complete` or `failed` → proceed to step 4
 - If `pending` or `processing` → loop back to delay (add a max retry count to avoid infinite loops)
 

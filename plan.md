@@ -62,7 +62,9 @@ one binary — no Python, no pip, no virtual environments.
 Results are delivered **two ways simultaneously:**
 
 ### 1. Folder routing (for workflow integration)
+
 Each hot folder config specifies optional output directories:
+
 - `pass_dir` — files that passed preflight are moved here
 - `fail_dir` — files that failed are moved here
 - `error_dir` — files that errored during submission are moved here
@@ -71,6 +73,7 @@ Each hot folder config specifies optional output directories:
 If no output dirs are configured, files stay in place and only get a sidecar.
 
 ### 2. App UI (for human visibility)
+
 - Live results feed in the main window (table with file name, status, finding counts, timestamp)
 - System tray badge/tooltip updates (e.g., "3 files processed, 1 failed")
 - Desktop notifications on completion (optional, configurable)
@@ -134,12 +137,14 @@ If no output dirs are configured, files stay in place and only get a sidecar.
 ### Step 1: Scaffold Tauri v2 project
 
 Create `packages/desktop/` with:
+
 - `src-tauri/` — Rust backend (Cargo.toml, main.rs, lib.rs)
 - `src/` — React frontend (Vite + React + Tailwind)
 - `package.json` — frontend dependencies
 - Tauri config (`tauri.conf.json`)
 
 Key Rust dependencies:
+
 - `tauri` v2 — app framework
 - `tauri-plugin-shell` — if needed
 - `notify` v7 — file system watching
@@ -150,6 +155,7 @@ Key Rust dependencies:
 - `rusqlite` — local job history DB (lightweight)
 
 Key frontend dependencies:
+
 - `react` + `react-dom`
 - `@tauri-apps/api` v2 — IPC bridge
 - `tailwindcss` — styling (match existing LintPDF design)
