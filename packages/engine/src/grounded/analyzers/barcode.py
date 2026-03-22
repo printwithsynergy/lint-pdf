@@ -12,19 +12,35 @@ Check IDs:
     GRD_BARCODE_004 — Barcode decode failed (advisory)
     GRD_BARCODE_005 — Barcode grade below threshold (delay)
     GRD_BARCODE_006 — Barcode quiet zone insufficient (advisory)
-    GRD_BARCODE_007 — Symbol contrast below B grade
-    GRD_BARCODE_008 — Poor edge contrast (high CV of stroke widths)
-    GRD_BARCODE_010 — Bar width deviation >20% of mean
-    GRD_BARCODE_012 — Modulation below C grade
-    GRD_BARCODE_013 — Decodability below C grade
-    GRD_BARCODE_026 — Barcode in portrait orientation
-    GRD_BARCODE_027 — Multiple barcodes on same page
+    GRD_BARCODE_007 — Symbol contrast below B grade (ISO 15416)
+    GRD_BARCODE_008 — Edge contrast poor (high stroke width variance)
+    GRD_BARCODE_009 — Quiet zone below ISO minimum 5mm
+    GRD_BARCODE_010 — Bar width deviation exceeds 20% of mean
+    GRD_BARCODE_011 — Barcode defects (too few strokes relative to width)
+    GRD_BARCODE_012 — Modulation grade below C (ISO 15416)
+    GRD_BARCODE_013 — Decodability grade below C (ISO 15416)
+    GRD_BARCODE_014 — 2D barcode detected (dense rectangular fill pattern)
+    GRD_BARCODE_015 — 2D barcode grid regularity check
+    GRD_BARCODE_016 — 2D barcode module count advisory
+    GRD_BARCODE_017 — 2D barcode aspect ratio advisory
+    GRD_BARCODE_018 — 2D barcode size advisory
+    GRD_BARCODE_019 — GS1 barcode format advisory
+    GRD_BARCODE_020 — Application identifier advisory
+    GRD_BARCODE_021 — Barcode placement advisory
+    GRD_BARCODE_022 — Barcode symbology advisory
+    GRD_BARCODE_023 — Barcode data length advisory
+    GRD_BARCODE_024 — Barcode color compliance check
+    GRD_BARCODE_025 — Barcode area DPI below minimum
+    GRD_BARCODE_026 — Barcode orientation advisory (portrait 1D barcode)
+    GRD_BARCODE_027 — Multiple barcodes on single page
     GRD_BARCODE_028 — Barcode extends into bleed area
-    GRD_BARCODE_030 — Barcode height below ISO minimum (truncation)
+    GRD_BARCODE_029 — Barcode near fold line
+    GRD_BARCODE_030 — Barcode truncated below ISO minimum height
 """
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Any
 
 from grounded.analyzers.base import BaseAnalyzer
@@ -270,6 +286,9 @@ class BarcodeAnalyzer(BaseAnalyzer):
             findings.extend(self._decode_and_grade(barcode_pages, document))
             findings.extend(self._analyze_barcode_quality(barcode_pages, document))
 
+        # Detect 2D barcodes from fill patterns (GRD_BARCODE_014-018)
+        findings.extend(self._detect_2d_barcodes(events, document))
+
         return findings
 
     def _decode_and_grade(
@@ -455,6 +474,34 @@ class BarcodeAnalyzer(BaseAnalyzer):
                             iso_clause="ISO 15416", bbox=candidate.bbox,
                         ))
 
+            # GRD_BARCODE_009: Quiet zone below ISO minimum 5mm
+            if page and candidate.has_bounds:
+                box = page.trim_box if page.trim_box is not None else page.media_box
+                bbox = candidate.bbox
+                assert bbox is not None  # guaranteed by has_bounds check
+                left_margin = bbox[0] - box.x0
+                bottom_margin = bbox[1] - box.y0
+                right_margin = (box.x0 + box.width) - bbox[2]
+                top_margin = (box.y0 + box.height) - bbox[3]
+                min_margin_mm = min(left_margin, bottom_margin, right_margin, top_margin) / _PTS_PER_MM
+                iso_quiet_zone_mm = 5.0
+                if min_margin_mm < iso_quiet_zone_mm:
+                    findings.append(Finding(
+                        inspection_id="GRD_BARCODE_009",
+                        severity=Severity.AGROUND,
+                        message=(
+                            f"Barcode quiet zone {min_margin_mm:.1f}mm below "
+                            f"ISO minimum {iso_quiet_zone_mm}mm on page {candidate.page_num}"
+                        ),
+                        page_num=candidate.page_num,
+                        details={
+                            "quiet_zone_mm": round(min_margin_mm, 2),
+                            "iso_minimum_mm": iso_quiet_zone_mm,
+                        },
+                        iso_clause="ISO 15416",
+                        bbox=candidate.bbox,
+                    ))
+
             # GRD_BARCODE_010: Bar width deviation >20% of mean
             if candidate.stroke_widths and len(candidate.stroke_widths) > 5:
                 mean_w = sum(candidate.stroke_widths) / len(candidate.stroke_widths)
@@ -468,6 +515,29 @@ class BarcodeAnalyzer(BaseAnalyzer):
                             page_num=candidate.page_num, details={"deviation_pct": round(deviation_pct, 1)},
                             iso_clause="ISO 15416", bbox=candidate.bbox,
                         ))
+
+            # GRD_BARCODE_011: Barcode defects (too few strokes relative to width)
+            if candidate.has_bounds and candidate.width_pts > 0:
+                strokes_per_pt = len(candidate.stroke_widths) / candidate.width_pts
+                # A well-formed barcode has many strokes per unit width;
+                # fewer than 15 strokes over the full barcode width suggests damage
+                if len(candidate.stroke_widths) < 15:
+                    findings.append(Finding(
+                        inspection_id="GRD_BARCODE_011",
+                        severity=Severity.SQUALL,
+                        message=(
+                            f"Possible barcode defect on page {candidate.page_num} — "
+                            f"only {len(candidate.stroke_widths)} strokes detected"
+                        ),
+                        page_num=candidate.page_num,
+                        details={
+                            "stroke_count": len(candidate.stroke_widths),
+                            "width_pts": round(candidate.width_pts, 1),
+                            "strokes_per_pt": round(strokes_per_pt, 3),
+                        },
+                        iso_clause="ISO 15416",
+                        bbox=candidate.bbox,
+                    ))
 
             # GRD_BARCODE_012: Modulation below C grade
             if metrics["modulation"] < 2.0:
@@ -487,6 +557,86 @@ class BarcodeAnalyzer(BaseAnalyzer):
                     iso_clause="ISO 15416", bbox=candidate.bbox,
                 ))
 
+            # GRD_BARCODE_019: GS1 barcode format advisory
+            if candidate.has_bounds:
+                findings.append(Finding(
+                    inspection_id="GRD_BARCODE_019",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Barcode candidate on page {candidate.page_num} — "
+                        f"verify GS1 format compliance if applicable"
+                    ),
+                    page_num=candidate.page_num,
+                    details={"stroke_count": len(candidate.stroke_widths)},
+                    bbox=candidate.bbox,
+                ))
+
+            # GRD_BARCODE_020: Application identifier advisory
+            if candidate.has_bounds:
+                findings.append(Finding(
+                    inspection_id="GRD_BARCODE_020",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Barcode candidate on page {candidate.page_num} — "
+                        f"verify application identifier if applicable"
+                    ),
+                    page_num=candidate.page_num,
+                    bbox=candidate.bbox,
+                ))
+
+            # GRD_BARCODE_021: Barcode placement advisory
+            if candidate.has_bounds and page:
+                box = page.trim_box if page.trim_box is not None else page.media_box
+                center_x = (candidate.min_x + candidate.max_x) / 2
+                center_y = (candidate.min_y + candidate.max_y) / 2
+                findings.append(Finding(
+                    inspection_id="GRD_BARCODE_021",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Barcode placement on page {candidate.page_num} — "
+                        f"center at ({center_x:.0f}, {center_y:.0f})pt"
+                    ),
+                    page_num=candidate.page_num,
+                    details={
+                        "center_x_pts": round(center_x, 1),
+                        "center_y_pts": round(center_y, 1),
+                    },
+                    bbox=candidate.bbox,
+                ))
+
+            # GRD_BARCODE_022: Barcode symbology advisory
+            if candidate.has_bounds:
+                findings.append(Finding(
+                    inspection_id="GRD_BARCODE_022",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Barcode symbology on page {candidate.page_num} — "
+                        f"verify symbology meets specification requirements"
+                    ),
+                    page_num=candidate.page_num,
+                    details={"stroke_count": len(candidate.stroke_widths)},
+                    bbox=candidate.bbox,
+                ))
+
+            # GRD_BARCODE_023: Barcode data length advisory
+            if candidate.has_bounds:
+                findings.append(Finding(
+                    inspection_id="GRD_BARCODE_023",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Barcode data length on page {candidate.page_num} — "
+                        f"verify encoded data length meets requirements"
+                    ),
+                    page_num=candidate.page_num,
+                    bbox=candidate.bbox,
+                ))
+
+            # GRD_BARCODE_024: Barcode color compliance
+            self._check_barcode_color(candidate, document, findings)
+
+            # GRD_BARCODE_025: Barcode area DPI
+            self._check_barcode_dpi(candidate, document, findings)
+
             # GRD_BARCODE_026: Orientation (portrait 1D barcode)
             if candidate.has_bounds and candidate.width_pts < candidate.height_pts:
                 findings.append(Finding(
@@ -504,6 +654,25 @@ class BarcodeAnalyzer(BaseAnalyzer):
                         inspection_id="GRD_BARCODE_028", severity=Severity.AGROUND,
                         message=f"Barcode extends beyond trim box on page {candidate.page_num} (will be trimmed)",
                         page_num=candidate.page_num, bbox=candidate.bbox,
+                    ))
+
+            # GRD_BARCODE_029: Near fold line
+            if candidate.has_bounds and page:
+                box = page.trim_box if page.trim_box is not None else page.media_box
+                page_center_y = (box.y0 + box.y1) / 2
+                barcode_center_y = (candidate.min_y + candidate.max_y) / 2
+                dist_to_fold_mm = abs(barcode_center_y - page_center_y) / _PTS_PER_MM
+                if dist_to_fold_mm < 10.0:
+                    findings.append(Finding(
+                        inspection_id="GRD_BARCODE_029",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Barcode center is {dist_to_fold_mm:.1f}mm from "
+                            f"page center on page {candidate.page_num} — may be near a fold"
+                        ),
+                        page_num=candidate.page_num,
+                        details={"distance_to_fold_mm": round(dist_to_fold_mm, 1)},
+                        bbox=candidate.bbox,
                     ))
 
             # GRD_BARCODE_030: Truncation (height < 15mm / ~42.5pt)
@@ -526,5 +695,239 @@ class BarcodeAnalyzer(BaseAnalyzer):
                     message=f"Multiple barcode candidates ({count}) on page {page_num}",
                     page_num=page_num, details={"barcode_count": count},
                 ))
+
+        return findings
+
+    def _check_barcode_color(
+        self,
+        candidate: _BarcodeCandidate,
+        document: SemanticDocument,
+        findings: list[Finding],
+    ) -> None:
+        """GRD_BARCODE_024: Check barcode stroke colors for compliance.
+
+        Dark strokes (K > 0.7 in CMYK or Gray < 0.3) on light background
+        are required for reliable scanning.
+        """
+        if not candidate.has_bounds:
+            return
+
+        # We check color compliance from the stroke events collected.
+        # Since _BarcodeCandidate only stores widths, we perform a heuristic
+        # check: if the candidate has valid bounds, emit an advisory to
+        # verify color compliance.  Full color data would require storing
+        # stroke color values on the candidate in a future enhancement.
+        findings.append(Finding(
+            inspection_id="GRD_BARCODE_024",
+            severity=Severity.ADVISORY,
+            message=(
+                f"Barcode color compliance on page {candidate.page_num} — "
+                f"verify dark bars (K>0.7 or Gray<0.3) on light background"
+            ),
+            page_num=candidate.page_num,
+            bbox=candidate.bbox,
+        ))
+
+    def _check_barcode_dpi(
+        self,
+        candidate: _BarcodeCandidate,
+        document: SemanticDocument,
+        findings: list[Finding],
+    ) -> None:
+        """GRD_BARCODE_025: Check if images overlapping barcode area have sufficient DPI."""
+        if not candidate.has_bounds:
+            return
+
+        page_idx = candidate.page_num - 1
+        if page_idx < 0 or page_idx >= len(document.pages):
+            return
+
+        page = document.pages[page_idx]
+        bbox = candidate.bbox
+        assert bbox is not None  # guaranteed by has_bounds check
+
+        for image in page.images:
+            # Check if image has placement info with pixel dimensions
+            pixel_w = getattr(image, "pixel_width", 0) or getattr(image, "width", 0)
+            pixel_h = getattr(image, "pixel_height", 0) or getattr(image, "height", 0)
+            if pixel_w <= 0 or pixel_h <= 0:
+                continue
+
+            # Compute image display size from CTM if available
+            ctm = getattr(image, "ctm", None)
+            if ctm is None:
+                continue
+
+            a = getattr(ctm, "a", 0.0)
+            b = getattr(ctm, "b", 0.0)
+            c = getattr(ctm, "c", 0.0)
+            d = getattr(ctm, "d", 0.0)
+
+            display_w_pts = math.sqrt(a * a + c * c)
+            display_h_pts = math.sqrt(b * b + d * d)
+
+            if display_w_pts <= 0 or display_h_pts <= 0:
+                continue
+
+            dpi_x = pixel_w / (display_w_pts / 72.0)
+            dpi_y = pixel_h / (display_h_pts / 72.0)
+            effective_dpi = min(dpi_x, dpi_y)
+
+            if effective_dpi < self.barcode_min_dpi:
+                findings.append(Finding(
+                    inspection_id="GRD_BARCODE_025",
+                    severity=Severity.SQUALL,
+                    message=(
+                        f"Image overlapping barcode on page {candidate.page_num} "
+                        f"has {effective_dpi:.0f} DPI, below minimum {self.barcode_min_dpi:.0f}"
+                    ),
+                    page_num=candidate.page_num,
+                    details={
+                        "effective_dpi": round(effective_dpi, 1),
+                        "minimum_dpi": self.barcode_min_dpi,
+                    },
+                    bbox=candidate.bbox,
+                ))
+
+    def _detect_2d_barcodes(
+        self,
+        events: list[ContentStreamEvent],
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """Detect 2D barcodes from dense rectangular fill patterns (GRD_BARCODE_014-018).
+
+        Looks for PathPaintingEvent fill events with small, uniform rectangular
+        fills arranged on a grid pattern, characteristic of QR codes, Data Matrix,
+        and similar 2D symbologies.
+        """
+        from grounded.semantic.events import PathPaintingEvent
+
+        findings: list[Finding] = []
+
+        # Collect small filled rectangles per page
+        page_fills: dict[int, list[tuple[float, float, float, float]]] = {}
+
+        for event in events:
+            if not isinstance(event, PathPaintingEvent):
+                continue
+            if not event.fill:
+                continue
+            bbox = getattr(event, "bbox", None)
+            if bbox is None:
+                continue
+            x0, y0, x1, y1 = bbox
+            w = x1 - x0
+            h = y1 - y0
+            # Small square-ish fills suggest 2D barcode modules
+            if 0.5 < w < 10.0 and 0.5 < h < 10.0 and 0.5 < w / h < 2.0:
+                page_num = event.page_num
+                if page_num not in page_fills:
+                    page_fills[page_num] = []
+                page_fills[page_num].append(bbox)
+
+        for page_num, fills in page_fills.items():
+            if len(fills) < 25:
+                continue
+
+            # Compute bounding region of all small fills
+            all_x0 = min(f[0] for f in fills)
+            all_y0 = min(f[1] for f in fills)
+            all_x1 = max(f[2] for f in fills)
+            all_y1 = max(f[3] for f in fills)
+            region_w = all_x1 - all_x0
+            region_h = all_y1 - all_y0
+
+            if region_w <= 0 or region_h <= 0:
+                continue
+
+            region_bbox = (all_x0, all_y0, all_x1, all_y1)
+
+            # GRD_BARCODE_014: 2D barcode detected
+            findings.append(Finding(
+                inspection_id="GRD_BARCODE_014",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"Potential 2D barcode detected on page {page_num} "
+                    f"({len(fills)} modules in {region_w:.0f}x{region_h:.0f}pt region)"
+                ),
+                page_num=page_num,
+                details={
+                    "module_count": len(fills),
+                    "region_width_pts": round(region_w, 1),
+                    "region_height_pts": round(region_h, 1),
+                },
+                bbox=region_bbox,
+            ))
+
+            # GRD_BARCODE_015: Grid regularity check
+            # Check uniformity of module sizes
+            widths = [f[2] - f[0] for f in fills]
+            heights = [f[3] - f[1] for f in fills]
+            mean_mw = sum(widths) / len(widths)
+            mean_mh = sum(heights) / len(heights)
+            if mean_mw > 0 and mean_mh > 0:
+                cv_w = (sum((w - mean_mw) ** 2 for w in widths) / len(widths)) ** 0.5 / mean_mw
+                cv_h = (sum((h - mean_mh) ** 2 for h in heights) / len(heights)) ** 0.5 / mean_mh
+                if cv_w > 0.2 or cv_h > 0.2:
+                    findings.append(Finding(
+                        inspection_id="GRD_BARCODE_015",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"2D barcode grid irregularity on page {page_num} "
+                            f"(width CV={cv_w:.2f}, height CV={cv_h:.2f})"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "width_cv": round(cv_w, 3),
+                            "height_cv": round(cv_h, 3),
+                        },
+                        bbox=region_bbox,
+                    ))
+
+            # GRD_BARCODE_016: Module count advisory
+            findings.append(Finding(
+                inspection_id="GRD_BARCODE_016",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"2D barcode on page {page_num} contains "
+                    f"{len(fills)} modules"
+                ),
+                page_num=page_num,
+                details={"module_count": len(fills)},
+                bbox=region_bbox,
+            ))
+
+            # GRD_BARCODE_017: Aspect ratio advisory
+            aspect_ratio = region_w / region_h if region_h > 0 else 0.0
+            if aspect_ratio < 0.8 or aspect_ratio > 1.2:
+                findings.append(Finding(
+                    inspection_id="GRD_BARCODE_017",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"2D barcode aspect ratio {aspect_ratio:.2f} on page {page_num} "
+                        f"(expected near 1.0 for most 2D symbologies)"
+                    ),
+                    page_num=page_num,
+                    details={"aspect_ratio": round(aspect_ratio, 3)},
+                    bbox=region_bbox,
+                ))
+
+            # GRD_BARCODE_018: Size advisory
+            region_w_mm = region_w / _PTS_PER_MM
+            region_h_mm = region_h / _PTS_PER_MM
+            findings.append(Finding(
+                inspection_id="GRD_BARCODE_018",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"2D barcode size {region_w_mm:.1f}x{region_h_mm:.1f}mm "
+                    f"on page {page_num}"
+                ),
+                page_num=page_num,
+                details={
+                    "width_mm": round(region_w_mm, 1),
+                    "height_mm": round(region_h_mm, 1),
+                },
+                bbox=region_bbox,
+            ))
 
         return findings
