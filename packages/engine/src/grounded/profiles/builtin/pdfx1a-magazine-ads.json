@@ -1,0 +1,23 @@
+{
+  "name": "PDF/X-1a Magazine Ads",
+  "description": "PDF/X-1a:2003 conformance for magazine advertising. CMYK-only, no transparency, all fonts embedded.",
+  "version": "1.0",
+  "conformance": "pdfx1a",
+  "workflow": "CMYK",
+  "checks": {
+    "enabled": ["GRD_*", "PDFX1A-*"],
+    "disabled": ["PDFX4-*", "PDFX3-*"],
+    "severity_overrides": {}
+  },
+  "thresholds": {
+    "min_dpi": 200.0,
+    "max_dpi": 600.0,
+    "tac_limit": 300.0,
+    "min_bleed_mm": 3.0,
+    "hairline_threshold": 0.25,
+    "small_text_threshold": 6.0,
+    "very_small_text_threshold": 4.0,
+    "safety_margin_mm": 5.0,
+    "max_file_size_mb": 200.0
+  }
+}

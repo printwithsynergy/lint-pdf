@@ -97,6 +97,16 @@ class PreflightOrchestrator:
 
             validator = PdfX4Validator()
             raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfx1a", "pdfx1a2003"):
+            from grounded.conformance.pdfx1a import PdfX1aValidator
+
+            validator = PdfX1aValidator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfx3", "pdfx32003"):
+            from grounded.conformance.pdfx3 import PdfX3Validator
+
+            validator = PdfX3Validator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
 
         # Step 6: Run AI analyzers (if AI enabled in voyage plan)
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
@@ -166,6 +176,16 @@ class PreflightOrchestrator:
             from grounded.conformance.pdfx4 import PdfX4Validator
 
             validator = PdfX4Validator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfx1a", "pdfx1a2003"):
+            from grounded.conformance.pdfx1a import PdfX1aValidator
+
+            validator = PdfX1aValidator()
+            raw_findings.extend(validator.validate(document, events, raw_findings))
+        elif self._plan.conformance in ("pdfx3", "pdfx32003"):
+            from grounded.conformance.pdfx3 import PdfX3Validator
+
+            validator = PdfX3Validator()
             raw_findings.extend(validator.validate(document, events, raw_findings))
 
         findings = self._apply_overrides_and_filter(raw_findings)
