@@ -161,10 +161,10 @@ export default function IntegrationsPage() {
                   Hot Folders Desktop App
                 </h2>
                 <p className="mt-4 text-slate-500 leading-relaxed">
-                  A native desktop app for macOS, Windows, and Linux that watches
-                  directories and preflights files automatically. Configure
-                  multiple folders, see results in real time, and run quietly in
-                  the system tray. No code required.
+                  A native desktop app for macOS, Windows, and Linux that
+                  watches directories and preflights files automatically.
+                  Configure multiple folders, see results in real time, and run
+                  quietly in the system tray. No code required.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Link
@@ -183,24 +183,40 @@ export default function IntegrationsPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
-                  <div className="text-2xl font-bold text-brand-600 mb-1">&infin;</div>
+                  <div className="text-2xl font-bold text-brand-600 mb-1">
+                    &infin;
+                  </div>
                   <div className="font-medium text-slate-900">Folders</div>
-                  <div className="text-slate-400 text-xs mt-0.5">Watch unlimited directories</div>
+                  <div className="text-slate-400 text-xs mt-0.5">
+                    Watch unlimited directories
+                  </div>
                 </div>
                 <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
-                  <div className="text-2xl font-bold text-brand-600 mb-1">3</div>
+                  <div className="text-2xl font-bold text-brand-600 mb-1">
+                    3
+                  </div>
                   <div className="font-medium text-slate-900">Platforms</div>
-                  <div className="text-slate-400 text-xs mt-0.5">macOS, Windows, Linux</div>
+                  <div className="text-slate-400 text-xs mt-0.5">
+                    macOS, Windows, Linux
+                  </div>
                 </div>
                 <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
-                  <div className="text-2xl font-bold text-brand-600 mb-1">Live</div>
+                  <div className="text-2xl font-bold text-brand-600 mb-1">
+                    Live
+                  </div>
                   <div className="font-medium text-slate-900">Results Feed</div>
-                  <div className="text-slate-400 text-xs mt-0.5">Real-time pass/fail status</div>
+                  <div className="text-slate-400 text-xs mt-0.5">
+                    Real-time pass/fail status
+                  </div>
                 </div>
                 <div className="rounded-xl bg-white p-4 shadow-sm border border-slate-100">
-                  <div className="text-2xl font-bold text-brand-600 mb-1">Tray</div>
+                  <div className="text-2xl font-bold text-brand-600 mb-1">
+                    Tray
+                  </div>
                   <div className="font-medium text-slate-900">Background</div>
-                  <div className="text-slate-400 text-xs mt-0.5">Runs silently in system tray</div>
+                  <div className="text-slate-400 text-xs mt-0.5">
+                    Runs silently in system tray
+                  </div>
                 </div>
               </div>
             </div>

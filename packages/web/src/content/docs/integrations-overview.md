@@ -108,11 +108,11 @@ A job passes when `aground_count` is 0.
 
 ### Desktop & Automation Tools
 
-| System              | Integration Type                                       | Guide                                                    |
-| ------------------- | ------------------------------------------------------ | -------------------------------------------------------- |
-| Desktop App         | Native GUI hot folder manager (macOS, Windows, Linux)  | [Desktop App](/docs/desktop-app)                         |
-| Hot Folder CLI      | Python CLI directory watcher for servers               | [Hot Folder](/docs/integrations-hot-folder)              |
-| Zapier / Make / n8n | Webhook + HTTP modules                                 | [Zapier, Make & n8n](/docs/integrations-zapier-make-n8n) |
+| System              | Integration Type                                      | Guide                                                    |
+| ------------------- | ----------------------------------------------------- | -------------------------------------------------------- |
+| Desktop App         | Native GUI hot folder manager (macOS, Windows, Linux) | [Desktop App](/docs/desktop-app)                         |
+| Hot Folder CLI      | Python CLI directory watcher for servers              | [Hot Folder](/docs/integrations-hot-folder)              |
+| Zapier / Make / n8n | Webhook + HTTP modules                                | [Zapier, Make & n8n](/docs/integrations-zapier-make-n8n) |
 
 ## Authentication
 

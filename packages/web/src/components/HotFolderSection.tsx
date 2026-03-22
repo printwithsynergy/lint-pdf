@@ -40,8 +40,8 @@ export function HotFolderSection() {
             <p className="mt-3 text-slate-500 leading-relaxed">
               A native app for macOS, Windows, and Linux that watches
               directories on your machine and preflights every new file through
-              LintPDF. Runs silently in the system tray with a live results
-              feed — no code, no scripts, no training.
+              LintPDF. Runs silently in the system tray with a live results feed
+              — no code, no scripts, no training.
             </p>
             <div className="mt-8 space-y-4">
               {steps.map((s) => (
@@ -130,8 +130,8 @@ export function HotFolderSection() {
               </svg>
               <h3 className="font-semibold text-slate-900">Live Results</h3>
               <p className="mt-1 text-xs text-slate-500">
-                Real-time feed of every file processed with pass/fail status
-                and finding counts.
+                Real-time feed of every file processed with pass/fail status and
+                finding counts.
               </p>
             </div>
             <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">

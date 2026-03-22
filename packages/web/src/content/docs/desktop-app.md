@@ -13,11 +13,11 @@ No code, no terminal, no scripting required.
 
 ## Download
 
-| Platform | Download | Requirements |
-|----------|----------|-------------|
-| macOS (Universal) | [LintPDF-HotFolders.dmg](#) | macOS 10.15+ |
-| Windows (64-bit) | [LintPDF-HotFolders.msi](#) | Windows 10+ |
-| Linux (AppImage) | [LintPDF-HotFolders.AppImage](#) | GTK 4 / WebKitGTK 6 |
+| Platform          | Download                         | Requirements        |
+| ----------------- | -------------------------------- | ------------------- |
+| macOS (Universal) | [LintPDF-HotFolders.dmg](#)      | macOS 10.15+        |
+| Windows (64-bit)  | [LintPDF-HotFolders.msi](#)      | Windows 10+         |
+| Linux (AppImage)  | [LintPDF-HotFolders.AppImage](#) | GTK 4 / WebKitGTK 6 |
 
 ## How It Works
 
@@ -119,12 +119,12 @@ Closing the main window hides the app to the tray — it keeps running in the ba
 
 ## Advanced Settings Per Folder
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Stabilization | 2 seconds | How long to wait for file size to stop changing before submitting. Increase this for slow network mounts (NFS, SMB). |
-| Poll Interval | 5 seconds | How often to check the API for job completion. Lower values = faster results but more API calls. |
-| File Extensions | All supported | Choose which file types to watch. Uncheck types you don't need. |
-| Write Sidecar | On | Write a `.lintpdf.json` report alongside each processed file. |
+| Setting         | Default       | Description                                                                                                          |
+| --------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Stabilization   | 2 seconds     | How long to wait for file size to stop changing before submitting. Increase this for slow network mounts (NFS, SMB). |
+| Poll Interval   | 5 seconds     | How often to check the API for job completion. Lower values = faster results but more API calls.                     |
+| File Extensions | All supported | Choose which file types to watch. Uncheck types you don't need.                                                      |
+| Write Sidecar   | On            | Write a `.lintpdf.json` report alongside each processed file.                                                        |
 
 ## Supported File Types
 
@@ -140,10 +140,10 @@ Closing the main window hides the app to the tray — it keeps running in the ba
 
 The app stores data locally on your machine:
 
-| Data | Location |
-|------|----------|
+| Data          | Location                                                                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Configuration | `~/.config/lintpdf-desktop/config.json` (Linux), `~/Library/Application Support/lintpdf-desktop/config.json` (macOS), `%APPDATA%/lintpdf-desktop/config.json` (Windows) |
-| Job History | `~/.local/share/lintpdf-desktop/jobs.db` (Linux), `~/Library/Application Support/lintpdf-desktop/jobs.db` (macOS), `%APPDATA%/lintpdf-desktop/jobs.db` (Windows) |
+| Job History   | `~/.local/share/lintpdf-desktop/jobs.db` (Linux), `~/Library/Application Support/lintpdf-desktop/jobs.db` (macOS), `%APPDATA%/lintpdf-desktop/jobs.db` (Windows)        |
 
 Job history is stored in a local SQLite database and auto-prunes to the most recent 1,000 entries.
 
