@@ -33,7 +33,7 @@ export const groundedUsagePlugin: PixieDustPlugin = {
     // Navigation
     ctx.addNavItem({
       label: "Usage",
-      href: "/dashboard/preflight/usage",
+      href: "/dashboard/usage",
       icon: "chart-bar",
       section: "main",
       order: 42,
@@ -42,7 +42,7 @@ export const groundedUsagePlugin: PixieDustPlugin = {
 
     // Pages
     ctx.addPage({
-      path: "/dashboard/preflight/usage",
+      path: "/dashboard/usage",
       title: "Usage & Limits",
       layout: "dashboard",
     });

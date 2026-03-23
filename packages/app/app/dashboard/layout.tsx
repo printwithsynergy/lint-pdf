@@ -58,7 +58,7 @@ export default async function DashboardLayout({
         navItems={navItems}
         user={user}
         brandName={branding.brandName ?? "LintPDF"}
-        brandLogoUrl={branding.brandLogoUrl}
+        brandLogoUrl={branding.brandLogoUrl ?? "/logo.svg"}
         customCss={branding.customCss}
       >
         {children}
