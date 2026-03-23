@@ -60,6 +60,31 @@ export function getClient(): GroundedClient | null {
   return _client;
 }
 
+// ── Engine tenant ID resolver ──────────────────────────────
+
+let _db: { tenant: { findUnique: (args: Record<string, unknown>) => Promise<{ engineTenantId: string | null } | null> } } | null = null;
+
+export function setPluginDb(db: typeof _db): void {
+  _db = db;
+}
+
+/**
+ * Resolve a Prisma tenant ID (cuid) to the engine's UUID tenant ID.
+ * Returns the engine UUID or falls back to the cuid if no mapping exists.
+ */
+export async function resolveEngineTenantId(tenantId: string): Promise<string> {
+  if (!_db) return tenantId;
+  try {
+    const tenant = await _db.tenant.findUnique({
+      where: { id: tenantId } as Record<string, unknown>,
+      select: { engineTenantId: true } as Record<string, unknown>,
+    } as Record<string, unknown>) as { engineTenantId: string | null } | null;
+    return tenant?.engineTenantId ?? tenantId;
+  } catch {
+    return tenantId;
+  }
+}
+
 // ── Core plugin ─────────────────────────────────────────────
 
 export const groundedPlugin: PixieDustPlugin = {
@@ -90,6 +115,9 @@ export const groundedPlugin: PixieDustPlugin = {
 
     const config = parsed.data;
     _client = new GroundedClient(config);
+
+    // Store DB reference for engine tenant ID resolution
+    setPluginDb(ctx.services.db as typeof _db);
 
     // ── Custom role ──
     ctx.addRole("OPERATOR");
