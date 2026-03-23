@@ -156,7 +156,9 @@ class ThresholdConfig(BaseModel):
         description="Maximum ink per individual channel for ECG workflows (0.0-1.0).",
     )
     epm_toner_limit: float = Field(
-        default=280.0, ge=0, description="Total toner area coverage limit for EPM digital devices (%)."
+        default=280.0,
+        ge=0,
+        description="Total toner area coverage limit for EPM digital devices (%).",
     )
     epm_min_line_weight: float = Field(
         default=0.35, ge=0, description="Minimum line weight for digital press output (pt)."

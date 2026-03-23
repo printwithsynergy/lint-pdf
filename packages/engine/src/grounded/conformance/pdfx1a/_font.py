@@ -102,8 +102,7 @@ def _check_font(
                             inspection_id=f"{_PREFIX}-011",
                             severity=Severity.ERROR,
                             message=(
-                                f"CID font '{base_font}' is not embedded "
-                                f"(required for PDF/X-1a)"
+                                f"CID font '{base_font}' is not embedded (required for PDF/X-1a)"
                             ),
                             page_num=page_num,
                             iso_clause="ISO 15930-4:2003 6.3",
@@ -113,9 +112,7 @@ def _check_font(
                     )
 
                 # PDFX1A-014: CID font missing CIDSystemInfo
-                cid_system_info = (
-                    cid_font.get("/CIDSystemInfo") or cid_font.get("CIDSystemInfo")
-                )
+                cid_system_info = cid_font.get("/CIDSystemInfo") or cid_font.get("CIDSystemInfo")
                 if cid_system_info is None:
                     findings.append(
                         Finding(
@@ -177,10 +174,14 @@ def _check_font(
     # PDFX1A-015: Font missing encoding
     encoding = font_dict.get("/Encoding") or font_dict.get("Encoding")
     if encoding is None and subtype not in (
-        "Type3", "/Type3",
-        "Type0", "/Type0",
-        "CIDFontType0", "/CIDFontType0",
-        "CIDFontType2", "/CIDFontType2",
+        "Type3",
+        "/Type3",
+        "Type0",
+        "/Type0",
+        "CIDFontType0",
+        "/CIDFontType0",
+        "CIDFontType2",
+        "/CIDFontType2",
     ):
         findings.append(
             Finding(

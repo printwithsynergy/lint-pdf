@@ -97,8 +97,7 @@ class ComparisonEngine:
                     diff_type="structure",
                     category="changed",
                     description=(
-                        f"Page count changed from {reference.page_count} "
-                        f"to {candidate.page_count}"
+                        f"Page count changed from {reference.page_count} to {candidate.page_count}"
                     ),
                     details={
                         "reference": reference.page_count,
@@ -149,8 +148,7 @@ class ComparisonEngine:
                             category="removed",
                             page_num=page_num,
                             description=(
-                                f"Page {page_num}: {box_name} removed "
-                                f"(was {ref_b.as_tuple()})"
+                                f"Page {page_num}: {box_name} removed (was {ref_b.as_tuple()})"
                             ),
                             details={"box": box_name, "reference": ref_b.as_tuple()},
                         )
@@ -162,8 +160,7 @@ class ComparisonEngine:
                             category="added",
                             page_num=page_num,
                             description=(
-                                f"Page {page_num}: {box_name} added "
-                                f"({cand_b.as_tuple()})"
+                                f"Page {page_num}: {box_name} added ({cand_b.as_tuple()})"
                             ),
                             details={"box": box_name, "candidate": cand_b.as_tuple()},
                         )
@@ -199,8 +196,7 @@ class ComparisonEngine:
                         category="added",
                         page_num=page_num,
                         description=(
-                            f"Page {page_num}: fonts added: "
-                            f"{', '.join(sorted(added_fonts))}"
+                            f"Page {page_num}: fonts added: {', '.join(sorted(added_fonts))}"
                         ),
                         details={"added_fonts": sorted(added_fonts)},
                     )
@@ -212,8 +208,7 @@ class ComparisonEngine:
                         category="removed",
                         page_num=page_num,
                         description=(
-                            f"Page {page_num}: fonts removed: "
-                            f"{', '.join(sorted(removed_fonts))}"
+                            f"Page {page_num}: fonts removed: {', '.join(sorted(removed_fonts))}"
                         ),
                         details={"removed_fonts": sorted(removed_fonts)},
                     )
@@ -231,8 +226,7 @@ class ComparisonEngine:
                         category="added",
                         page_num=page_num,
                         description=(
-                            f"Page {page_num}: color spaces added: "
-                            f"{', '.join(sorted(added_cs))}"
+                            f"Page {page_num}: color spaces added: {', '.join(sorted(added_cs))}"
                         ),
                         details={"added_color_spaces": sorted(added_cs)},
                     )
@@ -303,8 +297,7 @@ class ComparisonEngine:
                             category="added",
                             page_num=page_num,
                             description=(
-                                f"Page {page_num}: content added "
-                                f"({len(cand_stream)} bytes)"
+                                f"Page {page_num}: content added ({len(cand_stream)} bytes)"
                             ),
                             details={
                                 "candidate_size": len(cand_stream),
@@ -318,8 +311,7 @@ class ComparisonEngine:
                             category="removed",
                             page_num=page_num,
                             description=(
-                                f"Page {page_num}: content removed "
-                                f"({len(ref_stream)} bytes)"
+                                f"Page {page_num}: content removed ({len(ref_stream)} bytes)"
                             ),
                             details={
                                 "reference_size": len(ref_stream),
@@ -364,8 +356,7 @@ class ComparisonEngine:
                     diff_type="metadata",
                     category="changed",
                     description=(
-                        f"PDF version changed from {reference.version} "
-                        f"to {candidate.version}"
+                        f"PDF version changed from {reference.version} to {candidate.version}"
                     ),
                     details={
                         "reference": reference.version,
@@ -426,8 +417,7 @@ class ComparisonEngine:
                         diff_type="metadata",
                         category="changed",
                         description=(
-                            f"Info dict key '{key}' changed from "
-                            f"'{ref_val}' to '{cand_val}'"
+                            f"Info dict key '{key}' changed from '{ref_val}' to '{cand_val}'"
                         ),
                         details={
                             "key": key,

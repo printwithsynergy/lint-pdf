@@ -85,11 +85,14 @@ def validate_transparency(
                 return findings
 
     if findings:
-        findings.insert(0, Finding(
-            inspection_id=f"{_PREFIX}-027",
-            severity=Severity.ERROR,
-            message="Transparency is used — prohibited in PDF/X-3",
-            iso_clause="ISO 15930-6:2003 6.2.5",
-        ))
+        findings.insert(
+            0,
+            Finding(
+                inspection_id=f"{_PREFIX}-027",
+                severity=Severity.ERROR,
+                message="Transparency is used — prohibited in PDF/X-3",
+                iso_clause="ISO 15930-6:2003 6.2.5",
+            ),
+        )
 
     return findings

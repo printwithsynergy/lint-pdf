@@ -21,7 +21,11 @@ logger = logging.getLogger(__name__)
     soft_time_limit=270,
 )
 def run_preflight(
-    self: Any, job_id: str, profile_id: str, file_key: str, jdf_overrides: dict[str, Any] | None = None
+    self: Any,
+    job_id: str,
+    profile_id: str,
+    file_key: str,
+    jdf_overrides: dict[str, Any] | None = None,
 ) -> dict[str, Any]:  # skipcq: PY-R1000
     """Execute preflight job.
 
@@ -114,6 +118,7 @@ def run_preflight(
                     if key in threshold_data:
                         threshold_data[key] = value
                 from grounded.profiles.schema import PreflightProfile, ThresholdConfig
+
                 profile = profile.model_copy(
                     update={"thresholds": ThresholdConfig(**threshold_data)}
                 )

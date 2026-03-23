@@ -121,11 +121,16 @@ def validate_restrictions(  # skipcq: PY-R1000
                     continue
                 annot_subtype = annot.get("/Subtype") or annot.get("Subtype") or ""
                 if annot_subtype in (
-                    "/Sound", "Sound",
-                    "/Movie", "Movie",
-                    "/Screen", "Screen",
-                    "/3D", "3D",
-                    "/RichMedia", "RichMedia",
+                    "/Sound",
+                    "Sound",
+                    "/Movie",
+                    "Movie",
+                    "/Screen",
+                    "Screen",
+                    "/3D",
+                    "3D",
+                    "/RichMedia",
+                    "RichMedia",
                 ):
                     findings.append(
                         Finding(
@@ -285,8 +290,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         inspection_id=f"{_PREFIX}-033",
                         severity=Severity.ERROR,
                         message=(
-                            f"Page {page.page_num} has a transparency group "
-                            f"(prohibited in PDF/A-1)"
+                            f"Page {page.page_num} has a transparency group (prohibited in PDF/A-1)"
                         ),
                         page_num=page.page_num,
                         iso_clause="ISO 19005-1 6.4",
@@ -320,9 +324,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         for event in events:
             if isinstance(event, ImagePlacedEvent):
                 filters = event.filters if hasattr(event, "filters") else []
-                if filters and any(
-                    f in ("JPXDecode", "/JPXDecode") for f in filters
-                ):
+                if filters and any(f in ("JPXDecode", "/JPXDecode") for f in filters):
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-034",
@@ -387,8 +389,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                     inspection_id=f"{_PREFIX}-036",
                     severity=Severity.ERROR,
                     message=(
-                        f"Additional actions (/AA) on page {page.page_num} "
-                        f"(prohibited in PDF/A)"
+                        f"Additional actions (/AA) on page {page.page_num} (prohibited in PDF/A)"
                     ),
                     page_num=page.page_num,
                     iso_clause="ISO 19005 6.6.1",

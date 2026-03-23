@@ -80,8 +80,8 @@ curl -X POST https://api.lintpdf.com/api/v1/tenants/{id}/color-config/profiles \
 
 ### Spot Color & DeviceN (GRD*SPOT*\*)
 
-| Check        | Description                        | Severity        |
-| ------------ | ---------------------------------- | --------------- |
+| Check        | Description                        | Severity         |
+| ------------ | ---------------------------------- | ---------------- |
 | GRD_SPOT_001 | Spot color inventory & consistency | Advisory/Warning |
 | GRD_SPOT_002 | Spot color fallback validation     | Advisory         |
 | GRD_SPOT_003 | Spot color naming issues           | Warning/Advisory |
@@ -90,24 +90,24 @@ curl -X POST https://api.lintpdf.com/api/v1/tenants/{id}/color-config/profiles \
 
 ### Ink Coverage (GRD*INK*\*)
 
-| Check       | Description                  | Severity        |
-| ----------- | ---------------------------- | --------------- |
-| GRD_INK_001 | TAC heatmap data             | Advisory        |
-| GRD_INK_002 | Per-separation ink coverage  | Advisory        |
+| Check       | Description                  | Severity         |
+| ----------- | ---------------------------- | ---------------- |
+| GRD_INK_001 | TAC heatmap data             | Advisory         |
+| GRD_INK_002 | Per-separation ink coverage  | Advisory         |
 | GRD_INK_003 | Ink channel count validation | Warning/Advisory |
 
 ### Gamut Checking (GRD*GAMUT*\*)
 
-| Check         | Description                    | Severity        |
-| ------------- | ------------------------------ | --------------- |
+| Check         | Description                    | Severity         |
+| ------------- | ------------------------------ | ---------------- |
 | GRD_GAMUT_001 | Per-object gamut boundary test | Warning/Advisory |
-| GRD_GAMUT_002 | Gamut volume comparison        | Advisory        |
-| GRD_GAMUT_003 | Out-of-gamut summary           | Advisory        |
+| GRD_GAMUT_002 | Gamut volume comparison        | Advisory         |
+| GRD_GAMUT_003 | Out-of-gamut summary           | Advisory         |
 
 ### Standards Compliance (GRD*STD*\*)
 
-| Check       | Description          | Severity        |
-| ----------- | -------------------- | --------------- |
+| Check       | Description          | Severity         |
+| ----------- | -------------------- | ---------------- |
 | GRD_STD_001 | G7 pre-compliance    | Warning/Advisory |
 | GRD_STD_002 | GRACoL compliance    | Warning/Advisory |
 | GRD_STD_003 | ISO 12647 compliance | Warning/Advisory |

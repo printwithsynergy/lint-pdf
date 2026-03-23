@@ -278,7 +278,9 @@ class AccessibilityAnalyzer(BaseAnalyzer):
         if isinstance(children, list):
             for child in children:
                 if isinstance(child, dict):
-                    types.update(AccessibilityAnalyzer._collect_struct_types(child, _depth=_depth + 1))
+                    types.update(
+                        AccessibilityAnalyzer._collect_struct_types(child, _depth=_depth + 1)
+                    )
         elif isinstance(children, dict):
             types.update(AccessibilityAnalyzer._collect_struct_types(children, _depth=_depth + 1))
 
