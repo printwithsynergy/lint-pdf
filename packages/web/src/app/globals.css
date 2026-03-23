@@ -50,6 +50,65 @@ pre code {
   line-height: 1.7;
 }
 
+/* ── Mobile-friendly prose tables ──
+ * Markdown-rendered tables inside .prose don't have scroll wrappers,
+ * so we make the table container scrollable and tweak cell sizing for
+ * narrow viewports. */
+.prose table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.prose thead {
+  display: table;
+  width: 100%;
+  table-layout: auto;
+}
+
+.prose tbody {
+  display: table;
+  width: 100%;
+  table-layout: auto;
+}
+
+.prose tr {
+  display: table-row;
+}
+
+.prose th,
+.prose td {
+  display: table-cell;
+  white-space: nowrap;
+}
+
+/* Allow wrapping on cells with long content */
+.prose td:last-child,
+.prose th:last-child {
+  white-space: normal;
+  min-width: 120px;
+}
+
+@media (max-width: 640px) {
+  .prose th,
+  .prose td {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.5rem;
+  }
+
+  .prose h1 {
+    font-size: 1.5rem;
+  }
+
+  .prose h2 {
+    font-size: 1.25rem;
+  }
+
+  .prose h3 {
+    font-size: 1.125rem;
+  }
+}
+
 /* ── Mobile CSS-only particle dots ── */
 @keyframes particle-drift {
   0% {
