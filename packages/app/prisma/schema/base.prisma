@@ -17,7 +17,7 @@ model Tenant {
   name           String
   slug           String       @unique
   domain         String?      @unique
-  engineTenantId String?      @unique
+  engineTenantId String?
   settings       Json         @default("{}")
   status         TenantStatus @default(ACTIVE)
   createdAt      DateTime     @default(now())
