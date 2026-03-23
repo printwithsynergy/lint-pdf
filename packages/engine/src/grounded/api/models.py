@@ -207,6 +207,32 @@ class CustomProfile(Base):
     )
 
 
+class CustomEndpoint(Base):
+    """Custom API endpoint bound to a specific profile for simplified job submission."""
+
+    __tablename__ = "custom_endpoints"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    slug: Mapped[str] = mapped_column(String(255), nullable=False)
+    profile_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(1024), nullable=False, default="")
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Unique constraint: one slug per tenant
+    __table_args__ = (
+        Index("ix_custom_endpoints_tenant_slug", "tenant_id", "slug", unique=True),
+    )
+
+    # Relationships
+    tenant: Mapped[Tenant] = relationship()
+
+
 class ApiKey(Base):
     """API key for tenant programmatic access. Supports multiple keys per tenant."""
 

@@ -36,6 +36,38 @@ export async function GET(req: Request) {
     orderBy: { joinedAt: "asc" },
   });
 
+  // Check impersonation state for super admins
+  let impersonating: { tenantId: string; tenantName: string; tenantSlug: string } | null = null;
+  if (user.isSuperAdmin) {
+    const { getCookieName } = await import("@thinkneverland/pixie-dust-config");
+    const cookieName = getCookieName();
+    const cookies = cookieHeader?.split(";").map((c: string) => c.trim()) ?? [];
+    const sessionToken = cookies
+      .find((c: string) => c.startsWith(`${cookieName}=`))
+      ?.split("=")[1];
+
+    if (sessionToken) {
+      const session = await prisma.session.findUnique({
+        where: { token: sessionToken },
+        select: { impersonatingTenantId: true },
+      });
+
+      if (session?.impersonatingTenantId) {
+        const targetTenant = await prisma.tenant.findUnique({
+          where: { id: session.impersonatingTenantId },
+          select: { id: true, name: true, slug: true },
+        });
+        if (targetTenant) {
+          impersonating = {
+            tenantId: targetTenant.id,
+            tenantName: targetTenant.name,
+            tenantSlug: targetTenant.slug,
+          };
+        }
+      }
+    }
+  }
+
   return NextResponse.json({
     authenticated: true,
     user: {
@@ -48,5 +80,6 @@ export async function GET(req: Request) {
         role: t.role,
       })),
     },
+    impersonating,
   });
 }

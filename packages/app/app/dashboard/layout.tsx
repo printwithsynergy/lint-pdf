@@ -9,6 +9,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ensureRegistry } from "@/lib/plugins";
+import { SuperAdminToolbar } from "@/components/super-admin-toolbar";
 
 export default async function DashboardLayout({
   children,
@@ -34,19 +35,34 @@ export default async function DashboardLayout({
   });
   if (!user) redirect("/auth/login");
 
+  // Check if super admin is impersonating a tenant
+  let impersonatingTenantId: string | null = null;
+  if (user.isSuperAdmin) {
+    const sessionRecord = await prisma.session.findUnique({
+      where: { token },
+      select: { impersonatingTenantId: true },
+    });
+    impersonatingTenantId = sessionRecord?.impersonatingTenantId ?? null;
+  }
+
   const registry = await ensureRegistry();
   const navItems = filterNavByUser(registry.getNavItems(), user);
+
+  // When impersonating, load the target tenant's branding instead
   const branding = await getBranding(prisma);
 
   return (
-    <DashboardShell
-      navItems={navItems}
-      user={user}
-      brandName={branding.brandName ?? "LintPDF"}
-      brandLogoUrl={branding.brandLogoUrl}
-      customCss={branding.customCss}
-    >
-      {children}
-    </DashboardShell>
+    <div className="flex min-h-screen flex-col">
+      {user.isSuperAdmin && <SuperAdminToolbar />}
+      <DashboardShell
+        navItems={navItems}
+        user={user}
+        brandName={branding.brandName ?? "LintPDF"}
+        brandLogoUrl={branding.brandLogoUrl}
+        customCss={branding.customCss}
+      >
+        {children}
+      </DashboardShell>
+    </div>
   );
 }
