@@ -10,10 +10,7 @@ interface WebhookEndpoint {
   created_at: string;
 }
 
-const AVAILABLE_EVENTS = [
-  "job.completed",
-  "job.failed",
-];
+const AVAILABLE_EVENTS = ["job.completed", "job.failed"];
 
 export default function WebhooksPage() {
   const [webhooks, setWebhooks] = useState<WebhookEndpoint[]>([]);
@@ -132,10 +129,9 @@ export default function WebhooksPage() {
     setTestingId(id);
     setTestResult(null);
     try {
-      const resp = await fetch(
-        `/api/grounded/webhook-endpoints/${id}/test`,
-        { method: "POST" },
-      );
+      const resp = await fetch(`/api/grounded/webhook-endpoints/${id}/test`, {
+        method: "POST",
+      });
       const data = await resp.json();
       setTestResult({ id, ...data });
     } catch {
@@ -177,7 +173,8 @@ export default function WebhooksPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Webhooks</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Receive real-time notifications when preflight jobs complete or fail.
+            Receive real-time notifications when preflight jobs complete or
+            fail.
           </p>
         </div>
         <button
@@ -316,8 +313,7 @@ export default function WebhooksPage() {
                         ))}
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Created{" "}
-                        {new Date(wh.created_at).toLocaleDateString()}
+                        Created {new Date(wh.created_at).toLocaleDateString()}
                       </p>
                       {testResult?.id === wh.id && (
                         <div

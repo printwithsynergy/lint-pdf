@@ -98,9 +98,7 @@ async def list_endpoints(
     tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
 ) -> EndpointListResponse:
     """List all custom endpoints for the current tenant."""
-    endpoints = (
-        db.query(CustomEndpoint).filter(CustomEndpoint.tenant_id == tenant.id).all()
-    )
+    endpoints = db.query(CustomEndpoint).filter(CustomEndpoint.tenant_id == tenant.id).all()
     return EndpointListResponse(
         endpoints=[
             EndpointResponse(

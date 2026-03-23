@@ -28,7 +28,7 @@ export default function ApiKeysPage() {
       const resp = await fetch("/api/grounded/keys");
       if (!resp.ok) throw new Error("Failed to load API keys");
       const data = await resp.json();
-      setKeys(Array.isArray(data) ? data : data.keys ?? []);
+      setKeys(Array.isArray(data) ? data : (data.keys ?? []));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load API keys");
     } finally {

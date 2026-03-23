@@ -37,7 +37,11 @@ export async function GET(req: Request) {
   });
 
   // Check impersonation state for super admins
-  let impersonating: { tenantId: string; tenantName: string; tenantSlug: string } | null = null;
+  let impersonating: {
+    tenantId: string;
+    tenantName: string;
+    tenantSlug: string;
+  } | null = null;
   if (user.isSuperAdmin) {
     const { getCookieName } = await import("@thinkneverland/pixie-dust-config");
     const cookieName = getCookieName();

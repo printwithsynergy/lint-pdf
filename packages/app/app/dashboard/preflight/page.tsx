@@ -82,9 +82,7 @@ export default function PreflightPage() {
   return (
     <main className="p-8 max-w-5xl">
       <h1 className="font-display text-2xl font-bold">Preflight Jobs</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {total} total jobs
-      </p>
+      <p className="mt-1 text-sm text-muted-foreground">{total} total jobs</p>
 
       {error && (
         <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">

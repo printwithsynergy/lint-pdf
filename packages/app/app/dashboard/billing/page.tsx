@@ -74,7 +74,7 @@ export default function BillingPage() {
       }
       if (invResp.ok) {
         const data = await invResp.json();
-        setInvoices(Array.isArray(data) ? data : data.invoices ?? []);
+        setInvoices(Array.isArray(data) ? data : (data.invoices ?? []));
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load billing");
@@ -161,13 +161,8 @@ export default function BillingPage() {
             </div>
             {subscription?.current_period_end && (
               <p className="mt-1 text-xs text-muted-foreground">
-                {subscription.cancel_at_period_end
-                  ? "Cancels"
-                  : "Renews"}{" "}
-                on{" "}
-                {new Date(
-                  subscription.current_period_end,
-                ).toLocaleDateString()}
+                {subscription.cancel_at_period_end ? "Cancels" : "Renews"} on{" "}
+                {new Date(subscription.current_period_end).toLocaleDateString()}
               </p>
             )}
           </div>

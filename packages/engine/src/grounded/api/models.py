@@ -225,9 +225,7 @@ class CustomEndpoint(Base):
     )
 
     # Unique constraint: one slug per tenant
-    __table_args__ = (
-        Index("ix_custom_endpoints_tenant_slug", "tenant_id", "slug", unique=True),
-    )
+    __table_args__ = (Index("ix_custom_endpoints_tenant_slug", "tenant_id", "slug", unique=True),)
 
     # Relationships
     tenant: Mapped[Tenant] = relationship()

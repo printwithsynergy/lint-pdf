@@ -144,9 +144,7 @@ export default function ColorConfigPage() {
         <h2 className="text-lg font-semibold">Default Thresholds</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium">
-              TAC Limit (%)
-            </label>
+            <label className="block text-sm font-medium">TAC Limit (%)</label>
             <input
               type="number"
               value={tacThreshold}

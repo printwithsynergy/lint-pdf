@@ -129,9 +129,7 @@ export default function AdminTenantsPage() {
                     <td className="py-2">
                       <select
                         value={t.plan}
-                        onChange={(e) =>
-                          handlePlanChange(t.id, e.target.value)
-                        }
+                        onChange={(e) => handlePlanChange(t.id, e.target.value)}
                         className="rounded border px-2 py-1 text-xs"
                       >
                         {PLANS.map((p) => (

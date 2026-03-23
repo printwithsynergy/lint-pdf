@@ -78,9 +78,7 @@ export default function AiConfigPage() {
 
   function toggleCategory(catId: string) {
     setEnabledCategories((prev) =>
-      prev.includes(catId)
-        ? prev.filter((c) => c !== catId)
-        : [...prev, catId],
+      prev.includes(catId) ? prev.filter((c) => c !== catId) : [...prev, catId],
     );
   }
 
@@ -141,10 +139,7 @@ export default function AiConfigPage() {
         </p>
         <div className="mt-3 space-y-2">
           {AI_CATEGORIES.map((cat) => (
-            <label
-              key={cat.id}
-              className="flex items-center gap-2 text-sm"
-            >
+            <label key={cat.id} className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={enabledCategories.includes(cat.id)}

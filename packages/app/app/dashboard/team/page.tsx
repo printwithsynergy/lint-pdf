@@ -189,9 +189,7 @@ export default function TeamPage() {
 
       {/* Members */}
       <div className="mt-6 space-y-2">
-        <h2 className="text-lg font-semibold">
-          Members ({members.length})
-        </h2>
+        <h2 className="text-lg font-semibold">Members ({members.length})</h2>
         {members.map((m) => (
           <div
             key={m.userId}
@@ -202,9 +200,7 @@ export default function TeamPage() {
                 {(m.user.name ?? m.user.email).charAt(0).toUpperCase()}
               </div>
               <div>
-                <div className="font-medium">
-                  {m.user.name ?? m.user.email}
-                </div>
+                <div className="font-medium">{m.user.name ?? m.user.email}</div>
                 <div className="text-xs text-muted-foreground">
                   {m.user.email}
                 </div>
