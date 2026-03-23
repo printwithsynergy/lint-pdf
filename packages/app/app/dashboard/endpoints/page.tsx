@@ -37,7 +37,7 @@ export default function EndpointsPage() {
   const [editProfileId, setEditProfileId] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_GROUNDED_API_URL ?? "";
+  const apiBaseUrl = process.env.NEXT_PUBLIC_LINTPDF_API_URL ?? "";
 
   const fetchData = useCallback(async () => {
     try {
