@@ -58,7 +58,9 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: `User ${email} not found. Create them first via /api/auth/mcp-backdoor.` },
+        {
+          error: `User ${email} not found. Create them first via /api/auth/mcp-backdoor.`,
+        },
         { status: 404 },
       );
     }

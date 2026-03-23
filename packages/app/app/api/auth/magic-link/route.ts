@@ -70,7 +70,9 @@ export async function POST(req: Request) {
       pollingToken: result.pollingToken,
       message: "Check your email for a sign-in link and code.",
     });
-  } catch {
+  } catch (err) {
+    console.error("[magic-link] Error:", err instanceof Error ? err.message : err);
+    console.error("[magic-link] Stack:", err instanceof Error ? err.stack : "no stack");
     return NextResponse.json(
       { error: "Failed to send magic link. Please try again." },
       { status: 500 },
