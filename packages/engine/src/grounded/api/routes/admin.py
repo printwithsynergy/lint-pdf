@@ -246,6 +246,7 @@ async def create_tenant(
         is_active=True,
     )
     db.add(tenant)
+    db.flush()
 
     api_key_record = ApiKey(
         tenant_id=tenant_id,
