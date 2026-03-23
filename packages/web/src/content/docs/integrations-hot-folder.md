@@ -11,14 +11,14 @@ LintPDF hot folders let you preflight files by dropping them into a watched dire
 
 Two options:
 
-| | **Desktop App** | **CLI** |
-|---|---|---|
-| **Best for** | Operators, prepress desks, anyone who prefers a GUI | Servers, headless environments, CI/CD |
-| **Platform** | macOS, Windows, Linux | Any platform with Python 3.10+ |
-| **Multi-folder** | Configure unlimited folders in one window | Run one instance per folder |
-| **System tray** | Runs in background with live status | Runs as a foreground process or systemd service |
-| **Results** | Live results feed with filtering | Sidecar JSON reports + log output |
-| **Install** | Download native installer | `pip install lintpdf-hotfolder` |
+|                  | **Desktop App**                                     | **CLI**                                         |
+| ---------------- | --------------------------------------------------- | ----------------------------------------------- |
+| **Best for**     | Operators, prepress desks, anyone who prefers a GUI | Servers, headless environments, CI/CD           |
+| **Platform**     | macOS, Windows, Linux                               | Any platform with Python 3.10+                  |
+| **Multi-folder** | Configure unlimited folders in one window           | Run one instance per folder                     |
+| **System tray**  | Runs in background with live status                 | Runs as a foreground process or systemd service |
+| **Results**      | Live results feed with filtering                    | Sidecar JSON reports + log output               |
+| **Install**      | Download native installer                           | `pip install lintpdf-hotfolder`                 |
 
 ---
 
@@ -28,11 +28,11 @@ The LintPDF Hot Folders desktop app is a native application built with Tauri tha
 
 ### Download
 
-| Platform | Download |
-|----------|----------|
-| macOS (Universal) | [LintPDF-HotFolders.dmg](#) |
-| Windows (64-bit) | [LintPDF-HotFolders.msi](#) |
-| Linux (AppImage) | [LintPDF-HotFolders.AppImage](#) |
+| Platform          | Download                         |
+| ----------------- | -------------------------------- |
+| macOS (Universal) | [LintPDF-HotFolders.dmg](#)      |
+| Windows (64-bit)  | [LintPDF-HotFolders.msi](#)      |
+| Linux (AppImage)  | [LintPDF-HotFolders.AppImage](#) |
 
 ### Features
 
@@ -59,18 +59,18 @@ The LintPDF Hot Folders desktop app is a native application built with Tauri tha
 
 Each hot folder has these settings:
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| Name | — | Display name for the folder |
-| Watch Directory | — | Path to monitor for new files |
-| Profile | `grounded-default` | Preflight profile ID |
-| Pass Directory | — | Move passed files here (leave empty to keep in place) |
-| Fail Directory | — | Move failed files here |
-| Error Directory | — | Move files that couldn't be processed here |
-| Write Sidecar | On | Write a `.lintpdf.json` report alongside each file |
-| Stabilization | 2s | Wait for file size to stabilize before submitting |
-| Poll Interval | 5s | How often to check job status |
-| File Extensions | All supported | Which file types to watch |
+| Setting         | Default            | Description                                           |
+| --------------- | ------------------ | ----------------------------------------------------- |
+| Name            | —                  | Display name for the folder                           |
+| Watch Directory | —                  | Path to monitor for new files                         |
+| Profile         | `grounded-default` | Preflight profile ID                                  |
+| Pass Directory  | —                  | Move passed files here (leave empty to keep in place) |
+| Fail Directory  | —                  | Move failed files here                                |
+| Error Directory | —                  | Move files that couldn't be processed here            |
+| Write Sidecar   | On                 | Write a `.lintpdf.json` report alongside each file    |
+| Stabilization   | 2s                 | Wait for file size to stabilize before submitting     |
+| Poll Interval   | 5s                 | How often to check job status                         |
+| File Extensions | All supported      | Which file types to watch                             |
 
 ### Running at Startup
 
