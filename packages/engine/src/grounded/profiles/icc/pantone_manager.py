@@ -1,7 +1,8 @@
 """Pantone reference database manager — lookup and Delta-E validation.
 
 Provides Pantone Lab/CMYK reference data for spot color fallback validation.
-Ships community-measured approximations by default; customers can upload
+Ships enriched reference data (PANTONE_PUBLISHED Lab values + Color Bridge CMYK)
+covering 23,000+ colors across 16 Pantone libraries. Customers can upload
 official Pantone Color Bridge data to override.
 """
 
@@ -32,6 +33,9 @@ class PantoneReference:
     name: str
     lab: tuple[float, float, float]
     cmyk_bridge: tuple[float, float, float, float] | None
+    library: str | None = None
+    lab_source: str | None = None
+    cmyk_source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -129,7 +133,22 @@ class PantoneManager:
                 float(cmyk_raw[3]),
             )
 
-        return PantoneReference(name=name, lab=lab, cmyk_bridge=cmyk)
+        return PantoneReference(
+            name=name,
+            lab=lab,
+            cmyk_bridge=cmyk,
+            library=data.get("library"),
+            lab_source=data.get("lab_source"),
+            cmyk_source=data.get("cmyk_source"),
+        )
+
+    def has_color(self, name: str) -> bool:
+        """Check if a color exists in the reference database."""
+        key = _normalize_pantone_name(name)
+        if key in self._overrides or key in self._reference:
+            return True
+        alt_key = self._try_alternate_key(key)
+        return alt_key is not None and (alt_key in self._overrides or alt_key in self._reference)
 
     @staticmethod
     def _try_alternate_key(key: str) -> str | None:
