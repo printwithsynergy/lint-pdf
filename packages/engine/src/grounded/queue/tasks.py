@@ -137,6 +137,32 @@ def run_preflight(
                 except Exception:
                     logger.debug("Could not load AI config for tenant %s", job.tenant_id)
 
+            # Load tenant Pantone overrides (Redis cache → DB fallback)
+            custom_pantone: dict | None = None
+            try:
+                from grounded.api.middleware import get_redis_client
+                from grounded.api.models import TenantColorConfig
+                from grounded.profiles.icc.pantone_cache import get_overrides, set_overrides
+
+                redis = get_redis_client()
+                tenant_id_str = str(job.tenant_id)
+                custom_pantone = get_overrides(redis, tenant_id_str)
+                if custom_pantone is None:
+                    color_config = db.query(TenantColorConfig).filter(
+                        TenantColorConfig.tenant_id == job.tenant_id
+                    ).first()
+                    custom_pantone = (
+                        color_config.custom_pantone_overrides if color_config else None
+                    )
+                    if custom_pantone:
+                        set_overrides(redis, tenant_id_str, custom_pantone)
+            except Exception:
+                logger.debug(
+                    "Could not load Pantone overrides for tenant %s",
+                    job.tenant_id,
+                    exc_info=True,
+                )
+
             # Run preflight orchestrator
             from grounded.profiles.orchestrator import PreflightOrchestrator
 
@@ -145,6 +171,7 @@ def run_preflight(
                 profile_id=profile_id,
                 ai_config=ai_config,
                 pdf_bytes=pdf_bytes,
+                custom_pantone_overrides=custom_pantone,
             )
             result = orchestrator.run(pdf_bytes)
 
