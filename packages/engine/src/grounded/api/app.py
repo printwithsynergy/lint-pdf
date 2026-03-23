@@ -31,7 +31,12 @@ logger = logging.getLogger(__name__)
 
 
 def _run_migrations(database_url: str) -> None:
-    """Run Alembic migrations to head on startup."""
+    """Run Alembic migrations to head on startup, falling back to create_all."""
+    from grounded.api.database import get_engine
+    from grounded.api.models import Base
+
+    engine = get_engine()
+
     try:
         from alembic import command
         from alembic.config import Config
@@ -42,11 +47,12 @@ def _run_migrations(database_url: str) -> None:
         command.upgrade(alembic_cfg, "head")
         logger.info("Database migrations applied successfully.")
     except Exception:
-        logger.exception("Failed to run database migrations — falling back to create_all.")
-        from grounded.api.database import get_engine
-        from grounded.api.models import Base
-
-        Base.metadata.create_all(get_engine())
+        logger.exception("Failed to run Alembic migrations — falling back to create_all.")
+        try:
+            Base.metadata.create_all(engine)
+            logger.info("Database tables created via create_all.")
+        except Exception:
+            logger.exception("create_all also failed.")
 
 
 @asynccontextmanager
