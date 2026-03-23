@@ -1,13 +1,6 @@
 /**
- * Seed script — ensures a super admin user exists for quincy@thinkneverland.com.
- *
- * Usage:
- *   DATABASE_URL="..." npx tsx prisma/seed.ts
- *
- * Or add to package.json:
- *   "prisma": { "seed": "tsx prisma/seed.ts" }
- * Then run:
- *   npx prisma db seed
+ * Production seed — ensures super admin and default tenants exist.
+ * Runs on every deploy (uses upsert, safe to re-run).
  */
 
 import { PrismaClient } from "@prisma/client";
@@ -79,7 +72,9 @@ async function main() {
       isSuperAdmin: false,
     },
   });
-  console.log(`Test customer: ${testCustomer.email} (id: ${testCustomer.id})`);
+  console.log(
+    `Test customer: ${testCustomer.email} (id: ${testCustomer.id})`,
+  );
 
   const customerMembership = await prisma.tenantUser.findFirst({
     where: { userId: testCustomer.id },
