@@ -4,7 +4,7 @@ import { env } from "@/lib/env";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const adminKey = env.LINTPDF_ADMIN_API_KEY;
+  const adminKey = env.GROUNDED_ADMIN_API_KEY;
   if (!adminKey) {
     return NextResponse.json(
       { error: "Admin API key not configured" },
@@ -13,7 +13,7 @@ export async function GET() {
   }
 
   try {
-    const resp = await fetch(`${env.LINTPDF_API_URL}/api/v1/status`, {
+    const resp = await fetch(`${env.GROUNDED_API_URL}/api/v1/status`, {
       headers: { "X-Admin-Key": adminKey },
     });
 

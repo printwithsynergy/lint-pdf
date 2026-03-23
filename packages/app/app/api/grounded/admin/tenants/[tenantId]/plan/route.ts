@@ -7,7 +7,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ tenantId: string }> },
 ) {
-  const adminKey = env.LINTPDF_ADMIN_API_KEY;
+  const adminKey = env.GROUNDED_ADMIN_API_KEY;
   if (!adminKey) {
     return NextResponse.json(
       { error: "Admin API key not configured" },
@@ -20,7 +20,7 @@ export async function PATCH(
 
   try {
     const resp = await fetch(
-      `${env.LINTPDF_API_URL}/api/v1/admin/tenants/${tenantId}/plan`,
+      `${env.GROUNDED_API_URL}/api/v1/admin/tenants/${tenantId}/plan`,
       {
         method: "PATCH",
         headers: {
