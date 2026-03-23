@@ -51,8 +51,8 @@ def _mock_poll_response(passed: bool = True) -> httpx.Response:
             "profile_id": "gwg-sheetfed",
             "summary": {
                 "passed": passed,
-                "aground_count": 0 if passed else 2,
-                "squall_count": 0 if passed else 1,
+                "error_count": 0 if passed else 2,
+                "warning_count": 0 if passed else 1,
                 "advisory_count": 1,
                 "total_findings": 1 if passed else 4,
             },
@@ -61,7 +61,7 @@ def _mock_poll_response(passed: bool = True) -> httpx.Response:
             else [
                 {
                     "inspection_id": "GRD_FONT_001",
-                    "severity": "aground",
+                    "severity": "error",
                     "message": "Font not embedded",
                     "page_num": 1,
                 }
@@ -120,7 +120,7 @@ def test_fail_routes_to_fail_dir(mock_httpx: MagicMock, tmp_path: Path):
     assert sidecar.exists()
     data = json.loads(sidecar.read_text())
     assert data["passed"] is False
-    assert data["summary"]["aground_count"] == 2
+    assert data["summary"]["error_count"] == 2
     assert len(data["findings"]) == 1
 
 

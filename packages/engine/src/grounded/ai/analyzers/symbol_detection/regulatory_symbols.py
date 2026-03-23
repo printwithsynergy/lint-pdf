@@ -2,7 +2,7 @@
 
 Uses a trained symbol detection model on the GPU inference service to identify
 regulatory, recycling, and certification symbols (e.g. CE, FDA, recycling
-arrows, kosher, halal).  Undersized symbols generate a SQUALL finding;
+arrows, kosher, halal).  Undersized symbols generate a WARNING finding;
 successfully detected symbols are reported as ADVISORY.
 """
 
@@ -183,7 +183,7 @@ class RegulatorySymbolDetectionAnalyzer(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="AI_RSYM_002",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Regulatory symbol '{label}' on page {page_num} "
                                 f"is undersized ({actual_size_mm:.1f}mm, "
@@ -232,7 +232,7 @@ class RegulatorySymbolDetectionAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_RSYM_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Expected regulatory symbol '{expected}' was not "
                             f"detected in the document"

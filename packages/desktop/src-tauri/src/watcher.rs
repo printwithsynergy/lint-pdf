@@ -10,6 +10,7 @@ use crate::config::FolderConfig;
 pub struct StabilizedFile {
     pub path: PathBuf,
     pub folder_id: String,
+    pub jdf_path: Option<PathBuf>,
 }
 
 struct PendingFile {
@@ -44,9 +45,39 @@ impl WatcherManager {
                     let now = Instant::now();
                     map.retain(|path, (pf, folder_id)| {
                         if now.duration_since(pf.last_changed) >= Duration::from_secs(2) {
+                            let ext = path
+                                .extension()
+                                .and_then(|e| e.to_str())
+                                .map(|e| e.to_lowercase())
+                                .unwrap_or_default();
+
+                            if ext == "jdf" || ext == "xjdf" {
+                                // JDF/XJDF files are not submitted alone;
+                                // they will be picked up as companions to a PDF.
+                                // Check if a companion PDF exists; if not, skip.
+                                let stem = path.file_stem();
+                                let parent = path.parent();
+                                if let (Some(stem), Some(parent)) = (stem, parent) {
+                                    let companion_pdf = parent.join(format!("{}.pdf", stem.to_string_lossy()));
+                                    if !companion_pdf.exists() {
+                                        log::info!("Skipping JDF without companion PDF: {}", path.display());
+                                    }
+                                    // Either way, remove from pending — PDF will pick up JDF when it stabilizes
+                                }
+                                return false;
+                            }
+
+                            // For PDF files, look for a companion JDF/XJDF sidecar
+                            let jdf_path = if ext == "pdf" {
+                                find_companion_jdf(path)
+                            } else {
+                                None
+                            };
+
                             ready.push(StabilizedFile {
                                 path: path.clone(),
                                 folder_id: folder_id.clone(),
+                                jdf_path,
                             });
                             false
                         } else {
@@ -121,10 +152,28 @@ impl WatcherManager {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if is_supported_file(&path, &folder.file_extensions) {
+                    let ext = path
+                        .extension()
+                        .and_then(|e| e.to_str())
+                        .map(|e| e.to_lowercase())
+                        .unwrap_or_default();
+
+                    // Skip standalone JDF/XJDF files — they'll be picked up as companions
+                    if ext == "jdf" || ext == "xjdf" {
+                        continue;
+                    }
+
+                    let jdf_path = if ext == "pdf" {
+                        find_companion_jdf(&path)
+                    } else {
+                        None
+                    };
+
                     self.ready_tx
                         .send(StabilizedFile {
                             path,
                             folder_id: folder.id.clone(),
+                            jdf_path,
                         })
                         .ok();
                 }
@@ -165,6 +214,21 @@ impl WatcherManager {
             .filter(|(_, fid)| fid == folder_id)
             .count()
     }
+}
+
+/// Look for a companion `.jdf` or `.xjdf` file with the same stem in the same directory.
+fn find_companion_jdf(path: &Path) -> Option<PathBuf> {
+    let stem = path.file_stem()?;
+    let parent = path.parent()?;
+    let stem_str = stem.to_string_lossy();
+
+    for ext in &["jdf", "xjdf"] {
+        let candidate = parent.join(format!("{}.{}", stem_str, ext));
+        if candidate.exists() {
+            return Some(candidate);
+        }
+    }
+    None
 }
 
 fn is_supported_file(path: &Path, extensions: &[String]) -> bool {

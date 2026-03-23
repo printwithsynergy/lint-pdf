@@ -272,7 +272,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_001",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"EPM K-channel dependency: {k_usage_count} object(s) use K "
                         f"across {len(k_usage_pages)} page(s)"
@@ -289,7 +289,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_002",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"EPM pure black text: {pure_black_text_count} text object(s) use "
                         f"pure K-only or DeviceGray black and will not print in EPM mode "
@@ -308,7 +308,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_003",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"EPM weak CMY black: {weak_black_count} object(s) with K=0 and "
                         f"C+M+Y < 200% may produce weak blacks in CMY-only mode "
@@ -329,7 +329,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_004",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"EPM CMY TAC {max_cmy_tac:.0f}% exceeds {self.cmy_tac_threshold:.0f}% "
                         f"threshold on page {max_cmy_tac_page} (K excluded)"
@@ -373,7 +373,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_008",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"EPM gray balance risk: {gray_balance_count} object(s) with "
                         f"neutral CMY mix (C{chr(0x2248)}M{chr(0x2248)}Y within "
@@ -396,7 +396,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_009",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"EPM toner limit exceeded: total toner area coverage "
                         f"{max_total_tac:.0f}% exceeds EPM device limit "
@@ -416,7 +416,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_010",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"EPM substrate ink limit: {ink_limit_count} object(s) with "
                         f"individual ink channel >95% across "
@@ -474,7 +474,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_018",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"EPM thin line weight: {thin_line_count} stroked path(s) "
                         f"have line width below {self.epm_min_line_weight}pt "
@@ -775,7 +775,7 @@ class EpmAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_EPM_006",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"EPM image K-dependency: {cmyk_image_count} CMYK image(s) "
                         f"across {len(cmyk_image_pages)} page(s) have K channel "

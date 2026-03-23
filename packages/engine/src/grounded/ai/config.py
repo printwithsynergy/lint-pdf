@@ -43,8 +43,8 @@ def update_ai_config(
         "default_package_capacity_ml",
         "default_package_surface_area_cm2",
         "min_image_quality_score",
-        "delta_e_squall_threshold",
-        "delta_e_aground_threshold",
+        "delta_e_warning_threshold",
+        "delta_e_error_threshold",
         "monthly_spending_limit",
     }
 

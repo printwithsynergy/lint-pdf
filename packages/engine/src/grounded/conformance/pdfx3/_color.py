@@ -66,7 +66,7 @@ def validate_color(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-001",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         "DeviceRGB used without ICC profile output intent or DefaultRGB "
                         "(prohibited in PDF/X-3, use ICCBased RGB instead)"
@@ -80,7 +80,7 @@ def validate_color(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-002",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="CalRGB color space used (prohibited in PDF/X-3, use ICCBased instead)",
                 iso_clause="ISO 15930-6:2003 6.2.4",
             )
@@ -91,7 +91,7 @@ def validate_color(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-003",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="CalGray color space used (prohibited in PDF/X-3, use ICCBased instead)",
                 iso_clause="ISO 15930-6:2003 6.2.4",
             )
@@ -110,7 +110,7 @@ def validate_color(  # skipcq: PY-R1000
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-004",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"Indexed color space '{cs_name}' uses DeviceRGB base "
                                         f"(prohibited in PDF/X-3)"
@@ -136,7 +136,7 @@ def validate_color(  # skipcq: PY-R1000
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-005",
-                                    severity=Severity.SQUALL,
+                                    severity=Severity.WARNING,
                                     message=(
                                         f"Separation '{cs_name}' has alternate space "
                                         f"'{alt_space}' (expected CMYK, Gray, Lab, or ICCBased)"
@@ -162,7 +162,7 @@ def validate_color(  # skipcq: PY-R1000
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-006",
-                                    severity=Severity.SQUALL,
+                                    severity=Severity.WARNING,
                                     message=(
                                         f"DeviceN '{cs_name}' has alternate space "
                                         f"'{alt_space}' (expected CMYK, Gray, Lab, or ICCBased)"
@@ -185,7 +185,7 @@ def validate_color(  # skipcq: PY-R1000
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-007",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"Pattern '{cs_name}' uses DeviceRGB base "
                                         f"(prohibited in PDF/X-3)"
@@ -203,7 +203,7 @@ def validate_color(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-008",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"Invalid rendering intent '{ri}' on page {event.page_num}",
                         page_num=event.page_num,
                         iso_clause="ISO 15930-6:2003 6.2.4",

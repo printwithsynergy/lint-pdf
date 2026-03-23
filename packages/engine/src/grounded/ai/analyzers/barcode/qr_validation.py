@@ -167,7 +167,7 @@ class QRValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_QR_001",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"QR code on page {page_num} has insufficient "
                                     f"left quiet zone: {quiet_modules:.1f} modules "
@@ -190,7 +190,7 @@ class QRValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_QR_001",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"QR code on page {page_num} has insufficient "
                                     f"top quiet zone: {quiet_modules:.1f} modules "

@@ -60,6 +60,12 @@ _SVG = AllowedFileType("image/svg+xml", frozenset({".svg"}), _DETECTION_CUSTOM)
 _QXP = AllowedFileType(
     "application/x-quark-xpress", frozenset({".qxp", ".qxd"}), _DETECTION_EXTENSION_ONLY
 )
+_JDF = AllowedFileType(
+    "application/vnd.cip4-jdf+xml", frozenset({".jdf"}), _DETECTION_EXTENSION_ONLY
+)
+_XJDF = AllowedFileType(
+    "application/vnd.cip4-xjdf+xml", frozenset({".xjdf"}), _DETECTION_EXTENSION_ONLY
+)
 
 # Pre-built registries for endpoints
 PDF_TYPES: frozenset[AllowedFileType] = frozenset({_PDF})
@@ -77,6 +83,8 @@ PRINT_READY_TYPES: frozenset[AllowedFileType] = frozenset(
         _INDD,
         _SVG,
         _QXP,
+        _JDF,
+        _XJDF,
     }
 )
 

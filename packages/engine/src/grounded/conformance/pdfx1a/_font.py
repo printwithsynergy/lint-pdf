@@ -49,7 +49,7 @@ def _check_font(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-012",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message=f"Type 3 font '{base_font}' used (prohibited in PDF/X-1a)",
                 page_num=page_num,
                 iso_clause="ISO 15930-4:2003 6.3",
@@ -73,7 +73,7 @@ def _check_font(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-011",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Font '{base_font}' is not embedded (required for PDF/X-1a)",
                     page_num=page_num,
                     iso_clause="ISO 15930-4:2003 6.3",
@@ -100,7 +100,7 @@ def _check_font(
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-011",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"CID font '{base_font}' is not embedded "
                                 f"(required for PDF/X-1a)"
@@ -120,7 +120,7 @@ def _check_font(
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-014",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=f"CID font '{base_font}' missing /CIDSystemInfo",
                             page_num=page_num,
                             iso_clause="ISO 15930-4:2003 6.3",
@@ -133,7 +133,7 @@ def _check_font(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-013",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"Font '{base_font}' missing /FontDescriptor",
                         page_num=page_num,
                         iso_clause="ISO 15930-4:2003 6.3",
@@ -146,7 +146,7 @@ def _check_font(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-013",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=f"Font '{base_font}' missing /FontDescriptor",
                     page_num=page_num,
                     iso_clause="ISO 15930-4:2003 6.3",
@@ -165,7 +165,7 @@ def _check_font(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-014",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"CID font '{base_font}' missing /CIDSystemInfo",
                         page_num=page_num,
                         iso_clause="ISO 15930-4:2003 6.3",
@@ -185,7 +185,7 @@ def _check_font(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-015",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"Font '{base_font}' missing /Encoding",
                 page_num=page_num,
                 iso_clause="ISO 15930-4:2003 6.3",

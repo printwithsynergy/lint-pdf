@@ -1,11 +1,11 @@
-"""Tests for VoyagePlan schema validation."""
+"""Tests for PreflightProfile schema validation."""
 
 from __future__ import annotations
 
 import pytest
 from pydantic import ValidationError
 
-from grounded.profiles.schema import CheckConfig, ThresholdConfig, VoyagePlan
+from grounded.profiles.schema import CheckConfig, ThresholdConfig, PreflightProfile
 
 
 class TestThresholdConfig:
@@ -45,10 +45,10 @@ class TestCheckConfig:
         assert "GRD_IMG_002" in c.disabled
 
 
-class TestVoyagePlan:
+class TestPreflightProfile:
     @staticmethod
     def test_minimal() -> None:
-        fp = VoyagePlan(name="Test")
+        fp = PreflightProfile(name="Test")
         assert fp.name == "Test"
         assert fp.conformance is None
         assert fp.workflow == "CMYK"
@@ -56,7 +56,7 @@ class TestVoyagePlan:
 
     @staticmethod
     def test_full() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Full",
             description="Full profile",
             conformance="pdfx4",
@@ -68,9 +68,9 @@ class TestVoyagePlan:
 
     @staticmethod
     def test_json_round_trip() -> None:
-        fp = VoyagePlan(name="Test", conformance="pdfx4")
+        fp = PreflightProfile(name="Test", conformance="pdfx4")
         data = fp.model_dump()
-        fp2 = VoyagePlan.model_validate(data)
+        fp2 = PreflightProfile.model_validate(data)
         assert fp2.name == "Test"
         assert fp2.conformance == "pdfx4"
 
@@ -78,14 +78,14 @@ class TestVoyagePlan:
 class TestCheckEnabled:
     @staticmethod
     def test_default_enables_all_grd() -> None:
-        fp = VoyagePlan(name="Test")
+        fp = PreflightProfile(name="Test")
         assert fp.is_check_enabled("GRD_IMG_001")
         assert fp.is_check_enabled("GRD_FONT_003")
         assert fp.is_check_enabled("PDFX4-001")
 
     @staticmethod
     def test_disabled_overrides_enabled() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             checks=CheckConfig(disabled=["GRD_IMG_002"]),
         )
@@ -94,7 +94,7 @@ class TestCheckEnabled:
 
     @staticmethod
     def test_ignore_severity_disables() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             checks=CheckConfig(severity_overrides={"GRD_IMG_005": "ignore"}),
         )
@@ -102,7 +102,7 @@ class TestCheckEnabled:
 
     @staticmethod
     def test_pattern_matching() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             checks=CheckConfig(enabled=["GRD_IMG_*"], disabled=[]),
         )
@@ -111,7 +111,7 @@ class TestCheckEnabled:
 
     @staticmethod
     def test_disable_pattern() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             checks=CheckConfig(disabled=["PDFX4-*"]),
         )
@@ -122,12 +122,12 @@ class TestCheckEnabled:
 class TestSeverityOverride:
     @staticmethod
     def test_no_override_returns_none() -> None:
-        fp = VoyagePlan(name="Test")
+        fp = PreflightProfile(name="Test")
         assert fp.get_severity_override("GRD_IMG_001") is None
 
     @staticmethod
     def test_override_returns_value() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             checks=CheckConfig(severity_overrides={"GRD_IMG_001": "advisory"}),
         )

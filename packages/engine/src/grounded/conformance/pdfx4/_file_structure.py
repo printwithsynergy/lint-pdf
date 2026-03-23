@@ -31,7 +31,7 @@ def validate_file_structure(document: SemanticDocument) -> list[Finding]:  # ski
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-001",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message=f"PDF version {version} is below minimum 1.6 required for PDF/X-4",
                 iso_clause="ISO 15930-7:2010 6.1.2",
             )
@@ -42,7 +42,7 @@ def validate_file_structure(document: SemanticDocument) -> list[Finding]:  # ski
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-002",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="PDF header version not detected",
                 iso_clause="ISO 32000-2:2020 7.5.2",
             )
@@ -85,7 +85,7 @@ def validate_file_structure(document: SemanticDocument) -> list[Finding]:  # ski
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-080",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message=f"Stream decompression failures: {len(decompress_errors)} stream(s)",
                 iso_clause="ISO 32000-2:2020 7.3.8",
                 details={"error_count": len(decompress_errors)},
@@ -98,7 +98,7 @@ def validate_file_structure(document: SemanticDocument) -> list[Finding]:  # ski
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-081",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message=f"Broken object references found: {len(broken_refs)} reference(s)",
                 iso_clause="ISO 32000-2:2020 7.3.10",
                 details={"broken_count": len(broken_refs)},
@@ -111,7 +111,7 @@ def validate_file_structure(document: SemanticDocument) -> list[Finding]:  # ski
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-082",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Cross-reference table errors detected",
                 iso_clause="ISO 32000-2:2020 7.5.4",
             )
@@ -123,7 +123,7 @@ def validate_file_structure(document: SemanticDocument) -> list[Finding]:  # ski
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-083",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="Trailer /ID array missing (required for PDF/X-4)",
                 iso_clause="ISO 32000-2:2020 14.4",
             )

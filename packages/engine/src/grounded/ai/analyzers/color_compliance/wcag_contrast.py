@@ -152,11 +152,11 @@ class WcagContrastAnalyzer(BaseAIAnalyzer):
             text_type = "large text" if is_large else "normal text"
 
             if ratio < aa_threshold:
-                # AA failure — SQUALL severity
+                # AA failure — WARNING severity
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_WCAG_001",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"WCAG AA contrast failure on page {event.page_num}: "
                             f"ratio {ratio_rounded}:1 for {text_type} "

@@ -32,7 +32,7 @@ def validate_transparency(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-031",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message="Transparency (alpha < 1.0) — prohibited in PDF/X-3",
                         page_num=event.page_num,
                         iso_clause="ISO 15930-6:2003 6.2.5",
@@ -43,7 +43,7 @@ def validate_transparency(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-030",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"Blend mode '{event.blend_mode}' — prohibited in PDF/X-3",
                         page_num=event.page_num,
                         iso_clause="ISO 15930-6:2003 6.2.5",
@@ -56,7 +56,7 @@ def validate_transparency(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-028",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Page {page.page_num} has transparency group — prohibited in PDF/X-3",
                     page_num=page.page_num,
                     iso_clause="ISO 15930-6:2003 6.2.5",
@@ -76,7 +76,7 @@ def validate_transparency(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-029",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"Soft mask in '{gs_name}' on page {page.page_num} — prohibited in PDF/X-3",
                         page_num=page.page_num,
                         iso_clause="ISO 15930-6:2003 6.2.5",
@@ -87,7 +87,7 @@ def validate_transparency(
     if findings:
         findings.insert(0, Finding(
             inspection_id=f"{_PREFIX}-027",
-            severity=Severity.AGROUND,
+            severity=Severity.ERROR,
             message="Transparency is used — prohibited in PDF/X-3",
             iso_clause="ISO 15930-6:2003 6.2.5",
         ))

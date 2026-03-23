@@ -1,6 +1,6 @@
-"""Voyage Plan schema - configurable preflight profile.
+"""Preflight Profile schema - configurable preflight profile.
 
-A Voyage Plan defines which checks to run, severity overrides,
+A Preflight Profile defines which checks to run, severity overrides,
 threshold configuration, and optional conformance standard.
 """
 
@@ -128,8 +128,8 @@ class ThresholdConfig(BaseModel):
     rich_black_k: float = Field(
         default=100.0, ge=0, le=100, description="Target Key component for rich black (%)."
     )
-    spot_color_delta_e_squall: float = Field(
-        default=5.0, ge=0, description="Delta-E 2000 threshold for spot color fallback squall."
+    spot_color_delta_e_warning: float = Field(
+        default=5.0, ge=0, description="Delta-E 2000 threshold for spot color fallback warning."
     )
     spot_color_delta_e_advisory: float = Field(
         default=2.0, ge=0, description="Delta-E 2000 threshold for spot color fallback advisory."
@@ -174,9 +174,9 @@ class ThresholdConfig(BaseModel):
 
 
 class AIFeatureConfig(BaseModel):
-    """Configuration for AI-powered inspections within a Voyage Plan."""
+    """Configuration for AI-powered inspections within a Preflight Profile."""
 
-    enabled: bool = Field(default=False, description="Enable AI inspections for this voyage plan.")
+    enabled: bool = Field(default=False, description="Enable AI inspections for this profile.")
     categories: list[str] = Field(
         default_factory=lambda: ["all"],
         description='AI categories to enable (e.g., ["barcode_detection", "regulatory_compliance"] or ["all"]).',
@@ -206,10 +206,10 @@ class ColorConfig(BaseModel):
     epm_mode: bool | None = Field(default=None, description="Enable/disable EPM mode override.")
 
 
-class VoyagePlan(BaseModel):
+class PreflightProfile(BaseModel):
     """A complete preflight configuration profile.
 
-    Voyage Plans configure the preflight pipeline: which checks run,
+    Preflight Profiles configure the preflight pipeline: which checks run,
     what thresholds to use, and whether conformance validation applies.
     """
 
@@ -230,7 +230,7 @@ class VoyagePlan(BaseModel):
     color: ColorConfig = Field(default_factory=ColorConfig)
 
     def is_check_enabled(self, check_id: str) -> bool:
-        """Determine if a check ID is enabled by this voyage plan."""
+        """Determine if a check ID is enabled by this profile."""
         import fnmatch
 
         # Disabled takes precedence
@@ -248,3 +248,7 @@ class VoyagePlan(BaseModel):
     def get_severity_override(self, check_id: str) -> str | None:
         """Get severity override for a check, or None if no override."""
         return self.checks.severity_overrides.get(check_id)
+
+
+# Backwards compatibility alias
+VoyagePlan = PreflightProfile

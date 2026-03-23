@@ -242,7 +242,7 @@ class BarcodeContentValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BCV_002",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"QR code on page {page_num} contains invalid "
                                     f"URL: {reason} — '{data[:100]}'"
@@ -276,7 +276,7 @@ class BarcodeContentValidation(BaseAIAnalyzer):
                             findings.append(
                                 self._make_finding(
                                     inspection_id="GRD_BCV_003",
-                                    severity=Severity.SQUALL,
+                                    severity=Severity.WARNING,
                                     message=(
                                         f"DataMatrix on page {page_num}: GS1 AI "
                                         f"({ai}) has invalid value '{value}'"
@@ -302,7 +302,7 @@ class BarcodeContentValidation(BaseAIAnalyzer):
                                     findings.append(
                                         self._make_finding(
                                             inspection_id="GRD_BCV_001",
-                                            severity=Severity.AGROUND,
+                                            severity=Severity.ERROR,
                                             message=(
                                                 f"DataMatrix on page {page_num}: "
                                                 f"GTIN {value} has invalid check "
@@ -340,7 +340,7 @@ class BarcodeContentValidation(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="GRD_BCV_001",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"EAN-13 on page {page_num}: check digit invalid "
                                 f"(expected {expected}, got {data[12]})"
@@ -365,7 +365,7 @@ class BarcodeContentValidation(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="GRD_BCV_001",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"UPC-A on page {page_num}: check digit invalid "
                                 f"(expected {expected}, got {data[11]})"
@@ -391,7 +391,7 @@ class BarcodeContentValidation(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="GRD_BCV_001",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"UPC-E on page {page_num}: check digit invalid "
                                 f"when expanded to UPC-A {expanded}"

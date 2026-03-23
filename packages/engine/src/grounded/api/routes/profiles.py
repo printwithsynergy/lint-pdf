@@ -18,7 +18,7 @@ from grounded.api.schemas import (
     ProfileSummaryResponse,
 )
 from grounded.profiles.registry import ProfileRegistry
-from grounded.profiles.schema import VoyagePlan
+from grounded.profiles.schema import PreflightProfile
 
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
 
@@ -63,7 +63,7 @@ async def list_profiles(
     custom_rows = _load_custom_profiles_from_db(db, tenant.id)
     for row in custom_rows:
         try:
-            fp = VoyagePlan.model_validate(row.voyage_plan_json)
+            fp = PreflightProfile.model_validate(row.preflight_profile_json)
             profiles.append(
                 ProfileSummaryResponse(
                     profile_id=row.profile_id,
@@ -117,7 +117,7 @@ async def get_profile(
             detail=f"Profile '{profile_id}' not found.",
         )
 
-    fp = VoyagePlan.model_validate(row.voyage_plan_json)
+    fp = PreflightProfile.model_validate(row.preflight_profile_json)
     return ProfileDetailResponse(
         profile_id=profile_id,
         name=fp.name,
@@ -140,13 +140,13 @@ async def create_profile(
     """Create a custom preflight profile."""
     registry = get_registry()
 
-    # Validate the voyage plan JSON
+    # Validate the preflight profile JSON
     try:
-        fp = VoyagePlan.model_validate(request.voyage_plan)
+        fp = PreflightProfile.model_validate(request.preflight_profile)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid voyage plan: {e}",
+            detail=f"Invalid Preflight Profile: {e}",
         ) from e
 
     # Enforce tier-based restrictions on custom profiles
@@ -154,10 +154,10 @@ async def create_profile(
 
     entitlements = resolve_entitlements(tenant)
 
-    if not entitlements.custom_voyage_plans:
+    if not entitlements.custom_profiles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Custom Voyage Plans require Growth plan or above.",
+            detail="Custom Preflight Profiles require Growth plan or above.",
         )
 
     # Prevent overwriting builtins
@@ -187,7 +187,7 @@ async def create_profile(
 
     if existing:
         # Update existing custom profile
-        existing.voyage_plan_json = fp.model_dump(mode="json")
+        existing.preflight_profile_json = fp.model_dump(mode="json")
         db.commit()
     else:
         # Create new custom profile row
@@ -195,7 +195,7 @@ async def create_profile(
             id=uuid_mod.uuid4(),
             tenant_id=tenant.id,
             profile_id=request.profile_id,
-            voyage_plan_json=fp.model_dump(mode="json"),
+            preflight_profile_json=fp.model_dump(mode="json"),
         )
         db.add(row)
         db.commit()

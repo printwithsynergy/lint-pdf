@@ -55,7 +55,7 @@ def validate_color(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-026",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="CalGray color space used (prohibited in PDF/X-4, use ICCBased instead)",
                 iso_clause="ISO 15930-7:2010 6.2.4",
             )
@@ -66,7 +66,7 @@ def validate_color(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-027",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="CalRGB color space used (prohibited in PDF/X-4, use ICCBased instead)",
                 iso_clause="ISO 15930-7:2010 6.2.4",
             )
@@ -88,7 +88,7 @@ def validate_color(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-028",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         "DeviceRGB used without RGB output intent or DefaultRGB "
                         "(device-dependent color not recommended for PDF/X-4)"
@@ -151,7 +151,7 @@ def validate_color(
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-031",
-                                    severity=Severity.SQUALL,
+                                    severity=Severity.WARNING,
                                     message=(
                                         f"ICCBased profile '{cs_name}' has {n_components} "
                                         f"components (expected 1, 3, or 4)"
@@ -180,7 +180,7 @@ def validate_color(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-032",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Separation colorant '{colorant}' has inconsistent "
                         f"alternate spaces: {sorted(alternates)}"
@@ -229,7 +229,7 @@ def validate_color(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-035",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"Invalid rendering intent '{ri}' on page {event.page_num}",
                         page_num=event.page_num,
                         iso_clause="ISO 32000-2:2020 8.6.5.8",

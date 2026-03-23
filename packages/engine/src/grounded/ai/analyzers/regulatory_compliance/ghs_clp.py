@@ -155,7 +155,7 @@ class GhsClpAnalyzer(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="AI_GHS_002",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"GHS mutual exclusion violation: {superior} and "
                                 f"{inferior} both present. {reason}."
@@ -178,7 +178,7 @@ class GhsClpAnalyzer(BaseAIAnalyzer):
             findings.append(
                 self._make_finding(
                     inspection_id="AI_GHS_003",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         "H-statements or signal words detected but no GHS "
                         "pictograms found. CLP requires pictograms when "
@@ -220,7 +220,7 @@ class GhsClpAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_GHS_006",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             "Multiple signal words detected: "
                             f"{', '.join(signal_words)}. "
@@ -377,7 +377,7 @@ class GhsClpAnalyzer(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="AI_GHS_008",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"GHS pictogram {ghs_id} ({_GHS_PICTOGRAMS[ghs_id]}) "
                                     f"is {min_side:.1f}mm, below minimum "

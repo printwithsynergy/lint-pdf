@@ -33,7 +33,7 @@ class TestNoOutputIntent:
         f = validate_output_intent(_doc())
         ids = [x for x in f if x.inspection_id == "PDFX4-016"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_valid_intent_no_016() -> None:
@@ -48,7 +48,7 @@ class TestGtsPdfxSubtype:
         f = validate_output_intent(_doc(output_intents=[intent]))
         ids = [x for x in f if x.inspection_id == "PDFX4-017"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_valid_gts_pdfx() -> None:
@@ -63,7 +63,7 @@ class TestOutputConditionIdentifier:
         f = validate_output_intent(_doc(output_intents=[intent]))
         ids = [x for x in f if x.inspection_id == "PDFX4-018"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestIccProfile:
@@ -77,7 +77,7 @@ class TestIccProfile:
         f = validate_output_intent(_doc(output_intents=[intent]))
         ids = [x for x in f if x.inspection_id == "PDFX4-019"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_registered_condition_ok() -> None:
@@ -106,7 +106,7 @@ class TestIccProfile:
         f = validate_output_intent(_doc(output_intents=[intent]))
         ids = [x for x in f if x.inspection_id == "PDFX4-020"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_icc_bad_profile_class() -> None:
@@ -142,7 +142,7 @@ class TestMultipleIntents:
         f = validate_output_intent(_doc(output_intents=[_VALID_INTENT, _VALID_INTENT]))
         ids = [x for x in f if x.inspection_id == "PDFX4-023"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
 
 class TestRegistryAndInfo:

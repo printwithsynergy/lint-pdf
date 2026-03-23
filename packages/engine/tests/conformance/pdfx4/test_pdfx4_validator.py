@@ -58,64 +58,64 @@ class TestPdfX4ValidatorIntegration:
     def test_compliant_doc_minimal_findings() -> None:
         validator = PdfX4Validator()
         findings = validator.validate(_compliant_doc(), [])
-        # A well-formed doc should have no AGROUND findings
-        aground = [f for f in findings if f.severity == Severity.AGROUND]
-        assert len(aground) == 0
+        # A well-formed doc should have no ERROR findings
+        errors = [f for f in findings if f.severity == Severity.ERROR]
+        assert len(errors) == 0
 
     @staticmethod
-    def test_encrypted_doc_aground() -> None:
+    def test_encrypted_doc_error() -> None:
         doc = _compliant_doc()
         doc.is_encrypted = True
         validator = PdfX4Validator()
         findings = validator.validate(doc, [])
-        aground = [f for f in findings if f.severity == Severity.AGROUND]
-        assert any(f.inspection_id == "PDFX4-063" for f in aground)
+        errors = [f for f in findings if f.severity == Severity.ERROR]
+        assert any(f.inspection_id == "PDFX4-063" for f in errors)
 
     @staticmethod
-    def test_missing_xmp_aground() -> None:
+    def test_missing_xmp_error() -> None:
         doc = _compliant_doc()
         doc.metadata_stream = None
         validator = PdfX4Validator()
         findings = validator.validate(doc, [])
-        aground = [f for f in findings if f.severity == Severity.AGROUND]
-        assert any(f.inspection_id == "PDFX4-005" for f in aground)
+        errors = [f for f in findings if f.severity == Severity.ERROR]
+        assert any(f.inspection_id == "PDFX4-005" for f in errors)
 
     @staticmethod
-    def test_old_version_aground() -> None:
+    def test_old_version_error() -> None:
         doc = _compliant_doc()
         doc.version = "1.4"
         validator = PdfX4Validator()
         findings = validator.validate(doc, [])
-        aground = [f for f in findings if f.severity == Severity.AGROUND]
-        assert any(f.inspection_id == "PDFX4-001" for f in aground)
+        errors = [f for f in findings if f.severity == Severity.ERROR]
+        assert any(f.inspection_id == "PDFX4-001" for f in errors)
 
     @staticmethod
-    def test_prohibited_annotation_aground() -> None:
+    def test_prohibited_annotation_error() -> None:
         doc = _compliant_doc()
         doc.pages[0].annotations = [PdfAnnotation(subtype="Sound", page_num=1)]
         validator = PdfX4Validator()
         findings = validator.validate(doc, [])
-        aground = [f for f in findings if f.severity == Severity.AGROUND]
-        assert any(f.inspection_id == "PDFX4-057" for f in aground)
+        errors = [f for f in findings if f.severity == Severity.ERROR]
+        assert any(f.inspection_id == "PDFX4-057" for f in errors)
 
     @staticmethod
-    def test_no_output_intent_aground() -> None:
+    def test_no_output_intent_error() -> None:
         doc = _compliant_doc()
         doc.output_intents = []
         validator = PdfX4Validator()
         findings = validator.validate(doc, [])
-        aground = [f for f in findings if f.severity == Severity.AGROUND]
-        assert any(f.inspection_id == "PDFX4-016" for f in aground)
+        errors = [f for f in findings if f.severity == Severity.ERROR]
+        assert any(f.inspection_id == "PDFX4-016" for f in errors)
 
     @staticmethod
-    def test_no_trim_no_art_aground() -> None:
+    def test_no_trim_no_art_error() -> None:
         doc = _compliant_doc()
         doc.pages[0].trim_box = None
         doc.pages[0].art_box = None
         validator = PdfX4Validator()
         findings = validator.validate(doc, [])
-        aground = [f for f in findings if f.severity == Severity.AGROUND]
-        assert any(f.inspection_id == "PDFX4-050" for f in aground)
+        errors = [f for f in findings if f.severity == Severity.ERROR]
+        assert any(f.inspection_id == "PDFX4-050" for f in errors)
 
     @staticmethod
     def test_all_check_ids_prefixed() -> None:

@@ -68,8 +68,8 @@ curl https://api.lintpdf.com/api/v1/jobs/job_abc123 \
 #   "status": "complete",
 #   "summary": {
 #     "passed": false,
-#     "aground_count": 2,
-#     "squall_count": 1,
+#     "error_count": 2,
+#     "warning_count": 1,
 #     "advisory_count": 3
 #   },
 #   "findings": [...]
@@ -80,11 +80,11 @@ curl https://api.lintpdf.com/api/v1/jobs/job_abc123 \
 
 | Severity   | Meaning                                        |
 | ---------- | ---------------------------------------------- |
-| `aground`  | Critical — file will cause production issues   |
-| `squall`   | Warning — should be reviewed before production |
+| `error`    | Critical — file will cause production issues   |
+| `warning`  | Warning — should be reviewed before production |
 | `advisory` | Informational — no action required             |
 
-A job passes when `aground_count` is 0.
+A job passes when `error_count` is 0.
 
 ## Integration Guides
 

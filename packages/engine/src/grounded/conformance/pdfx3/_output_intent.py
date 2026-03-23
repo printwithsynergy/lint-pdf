@@ -35,7 +35,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-021",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="No OutputIntent present (required for PDF/X-3)",
                 iso_clause="ISO 15930-6:2003 6.2.3",
             )
@@ -55,7 +55,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-023",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"OutputIntent {i + 1}: /OutputConditionIdentifier missing",
                     iso_clause="ISO 15930-6:2003 6.2.3",
                 )
@@ -67,7 +67,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-024",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"OutputIntent {i + 1}: ICC profile not embedded "
                         f"and condition '{oci}' is not registered"
@@ -83,7 +83,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-026",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"OutputIntent {i + 1}: ICC color space '{icc_cs}' not recognized",
                         iso_clause="ISO 15930-6:2003 6.2.3",
                     )
@@ -93,7 +93,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-022",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="No OutputIntent with /S = /GTS_PDFX found (required for PDF/X-3)",
                 iso_clause="ISO 15930-6:2003 6.2.3",
             )
@@ -103,7 +103,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-025",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"Multiple GTS_PDFX OutputIntents found ({gts_pdfx_count})",
                 iso_clause="ISO 15930-6:2003 6.2.3",
             )

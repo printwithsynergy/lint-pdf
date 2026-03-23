@@ -5,7 +5,7 @@
 import type {
   PreflightJob,
   PreflightJobList,
-  VoyagePlanList,
+  PreflightProfileList,
   UsageInfo,
   PluginConfig,
 } from "./types";
@@ -68,14 +68,14 @@ export class GroundedClient {
     });
   }
 
-  async listProfiles(): Promise<VoyagePlanList> {
+  async listProfiles(): Promise<PreflightProfileList> {
     const resp = await GroundedClient.request(
       `${this.baseUrl}/api/v1/profiles`,
       {
         headers: this.headers(),
       },
     );
-    return resp.json() as Promise<VoyagePlanList>;
+    return resp.json() as Promise<PreflightProfileList>;
   }
 
   async getUsage(): Promise<UsageInfo> {

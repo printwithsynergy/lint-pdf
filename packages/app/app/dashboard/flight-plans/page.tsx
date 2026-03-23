@@ -10,9 +10,9 @@ export default async function FlightPlansPage() {
 
   return (
     <main className="p-8">
-      <h1 className="font-display text-2xl font-bold">Flight Plans</h1>
+      <h1 className="font-display text-2xl font-bold">Preflight Profiles</h1>
       <p className="mt-2 text-muted-foreground">
-        Manage your preflight inspection profiles.
+        Manage your preflight profiles.
       </p>
     </main>
   );

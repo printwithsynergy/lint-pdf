@@ -1,6 +1,6 @@
 use reqwest::multipart;
 use serde::Deserialize;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::time::Duration;
@@ -26,8 +26,8 @@ struct JobStatusResponse {
 #[derive(Debug, Deserialize)]
 struct ApiSummary {
     passed: Option<bool>,
-    aground_count: Option<u32>,
-    squall_count: Option<u32>,
+    error_count: Option<u32>,
+    warning_count: Option<u32>,
     advisory_count: Option<u32>,
 }
 
@@ -103,7 +103,7 @@ async fn process_file(
 
     // Submit to API
     let client = reqwest::Client::new();
-    let submit_result = submit_file(&client, &config.base_url, &config.api_key, &file.path, &folder.profile_id).await;
+    let submit_result = submit_file(&client, &config.base_url, &config.api_key, &file.path, &folder.profile_id, &file.jdf_path).await;
 
     let api_job_id = match submit_result {
         Ok(id) => id,
@@ -114,7 +114,7 @@ async fn process_file(
             record.completed_at = Some(chrono::Utc::now().to_rfc3339());
             db.update_job(&record).ok();
             emit_job_update(&app_handle, &record);
-            router::route_file(&file.path, &folder.error_dir, &record, folder.write_sidecar);
+            router::route_file(&file.path, &folder.error_dir, &record, folder.write_sidecar, file.jdf_path.as_deref());
             return;
         }
     };
@@ -137,8 +137,8 @@ async fn process_file(
         Ok(status) => {
             let summary = status.summary.map(|s| JobSummary {
                 passed: s.passed.unwrap_or(false),
-                aground_count: s.aground_count.unwrap_or(0),
-                squall_count: s.squall_count.unwrap_or(0),
+                error_count: s.error_count.unwrap_or(0),
+                warning_count: s.warning_count.unwrap_or(0),
                 advisory_count: s.advisory_count.unwrap_or(0),
             });
 
@@ -153,7 +153,7 @@ async fn process_file(
                 &folder.fail_dir
             };
 
-            if let Some(routed) = router::route_file(&file.path, target_dir, &record, folder.write_sidecar) {
+            if let Some(routed) = router::route_file(&file.path, target_dir, &record, folder.write_sidecar, file.jdf_path.as_deref()) {
                 record.routed_to = Some(routed);
             }
 
@@ -165,7 +165,7 @@ async fn process_file(
             record.status = "error".to_string();
             record.error_message = Some(format!("Polling failed: {}", e));
             record.completed_at = Some(chrono::Utc::now().to_rfc3339());
-            router::route_file(&file.path, &folder.error_dir, &record, folder.write_sidecar);
+            router::route_file(&file.path, &folder.error_dir, &record, folder.write_sidecar, file.jdf_path.as_deref());
             db.update_job(&record).ok();
             emit_job_update(&app_handle, &record);
         }
@@ -178,6 +178,7 @@ async fn submit_file(
     api_key: &str,
     file_path: &Path,
     profile_id: &str,
+    jdf_path: &Option<PathBuf>,
 ) -> Result<String, String> {
     let file_bytes = tokio::fs::read(file_path)
         .await
@@ -194,9 +195,32 @@ async fn submit_file(
         .mime_str("application/octet-stream")
         .map_err(|e| format!("MIME error: {}", e))?;
 
-    let form = multipart::Form::new()
+    let mut form = multipart::Form::new()
         .text("profile_id", profile_id.to_string())
         .part("file", part);
+
+    // Attach companion JDF/XJDF file if present
+    if let Some(jdf) = jdf_path {
+        if jdf.exists() {
+            match tokio::fs::read(jdf).await {
+                Ok(jdf_bytes) => {
+                    let jdf_name = jdf
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("file.jdf")
+                        .to_string();
+                    let jdf_part = multipart::Part::bytes(jdf_bytes)
+                        .file_name(jdf_name)
+                        .mime_str("application/octet-stream")
+                        .map_err(|e| format!("JDF MIME error: {}", e))?;
+                    form = form.part("jdf_file", jdf_part);
+                }
+                Err(e) => {
+                    log::warn!("Failed to read JDF sidecar {}: {}", jdf.display(), e);
+                }
+            }
+        }
+    }
 
     let url = format!("{}/api/v1/jobs", base_url.trim_end_matches('/'));
 

@@ -30,7 +30,7 @@ class TestXFAForms:
         findings = StructureAnalyzer().analyze(doc, [])
         xfa = [f for f in findings if f.inspection_id == "GRD_STRUCT_006"]
         assert len(xfa) == 1
-        assert xfa[0].severity == Severity.AGROUND
+        assert xfa[0].severity == Severity.ERROR
 
     @staticmethod
     def test_xfa_dict_value() -> None:

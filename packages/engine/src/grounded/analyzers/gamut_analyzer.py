@@ -288,7 +288,7 @@ class GamutAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_GAMUT_001",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"RGB color ({r:.2f}, {g:.2f}, {b:.2f}) is "
                                 f"out of gamut for {boundary.condition_name} "
@@ -330,7 +330,7 @@ class GamutAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_GAMUT_001",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"CMYK color ({c_val:.2f}, {m_val:.2f}, "
                                 f"{y_val:.2f}, {k_val:.2f}) is out of gamut "

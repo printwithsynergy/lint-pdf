@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from grounded.analyzers.finding import Finding, Severity
 from grounded.profiles.orchestrator import PreflightOrchestrator, PreflightResult
-from grounded.profiles.schema import AIFeatureConfig, CheckConfig, VoyagePlan
+from grounded.profiles.schema import AIFeatureConfig, CheckConfig, PreflightProfile
 
 
 def _minimal_doc() -> MagicMock:
@@ -51,7 +51,7 @@ class TestOrchestratorWithAI:
 
     @staticmethod
     def test_ai_disabled_produces_no_ai_findings() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=False),
         )
@@ -63,7 +63,7 @@ class TestOrchestratorWithAI:
 
     @staticmethod
     def test_ai_enabled_runs_analyzers() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["all"]),
             checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
@@ -90,7 +90,7 @@ class TestOrchestratorWithAI:
 
     @staticmethod
     def test_ai_findings_merged_with_engine_findings() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["barcode"]),
             checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
@@ -127,7 +127,7 @@ class TestOrchestratorWithAI:
     @staticmethod
     def test_ai_analyzer_exception_caught() -> None:
         """If an AI analyzer throws, it should not crash the pipeline."""
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["all"]),
             checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
@@ -154,7 +154,7 @@ class TestOrchestratorWithAI:
 
     @staticmethod
     def test_ai_findings_have_correct_source_and_category() -> None:
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, features=["spell_check"]),
             checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
@@ -191,7 +191,7 @@ class TestOrchestratorWithAI:
     @staticmethod
     def test_ai_import_error_handled_gracefully() -> None:
         """If AI modules are not installed, pipeline should still succeed."""
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True),
             checks=CheckConfig(enabled=["GRD_*"]),

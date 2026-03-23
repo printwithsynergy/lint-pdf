@@ -92,7 +92,7 @@ A live table of every file processed, with columns for status, file name, folder
 
 - Job ID and timestamps
 - Pass/fail status
-- Aground, squall, and advisory counts
+- Error, warning, and advisory counts
 - Error messages (if any)
 - Destination path
 
@@ -135,6 +135,23 @@ Closing the main window hides the app to the tray — it keeps running in the ba
 - `.jpg`, `.jpeg` — JPEG images
 - `.png` — PNG images
 - `.ai` — Adobe Illustrator (PDF-compatible)
+
+## JDF/XJDF Sidecar Support
+
+The desktop app automatically detects JDF and XJDF companion files placed alongside PDFs in watched directories. When a PDF and a JDF/XJDF file share the same filename stem (e.g., `artwork.pdf` and `artwork.jdf`), the app pairs them automatically.
+
+### How It Works
+
+1. Drop a PDF and its companion JDF/XJDF file into a watched folder
+2. The app detects the pair and extracts production parameters from the job ticket
+3. JDF parameters (DPI, bleed, TAC, output condition, conformance) are sent to the LintPDF API alongside the PDF
+4. These parameters **override** the corresponding thresholds in the selected preflight profile for that submission
+
+### Configuration
+
+JDF pairing is enabled by default. You can configure the companion file timeout per folder in the folder settings — this controls how long the app waits for a JDF/XJDF file after detecting a new PDF. The default is 30 seconds.
+
+When JDF parameters are applied, the Results tab shows which thresholds were overridden and their values.
 
 ## Data Storage
 

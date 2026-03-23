@@ -23,7 +23,7 @@ LintPDF now includes 25+ color management inspections that match what you'd expe
 
 ## Color Quality Score — Nobody Has This
 
-Every Flight Log now includes a **0-100 Color Quality Score**. This weighted composite considers color spaces, ink coverage, profiles, spot colors, and overprint patterns to give you a single number that answers: "How ready is this file for press?"
+Every preflight report now includes a **0-100 Color Quality Score**. This weighted composite considers color spaces, ink coverage, profiles, spot colors, and overprint patterns to give you a single number that answers: "How ready is this file for press?"
 
 ## Extended Gamut & Digital Press
 

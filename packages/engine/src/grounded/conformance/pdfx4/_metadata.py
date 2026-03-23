@@ -25,7 +25,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-005",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="XMP metadata stream missing (required for PDF/X-4)",
                 iso_clause="ISO 15930-7:2010 6.7.2",
             )
@@ -39,7 +39,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-006",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="GTS_PDFXVersion not declared in XMP",
                 iso_clause="ISO 15930-7:2010 6.7.3",
             )
@@ -48,7 +48,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-006",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message=f"GTS_PDFXVersion is '{xmp.pdfx_version}' (expected 'PDF/X-4')",
                 iso_clause="ISO 15930-7:2010 6.7.3",
                 details={"pdfx_version": xmp.pdfx_version},
@@ -71,7 +71,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-008",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=(
                     f"XMP pdf:PDFVersion '{xmp.pdf_version}' "
                     f"does not match header version '{document.version}'"
@@ -89,7 +89,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-009",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="xmp:CreateDate missing from XMP metadata",
                 iso_clause="ISO 15930-7:2010 6.7.5",
             )
@@ -100,7 +100,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-010",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="xmp:ModifyDate missing from XMP metadata",
                 iso_clause="ISO 15930-7:2010 6.7.5",
             )
@@ -111,7 +111,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-011",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="dc:title missing from XMP metadata",
                 iso_clause="ISO 15930-7:2010 6.7.5",
             )
@@ -123,7 +123,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-012",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"pdf:Trapped value '{xmp.trapped}' is not valid (expected True/False/Unknown)",
                 iso_clause="ISO 15930-7:2010 6.7.6",
                 details={"trapped": xmp.trapped},

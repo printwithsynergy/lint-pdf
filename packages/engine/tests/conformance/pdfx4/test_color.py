@@ -41,14 +41,14 @@ class TestCalibratedProhibited:
         f = validate_color(_doc(), [_color_event("CalGray")])
         ids = [x for x in f if x.inspection_id == "PDFX4-026"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_calrgb_delay() -> None:
         f = validate_color(_doc(), [_color_event("CalRGB")])
         ids = [x for x in f if x.inspection_id == "PDFX4-027"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
 
 class TestDeviceRgb:
@@ -57,7 +57,7 @@ class TestDeviceRgb:
         f = validate_color(_doc(), [_color_event("DeviceRGB")])
         ids = [x for x in f if x.inspection_id == "PDFX4-028"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_device_rgb_with_rgb_intent_ok() -> None:

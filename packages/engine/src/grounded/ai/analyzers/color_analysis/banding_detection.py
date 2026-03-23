@@ -76,7 +76,7 @@ class BandingDetectionAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="GRD_AI_BAND_001",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Visible banding detected on page {page_num}: "
                             f"CAMBI score {cambi_score} exceeds threshold "

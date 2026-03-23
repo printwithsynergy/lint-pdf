@@ -14,7 +14,7 @@ def sample_result() -> PreflightResult:
     findings = [
         Finding(
             inspection_id="GRD_FONT_001",
-            severity=Severity.AGROUND,
+            severity=Severity.ERROR,
             message="Font 'Arial' is not embedded",
             page_num=1,
             object_id="F1",
@@ -22,7 +22,7 @@ def sample_result() -> PreflightResult:
         ),
         Finding(
             inspection_id="GRD_IMG_001",
-            severity=Severity.SQUALL,
+            severity=Severity.WARNING,
             message="Image resolution below minimum (72 DPI < 150 DPI)",
             page_num=1,
             object_id="Im1",
@@ -39,8 +39,8 @@ def sample_result() -> PreflightResult:
 
     summary = PreflightSummary(
         total_findings=3,
-        aground_count=1,
-        squall_count=1,
+        error_count=1,
+        warning_count=1,
         advisory_count=1,
         passed=False,
         page_count=2,
@@ -49,7 +49,7 @@ def sample_result() -> PreflightResult:
 
     return PreflightResult(
         job_id="test-job-001",
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         findings=findings,
         summary=summary,
         metadata={
@@ -68,12 +68,12 @@ def empty_result() -> PreflightResult:
     """Create a PreflightResult with no findings."""
     return PreflightResult(
         job_id="test-job-002",
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         findings=[],
         summary=PreflightSummary(
             total_findings=0,
-            aground_count=0,
-            squall_count=0,
+            error_count=0,
+            warning_count=0,
             advisory_count=0,
             passed=True,
             page_count=1,

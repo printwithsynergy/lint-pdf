@@ -122,7 +122,7 @@ If no output dirs are configured, files stay in place and only get a sidecar.
   "file_path": "/original/path",
   "status": "passed|failed|error|processing|queued",
   "job_id": "api-job-id",
-  "summary": { "passed": false, "aground_count": 2, "squall_count": 1, "advisory_count": 0 },
+  "summary": { "passed": false, "error_count": 2, "warning_count": 1, "advisory_count": 0 },
   "findings": [...],
   "routed_to": "/path/to/output/dir/brochure.pdf",
   "submitted_at": "2026-03-22T10:30:00Z",
@@ -231,7 +231,7 @@ Key frontend dependencies:
 ### Step 8: Frontend — Results feed UI
 
 - `src/pages/Results.tsx` — Live results table
-  - Columns: File, Folder, Status, Findings (aground/squall/advisory), Time
+  - Columns: File, Folder, Status, Findings (error/warning/advisory), Time
   - Color-coded rows (green=pass, red=fail, yellow=error)
   - Click row to expand findings detail
   - Filter by folder, status, date range

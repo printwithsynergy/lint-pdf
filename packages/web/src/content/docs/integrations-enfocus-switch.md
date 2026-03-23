@@ -107,18 +107,18 @@ function jobArrived(s, flowElement, job) {
 
   // --- Step 3: Route based on results ---
   var passed = resultData.summary.passed;
-  var agroundCount = resultData.summary.aground_count || 0;
-  var squallCount = resultData.summary.squall_count || 0;
+  var errorCount = resultData.summary.error_count || 0;
+  var warningCount = resultData.summary.warning_count || 0;
   var advisoryCount = resultData.summary.advisory_count || 0;
 
   s.log(
     3,
     "LintPDF result — Passed: " +
       passed +
-      " | Aground: " +
-      agroundCount +
-      " | Squall: " +
-      squallCount +
+      " | Error: " +
+      errorCount +
+      " | Warning: " +
+      warningCount +
       " | Advisory: " +
       advisoryCount,
   );

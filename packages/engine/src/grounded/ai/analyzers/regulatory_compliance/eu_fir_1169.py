@@ -217,7 +217,7 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
             findings.append(
                 self._make_finding(
                     inspection_id="AI_EU1169_001",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Text x-height {violation['x_height_mm']:.2f}mm below "
                         f"EU FIR 1169/2011 minimum ({min_x_height_mm}mm"
@@ -306,7 +306,7 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="AI_EU1169_002",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Allergen '{allergen_name}' (matched: '{matched_text}') "
                                     f"may not be emphasised on page {page.page_num} "
@@ -367,7 +367,7 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="AI_EU1169_003",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Nutritional declaration order: '{curr_name}' "
                                     f"appears after '{next_name}' on page {page.page_num} "

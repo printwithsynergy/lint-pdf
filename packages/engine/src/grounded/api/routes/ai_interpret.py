@@ -123,7 +123,7 @@ def _interpret_with_llm(findings_text: str) -> dict[str, Any]:
 
 def _interpret_rule_based(findings: list[JobFinding]) -> dict[str, Any]:
     """Fallback rule-based interpretation."""
-    severity_counts = {"aground": 0, "squall": 0, "advisory": 0}
+    severity_counts = {"error": 0, "warning": 0, "advisory": 0}
     interpretations = []
 
     for f in findings:
@@ -137,14 +137,14 @@ def _interpret_rule_based(findings: list[JobFinding]) -> dict[str, Any]:
             }
         )
 
-    aground = severity_counts.get("aground", 0)
-    squall = severity_counts.get("squall", 0)
+    errors = severity_counts.get("error", 0)
+    warnings = severity_counts.get("warning", 0)
     advisory = severity_counts.get("advisory", 0)
 
-    if aground > 0:
-        summary = f"This file has {aground} critical issue(s) that must be fixed before printing."
-    elif squall > 0:
-        summary = f"This file has {squall} warning(s) that should be reviewed."
+    if errors > 0:
+        summary = f"This file has {errors} critical issue(s) that must be fixed before printing."
+    elif warnings > 0:
+        summary = f"This file has {warnings} warning(s) that should be reviewed."
     else:
         summary = f"This file has {advisory} informational note(s). No critical issues found."
 
@@ -154,7 +154,7 @@ def _interpret_rule_based(findings: list[JobFinding]) -> dict[str, Any]:
 def _severity_explanation(severity: str) -> str:
     """Get a plain language explanation for a severity level."""
     return {
-        "aground": "This is a critical issue that will likely cause problems in print production.",
-        "squall": "This is a warning that could affect print quality and should be reviewed.",
+        "error": "This is a critical issue that will likely cause problems in print production.",
+        "warning": "This is a warning that could affect print quality and should be reviewed.",
         "advisory": "This is informational and may not require action.",
     }.get(severity, "Review this finding.")

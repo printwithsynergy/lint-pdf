@@ -39,7 +39,7 @@ def validate_transparency(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-033",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Alpha value < 1.0 detected on page {event.page_num} "
                         f"(transparency prohibited in PDF/X-1a)"
@@ -56,7 +56,7 @@ def validate_transparency(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-032",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Non-Normal blend mode '{event.blend_mode}' on page {event.page_num} "
                         f"(transparency prohibited in PDF/X-1a)"
@@ -75,7 +75,7 @@ def validate_transparency(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-030",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Page {page.page_num} has a transparency group "
                         f"(prohibited in PDF/X-1a)"
@@ -97,7 +97,7 @@ def validate_transparency(
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-031",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Soft mask '{gs_name}' on page {page.page_num} "
                                     f"(prohibited in PDF/X-1a)"
@@ -113,7 +113,7 @@ def validate_transparency(
             0,
             Finding(
                 inspection_id=f"{_PREFIX}-029",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Transparency detected (completely prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.2.5",
             ),

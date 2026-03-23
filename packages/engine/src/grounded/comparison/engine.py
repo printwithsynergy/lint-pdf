@@ -104,7 +104,7 @@ class ComparisonEngine:
                         "reference": reference.page_count,
                         "candidate": candidate.page_count,
                     },
-                    severity="squall",
+                    severity="warning",
                 )
             )
 
@@ -259,7 +259,7 @@ class ComparisonEngine:
                     category="removed",
                     page_num=i + 1,
                     description=f"Page {i + 1} removed in candidate",
-                    severity="squall",
+                    severity="warning",
                 )
             )
 
@@ -271,7 +271,7 @@ class ComparisonEngine:
                     category="added",
                     page_num=i + 1,
                     description=f"Page {i + 1} added in candidate",
-                    severity="squall",
+                    severity="warning",
                 )
             )
 
@@ -382,7 +382,7 @@ class ComparisonEngine:
                         diff_type="metadata",
                         category="added",
                         description="Encryption added to candidate document",
-                        severity="squall",
+                        severity="warning",
                     )
                 )
             else:
@@ -391,7 +391,7 @@ class ComparisonEngine:
                         diff_type="metadata",
                         category="removed",
                         description="Encryption removed in candidate document",
-                        severity="squall",
+                        severity="warning",
                     )
                 )
 
@@ -453,7 +453,7 @@ class ComparisonEngine:
                         "reference_count": len(ref_intents),
                         "candidate_count": len(cand_intents),
                     },
-                    severity="squall",
+                    severity="warning",
                 )
             )
         else:
@@ -479,7 +479,7 @@ class ComparisonEngine:
                                 "reference_identifier": ref_id,
                                 "candidate_identifier": cand_id,
                             },
-                            severity="squall",
+                            severity="warning",
                         )
                     )
 

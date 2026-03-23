@@ -4,12 +4,14 @@ use std::path::{Path, PathBuf};
 use crate::db::JobRecord;
 
 /// Move file to target directory and optionally write sidecar report.
+/// Also moves companion JDF file if present.
 /// Returns the destination path if the file was moved.
 pub fn route_file(
     source: &Path,
     target_dir: &str,
     record: &JobRecord,
     write_sidecar: bool,
+    jdf_path: Option<&Path>,
 ) -> Option<String> {
     if target_dir.is_empty() {
         // No target dir configured — write sidecar in place if requested
@@ -18,6 +20,27 @@ pub fn route_file(
         }
         return None;
     }
+
+    // Helper closure to route the companion JDF file alongside the PDF
+    let route_jdf = |target_path: &Path| {
+        if let Some(jdf) = jdf_path {
+            if jdf.exists() {
+                let jdf_name = jdf.file_name().and_then(|n| n.to_str()).unwrap_or("file.jdf");
+                let jdf_dest = resolve_collision(target_path, jdf_name);
+                if fs::rename(jdf, &jdf_dest).is_err() {
+                    // Try copy+delete for cross-filesystem moves
+                    if fs::copy(jdf, &jdf_dest).is_ok() {
+                        fs::remove_file(jdf).ok();
+                        log::info!("Copied JDF {} -> {}", jdf.display(), jdf_dest.display());
+                    } else {
+                        log::error!("Failed to route JDF {} -> {}", jdf.display(), jdf_dest.display());
+                    }
+                } else {
+                    log::info!("Routed JDF {} -> {}", jdf.display(), jdf_dest.display());
+                }
+            }
+        }
+    };
 
     let target_path = Path::new(target_dir);
     if let Err(e) = fs::create_dir_all(target_path) {
@@ -38,6 +61,7 @@ pub fn route_file(
             if write_sidecar {
                 write_sidecar_report(&dest, record);
             }
+            route_jdf(target_path);
             Some(dest.to_string_lossy().to_string())
         }
         Err(e) => {
@@ -49,6 +73,7 @@ pub fn route_file(
                     if write_sidecar {
                         write_sidecar_report(&dest, record);
                     }
+                    route_jdf(target_path);
                     Some(dest.to_string_lossy().to_string())
                 }
                 Err(copy_err) => {

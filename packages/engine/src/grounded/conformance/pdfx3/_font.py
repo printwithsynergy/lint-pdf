@@ -59,7 +59,7 @@ def _check_font(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-009",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Font '{base_font}' is not embedded (required for PDF/X-3)",
                     page_num=page_num,
                     iso_clause="ISO 15930-6:2003 6.3",
@@ -82,7 +82,7 @@ def _check_font(
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-009",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=f"CID font '{base_font}' is not embedded",
                             page_num=page_num,
                             iso_clause="ISO 15930-6:2003 6.3",
@@ -98,7 +98,7 @@ def _check_font(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-010",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Type3 font '{base_font}' has no /CharProcs",
                     page_num=page_num,
                     iso_clause="ISO 15930-6:2003 6.3",
@@ -116,7 +116,7 @@ def _check_font(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-011",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"Font '{base_font}' missing /FontDescriptor",
                 page_num=page_num,
                 iso_clause="ISO 15930-6:2003 6.3",
@@ -133,7 +133,7 @@ def _check_font(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-012",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=f"CID font '{base_font}' missing /CIDSystemInfo",
                     page_num=page_num,
                     iso_clause="ISO 15930-6:2003 6.3",

@@ -55,7 +55,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:  # skip
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-016",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="No OutputIntent present (required for PDF/X-4)",
                 iso_clause="ISO 15930-7:2010 6.2.3",
             )
@@ -80,7 +80,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:  # skip
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-018",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"OutputIntent {i + 1}: /OutputConditionIdentifier missing",
                     iso_clause="ISO 15930-7:2010 6.2.3",
                 )
@@ -94,7 +94,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:  # skip
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-019",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"OutputIntent {i + 1}: ICC profile not embedded "
                         f"and condition '{oci}' is not a registered name"
@@ -116,7 +116,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:  # skip
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-020",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=f"OutputIntent {i + 1}: ICC profile version {icc_version} < 2.0",
                             iso_clause="ISO 15930-7:2010 6.2.4",
                         )
@@ -130,7 +130,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:  # skip
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-021",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"OutputIntent {i + 1}: ICC profile class '{profile_class}' "
                             f"is not output (prtr) or display (mntr)"
@@ -145,7 +145,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:  # skip
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-022",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"OutputIntent {i + 1}: ICC color space '{icc_cs}' not recognized",
                         iso_clause="ISO 15930-7:2010 6.2.4",
                     )
@@ -184,7 +184,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:  # skip
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-017",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="No OutputIntent with /S = /GTS_PDFX found (required for PDF/X-4)",
                 iso_clause="ISO 15930-7:2010 6.2.3",
             )
@@ -195,7 +195,7 @@ def validate_output_intent(document: SemanticDocument) -> list[Finding]:  # skip
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-023",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"Multiple GTS_PDFX OutputIntents found ({gts_pdfx_count})",
                 iso_clause="ISO 15930-7:2010 6.2.3",
                 details={"gts_pdfx_count": gts_pdfx_count},

@@ -49,7 +49,7 @@ class StructureAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STRUCT_001",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="Document contains JavaScript (not allowed in print workflows)",
                     details={"source": "catalog"},
                     iso_clause="ISO 15930-7:2010 6.2.8",
@@ -64,7 +64,7 @@ class StructureAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_STRUCT_002",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Document contains {len(fields)} form field(s) "
                             f"(should be flattened before print)"
@@ -100,7 +100,7 @@ class StructureAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_STRUCT_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message="Document contains embedded files",
                         iso_clause="ISO 15930-7:2010 6.2.8",
                     )
@@ -112,7 +112,7 @@ class StructureAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_STRUCT_005",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"3D annotation found on page {page.page_num}",
                         page_num=page.page_num,
                         iso_clause="ISO 32000-2:2020 13.6.3",
@@ -126,7 +126,7 @@ class StructureAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STRUCT_006",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="Document contains XFA forms (not supported in print workflows)",
                     iso_clause="ISO 15930-7:2010 6.2.8",
                 )
@@ -213,7 +213,7 @@ class StructureAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_STRUCT_008",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"JavaScript action detected in page {page.page_num} "
                                 f"actions (security and print workflow risk)"
@@ -240,7 +240,7 @@ class StructureAnalyzer(BaseAnalyzer):
                             findings.append(
                                 Finding(
                                     inspection_id="GRD_STRUCT_008",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"JavaScript action detected in annotation "
                                         f"on page {page.page_num}"
@@ -408,7 +408,7 @@ class StructureAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_STRUCT_011",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"PostScript fragment (Type 1 XObject) detected on page "
                                 f"{page.page_num} (prohibited in modern PDF/X workflows)"
@@ -508,7 +508,7 @@ class StructureAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_STRUCT_014",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Non-JavaScript action '{action_type}' detected in document "
                                 f"catalog (may cause unexpected behavior in print workflow)"
@@ -525,7 +525,7 @@ class StructureAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STRUCT_014",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Non-JavaScript action '{action_type}' detected in document "
                         f"catalog (may cause unexpected behavior in print workflow)"

@@ -65,7 +65,7 @@ class TestGroupColorSpace:
         f = validate_transparency(_doc(pages=[page], output_intents=[intent]), [])
         ids = [x for x in f if x.inspection_id == "PDFX4-044"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_group_cs_matches_intent_ok() -> None:
@@ -85,7 +85,7 @@ class TestBlendModes:
         f = validate_transparency(_doc(), [_opacity_event(nsa=0.5, blend_mode="CustomBlend")])
         ids = [x for x in f if x.inspection_id == "PDFX4-046"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_standard_blend_mode_ok() -> None:

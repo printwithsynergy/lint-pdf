@@ -5,7 +5,7 @@
  * packages/engine/src/grounded/api/schemas.py
  */
 
-export type Severity = "aground" | "squall" | "advisory";
+export type Severity = "error" | "warning" | "advisory";
 export type JobStatus = "pending" | "processing" | "complete" | "failed";
 
 export interface PreflightFinding {
@@ -18,8 +18,8 @@ export interface PreflightFinding {
 
 export interface PreflightSummary {
   total_findings: number;
-  aground_count: number;
-  squall_count: number;
+  error_count: number;
+  warning_count: number;
   advisory_count: number;
   passed: boolean;
   page_count: number;
@@ -41,7 +41,7 @@ export interface PreflightJob {
   error_message: string | null;
 }
 
-export interface VoyagePlan {
+export interface PreflightProfile {
   profile_id: string;
   name: string;
   description: string;
@@ -59,8 +59,8 @@ export interface PixieDustPayload {
   badge: "pass" | "fail" | "error";
   summary?: {
     total: number;
-    aground: number;
-    squall: number;
+    error_count: number;
+    warning_count: number;
     advisory: number;
     pages: number;
     file_size_bytes: number;
@@ -71,8 +71,8 @@ export interface PixieDustPayload {
     conformance: string | null;
   };
   findings?: {
-    aground: PixieDustFinding[];
-    squall: PixieDustFinding[];
+    error: PixieDustFinding[];
+    warning: PixieDustFinding[];
     advisory: PixieDustFinding[];
   };
   duration_ms?: number;
@@ -109,8 +109,8 @@ export interface PreflightJobList {
   page_size: number;
 }
 
-export interface VoyagePlanList {
-  profiles: VoyagePlan[];
+export interface PreflightProfileList {
+  profiles: PreflightProfile[];
 }
 
 export interface UsageInfo {

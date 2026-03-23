@@ -191,7 +191,7 @@ class SpcEngine:
                             f"Point {side} (value={dp.value:.4f}, "
                             f"UCL={limits.ucl:.4f}, LCL={limits.lcl:.4f})"
                         ),
-                        severity="squall",
+                        severity="warning",
                         data_points=[dp],
                     )
                 )
@@ -229,7 +229,7 @@ class SpcEngine:
                             f"Two of three consecutive points above UWL "
                             f"(2-sigma={limits.uwl:.4f})"
                         ),
-                        severity="squall",
+                        severity="warning",
                         data_points=list(window),
                     )
                 )
@@ -245,7 +245,7 @@ class SpcEngine:
                             f"Two of three consecutive points below LWL "
                             f"(2-sigma={limits.lwl:.4f})"
                         ),
-                        severity="squall",
+                        severity="warning",
                         data_points=list(window),
                     )
                 )

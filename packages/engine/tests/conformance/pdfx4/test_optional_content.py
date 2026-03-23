@@ -32,7 +32,7 @@ class TestMissingDefaultConfig:
         f = validate_optional_content(_doc(catalog={"/OCProperties": {}}))
         ids = [x for x in f if x.inspection_id == "PDFX4-066"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
 
 class TestBaseState:
@@ -50,7 +50,7 @@ class TestBaseState:
         )
         ids = [x for x in f if x.inspection_id == "PDFX4-067"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_base_state_on_ok() -> None:
@@ -105,7 +105,7 @@ class TestOcgsArray:
         f = validate_optional_content(_doc(catalog={"/OCProperties": {"/D": {}, "/OCGs": []}}))
         ids = [x for x in f if x.inspection_id == "PDFX4-069"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_ocgs_present_ok() -> None:
@@ -137,4 +137,4 @@ class TestAsTriggers:
         )
         ids = [x for x in f if x.inspection_id == "PDFX4-070"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING

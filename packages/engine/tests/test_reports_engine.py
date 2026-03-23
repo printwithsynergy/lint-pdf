@@ -17,7 +17,7 @@ def sample_result() -> PreflightResult:
     findings = [
         Finding(
             inspection_id="GRD_FONT_001",
-            severity=Severity.AGROUND,
+            severity=Severity.ERROR,
             message="Font 'Arial' is not embedded",
             page_num=1,
             object_id="F1",
@@ -26,8 +26,8 @@ def sample_result() -> PreflightResult:
     ]
     summary = PreflightSummary(
         total_findings=1,
-        aground_count=1,
-        squall_count=0,
+        error_count=1,
+        warning_count=0,
         advisory_count=0,
         passed=False,
         page_count=2,
@@ -35,7 +35,7 @@ def sample_result() -> PreflightResult:
     )
     return PreflightResult(
         job_id="test-job-001",
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         findings=findings,
         summary=summary,
         metadata={"pdf_version": "1.7", "page_count": 2, "is_encrypted": False},
@@ -48,12 +48,12 @@ def empty_result() -> PreflightResult:
     """PreflightResult with no findings (passed)."""
     return PreflightResult(
         job_id="test-job-002",
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         findings=[],
         summary=PreflightSummary(
             total_findings=0,
-            aground_count=0,
-            squall_count=0,
+            error_count=0,
+            warning_count=0,
             advisory_count=0,
             passed=True,
             page_count=1,
@@ -138,7 +138,7 @@ class TestToJson:
         result = engine.to_json(sample_result)
         data = json.loads(result)
         assert data["job_id"] == "test-job-001"
-        assert data["profile_id"] == "grounded-default"
+        assert data["profile_id"] == "lintpdf-default"
         assert data["summary"]["passed"] is False
         assert data["summary"]["total_findings"] == 1
 
@@ -160,7 +160,7 @@ class TestToJson:
         assert len(data["findings"]) == 1
         finding = data["findings"][0]
         assert finding["inspection_id"] == "GRD_FONT_001"
-        assert finding["severity"] == "aground"
+        assert finding["severity"] == "error"
         assert finding["page_num"] == 1
 
 

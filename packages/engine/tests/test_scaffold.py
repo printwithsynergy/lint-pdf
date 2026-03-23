@@ -26,7 +26,7 @@ def test_exceptions_importable() -> None:
         RateLimitExceededError,
         RuleRegistrationError,
         TenantNotFoundError,
-        VoyagePlanValidationError,
+        PreflightProfileValidationError,
     )
 
     # All exceptions inherit from GroundedError
@@ -37,7 +37,7 @@ def test_exceptions_importable() -> None:
     assert issubclass(InvalidBoxError, GroundedError)
     assert issubclass(InvalidPageError, GroundedError)
     assert issubclass(ContentStreamError, GroundedError)
-    assert issubclass(VoyagePlanValidationError, GroundedError)
+    assert issubclass(PreflightProfileValidationError, GroundedError)
     assert issubclass(RuleRegistrationError, GroundedError)
     assert issubclass(ProfileNotFoundError, GroundedError)
     assert issubclass(TenantNotFoundError, GroundedError)

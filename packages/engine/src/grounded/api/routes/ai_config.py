@@ -53,8 +53,8 @@ async def get_ai_config(
         default_package_capacity_ml=config.default_package_capacity_ml,
         default_package_surface_area_cm2=config.default_package_surface_area_cm2,
         min_image_quality_score=config.min_image_quality_score,
-        delta_e_squall_threshold=config.delta_e_squall_threshold,
-        delta_e_aground_threshold=config.delta_e_aground_threshold,
+        delta_e_warning_threshold=config.delta_e_warning_threshold,
+        delta_e_error_threshold=config.delta_e_error_threshold,
     )
 
 
@@ -93,8 +93,8 @@ async def update_ai_config(
         default_package_capacity_ml=config.default_package_capacity_ml,
         default_package_surface_area_cm2=config.default_package_surface_area_cm2,
         min_image_quality_score=config.min_image_quality_score,
-        delta_e_squall_threshold=config.delta_e_squall_threshold,
-        delta_e_aground_threshold=config.delta_e_aground_threshold,
+        delta_e_warning_threshold=config.delta_e_warning_threshold,
+        delta_e_error_threshold=config.delta_e_error_threshold,
     )
 
 

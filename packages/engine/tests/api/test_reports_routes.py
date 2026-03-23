@@ -25,8 +25,8 @@ def _seed_completed_job(db: Session, *, result_json: dict | None = None) -> Job:
         result_json = {
             "summary": {
                 "total_findings": 0,
-                "aground_count": 0,
-                "squall_count": 0,
+                "error_count": 0,
+                "warning_count": 0,
                 "advisory_count": 0,
                 "passed": True,
                 "page_count": 1,
@@ -37,7 +37,7 @@ def _seed_completed_job(db: Session, *, result_json: dict | None = None) -> Job:
         id=uuid.uuid4(),
         tenant_id=PLACEHOLDER_TENANT_ID,
         status=JobStatus.COMPLETE,
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         file_key="fake/key.pdf",
         file_name="report-test.pdf",
         file_size=500,
@@ -58,7 +58,7 @@ def _seed_pending_job(db: Session) -> Job:
         id=uuid.uuid4(),
         tenant_id=PLACEHOLDER_TENANT_ID,
         status=JobStatus.PENDING,
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         file_key="fake/pending.pdf",
         file_name="pending.pdf",
         file_size=100,

@@ -74,7 +74,7 @@ for (const plan of PLANS) {
             mimeType: "application/pdf",
             buffer: readFileSync(TEST_PDF),
           },
-          profile_id: "grounded-default",
+          profile_id: "lintpdf-default",
         },
       });
       expect(submitRes.status()).toBe(202);

@@ -40,7 +40,7 @@
 | `GET`    | `/api/v1/jobs`          | Tenant API key | List jobs for current tenant (paginated)         |
 | `DELETE` | `/api/v1/jobs/{job_id}` | Tenant API key | Cancel or delete a job (204)                     |
 
-#### Profiles — Voyage Plans (`routes/profiles.py`, prefix: `/api/v1/profiles`)
+#### Profiles — Preflight Profiles (`routes/profiles.py`, prefix: `/api/v1/profiles`)
 
 | Method   | Path                            | Auth           | Description                           |
 | -------- | ------------------------------- | -------------- | ------------------------------------- |
@@ -49,7 +49,7 @@
 | `POST`   | `/api/v1/profiles`              | Tenant API key | Create custom preflight profile (201) |
 | `DELETE` | `/api/v1/profiles/{profile_id}` | Tenant API key | Delete custom profile (204)           |
 
-#### Webhooks — Tower Alerts (`routes/webhooks.py`, prefix: `/api/v1/webhooks`)
+#### Webhooks (`routes/webhooks.py`, prefix: `/api/v1/webhooks`)
 
 | Method   | Path                            | Auth           | Description                           |
 | -------- | ------------------------------- | -------------- | ------------------------------------- |
@@ -171,13 +171,13 @@
 
 **Built-in presets:** `fda-food-label`, `eu-food-label`, `pharma-eu`, `ghs-chemical`, `packaging-qc`, `brand-compliance`, `full-ai-scan`
 
-#### AI Voyage Plan Generation (`routes/ai_generate.py`)
+#### AI Preflight Profile Generation (`routes/ai_generate.py`)
 
-| Method | Path                            | Auth               | Description                                |
-| ------ | ------------------------------- | ------------------ | ------------------------------------------ |
-| `POST` | `/api/v1/voyage-plans/generate` | Tenant + AI access | Generate Voyage Plan from natural language |
+| Method | Path                                | Auth               | Description                                     |
+| ------ | ----------------------------------- | ------------------ | ----------------------------------------------- |
+| `POST` | `/api/v1/preflight-profiles/generate` | Tenant + AI access | Generate Preflight Profile from natural language |
 
-#### AI Report Interpretation — Captain's Log (`routes/ai_interpret.py`)
+#### AI Report Interpretation (`routes/ai_interpret.py`)
 
 | Method | Path                                      | Auth               | Description                               |
 | ------ | ----------------------------------------- | ------------------ | ----------------------------------------- |
@@ -223,7 +223,7 @@
 | Parser      | `parser/`      | pikepdf adapter for PDF parsing                                                      |
 | Semantic    | `semantic/`    | PDF content stream interpreter (model, graphics state, builder, events, interpreter) |
 | Conformance | `conformance/` | PDF/X-4 validation (14 sub-modules) + XMP validation                                 |
-| Profiles    | `profiles/`    | Voyage Plan schema, registry, orchestrator                                           |
+| Profiles    | `profiles/`    | Preflight Profile schema, registry, orchestrator                                     |
 | Rules       | `rules/`       | Builtin + GWG rule sets                                                              |
 | Reports     | `reports/`     | JSON, XML, HTML (Jinja2), PDF (WeasyPrint) generation + service layer                |
 
@@ -277,11 +277,11 @@
 | 23  | Symbol           | ProcessingStepsFallbackAnalyzer   | `ai/analyzers/symbol_detection/processing_steps_fallback.py`  |
 | 24  | File Comparison  | VersionDiffAnalyzer               | `ai/analyzers/file_comparison/version_diff.py`                |
 | 25  | Classification   | FileClassificationAnalyzer        | `ai/analyzers/document_classification/file_classification.py` |
-| 26  | Classification   | AutoVoyagePlanAnalyzer            | `ai/analyzers/document_classification/auto_voyage_plan.py`    |
+| 26  | Classification   | AutoPreflightProfileAnalyzer      | `ai/analyzers/document_classification/auto_voyage_plan.py`    |
 | 27  | Trend Analysis   | SubmissionQualitySPCAnalyzer      | `ai/analyzers/trend_analysis/submission_quality_spc.py`       |
 | 28  | Spatial          | SafeZoneViolationsAnalyzer        | `ai/analyzers/spatial_analysis/safe_zone_violations.py`       |
 | 29  | Text             | TextAsOutlinesAnalyzer            | `ai/analyzers/text_analysis/text_as_outlines.py`              |
-| 30  | NLP              | NLVoyagePlanAnalyzer              | `ai/analyzers/nlp_interfaces/nl_voyage_plan.py`               |
+| 30  | NLP              | NLPreflightProfileAnalyzer        | `ai/analyzers/nlp_interfaces/nl_voyage_plan.py`               |
 | 31  | NLP              | NLReportInterpretAnalyzer         | `ai/analyzers/nlp_interfaces/nl_report_interpret.py`          |
 | 32  | NLP              | MultiLanguageReportsAnalyzer      | `ai/analyzers/nlp_interfaces/multi_language.py`               |
 
@@ -299,9 +299,9 @@
 
 | Profile                  | File                                             |
 | ------------------------ | ------------------------------------------------ |
-| LintPDF Default          | `profiles/builtin/grounded-default.json`         |
-| LintPDF Strict           | `profiles/builtin/grounded-strict.json`          |
-| Advisory Only            | `profiles/builtin/grounded-advisory-only.json`   |
+| LintPDF Default          | `profiles/builtin/lintpdf-default.json`          |
+| LintPDF Strict           | `profiles/builtin/lintpdf-strict.json`           |
+| Advisory Only            | `profiles/builtin/lintpdf-advisory-only.json`    |
 | GWG 2022 Coated Offset   | `profiles/builtin/gwg-2022-coated-offset.json`   |
 | GWG 2022 Uncoated Offset | `profiles/builtin/gwg-2022-uncoated-offset.json` |
 | GWG 2022 Digital Print   | `profiles/builtin/gwg-2022-digital-print.json`   |
@@ -362,7 +362,7 @@
 | `job_findings`              | Individual findings from a job (severity, message, page, category)    |
 | `api_keys`                  | API keys per tenant (hash, label, prefix, activity tracking)          |
 | `webhook_endpoints`         | Webhook registrations (URL, secret, events, active flag)              |
-| `custom_profiles`           | Custom Voyage Plans (tenant-scoped JSON)                              |
+| `custom_profiles`           | Custom Preflight Profiles (tenant-scoped JSON)                        |
 | `waitlist_entries`          | Beta waitlist signups (email, company, status)                        |
 | `report_tokens`             | Token-based report access (format, expiry, access count)              |
 | `tenant_ai_configs`         | AI feature config per tenant (categories, palette, logos, dictionary) |

@@ -27,28 +27,28 @@ class TestProhibitedAnnotations:
         f = validate_annotations(_doc([PdfAnnotation(subtype="Sound", page_num=1)]))
         ids = [x for x in f if x.inspection_id == "PDFX4-057"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_movie_no_fly() -> None:
         f = validate_annotations(_doc([PdfAnnotation(subtype="Movie", page_num=1)]))
         ids = [x for x in f if x.inspection_id == "PDFX4-058"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_3d_no_fly() -> None:
         f = validate_annotations(_doc([PdfAnnotation(subtype="3D", page_num=1)]))
         ids = [x for x in f if x.inspection_id == "PDFX4-059"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_richmedia_no_fly() -> None:
         f = validate_annotations(_doc([PdfAnnotation(subtype="RichMedia", page_num=1)]))
         ids = [x for x in f if x.inspection_id == "PDFX4-060"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_screen_no_fly() -> None:

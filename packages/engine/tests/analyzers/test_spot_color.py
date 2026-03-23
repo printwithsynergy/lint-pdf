@@ -75,8 +75,8 @@ class TestSpotColorAnalyzer:
         findings = SpotColorAnalyzer().analyze(doc, [])
         spot_004 = [f for f in findings if f.inspection_id == "GRD_SPOT_004"]
         # Well-formed DeviceN should not trigger structural errors
-        aground = [f for f in spot_004 if f.severity == Severity.AGROUND]
-        assert len(aground) == 0
+        errors = [f for f in spot_004 if f.severity == Severity.ERROR]
+        assert len(errors) == 0
 
     def test_devicen_bad_structure(self):
         cs = PdfColorSpace(

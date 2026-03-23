@@ -31,7 +31,7 @@ def validate_metadata(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-010",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="/Metadata entry missing from document catalog (required for PDF/A)",
                 iso_clause="ISO 19005 6.7.1",
             )
@@ -43,7 +43,7 @@ def validate_metadata(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-001",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="XMP metadata stream missing (required for PDF/A)",
                 iso_clause="ISO 19005 6.7.2",
             )
@@ -56,7 +56,7 @@ def validate_metadata(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-002",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="pdfaid:part missing in XMP metadata (required for PDF/A identification)",
                     iso_clause="ISO 19005 6.7.11",
                 )
@@ -68,7 +68,7 @@ def validate_metadata(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-003",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         "pdfaid:conformance missing in XMP metadata "
                         "(required for PDF/A identification)"
@@ -93,7 +93,7 @@ def validate_metadata(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Info dict /{info_key} ('{info_val}') does not match "
                             f"XMP {xmp_key} ('{xmp_val}')"
@@ -111,7 +111,7 @@ def validate_metadata(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-005",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="/CreationDate missing from Info dictionary (required for PDF/A)",
                 iso_clause="ISO 19005 6.7.3",
             )
@@ -123,7 +123,7 @@ def validate_metadata(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-006",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="/ModDate missing from Info dictionary (required for PDF/A)",
                 iso_clause="ISO 19005 6.7.3",
             )
@@ -135,7 +135,7 @@ def validate_metadata(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-007",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="No OutputIntent present (required for PDF/A)",
                 iso_clause="ISO 19005 6.2.2",
             )
@@ -163,7 +163,7 @@ def validate_metadata(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-008",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             "OutputIntent ICC profile missing and no registered "
                             "OutputConditionIdentifier found"
@@ -186,7 +186,7 @@ def validate_metadata(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-009",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"PDF version {version} exceeds maximum allowed for PDF/A-1 "
                             f"(must be 1.4 or lower)"
@@ -201,7 +201,7 @@ def validate_metadata(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-009",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"PDF version {version} exceeds maximum allowed for PDF/A-{level[0]} "
                             f"(must be 1.7 or lower)"

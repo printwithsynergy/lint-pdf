@@ -43,7 +43,7 @@ class TestHtmlReport:
     @staticmethod
     def test_includes_profile_id(sample_result: PreflightResult) -> None:
         html = generate_html_report(sample_result).decode("utf-8")
-        assert "grounded-default" in html
+        assert "lintpdf-default" in html
 
     @staticmethod
     def test_empty_result_shows_no_findings(empty_result: PreflightResult) -> None:

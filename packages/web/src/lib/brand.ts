@@ -775,8 +775,8 @@ export const AI_CATEGORIES: AICategory[] = [
         credits: 2,
       },
       {
-        id: "ai.document_classification.auto_voyage_plan",
-        name: "Auto Ruleset",
+        id: "ai.document_classification.auto_preflight_profile",
+        name: "Auto Preflight Profile",
         description:
           "Suggest optimal Ruleset based on detected document characteristics",
         tier: "vision",
@@ -823,8 +823,8 @@ export const AI_CATEGORIES: AICategory[] = [
       "Natural language interfaces for querying and interpreting preflight data.",
     inspections: [
       {
-        id: "ai.nlp.voyage_plan",
-        name: "NL Ruleset",
+        id: "ai.nlp.preflight_profile",
+        name: "NL Preflight Profile",
         description: "Create Rulesets from natural language descriptions",
         tier: "vision",
         credits: 2,

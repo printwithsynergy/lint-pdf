@@ -98,7 +98,7 @@ export function FolderEdit({
               className="input"
               value={folder.profile_id}
               onChange={(e) => update({ profile_id: e.target.value })}
-              placeholder="grounded-default"
+              placeholder="lintpdf-default"
             />
             <p className="text-xs text-gray-400 mt-1">
               The Voyage Plan profile ID to use for preflight checks

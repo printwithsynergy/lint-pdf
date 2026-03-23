@@ -62,7 +62,7 @@ class TestIccProfileAnalyzer:
         findings = analyzer.analyze(doc, [])
         icc_001 = [f for f in findings if f.inspection_id == "GRD_ICC_001"]
         assert len(icc_001) >= 1
-        assert icc_001[0].severity == Severity.AGROUND
+        assert icc_001[0].severity == Severity.ERROR
 
     def test_missing_icc_profile_ref(self):
         cs = PdfColorSpace(name="CS1", cs_type="ICCBased", components=3, icc_profile_ref=None)
@@ -71,7 +71,7 @@ class TestIccProfileAnalyzer:
         findings = analyzer.analyze(doc, [])
         icc_003 = [f for f in findings if f.inspection_id == "GRD_ICC_003"]
         assert len(icc_003) >= 1
-        assert icc_003[0].severity == Severity.AGROUND
+        assert icc_003[0].severity == Severity.ERROR
 
     def test_output_intent_validation(self):
         doc = _make_doc(output_intents=[{"S": "GTS_PDFX", "OutputConditionIdentifier": "FOGRA39"}])
@@ -86,7 +86,7 @@ class TestIccProfileAnalyzer:
         findings = analyzer.analyze(doc, [])
         icc_004 = [f for f in findings if f.inspection_id == "GRD_ICC_004"]
         assert len(icc_004) >= 1
-        assert icc_004[0].severity == Severity.SQUALL
+        assert icc_004[0].severity == Severity.WARNING
 
     def test_multiple_inconsistent_output_intents(self):
         doc = _make_doc(
@@ -308,7 +308,7 @@ class TestIccAnalyzerNewChecks:
         findings = analyzer.analyze(doc, [])
         icc_007 = [f for f in findings if f.inspection_id == "GRD_ICC_007"]
         assert len(icc_007) >= 1
-        assert icc_007[0].severity == Severity.SQUALL
+        assert icc_007[0].severity == Severity.WARNING
 
     def test_icc_007_no_fire_when_complete(self):
         """GRD_ICC_007 does not fire when all required tags present."""
@@ -343,7 +343,7 @@ class TestIccAnalyzerNewChecks:
         findings = analyzer.analyze(doc, [])
         icc_009 = [f for f in findings if f.inspection_id == "GRD_ICC_009"]
         assert len(icc_009) >= 1
-        assert icc_009[0].severity == Severity.SQUALL
+        assert icc_009[0].severity == Severity.WARNING
 
     def test_icc_009_no_fire_when_d50(self):
         """GRD_ICC_009 does not fire with correct D50 illuminant."""

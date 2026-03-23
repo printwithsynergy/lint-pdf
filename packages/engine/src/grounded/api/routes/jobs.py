@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
 _file_param = File(..., description="PDF file to preflight")
-_profile_param = Form(default="grounded-default", description="Profile to use")
+_profile_param = Form(default="lintpdf-default", description="Profile to use")
 
 
 def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skipcq: PY-R1000
@@ -100,6 +100,7 @@ def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skip
 async def submit_job(  # skipcq: PY-R1000
     file: UploadFile = _file_param,
     profile_id: str = _profile_param,
+    jdf_file: UploadFile | None = File(default=None, description="Optional JDF/XJDF sidecar"),
     db: Session = Depends(get_db),  # noqa: B008
     tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
 ) -> JSONResponse:
@@ -131,6 +132,18 @@ async def submit_job(  # skipcq: PY-R1000
         content,
     )
 
+    # Parse JDF sidecar if provided
+    jdf_overrides = None
+    if jdf_file is not None:
+        try:
+            jdf_content = await jdf_file.read()
+            from grounded.integrations.jdf_parser import params_to_overrides, parse_jdf
+
+            jdf_params = parse_jdf(jdf_content)
+            jdf_overrides = params_to_overrides(jdf_params)
+        except Exception:
+            logger.warning("Failed to parse JDF sidecar for job %s — ignoring", job_id)
+
     job = Job(
         id=job_id,
         tenant_id=tenant.id,
@@ -139,6 +152,7 @@ async def submit_job(  # skipcq: PY-R1000
         file_key=file_key,
         file_name=file.filename,
         file_size=len(content),
+        jdf_overrides=jdf_overrides,
     )
     db.add(job)
     db.commit()
@@ -161,8 +175,13 @@ async def submit_job(  # skipcq: PY-R1000
         logger.debug("Failed to cache PDF in Redis — worker will use R2")
 
     queue_name = "priority" if entitlements.priority_processing else "default"
+    task_args = [str(job_id), profile_id, file_key]
+    task_kwargs = {}
+    if jdf_overrides:
+        task_kwargs["jdf_overrides"] = jdf_overrides
     run_preflight.apply_async(
-        args=[str(job_id), profile_id, file_key],
+        args=task_args,
+        kwargs=task_kwargs,
         queue=queue_name,
     )
 
@@ -226,8 +245,8 @@ async def get_job(
         summary = result.get("summary", {})
         response.summary = JobSummaryResponse(
             total_findings=summary.get("total_findings", 0),
-            aground_count=summary.get("aground_count", 0),
-            squall_count=summary.get("squall_count", 0),
+            error_count=summary.get("error_count", 0),
+            warning_count=summary.get("warning_count", 0),
             advisory_count=summary.get("advisory_count", 0),
             passed=summary.get("passed", True),
             page_count=summary.get("page_count", 0),

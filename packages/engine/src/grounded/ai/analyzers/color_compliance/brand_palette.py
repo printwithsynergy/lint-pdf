@@ -210,8 +210,8 @@ class BrandPaletteAnalyzer(BaseAIAnalyzer):
             ]
 
         # Thresholds
-        squall_threshold = float(getattr(ai_config, "delta_e_squall_threshold", 2.0) or 2.0)
-        aground_threshold = float(getattr(ai_config, "delta_e_aground_threshold", 5.0) or 5.0)
+        warning_threshold = float(getattr(ai_config, "delta_e_warning_threshold", 2.0) or 2.0)
+        error_threshold = float(getattr(ai_config, "delta_e_error_threshold", 5.0) or 5.0)
 
         # Extract document colors
         doc_colors = _extract_document_colors(events)
@@ -239,19 +239,19 @@ class BrandPaletteAnalyzer(BaseAIAnalyzer):
 
             min_delta_e = round(min_delta_e, 2)
 
-            if min_delta_e > aground_threshold:
-                severity = Severity.AGROUND
+            if min_delta_e > error_threshold:
+                severity = Severity.ERROR
                 message = (
                     f"Color {color_info['color_space']} {color_info['values']} "
                     f"is out of brand palette (ΔE={min_delta_e:.2f}, "
-                    f"nearest palette: {closest_palette}, threshold: {aground_threshold})"
+                    f"nearest palette: {closest_palette}, threshold: {error_threshold})"
                 )
-            elif min_delta_e > squall_threshold:
-                severity = Severity.SQUALL
+            elif min_delta_e > warning_threshold:
+                severity = Severity.WARNING
                 message = (
                     f"Color {color_info['color_space']} {color_info['values']} "
                     f"deviates from brand palette (ΔE={min_delta_e:.2f}, "
-                    f"nearest palette: {closest_palette}, threshold: {squall_threshold})"
+                    f"nearest palette: {closest_palette}, threshold: {warning_threshold})"
                 )
             else:
                 continue

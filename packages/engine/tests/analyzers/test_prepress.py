@@ -76,7 +76,7 @@ class TestTransferFunction:
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
         tf = [f for f in findings if f.inspection_id == "GRD_PRESS_002"]
         assert len(tf) == 1
-        assert tf[0].severity == Severity.SQUALL
+        assert tf[0].severity == Severity.WARNING
 
     @staticmethod
     def test_no_transfer_no_finding() -> None:

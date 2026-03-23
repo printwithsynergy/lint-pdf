@@ -23,7 +23,7 @@ class TenantEntitlements:
     whitelabel_enabled: bool
     priority_processing: bool
     custom_integrations: bool
-    custom_voyage_plans: bool
+    custom_profiles: bool
     max_webhooks: int
     ai_enabled: bool
 
@@ -76,7 +76,7 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
         whitelabel_enabled=merged["whitelabel_enabled"],
         priority_processing=merged["priority_processing"],
         custom_integrations=merged["custom_integrations"],
-        custom_voyage_plans=merged["custom_voyage_plans"],
+        custom_profiles=merged["custom_profiles"],
         max_webhooks=merged["max_webhooks"],
         ai_enabled=merged.get("ai_enabled", False),
     )

@@ -1,19 +1,23 @@
 """LintPDF exception hierarchy.
 
-All LintPDF-specific exceptions inherit from GroundedError.
+All LintPDF-specific exceptions inherit from LintPDFError.
 Parser exceptions map to specific failure modes during PDF parsing.
 Validation exceptions cover semantic and rule engine issues.
 """
 
 
-class GroundedError(Exception):
+class LintPDFError(Exception):
     """Base exception for all LintPDF errors."""
+
+
+# Backwards compatibility alias
+GroundedError = LintPDFError
 
 
 # --- Parser Layer Exceptions ---
 
 
-class PDFStructureError(GroundedError):
+class PDFStructureError(LintPDFError):
     """PDF file structure is invalid or unreadable.
 
     Raised when the PDF cannot be opened at all — missing header,
@@ -21,7 +25,7 @@ class PDFStructureError(GroundedError):
     """
 
 
-class PDFParseError(GroundedError):
+class PDFParseError(LintPDFError):
     """PDF parsing failed for a specific object or stream.
 
     Raised when a specific PDF object cannot be parsed, but the
@@ -29,7 +33,7 @@ class PDFParseError(GroundedError):
     """
 
 
-class PDFStreamEncodingError(GroundedError):
+class PDFStreamEncodingError(LintPDFError):
     """Content stream decompression or decoding failed.
 
     Raised when a stream filter (FlateDecode, ASCII85Decode, etc.)
@@ -37,7 +41,7 @@ class PDFStreamEncodingError(GroundedError):
     """
 
 
-class PDFObjectNotFoundError(GroundedError):
+class PDFObjectNotFoundError(LintPDFError):
     """Requested PDF object does not exist.
 
     Raised when an indirect reference points to a non-existent object,
@@ -48,7 +52,7 @@ class PDFObjectNotFoundError(GroundedError):
 # --- Semantic Layer Exceptions ---
 
 
-class InvalidBoxError(GroundedError):
+class InvalidBoxError(LintPDFError):
     """Page box coordinates are invalid.
 
     Raised when box coordinates fail validation (e.g., x0 >= x1)
@@ -56,7 +60,7 @@ class InvalidBoxError(GroundedError):
     """
 
 
-class InvalidPageError(GroundedError):
+class InvalidPageError(LintPDFError):
     """Page is missing required properties.
 
     Raised when MediaBox is missing from the page and all ancestors,
@@ -64,7 +68,7 @@ class InvalidPageError(GroundedError):
     """
 
 
-class ContentStreamError(GroundedError):
+class ContentStreamError(LintPDFError):
     """Content stream interpretation failed.
 
     Raised when the content stream interpreter encounters an
@@ -76,15 +80,19 @@ class ContentStreamError(GroundedError):
 # --- Rule Engine Exceptions ---
 
 
-class VoyagePlanValidationError(GroundedError):
-    """Voyage Plan JSON schema validation failed.
+class PreflightProfileValidationError(LintPDFError):
+    """Preflight Profile JSON schema validation failed.
 
-    Raised when a Voyage Plan file does not conform to the
+    Raised when a Preflight Profile does not conform to the
     expected JSON schema.
     """
 
 
-class RuleRegistrationError(GroundedError):
+# Backwards compatibility alias
+VoyagePlanValidationError = PreflightProfileValidationError
+
+
+class RuleRegistrationError(LintPDFError):
     """Rule registration failed.
 
     Raised when a rule function cannot be registered — duplicate name,
@@ -92,8 +100,8 @@ class RuleRegistrationError(GroundedError):
     """
 
 
-class ProfileNotFoundError(GroundedError):
-    """Requested Voyage Plan profile does not exist.
+class ProfileNotFoundError(LintPDFError):
+    """Requested preflight profile does not exist.
 
     Raised when a profile_id is not found in the ProfileRegistry.
     """
@@ -102,21 +110,21 @@ class ProfileNotFoundError(GroundedError):
 # --- API Layer Exceptions ---
 
 
-class TenantNotFoundError(GroundedError):
+class TenantNotFoundError(LintPDFError):
     """Tenant could not be resolved from API key.
 
     Raised when the provided API key does not map to any tenant.
     """
 
 
-class RateLimitExceededError(GroundedError):
+class RateLimitExceededError(LintPDFError):
     """Tenant has exceeded their rate limit.
 
     Raised when a tenant's request rate exceeds their plan's limit.
     """
 
 
-class JobNotFoundError(GroundedError):
+class JobNotFoundError(LintPDFError):
     """Inspection job not found.
 
     Raised when a job_id does not exist in the database.

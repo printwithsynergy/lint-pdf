@@ -92,7 +92,7 @@ class ColorCastDetectionAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="GRD_AI_CAST_001",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Significant color cast detected on page {page_num}: "
                             f"{cast_direction} cast (deviation {deviation}, "

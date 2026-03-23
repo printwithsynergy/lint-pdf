@@ -1,8 +1,8 @@
 """NSFW content detection analyzer — GPU-based explicit content screening.
 
 Uses NudeNet on the GPU inference service to detect inappropriate content
-in PDF page images.  Explicit content triggers an AGROUND finding; suggestive
-content triggers a SQUALL finding.
+in PDF page images.  Explicit content triggers an ERROR finding; suggestive
+content triggers a WARNING finding.
 """
 
 from __future__ import annotations
@@ -104,7 +104,7 @@ class NSFWDetectionAnalyzer(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="AI_NSFW_002",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"Explicit content detected on page {page_num} "
                                 f"(label: {label}, confidence: {confidence:.0%})"
@@ -123,7 +123,7 @@ class NSFWDetectionAnalyzer(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="AI_NSFW_003",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Suggestive content detected on page {page_num} "
                                 f"(label: {label}, confidence: {confidence:.0%})"

@@ -38,7 +38,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-016",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"PDF version {version} exceeds maximum allowed for PDF/X-1a "
                         f"(must be 1.3 or 1.4)"
@@ -56,7 +56,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-017",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="/GTS_PDFXVersion missing from Info dictionary (required for PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.7.3",
             )
@@ -67,7 +67,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-018",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"/GTS_PDFXVersion is '{pdfx_version}' "
                         f"(expected 'PDF/X-1a:2003' or 'PDF/X-1:2001')"
@@ -83,7 +83,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-019",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="/Trapped key missing from Info dictionary",
                 iso_clause="ISO 15930-4:2003 6.7.5",
             )
@@ -95,7 +95,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-020",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="/CreationDate missing from Info dictionary",
                 iso_clause="ISO 15930-4:2003 6.7.5",
             )
@@ -107,7 +107,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-021",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="/ModDate missing from Info dictionary",
                 iso_clause="ISO 15930-4:2003 6.7.5",
             )
@@ -119,7 +119,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-022",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="/Title missing from Info dictionary",
                 iso_clause="ISO 15930-4:2003 6.7.5",
             )

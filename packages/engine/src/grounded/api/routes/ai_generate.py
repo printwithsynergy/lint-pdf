@@ -1,4 +1,4 @@
-"""Natural language Voyage Plan generation endpoint."""
+"""Natural language Preflight Profile generation endpoint."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
 
-from grounded.api.ai_schemas import NLVoyagePlanRequest, NLVoyagePlanResponse
+from grounded.api.ai_schemas import NLPreflightProfileRequest, NLPreflightProfileResponse
 from grounded.api.auth import get_current_tenant
 from grounded.api.database import get_db
 
@@ -18,9 +18,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/voyage-plans", tags=["ai-generate"])
+router = APIRouter(prefix="/api/v1/preflight-profiles", tags=["ai-generate"])
 
-# System prompt for NL voyage plan generation
+# System prompt for NL preflight profile generation
 _SYSTEM_PROMPT = """You are an expert prepress technician generating LintPDF preflight Rulesets.
 
 A Ruleset is a JSON configuration that controls which preflight checks run on a PDF file.
@@ -37,19 +37,19 @@ Available fields:
 
 Available AI categories: barcode_detection, content_quality, file_comparison, color_compliance, trend_analysis, dieline_detection, regulatory_compliance, image_analysis, document_classification, logo_verification, spatial_analysis, text_analysis, symbol_detection
 
-Respond with ONLY valid JSON matching the Voyage Plan schema. No explanation outside the JSON."""
+Respond with ONLY valid JSON matching the Preflight Profile schema. No explanation outside the JSON."""
 
 
-@router.post("/generate", response_model=NLVoyagePlanResponse)
-async def generate_voyage_plan(
-    request: NLVoyagePlanRequest,
+@router.post("/generate", response_model=NLPreflightProfileResponse)
+async def generate_preflight_profile(
+    request: NLPreflightProfileRequest,
     db: Session = Depends(get_db),  # noqa: B008
     tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
-) -> NLVoyagePlanResponse:
-    """Generate a Voyage Plan from a natural language description.
+) -> NLPreflightProfileResponse:
+    """Generate a Preflight Profile from a natural language description.
 
     Uses an LLM to interpret the description and produce a valid
-    Voyage Plan JSON configuration.
+    Preflight Profile JSON configuration.
     """
     from grounded.ai.access import check_ai_access
 
@@ -57,33 +57,33 @@ async def generate_voyage_plan(
 
     # Try to use Claude API for generation
     try:
-        voyage_plan = _generate_with_llm(request.description)
+        preflight_profile = _generate_with_llm(request.description)
     except Exception:
-        logger.exception("LLM voyage plan generation failed")
+        logger.exception("LLM preflight profile generation failed")
         # Fall back to rule-based generation
-        voyage_plan = _generate_rule_based(request.description)
+        preflight_profile = _generate_rule_based(request.description)
 
     # Validate the generated plan against our schema
-    from grounded.profiles.schema import VoyagePlan
+    from grounded.profiles.schema import PreflightProfile
 
     try:
-        validated = VoyagePlan.model_validate(voyage_plan)
-        voyage_plan = validated.model_dump()
+        validated = PreflightProfile.model_validate(preflight_profile)
+        preflight_profile = validated.model_dump()
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Generated voyage plan failed validation: {exc}",
+            detail=f"Generated preflight profile failed validation: {exc}",
         ) from exc
 
-    return NLVoyagePlanResponse(
-        voyage_plan=voyage_plan,
-        explanation=f"Generated voyage plan based on: {request.description}",
+    return NLPreflightProfileResponse(
+        preflight_profile=preflight_profile,
+        explanation=f"Generated Preflight Profile based on: {request.description}",
         confidence=0.85,
     )
 
 
 def _generate_with_llm(description: str) -> dict[str, Any]:
-    """Generate a voyage plan using an LLM."""
+    """Generate a preflight profile using an LLM."""
     try:
         import anthropic
 
@@ -102,11 +102,11 @@ def _generate_with_llm(description: str) -> dict[str, Any]:
 
 
 def _generate_rule_based(description: str) -> dict[str, Any]:  # skipcq: PY-R1000
-    """Fallback rule-based voyage plan generation from keywords."""
+    """Fallback rule-based preflight profile generation from keywords."""
     desc_lower = description.lower()
 
     plan: dict[str, Any] = {
-        "name": "Generated Voyage Plan",
+        "name": "Generated Preflight Profile",
         "description": description,
         "version": "1.0",
         "conformance": None,

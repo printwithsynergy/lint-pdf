@@ -48,7 +48,7 @@ class TestXmpPresence:
         f = validate_metadata(_doc(metadata_stream=None))
         ids = [x for x in f if x.inspection_id == "PDFX4-005"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_valid_xmp_ok() -> None:
@@ -71,7 +71,7 @@ class TestPdfxVersion:
         f = validate_metadata(_doc(metadata_stream=xmp))
         ids = [x for x in f if x.inspection_id == "PDFX4-006"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_wrong_pdfx_version() -> None:

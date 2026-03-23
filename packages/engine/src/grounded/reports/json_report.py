@@ -24,8 +24,8 @@ def generate_json_report(result: PreflightResult) -> bytes:
         "summary": {
             "passed": result.summary.passed,
             "total_findings": result.summary.total_findings,
-            "aground_count": result.summary.aground_count,
-            "squall_count": result.summary.squall_count,
+            "error_count": result.summary.error_count,
+            "warning_count": result.summary.warning_count,
             "advisory_count": result.summary.advisory_count,
             "page_count": result.summary.page_count,
             "file_size_bytes": result.summary.file_size_bytes,

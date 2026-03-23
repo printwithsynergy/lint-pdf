@@ -59,7 +59,7 @@ def validate_transparency(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-046",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"Non-standard blend mode '{event.blend_mode}' on page {event.page_num}"
                         ),
@@ -99,7 +99,7 @@ def validate_transparency(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-044",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Transparency group /CS '{cs}' on page {page.page_num} "
                         f"conflicts with output intent color space '{output_cs}'"

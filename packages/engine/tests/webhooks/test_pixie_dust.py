@@ -14,8 +14,8 @@ from grounded.webhooks.pixie_dust import (
 
 
 class _Severity(StrEnum):
-    AGROUND = "aground"
-    SQUALL = "squall"
+    ERROR = "error"
+    WARNING = "warning"
     ADVISORY = "advisory"
 
 
@@ -32,8 +32,8 @@ class _Finding:
 @dataclass
 class _Summary:
     total_findings: int = 0
-    aground_count: int = 0
-    squall_count: int = 0
+    error_count: int = 0
+    warning_count: int = 0
     advisory_count: int = 0
     passed: bool = True
     page_count: int = 1
@@ -43,7 +43,7 @@ class _Summary:
 @dataclass
 class _PreflightResult:
     job_id: str = "job-123"
-    profile_id: str = "grounded-default"
+    profile_id: str = "lintpdf-default"
     findings: list[Any] = field(default_factory=list)
     summary: _Summary = field(default_factory=_Summary)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -88,7 +88,7 @@ class TestFormatPixieDustPayload:
 
         assert payload["event"] == "preflight.complete"
         assert payload["job_id"] == "job-123"
-        assert payload["profile_id"] == "grounded-default"
+        assert payload["profile_id"] == "lintpdf-default"
         assert payload["passed"] is True
         assert payload["badge"] == "pass"
         assert payload["duration_ms"] == 500
@@ -111,8 +111,8 @@ class TestFormatPixieDustPayload:
         result = _PreflightResult(
             summary=_Summary(
                 total_findings=10,
-                aground_count=2,
-                squall_count=3,
+                error_count=2,
+                warning_count=3,
                 advisory_count=5,
                 page_count=4,
                 file_size_bytes=2048,
@@ -121,8 +121,8 @@ class TestFormatPixieDustPayload:
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
 
         assert payload["summary"]["total"] == 10
-        assert payload["summary"]["aground"] == 2
-        assert payload["summary"]["squall"] == 3
+        assert payload["summary"]["error"] == 2
+        assert payload["summary"]["warning"] == 3
         assert payload["summary"]["advisory"] == 5
         assert payload["summary"]["pages"] == 4
         assert payload["summary"]["file_size_bytes"] == 2048
@@ -156,13 +156,13 @@ class TestFormatPixieDustPayload:
         findings = [
             _Finding(
                 inspection_id="GRD_FONT_001",
-                severity=_Severity.AGROUND,
+                severity=_Severity.ERROR,
                 message="Font not embedded",
                 page_num=1,
             ),
             _Finding(
                 inspection_id="GRD_IMG_001",
-                severity=_Severity.SQUALL,
+                severity=_Severity.WARNING,
                 message="Low resolution",
                 page_num=2,
             ),
@@ -176,8 +176,8 @@ class TestFormatPixieDustPayload:
         result = _PreflightResult(findings=findings)
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
 
-        assert len(payload["findings"]["aground"]) == 1
-        assert len(payload["findings"]["squall"]) == 1
+        assert len(payload["findings"]["error"]) == 1
+        assert len(payload["findings"]["warning"]) == 1
         assert len(payload["findings"]["advisory"]) == 1
 
     @staticmethod
@@ -185,7 +185,7 @@ class TestFormatPixieDustPayload:
         findings = [
             _Finding(
                 inspection_id="GRD_FONT_001",
-                severity=_Severity.AGROUND,
+                severity=_Severity.ERROR,
                 message="Font not embedded",
                 page_num=3,
                 object_id="F1",
@@ -194,7 +194,7 @@ class TestFormatPixieDustPayload:
         result = _PreflightResult(findings=findings)
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
 
-        finding = payload["findings"]["aground"][0]
+        finding = payload["findings"]["error"][0]
         assert finding["check_id"] == "GRD_FONT_001"
         assert finding["message"] == "Font not embedded"
         assert finding["page"] == 3
@@ -205,8 +205,8 @@ class TestFormatPixieDustPayload:
         result = _PreflightResult(findings=[])
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
 
-        assert payload["findings"]["aground"] == []
-        assert payload["findings"]["squall"] == []
+        assert payload["findings"]["error"] == []
+        assert payload["findings"]["warning"] == []
         assert payload["findings"]["advisory"] == []
 
     @staticmethod

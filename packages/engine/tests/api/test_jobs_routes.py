@@ -20,7 +20,7 @@ from tests.api.conftest import PLACEHOLDER_TENANT_ID
 # ---------------------------------------------------------------------------
 
 
-def _submit(client: TestClient, pdf: bytes, profile: str = "grounded-default"):
+def _submit(client: TestClient, pdf: bytes, profile: str = "lintpdf-default"):
     """Submit a PDF and return the response."""
     return client.post(
         "/api/v1/jobs",
@@ -44,7 +44,7 @@ def _seed_job(
         id=uuid.uuid4(),
         tenant_id=PLACEHOLDER_TENANT_ID,
         status=status,
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         file_key="fake/key.pdf",
         file_name=file_name,
         file_size=1024,
@@ -144,11 +144,11 @@ class TestSubmitJobSuccess:
 
     @staticmethod
     def test_custom_profile_id(client: TestClient, minimal_pdf_bytes: bytes) -> None:
-        resp = _submit(client, minimal_pdf_bytes, profile="grounded-strict")
+        resp = _submit(client, minimal_pdf_bytes, profile="lintpdf-strict")
         assert resp.status_code == 202
         job_id = resp.json()["job_id"]
         detail = client.get(f"/api/v1/jobs/{job_id}").json()
-        assert detail["profile_id"] == "grounded-strict"
+        assert detail["profile_id"] == "lintpdf-strict"
 
     @staticmethod
     def test_celery_task_dispatched(client: TestClient, minimal_pdf_bytes: bytes) -> None:
@@ -220,8 +220,8 @@ class TestGetJob:
         result = {
             "summary": {
                 "total_findings": 2,
-                "aground_count": 1,
-                "squall_count": 0,
+                "error_count": 1,
+                "warning_count": 0,
                 "advisory_count": 1,
                 "passed": False,
                 "page_count": 3,
@@ -239,7 +239,7 @@ class TestGetJob:
         f1 = JobFinding(
             job_id=job.id,
             inspection_id="INK001",
-            severity="aground",
+            severity="error",
             message="Spot color detected",
             page_num=1,
         )
@@ -262,7 +262,7 @@ class TestGetJob:
         assert data["summary"]["passed"] is False
         assert len(data["findings"]) == 2
         severities = {f["severity"] for f in data["findings"]}
-        assert "aground" in severities
+        assert "error" in severities
         assert "advisory" in severities
 
     @staticmethod
@@ -295,7 +295,7 @@ class TestGetJob:
             id=uuid.uuid4(),
             tenant_id=other_tenant_id,
             status=JobStatus.PENDING,
-            profile_id="grounded-default",
+            profile_id="lintpdf-default",
             file_key="other/key.pdf",
             file_name="other.pdf",
             file_size=100,

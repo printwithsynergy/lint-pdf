@@ -50,7 +50,7 @@ def _check_font(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-022",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Type 3 font '{base_font}' used (prohibited in PDF/A-1)",
                     page_num=page_num,
                     iso_clause="ISO 19005-1 6.3.5",
@@ -74,7 +74,7 @@ def _check_font(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-019",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Font '{base_font}' is not embedded (required for PDF/A)",
                     page_num=page_num,
                     iso_clause="ISO 19005 6.3.3",
@@ -101,7 +101,7 @@ def _check_font(  # skipcq: PY-R1000
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-019",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"CID font '{base_font}' is not embedded "
                                 f"(required for PDF/A)"
@@ -119,7 +119,7 @@ def _check_font(  # skipcq: PY-R1000
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-023",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=f"CID font '{base_font}' missing /CIDToGIDMap",
                             page_num=page_num,
                             iso_clause="ISO 19005 6.3.5",
@@ -140,7 +140,7 @@ def _check_font(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-020",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=(
                     f"Font '{base_font}' missing /ToUnicode CMap "
                     f"(required for text extraction in PDF/A)"
@@ -163,7 +163,7 @@ def _check_font(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-021",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"Font '{base_font}' missing /Widths array",
                 page_num=page_num,
                 iso_clause="ISO 19005 6.3.4",
@@ -183,7 +183,7 @@ def _check_font(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-024",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"Font '{base_font}' missing /Encoding",
                 page_num=page_num,
                 iso_clause="ISO 19005 6.3.3",
@@ -203,7 +203,7 @@ def _check_font(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-025",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"TrueType font '{base_font}' missing required tables: "
                             f"{missing_tables}"

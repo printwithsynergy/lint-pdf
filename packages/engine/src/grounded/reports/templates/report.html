@@ -29,15 +29,15 @@
       .summary-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; text-align: center; }
       .summary-card .count { font-size: 28px; font-weight: bold; }
       .summary-card .label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
-      .aground .count { color: #dc2626; }
-      .squall .count { color: #ea580c; }
+      .error .count { color: #dc2626; }
+      .warning .count { color: #ea580c; }
       .advisory .count { color: #2563eb; }
       table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
       th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
       th { background: #f9fafb; font-weight: 600; }
       .severity-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
-      .severity-aground { background: #fef2f2; color: #dc2626; }
-      .severity-squall { background: #fff7ed; color: #ea580c; }
+      .severity-error { background: #fef2f2; color: #dc2626; }
+      .severity-warning { background: #fff7ed; color: #ea580c; }
       .severity-advisory { background: #eff6ff; color: #2563eb; }
       .source-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-left: 4px; }
       .source-ai { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
@@ -72,10 +72,10 @@
       <button onclick="filterSeverity('')" class="active" data-filter="all">
         All
       </button>
-      <button onclick="filterSeverity('aground')" data-filter="aground">
+      <button onclick="filterSeverity('error')" data-filter="error">
         Error
       </button>
-      <button onclick="filterSeverity('squall')" data-filter="squall">
+      <button onclick="filterSeverity('warning')" data-filter="warning">
         Warning
       </button>
       <button onclick="filterSeverity('advisory')" data-filter="advisory">
@@ -103,12 +103,12 @@
 
     <h2>Summary</h2>
     <div class="summary-grid">
-      <div class="summary-card aground">
-        <div class="count">{{ summary.aground_count }}</div>
+      <div class="summary-card error">
+        <div class="count">{{ summary.error_count }}</div>
         <div class="label">Errors</div>
       </div>
-      <div class="summary-card squall">
-        <div class="count">{{ summary.squall_count }}</div>
+      <div class="summary-card warning">
+        <div class="count">{{ summary.warning_count }}</div>
         <div class="label">Warnings</div>
       </div>
       <div class="summary-card advisory">

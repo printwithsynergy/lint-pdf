@@ -72,12 +72,12 @@ class TestReportService:
     def _make_result_json() -> dict:
         return {
             "job_id": str(uuid.uuid4()),
-            "profile_id": "grounded-default",
+            "profile_id": "lintpdf-default",
             "duration_ms": 42,
             "summary": {
                 "total_findings": 1,
-                "aground_count": 1,
-                "squall_count": 0,
+                "error_count": 1,
+                "warning_count": 0,
                 "advisory_count": 0,
                 "passed": False,
                 "page_count": 1,
@@ -91,7 +91,7 @@ class TestReportService:
             "findings": [
                 {
                     "inspection_id": "GRD_FONT_001",
-                    "severity": "aground",
+                    "severity": "error",
                     "message": "Font not embedded",
                     "page_num": 1,
                     "object_id": None,

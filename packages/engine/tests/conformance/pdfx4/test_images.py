@@ -55,7 +55,7 @@ class TestLzwCompression:
         f = validate_images(_doc(), [_img_event(filters=("LZWDecode",))])
         ids = [x for x in f if x.inspection_id == "PDFX4-079"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_flate_ok() -> None:
@@ -69,7 +69,7 @@ class TestOpiReference:
         f = validate_images(_doc(), [_img_event(has_opi=True)])
         ids = [x for x in f if x.inspection_id == "PDFX4-082i"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestAlternateImages:
@@ -78,7 +78,7 @@ class TestAlternateImages:
         f = validate_images(_doc(), [_img_event(has_alternate=True)])
         ids = [x for x in f if x.inspection_id == "PDFX4-083i"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
 
 class TestColorSpaceCompat:

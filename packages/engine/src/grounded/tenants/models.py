@@ -31,7 +31,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "whitelabel_enabled": False,
         "priority_processing": False,
         "custom_integrations": False,
-        "custom_voyage_plans": False,
+        "custom_profiles": False,
         "max_webhooks": 0,
     },
     TenantPlan.STARTER: {
@@ -46,7 +46,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "whitelabel_enabled": False,
         "priority_processing": False,
         "custom_integrations": False,
-        "custom_voyage_plans": False,
+        "custom_profiles": False,
         "max_webhooks": 0,
     },
     TenantPlan.GROWTH: {
@@ -61,7 +61,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "whitelabel_enabled": False,
         "priority_processing": False,
         "custom_integrations": False,
-        "custom_voyage_plans": True,
+        "custom_profiles": True,
         "max_webhooks": 5,
     },
     TenantPlan.SCALE: {
@@ -76,7 +76,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "whitelabel_enabled": True,
         "priority_processing": True,
         "custom_integrations": False,
-        "custom_voyage_plans": True,
+        "custom_profiles": True,
         "max_webhooks": 20,
     },
     TenantPlan.ENTERPRISE: {
@@ -91,7 +91,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "whitelabel_enabled": True,
         "priority_processing": True,
         "custom_integrations": True,
-        "custom_voyage_plans": True,
+        "custom_profiles": True,
         "max_webhooks": 100,
     },
 }

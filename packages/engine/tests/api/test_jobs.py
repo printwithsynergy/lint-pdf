@@ -15,7 +15,7 @@ class TestSubmitJob:
         response = client.post(
             "/api/v1/jobs",
             files={"file": ("test.pdf", BytesIO(minimal_pdf_bytes), "application/pdf")},
-            data={"profile_id": "grounded-default"},
+            data={"profile_id": "lintpdf-default"},
         )
         assert response.status_code == 202
         data = response.json()
@@ -69,7 +69,7 @@ class TestGetJob:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "pending"
-        assert data["profile_id"] == "grounded-default"
+        assert data["profile_id"] == "lintpdf-default"
         assert data["file_name"] == "test.pdf"
 
     @staticmethod

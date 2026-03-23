@@ -113,7 +113,7 @@ class ColorAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_COLOR_006",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message="No Output Intent defined in document",
                     iso_clause="ISO 15930-7:2010 6.2.3",
                 )
@@ -138,7 +138,7 @@ class ColorAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_COLOR_001",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Prohibited color space '{cs.cs_type}' "
                                     f"defined in page {page.page_num} resources"
@@ -157,7 +157,7 @@ class ColorAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_COLOR_002",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"DeviceRGB color space '{cs_name}' "
                                     f"used without ICC profile on page {page.page_num}"
@@ -175,7 +175,7 @@ class ColorAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_COLOR_003",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Spot color '{cs_name}' ({cs.cs_type}) "
                                     f"has no alternate color space on page {page.page_num}"
@@ -330,7 +330,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_COLOR_001",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"Prohibited color space '{event.color_space}' "
                             f"used on page {event.page_num}"
@@ -356,7 +356,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_COLOR_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"TAC {tac:.0f}% exceeds limit {self.tac_limit:.0f}% "
                             f"(fill color on page {event.page_num})"
@@ -378,7 +378,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_COLOR_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"TAC {tac:.0f}% exceeds limit {self.tac_limit:.0f}% "
                             f"(stroke color on page {event.page_num})"
@@ -414,7 +414,7 @@ class ColorAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_COLOR_005",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Registration color (100% all CMYK) used as fill on page {event.page_num}"
                     ),
@@ -428,7 +428,7 @@ class ColorAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_COLOR_005",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Registration color (100% all CMYK) used as stroke "
                         f"on page {event.page_num}"
@@ -467,7 +467,7 @@ class ColorAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_COLOR_008",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Rich black on small text ({effective_size:.1f}pt) "
                         f"on page {event.page_num} "
@@ -577,7 +577,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_COLOR_016",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Impure gray detected (CMY-built gray "
                             f"C={c * 100:.0f}% M={m * 100:.0f}% "
@@ -615,7 +615,7 @@ class ColorAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_COLOR_017",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Impure black detected "
                         f"(C={c * 100:.0f}% M={m * 100:.0f}% "
@@ -656,7 +656,7 @@ class ColorAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_COLOR_020",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Default color space override '{cs_key}' defined "
                                 f"on page {page.page_num} (may cause unexpected "
@@ -704,7 +704,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_COLOR_011",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Spot color '{colorant}' has conflicting alternate "
                             f"color spaces across pages {colorant_pages[colorant]}"
@@ -759,7 +759,7 @@ class ColorAnalyzer(BaseAnalyzer):
                                 findings.append(
                                     Finding(
                                         inspection_id="GRD_COLOR_012",
-                                        severity=Severity.SQUALL,
+                                        severity=Severity.WARNING,
                                         message=(
                                             f"Separation '{colorant}' has tint value "
                                             f"{fval * 100:.1f}% below 2% minimum dot "

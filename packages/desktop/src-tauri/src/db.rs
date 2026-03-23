@@ -6,8 +6,8 @@ use std::sync::Mutex;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JobSummary {
     pub passed: bool,
-    pub aground_count: u32,
-    pub squall_count: u32,
+    pub error_count: u32,
+    pub warning_count: u32,
     pub advisory_count: u32,
 }
 

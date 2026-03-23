@@ -46,7 +46,7 @@ class TestOverprintOnNonCMYK:
         findings = analyzer.analyze(_make_document(), events)
         op_findings = [f for f in findings if f.inspection_id == "GRD_OVER_001"]
         assert len(op_findings) == 1
-        assert op_findings[0].severity == Severity.SQUALL
+        assert op_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_overprint_on_cmyk_ok() -> None:
@@ -140,7 +140,7 @@ class TestOPMZero:
         findings = analyzer.analyze(_make_document(), events)
         opm_findings = [f for f in findings if f.inspection_id == "GRD_OVER_002"]
         assert len(opm_findings) == 1
-        assert opm_findings[0].severity == Severity.SQUALL
+        assert opm_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_opm1_cmyk_ok() -> None:

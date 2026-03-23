@@ -85,7 +85,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_OVER_002",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"OPM=0 with DeviceCMYK and overprint active "
                                 f"on page {event.page_num} "
@@ -108,7 +108,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_OVER_003",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Overprint active with transparency "
                                 f"on page {event.page_num} "
@@ -140,7 +140,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_OVER_004",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"White overprint on page {event.page_num} "
                                 f"(fill is white with overprint active — "
@@ -168,7 +168,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_OVER_006",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Overprint active with DeviceRGB "
                                     f"on page {event.page_num} "
@@ -194,7 +194,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_OVER_008",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"Registration color with overprint active "
                                 f"on page {event.page_num} "
@@ -223,7 +223,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                             findings.append(
                                 Finding(
                                     inspection_id="GRD_OVER_001",
-                                    severity=Severity.SQUALL,
+                                    severity=Severity.WARNING,
                                     message=(
                                         f"Overprint active on non-CMYK "
                                         f"color space '{cs}' "
@@ -252,7 +252,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_OVER_007",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Small black text ({event.font_size:.1f}pt) "
                                 f"in knockout mode on page {event.page_num} "

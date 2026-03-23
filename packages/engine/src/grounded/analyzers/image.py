@@ -129,7 +129,7 @@ class ImageAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_IMG_001",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Image '{result.image_name}' has low resolution: "
                             f"{result.dpi_effective:.0f} DPI "
@@ -189,7 +189,7 @@ class ImageAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_IMG_006",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Image '{event.image_name}' is upscaled "
                                     f"{upscale_pct:.0f}% on page {event.page_num} "
@@ -249,7 +249,7 @@ class ImageAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_IMG_007",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Image '{event.image_name}' uses LZW compression "
                         f"on page {event.page_num} (prohibited in PDF/X)"
@@ -312,7 +312,7 @@ class ImageAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_IMG_010",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Image '{event.image_name}' contains OPI reference "
                         f"on page {event.page_num} (prohibited in PDF/X)"
@@ -330,7 +330,7 @@ class ImageAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_IMG_011",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Image '{event.image_name}' has alternate images "
                         f"on page {event.page_num} (prohibited in PDF/X)"
@@ -635,7 +635,7 @@ class ImageAnalyzer(BaseAnalyzer):
         if workflow == "CMYK" and cs in ("DeviceRGB", "CalRGB"):
             return Finding(
                 inspection_id="GRD_IMG_003",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=(f"Image '{event.image_name}' uses {cs} in a CMYK workflow"),
                 page_num=event.page_num,
                 details={
@@ -649,7 +649,7 @@ class ImageAnalyzer(BaseAnalyzer):
         if workflow == "RGB" and cs in ("DeviceCMYK",):
             return Finding(
                 inspection_id="GRD_IMG_003",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=(f"Image '{event.image_name}' uses {cs} in an RGB workflow"),
                 page_num=event.page_num,
                 details={

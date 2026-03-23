@@ -27,7 +27,7 @@ def validate_boxes(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-049",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"MediaBox missing on page {pn}",
                     page_num=pn,
                     iso_clause="ISO 32000-2:2020 14.11.2",
@@ -41,7 +41,7 @@ def validate_boxes(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-050",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Neither TrimBox nor ArtBox present on page {pn} (one required for PDF/X-4)",
                     page_num=pn,
                     iso_clause="ISO 15930-7:2010 6.2.1",
@@ -53,7 +53,7 @@ def validate_boxes(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-051",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=f"Both TrimBox and ArtBox present with different values on page {pn}",
                     page_num=pn,
                     iso_clause="ISO 15930-7:2010 6.2.1",
@@ -67,7 +67,7 @@ def validate_boxes(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-052",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"BleedBox extends outside CropBox/MediaBox on page {pn}",
                         page_num=pn,
                         iso_clause="ISO 32000-2:2020 14.11.2",
@@ -81,7 +81,7 @@ def validate_boxes(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-053",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"TrimBox extends outside BleedBox on page {pn}",
                         page_num=pn,
                         iso_clause="ISO 32000-2:2020 14.11.2",
@@ -100,7 +100,7 @@ def validate_boxes(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-054",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"{box_name} has zero or negative dimensions on page {pn}",
                         page_num=pn,
                         iso_clause="ISO 32000-2:2020 14.11.2",
@@ -121,7 +121,7 @@ def validate_boxes(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-055",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=f"CropBox extends outside MediaBox on page {pn}",
                     page_num=pn,
                     iso_clause="ISO 32000-2:2020 14.11.2",
@@ -135,7 +135,7 @@ def validate_boxes(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-056",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"ArtBox extends outside container box on page {pn}",
                         page_num=pn,
                         iso_clause="ISO 32000-2:2020 14.11.2",

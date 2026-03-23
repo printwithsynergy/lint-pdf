@@ -100,7 +100,7 @@ def update_pace(pace: httpx.Client, job_id: str, result: dict):
         json={
             "status": "pass" if summary.get("passed") else "fail",
             "findings_count": summary.get("total_findings", 0),
-            "critical_count": summary.get("aground_count", 0),
+            "critical_count": summary.get("error_count", 0),
         },
     )
 

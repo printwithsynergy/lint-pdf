@@ -21,22 +21,24 @@ logger = logging.getLogger(__name__)
     soft_time_limit=270,
 )
 def run_preflight(
-    self: Any, job_id: str, profile_id: str, file_key: str
+    self: Any, job_id: str, profile_id: str, file_key: str, jdf_overrides: dict[str, Any] | None = None
 ) -> dict[str, Any]:  # skipcq: PY-R1000
     """Execute preflight job.
 
     Pipeline:
     1. Download PDF from storage
-    2. Load voyage plan from profile registry
-    3. Run PreflightOrchestrator
-    4. Store results + update job row
-    5. Dispatch webhooks
+    2. Load preflight profile from registry
+    3. Apply JDF overrides (if provided)
+    4. Run PreflightOrchestrator
+    5. Store results + update job row
+    6. Dispatch webhooks
 
     Args:
         self: Celery task instance (bound).
         job_id: UUID of the job.
         profile_id: Profile to use for preflight.
         file_key: Storage key for the PDF file.
+        jdf_overrides: Optional JDF-derived threshold overrides.
 
     Returns:
         Dict with job results including findings and summary.
@@ -103,11 +105,26 @@ def run_preflight(
             from grounded.profiles.registry import ProfileRegistry
 
             registry = ProfileRegistry()
-            voyage_plan = registry.get(profile_id)
+            profile = registry.get(profile_id)
 
-            # Load AI config if AI is enabled in the voyage plan
+            # Apply JDF overrides to profile thresholds if provided
+            if jdf_overrides:
+                threshold_data = profile.thresholds.model_dump()
+                for key, value in jdf_overrides.items():
+                    if key in threshold_data:
+                        threshold_data[key] = value
+                from grounded.profiles.schema import PreflightProfile, ThresholdConfig
+                profile = profile.model_copy(
+                    update={"thresholds": ThresholdConfig(**threshold_data)}
+                )
+                if "conformance" in jdf_overrides:
+                    profile = profile.model_copy(
+                        update={"conformance": jdf_overrides["conformance"]}
+                    )
+
+            # Load AI config if AI is enabled in the profile
             ai_config = None
-            if voyage_plan.ai and voyage_plan.ai.enabled:
+            if profile.ai and profile.ai.enabled:
                 try:
                     from grounded.ai.access import get_ai_config
 
@@ -119,7 +136,7 @@ def run_preflight(
             from grounded.profiles.orchestrator import PreflightOrchestrator
 
             orchestrator = PreflightOrchestrator(
-                voyage_plan,
+                profile,
                 profile_id=profile_id,
                 ai_config=ai_config,
                 pdf_bytes=pdf_bytes,
@@ -132,8 +149,8 @@ def run_preflight(
             result_dict = {
                 "summary": {
                     "total_findings": result.summary.total_findings,
-                    "aground_count": result.summary.aground_count,
-                    "squall_count": result.summary.squall_count,
+                    "error_count": result.summary.error_count,
+                    "warning_count": result.summary.warning_count,
                     "advisory_count": result.summary.advisory_count,
                     "passed": result.summary.passed,
                     "page_count": result.summary.page_count,

@@ -28,8 +28,8 @@ def format_pixie_dust_payload(
     """
     # Group findings by severity for summary
     findings_by_severity: dict[str, list[dict[str, Any]]] = {
-        "aground": [],
-        "squall": [],
+        "error": [],
+        "warning": [],
         "advisory": [],
     }
 
@@ -57,8 +57,8 @@ def format_pixie_dust_payload(
         "badge": "pass" if result.summary.passed else "fail",
         "summary": {
             "total": result.summary.total_findings,
-            "aground": result.summary.aground_count,
-            "squall": result.summary.squall_count,
+            "error": result.summary.error_count,
+            "warning": result.summary.warning_count,
             "advisory": result.summary.advisory_count,
             "pages": result.summary.page_count,
             "file_size_bytes": result.summary.file_size_bytes,

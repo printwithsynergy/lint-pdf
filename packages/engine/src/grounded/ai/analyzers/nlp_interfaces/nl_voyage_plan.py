@@ -1,10 +1,10 @@
-"""Natural language voyage plan creation — NLP interface stub.
+"""Natural language preflight profile creation — NLP interface stub.
 
-This analyzer registers the ``nl_voyage_plan_creation`` feature in the AI
+This analyzer registers the ``nl_preflight_profile_creation`` feature in the AI
 feature catalogue but does NOT perform inspection logic itself.  The actual
-natural-language-to-voyage-plan conversion is handled by the API endpoint
+natural-language-to-preflight-profile conversion is handled by the API endpoint
 that accepts free-text instructions and translates them into a structured
-voyage plan configuration.
+preflight profile configuration.
 
 The analyzer always returns an empty findings list and costs 0 credits.
 """
@@ -27,15 +27,15 @@ logger = logging.getLogger(__name__)
 
 
 @register_ai_analyzer
-class NLVoyagePlanAnalyzer(BaseAIAnalyzer):
-    """Placeholder for natural language voyage plan creation feature.
+class NLPreflightProfileAnalyzer(BaseAIAnalyzer):
+    """Placeholder for natural language preflight profile creation feature.
 
-    The actual NL-to-voyage-plan logic lives in the API endpoint.
+    The actual NL-to-preflight-profile logic lives in the API endpoint.
     This class exists solely to register the feature in the AI catalogue.
     """
 
     category = "nlp_interfaces"
-    feature_slug = "nl_voyage_plan_creation"
+    feature_slug = "nl_preflight_profile_creation"
     tier = "gpu"
     credits_per_run = 0
 

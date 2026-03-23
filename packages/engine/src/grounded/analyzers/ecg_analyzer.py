@@ -391,7 +391,7 @@ class EcgAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ECG_003",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"ECG TAC {tac:.0f}% exceeds {self.tac_limit:.0f}% limit "
                             f"on page {page_num} "
@@ -463,7 +463,7 @@ class EcgAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ECG_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"DeviceN 7-colorant space '{dn['cs_name']}' on page "
                             f"{page_num} has inconsistent naming: {colorants}. "
@@ -516,7 +516,7 @@ class EcgAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ECG_005",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"ECG ink build: {active_inks} active inks (>{_SIGNIFICANT_INK * 100:.0f}%) "
                             f"on page {page_num} exceeds 3-ink maximum for color stability"
@@ -578,7 +578,7 @@ class EcgAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ECG_007",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"ECG color out of build range: CMYK+OGV TAC {tac:.0f}% "
                             f"exceeds maximum allowable 400% on page {page_num}"
@@ -625,7 +625,7 @@ class EcgAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_ECG_008",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"ECG gray balance drift risk: {drift_count} object(s) with "
                         f"near-equal C/M/Y components above {_ECG_GRAY_HIGH_THRESHOLD * 100:.0f}% "
@@ -659,7 +659,7 @@ class EcgAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ECG_009",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"ECG overinking: TAC {tac:.0f}% exceeds ECG threshold "
                             f"{self.ecg_tac_limit:.0f}% on page {page_num}"
@@ -701,7 +701,7 @@ class EcgAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_ECG_010",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         "Missing ECG characterization data: no ECG-specific output "
                         "intent or characterization reference (e.g., FOGRA55) found "
@@ -736,7 +736,7 @@ class EcgAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ECG_011",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"ECG ink channel limit exceeded: channel(s) "
                             f"{exceeded_channels} above "
@@ -815,7 +815,7 @@ class EcgAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_ECG_013",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"ECG multi-ink small text: {multi_ink_text_count} text "
                         f"object(s) below {_ECG_SMALL_TEXT_THRESHOLD:.0f}pt use "
@@ -941,7 +941,7 @@ class EcgAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_ECG_016",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"ECG ICC profile version {icc_version} is below "
                                 f"v4.0; ECG workflows require ICC v4 or later for "
@@ -980,7 +980,7 @@ class EcgAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ECG_017",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"DeviceN colorant order {colorants} on page {page_num} "
                             f"does not follow CMYKOGV convention "

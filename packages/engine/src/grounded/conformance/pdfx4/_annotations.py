@@ -32,7 +32,7 @@ def validate_annotations(document: SemanticDocument) -> list[Finding]:  # skipcq
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-057",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"Sound annotation on page {pn} (prohibited in PDF/X-4)",
                         page_num=pn,
                         iso_clause="ISO 15930-7:2010 6.4",
@@ -44,7 +44,7 @@ def validate_annotations(document: SemanticDocument) -> list[Finding]:  # skipcq
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-058",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"Movie annotation on page {pn} (prohibited in PDF/X-4)",
                         page_num=pn,
                         iso_clause="ISO 15930-7:2010 6.4",
@@ -56,7 +56,7 @@ def validate_annotations(document: SemanticDocument) -> list[Finding]:  # skipcq
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-059",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"3D annotation on page {pn} (prohibited in PDF/X-4)",
                         page_num=pn,
                         iso_clause="ISO 15930-7:2010 6.4",
@@ -68,7 +68,7 @@ def validate_annotations(document: SemanticDocument) -> list[Finding]:  # skipcq
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-060",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"RichMedia/Screen annotation on page {pn} (prohibited in PDF/X-4)",
                         page_num=pn,
                         iso_clause="ISO 15930-7:2010 6.4",

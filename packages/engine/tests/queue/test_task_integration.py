@@ -44,8 +44,8 @@ MINIMAL_PDF = (
 @dataclass
 class FakeSummary:
     total_findings: int = 0
-    aground_count: int = 0
-    squall_count: int = 0
+    error_count: int = 0
+    warning_count: int = 0
     advisory_count: int = 0
     passed: bool = True
     page_count: int = 1
@@ -72,7 +72,7 @@ class FakeFinding:
 @dataclass
 class FakeResult:
     job_id: str = ""
-    profile_id: str = "grounded-default"
+    profile_id: str = "lintpdf-default"
     findings: list[Any] | None = None
     summary: FakeSummary | None = None
     metadata: dict[str, Any] | None = None
@@ -143,7 +143,7 @@ def job_in_db(db_session: Session) -> Job:
         id=job_id,
         tenant_id=TENANT_ID,
         status=JobStatus.PENDING,
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         file_key=f"uploads/{job_id}/input.pdf",
         file_name="test.pdf",
         file_size=len(MINIMAL_PDF),
@@ -245,7 +245,7 @@ class TestRunPreflightPipeline:
         fake_result = FakeResult(
             job_id=str(job_in_db.id),
             summary=FakeSummary(
-                total_findings=3, aground_count=1, squall_count=1, advisory_count=1, passed=False
+                total_findings=3, error_count=1, warning_count=1, advisory_count=1, passed=False
             ),
         )
         self._run_task(db_session, storage, job_in_db, orchestrator_result=fake_result)
@@ -263,7 +263,7 @@ class TestRunPreflightPipeline:
         ):
             result = run_preflight.run(
                 str(uuid.uuid4()),
-                "grounded-default",
+                "lintpdf-default",
                 "nonexistent/key",
             )
             assert result["status"] == "failed"
