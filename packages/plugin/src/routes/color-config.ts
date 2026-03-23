@@ -7,6 +7,7 @@ import type {
   RouteRequest,
   RouteResponse,
 } from "@thinkneverland/pixie-dust-fairy-ring";
+import { resolveEngineTenantId } from "../index";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
@@ -19,11 +20,22 @@ function engineFetch(path: string, init?: RequestInit): Promise<Response> {
     "Content-Type": "application/json",
     ...(init?.headers as Record<string, string> | undefined),
   };
-  const apiKey = process.env.GROUNDED_API_KEY;
-  if (apiKey) {
-    headers["Authorization"] = `Bearer ${apiKey}`;
+  const adminKey = process.env.GROUNDED_ADMIN_API_KEY;
+  if (adminKey) {
+    headers["X-Admin-Key"] = adminKey;
   }
   return fetch(`${baseUrl}${path}`, { ...init, headers });
+}
+
+async function getEnginePath(
+  tenantId: string | undefined,
+  suffix: string,
+): Promise<{ path: string } | { error: RouteResponse }> {
+  if (!tenantId) {
+    return { error: { status: 400, body: { error: "Missing tenant context" } } };
+  }
+  const engineId = await resolveEngineTenantId(tenantId);
+  return { path: `/api/v1/tenants/${engineId}/color-config${suffix}` };
 }
 
 export function colorConfigRoutes(): RouteDefinition[] {
@@ -34,8 +46,10 @@ export function colorConfigRoutes(): RouteDefinition[] {
       auth: true,
       permission: "account:manage",
       description: "Get tenant color management configuration",
-      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch("/api/v1/color-config");
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const result = await getEnginePath(req.auth?.tenantId, "");
+        if ("error" in result) return result.error;
+        const resp = await engineFetch(result.path);
         if (!resp.ok) {
           const detail = await resp.text();
           return { status: resp.status, body: { error: detail } };
@@ -51,7 +65,9 @@ export function colorConfigRoutes(): RouteDefinition[] {
       permission: "account:manage",
       description: "Update tenant color management configuration",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch("/api/v1/color-config", {
+        const result = await getEnginePath(req.auth?.tenantId, "");
+        if ("error" in result) return result.error;
+        const resp = await engineFetch(result.path, {
           method: "PUT",
           body: JSON.stringify(req.body),
         });
@@ -70,7 +86,9 @@ export function colorConfigRoutes(): RouteDefinition[] {
       permission: "account:manage",
       description: "Update brand color palette",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch("/api/v1/color-config/palette", {
+        const result = await getEnginePath(req.auth?.tenantId, "/palette");
+        if ("error" in result) return result.error;
+        const resp = await engineFetch(result.path, {
           method: "PUT",
           body: JSON.stringify(req.body),
         });
@@ -88,8 +106,10 @@ export function colorConfigRoutes(): RouteDefinition[] {
       auth: true,
       permission: "account:manage",
       description: "List available gamut/output conditions",
-      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch("/api/v1/color-config/gamut-conditions");
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const result = await getEnginePath(req.auth?.tenantId, "/gamut-conditions");
+        if ("error" in result) return result.error;
+        const resp = await engineFetch(result.path);
         if (!resp.ok) {
           const detail = await resp.text();
           return { status: resp.status, body: { error: detail } };
@@ -104,10 +124,10 @@ export function colorConfigRoutes(): RouteDefinition[] {
       auth: true,
       permission: "account:manage",
       description: "Get tenant Pantone color overrides",
-      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch(
-          "/api/v1/color-config/pantone-overrides",
-        );
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const result = await getEnginePath(req.auth?.tenantId, "/pantone-overrides");
+        if ("error" in result) return result.error;
+        const resp = await engineFetch(result.path);
         if (!resp.ok) {
           const detail = await resp.text();
           return { status: resp.status, body: { error: detail } };
@@ -123,13 +143,12 @@ export function colorConfigRoutes(): RouteDefinition[] {
       permission: "account:manage",
       description: "Bulk set/replace Pantone color overrides",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch(
-          "/api/v1/color-config/pantone-overrides",
-          {
-            method: "PUT",
-            body: JSON.stringify(req.body),
-          },
-        );
+        const result = await getEnginePath(req.auth?.tenantId, "/pantone-overrides");
+        if ("error" in result) return result.error;
+        const resp = await engineFetch(result.path, {
+          method: "PUT",
+          body: JSON.stringify(req.body),
+        });
         if (!resp.ok) {
           const detail = await resp.text();
           return { status: resp.status, body: { error: detail } };
@@ -144,11 +163,10 @@ export function colorConfigRoutes(): RouteDefinition[] {
       auth: true,
       permission: "account:manage",
       description: "Clear all Pantone color overrides",
-      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch(
-          "/api/v1/color-config/pantone-overrides",
-          { method: "DELETE" },
-        );
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const result = await getEnginePath(req.auth?.tenantId, "/pantone-overrides");
+        if ("error" in result) return result.error;
+        const resp = await engineFetch(result.path, { method: "DELETE" });
         if (!resp.ok) {
           const detail = await resp.text();
           return { status: resp.status, body: { error: detail } };

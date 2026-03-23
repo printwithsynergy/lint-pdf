@@ -10,6 +10,8 @@ import type {
   RouteResponse,
 } from "@thinkneverland/pixie-dust-fairy-ring";
 
+import { resolveEngineTenantId } from "../../index";
+
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 
@@ -94,7 +96,8 @@ export const groundedAccountPlugin: PixieDustPlugin = {
           if (!tenantId) {
             return { status: 400, body: { error: "Missing tenant context" } };
           }
-          const resp = await adminFetch(`/api/v1/admin/tenants/${tenantId}`);
+          const engineId = await resolveEngineTenantId(tenantId);
+          const resp = await adminFetch(`/api/v1/admin/tenants/${engineId}`);
           if (!resp.ok) {
             const detail = await resp.text();
             return { status: resp.status, body: { error: detail } };
@@ -114,7 +117,8 @@ export const groundedAccountPlugin: PixieDustPlugin = {
           if (!tenantId) {
             return { status: 400, body: { error: "Missing tenant context" } };
           }
-          const resp = await adminFetch(`/api/v1/admin/tenants/${tenantId}`, {
+          const engineId = await resolveEngineTenantId(tenantId);
+          const resp = await adminFetch(`/api/v1/admin/tenants/${engineId}`, {
             method: "PATCH",
             body: JSON.stringify(req.body),
           });
@@ -139,8 +143,9 @@ export const groundedAccountPlugin: PixieDustPlugin = {
           }
 
           // 1. Update branding in the LintPDF engine
+          const engineId = await resolveEngineTenantId(tenantId);
           const resp = await adminFetch(
-            `/api/v1/admin/tenants/${tenantId}/branding`,
+            `/api/v1/admin/tenants/${engineId}/branding`,
             {
               method: "PATCH",
               body: JSON.stringify(req.body),

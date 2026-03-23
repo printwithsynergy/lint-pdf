@@ -92,10 +92,10 @@ export const groundedTeamPlugin: PixieDustPlugin = {
             where: { tenantId },
             include: {
               user: {
-                select: { id: true, name: true, email: true, image: true },
+                select: { id: true, name: true, email: true, avatarUrl: true },
               },
             },
-            orderBy: { createdAt: "asc" },
+            orderBy: { joinedAt: "asc" },
           });
           return { status: 200, body: members };
         }) as RouteHandler,
@@ -117,12 +117,13 @@ export const groundedTeamPlugin: PixieDustPlugin = {
             return { status: 400, body: { error: "Email is required" } };
           }
 
+          const crypto = await import("node:crypto");
           const invite = await db.tenantInvite.create({
             data: {
               tenantId,
               email,
               role: role ?? "MEMBER",
-              invitedById: req.auth?.userId,
+              token: crypto.randomBytes(32).toString("hex"),
               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
             },
           });

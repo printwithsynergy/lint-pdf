@@ -9,7 +9,7 @@ import type {
   RouteRequest,
   RouteResponse,
 } from "@thinkneverland/pixie-dust-fairy-ring";
-// getClient not needed — this plugin proxies directly to the engine admin API
+import { resolveEngineTenantId } from "../../index";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
@@ -77,8 +77,9 @@ export const groundedApiKeysPlugin: PixieDustPlugin = {
           if (!tenantId) {
             return { status: 400, body: { error: "Missing tenant context" } };
           }
+          const engineId = await resolveEngineTenantId(tenantId);
           const resp = await adminFetch(
-            `/api/v1/admin/tenants/${tenantId}/keys`,
+            `/api/v1/admin/tenants/${engineId}/keys`,
             { method: "POST", body: JSON.stringify(req.body) },
           );
           if (!resp.ok) {
@@ -100,8 +101,9 @@ export const groundedApiKeysPlugin: PixieDustPlugin = {
           if (!tenantId) {
             return { status: 400, body: { error: "Missing tenant context" } };
           }
+          const engineId = await resolveEngineTenantId(tenantId);
           const resp = await adminFetch(
-            `/api/v1/admin/tenants/${tenantId}/keys`,
+            `/api/v1/admin/tenants/${engineId}/keys`,
             { method: "GET" },
           );
           if (!resp.ok) {
@@ -123,8 +125,9 @@ export const groundedApiKeysPlugin: PixieDustPlugin = {
           if (!tenantId) {
             return { status: 400, body: { error: "Missing tenant context" } };
           }
+          const engineId = await resolveEngineTenantId(tenantId);
           const resp = await adminFetch(
-            `/api/v1/admin/tenants/${tenantId}/keys/${req.params.keyId}`,
+            `/api/v1/admin/tenants/${engineId}/keys/${req.params.keyId}`,
             { method: "DELETE" },
           );
           if (!resp.ok) {
