@@ -117,13 +117,15 @@ export const groundedTeamPlugin: PixieDustPlugin = {
             return { status: 400, body: { error: "Email is required" } };
           }
 
-          const crypto = await import("node:crypto");
+          const token = Array.from({ length: 32 }, () =>
+            Math.floor(Math.random() * 16).toString(16),
+          ).join("");
           const invite = await db.tenantInvite.create({
             data: {
               tenantId,
               email,
               role: role ?? "MEMBER",
-              token: crypto.randomBytes(32).toString("hex"),
+              token,
               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
             },
           });
