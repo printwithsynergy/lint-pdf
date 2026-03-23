@@ -51,6 +51,19 @@ def _run_migrations(database_url: str) -> None:
         try:
             Base.metadata.create_all(engine)
             logger.info("Database tables created via create_all.")
+            # Stamp alembic_version to head so future Alembic runs don't
+            # try to re-run all migrations from scratch.
+            try:
+                from alembic import command
+                from alembic.config import Config
+
+                alembic_cfg = Config()
+                alembic_cfg.set_main_option("script_location", "alembic")
+                alembic_cfg.set_main_option("sqlalchemy.url", database_url)
+                command.stamp(alembic_cfg, "head")
+                logger.info("Alembic version stamped to head.")
+            except Exception:
+                logger.warning("Could not stamp alembic_version — future migrations may need manual intervention.")
         except Exception:
             logger.exception("create_all also failed.")
 
