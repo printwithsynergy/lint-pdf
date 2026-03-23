@@ -18,18 +18,33 @@ export async function PATCH(
   const { tenantId } = await params;
   const body = await req.json();
 
-  const resp = await fetch(
-    `${env.LINTPDF_API_URL}/api/v1/admin/tenants/${tenantId}/status`,
-    {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Admin-Key": adminKey,
+  try {
+    const resp = await fetch(
+      `${env.LINTPDF_API_URL}/api/v1/admin/tenants/${tenantId}/status`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Admin-Key": adminKey,
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    },
-  );
+    );
 
-  const data = await resp.json();
-  return NextResponse.json(data, { status: resp.status });
+    const text = await resp.text();
+    try {
+      const data = JSON.parse(text);
+      return NextResponse.json(data, { status: resp.status });
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid response from engine", detail: text.slice(0, 200) },
+        { status: 502 },
+      );
+    }
+  } catch (e) {
+    return NextResponse.json(
+      { error: "Engine unreachable", detail: e instanceof Error ? e.message : String(e) },
+      { status: 502 },
+    );
+  }
 }
