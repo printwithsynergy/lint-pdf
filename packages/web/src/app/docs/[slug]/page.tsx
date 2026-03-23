@@ -40,7 +40,8 @@ const jsxPages: Record<
   webhooks: {
     component: WebhooksPage,
     title: "Webhooks",
-    description: "Register webhook endpoints for real-time event notifications.",
+    description:
+      "Register webhook endpoints for real-time event notifications.",
   },
   glossary: {
     component: GlossaryPage,
@@ -119,7 +120,9 @@ export default async function DocSlugPage({ params }: Props) {
 
   return (
     <article>
-      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">{doc.title}</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+        {doc.title}
+      </h1>
       {doc.description && (
         <p className="text-slate-500 mb-8">{doc.description}</p>
       )}

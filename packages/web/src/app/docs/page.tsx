@@ -179,7 +179,9 @@ const sections = [
 export default function DocsPage() {
   return (
     <>
-      <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 mb-2">Documentation</h1>
+      <h1 className="text-2xl sm:text-4xl font-bold text-slate-900 mb-2">
+        Documentation
+      </h1>
       <p className="text-slate-500 mb-12">
         Everything you need to integrate LintPDF into your workflow.
       </p>
