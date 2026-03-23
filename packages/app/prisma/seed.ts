@@ -94,6 +94,21 @@ async function main() {
     console.log(`Created tenant: ${customerTenant.name} (${customerTenant.id})`);
   }
 
+  // ── App Settings (branding) ─────────────────────────────────
+  const appSettings = await prisma.appSettings.upsert({
+    where: { id: "singleton" },
+    update: {},
+    create: {
+      id: "singleton",
+      brandName: "LintPDF",
+      brandLogoUrl: "/logo.svg",
+      brandTagline: "Preflights you won't hate.",
+    },
+  });
+  console.log(
+    `App settings: brandName=${appSettings.brandName}, logo=${appSettings.brandLogoUrl}`,
+  );
+
   console.log("Seed complete.");
 }
 
