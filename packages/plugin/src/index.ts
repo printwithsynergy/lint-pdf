@@ -50,6 +50,7 @@ export { groundedAccountPlugin } from "./plugins/account/index";
 export { groundedSiteAdminPlugin } from "./plugins/site-admin/index";
 export { groundedWebhooksPlugin } from "./plugins/webhooks/index";
 export { groundedEndpointsPlugin } from "./plugins/endpoints/index";
+export { groundedSuperAdminPlugin } from "./plugins/super-admin/index";
 
 // ── Client singleton ────────────────────────────────────────
 

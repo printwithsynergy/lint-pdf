@@ -70,6 +70,22 @@ export default function AdminTenantsPage() {
     }
   }
 
+  async function handleAssist(tenantId: string) {
+    try {
+      const resp = await fetch("/api/auth/impersonate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId }),
+      });
+      if (resp.ok) {
+        // Reload dashboard to show the customer's view
+        window.location.href = "/dashboard/preflight";
+      }
+    } catch {
+      setError("Failed to start customer assist");
+    }
+  }
+
   const totalPages = Math.ceil(total / pageSize);
 
   return (
@@ -98,6 +114,7 @@ export default function AdminTenantsPage() {
                   <th className="pb-2 font-medium">Status</th>
                   <th className="pb-2 font-medium">Daily Limit</th>
                   <th className="pb-2 font-medium">Created</th>
+                  <th className="pb-2 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
@@ -144,6 +161,15 @@ export default function AdminTenantsPage() {
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">
                       {new Date(t.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="py-2">
+                      <button
+                        onClick={() => handleAssist(t.id)}
+                        className="rounded bg-violet-600 px-2 py-1 text-xs font-medium text-white hover:bg-violet-500"
+                        title="View and configure this customer's dashboard"
+                      >
+                        Assist
+                      </button>
                     </td>
                   </tr>
                 ))}

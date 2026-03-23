@@ -28,6 +28,7 @@ import {
   groundedSiteAdminPlugin,
   groundedWebhooksPlugin,
   groundedEndpointsPlugin,
+  groundedSuperAdminPlugin,
 } from "@thinkneverland/grounded-plugin";
 import { groundedBillingPlugin } from "@grounded/stripe";
 
@@ -89,6 +90,7 @@ const plugins: PixieDustPlugin[] = [
   groundedAccountPlugin,
   groundedWebhooksPlugin,
   groundedEndpointsPlugin,
+  groundedSuperAdminPlugin,
   groundedSiteAdminPlugin,
   groundedBillingPlugin,
 ];
