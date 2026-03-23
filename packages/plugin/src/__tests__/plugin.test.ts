@@ -31,9 +31,9 @@ describe("groundedPlugin", () => {
 
   beforeEach(() => {
     vi.resetModules();
-    delete process.env.LINTPDF_API_URL;
-    delete process.env.LINTPDF_WEBHOOK_SECRET;
-    delete process.env.LINTPDF_API_KEY;
+    delete process.env.GROUNDED_API_URL;
+    delete process.env.GROUNDED_WEBHOOK_SECRET;
+    delete process.env.GROUNDED_API_KEY;
   });
 
   it("skips registration if config is invalid", async () => {
@@ -45,9 +45,9 @@ describe("groundedPlugin", () => {
   });
 
   it("registers routes, nav, pages, permissions, and custom role with valid config", async () => {
-    process.env.LINTPDF_API_URL = "https://api.lintpdf.com";
-    process.env.LINTPDF_WEBHOOK_SECRET = "a-very-long-test-secret";
-    process.env.LINTPDF_API_KEY = "lpdf_test";
+    process.env.GROUNDED_API_URL = "https://api.lintpdf.com";
+    process.env.GROUNDED_WEBHOOK_SECRET = "a-very-long-test-secret";
+    process.env.GROUNDED_API_KEY = "lpdf_test";
 
     const mod = await import("../index");
     const ctx = mockCtx();
@@ -92,8 +92,8 @@ describe("groundedPlugin", () => {
   });
 
   it("registers 4 routes (1 webhook + 3 jobs + 1 profiles = 5)", async () => {
-    process.env.LINTPDF_API_URL = "https://api.lintpdf.com";
-    process.env.LINTPDF_WEBHOOK_SECRET = "a-very-long-test-secret";
+    process.env.GROUNDED_API_URL = "https://api.lintpdf.com";
+    process.env.GROUNDED_WEBHOOK_SECRET = "a-very-long-test-secret";
 
     const mod = await import("../index");
     const ctx = mockCtx();
@@ -106,8 +106,8 @@ describe("groundedPlugin", () => {
   });
 
   it("boot logs when client is ready", async () => {
-    process.env.LINTPDF_API_URL = "https://api.lintpdf.com";
-    process.env.LINTPDF_WEBHOOK_SECRET = "a-very-long-test-secret";
+    process.env.GROUNDED_API_URL = "https://api.lintpdf.com";
+    process.env.GROUNDED_WEBHOOK_SECRET = "a-very-long-test-secret";
 
     const mod = await import("../index");
     const ctx = mockCtx();
@@ -120,8 +120,8 @@ describe("groundedPlugin", () => {
   });
 
   it("shutdown clears client", async () => {
-    process.env.LINTPDF_API_URL = "https://api.lintpdf.com";
-    process.env.LINTPDF_WEBHOOK_SECRET = "a-very-long-test-secret";
+    process.env.GROUNDED_API_URL = "https://api.lintpdf.com";
+    process.env.GROUNDED_WEBHOOK_SECRET = "a-very-long-test-secret";
 
     const mod = await import("../index");
     const ctx = mockCtx();

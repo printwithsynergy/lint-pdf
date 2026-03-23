@@ -19,17 +19,17 @@ type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 
 function adminFetch(path: string, init?: RequestInit): Promise<Response> {
   const baseUrl = (
-    process.env.LINTPDF_API_URL ?? "https://api.lintpdf.com"
+    process.env.GROUNDED_API_URL ?? "https://api.lintpdf.com"
   ).replace(/\/$/, "");
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(init?.headers as Record<string, string> | undefined),
   };
-  const adminKey = process.env.LINTPDF_ADMIN_API_KEY;
+  const adminKey = process.env.GROUNDED_ADMIN_API_KEY;
   if (adminKey) {
     headers["X-Admin-Key"] = adminKey;
   }
-  const apiKey = process.env.LINTPDF_API_KEY;
+  const apiKey = process.env.GROUNDED_API_KEY;
   if (apiKey) {
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
