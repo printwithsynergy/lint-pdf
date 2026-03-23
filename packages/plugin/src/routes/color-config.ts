@@ -98,5 +98,63 @@ export function colorConfigRoutes(): RouteDefinition[] {
         return { status: 200, body: data };
       }) as RouteHandler,
     },
+    {
+      method: "GET" as HttpMethod,
+      path: "/color-config/pantone-overrides",
+      auth: true,
+      permission: "account:manage",
+      description: "Get tenant Pantone color overrides",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch(
+          "/api/v1/color-config/pantone-overrides",
+        );
+        if (!resp.ok) {
+          const detail = await resp.text();
+          return { status: resp.status, body: { error: detail } };
+        }
+        const data = await resp.json();
+        return { status: 200, body: data };
+      }) as RouteHandler,
+    },
+    {
+      method: "PUT" as HttpMethod,
+      path: "/color-config/pantone-overrides",
+      auth: true,
+      permission: "account:manage",
+      description: "Bulk set/replace Pantone color overrides",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch(
+          "/api/v1/color-config/pantone-overrides",
+          {
+            method: "PUT",
+            body: JSON.stringify(req.body),
+          },
+        );
+        if (!resp.ok) {
+          const detail = await resp.text();
+          return { status: resp.status, body: { error: detail } };
+        }
+        const data = await resp.json();
+        return { status: 200, body: data };
+      }) as RouteHandler,
+    },
+    {
+      method: "DELETE" as HttpMethod,
+      path: "/color-config/pantone-overrides",
+      auth: true,
+      permission: "account:manage",
+      description: "Clear all Pantone color overrides",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch(
+          "/api/v1/color-config/pantone-overrides",
+          { method: "DELETE" },
+        );
+        if (!resp.ok) {
+          const detail = await resp.text();
+          return { status: resp.status, body: { error: detail } };
+        }
+        return { status: 204, body: null };
+      }) as RouteHandler,
+    },
   ];
 }
