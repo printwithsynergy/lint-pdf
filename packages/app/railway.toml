@@ -5,7 +5,7 @@ watchPatterns = ["packages/app/**"]
 
 [deploy]
 numReplicas = 1
-startCommand = "prisma db push --schema packages/app/prisma/schema --skip-generate --accept-data-loss 2>&1 || true && node packages/app/server.js"
+startCommand = "prisma db push --schema packages/app/prisma/schema --skip-generate 2>&1 || true && node packages/app/server.js"
 healthcheckPath = "/auth/login"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
