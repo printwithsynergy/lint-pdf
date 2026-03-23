@@ -179,3 +179,73 @@ class TestSpotColorAnalyzerPantone:
             f for f in findings if f.inspection_id in ("GRD_SPOT_002", "GRD_SPOT_006")
         ]
         assert len(pantone_findings) == 0
+
+
+class TestEnrichedPantoneReference:
+    """Tests for the enriched Pantone reference with library metadata."""
+
+    def test_reference_has_minimum_count(self):
+        """Reference database never shrinks below original 2,162 colors."""
+        import json
+        from pathlib import Path
+
+        ref_path = Path(__file__).parent / "../../src/grounded/profiles/icc/pantone_reference.json"
+        data = json.loads(ref_path.read_text(encoding="utf-8"))
+        assert data["_meta"]["count"] >= 2162
+
+    def test_lookup_returns_library_metadata(self):
+        """PantoneReference includes library, lab_source, cmyk_source fields."""
+        mgr = PantoneManager()
+        ref = mgr.lookup("PANTONE 485 C")
+        assert ref is not None
+        assert ref.library == "Pantone Formula Guide Coated"
+        assert ref.lab_source == "PANTONE_PUBLISHED"
+        assert ref.cmyk_source is not None
+
+    def test_lookup_tcx_color(self):
+        """Can look up a non-Formula-Guide color (TCX textile)."""
+        mgr = PantoneManager()
+        ref = mgr.lookup("PANTONE 19-4052 TCX")
+        assert ref is not None
+        assert ref.library == "FHI Cotton TCX"
+        assert ref.lab_source == "PANTONE_PUBLISHED"
+        assert ref.lab is not None
+        assert len(ref.lab) == 3
+
+    def test_lookup_metallics_color(self):
+        """Can look up a Metallics color."""
+        mgr = PantoneManager()
+        ref = mgr.lookup("PANTONE 8485 C")
+        assert ref is not None
+        assert ref.library == "Pantone Metallics Coated"
+
+    def test_has_color_known(self):
+        """has_color returns True for known colors."""
+        mgr = PantoneManager()
+        assert mgr.has_color("PANTONE 485 C") is True
+        assert mgr.has_color("pantone 485 c") is True
+
+    def test_has_color_unknown(self):
+        """has_color returns False for unknown colors."""
+        mgr = PantoneManager()
+        assert mgr.has_color("PANTONE 99999 C") is False
+
+    def test_has_color_alternate_spacing(self):
+        """has_color handles alternate name spacing."""
+        mgr = PantoneManager()
+        assert mgr.has_color("PANTONE 485C") is True
+
+    def test_formula_guide_colors_have_cmyk_bridge(self):
+        """All Formula Guide C/U colors should have cmyk_bridge values."""
+        import json
+        from pathlib import Path
+
+        ref_path = Path(__file__).parent / "../../src/grounded/profiles/icc/pantone_reference.json"
+        data = json.loads(ref_path.read_text(encoding="utf-8"))
+        fg_colors = {
+            k: v for k, v in data["colors"].items()
+            if v.get("library", "").startswith("Pantone Formula Guide")
+        }
+        assert len(fg_colors) > 4000  # Should be ~4,646
+        missing_bridge = [k for k, v in fg_colors.items() if not v.get("cmyk_bridge")]
+        assert len(missing_bridge) == 0, f"Formula Guide colors missing cmyk_bridge: {missing_bridge[:5]}"
