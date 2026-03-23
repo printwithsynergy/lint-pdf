@@ -9,7 +9,7 @@ combining two approaches:
    inference service to confirm that visible text exists as paths rather
    than font glyphs.
 
-Outlined text that should be live text generates a SQUALL finding.
+Outlined text that should be live text generates a WARNING finding.
 """
 
 from __future__ import annotations
@@ -153,7 +153,7 @@ class TextAsOutlinesAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_TAO_002",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Page {page_num} contains text converted to outlines. "
                             f"OCR detected {len(ocr_text)} characters of visible "
@@ -186,7 +186,7 @@ class TextAsOutlinesAnalyzer(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="AI_TAO_003",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Outlined text region on page {page_num}: '{region_text[:80]}'"
                                 ),

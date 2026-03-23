@@ -32,8 +32,8 @@ class AIConfigResponse(BaseModel):
     default_package_capacity_ml: Decimal | None = None
     default_package_surface_area_cm2: Decimal | None = None
     min_image_quality_score: int
-    delta_e_squall_threshold: Decimal
-    delta_e_aground_threshold: Decimal
+    delta_e_warning_threshold: Decimal
+    delta_e_error_threshold: Decimal
 
 
 class AIConfigUpdateRequest(BaseModel):
@@ -49,8 +49,8 @@ class AIConfigUpdateRequest(BaseModel):
     default_package_capacity_ml: Decimal | None = None
     default_package_surface_area_cm2: Decimal | None = None
     min_image_quality_score: int | None = None
-    delta_e_squall_threshold: Decimal | None = None
-    delta_e_aground_threshold: Decimal | None = None
+    delta_e_warning_threshold: Decimal | None = None
+    delta_e_error_threshold: Decimal | None = None
     monthly_spending_limit: Decimal | None = None
 
 
@@ -206,11 +206,11 @@ class AIPresetListResponse(BaseModel):
     presets: list[AIPresetResponse]
 
 
-# --- NL Voyage Plan generation schemas ---
+# --- NL Preflight Profile generation schemas ---
 
 
-class NLVoyagePlanRequest(BaseModel):
-    """Natural language voyage plan generation."""
+class NLPreflightProfileRequest(BaseModel):
+    """Natural language preflight profile generation."""
 
     description: str = Field(
         min_length=10,
@@ -219,12 +219,17 @@ class NLVoyagePlanRequest(BaseModel):
     )
 
 
-class NLVoyagePlanResponse(BaseModel):
-    """Generated voyage plan from NL description."""
+class NLPreflightProfileResponse(BaseModel):
+    """Generated preflight profile from NL description."""
 
-    voyage_plan: dict[str, object]
+    preflight_profile: dict[str, object]
     explanation: str
     confidence: float
+
+
+# Backwards compatibility aliases
+NLVoyagePlanRequest = NLPreflightProfileRequest
+NLVoyagePlanResponse = NLPreflightProfileResponse
 
 
 # --- NL Report interpretation schemas ---

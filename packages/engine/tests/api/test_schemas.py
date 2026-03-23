@@ -93,7 +93,7 @@ class TestJobCreateResponse:
 class TestFindingResponse:
     @staticmethod
     def test_minimal() -> None:
-        f = FindingResponse(inspection_id="INK001", severity="aground", message="Bad ink")
+        f = FindingResponse(inspection_id="INK001", severity="error", message="Bad ink")
         assert f.page_num is None
         assert f.details is None
 
@@ -115,8 +115,8 @@ class TestJobSummaryResponse:
     def test_all_fields() -> None:
         s = JobSummaryResponse(
             total_findings=5,
-            aground_count=1,
-            squall_count=2,
+            error_count=1,
+            warning_count=2,
             advisory_count=2,
             passed=False,
             page_count=10,
@@ -133,7 +133,7 @@ class TestJobResponse:
         r = JobResponse(
             job_id=uuid.uuid4(),
             status="pending",
-            profile_id="grounded-default",
+            profile_id="lintpdf-default",
             file_name="test.pdf",
             file_size=1024,
             created_at=now,
@@ -148,7 +148,7 @@ class TestJobResponse:
         r = JobResponse(
             job_id=uuid.uuid4(),
             status="complete",
-            profile_id="grounded-default",
+            profile_id="lintpdf-default",
             file_name="test.pdf",
             file_size=1024,
             created_at=now,
@@ -156,8 +156,8 @@ class TestJobResponse:
             duration_ms=500,
             summary=JobSummaryResponse(
                 total_findings=0,
-                aground_count=0,
-                squall_count=0,
+                error_count=0,
+                warning_count=0,
                 advisory_count=0,
                 passed=True,
                 page_count=1,
@@ -173,7 +173,7 @@ class TestJobResponse:
         r = JobResponse(
             job_id=uuid.uuid4(),
             status="failed",
-            profile_id="grounded-default",
+            profile_id="lintpdf-default",
             file_name="test.pdf",
             file_size=1024,
             created_at=datetime.now(UTC),
@@ -195,7 +195,7 @@ class TestJobListResponse:
             JobResponse(
                 job_id=uuid.uuid4(),
                 status="pending",
-                profile_id="grounded-default",
+                profile_id="lintpdf-default",
                 file_name=f"file{i}.pdf",
                 file_size=100,
                 created_at=now,
@@ -236,7 +236,7 @@ class TestProfileCreateRequest:
     def test_valid_kebab_case() -> None:
         r = ProfileCreateRequest(
             profile_id="my-custom-profile",
-            voyage_plan={"name": "Test"},
+            preflight_profile={"name": "Test"},
         )
         assert r.profile_id == "my-custom-profile"
 
@@ -245,7 +245,7 @@ class TestProfileCreateRequest:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(
                 profile_id="MyProfile",
-                voyage_plan={"name": "Bad"},
+                preflight_profile={"name": "Bad"},
             )
 
     @staticmethod
@@ -253,25 +253,25 @@ class TestProfileCreateRequest:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(
                 profile_id="has spaces",
-                voyage_plan={"name": "Bad"},
+                preflight_profile={"name": "Bad"},
             )
 
     @staticmethod
     def test_rejects_empty() -> None:
         with pytest.raises(ValidationError):
-            ProfileCreateRequest(profile_id="", voyage_plan={"name": "Bad"})
+            ProfileCreateRequest(profile_id="", preflight_profile={"name": "Bad"})
 
     @staticmethod
     def test_rejects_single_char() -> None:
         with pytest.raises(ValidationError):
-            ProfileCreateRequest(profile_id="x", voyage_plan={"name": "Bad"})
+            ProfileCreateRequest(profile_id="x", preflight_profile={"name": "Bad"})
 
     @staticmethod
     def test_rejects_leading_hyphen() -> None:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(
                 profile_id="-leading",
-                voyage_plan={"name": "Bad"},
+                preflight_profile={"name": "Bad"},
             )
 
     @staticmethod
@@ -279,14 +279,14 @@ class TestProfileCreateRequest:
         with pytest.raises(ValidationError):
             ProfileCreateRequest(
                 profile_id="trailing-",
-                voyage_plan={"name": "Bad"},
+                preflight_profile={"name": "Bad"},
             )
 
     @staticmethod
     def test_allows_numbers() -> None:
         r = ProfileCreateRequest(
             profile_id="profile-v2",
-            voyage_plan={"name": "V2"},
+            preflight_profile={"name": "V2"},
         )
         assert r.profile_id == "profile-v2"
 

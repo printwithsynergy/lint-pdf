@@ -73,19 +73,19 @@ export function ResultDetail({ job, onClose }: ResultDetailProps) {
           <div className="flex items-center gap-6 mt-1">
             <div className="text-center">
               <p
-                className={`text-lg font-bold ${job.summary.aground_count > 0 ? "text-red-600" : "text-gray-300"}`}
+                className={`text-lg font-bold ${job.summary.error_count > 0 ? "text-red-600" : "text-gray-300"}`}
               >
-                {job.summary.aground_count}
+                {job.summary.error_count}
               </p>
-              <p className="text-xs text-gray-500">Aground</p>
+              <p className="text-xs text-gray-500">Error</p>
             </div>
             <div className="text-center">
               <p
-                className={`text-lg font-bold ${job.summary.squall_count > 0 ? "text-amber-600" : "text-gray-300"}`}
+                className={`text-lg font-bold ${job.summary.warning_count > 0 ? "text-amber-600" : "text-gray-300"}`}
               >
-                {job.summary.squall_count}
+                {job.summary.warning_count}
               </p>
-              <p className="text-xs text-gray-500">Squall</p>
+              <p className="text-xs text-gray-500">Warning</p>
             </div>
             <div className="text-center">
               <p

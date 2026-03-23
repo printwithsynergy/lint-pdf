@@ -229,7 +229,7 @@ class DielineByNameAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_DIE_002",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             "No die line detected in packaging file. "
                             "Expected a die line layer or spot color "

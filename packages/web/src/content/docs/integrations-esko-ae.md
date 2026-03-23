@@ -85,8 +85,8 @@ Use the **Map Data** task to extract values from the XML response into SmartName
 | SmartName               | XPath                         |
 | ----------------------- | ----------------------------- |
 | `LintPDF_Passed`        | `/job/summary/passed`         |
-| `LintPDF_AgroundCount`  | `/job/summary/aground_count`  |
-| `LintPDF_SquallCount`   | `/job/summary/squall_count`   |
+| `LintPDF_ErrorCount`    | `/job/summary/error_count`    |
+| `LintPDF_WarningCount`  | `/job/summary/warning_count`  |
 | `LintPDF_AdvisoryCount` | `/job/summary/advisory_count` |
 | `LintPDF_TotalFindings` | `/job/summary/total_findings` |
 
@@ -188,8 +188,8 @@ if job_data["status"] == "complete":
         json.dump({
             "job_id": job_id,
             "passed": passed,
-            "aground_count": summary.get("aground_count", 0),
-            "squall_count": summary.get("squall_count", 0),
+            "error_count": summary.get("error_count", 0),
+            "warning_count": summary.get("warning_count", 0),
             "advisory_count": summary.get("advisory_count", 0),
         }, f, indent=2)
 

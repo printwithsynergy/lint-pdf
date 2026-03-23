@@ -50,7 +50,7 @@ class TestBlendModes:
         findings = analyzer.analyze(_make_document(), [event])
         blend_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_001"]
         assert len(blend_findings) == 1
-        assert blend_findings[0].severity == Severity.SQUALL
+        assert blend_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_normal_blend_mode_ok() -> None:
@@ -121,7 +121,7 @@ class TestTransparencyOverprintConflict:
         findings = analyzer.analyze(_make_document(), events)
         conflict_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_002"]
         assert len(conflict_findings) == 1
-        assert conflict_findings[0].severity == Severity.SQUALL
+        assert conflict_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_no_conflict_without_transparency() -> None:

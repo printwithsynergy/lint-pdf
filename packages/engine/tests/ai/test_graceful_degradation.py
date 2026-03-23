@@ -14,7 +14,7 @@ import pytest
 
 from grounded.ai.gpu_client import CircuitBreaker, GPUInferenceClient, GPUServiceUnavailableError
 from grounded.profiles.orchestrator import PreflightOrchestrator, PreflightResult
-from grounded.profiles.schema import AIFeatureConfig, CheckConfig, VoyagePlan
+from grounded.profiles.schema import AIFeatureConfig, CheckConfig, PreflightProfile
 from grounded.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
@@ -41,7 +41,7 @@ class TestGPUUnavailableProducesAdvisory:
     def test_circuit_breaker_open_returns_advisory_finding() -> None:
         """An AI analyzer that uses the GPU client should handle GPUServiceUnavailableError
         and the orchestrator should catch any exceptions gracefully."""
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["all"]),
             checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
@@ -85,7 +85,7 @@ class TestRuleBasedFindingsUnaffected:
             subset=False,
         )
 
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["all"]),
         )

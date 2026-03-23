@@ -12,7 +12,7 @@ class TestFindingSourceAndCategory:
     def test_default_source_is_engine() -> None:
         f = Finding(
             inspection_id="GRD_FONT_001",
-            severity=Severity.AGROUND,
+            severity=Severity.ERROR,
             message="Font not embedded",
         )
         assert f.source == "engine"
@@ -21,7 +21,7 @@ class TestFindingSourceAndCategory:
     def test_default_category_is_empty() -> None:
         f = Finding(
             inspection_id="GRD_FONT_001",
-            severity=Severity.AGROUND,
+            severity=Severity.ERROR,
             message="Font not embedded",
         )
         assert f.category == ""
@@ -55,7 +55,7 @@ class TestFindingSourceAndCategory:
         """Existing engine code that doesn't pass source/category should still work."""
         f = Finding(
             inspection_id="GRD_IMG_001",
-            severity=Severity.SQUALL,
+            severity=Severity.WARNING,
             message="Low resolution image",
             page_num=1,
             details={"dpi": 72},
@@ -69,8 +69,8 @@ class TestFindingSourceAndCategory:
     @staticmethod
     def test_all_severity_values() -> None:
         """Severity enum has exactly three members."""
-        assert Severity.AGROUND == "aground"
-        assert Severity.SQUALL == "squall"
+        assert Severity.ERROR == "error"
+        assert Severity.WARNING == "warning"
         assert Severity.ADVISORY == "advisory"
         assert len(Severity) == 3
 
@@ -125,7 +125,7 @@ class TestFindingSourceAndCategory:
     def test_finding_with_object_metadata() -> None:
         f = Finding(
             inspection_id="AI_LOGO_001",
-            severity=Severity.SQUALL,
+            severity=Severity.WARNING,
             message="Logo not verified",
             source="ai",
             category="logo_verification",

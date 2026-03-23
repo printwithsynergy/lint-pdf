@@ -233,7 +233,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ADV_003",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Trapping risk: small text ({effective_size:.1f}pt) "
                             f"on page {event.page_num} uses {non_k_active} non-K "
@@ -342,7 +342,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_ADV_004",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(f"CxF spectral data is malformed: {'; '.join(cxf_data.errors)}"),
                     details={
                         "cxf_detected": True,
@@ -423,7 +423,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ADV_006",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"CxF defines spot color '{cxf_spot.name}' but no "
                             f"matching Separation space found in document"
@@ -500,7 +500,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_ADV_005",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"Registration color on non-mark {obj_type} object "
                                 f"on page {page_num} "
@@ -522,7 +522,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_ADV_005",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Rich black on small text ({font_size:.1f}pt) "
                                     f"on page {page_num} "
@@ -706,7 +706,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ADV_008",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"CxF spectral range for '{spot.name}' is "
                             f"{min_wl}-{max_wl}nm, does not cover "
@@ -882,7 +882,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ADV_012",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"CxF spot '{spot.name}' spectral vs colorimetric "
                             f"Delta-E = {delta_e:.2f} exceeds threshold "

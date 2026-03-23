@@ -43,8 +43,8 @@ def _build_template_context(result: PreflightResult) -> dict[str, Any]:  # skipc
 
     # Group findings by severity
     severity_groups: dict[str, list[dict[str, Any]]] = {
-        "aground": [],
-        "squall": [],
+        "error": [],
+        "warning": [],
         "advisory": [],
     }
     for f in result.findings:

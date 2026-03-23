@@ -345,7 +345,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_BARCODE_005",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Barcode grade '{grade}' on page {candidate.page_num} "
                             f"is below minimum '{self.barcode_min_grade}'"
@@ -454,7 +454,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
             # GRD_BARCODE_007: Symbol contrast below B grade
             if metrics["symbol_contrast"] < 2.5:
                 findings.append(Finding(
-                    inspection_id="GRD_BARCODE_007", severity=Severity.SQUALL,
+                    inspection_id="GRD_BARCODE_007", severity=Severity.WARNING,
                     message=f"Barcode symbol contrast {metrics['symbol_contrast']:.1f} below B grade on page {candidate.page_num}",
                     page_num=candidate.page_num, details={"symbol_contrast": metrics["symbol_contrast"]},
                     iso_clause="ISO 15416", bbox=candidate.bbox,
@@ -468,7 +468,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
                     cv = (variance**0.5) / mean_w
                     if cv > 0.3:
                         findings.append(Finding(
-                            inspection_id="GRD_BARCODE_008", severity=Severity.SQUALL,
+                            inspection_id="GRD_BARCODE_008", severity=Severity.WARNING,
                             message=f"Poor barcode edge contrast (CV={cv:.2f}) on page {candidate.page_num}",
                             page_num=candidate.page_num, details={"cv": round(cv, 3)},
                             iso_clause="ISO 15416", bbox=candidate.bbox,
@@ -488,7 +488,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
                 if min_margin_mm < iso_quiet_zone_mm:
                     findings.append(Finding(
                         inspection_id="GRD_BARCODE_009",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"Barcode quiet zone {min_margin_mm:.1f}mm below "
                             f"ISO minimum {iso_quiet_zone_mm}mm on page {candidate.page_num}"
@@ -510,7 +510,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
                     deviation_pct = std_dev / mean_w * 100
                     if deviation_pct > 20:
                         findings.append(Finding(
-                            inspection_id="GRD_BARCODE_010", severity=Severity.SQUALL,
+                            inspection_id="GRD_BARCODE_010", severity=Severity.WARNING,
                             message=f"Barcode bar width deviation {deviation_pct:.0f}% on page {candidate.page_num}",
                             page_num=candidate.page_num, details={"deviation_pct": round(deviation_pct, 1)},
                             iso_clause="ISO 15416", bbox=candidate.bbox,
@@ -524,7 +524,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
                 if len(candidate.stroke_widths) < 15:
                     findings.append(Finding(
                         inspection_id="GRD_BARCODE_011",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Possible barcode defect on page {candidate.page_num} — "
                             f"only {len(candidate.stroke_widths)} strokes detected"
@@ -542,7 +542,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
             # GRD_BARCODE_012: Modulation below C grade
             if metrics["modulation"] < 2.0:
                 findings.append(Finding(
-                    inspection_id="GRD_BARCODE_012", severity=Severity.SQUALL,
+                    inspection_id="GRD_BARCODE_012", severity=Severity.WARNING,
                     message=f"Barcode modulation {metrics['modulation']:.1f} below C grade on page {candidate.page_num}",
                     page_num=candidate.page_num, details={"modulation": metrics["modulation"]},
                     iso_clause="ISO 15416", bbox=candidate.bbox,
@@ -551,7 +551,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
             # GRD_BARCODE_013: Decodability below C grade
             if metrics["decodability"] < 2.0:
                 findings.append(Finding(
-                    inspection_id="GRD_BARCODE_013", severity=Severity.SQUALL,
+                    inspection_id="GRD_BARCODE_013", severity=Severity.WARNING,
                     message=f"Barcode decodability {metrics['decodability']:.1f} below C grade on page {candidate.page_num}",
                     page_num=candidate.page_num, details={"decodability": metrics["decodability"]},
                     iso_clause="ISO 15416", bbox=candidate.bbox,
@@ -651,7 +651,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
                 trim = page.trim_box
                 if bbox[0] < trim.x0 or bbox[1] < trim.y0 or bbox[2] > trim.x1 or bbox[3] > trim.y1:
                     findings.append(Finding(
-                        inspection_id="GRD_BARCODE_028", severity=Severity.AGROUND,
+                        inspection_id="GRD_BARCODE_028", severity=Severity.ERROR,
                         message=f"Barcode extends beyond trim box on page {candidate.page_num} (will be trimmed)",
                         page_num=candidate.page_num, bbox=candidate.bbox,
                     ))
@@ -678,7 +678,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
             # GRD_BARCODE_030: Truncation (height < 15mm / ~42.5pt)
             if candidate.has_bounds and candidate.height_pts < 42.5:
                 findings.append(Finding(
-                    inspection_id="GRD_BARCODE_030", severity=Severity.SQUALL,
+                    inspection_id="GRD_BARCODE_030", severity=Severity.WARNING,
                     message=f"Barcode height {candidate.height_pts / _PTS_PER_MM:.1f}mm below ISO minimum on page {candidate.page_num}",
                     page_num=candidate.page_num, details={"height_mm": round(candidate.height_pts / _PTS_PER_MM, 1)},
                     iso_clause="ISO 15416", bbox=candidate.bbox,
@@ -776,7 +776,7 @@ class BarcodeAnalyzer(BaseAnalyzer):
             if effective_dpi < self.barcode_min_dpi:
                 findings.append(Finding(
                     inspection_id="GRD_BARCODE_025",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Image overlapping barcode on page {candidate.page_num} "
                         f"has {effective_dpi:.0f} DPI, below minimum {self.barcode_min_dpi:.0f}"

@@ -39,7 +39,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-026",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="JavaScript detected in /Names tree (prohibited in PDF/A)",
                     iso_clause="ISO 19005 6.6.1",
                 )
@@ -53,7 +53,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-026",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="JavaScript in /OpenAction (prohibited in PDF/A)",
                     iso_clause="ISO 19005 6.6.1",
                 )
@@ -65,7 +65,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-027",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Encryption/security detected (prohibited in PDF/A)",
                 iso_clause="ISO 19005 6.1.3",
             )
@@ -74,7 +74,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-027",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Document is encrypted (prohibited in PDF/A)",
                 iso_clause="ISO 19005 6.1.3",
             )
@@ -89,7 +89,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-028",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message="Embedded files detected (prohibited in PDF/A-1)",
                         iso_clause="ISO 19005-1 6.6.1",
                     )
@@ -98,7 +98,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-028",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             "Embedded files detected — must be PDF/A compliant "
                             "for PDF/A-2 conformance"
@@ -130,7 +130,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-029",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"Multimedia annotation '{annot_subtype}' on page "
                                 f"{page.page_num} (prohibited in PDF/A)"
@@ -149,7 +149,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-030",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"LZW compression used on image '{event.image_name}' "
                             f"on page {event.page_num} (prohibited in PDF/A)"
@@ -169,7 +169,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-031",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message="XFA form data detected (prohibited in PDF/A)",
                         iso_clause="ISO 19005 6.6.1",
                     )
@@ -178,7 +178,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-031",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message="AcroForm detected (interactive forms restricted in PDF/A-1)",
                     iso_clause="ISO 19005-1 6.6.1",
                 )
@@ -195,7 +195,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-032",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"OPI reference in XObject '{xobj_name}' "
                                     f"on page {page.page_num} (prohibited in PDF/A)"
@@ -210,7 +210,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-032",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"External /Ref in XObject '{xobj_name}' "
                                     f"on page {page.page_num} (prohibited in PDF/A)"
@@ -228,7 +228,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-032",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message="Document-level URI base found (external reference)",
                     iso_clause="ISO 19005 6.6.1",
                 )
@@ -248,7 +248,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-033",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"Alpha value < 1.0 detected on page {event.page_num} "
                             f"(transparency prohibited in PDF/A-1)"
@@ -264,7 +264,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-033",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"Non-Normal blend mode '{event.blend_mode}' on page "
                             f"{event.page_num} (transparency prohibited in PDF/A-1)"
@@ -283,7 +283,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-033",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"Page {page.page_num} has a transparency group "
                             f"(prohibited in PDF/A-1)"
@@ -305,7 +305,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-033",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"Soft mask '{gs_name}' on page {page.page_num} "
                                         f"(prohibited in PDF/A-1)"
@@ -326,7 +326,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-034",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"JPEG2000 compression used on image '{event.image_name}' "
                                 f"on page {event.page_num} (prohibited in PDF/A-1)"
@@ -344,7 +344,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-035",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="Optional content (layers) detected (prohibited in PDF/A-1)",
                     iso_clause="ISO 19005-1 6.6.1",
                 )
@@ -354,7 +354,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-035",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         "Optional content (layers) detected — all OCGs must be printable "
                         "for PDF/A-2/A-3 conformance"
@@ -370,7 +370,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-036",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Additional actions (/AA) in document catalog (prohibited in PDF/A)",
                 iso_clause="ISO 19005 6.6.1",
             )
@@ -385,7 +385,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-036",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Additional actions (/AA) on page {page.page_num} "
                         f"(prohibited in PDF/A)"
@@ -407,7 +407,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-037",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Transfer function detected (prohibited in PDF/A)",
                 iso_clause="ISO 19005 6.2.8",
             )
@@ -424,7 +424,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-038",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"PostScript XObject '{xobj_name}' on page "
                                     f"{page.page_num} (prohibited in PDF/A)"
@@ -445,7 +445,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-039",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Alternate image in XObject '{xobj_name}' "
                                     f"on page {page.page_num} (prohibited in PDF/A)"
@@ -471,7 +471,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-040",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"File attachment annotation on page {page.page_num} "
                                     f"(prohibited in PDF/A-1)"

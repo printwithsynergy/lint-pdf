@@ -60,7 +60,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
     Args:
         custom_pantone_data: Customer-uploaded Pantone overrides.
         icc_profile_bytes: ICC profile for accurate CMYK→Lab conversion.
-        delta_e_squall: Delta-E threshold for SQUALL severity (default 5.0).
+        delta_e_warning: Delta-E threshold for WARNING severity (default 5.0).
         delta_e_advisory: Delta-E threshold for ADVISORY severity (default 2.0).
         max_spot_colors: Maximum number of spot colors before advisory (default 8).
     """
@@ -69,13 +69,13 @@ class SpotColorAnalyzer(BaseAnalyzer):
         self,
         custom_pantone_data: dict[str, Any] | None = None,
         icc_profile_bytes: bytes | None = None,
-        delta_e_squall: float = 5.0,
+        delta_e_warning: float = 5.0,
         delta_e_advisory: float = 2.0,
         max_spot_colors: int = 8,
     ) -> None:
         self._custom_pantone_data = custom_pantone_data
         self._icc_profile_bytes = icc_profile_bytes
-        self._delta_e_squall = delta_e_squall
+        self._delta_e_warning = delta_e_warning
         self._delta_e_advisory = delta_e_advisory
         self._max_spot_colors = max_spot_colors
 
@@ -172,7 +172,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_SPOT_001",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Spot color '{colorant}' has inconsistent alternate "
                             f"color spaces across pages {_format_page_list(colorant_pages[colorant])}: "
@@ -262,13 +262,13 @@ class SpotColorAnalyzer(BaseAnalyzer):
                             colorant,
                             cmyk_01,
                             icc_profile_bytes=self._icc_profile_bytes,
-                            squall_threshold=self._delta_e_squall,
+                            warning_threshold=self._delta_e_warning,
                             advisory_threshold=self._delta_e_advisory,
                         )
 
                         if de_result:
-                            if de_result.delta_e > self._delta_e_squall:
-                                severity = Severity.SQUALL
+                            if de_result.delta_e > self._delta_e_warning:
+                                severity = Severity.WARNING
                             elif de_result.delta_e > self._delta_e_advisory:
                                 severity = Severity.ADVISORY
                             else:
@@ -302,7 +302,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                                     message=(
                                         f"Pantone '{colorant}' CMYK fallback "
                                         f"Delta-E = {de_result.delta_e:.1f} "
-                                        f"(threshold: {self._delta_e_squall})"
+                                        f"(threshold: {self._delta_e_warning})"
                                     ),
                                     page_num=page.page_num,
                                     details={
@@ -371,7 +371,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_SPOT_003",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Empty or unnamed colorant in {cs.cs_type} "
                                     f"color space on page {page.page_num}"
@@ -396,7 +396,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                             findings.append(
                                 Finding(
                                     inspection_id="GRD_SPOT_003",
-                                    severity=Severity.SQUALL,
+                                    severity=Severity.WARNING,
                                     message=(
                                         f"Ambiguous Pantone name '{colorant}' "
                                         f"contains both C and U variant markers"
@@ -423,7 +423,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                             findings.append(
                                 Finding(
                                     inspection_id="GRD_SPOT_003",
-                                    severity=Severity.SQUALL,
+                                    severity=Severity.WARNING,
                                     message=(
                                         f"Pantone name '{colorant}' is missing a "
                                         f"coated/uncoated suffix (e.g., C, U, M)"
@@ -485,7 +485,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_SPOT_004",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"DeviceN '{cs_name}' on page {page.page_num}: "
                                 f"colorant count ({len(cs.colorant_names)}) does not match "
@@ -507,7 +507,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_SPOT_004",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"DeviceN '{cs_name}' on page {page.page_num} "
                                 f"has no alternate color space"
@@ -526,7 +526,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_SPOT_004",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"DeviceN '{cs_name}' on page {page.page_num} "
                                 f"has no colorant names defined"
@@ -550,7 +550,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_SPOT_004",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"DeviceN '{cs_name}' on page {page.page_num} "
                                     f"has empty colorant name(s) at "
@@ -639,7 +639,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_SPOT_005",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Inconsistent process color sets in DeviceN spaces: "
                         f"{'; '.join(set_descriptions)}"
@@ -761,7 +761,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_SPOT_008",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Spot color '{colorant}' ({matched_library} library) "
                                 f"has alternate space '{alt_type}' which is not "
@@ -824,7 +824,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_SPOT_009",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Duplicate spot color '{colorant}' on page "
                                 f"{page.page_num} defined {len(defs)} time(s) with "

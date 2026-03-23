@@ -190,7 +190,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BD_001",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
                                     f"X-dimension {x_dim_mm:.3f} mm is below "
@@ -215,7 +215,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BD_001",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
                                     f"X-dimension {x_dim_mm:.3f} mm is below "
@@ -243,7 +243,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BD_002",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
                                     f"magnification {magnification:.1%} is below "
@@ -264,7 +264,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BD_002",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
                                     f"magnification {magnification:.1%} exceeds "
@@ -294,7 +294,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BD_003",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
                                     f"height {height_mm:.2f} mm is critically below "
@@ -315,7 +315,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BD_003",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
                                     f"height {height_mm:.2f} mm is below "
@@ -349,7 +349,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BD_004",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
                                     f"left quiet zone ~{actual_left_modules:.1f} modules, "
@@ -373,7 +373,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BD_004",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
                                     f"right quiet zone ~{actual_right_modules:.1f} modules, "

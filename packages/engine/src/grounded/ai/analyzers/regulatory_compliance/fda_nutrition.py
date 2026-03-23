@@ -188,7 +188,7 @@ class FdaNutritionAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_FDA_001",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"Calories declaration may be below minimum "
                             f"font size (largest: {max_size:.1f}pt, "
@@ -210,7 +210,7 @@ class FdaNutritionAnalyzer(BaseAIAnalyzer):
             findings.append(
                 self._make_finding(
                     inspection_id="AI_FDA_002",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Nutrition Facts text below minimum readable size "
                         f"({min_size:.1f}pt, FDA requires ≥6pt for any NFP text)"
@@ -231,7 +231,7 @@ class FdaNutritionAnalyzer(BaseAIAnalyzer):
             findings.append(
                 self._make_finding(
                     inspection_id="AI_FDA_003",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         "No bold fonts detected in Nutrition Facts panel. "
                         "21 CFR 101.9 requires bold for key headings "
@@ -272,7 +272,7 @@ class FdaNutritionAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_FDA_004",
-                        severity=Severity.AGROUND if is_added_sugars_missing else Severity.SQUALL,
+                        severity=Severity.ERROR if is_added_sugars_missing else Severity.WARNING,
                         message=(
                             f"Potentially missing required nutrients in NFP: "
                             f"{', '.join(missing_nutrients)}"
@@ -304,7 +304,7 @@ class FdaNutritionAnalyzer(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="AI_FDA_005",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Nutrient ordering issue: '{curr_name}' appears "
                                     f"after '{next_name}' in the panel (21 CFR 101.9 "

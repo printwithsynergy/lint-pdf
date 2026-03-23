@@ -2,7 +2,7 @@
 
 Uses MUSIQ/TOPIQ models on the GPU inference service to assign a perceptual
 quality score (0-100) to each raster image embedded in the PDF.  Images below
-the tenant's configured minimum score threshold generate a SQUALL finding.
+the tenant's configured minimum score threshold generate a WARNING finding.
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ class ImageQualityAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_IQ_002",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Page {page_num} image quality score {score} is below "
                             f"minimum threshold ({min_score})"

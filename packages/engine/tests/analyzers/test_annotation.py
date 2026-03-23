@@ -50,7 +50,7 @@ class TestPrintableAnnotationInTrim:
         findings = analyzer.analyze(doc, [])
         pa = [f for f in findings if f.inspection_id == "GRD_ANNOT_001"]
         assert len(pa) == 1
-        assert pa[0].severity == Severity.SQUALL
+        assert pa[0].severity == Severity.WARNING
 
     @staticmethod
     def test_printable_outside_trim_no_finding() -> None:
@@ -108,7 +108,7 @@ class TestMultimediaAnnotation:
         findings = AnnotationAnalyzer().analyze(doc, [])
         mm = [f for f in findings if f.inspection_id == "GRD_ANNOT_002"]
         assert len(mm) == 1
-        assert mm[0].severity == Severity.AGROUND
+        assert mm[0].severity == Severity.ERROR
 
     @staticmethod
     def test_movie_annotation() -> None:

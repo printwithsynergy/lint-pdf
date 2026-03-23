@@ -53,7 +53,7 @@ class TestEpmAnalyzer:
         findings = analyzer.analyze(_make_doc(), events)
         epm_002 = [f for f in findings if f.inspection_id == "GRD_EPM_002"]
         assert len(epm_002) >= 1
-        assert epm_002[0].severity == Severity.AGROUND
+        assert epm_002[0].severity == Severity.ERROR
 
     def test_k_channel_usage_detected(self):
         events = [

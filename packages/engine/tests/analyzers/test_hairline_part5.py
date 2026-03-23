@@ -40,7 +40,7 @@ class TestMultiInkThinStroke:
         findings = analyzer.analyze(_make_document(), events)
         f = [f for f in findings if f.inspection_id == "GRD_STROKE_004"]
         assert len(f) == 1
-        assert f[0].severity == Severity.SQUALL
+        assert f[0].severity == Severity.WARNING
 
     @staticmethod
     def test_single_ink_thin_stroke_no_flag() -> None:
@@ -128,7 +128,7 @@ class TestExcessivePathPoints:
         findings = analyzer.analyze(_make_document(), events)
         f = [f for f in findings if f.inspection_id == "GRD_PATH_001"]
         assert len(f) == 1
-        assert f[0].severity == Severity.SQUALL
+        assert f[0].severity == Severity.WARNING
         assert f[0].details["point_count"] == 15000
 
     @staticmethod

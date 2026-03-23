@@ -139,7 +139,7 @@ class TestDielineByNameAnalyzer:
 
         assert len(findings) == 1
         assert findings[0].inspection_id == "AI_DIE_002"
-        assert findings[0].severity == Severity.SQUALL
+        assert findings[0].severity == Severity.WARNING
         assert "No die line detected" in findings[0].message
 
     @staticmethod

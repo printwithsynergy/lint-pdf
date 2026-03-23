@@ -27,7 +27,7 @@ def _seed_custom_profile(
         id=uuid.uuid4(),
         tenant_id=PLACEHOLDER_TENANT_ID,
         profile_id=profile_id,
-        voyage_plan_json={"name": name, "workflow": "CMYK"},
+        preflight_profile_json={"name": name, "workflow": "CMYK"},
     )
     db.add(row)
     db.commit()
@@ -49,14 +49,14 @@ class TestListProfilesRoute:
     def test_contains_builtins(client: TestClient) -> None:
         data = client.get("/api/v1/profiles").json()
         ids = [p["profile_id"] for p in data["profiles"]]
-        assert "grounded-default" in ids
-        assert "grounded-strict" in ids
+        assert "lintpdf-default" in ids
+        assert "lintpdf-strict" in ids
 
     @staticmethod
     def test_builtins_marked_as_builtin(client: TestClient) -> None:
         data = client.get("/api/v1/profiles").json()
         for p in data["profiles"]:
-            if p["profile_id"].startswith("grounded-"):
+            if p["profile_id"].startswith("lintpdf-"):
                 assert p["is_builtin"] is True
 
     @staticmethod
@@ -76,12 +76,12 @@ class TestListProfilesRoute:
     def test_malformed_custom_profile_skipped(
         self, client: TestClient, db_session: Session
     ) -> None:
-        """A custom profile with invalid voyage_plan_json should be silently skipped."""
+        """A custom profile with invalid preflight_profile_json should be silently skipped."""
         row = CustomProfile(
             id=uuid.uuid4(),
             tenant_id=PLACEHOLDER_TENANT_ID,
             profile_id="custom-broken",
-            voyage_plan_json={"invalid_field_only": True},
+            preflight_profile_json={"invalid_field_only": True},
         )
         db_session.add(row)
         db_session.commit()
@@ -106,10 +106,10 @@ class TestListProfilesRoute:
 class TestGetProfileRoute:
     @staticmethod
     def test_builtin_profile_detail(client: TestClient) -> None:
-        resp = client.get("/api/v1/profiles/grounded-default")
+        resp = client.get("/api/v1/profiles/lintpdf-default")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["profile_id"] == "grounded-default"
+        assert data["profile_id"] == "lintpdf-default"
         assert data["is_builtin"] is True
         assert "checks" in data
         assert "thresholds" in data
@@ -129,7 +129,7 @@ class TestGetProfileRoute:
 
     @staticmethod
     def test_strict_profile_has_conformance(client: TestClient) -> None:
-        data = client.get("/api/v1/profiles/grounded-strict").json()
+        data = client.get("/api/v1/profiles/lintpdf-strict").json()
         assert data["conformance"] == "pdfx4"
 
 
@@ -145,7 +145,7 @@ class TestCreateProfileRoute:
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-new-one",
-                "voyage_plan": {"name": "New One", "workflow": "CMYK"},
+                "preflight_profile": {"name": "New One", "workflow": "CMYK"},
             },
         )
         assert resp.status_code == 201
@@ -157,7 +157,7 @@ class TestCreateProfileRoute:
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-get-check",
-                "voyage_plan": {"name": "Get Check"},
+                "preflight_profile": {"name": "Get Check"},
             },
         )
         resp = client.get("/api/v1/profiles/custom-get-check")
@@ -171,14 +171,14 @@ class TestCreateProfileRoute:
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-overwrite",
-                "voyage_plan": {"name": "V1"},
+                "preflight_profile": {"name": "V1"},
             },
         )
         resp = client.post(
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-overwrite",
-                "voyage_plan": {"name": "V2"},
+                "preflight_profile": {"name": "V2"},
             },
         )
         assert resp.status_code == 201
@@ -190,8 +190,8 @@ class TestCreateProfileRoute:
         resp = client.post(
             "/api/v1/profiles",
             json={
-                "profile_id": "grounded-default",
-                "voyage_plan": {"name": "Hijack"},
+                "profile_id": "lintpdf-default",
+                "preflight_profile": {"name": "Hijack"},
             },
         )
         assert resp.status_code == 409
@@ -203,18 +203,18 @@ class TestCreateProfileRoute:
             "/api/v1/profiles",
             json={
                 "profile_id": "HAS SPACES",
-                "voyage_plan": {"name": "Bad ID"},
+                "preflight_profile": {"name": "Bad ID"},
             },
         )
         assert resp.status_code == 422
 
     @staticmethod
-    def test_invalid_voyage_plan(client: TestClient) -> None:
+    def test_invalid_preflight_profile(client: TestClient) -> None:
         resp = client.post(
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-bad-plan",
-                "voyage_plan": {"no_valid_field": True},
+                "preflight_profile": {"no_valid_field": True},
             },
         )
         assert resp.status_code == 422
@@ -224,7 +224,7 @@ class TestCreateProfileRoute:
         """Profile ID pattern requires at least two characters."""
         resp = client.post(
             "/api/v1/profiles",
-            json={"profile_id": "x", "voyage_plan": {"name": "Short"}},
+            json={"profile_id": "x", "preflight_profile": {"name": "Short"}},
         )
         assert resp.status_code == 422
 
@@ -245,7 +245,7 @@ class TestDeleteProfileRoute:
 
     @staticmethod
     def test_delete_builtin_forbidden(client: TestClient) -> None:
-        resp = client.delete("/api/v1/profiles/grounded-default")
+        resp = client.delete("/api/v1/profiles/lintpdf-default")
         assert resp.status_code == 403
         assert "built-in" in resp.json()["detail"].lower()
 
@@ -262,7 +262,7 @@ class TestDeleteProfileRoute:
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-reuse",
-                "voyage_plan": {"name": "Reused"},
+                "preflight_profile": {"name": "Reused"},
             },
         )
         assert resp.status_code == 201

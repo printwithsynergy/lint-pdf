@@ -66,7 +66,7 @@ class TestFontEmbedding:
         findings = analyzer.analyze(_make_doc_with_font(font), [])
         embed_findings = [f for f in findings if f.inspection_id == "GRD_FONT_001"]
         assert len(embed_findings) == 1
-        assert embed_findings[0].severity == Severity.AGROUND
+        assert embed_findings[0].severity == Severity.ERROR
 
     @staticmethod
     def test_standard_14_not_embedded_ok() -> None:
@@ -130,7 +130,7 @@ class TestType3:
         findings = analyzer.analyze(_make_doc_with_font(font), [])
         t3_findings = [f for f in findings if f.inspection_id == "GRD_FONT_004"]
         assert len(t3_findings) == 1
-        assert t3_findings[0].severity == Severity.SQUALL
+        assert t3_findings[0].severity == Severity.WARNING
 
 
 class TestCIDFonts:
@@ -207,7 +207,7 @@ class TestTrueTypeEmbedding:
         findings = analyzer.analyze(_make_doc_with_font(font), [])
         tt_findings = [f for f in findings if f.inspection_id == "GRD_FONT_008"]
         assert len(tt_findings) == 1
-        assert tt_findings[0].severity == Severity.AGROUND
+        assert tt_findings[0].severity == Severity.ERROR
 
 
 class TestDeduplication:

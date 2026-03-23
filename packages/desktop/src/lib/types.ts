@@ -27,8 +27,8 @@ export type JobStatus = "queued" | "processing" | "passed" | "failed" | "error";
 
 export interface JobSummary {
   passed: boolean;
-  aground_count: number;
-  squall_count: number;
+  error_count: number;
+  warning_count: number;
   advisory_count: number;
 }
 
@@ -64,6 +64,8 @@ export const DEFAULT_EXTENSIONS = [
   ".jpeg",
   ".png",
   ".ai",
+  ".jdf",
+  ".xjdf",
 ];
 
 export function newFolderConfig(partial?: Partial<FolderConfig>): FolderConfig {
@@ -72,7 +74,7 @@ export function newFolderConfig(partial?: Partial<FolderConfig>): FolderConfig {
     name: "",
     enabled: true,
     watch_dir: "",
-    profile_id: "grounded-default",
+    profile_id: "lintpdf-default",
     pass_dir: "",
     fail_dir: "",
     error_dir: "",

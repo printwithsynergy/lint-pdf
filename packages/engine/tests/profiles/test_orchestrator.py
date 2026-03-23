@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from grounded.analyzers.finding import Severity
 from grounded.profiles.orchestrator import PreflightOrchestrator, PreflightResult
-from grounded.profiles.schema import CheckConfig, ThresholdConfig, VoyagePlan
+from grounded.profiles.schema import CheckConfig, ThresholdConfig, PreflightProfile
 from grounded.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
@@ -28,7 +28,7 @@ def _minimal_doc(
 class TestOrchestratorOnDocument:
     @staticmethod
     def test_basic_run() -> None:
-        fp = VoyagePlan(name="Test")
+        fp = PreflightProfile(name="Test")
         orch = PreflightOrchestrator(fp, profile_id="test")
         result = orch.run_on_document(_minimal_doc(), [])
 
@@ -49,7 +49,7 @@ class TestOrchestratorOnDocument:
             embedded=False,
             subset=False,
         )
-        fp = VoyagePlan(name="Test")
+        fp = PreflightProfile(name="Test")
         orch = PreflightOrchestrator(fp)
         result = orch.run_on_document(_minimal_doc(fonts={"F1": font}), [])
 
@@ -66,7 +66,7 @@ class TestOrchestratorOnDocument:
             embedded=False,
             subset=False,
         )
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             checks=CheckConfig(disabled=["GRD_FONT_*"]),
         )
@@ -85,7 +85,7 @@ class TestOrchestratorOnDocument:
             embedded=False,
             subset=False,
         )
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             checks=CheckConfig(
                 severity_overrides={"GRD_FONT_001": "advisory"},
@@ -100,7 +100,7 @@ class TestOrchestratorOnDocument:
 
     @staticmethod
     def test_passed_when_no_aground() -> None:
-        fp = VoyagePlan(name="Test")
+        fp = PreflightProfile(name="Test")
         orch = PreflightOrchestrator(fp)
         result = orch.run_on_document(_minimal_doc(), [])
         # Minimal doc should have no AGROUND
@@ -115,15 +115,15 @@ class TestOrchestratorOnDocument:
             embedded=False,
             subset=False,
         )
-        fp = VoyagePlan(name="Test")
+        fp = PreflightProfile(name="Test")
         orch = PreflightOrchestrator(fp)
         result = orch.run_on_document(_minimal_doc(fonts={"F1": font}), [])
-        assert result.summary.aground_count > 0
+        assert result.summary.error_count > 0
         assert result.summary.passed is False
 
     @staticmethod
     def test_conformance_pdfx4() -> None:
-        fp = VoyagePlan(name="Test", conformance="pdfx4")
+        fp = PreflightProfile(name="Test", conformance="pdfx4")
         orch = PreflightOrchestrator(fp)
         result = orch.run_on_document(_minimal_doc(), [])
         # Should include PDFX4 findings (e.g. missing XMP, output intent)
@@ -132,7 +132,7 @@ class TestOrchestratorOnDocument:
 
     @staticmethod
     def test_no_conformance_no_pdfx4() -> None:
-        fp = VoyagePlan(name="Test", conformance=None)
+        fp = PreflightProfile(name="Test", conformance=None)
         orch = PreflightOrchestrator(fp)
         result = orch.run_on_document(_minimal_doc(), [])
         pdfx4_findings = [f for f in result.findings if f.inspection_id.startswith("PDFX4")]
@@ -141,7 +141,7 @@ class TestOrchestratorOnDocument:
     @staticmethod
     def test_threshold_propagation() -> None:
         # Use high min_dpi so even 300dpi images would fail
-        fp = VoyagePlan(
+        fp = PreflightProfile(
             name="Test",
             thresholds=ThresholdConfig(min_dpi=9999.0),
         )

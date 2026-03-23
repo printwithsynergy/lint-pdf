@@ -42,7 +42,7 @@ export const docSections = [
       { slug: "ai-findings", label: "Reading Findings" },
       { slug: "ai-regulatory", label: "Regulatory Compliance" },
       { slug: "ai-monitoring", label: "Usage Monitoring" },
-      { slug: "ai-voyage-plans", label: "Rulesets" },
+      { slug: "ai-preflight-profiles", label: "Preflight Profiles" },
       { slug: "ai-faq", label: "FAQ" },
       { slug: "ai-api", label: "API Reference" },
       { slug: "ai-errors", label: "Errors" },

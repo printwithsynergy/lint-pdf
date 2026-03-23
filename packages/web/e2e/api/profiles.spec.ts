@@ -16,8 +16,8 @@ test.describe("Flight Plan Profiles", () => {
 
     // Check expected profile IDs
     const ids = body.profiles.map((p: { profile_id: string }) => p.profile_id);
-    expect(ids).toContain("grounded-default");
-    expect(ids).toContain("grounded-strict");
+    expect(ids).toContain("lintpdf-default");
+    expect(ids).toContain("lintpdf-strict");
     expect(ids).toContain("gwg-2022-coated-offset");
   });
 
@@ -27,12 +27,12 @@ test.describe("Flight Plan Profiles", () => {
     const key = getAnyTenantKey();
     test.skip(!key, "No test tenant key available");
 
-    const res = await request.get("/api/v1/profiles/grounded-default", {
+    const res = await request.get("/api/v1/profiles/lintpdf-default", {
       headers: { Authorization: `Bearer ${key}` },
     });
     expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(body.profile_id).toBe("grounded-default");
+    expect(body.profile_id).toBe("lintpdf-default");
     expect(body).toHaveProperty("name");
   });
 

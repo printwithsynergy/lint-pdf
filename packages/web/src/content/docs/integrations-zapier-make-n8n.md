@@ -91,8 +91,8 @@ When the job completes, LintPDF sends a POST to your webhook URL with:
 **Parse the JSON body** to extract:
 
 - `summary.passed` — boolean
-- `summary.aground_count` — critical issue count
-- `summary.squall_count` — warning count
+- `summary.error_count` — critical issue count
+- `summary.warning_count` — warning count
 - `summary.advisory_count` — informational count
 - `findings` — array of individual issues
 

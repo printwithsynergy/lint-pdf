@@ -233,7 +233,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="GRD_BCQM_002",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"QR code on page {page_num} contains invalid URL: {reason}"
                                 ),
@@ -287,7 +287,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                             findings.append(
                                 self._make_finding(
                                     inspection_id="GRD_BCQM_004",
-                                    severity=Severity.SQUALL,
+                                    severity=Severity.WARNING,
                                     message=(
                                         f"QR code on page {page_num}: human-readable "
                                         f"text does not match decoded data "
@@ -328,7 +328,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                                 findings.append(
                                     self._make_finding(
                                         inspection_id="GRD_BCQM_001",
-                                        severity=Severity.AGROUND,
+                                        severity=Severity.ERROR,
                                         message=(
                                             f"DataMatrix on page {page_num}: "
                                             f"GTIN {gtin} has invalid check digit "
@@ -364,7 +364,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="GRD_BCQM_001",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"EAN-13 on page {page_num}: invalid check digit "
                             f"(expected {expected}, got {data[12]})"
@@ -387,7 +387,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="GRD_BCQM_001",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"UPC-A on page {page_num}: invalid check digit "
                             f"(expected {expected}, got {data[11]})"

@@ -31,7 +31,7 @@ class TestEncryption:
         assert "GRD_DOC_004" in ids
         f = next((f for f in findings if f.inspection_id == "GRD_DOC_004"), None)
         assert f is not None
-        assert f.severity == Severity.AGROUND
+        assert f.severity == Severity.ERROR
 
     @staticmethod
     def test_not_encrypted_clean() -> None:

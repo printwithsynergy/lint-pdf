@@ -34,8 +34,8 @@ class JobSummaryResponse(BaseModel):
     """Summary statistics for a completed job."""
 
     total_findings: int
-    aground_count: int
-    squall_count: int
+    error_count: int
+    warning_count: int
     advisory_count: int
     passed: bool
     page_count: int
@@ -57,6 +57,7 @@ class JobResponse(BaseModel):
     summary: JobSummaryResponse | None = None
     findings: list[FindingResponse] | None = None
     error_message: str | None = None
+    jdf_overrides: dict[str, object] | None = None
     color_quality_score: float | None = None
     color_quality_grade: str | None = None
     color_score_breakdown: dict[str, float] | None = None
@@ -114,8 +115,8 @@ class ProfileCreateRequest(BaseModel):
         pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$",
         description="Lowercase kebab-case profile identifier.",
     )
-    voyage_plan: dict[str, object] = Field(
-        description="Voyage Plan JSON conforming to VoyagePlan schema.",
+    preflight_profile: dict[str, object] = Field(
+        description="Preflight Profile JSON conforming to PreflightProfile schema.",
     )
 
 
@@ -170,14 +171,14 @@ class HealthResponse(BaseModel):
     """Service health check response."""
 
     status: str
-    service: str = "grounded"
+    service: str = "lintpdf"
 
 
 class StatusResponse(BaseModel):
     """Detailed service status."""
 
     status: str
-    service: str = "grounded"
+    service: str = "lintpdf"
     version: str = "0.1.0"
     database: str = "unknown"
     redis: str = "unknown"

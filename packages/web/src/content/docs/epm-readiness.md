@@ -22,14 +22,14 @@ In EPM mode:
 
 | Check       | Description                          | Severity |
 | ----------- | ------------------------------------ | -------- |
-| GRD_EPM_001 | K channel usage detection            | Squall   |
-| GRD_EPM_002 | Pure black text (K100) detection     | Aground  |
-| GRD_EPM_003 | CMY composite black quality          | Squall   |
-| GRD_EPM_004 | CMY-only TAC recalculation           | Squall   |
+| GRD_EPM_001 | K channel usage detection            | Warning  |
+| GRD_EPM_002 | Pure black text (K100) detection     | Error    |
+| GRD_EPM_003 | CMY composite black quality          | Warning  |
+| GRD_EPM_004 | CMY-only TAC recalculation           | Warning  |
 | GRD_EPM_005 | Spot color K-dependency in fallbacks | Advisory |
-| GRD_EPM_006 | Image K channel dependency           | Squall   |
+| GRD_EPM_006 | Image K channel dependency           | Warning  |
 | GRD_EPM_007 | Registration color in EPM mode       | Advisory |
-| GRD_EPM_008 | Gray balance risk                    | Squall   |
+| GRD_EPM_008 | Gray balance risk                    | Warning  |
 
 ## Usage
 

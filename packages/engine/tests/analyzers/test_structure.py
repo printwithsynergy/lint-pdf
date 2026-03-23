@@ -52,7 +52,7 @@ class TestJavaScript:
         findings = [
             f for f in StructureAnalyzer().analyze(doc, []) if f.inspection_id == "GRD_STRUCT_001"
         ]
-        assert findings[0].severity == Severity.AGROUND
+        assert findings[0].severity == Severity.ERROR
 
 
 class TestFormFields:

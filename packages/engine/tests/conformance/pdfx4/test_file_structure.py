@@ -30,7 +30,7 @@ class TestPdfVersion:
         f = validate_file_structure(_doc(version="1.4"))
         ids = [x for x in f if x.inspection_id == "PDFX4-001"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_version_16_ok() -> None:
@@ -56,7 +56,7 @@ class TestTrailerId:
         f = validate_file_structure(_doc(trailer={}))
         ids = [x for x in f if x.inspection_id == "PDFX4-083"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_id_present_ok() -> None:

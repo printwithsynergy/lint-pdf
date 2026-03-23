@@ -36,7 +36,7 @@ class TestFontEmbedding:
         f = validate_fonts(_doc(fonts))
         ids = [x for x in f if x.inspection_id == "PDFX4-036"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_embedded_ok() -> None:
@@ -103,7 +103,7 @@ class TestType3Font:
         f = validate_fonts(_doc(fonts))
         ids = [x for x in f if x.inspection_id == "PDFX4-038"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_type3_with_charprocs_ok() -> None:
@@ -136,7 +136,7 @@ class TestCIDToGIDMap:
         f = validate_fonts(_doc(fonts))
         ids = [x for x in f if x.inspection_id == "PDFX4-039"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_cidtogidmap_present_ok() -> None:
@@ -170,7 +170,7 @@ class TestExternalRef:
         f = validate_fonts(_doc(fonts))
         ids = [x for x in f if x.inspection_id == "PDFX4-040"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestMissingDescriptor:
@@ -180,7 +180,7 @@ class TestMissingDescriptor:
         f = validate_fonts(_doc(fonts))
         ids = [x for x in f if x.inspection_id == "PDFX4-041"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.SQUALL
+        assert ids[0].severity == Severity.WARNING
 
     @staticmethod
     def test_type3_no_descriptor_ok() -> None:
@@ -208,4 +208,4 @@ class TestEmptyFontProgram:
         f = validate_fonts(_doc(fonts))
         ids = [x for x in f if x.inspection_id == "PDFX4-042"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR

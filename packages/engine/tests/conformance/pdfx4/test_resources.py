@@ -27,7 +27,7 @@ class TestNullXObject:
         f = validate_resources(_doc(pages=[page]))
         ids = [x for x in f if x.inspection_id == "PDFX4-088"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_valid_xobject_ok() -> None:
@@ -51,7 +51,7 @@ class TestNullFont:
         f = validate_resources(_doc(pages=[page]))
         ids = [x for x in f if x.inspection_id == "PDFX4-089"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestNullColorSpace:
@@ -65,7 +65,7 @@ class TestNullColorSpace:
         f = validate_resources(_doc(pages=[page]))
         ids = [x for x in f if x.inspection_id == "PDFX4-090"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestNullExtGState:
@@ -79,7 +79,7 @@ class TestNullExtGState:
         f = validate_resources(_doc(pages=[page]))
         ids = [x for x in f if x.inspection_id == "PDFX4-091"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestResourcePresence:

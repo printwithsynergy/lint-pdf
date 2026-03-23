@@ -160,7 +160,7 @@ def _query_historical_data(tenant_id: Any) -> list[dict[str, Any]] | None:
     Returns None if data is unavailable.
     """
     # Placeholder: would execute something like:
-    #   SELECT job_id, created_at, status, finding_count, aground_count, squall_count
+    #   SELECT job_id, created_at, status, finding_count, error_count, warning_count
     #   FROM jobs WHERE tenant_id = :tenant_id
     #   ORDER BY created_at DESC LIMIT 100
     logger.debug("Historical data query is a placeholder — tenant_id=%s", tenant_id)

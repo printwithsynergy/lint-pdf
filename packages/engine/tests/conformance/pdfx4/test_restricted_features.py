@@ -43,7 +43,7 @@ class TestJavaScript:
         f = validate_restricted_features(_doc(catalog=catalog), [])
         ids = [x for x in f if x.inspection_id == "PDFX4-071"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_js_in_open_action() -> None:
@@ -65,7 +65,7 @@ class TestLaunchActions:
         f = validate_restricted_features(_doc(catalog=catalog), [])
         ids = [x for x in f if x.inspection_id == "PDFX4-072"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestEmbeddedFiles:
@@ -75,7 +75,7 @@ class TestEmbeddedFiles:
         f = validate_restricted_features(_doc(catalog=catalog), [])
         ids = [x for x in f if x.inspection_id == "PDFX4-073"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestXfaForms:
@@ -85,7 +85,7 @@ class TestXfaForms:
         f = validate_restricted_features(_doc(catalog=catalog), [])
         ids = [x for x in f if x.inspection_id == "PDFX4-074"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestTransferFunctions:
@@ -94,7 +94,7 @@ class TestTransferFunctions:
         f = validate_restricted_features(_doc(), [_prepress_event(has_transfer_function=True)])
         ids = [x for x in f if x.inspection_id == "PDFX4-075"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_no_transfer_ok() -> None:
@@ -122,7 +122,7 @@ class TestPostScriptXObjects:
         f = validate_restricted_features(_doc(pages=[page]), [])
         ids = [x for x in f if x.inspection_id == "PDFX4-077"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
 
 class TestExternalStreams:
@@ -136,4 +136,4 @@ class TestExternalStreams:
         f = validate_restricted_features(_doc(pages=[page]), [])
         ids = [x for x in f if x.inspection_id == "PDFX4-078"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR

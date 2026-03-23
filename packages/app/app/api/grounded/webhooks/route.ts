@@ -8,7 +8,7 @@ export async function POST(req: Request) {
   const route = registry
     .getRoutes()
     .find(
-      (r) => r.method === "POST" && r.fullPath === "/api/grounded/webhooks",
+      (r) => r.method === "POST" && r.fullPath === "/api/lintpdf/webhooks",
     );
 
   if (!route) {
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   const body = await req.text();
   const result = await route.handler({
     method: "POST",
-    path: "/api/grounded/webhooks",
+    path: "/api/lintpdf/webhooks",
     headers: Object.fromEntries(req.headers.entries()),
     params: {},
     query: {},

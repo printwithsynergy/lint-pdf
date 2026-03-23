@@ -33,7 +33,7 @@ def validate_restricted_features(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-071",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="JavaScript detected in /Names tree (prohibited in PDF/X-4)",
                     iso_clause="ISO 15930-7:2010 6.2.8",
                 )
@@ -47,7 +47,7 @@ def validate_restricted_features(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-071",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="JavaScript in /OpenAction (prohibited in PDF/X-4)",
                     iso_clause="ISO 15930-7:2010 6.2.8",
                 )
@@ -63,7 +63,7 @@ def validate_restricted_features(  # skipcq: PY-R1000
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-072",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message="Launch action detected (prohibited in PDF/X-4)",
                             iso_clause="ISO 15930-7:2010 6.2.8",
                         )
@@ -77,7 +77,7 @@ def validate_restricted_features(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-073",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="Embedded files detected (prohibited in PDF/X-4)",
                     iso_clause="ISO 15930-7:2010 6.2.8",
                 )
@@ -91,7 +91,7 @@ def validate_restricted_features(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-074",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="XFA forms detected (prohibited in PDF/X-4)",
                     iso_clause="ISO 15930-7:2010 6.2.8",
                 )
@@ -108,7 +108,7 @@ def validate_restricted_features(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-075",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Transfer function detected (prohibited in PDF/X-4)",
                 iso_clause="ISO 15930-7:2010 6.2.7",
             )
@@ -142,7 +142,7 @@ def validate_restricted_features(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-077",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"PostScript XObject '{xobj_name}' on page {page.page_num} "
                                     f"(prohibited in PDF/X-4)"
@@ -163,7 +163,7 @@ def validate_restricted_features(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-078",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"External stream reference in XObject '{xobj_name}' "
                                     f"on page {page.page_num}"

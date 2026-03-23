@@ -3,5 +3,5 @@
 from grounded.ai.analyzers.nlp_interfaces import (
     multi_language,  # noqa: F401
     nl_report_interpret,  # noqa: F401
-    nl_voyage_plan,  # noqa: F401
+    nl_voyage_plan as nl_preflight_profile,  # noqa: F401
 )

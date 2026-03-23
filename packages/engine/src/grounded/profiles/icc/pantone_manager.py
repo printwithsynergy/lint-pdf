@@ -151,7 +151,7 @@ class PantoneManager:
         pantone_name: str,
         cmyk_values: tuple[float, float, float, float],
         icc_profile_bytes: bytes | None = None,
-        squall_threshold: float = 5.0,
+        warning_threshold: float = 5.0,
         advisory_threshold: float = 2.0,
     ) -> DeltaEResult | None:
         """Validate CMYK fallback values against the Pantone reference.
@@ -160,7 +160,7 @@ class PantoneManager:
             pantone_name: Pantone color name (e.g., "PANTONE 485 C").
             cmyk_values: CMYK alternate values (0-1 range).
             icc_profile_bytes: Optional ICC profile for accurate CMYK→Lab.
-            squall_threshold: Delta-E threshold for SQUALL severity.
+            warning_threshold: Delta-E threshold for WARNING severity.
             advisory_threshold: Delta-E threshold for ADVISORY severity.
 
         Returns:
@@ -182,7 +182,7 @@ class PantoneManager:
             reference_lab=ref.lab,
             fallback_lab=fallback_lab,
             pantone_name=pantone_name,
-            acceptable=delta_e <= squall_threshold,
+            acceptable=delta_e <= warning_threshold,
         )
 
     @staticmethod

@@ -56,7 +56,7 @@ class DocumentAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_DOC_004",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="Document is encrypted (not allowed in print workflows)",
                     iso_clause="ISO 15930-7:2010 6.2.2",
                 )
@@ -192,7 +192,7 @@ class DocumentAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_DOC_008",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=("Pre-separated pages detected (document contains /SeparationInfo)"),
                     details={"source": "catalog_separation_info"},
                 )
@@ -226,7 +226,7 @@ class DocumentAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_DOC_008",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Pre-separated pages detected "
                         f"({len(separation_pages)} pages with single Separation "

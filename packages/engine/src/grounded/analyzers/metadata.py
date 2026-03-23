@@ -39,7 +39,7 @@ class MetadataAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_META_001",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message="XMP metadata stream is missing",
                     iso_clause="ISO 15930-7:2010 6.2.2",
                 )

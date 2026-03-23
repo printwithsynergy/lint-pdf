@@ -60,7 +60,7 @@ class TestZeroWidthStroke:
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.0)])
         assert len(findings) == 1
         assert findings[0].inspection_id == "GRD_STROKE_002"
-        assert findings[0].severity == Severity.AGROUND
+        assert findings[0].severity == Severity.ERROR
 
     @staticmethod
     def test_negative_width_aground() -> None:
@@ -131,7 +131,7 @@ class TestSmallText:
         findings = analyzer.analyze(_make_document(), [_text_event(3.0)])
         assert len(findings) == 1
         assert findings[0].inspection_id == "GRD_TEXT_002"
-        assert findings[0].severity == Severity.SQUALL
+        assert findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_normal_text_no_finding() -> None:

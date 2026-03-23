@@ -206,7 +206,7 @@ class PharmaSerialization(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="GRD_PS_001",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"Pharma DataMatrix on page {page_num} is missing "
                                 f"required EU FMD fields: {', '.join(missing_ais)}"
@@ -232,7 +232,7 @@ class PharmaSerialization(BaseAIAnalyzer):
                             findings.append(
                                 self._make_finding(
                                     inspection_id="GRD_PS_002",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"Pharma DataMatrix on page {page_num}: "
                                         f"GTIN {gtin} has invalid check digit "
@@ -255,7 +255,7 @@ class PharmaSerialization(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="GRD_PS_003",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"Pharma DataMatrix on page {page_num}: "
                                 f"invalid expiry date format '{ais['expiry']}' "
@@ -297,7 +297,7 @@ class PharmaSerialization(BaseAIAnalyzer):
             findings.append(
                 self._make_finding(
                     inspection_id="GRD_PS_005",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         "No DataMatrix barcode found — EU FMD requires a "
                         "GS1 DataMatrix (ECC200) on pharmaceutical packaging"
@@ -312,7 +312,7 @@ class PharmaSerialization(BaseAIAnalyzer):
             findings.append(
                 self._make_finding(
                     inspection_id="GRD_PS_006",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Found {other_2d_count} non-DataMatrix 2D barcode(s) "
                         f"alongside pharma DataMatrix — may cause scanning confusion"

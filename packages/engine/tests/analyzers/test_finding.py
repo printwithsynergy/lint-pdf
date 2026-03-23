@@ -10,14 +10,14 @@ class TestSeverity:
 
     @staticmethod
     def test_values() -> None:
-        assert Severity.AGROUND == "aground"
-        assert Severity.SQUALL == "squall"
+        assert Severity.ERROR == "error"
+        assert Severity.WARNING == "warning"
         assert Severity.ADVISORY == "advisory"
 
     @staticmethod
     def test_string_comparison() -> None:
-        assert Severity.AGROUND == "aground"
-        assert str(Severity.AGROUND) == "aground"
+        assert Severity.ERROR == "error"
+        assert str(Severity.ERROR) == "error"
 
 
 class TestFinding:
@@ -27,11 +27,11 @@ class TestFinding:
     def test_create_minimal() -> None:
         f = Finding(
             inspection_id="GRD_TEST_001",
-            severity=Severity.SQUALL,
+            severity=Severity.WARNING,
             message="Test finding",
         )
         assert f.inspection_id == "GRD_TEST_001"
-        assert f.severity == Severity.SQUALL
+        assert f.severity == Severity.WARNING
         assert f.message == "Test finding"
         assert f.page_num == 0
         assert f.details == {}
@@ -41,7 +41,7 @@ class TestFinding:
     def test_create_full() -> None:
         f = Finding(
             inspection_id="GRD_IMG_001",
-            severity=Severity.AGROUND,
+            severity=Severity.ERROR,
             message="Low resolution image",
             page_num=3,
             details={"dpi": 72},
@@ -55,7 +55,7 @@ class TestFinding:
     def test_frozen() -> None:
         f = Finding(
             inspection_id="GRD_TEST_001",
-            severity=Severity.SQUALL,
+            severity=Severity.WARNING,
             message="Test",
         )
         try:

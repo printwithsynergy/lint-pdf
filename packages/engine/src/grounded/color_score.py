@@ -48,7 +48,7 @@ _MAJOR_DEDUCTIONS: dict[str, float] = {
     # Out-of-gamut objects
     "GRD_GAMUT_001": 8.0,
     # Spot color inconsistencies
-    "GRD_SPOT_001": 7.0,  # only for SQUALL severity
+    "GRD_SPOT_001": 7.0,  # only for WARNING severity
     # Spot color naming issues
     "GRD_SPOT_003": 5.0,
     # Pantone fallback Delta-E failure
@@ -183,7 +183,7 @@ def compute_color_quality_score(
         category = _get_category(check_id)
 
         # Critical floors (apply worst floor)
-        if check_id in _CRITICAL_FLOORS and finding.severity == Severity.AGROUND:
+        if check_id in _CRITICAL_FLOORS and finding.severity == Severity.ERROR:
             floor = _CRITICAL_FLOORS[check_id]
             if critical_floor is None or floor < critical_floor:
                 critical_floor = floor
@@ -197,13 +197,13 @@ def compute_color_quality_score(
         # Find deduction amount
         deduction = 0.0
         if check_id in _MAJOR_DEDUCTIONS and finding.severity in (
-            Severity.AGROUND,
-            Severity.SQUALL,
+            Severity.ERROR,
+            Severity.WARNING,
         ):
             deduction = _MAJOR_DEDUCTIONS[check_id]
         elif check_id in _MODERATE_DEDUCTIONS and finding.severity in (
-            Severity.AGROUND,
-            Severity.SQUALL,
+            Severity.ERROR,
+            Severity.WARNING,
         ):
             deduction = _MODERATE_DEDUCTIONS[check_id]
         elif check_id in _MINOR_DEDUCTIONS:

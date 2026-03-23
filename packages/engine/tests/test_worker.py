@@ -153,7 +153,7 @@ class TestRunPreflightTask:
         with patch("grounded.api.database.get_db_session", return_value=mock_db):
             result = self._run_preflight_fn(
                 job_id="00000000-0000-0000-0000-000000000001",
-                profile_id="grounded-default",
+                profile_id="lintpdf-default",
                 file_key="uploads/test.pdf",
             )
         assert result["status"] == "failed"
@@ -174,12 +174,12 @@ class TestRunPreflightTask:
 
         mock_result = PreflightResult(
             job_id="test-job",
-            profile_id="grounded-default",
+            profile_id="lintpdf-default",
             findings=[],
             summary=PreflightSummary(
                 total_findings=0,
-                aground_count=0,
-                squall_count=0,
+                error_count=0,
+                warning_count=0,
                 advisory_count=0,
                 passed=True,
                 page_count=1,
@@ -201,12 +201,12 @@ class TestRunPreflightTask:
 
             result = self._run_preflight_fn(
                 job_id="00000000-0000-0000-0000-000000000001",
-                profile_id="grounded-default",
+                profile_id="lintpdf-default",
                 file_key="uploads/test.pdf",
             )
 
         assert result["status"] == "complete"
-        assert result["profile_id"] == "grounded-default"
+        assert result["profile_id"] == "lintpdf-default"
         assert "duration_ms" in result
         mock_db.commit.assert_called()
         mock_db.close.assert_called_once()
@@ -228,12 +228,12 @@ class TestRunPreflightTask:
 
         mock_result = PreflightResult(
             job_id="test-job",
-            profile_id="grounded-default",
+            profile_id="lintpdf-default",
             findings=[],
             summary=PreflightSummary(
                 total_findings=0,
-                aground_count=0,
-                squall_count=0,
+                error_count=0,
+                warning_count=0,
                 advisory_count=0,
                 passed=True,
                 page_count=1,
@@ -256,7 +256,7 @@ class TestRunPreflightTask:
 
             result = self._run_preflight_fn(
                 job_id="00000000-0000-0000-0000-000000000001",
-                profile_id="grounded-default",
+                profile_id="lintpdf-default",
                 file_key="uploads/test.pdf",
             )
 
@@ -282,7 +282,7 @@ class TestRunPreflightTask:
             result = self._run_preflight_fn(
                 retries=2,
                 job_id="00000000-0000-0000-0000-000000000001",
-                profile_id="grounded-default",
+                profile_id="lintpdf-default",
                 file_key="uploads/test.pdf",
             )
 

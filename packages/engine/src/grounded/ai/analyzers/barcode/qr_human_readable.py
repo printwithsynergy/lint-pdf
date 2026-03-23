@@ -244,7 +244,7 @@ class QRHumanReadableMatching(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="GRD_QHR_003",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"QR code on page {page_num}: human-readable text "
                                 f"does not match decoded data (similarity {sim:.0%}). "

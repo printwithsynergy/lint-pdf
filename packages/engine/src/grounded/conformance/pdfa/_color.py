@@ -61,7 +61,7 @@ def validate_color(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-011",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Device-dependent color space '{cs}' used without an "
                         f"OutputIntent (required for PDF/A)"
@@ -78,7 +78,7 @@ def validate_color(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-012",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"Uncalibrated '{cs}' used without ICC profile or OutputIntent "
                             f"(required for PDF/A)"
@@ -98,7 +98,7 @@ def validate_color(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-013",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"ICCBased color space '{cs_name}' missing ICC profile data"
                                 ),
@@ -126,7 +126,7 @@ def validate_color(  # skipcq: PY-R1000
                                 findings.append(
                                     Finding(
                                         inspection_id=f"{_PREFIX}-014",
-                                        severity=Severity.AGROUND,
+                                        severity=Severity.ERROR,
                                         message=(
                                             f"ICC profile version {icc_version} in '{cs_name}' "
                                             f"exceeds maximum v{_max_icc_version} "
@@ -149,7 +149,7 @@ def validate_color(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-015",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"Invalid rendering intent '{ri}' on page {event.page_num}",
                         page_num=event.page_num,
                         iso_clause="ISO 19005 6.2.4",
@@ -171,7 +171,7 @@ def validate_color(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-016",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Separation color space '{cs_name}' has device-dependent "
                                     f"alternate '{alt_space}' without OutputIntent"
@@ -186,7 +186,7 @@ def validate_color(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-016",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"DeviceN color space '{cs_name}' has device-dependent "
                                     f"alternate '{alt_space}' without OutputIntent"
@@ -208,7 +208,7 @@ def validate_color(  # skipcq: PY-R1000
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-017",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"Pattern color space '{cs_name}' has device-dependent "
                                         f"base '{base_cs}' without OutputIntent"
@@ -229,7 +229,7 @@ def validate_color(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-018",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Indexed color space '{cs_name}' has device-dependent "
                                     f"base '{base_cs}' without OutputIntent"
@@ -249,7 +249,7 @@ def validate_color(  # skipcq: PY-R1000
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-018",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"Indexed color space '{cs_name}' has ICCBased base "
                                         f"with missing profile"

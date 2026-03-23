@@ -159,7 +159,7 @@ class TestImageAnalyzerFindings:
         findings = analyzer.analyze(_make_document(), [event])
         img_findings = [f for f in findings if f.inspection_id == "GRD_IMG_001"]
         assert len(img_findings) == 1
-        assert img_findings[0].severity == Severity.SQUALL
+        assert img_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_excessive_dpi_finding() -> None:
@@ -267,7 +267,7 @@ class TestLZWCompression:
         findings = analyzer.analyze(_make_document(), [event])
         lzw_findings = [f for f in findings if f.inspection_id == "GRD_IMG_007"]
         assert len(lzw_findings) == 1
-        assert lzw_findings[0].severity == Severity.SQUALL
+        assert lzw_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_lzw_with_other_filters() -> None:
@@ -413,7 +413,7 @@ class TestOPIReference:
         findings = analyzer.analyze(_make_document(), [event])
         opi_findings = [f for f in findings if f.inspection_id == "GRD_IMG_010"]
         assert len(opi_findings) == 1
-        assert opi_findings[0].severity == Severity.AGROUND
+        assert opi_findings[0].severity == Severity.ERROR
 
     @staticmethod
     def test_no_opi_no_finding() -> None:
@@ -464,7 +464,7 @@ class TestAlternateImages:
         findings = analyzer.analyze(_make_document(), [event])
         alt_findings = [f for f in findings if f.inspection_id == "GRD_IMG_011"]
         assert len(alt_findings) == 1
-        assert alt_findings[0].severity == Severity.SQUALL
+        assert alt_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_no_alternate_no_finding() -> None:

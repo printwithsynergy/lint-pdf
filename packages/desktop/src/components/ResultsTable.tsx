@@ -70,8 +70,8 @@ export function ResultsTable({
             <th className="px-3 py-2">Status</th>
             <th className="px-3 py-2">File</th>
             <th className="px-3 py-2">Folder</th>
-            <th className="px-3 py-2 text-center">Aground</th>
-            <th className="px-3 py-2 text-center">Squall</th>
+            <th className="px-3 py-2 text-center">Errors</th>
+            <th className="px-3 py-2 text-center">Warnings</th>
             <th className="px-3 py-2 text-center">Advisory</th>
             <th className="px-3 py-2 text-right">Time</th>
           </tr>
@@ -110,12 +110,12 @@ export function ResultsTable({
                   {job.summary ? (
                     <span
                       className={
-                        job.summary.aground_count > 0
+                        job.summary.error_count > 0
                           ? "text-red-600 font-medium"
                           : "text-gray-400"
                       }
                     >
-                      {job.summary.aground_count}
+                      {job.summary.error_count}
                     </span>
                   ) : (
                     <span className="text-gray-300">—</span>
@@ -125,12 +125,12 @@ export function ResultsTable({
                   {job.summary ? (
                     <span
                       className={
-                        job.summary.squall_count > 0
+                        job.summary.warning_count > 0
                           ? "text-amber-600 font-medium"
                           : "text-gray-400"
                       }
                     >
-                      {job.summary.squall_count}
+                      {job.summary.warning_count}
                     </span>
                   ) : (
                     <span className="text-gray-300">—</span>

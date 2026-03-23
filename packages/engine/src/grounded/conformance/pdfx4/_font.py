@@ -57,7 +57,7 @@ def _check_font(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-036",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Font '{base_font}' is not embedded (required for PDF/X-4)",
                     page_num=page_num,
                     iso_clause="ISO 15930-7:2010 6.3",
@@ -82,7 +82,7 @@ def _check_font(
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-036",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=f"CID font '{base_font}' is not embedded",
                             page_num=page_num,
                             iso_clause="ISO 15930-7:2010 6.3",
@@ -106,7 +106,7 @@ def _check_font(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-037",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"TrueType font '{base_font}' font program missing",
                         page_num=page_num,
                         iso_clause="ISO 15930-7:2010 6.3.2",
@@ -122,7 +122,7 @@ def _check_font(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-038",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Type3 font '{base_font}' has no /CharProcs",
                     page_num=page_num,
                     iso_clause="ISO 15930-7:2010 6.3.3",
@@ -142,7 +142,7 @@ def _check_font(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-039",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"CIDFontType2 '{base_font}' missing /CIDToGIDMap",
                         page_num=page_num,
                         iso_clause="ISO 15930-7:2010 6.3.4",
@@ -160,7 +160,7 @@ def _check_font(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-040",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"Font '{base_font}' has external file reference",
                         page_num=page_num,
                         iso_clause="ISO 15930-7:2010 6.3",
@@ -178,7 +178,7 @@ def _check_font(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-041",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"Font '{base_font}' missing /FontDescriptor",
                 page_num=page_num,
                 iso_clause="ISO 32000-2:2020 9.8",
@@ -195,7 +195,7 @@ def _check_font(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-042",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=f"Font '{base_font}' has empty font program ({key})",
                         page_num=page_num,
                         iso_clause="ISO 15930-7:2010 6.3",

@@ -2,7 +2,7 @@
 
 Uses YOLOv8 + CLIP on the GPU inference service to detect logos in the
 document and compare them against the tenant's reference logos.  Missing
-expected logos generate a SQUALL finding; detected logos are reported as
+expected logos generate a WARNING finding; detected logos are reported as
 ADVISORY with match confidence.
 """
 
@@ -127,7 +127,7 @@ class LogoDetectionAnalyzer(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="AI_LOGO_003",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Expected logo '{ref_name}' was not detected in the document"
                             ),

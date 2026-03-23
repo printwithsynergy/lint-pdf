@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from grounded.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
-    from grounded.profiles.schema import VoyagePlan
+    from grounded.profiles.schema import PreflightProfile
 
 
 @dataclass(frozen=True)
@@ -22,8 +22,8 @@ class PreflightSummary:
     """Summary statistics for a preflight run."""
 
     total_findings: int
-    aground_count: int
-    squall_count: int
+    error_count: int
+    warning_count: int
     advisory_count: int
     passed: bool
     page_count: int
@@ -48,7 +48,7 @@ def _mm_to_pts(mm: float) -> float:
 
 
 class PreflightOrchestrator:
-    """Executes the full preflight pipeline for a given voyage plan.
+    """Executes the full preflight pipeline for a given profile.
 
     Pipeline:
     1. Parse PDF via adapter
@@ -56,7 +56,7 @@ class PreflightOrchestrator:
     3. Interpret content streams -> events
     4. Run enabled analyzers with configured thresholds
     5. Run conformance validator (if configured)
-    6. Run AI analyzers (if AI enabled in voyage plan)
+    6. Run AI analyzers (if AI enabled in profile)
     7. Apply severity overrides
     8. Filter disabled checks
     9. Return PreflightResult
@@ -64,7 +64,7 @@ class PreflightOrchestrator:
 
     def __init__(
         self,
-        voyage_plan: VoyagePlan,
+        voyage_plan: PreflightProfile,
         profile_id: str = "custom",
         ai_config: Any | None = None,
         pdf_bytes: bytes | None = None,
@@ -225,7 +225,7 @@ class PreflightOrchestrator:
         events: list[Any],
         pdf_bytes: bytes,
     ) -> list[Finding]:
-        """Run AI analyzers if AI is enabled in the voyage plan."""
+        """Run AI analyzers if AI is enabled in the profile."""
         import logging
 
         logger = logging.getLogger(__name__)
@@ -485,16 +485,16 @@ class PreflightOrchestrator:
         findings: list[Finding], page_count: int, file_size_bytes: int
     ) -> PreflightSummary:
         """Build summary from filtered findings."""
-        aground = sum(1 for f in findings if f.severity == Severity.AGROUND)
-        squall = sum(1 for f in findings if f.severity == Severity.SQUALL)
+        errors = sum(1 for f in findings if f.severity == Severity.ERROR)
+        warnings = sum(1 for f in findings if f.severity == Severity.WARNING)
         advisory = sum(1 for f in findings if f.severity == Severity.ADVISORY)
 
         return PreflightSummary(
             total_findings=len(findings),
-            aground_count=aground,
-            squall_count=squall,
+            error_count=errors,
+            warning_count=warnings,
             advisory_count=advisory,
-            passed=aground == 0,
+            passed=errors == 0,
             page_count=page_count,
             file_size_bytes=file_size_bytes,
         )

@@ -73,7 +73,7 @@ class TestTACCalculation:
         findings = analyzer.analyze(_make_document(), [event])
         tac_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_004"]
         assert len(tac_findings) == 1
-        assert tac_findings[0].severity == Severity.SQUALL
+        assert tac_findings[0].severity == Severity.WARNING
         assert tac_findings[0].details["tac"] == 350.0
 
     @staticmethod
@@ -167,7 +167,7 @@ class TestProhibitedSpaces:
         findings = analyzer.analyze(_make_document(), [event])
         prohibited = [f for f in findings if f.inspection_id == "GRD_COLOR_001"]
         assert len(prohibited) == 1
-        assert prohibited[0].severity == Severity.AGROUND
+        assert prohibited[0].severity == Severity.ERROR
 
     @staticmethod
     def test_calrgb_prohibited() -> None:
@@ -232,7 +232,7 @@ class TestDeviceRGBWithoutICC:
         findings = analyzer.analyze(doc, [])
         rgb_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_002"]
         assert len(rgb_findings) == 1
-        assert rgb_findings[0].severity == Severity.SQUALL
+        assert rgb_findings[0].severity == Severity.WARNING
 
 
 class TestSpotColorBacking:
@@ -301,7 +301,7 @@ class TestRichBlackText:
         findings = analyzer.analyze(_make_document(), [event])
         rb = [f for f in findings if f.inspection_id == "GRD_COLOR_008"]
         assert len(rb) == 1
-        assert rb[0].severity == Severity.SQUALL
+        assert rb[0].severity == Severity.WARNING
 
     def test_large_text_no_rich_black_finding(self) -> None:
         """14pt text is above 12pt threshold — no GRD_COLOR_008."""
@@ -516,7 +516,7 @@ class TestSpotColorConflicts:
         findings = analyzer.analyze(doc, [])
         sc = [f for f in findings if f.inspection_id == "GRD_COLOR_011"]
         assert len(sc) == 1
-        assert sc[0].severity == Severity.SQUALL
+        assert sc[0].severity == Severity.WARNING
         assert "PANTONE 485 C" in sc[0].message
 
     @staticmethod

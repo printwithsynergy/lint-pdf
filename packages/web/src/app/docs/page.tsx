@@ -148,8 +148,8 @@ const sections = [
         desc: "Credit consumption and quality metrics.",
       },
       {
-        slug: "ai-voyage-plans",
-        title: "AI in Rulesets",
+        slug: "ai-preflight-profiles",
+        title: "AI in Preflight Profiles",
         desc: "Using AI checks in presets and overrides.",
       },
       {

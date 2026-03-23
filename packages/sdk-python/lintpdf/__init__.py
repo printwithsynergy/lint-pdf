@@ -6,7 +6,7 @@ Usage:
     from lintpdf import LintPDF
 
     client = LintPDF(api_key="lpdf_...")
-    result = client.preflight("document.pdf", profile="grounded-default")
+    result = client.preflight("document.pdf", profile="lintpdf-default")
 
     if result.passed:
         print("PDF passed preflight!")
@@ -59,12 +59,12 @@ class PreflightResult:
         self.duration_ms: int = data.get("duration_ms", 0)
 
     @property
-    def aground_count(self) -> int:
-        return self.summary.get("aground_count", 0)
+    def error_count(self) -> int:
+        return self.summary.get("error_count", 0)
 
     @property
-    def squall_count(self) -> int:
-        return self.summary.get("squall_count", 0)
+    def warning_count(self) -> int:
+        return self.summary.get("warning_count", 0)
 
     @property
     def advisory_count(self) -> int:
@@ -95,7 +95,8 @@ class LintPDF:
         self,
         pdf_path: str,
         *,
-        profile: str = "grounded-default",
+        profile: str = "lintpdf-default",
+        jdf_path: str | None = None,
         wait: bool = True,
         timeout: int | None = None,
     ) -> PreflightResult:
@@ -103,7 +104,8 @@ class LintPDF:
 
         Args:
             pdf_path: Path to the PDF file.
-            profile: Voyage Plan profile ID.
+            profile: Preflight Profile ID.
+            jdf_path: Optional path to a JDF/XJDF sidecar file.
             wait: If True, poll until job completes.
             timeout: Override timeout for this request.
 
@@ -122,13 +124,24 @@ class LintPDF:
 
         # Upload and submit
         with open(pdf_path, "rb") as f:
-            response = httpx.post(
-                f"{self.base_url}/api/v1/jobs",
-                headers=headers,
-                files={"file": f},
-                data={"profile_id": profile},
-                timeout=t,
-            )
+            files = {"file": f}
+            if jdf_path is not None:
+                jdf_fh = open(jdf_path, "rb")
+                files["jdf_file"] = jdf_fh
+            else:
+                jdf_fh = None
+
+            try:
+                response = httpx.post(
+                    f"{self.base_url}/api/v1/jobs",
+                    headers=headers,
+                    files=files,
+                    data={"profile_id": profile},
+                    timeout=t,
+                )
+            finally:
+                if jdf_fh is not None:
+                    jdf_fh.close()
 
         if response.status_code == 401:
             raise AuthenticationError("Invalid API key")
@@ -159,7 +172,7 @@ class LintPDF:
         raise LintPDFError(f"Job {job_id} did not complete within {t}s")
 
     def list_profiles(self) -> list[dict]:
-        """List available Voyage Plan profiles."""
+        """List available Preflight Profiles."""
         import httpx
         response = httpx.get(
             f"{self.base_url}/api/v1/profiles",

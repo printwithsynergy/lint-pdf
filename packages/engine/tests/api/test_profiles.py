@@ -22,8 +22,8 @@ class TestListProfiles:
         response = client.get("/api/v1/profiles")
         data = response.json()
         profile_ids = [p["profile_id"] for p in data["profiles"]]
-        assert "grounded-default" in profile_ids
-        assert "grounded-strict" in profile_ids
+        assert "lintpdf-default" in profile_ids
+        assert "lintpdf-strict" in profile_ids
         assert "gwg-2022-coated-offset" in profile_ids
 
     @staticmethod
@@ -40,17 +40,17 @@ class TestListProfiles:
 class TestGetProfile:
     @staticmethod
     def test_get_builtin_profile(client: TestClient) -> None:
-        response = client.get("/api/v1/profiles/grounded-default")
+        response = client.get("/api/v1/profiles/lintpdf-default")
         assert response.status_code == 200
         data = response.json()
-        assert data["profile_id"] == "grounded-default"
+        assert data["profile_id"] == "lintpdf-default"
         assert data["name"] == "LintPDF Default"
         assert "thresholds" in data
         assert "checks" in data
 
     @staticmethod
     def test_get_strict_profile(client: TestClient) -> None:
-        response = client.get("/api/v1/profiles/grounded-strict")
+        response = client.get("/api/v1/profiles/lintpdf-strict")
         assert response.status_code == 200
         data = response.json()
         assert data["conformance"] == "pdfx4"
@@ -69,7 +69,7 @@ class TestCreateProfile:
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-test-profile",
-                "voyage_plan": {
+                "preflight_profile": {
                     "name": "My Custom Profile",
                     "workflow": "CMYK",
                     "thresholds": {"min_dpi": 200.0},
@@ -86,7 +86,7 @@ class TestCreateProfile:
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-accessible",
-                "voyage_plan": {"name": "Accessible"},
+                "preflight_profile": {"name": "Accessible"},
             },
         )
         response = client.get("/api/v1/profiles/custom-accessible")
@@ -94,12 +94,12 @@ class TestCreateProfile:
         assert response.json()["name"] == "Accessible"
 
     @staticmethod
-    def test_create_invalid_voyage_plan(client: TestClient) -> None:
+    def test_create_invalid_preflight_profile(client: TestClient) -> None:
         response = client.post(
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-bad",
-                "voyage_plan": {"not_a_valid": "field"},
+                "preflight_profile": {"not_a_valid": "field"},
             },
         )
         assert response.status_code == 422
@@ -110,7 +110,7 @@ class TestCreateProfile:
             "/api/v1/profiles",
             json={
                 "profile_id": "INVALID ID WITH SPACES",
-                "voyage_plan": {"name": "Bad ID"},
+                "preflight_profile": {"name": "Bad ID"},
             },
         )
         assert response.status_code == 422
@@ -124,7 +124,7 @@ class TestDeleteProfile:
             "/api/v1/profiles",
             json={
                 "profile_id": "custom-to-delete",
-                "voyage_plan": {"name": "Deletable"},
+                "preflight_profile": {"name": "Deletable"},
             },
         )
         response = client.delete("/api/v1/profiles/custom-to-delete")
@@ -132,7 +132,7 @@ class TestDeleteProfile:
 
     @staticmethod
     def test_delete_builtin_forbidden(client: TestClient) -> None:
-        response = client.delete("/api/v1/profiles/grounded-default")
+        response = client.delete("/api/v1/profiles/lintpdf-default")
         assert response.status_code == 403
 
     @staticmethod

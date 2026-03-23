@@ -253,7 +253,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_INK_003",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Unusually high ink channel count: {total_channels} channels "
                         f"(>7 is unusual for any workflow)"

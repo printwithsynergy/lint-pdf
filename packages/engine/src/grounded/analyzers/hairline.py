@@ -87,7 +87,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_PATH_001",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Excessive path points ({event.point_count:,}) "
                                 f"on page {event.page_num} "
@@ -116,7 +116,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STROKE_002",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Zero-width stroke on page {event.page_num} (will not render in print)"
                     ),
@@ -136,7 +136,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STROKE_001",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Hairline stroke ({line_width:.3f}pt) on page {event.page_num} "
                         f"(below {self.hairline_threshold}pt minimum)"
@@ -182,7 +182,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_STROKE_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Multi-ink thin stroke ({line_width:.3f}pt, "
                             f"{non_zero} inks) on page {event.page_num} "
@@ -204,7 +204,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STROKE_005",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Invisible stroke (white/zero-opacity) on page {event.page_num} "
                         f"(renders as white line art)"
@@ -230,7 +230,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_STROKE_005",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Invisible stroke (white/zero-opacity) on page {event.page_num} "
                             f"(renders as white line art)"
@@ -351,7 +351,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_TEXT_005",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Text on registration color (100% all CMYK) on page {event.page_num}"
                     ),
@@ -383,7 +383,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_TEXT_006",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Small multi-ink text ({effective_size:.1f}pt, "
                             f"{non_zero} inks) on page {event.page_num} "
@@ -405,7 +405,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_TEXT_002",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Very small text ({effective_size:.1f}pt effective) "
                         f"on page {event.page_num} "

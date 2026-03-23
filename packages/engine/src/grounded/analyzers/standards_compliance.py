@@ -173,7 +173,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STD_001",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         "G7 pre-compliance: No G7-compatible OutputIntent profile found "
                         "(expected GRACoL or SWOP identifier)"
@@ -204,7 +204,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STD_001",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"G7 pre-compliance: TAC {max_tac:.0f}% exceeds G7 limit "
                         f"of {_G7_TAC_LIMIT:.0f}% on page {max_tac_page}"
@@ -253,7 +253,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STD_002",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=("GRACoL compliance: No GRACoL-compatible OutputIntent profile found"),
                     details={
                         "output_intent_count": len(document.output_intents),
@@ -282,7 +282,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STD_002",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"GRACoL compliance: TAC {max_tac:.0f}% exceeds GRACoL 2006 limit "
                         f"of {_GRACOL_TAC_LIMIT:.0f}% on page {max_tac_page}"
@@ -302,7 +302,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STD_002",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"GRACoL compliance: CMYK {first['channel']} channel value "
                         f"{float(first['value']) * 100:.1f}% is below {_MIN_DOT_THRESHOLD * 100:.0f}% "  # type: ignore[arg-type]
@@ -351,7 +351,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STD_003",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         "ISO 12647 compliance: No OutputIntent defined; "
                         "cannot validate against ISO 12647-2 reference conditions"
@@ -367,7 +367,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_STD_003",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         "ISO 12647 compliance: OutputIntent ICC profile does not match "
                         "known ISO 12647-2 reference conditions "

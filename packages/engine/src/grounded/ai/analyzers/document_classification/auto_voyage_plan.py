@@ -1,7 +1,7 @@
-"""Auto voyage plan recommendation analyzer — suggests inspection profiles.
+"""Auto preflight profile recommendation analyzer — suggests inspection profiles.
 
 Uses the file classification result (from file_classification analyzer) and
-document metadata to recommend an appropriate voyage plan (inspection profile)
+document metadata to recommend an appropriate preflight profile (inspection profile)
 for the document.  This is purely advisory: the orchestrator or user makes the
 final decision.
 """
@@ -23,8 +23,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Mapping from document classification labels to recommended voyage plans
-_CLASS_TO_VOYAGE_PLAN: dict[str, dict[str, str]] = {
+# Mapping from document classification labels to recommended preflight profiles
+_CLASS_TO_PROFILE: dict[str, dict[str, str]] = {
     "packaging_artwork": {
         "plan": "packaging_full",
         "description": "Full packaging artwork inspection (barcode, color, text, regulatory)",
@@ -65,11 +65,11 @@ def _get_gpu_client() -> GPUInferenceClient:
 
 
 @register_ai_analyzer
-class AutoVoyagePlanAnalyzer(BaseAIAnalyzer):
-    """Recommend a voyage plan based on document classification."""
+class AutoPreflightProfileAnalyzer(BaseAIAnalyzer):
+    """Recommend a preflight profile based on document classification."""
 
     category = "document_classification"
-    feature_slug = "auto_voyage_plan_recommendation"
+    feature_slug = "auto_preflight_profile_recommendation"
     tier = "gpu"
     credits_per_run = 2
 
@@ -86,7 +86,7 @@ class AutoVoyagePlanAnalyzer(BaseAIAnalyzer):
         try:
             first_page_png = render_page_to_image(pdf_bytes, page_num=1, dpi=150)
         except RuntimeError:
-            logger.debug("auto_voyage_plan: PDF rendering backend unavailable")
+            logger.debug("auto_preflight_profile: PDF rendering backend unavailable")
             return []
 
         gpu = _get_gpu_client()
@@ -99,7 +99,7 @@ class AutoVoyagePlanAnalyzer(BaseAIAnalyzer):
                     inspection_id="AI_AFP_001",
                     severity=Severity.ADVISORY,
                     message=(
-                        f"GPU inference service unavailable for voyage plan recommendation: {exc}"
+                        f"GPU inference service unavailable for preflight profile recommendation: {exc}"
                     ),
                     details={"reason": "gpu_unavailable"},
                 )
@@ -108,8 +108,8 @@ class AutoVoyagePlanAnalyzer(BaseAIAnalyzer):
         predicted_class = result.get("predicted_class", "unknown")
         confidence = float(result.get("confidence", 0))
 
-        # Look up the recommended voyage plan
-        plan_info = _CLASS_TO_VOYAGE_PLAN.get(predicted_class, _DEFAULT_PLAN)
+        # Look up the recommended preflight profile
+        plan_info = _CLASS_TO_PROFILE.get(predicted_class, _DEFAULT_PLAN)
 
         # Factor in page count for plan refinement
         page_count = len(document.pages) if document.pages else 0
@@ -136,7 +136,7 @@ class AutoVoyagePlanAnalyzer(BaseAIAnalyzer):
             self._make_finding(
                 inspection_id="AI_AFP_002",
                 severity=Severity.ADVISORY,
-                message=(f"Recommended voyage plan: '{plan_name}' — {plan_desc}"),
+                message=(f"Recommended preflight profile: '{plan_name}' — {plan_desc}"),
                 details={
                     "recommended_plan": plan_name,
                     "plan_description": plan_desc,
@@ -155,7 +155,7 @@ class AutoVoyagePlanAnalyzer(BaseAIAnalyzer):
                     inspection_id="AI_AFP_003",
                     severity=Severity.ADVISORY,
                     message=(
-                        "Voyage plan recommendation has low confidence "
+                        "Preflight profile recommendation has low confidence "
                         f"({confidence:.0%}). Manual selection may be more "
                         "appropriate."
                     ),

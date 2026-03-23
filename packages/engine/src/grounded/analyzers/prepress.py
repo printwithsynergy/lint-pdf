@@ -62,7 +62,7 @@ class PrepressAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_PRESS_002",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Transfer function detected on page {event.page_num} "
                             f"(prohibited in PDF/X)"

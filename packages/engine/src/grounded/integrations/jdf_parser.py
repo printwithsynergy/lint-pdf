@@ -1,7 +1,7 @@
 """JDF/XJDF job ticket parser.
 
 Extracts preflight-relevant parameters from JDF (Job Definition Format)
-and XJDF (XML JDF) job tickets to auto-configure voyage plans.
+and XJDF (XML JDF) job tickets to auto-configure preflight profiles.
 
 Supported fields:
 - Output condition / ICC profile
@@ -100,7 +100,7 @@ def _extract_jdf_params(
 
 
 def params_to_overrides(params: JobTicketParams) -> dict[str, Any]:
-    """Convert job ticket params to VoyagePlan threshold overrides."""
+    """Convert job ticket params to PreflightProfile threshold overrides."""
     overrides: dict[str, Any] = {}
 
     if params.conformance:

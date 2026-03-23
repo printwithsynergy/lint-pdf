@@ -54,7 +54,7 @@ def validate_color(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-001",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="DeviceRGB color space used (prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.2.4",
             )
@@ -73,7 +73,7 @@ def validate_color(
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-002",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"ICCBased RGB profile '{cs_name}' used "
                                         f"(prohibited in PDF/X-1a)"
@@ -88,7 +88,7 @@ def validate_color(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-003",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="CalRGB color space used (prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.2.4",
             )
@@ -99,7 +99,7 @@ def validate_color(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-004",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="CalGray color space used (prohibited in PDF/X-1a, use DeviceGray instead)",
                 iso_clause="ISO 15930-4:2003 6.2.4",
             )
@@ -110,7 +110,7 @@ def validate_color(
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-005",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Lab color space used (prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.2.4",
             )
@@ -127,7 +127,7 @@ def validate_color(
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-006",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Indexed color space '{cs_name}' has RGB base "
                                     f"'{base_cs}' (prohibited in PDF/X-1a)"
@@ -149,7 +149,7 @@ def validate_color(
                                 findings.append(
                                     Finding(
                                         inspection_id=f"{_PREFIX}-006",
-                                        severity=Severity.AGROUND,
+                                        severity=Severity.ERROR,
                                         message=(
                                             f"Indexed color space '{cs_name}' has ICCBased RGB "
                                             f"base (prohibited in PDF/X-1a)"
@@ -171,7 +171,7 @@ def validate_color(
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-007",
-                                    severity=Severity.AGROUND,
+                                    severity=Severity.ERROR,
                                     message=(
                                         f"Pattern color space '{cs_name}' has incompatible base "
                                         f"'{base_cs}' (prohibited in PDF/X-1a)"
@@ -192,7 +192,7 @@ def validate_color(
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-008",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"DeviceN color space '{cs_name}' has incompatible "
                                     f"alternate '{alt_space}' (prohibited in PDF/X-1a)"
@@ -217,7 +217,7 @@ def validate_color(
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-009",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Separation color space '{cs_name}' has RGB alternate "
                                     f"'{alt_space}' (prohibited in PDF/X-1a)"
@@ -235,7 +235,7 @@ def validate_color(
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-010",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=f"Invalid rendering intent '{ri}' on page {event.page_num}",
                         page_num=event.page_num,
                         iso_clause="ISO 15930-4:2003 6.2.4",

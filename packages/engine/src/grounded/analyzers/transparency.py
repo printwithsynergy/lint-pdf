@@ -118,7 +118,7 @@ class TransparencyAnalyzer(BaseAnalyzer):
                         findings.append(
                             Finding(
                                 inspection_id="GRD_TRANS_001",
-                                severity=Severity.SQUALL,
+                                severity=Severity.WARNING,
                                 message=(
                                     f"Risky blend mode '{event.blend_mode}' "
                                     f"used on page {event.page_num}"
@@ -233,7 +233,7 @@ class TransparencyAnalyzer(BaseAnalyzer):
         """Create a transparency + overprint conflict finding."""
         return Finding(
             inspection_id="GRD_TRANS_002",
-            severity=Severity.SQUALL,
+            severity=Severity.WARNING,
             message=(
                 f"Transparency and overprint both active on page {page_num} "
                 f"(may cause unpredictable rendering)"

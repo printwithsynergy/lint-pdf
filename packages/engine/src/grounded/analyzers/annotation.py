@@ -71,7 +71,7 @@ class AnnotationAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_ANNOT_002",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(f"Multimedia annotation ({annot.subtype}) on page {annot.page_num}"),
                     page_num=annot.page_num,
                     details={"subtype": annot.subtype},
@@ -113,7 +113,7 @@ class AnnotationAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_ANNOT_001",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Printable {annot.subtype} annotation "
                         f"inside trim area on page {annot.page_num}"

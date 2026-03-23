@@ -24,7 +24,7 @@ def validate_security(document: SemanticDocument) -> list[Finding]:
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-063",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Document is encrypted (prohibited in PDF/X-4)",
                 iso_clause="ISO 15930-7:2010 6.2.2",
             )
@@ -36,7 +36,7 @@ def validate_security(document: SemanticDocument) -> list[Finding]:
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-064",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Security handler present in trailer /Encrypt (prohibited in PDF/X-4)",
                 iso_clause="ISO 15930-7:2010 6.2.2",
             )
@@ -49,7 +49,7 @@ def validate_security(document: SemanticDocument) -> list[Finding]:
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-065",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="Permission restrictions set (prohibited in PDF/X-4)",
                     iso_clause="ISO 15930-7:2010 6.2.2",
                     details={"permissions": perms},

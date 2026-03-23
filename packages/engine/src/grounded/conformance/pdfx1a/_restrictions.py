@@ -33,7 +33,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-034",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="JavaScript detected in /Names tree (prohibited in PDF/X-1a)",
                     iso_clause="ISO 15930-4:2003 6.2.8",
                 )
@@ -47,7 +47,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-034",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="JavaScript in /OpenAction (prohibited in PDF/X-1a)",
                     iso_clause="ISO 15930-4:2003 6.2.8",
                 )
@@ -60,7 +60,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-035",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="Embedded files detected (prohibited in PDF/X-1a)",
                     iso_clause="ISO 15930-4:2003 6.2.8",
                 )
@@ -72,7 +72,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-036",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="AcroForm (form fields) detected (prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.2.8",
             )
@@ -89,7 +89,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-037",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"OPI reference in XObject '{xobj_name}' "
                                     f"on page {page.page_num} "
@@ -108,7 +108,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-038",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"LZW compression used on image '{event.image_name}' "
                             f"on page {event.page_num} (prohibited in PDF/X-1a)"
@@ -125,7 +125,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-039",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Encryption/security detected (prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.1",
             )
@@ -136,7 +136,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-039",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message="Document is encrypted (prohibited in PDF/X-1a)",
                     iso_clause="ISO 15930-4:2003 6.1",
                 )
@@ -153,7 +153,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-040",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Transfer function detected (prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.2.7",
             )
@@ -170,7 +170,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-041",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Custom halftone dictionary detected (prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.2.7",
             )
@@ -187,7 +187,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-042",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"PostScript XObject '{xobj_name}' on page "
                                     f"{page.page_num} (prohibited in PDF/X-1a)"
@@ -210,7 +210,7 @@ def validate_restrictions(  # skipcq: PY-R1000
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-043",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"Page {page.page_num} missing both /TrimBox and /ArtBox "
                         f"(at least one required for PDF/X-1a)"
@@ -231,7 +231,7 @@ def validate_restrictions(  # skipcq: PY-R1000
                         findings.append(
                             Finding(
                                 inspection_id=f"{_PREFIX}-044",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"Alternate image in XObject '{xobj_name}' "
                                     f"on page {page.page_num} (prohibited in PDF/X-1a)"
@@ -247,7 +247,7 @@ def validate_restrictions(  # skipcq: PY-R1000
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-045",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Optional content (layers) detected (prohibited in PDF/X-1a)",
                 iso_clause="ISO 15930-4:2003 6.2.8",
             )

@@ -101,20 +101,20 @@ test.describe.serial("Workflow: Onboarding & Profiles", () => {
     expect(body.profiles.length).toBeGreaterThanOrEqual(9);
 
     const ids = body.profiles.map((p: { profile_id: string }) => p.profile_id);
-    expect(ids).toContain("grounded-default");
-    expect(ids).toContain("grounded-strict");
+    expect(ids).toContain("lintpdf-default");
+    expect(ids).toContain("lintpdf-strict");
     expect(ids).toContain("gwg-2022-coated-offset");
   });
 
   test("6. Tenant views profile details", async ({ request }) => {
     test.skip(!tenantApiKey, "No tenant API key");
 
-    const res = await request.get("/api/v1/profiles/grounded-default", {
+    const res = await request.get("/api/v1/profiles/lintpdf-default", {
       headers: { Authorization: `Bearer ${tenantApiKey}` },
     });
     expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(body.profile_id).toBe("grounded-default");
+    expect(body.profile_id).toBe("lintpdf-default");
     expect(body.name).toContain("Default");
   });
 
@@ -168,7 +168,7 @@ test.describe.serial("Workflow: Preflight Job & Reports", () => {
           mimeType: "application/pdf",
           buffer: readFileSync(TEST_PDF),
         },
-        profile_id: "grounded-default",
+        profile_id: "lintpdf-default",
       },
     });
     expect(res.status()).toBe(202);

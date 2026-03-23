@@ -1,10 +1,10 @@
 """Conditional rule engine for per-check evaluation.
 
-Evaluates conditions defined in VoyagePlan to determine whether
+Evaluates conditions defined in PreflightProfile to determine whether
 a finding should be included, modified, or suppressed based on
 document context.
 
-Example VoyagePlan JSON with conditions:
+Example PreflightProfile JSON with conditions:
 
     {
         "checks": {
@@ -77,7 +77,7 @@ def evaluate_conditions(
 
     Args:
         context: The context to evaluate against.
-        conditions: List of condition dicts from VoyagePlan.
+        conditions: List of condition dicts from PreflightProfile.
 
     Returns:
         ConditionResult with include/severity/param overrides.

@@ -7,7 +7,7 @@ order: 2
 
 # Color Quality Score
 
-Every Flight Log includes a **Color Quality Score** — a 0-100 weighted composite that rates the color readiness of your PDF. No other preflight tool offers this.
+Every preflight report includes a **Color Quality Score** — a 0-100 weighted composite that rates the color readiness of your PDF. No other preflight tool offers this.
 
 ## How It Works
 
@@ -45,7 +45,7 @@ These cap the maximum score:
 
 ## Customizing Weights
 
-Captains can adjust category weights in their Voyage Plan to match their workflow:
+Users can adjust category weights in their Preflight Profile to match their workflow:
 
 ```json
 {
@@ -63,7 +63,7 @@ Captains can adjust category weights in their Voyage Plan to match their workflo
 
 ## API Response
 
-The score appears in every Flight Log response:
+The score appears in every preflight report response:
 
 ```json
 {

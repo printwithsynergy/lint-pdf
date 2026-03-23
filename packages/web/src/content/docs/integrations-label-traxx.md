@@ -118,7 +118,7 @@ def update_label_traxx(lt_client: httpx.Client, job_id: str, result: dict):
         json={
             "preflight_status": "pass" if summary.get("passed") else "fail",
             "preflight_findings": summary.get("total_findings", 0),
-            "preflight_critical": summary.get("aground_count", 0),
+            "preflight_critical": summary.get("error_count", 0),
         },
     )
 

@@ -91,7 +91,7 @@ class PackagingAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_PKG_002",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         "No dieline layer found. Packaging artwork should include a "
                         "dedicated dieline layer (expected names: "
@@ -203,7 +203,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_PKG_005",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Content within {self.min_safe_zone_mm:.1f}mm "
                                 f"packaging safe zone on page {page.page_num}"
@@ -249,7 +249,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_PKG_006",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Packaging bleed insufficient on page {page.page_num}: "
                             + ", ".join(

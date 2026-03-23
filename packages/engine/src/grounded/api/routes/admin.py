@@ -95,7 +95,7 @@ class UpdateEntitlementsRequest(BaseModel):
     whitelabel_enabled: bool | None = None
     priority_processing: bool | None = None
     custom_integrations: bool | None = None
-    custom_voyage_plans: bool | None = None
+    custom_profiles: bool | None = None
     max_custom_profiles: int | None = None
     max_webhooks: int | None = None
     rate_limit_daily: int | None = None

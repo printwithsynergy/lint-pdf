@@ -62,7 +62,7 @@ class TestXMPMissing:
         findings = MetadataAnalyzer().analyze(doc, [])
         meta = [f for f in findings if f.inspection_id == "GRD_META_001"]
         assert len(meta) == 1
-        assert meta[0].severity == Severity.SQUALL
+        assert meta[0].severity == Severity.WARNING
 
     @staticmethod
     def test_with_metadata_no_finding() -> None:

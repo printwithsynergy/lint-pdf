@@ -159,7 +159,7 @@ class TestRegistrationText:
         findings = analyzer.analyze(_make_document(), [event])
         reg = [f for f in findings if f.inspection_id == "GRD_TEXT_005"]
         assert len(reg) == 1
-        assert reg[0].severity == Severity.SQUALL
+        assert reg[0].severity == Severity.WARNING
 
     @staticmethod
     def test_near_registration_triggers() -> None:
@@ -226,7 +226,7 @@ class TestSmallMultiInkText:
         findings = analyzer.analyze(_make_document(), [event])
         mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
         assert len(mi) == 1
-        assert mi[0].severity == Severity.SQUALL
+        assert mi[0].severity == Severity.WARNING
 
     @staticmethod
     def test_large_multi_ink_no_finding() -> None:

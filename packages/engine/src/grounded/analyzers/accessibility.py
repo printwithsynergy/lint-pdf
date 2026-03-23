@@ -101,7 +101,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_ACCESS_004",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message="Document language not specified (/Lang missing or empty in catalog)",
                     details={"lang": lang},
                     iso_clause="ISO 14289-1:2014 7.2",
@@ -119,7 +119,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_ACCESS_005",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Image '{img.name}' on page {page.page_num} may lack "
                                 f"alternative text (/Alt)"
@@ -141,7 +141,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ACCESS_010",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message="Reading order undefined (/StructTreeRoot has no /K children)",
                         details={"has_k": False},
                         iso_clause="ISO 14289-1:2014 7.1",
@@ -171,7 +171,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ACCESS_007",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message="Table structure found but no table header (/TH) elements present",
                         details={"has_table": True, "has_th": False},
                         iso_clause="ISO 14289-1:2014 7.5",

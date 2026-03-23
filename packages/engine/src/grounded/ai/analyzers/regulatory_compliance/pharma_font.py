@@ -197,7 +197,7 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_PHARMA_001",
-                        severity=Severity.AGROUND,
+                        severity=Severity.ERROR,
                         message=(
                             f"EU pharma font below minimum: x-height "
                             f"{x_height_mm:.2f}mm (required ≥{_EU_PHARMA_MIN_X_HEIGHT_MM}mm, "
@@ -283,7 +283,7 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="AI_PHARMA_002",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"FDA Drug Facts body text below minimum: "
                                 f"{min_size:.1f}pt (required ≥{_FDA_OTC_BODY_MIN_PT}pt) "
@@ -315,7 +315,7 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="AI_PHARMA_003",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"FDA Drug Facts heading below minimum: "
                                     f"{bs:.1f}pt (required ≥{_FDA_OTC_HEADING_MIN_PT}pt) "
@@ -341,7 +341,7 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
                         findings.append(
                             self._make_finding(
                                 inspection_id="AI_PHARMA_004",
-                                severity=Severity.AGROUND,
+                                severity=Severity.ERROR,
                                 message=(
                                     f"FDA Drug Facts text exceeds {_FDA_OTC_MAX_CHARS_PER_INCH} "
                                     f"characters per inch (estimated {cpi:.0f} cpi) "

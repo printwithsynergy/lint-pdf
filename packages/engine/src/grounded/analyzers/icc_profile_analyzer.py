@@ -110,7 +110,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_ICC_001",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"ICCBased color space '{cs_name}' on page "
                                 f"{page.page_num} has invalid component count "
@@ -212,7 +212,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_ICC_003",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=(
                                 f"ICCBased color space '{cs_name}' on page "
                                 f"{page.page_num} has no ICC profile reference "
@@ -248,7 +248,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ICC_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Output intent #{idx + 1} is missing required 'S' (subtype) entry"
                         ),
@@ -263,7 +263,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ICC_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Output intent #{idx + 1} has unknown subtype "
                             f"'{subtype}' (expected one of "
@@ -282,7 +282,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_ICC_004",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Output intent #{idx + 1} is missing required "
                             f"'OutputConditionIdentifier' entry"
@@ -371,7 +371,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_ICC_006",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Multiple output intents have inconsistent color "
                         f"space types: {', '.join(known_hints)}"
@@ -413,7 +413,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_ICC_007",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"ICC profile '{cs.icc_profile_ref}' on page "
                                 f"{page.page_num} is missing required tag(s): "
@@ -438,7 +438,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_ICC_007",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"ICC profile '{cs.icc_profile_ref}' on page "
                                 f"{page.page_num} has tag directory errors: "
@@ -541,7 +541,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_ICC_009",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"ICC profile '{cs.icc_profile_ref}' has "
                                 f"non-D50 PCS illuminant: X={illuminant['X']}, "

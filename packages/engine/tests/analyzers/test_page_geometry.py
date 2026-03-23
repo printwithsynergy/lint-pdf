@@ -47,7 +47,7 @@ class TestBoxPresence:
         box_findings = [f for f in findings if f.inspection_id == "GRD_BOX_001"]
         trim_missing = [f for f in box_findings if "TrimBox" in f.message]
         assert len(trim_missing) == 1
-        assert trim_missing[0].severity == Severity.SQUALL
+        assert trim_missing[0].severity == Severity.WARNING
 
     @staticmethod
     def test_missing_bleed_box() -> None:
@@ -145,7 +145,7 @@ class TestBleedDistance:
         findings = analyzer.analyze(doc, [])
         bleed_findings = [f for f in findings if f.inspection_id == "GRD_BOX_003"]
         assert len(bleed_findings) == 1
-        assert bleed_findings[0].severity == Severity.SQUALL
+        assert bleed_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_zero_bleed() -> None:
@@ -477,7 +477,7 @@ class TestContentBeyondBleed:
         findings = analyzer.analyze(doc, events)
         f = [f for f in findings if f.inspection_id == "GRD_BOX_006"]
         assert len(f) == 1
-        assert f[0].severity == Severity.SQUALL
+        assert f[0].severity == Severity.WARNING
 
     def test_content_within_bleed_no_flag(self) -> None:
         doc = self._make_doc_with_bleed()

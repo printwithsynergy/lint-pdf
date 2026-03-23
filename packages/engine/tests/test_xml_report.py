@@ -17,7 +17,7 @@ def sample_result() -> PreflightResult:
     findings = [
         Finding(
             inspection_id="GRD_FONT_001",
-            severity=Severity.AGROUND,
+            severity=Severity.ERROR,
             message="Font 'Arial' is not embedded",
             page_num=1,
             object_id="F1",
@@ -26,7 +26,7 @@ def sample_result() -> PreflightResult:
         ),
         Finding(
             inspection_id="GRD_IMG_001",
-            severity=Severity.SQUALL,
+            severity=Severity.WARNING,
             message="Image resolution below minimum (72 DPI < 150 DPI)",
             page_num=1,
             object_id="Im1",
@@ -43,8 +43,8 @@ def sample_result() -> PreflightResult:
     ]
     summary = PreflightSummary(
         total_findings=3,
-        aground_count=1,
-        squall_count=1,
+        error_count=1,
+        warning_count=1,
         advisory_count=1,
         passed=False,
         page_count=2,
@@ -52,7 +52,7 @@ def sample_result() -> PreflightResult:
     )
     return PreflightResult(
         job_id="test-job-001",
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         findings=findings,
         summary=summary,
         metadata={
@@ -70,12 +70,12 @@ def empty_result() -> PreflightResult:
     """Result with no findings."""
     return PreflightResult(
         job_id="test-job-002",
-        profile_id="grounded-default",
+        profile_id="lintpdf-default",
         findings=[],
         summary=PreflightSummary(
             total_findings=0,
-            aground_count=0,
-            squall_count=0,
+            error_count=0,
+            warning_count=0,
             advisory_count=0,
             passed=True,
             page_count=1,
@@ -158,7 +158,7 @@ class TestXmlJobInfo:
         root = _parse_xml(generate_xml_report(sample_result))
         profile_id = root.find("ProfileId")
         assert profile_id is not None
-        assert profile_id.text == "grounded-default"
+        assert profile_id.text == "lintpdf-default"
 
     @staticmethod
     def test_duration_ms(sample_result) -> None:
@@ -189,8 +189,8 @@ class TestXmlSummary:
     def test_finding_counts(sample_result) -> None:
         root = _parse_xml(generate_xml_report(sample_result))
         assert root.find("Summary/TotalFindings").text == "3"
-        assert root.find("Summary/AgroundCount").text == "1"
-        assert root.find("Summary/SquallCount").text == "1"
+        assert root.find("Summary/ErrorCount").text == "1"
+        assert root.find("Summary/WarningCount").text == "1"
         assert root.find("Summary/AdvisoryCount").text == "1"
 
     @staticmethod
@@ -207,7 +207,7 @@ class TestXmlSummary:
     def test_empty_result_counts(empty_result) -> None:
         root = _parse_xml(generate_xml_report(empty_result))
         assert root.find("Summary/TotalFindings").text == "0"
-        assert root.find("Summary/AgroundCount").text == "0"
+        assert root.find("Summary/ErrorCount").text == "0"
 
 
 class TestXmlDocument:
@@ -258,7 +258,7 @@ class TestXmlFindings:
         findings = root.findall("Findings/Finding")
         first = findings[0]
         assert first.find("InspectionId").text == "GRD_FONT_001"
-        assert first.find("Severity").text == "aground"
+        assert first.find("Severity").text == "error"
         assert first.find("Message").text == "Font 'Arial' is not embedded"
         assert first.find("PageNum").text == "1"
 
@@ -311,8 +311,8 @@ class TestXmlFindings:
             ],
             summary=PreflightSummary(
                 total_findings=1,
-                aground_count=0,
-                squall_count=0,
+                error_count=0,
+                warning_count=0,
                 advisory_count=1,
                 passed=True,
                 page_count=1,
@@ -337,8 +337,8 @@ class TestXmlReportSeverityValues:
     @pytest.mark.parametrize(
         "severity,expected",
         [
-            (Severity.AGROUND, "aground"),
-            (Severity.SQUALL, "squall"),
+            (Severity.ERROR, "error"),
+            (Severity.WARNING, "warning"),
             (Severity.ADVISORY, "advisory"),
         ],
     )
@@ -357,8 +357,8 @@ class TestXmlReportSeverityValues:
             ],
             summary=PreflightSummary(
                 total_findings=1,
-                aground_count=0,
-                squall_count=0,
+                error_count=0,
+                warning_count=0,
                 advisory_count=0,
                 passed=True,
                 page_count=1,

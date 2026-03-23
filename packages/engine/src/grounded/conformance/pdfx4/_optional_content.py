@@ -30,7 +30,7 @@ def validate_optional_content(document: SemanticDocument) -> list[Finding]:  # s
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-066",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="OCProperties /D (default configuration) missing",
                 iso_clause="ISO 15930-7:2010 6.5",
             )
@@ -43,7 +43,7 @@ def validate_optional_content(document: SemanticDocument) -> list[Finding]:  # s
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-067",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"OCProperties default /BaseState is '{base_state}' (should be 'ON' for PDF/X-4)",
                 iso_clause="ISO 15930-7:2010 6.5",
             )
@@ -69,7 +69,7 @@ def validate_optional_content(document: SemanticDocument) -> list[Finding]:  # s
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-069",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="OCProperties present but /OCGs array is empty or missing",
                 iso_clause="ISO 32000-2:2020 8.11.4.2",
             )
@@ -81,7 +81,7 @@ def validate_optional_content(document: SemanticDocument) -> list[Finding]:  # s
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-070",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="OCProperties has /AS (auto-state) triggers (not recommended for PDF/X-4)",
                 iso_clause="ISO 15930-7:2010 6.5",
                 details={"trigger_count": len(as_triggers)},

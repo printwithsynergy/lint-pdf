@@ -28,7 +28,7 @@ class TestEncryption:
         f = validate_security(_doc(is_encrypted=True))
         ids = [x for x in f if x.inspection_id == "PDFX4-063"]
         assert len(ids) == 1
-        assert ids[0].severity == Severity.AGROUND
+        assert ids[0].severity == Severity.ERROR
 
     @staticmethod
     def test_not_encrypted_ok() -> None:

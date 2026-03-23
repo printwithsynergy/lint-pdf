@@ -131,6 +131,7 @@ class Job(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     color_quality_score: Mapped[Any | None] = mapped_column(Numeric(5, 1), nullable=True)
+    jdf_overrides: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     # Relationships
     tenant: Mapped[Tenant] = relationship(back_populates="jobs")
@@ -183,7 +184,7 @@ class WebhookEndpoint(Base):
 
 
 class CustomProfile(Base):
-    """Custom preflight profile (Voyage Plan) owned by a tenant."""
+    """Custom preflight profile owned by a tenant."""
 
     __tablename__ = "custom_profiles"
 
@@ -192,7 +193,7 @@ class CustomProfile(Base):
         Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     profile_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    voyage_plan_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    preflight_profile_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -289,16 +290,16 @@ class TenantAIConfig(Base):
         Numeric(10, 2), nullable=True
     )
     min_image_quality_score: Mapped[int] = mapped_column(Integer, nullable=False, default=50)
-    delta_e_squall_threshold: Mapped[Any] = mapped_column(
+    delta_e_warning_threshold: Mapped[Any] = mapped_column(
         Numeric(6, 2), nullable=False, default=2.0
     )
-    delta_e_aground_threshold: Mapped[Any] = mapped_column(
+    delta_e_error_threshold: Mapped[Any] = mapped_column(
         Numeric(6, 2), nullable=False, default=5.0
     )
     severity_labels: Mapped[dict[str, str] | None] = mapped_column(
         JSON,
         nullable=True,
-        default=lambda: {"aground": "Aground", "squall": "Squall", "advisory": "Advisory"},
+        default=lambda: {"error": "Error", "warning": "Warning", "advisory": "Advisory"},
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

@@ -72,7 +72,7 @@ POST /api/v1/jobs → LintPDF preflight
     ↓
 GET /api/v1/jobs/{id} → Poll for results
     ↓
-Results: passed=true/false, aground/squall/advisory counts
+Results: passed=true/false, error/warning/advisory counts
     ↓
 Workflow routes file (pass/fail)
     ↓

@@ -25,8 +25,13 @@ SUPPORTED_EXTENSIONS = frozenset(
         ".jpeg",
         ".png",
         ".ai",
+        ".jdf",
+        ".xjdf",
     }
 )
+
+JDF_EXTENSIONS = frozenset({".jdf", ".xjdf"})
+PDF_EXTENSIONS = frozenset(SUPPORTED_EXTENSIONS - JDF_EXTENSIONS)
 
 
 class _StabilizationHandler(FileSystemEventHandler):
@@ -34,17 +39,21 @@ class _StabilizationHandler(FileSystemEventHandler):
 
     def __init__(
         self,
-        ready_queue: queue.Queue[Path],
+        ready_queue: queue.Queue[tuple[Path, Path | None]],
         stabilization_seconds: float,
+        jdf_timeout: float,
         shutdown_event: threading.Event,
     ) -> None:
         super().__init__()
         self._ready_queue = ready_queue
         self._stabilization_seconds = stabilization_seconds
+        self._jdf_timeout = jdf_timeout
         self._shutdown_event = shutdown_event
         # Track pending files: path -> (last_size, timer)
         self._pending: dict[str, tuple[int, threading.Timer]] = {}
         self._lock = threading.Lock()
+        # Waiting for companion: path -> timer
+        self._waiting: dict[str, threading.Timer] = {}
 
     def _is_supported(self, path: str) -> bool:
         return Path(path).suffix.lower() in SUPPORTED_EXTENSIONS
@@ -104,7 +113,7 @@ class _StabilizationHandler(FileSystemEventHandler):
             with self._lock:
                 self._pending.pop(path, None)
             log.info("File stabilized: %s (%d bytes)", path, current_size)
-            self._ready_queue.put(Path(path))
+            self._on_file_stable(Path(path))
         else:
             # Size changed — restart stabilization
             log.debug(
@@ -112,12 +121,95 @@ class _StabilizationHandler(FileSystemEventHandler):
             )
             self._start_stabilization(path)
 
+    def _on_file_stable(self, file_path: Path) -> None:
+        """Handle a stabilized file, looking for JDF/PDF companions."""
+        suffix = file_path.suffix.lower()
+
+        if suffix in JDF_EXTENSIONS:
+            # JDF file stabilized — look for a companion PDF
+            pdf_companion = file_path.with_suffix(".pdf")
+            if pdf_companion.exists():
+                # Cancel any waiting timer for the PDF
+                with self._lock:
+                    waiting_timer = self._waiting.pop(str(pdf_companion), None)
+                    if waiting_timer:
+                        waiting_timer.cancel()
+                log.info("JDF companion found for %s", pdf_companion.name)
+                self._ready_queue.put((pdf_companion, file_path))
+            else:
+                # Wait for the PDF to appear
+                self._start_waiting(file_path, companion_ext=".pdf")
+        else:
+            # PDF (or other printable) stabilized — look for JDF/XJDF companion
+            jdf_companion = self._find_jdf_companion(file_path)
+            if jdf_companion is not None:
+                # Cancel any waiting timer for the JDF
+                with self._lock:
+                    waiting_timer = self._waiting.pop(str(jdf_companion), None)
+                    if waiting_timer:
+                        waiting_timer.cancel()
+                log.info("Found JDF companion %s for %s", jdf_companion.name, file_path.name)
+                self._ready_queue.put((file_path, jdf_companion))
+            else:
+                # Wait for a JDF to appear
+                self._start_waiting(file_path, companion_ext=None)
+
+    def _find_jdf_companion(self, pdf_path: Path) -> Path | None:
+        """Check for a same-stem .jdf or .xjdf file."""
+        for ext in (".jdf", ".xjdf"):
+            candidate = pdf_path.with_suffix(ext)
+            if candidate.exists():
+                return candidate
+        return None
+
+    def _start_waiting(self, file_path: Path, companion_ext: str | None) -> None:
+        """Wait for a companion file; submit without one on timeout."""
+        with self._lock:
+            # Cancel any existing waiting timer for this file
+            old_timer = self._waiting.pop(str(file_path), None)
+            if old_timer:
+                old_timer.cancel()
+
+            timer = threading.Timer(
+                self._jdf_timeout,
+                self._waiting_timeout,
+                args=(file_path, companion_ext),
+            )
+            timer.daemon = True
+            self._waiting[str(file_path)] = timer
+            timer.start()
+            log.debug(
+                "Waiting %.0fs for companion for %s",
+                self._jdf_timeout,
+                file_path.name,
+            )
+
+    def _waiting_timeout(self, file_path: Path, companion_ext: str | None) -> None:
+        """Timeout waiting for a companion — submit what we have."""
+        if self._shutdown_event.is_set():
+            return
+
+        with self._lock:
+            self._waiting.pop(str(file_path), None)
+
+        suffix = file_path.suffix.lower()
+        if suffix in JDF_EXTENSIONS:
+            # JDF with no matching PDF — skip it
+            log.warning("No companion PDF found for %s, skipping", file_path.name)
+        else:
+            # PDF with no matching JDF — submit without JDF
+            log.info("No JDF companion found for %s, submitting without", file_path.name)
+            self._ready_queue.put((file_path, None))
+
     def cancel_all(self) -> None:
-        """Cancel all pending stabilization timers."""
+        """Cancel all pending stabilization timers and waiting timers."""
         with self._lock:
             for _, (_, timer) in self._pending.items():
                 timer.cancel()
             self._pending.clear()
+            for _, timer in self._waiting.items():
+                timer.cancel()
+            self._waiting.clear()
 
 
 class HotFolderWatcher:
@@ -126,8 +218,9 @@ class HotFolderWatcher:
     def __init__(
         self,
         watch_dir: Path,
-        ready_queue: queue.Queue[Path],
+        ready_queue: queue.Queue[tuple[Path, Path | None]],
         stabilization_seconds: float = 2.0,
+        jdf_timeout: float = 30.0,
         shutdown_event: threading.Event | None = None,
     ) -> None:
         self.watch_dir = watch_dir
@@ -136,6 +229,7 @@ class HotFolderWatcher:
         self._handler = _StabilizationHandler(
             ready_queue=ready_queue,
             stabilization_seconds=stabilization_seconds,
+            jdf_timeout=jdf_timeout,
             shutdown_event=self._shutdown_event,
         )
         self._observer = Observer()

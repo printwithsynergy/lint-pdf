@@ -5,14 +5,14 @@ from __future__ import annotations
 import pytest
 
 from grounded.profiles.registry import ProfileNotFoundError, ProfileRegistry
-from grounded.profiles.schema import VoyagePlan
+from grounded.profiles.schema import PreflightProfile
 
 
 class TestProfileRegistry:
     @staticmethod
     def test_register_and_get() -> None:
         registry = ProfileRegistry()
-        fp = VoyagePlan(name="Custom")
+        fp = PreflightProfile(name="Custom")
         registry.register("custom", fp)
         assert registry.get("custom").name == "Custom"
 
@@ -25,8 +25,8 @@ class TestProfileRegistry:
     @staticmethod
     def test_list_profiles() -> None:
         registry = ProfileRegistry()
-        fp1 = VoyagePlan(name="A")
-        fp2 = VoyagePlan(name="B")
+        fp1 = PreflightProfile(name="A")
+        fp2 = PreflightProfile(name="B")
         registry.register("profile-b", fp2)
         registry.register("profile-a", fp1)
         profiles = registry.list_profiles()
@@ -37,7 +37,7 @@ class TestProfileRegistry:
     @staticmethod
     def test_has() -> None:
         registry = ProfileRegistry()
-        fp = VoyagePlan(name="Test")
+        fp = PreflightProfile(name="Test")
         registry.register("test-profile", fp)
         assert registry.has("test-profile")
         assert not registry.has("nope")
@@ -54,9 +54,9 @@ class TestBuiltinProfiles:
     def test_known_builtins_exist() -> None:
         registry = ProfileRegistry()
         expected = [
-            "grounded-default",
-            "grounded-strict",
-            "grounded-advisory-only",
+            "lintpdf-default",
+            "lintpdf-strict",
+            "lintpdf-advisory-only",
             "gwg-2022-coated-offset",
             "gwg-2022-uncoated-offset",
             "gwg-2022-newspaper",

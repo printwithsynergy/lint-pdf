@@ -2,7 +2,7 @@
 
 Uses Grounding DINO on the GPU inference service to detect text, logos, and
 barcodes, then checks whether any detected object falls within the configured
-safe zone margin.  Objects encroaching the safe zone trigger SQUALL findings.
+safe zone margin.  Objects encroaching the safe zone trigger WARNING findings.
 """
 
 from __future__ import annotations
@@ -144,7 +144,7 @@ class SafeZoneViolationsAnalyzer(BaseAIAnalyzer):
                     findings.append(
                         self._make_finding(
                             inspection_id="AI_SZ_002",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"'{label}' on page {page_num} encroaches the "
                                 f"safe zone ({safe_zone_mm}mm): " + "; ".join(violations)

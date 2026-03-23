@@ -3,9 +3,9 @@
 A Finding represents a single preflight check result: pass or fail,
 with severity, message, and traceability to an ISO clause.
 
-Severity levels use nautical-themed brand language:
-- aground: Critical spec violation (blocks approval)
-- squall: Warning (does not block but should be reviewed)
+Severity levels:
+- error: Critical spec violation (blocks approval)
+- warning: Warning (does not block but should be reviewed)
 - advisory: Informational (no action required)
 """
 
@@ -19,8 +19,8 @@ from typing import Any
 class Severity(StrEnum):
     """Finding severity levels."""
 
-    AGROUND = "aground"
-    SQUALL = "squall"
+    ERROR = "error"
+    WARNING = "warning"
     ADVISORY = "advisory"
 
 
@@ -30,7 +30,7 @@ class Finding:
 
     Attributes:
         inspection_id: Unique check identifier (e.g., GRD_IMG_001).
-        severity: aground, squall, or advisory.
+        severity: error, warning, or advisory.
         message: Human-readable description of the finding.
         page_num: 1-indexed page number, or 0 for document-level.
         details: Additional structured data about the finding.

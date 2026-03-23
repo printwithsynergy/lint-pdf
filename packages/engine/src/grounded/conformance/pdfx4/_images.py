@@ -36,7 +36,7 @@ def validate_images(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-079",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=f"Image '{name}' uses LZW compression on page {pn} (deprecated in PDF/X-4)",
                     page_num=pn,
                     iso_clause="ISO 15930-7:2010 6.6",
@@ -54,7 +54,7 @@ def validate_images(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-082i",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Image '{name}' has OPI reference on page {pn} (prohibited in PDF/X-4)",
                     page_num=pn,
                     iso_clause="ISO 15930-7:2010 6.6.3",
@@ -68,7 +68,7 @@ def validate_images(
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-083i",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=f"Image '{name}' has alternate images on page {pn} (prohibited in PDF/X-4)",
                     page_num=pn,
                     iso_clause="ISO 15930-7:2010 6.6.4",

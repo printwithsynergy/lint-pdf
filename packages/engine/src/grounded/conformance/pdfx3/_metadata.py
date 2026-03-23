@@ -32,7 +32,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-014",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"PDF version {version} exceeds 1.4 "
                         f"(PDF/X-3 requires PDF 1.4 or earlier)"
@@ -47,7 +47,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-015",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="XMP metadata stream missing (required for PDF/X-3)",
                 iso_clause="ISO 15930-6:2003 6.7",
             )
@@ -61,7 +61,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-015",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="GTS_PDFXVersion not declared in XMP (required for PDF/X-3)",
                 iso_clause="ISO 15930-6:2003 6.7.3",
             )
@@ -72,7 +72,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-016",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"GTS_PDFXVersion is '{xmp.pdfx_version}' "
                         f"(expected 'PDF/X-3:2003')"
@@ -89,7 +89,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-017",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message="/Trapped key missing from Info dictionary",
                 iso_clause="ISO 15930-6:2003 6.7.5",
             )
@@ -98,7 +98,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
         findings.append(
             Finding(
                 inspection_id=f"{_PREFIX}-017",
-                severity=Severity.SQUALL,
+                severity=Severity.WARNING,
                 message=f"/Trapped value '{info_trapped}' is not valid (expected True/False/Unknown)",
                 iso_clause="ISO 15930-6:2003 6.7.5",
                 details={"trapped": str(info_trapped)},
@@ -112,7 +112,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-018",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message="CreationDate missing from both Info dict and XMP metadata",
                     iso_clause="ISO 15930-6:2003 6.7.5",
                 )
@@ -125,7 +125,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-019",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message="ModDate missing from both Info dict and XMP metadata",
                     iso_clause="ISO 15930-6:2003 6.7.5",
                 )
@@ -138,7 +138,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
             findings.append(
                 Finding(
                     inspection_id=f"{_PREFIX}-020",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message="Title missing from both Info dict and XMP metadata",
                     iso_clause="ISO 15930-6:2003 6.7.5",
                 )

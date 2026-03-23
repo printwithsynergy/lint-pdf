@@ -21,11 +21,11 @@ class Submitter:
 
     def __init__(
         self,
-        ready_queue: queue.Queue[Path],
+        ready_queue: queue.Queue[tuple[Path, Path | None]],
         *,
         api_key: str,
         base_url: str = "https://api.lintpdf.com",
-        profile: str = "grounded-default",
+        profile: str = "lintpdf-default",
         pass_dir: Path | None = None,
         fail_dir: Path | None = None,
         error_dir: Path | None = None,
@@ -59,19 +59,19 @@ class Submitter:
         """Main worker loop."""
         while not self._shutdown_event.is_set():
             try:
-                file_path = self._queue.get(timeout=1.0)
+                file_path, jdf_path = self._queue.get(timeout=1.0)
             except queue.Empty:
                 continue
 
             try:
-                self._process_file(file_path)
+                self._process_file(file_path, jdf_path)
             except Exception:
                 log.exception("Unexpected error processing %s", file_path)
                 self._move_file(
                     file_path, self._error_dir, error_info="Unexpected processing error"
                 )
 
-    def _process_file(self, file_path: Path) -> None:
+    def _process_file(self, file_path: Path, jdf_path: Path | None = None) -> None:
         """Submit a file to LintPDF and route based on results."""
         if not file_path.exists():
             log.warning("File no longer exists: %s", file_path)
@@ -83,20 +83,31 @@ class Submitter:
         try:
             # Submit
             with open(file_path, "rb") as f:
-                response = httpx.post(
-                    f"{self._base_url}/api/v1/jobs",
-                    headers=headers,
-                    files={"file": (file_path.name, f, "application/octet-stream")},
-                    data={"profile_id": self._profile},
-                    timeout=120,
-                )
+                files = {"file": (file_path.name, f, "application/octet-stream")}
+                if jdf_path and jdf_path.exists():
+                    jdf_fh = open(jdf_path, "rb")
+                    files["jdf_file"] = (jdf_path.name, jdf_fh, "application/octet-stream")
+                else:
+                    jdf_fh = None
+
+                try:
+                    response = httpx.post(
+                        f"{self._base_url}/api/v1/jobs",
+                        headers=headers,
+                        files=files,
+                        data={"profile_id": self._profile},
+                        timeout=120,
+                    )
+                finally:
+                    if jdf_fh is not None:
+                        jdf_fh.close()
 
             if response.status_code == 429:
                 retry_after = int(response.headers.get("Retry-After", 60))
                 log.warning("Rate limited. Retrying after %ds", retry_after)
                 time.sleep(retry_after)
                 # Re-queue the file
-                self._queue.put(file_path)
+                self._queue.put((file_path, jdf_path))
                 return
 
             response.raise_for_status()
@@ -121,16 +132,16 @@ class Submitter:
         # Route based on results
         summary = result.get("summary", {})
         passed = summary.get("passed", False)
-        aground = summary.get("aground_count", 0)
-        squall = summary.get("squall_count", 0)
+        errors = summary.get("error_count", 0)
+        warnings = summary.get("warning_count", 0)
         advisory = summary.get("advisory_count", 0)
 
         log.info(
-            "Result for %s — %s | aground=%d squall=%d advisory=%d",
+            "Result for %s — %s | errors=%d warnings=%d advisory=%d",
             file_path.name,
             "PASS" if passed else "FAIL",
-            aground,
-            squall,
+            errors,
+            warnings,
             advisory,
         )
 
@@ -222,8 +233,8 @@ class Submitter:
             "profile_id": result.get("profile_id", self._profile),
             "passed": summary.get("passed", False),
             "summary": {
-                "aground_count": summary.get("aground_count", 0),
-                "squall_count": summary.get("squall_count", 0),
+                "error_count": summary.get("error_count", 0),
+                "warning_count": summary.get("warning_count", 0),
                 "advisory_count": summary.get("advisory_count", 0),
                 "total_findings": summary.get("total_findings", 0),
             },

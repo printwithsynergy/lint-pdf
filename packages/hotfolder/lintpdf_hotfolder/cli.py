@@ -39,9 +39,9 @@ from .watcher import HotFolderWatcher
 @click.option(
     "--profile",
     envvar="LINTPDF_PROFILE",
-    default="grounded-default",
+    default="lintpdf-default",
     show_default=True,
-    help="Voyage Plan profile ID.",
+    help="Preflight Profile ID.",
 )
 @click.option(
     "--pass-dir",
@@ -82,6 +82,13 @@ from .watcher import HotFolderWatcher
     help="Seconds between LintPDF job status polls.",
 )
 @click.option(
+    "--jdf-timeout",
+    type=float,
+    default=30,
+    show_default=True,
+    help="Seconds to wait for a JDF/XJDF companion file before submitting without one.",
+)
+@click.option(
     "--log-level",
     type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR"], case_sensitive=False),
     default="INFO",
@@ -99,6 +106,7 @@ def main(
     sidecar: bool,
     stabilization: float,
     poll_interval: float,
+    jdf_timeout: float,
     log_level: str,
 ) -> None:
     """Watch a directory for new files and submit them to LintPDF for preflight.
@@ -114,12 +122,13 @@ def main(
     log = logging.getLogger("lintpdf_hotfolder")
 
     shutdown_event = threading.Event()
-    ready_queue: queue.Queue[Path] = queue.Queue()
+    ready_queue: queue.Queue[tuple[Path, Path | None]] = queue.Queue()
 
     watcher = HotFolderWatcher(
         watch_dir=watch_dir,
         ready_queue=ready_queue,
         stabilization_seconds=stabilization,
+        jdf_timeout=jdf_timeout,
         shutdown_event=shutdown_event,
     )
 

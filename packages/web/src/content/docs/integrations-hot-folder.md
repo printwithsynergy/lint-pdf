@@ -37,7 +37,7 @@ The LintPDF Hot Folders desktop app is a native application built with Tauri tha
 ### Features
 
 - **Multiple folders** — Configure as many watched directories as you need, each with its own preflight profile and output directories
-- **Visual results feed** — See pass/fail status, finding counts (aground, squall, advisory), and job details in real time
+- **Visual results feed** — See pass/fail status, finding counts (error, warning, advisory), and job details in real time
 - **System tray** — Runs quietly in the background. Right-click the tray icon to start/stop all watchers or open the window
 - **File type filtering** — Choose which file types to watch per folder (.pdf, .eps, .tiff, .jpg, .png, .ai, etc.)
 - **Sidecar reports** — Optionally write `.lintpdf.json` reports alongside processed files
@@ -63,7 +63,7 @@ Each hot folder has these settings:
 | --------------- | ------------------ | ----------------------------------------------------- |
 | Name            | —                  | Display name for the folder                           |
 | Watch Directory | —                  | Path to monitor for new files                         |
-| Profile         | `grounded-default` | Preflight profile ID                                  |
+| Profile         | `lintpdf-default` | Preflight profile ID                                  |
 | Pass Directory  | —                  | Move passed files here (leave empty to keep in place) |
 | Fail Directory  | —                  | Move failed files here                                |
 | Error Directory | —                  | Move files that couldn't be processed here            |
@@ -145,7 +145,7 @@ Options:
   --watch-dir PATH          Directory to watch for new files (required)
   --api-key TEXT            LintPDF API key (or set LINTPDF_API_KEY env var)
   --base-url TEXT           API base URL [default: https://api.lintpdf.com]
-  --profile TEXT            Voyage Plan profile ID [default: grounded-default]
+  --profile TEXT            Preflight profile ID [default: lintpdf-default]
   --pass-dir PATH           Move passed files here
   --fail-dir PATH           Move failed files here
   --error-dir PATH          Move errored files here
@@ -224,14 +224,58 @@ Both the desktop app and CLI produce the same JSON sidecar format:
   "status": "failed",
   "summary": {
     "passed": false,
-    "aground_count": 2,
-    "squall_count": 1,
+    "error_count": 2,
+    "warning_count": 1,
     "advisory_count": 3
   },
   "submitted_at": "2025-03-22T10:15:30Z",
   "completed_at": "2025-03-22T10:15:42Z"
 }
 ```
+
+## JDF/XJDF Sidecar Workflow
+
+Both the desktop app and CLI support automatic JDF/XJDF sidecar pairing. When a JDF or XJDF file is placed alongside a PDF with the same filename stem (e.g., `artwork.pdf` and `artwork.jdf`), the hot folder automatically pairs them and extracts production parameters from the job ticket.
+
+### How It Works
+
+1. Drop a PDF and its companion JDF/XJDF file into the watched directory (e.g., `artwork.pdf` + `artwork.jdf`)
+2. The hot folder detects the pair and reads the JDF parameters
+3. JDF parameters are sent to the LintPDF API and **override** the corresponding profile thresholds for that submission
+
+### Supported JDF Parameters
+
+The following JDF parameters override profile thresholds when present:
+
+| JDF Parameter       | LintPDF Override         | Example              |
+| ------------------- | ------------------------ | -------------------- |
+| Resolution (DPI)    | Minimum image DPI        | `300`                |
+| Bleed               | Minimum bleed distance   | `3mm`                |
+| TAC (Total Area Coverage) | Maximum ink coverage | `320%`               |
+| Output Condition    | ICC output intent        | `FOGRA39`            |
+| Conformance         | PDF/X conformance level  | `PDF/X-4`            |
+
+### CLI: `--jdf-timeout` Flag
+
+When using the CLI, the `--jdf-timeout` flag controls how long the watcher waits for a companion JDF/XJDF file after a PDF is detected. If no companion arrives within the timeout, the PDF is submitted using the profile defaults.
+
+```bash
+lintpdf-watch \
+  --watch-dir /path/to/incoming \
+  --api-key lpdf_your_api_key \
+  --profile gwg-sheetfed \
+  --jdf-timeout 30 \
+  --pass-dir /path/to/approved \
+  --fail-dir /path/to/rejected
+```
+
+The default timeout is **30 seconds**. Set to `0` to disable JDF pairing entirely.
+
+### Desktop App
+
+In the desktop app, JDF pairing is enabled by default for all watched folders. The timeout is configurable per folder in the folder settings. When a JDF companion is detected, the Results tab shows which parameters were overridden.
+
+---
 
 ## Supported File Types
 

@@ -184,7 +184,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_BOX_006",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(f"Content extends beyond bleed box on page {page_num}"),
                         page_num=page_num,
                         details={
@@ -208,7 +208,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_BOX_001",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=f"TrimBox missing on page {page.page_num}",
                     page_num=page.page_num,
                     details={"missing_box": "TrimBox"},
@@ -220,7 +220,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_BOX_001",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=f"BleedBox missing on page {page.page_num}",
                     page_num=page.page_num,
                     details={"missing_box": "BleedBox"},
@@ -255,7 +255,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_BOX_007",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Page {page.page_num} uses UserUnit={user_unit} "
                         f"(coordinates scaled — may cause output issues in some RIPs)"
@@ -297,7 +297,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_BOX_002",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(f"CropBox extends outside MediaBox on page {page.page_num}"),
                     page_num=page.page_num,
                     details={
@@ -313,7 +313,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_BOX_002",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(f"BleedBox extends outside CropBox on page {page.page_num}"),
                     page_num=page.page_num,
                     details={
@@ -329,7 +329,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_BOX_002",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(f"TrimBox extends outside BleedBox on page {page.page_num}"),
                     page_num=page.page_num,
                     details={
@@ -370,7 +370,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_BOX_003",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Inadequate bleed on page {page_num}: "
                         + ", ".join(f"{side} {dist:.1f}pt" for side, dist in inadequate.items())

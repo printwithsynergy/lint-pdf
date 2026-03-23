@@ -73,15 +73,15 @@ curl https://api.lintpdf.com/api/v1/jobs/f47ac10b-58cc-4372-a567-0e02b2c3d479 \
   "status": "complete",
   "summary": {
     "passed": false,
-    "aground_count": 2,
-    "squall_count": 1,
+    "error_count": 2,
+    "warning_count": 1,
     "advisory_count": 3,
     "total_findings": 6
   },
   "findings": [
     {
       "inspection_id": "GRD_FONT_001",
-      "severity": "aground",
+      "severity": "error",
       "message": "Font not embedded: Helvetica",
       "page_num": 1
     }

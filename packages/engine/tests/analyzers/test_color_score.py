@@ -14,7 +14,7 @@ class TestColorQualityScore:
         findings = [
             Finding(
                 inspection_id="GRD_COLOR_006",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="No Output Intent defined",
             )
         ]
@@ -26,7 +26,7 @@ class TestColorQualityScore:
         findings = [
             Finding(
                 inspection_id="GRD_ICC_003",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Corrupt ICC profile",
             )
         ]
@@ -38,7 +38,7 @@ class TestColorQualityScore:
         findings = [
             Finding(
                 inspection_id="GRD_COLOR_013",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="RGB in CMYK workflow",
             )
         ]
@@ -58,7 +58,7 @@ class TestColorQualityScore:
         findings = [
             Finding(
                 inspection_id="GRD_IMG_001",
-                severity=Severity.AGROUND,
+                severity=Severity.ERROR,
                 message="Image DPI too low",
             )
         ]

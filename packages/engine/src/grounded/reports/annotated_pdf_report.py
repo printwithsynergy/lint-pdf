@@ -20,14 +20,14 @@ if TYPE_CHECKING:
 
 # Severity colors (RGBA)
 _SEVERITY_COLORS = {
-    "aground": (239, 68, 68, 128),    # Red, semi-transparent
-    "squall": (245, 158, 11, 128),    # Amber, semi-transparent
+    "error": (239, 68, 68, 128),    # Red, semi-transparent
+    "warning": (245, 158, 11, 128),    # Amber, semi-transparent
     "advisory": (59, 130, 246, 128),  # Blue, semi-transparent
 }
 
 _SEVERITY_STROKE = {
-    "aground": (220, 38, 38),    # Darker red
-    "squall": (217, 119, 6),     # Darker amber
+    "error": (220, 38, 38),    # Darker red
+    "warning": (217, 119, 6),     # Darker amber
     "advisory": (37, 99, 235),   # Darker blue
 }
 
@@ -200,8 +200,8 @@ def _add_summary_page(
     pdf = pikepdf.open(io.BytesIO(pdf_bytes))
 
     # Count findings by severity
-    aground_count = sum(1 for f in findings if f.get("severity") == "aground")
-    squall_count = sum(1 for f in findings if f.get("severity") == "squall")
+    error_count = sum(1 for f in findings if f.get("severity") == "error")
+    warning_count = sum(1 for f in findings if f.get("severity") == "warning")
     advisory_count = sum(1 for f in findings if f.get("severity") == "advisory")
     total = len(findings)
 
@@ -212,7 +212,7 @@ def _add_summary_page(
         f"BT /F1 10 Tf 72 720 Td "
         f"(Total findings: {total}) Tj ET\n"
         f"BT /F1 10 Tf 72 706 Td "
-        f"(Aground: {aground_count} | Squall: {squall_count} | Advisory: {advisory_count}) Tj ET\n"
+        f"(Error: {error_count} | Warning: {warning_count} | Advisory: {advisory_count}) Tj ET\n"
     )
 
     # Create the summary page

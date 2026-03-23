@@ -25,7 +25,7 @@ Extended Gamut (also called Expanded Color Gamut or CMYKOGV) uses 7 inks instead
 
 ## Usage
 
-Use the `ecg-readiness` preset or enable ECG mode in your Voyage Plan:
+Use the `ecg-readiness` preset or enable ECG mode in your Preflight Profile:
 
 ```json
 {

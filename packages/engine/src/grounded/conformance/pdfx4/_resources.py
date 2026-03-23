@@ -31,7 +31,7 @@ def validate_resources(document: SemanticDocument) -> list[Finding]:  # skipcq: 
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-088",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=f"XObject '{name}' on page {pn} references null object",
                             page_num=pn,
                             iso_clause="ISO 32000-2:2020 7.8.3",
@@ -46,7 +46,7 @@ def validate_resources(document: SemanticDocument) -> list[Finding]:  # skipcq: 
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-089",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=f"Font '{name}' on page {pn} references null object",
                             page_num=pn,
                             iso_clause="ISO 32000-2:2020 7.8.3",
@@ -61,7 +61,7 @@ def validate_resources(document: SemanticDocument) -> list[Finding]:  # skipcq: 
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-090",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=f"ColorSpace '{name}' on page {pn} references null object",
                             page_num=pn,
                             iso_clause="ISO 32000-2:2020 7.8.3",
@@ -76,7 +76,7 @@ def validate_resources(document: SemanticDocument) -> list[Finding]:  # skipcq: 
                     findings.append(
                         Finding(
                             inspection_id=f"{_PREFIX}-091",
-                            severity=Severity.AGROUND,
+                            severity=Severity.ERROR,
                             message=f"ExtGState '{name}' on page {pn} references null object",
                             page_num=pn,
                             iso_clause="ISO 32000-2:2020 7.8.3",

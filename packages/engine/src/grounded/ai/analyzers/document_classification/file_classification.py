@@ -3,7 +3,7 @@
 Uses DiT (Document Image Transformer) on the Vision inference service to classify
 the document type (e.g. packaging artwork, technical drawing, label, leaflet).
 Reports the classification result as an ADVISORY finding that downstream
-analyzers and the auto_voyage_plan module can consume.
+analyzers and the auto_preflight_profile module can consume.
 """
 
 from __future__ import annotations

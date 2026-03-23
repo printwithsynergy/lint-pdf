@@ -66,7 +66,7 @@ class FontAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_FONT_001",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=f"Font '{font.base_font}' is not embedded",
                     page_num=page_num,
                     details={
@@ -123,7 +123,7 @@ class FontAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_FONT_004",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Type 3 font '{font.base_font}' detected "
                         f"(user-drawn glyphs — may not render correctly)"
@@ -144,7 +144,7 @@ class FontAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_FONT_005",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"CID font '{font.base_font}' missing "
                             f"ToUnicode CMap (text extraction unreliable)"
@@ -163,7 +163,7 @@ class FontAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_FONT_006",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(f"CID font '{font.base_font}' missing CIDSystemInfo dictionary"),
                         page_num=page_num,
                         details={
@@ -196,7 +196,7 @@ class FontAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_FONT_008",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(
                         f"TrueType font '{font.base_font}' is not embedded "
                         f"(will cause rendering failures)"
@@ -215,7 +215,7 @@ class FontAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_FONT_009",
-                    severity=Severity.AGROUND,
+                    severity=Severity.ERROR,
                     message=(f"Composite font '{font.base_font}' is not embedded"),
                     page_num=page_num,
                     details={
@@ -242,7 +242,7 @@ class FontAnalyzer(BaseAnalyzer):
                 findings.append(
                     Finding(
                         inspection_id="GRD_FONT_010",
-                        severity=Severity.SQUALL,
+                        severity=Severity.WARNING,
                         message=(
                             f"Font '{font.base_font}' has FontDescriptor "
                             f"but no embedded font program"
@@ -264,7 +264,7 @@ class FontAnalyzer(BaseAnalyzer):
             findings.append(
                 Finding(
                     inspection_id="GRD_FONT_011",
-                    severity=Severity.SQUALL,
+                    severity=Severity.WARNING,
                     message=(
                         f"Multiple Master font '{font.base_font}' detected "
                         f"(may not render correctly in all RIPs)"
@@ -350,7 +350,7 @@ class FontAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_FONT_014",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Font '{font.base_font}' has mismatched font program type "
                                 f"(expected FontFile, found {found_stream})"
@@ -371,7 +371,7 @@ class FontAnalyzer(BaseAnalyzer):
                     findings.append(
                         Finding(
                             inspection_id="GRD_FONT_014",
-                            severity=Severity.SQUALL,
+                            severity=Severity.WARNING,
                             message=(
                                 f"Font '{font.base_font}' has mismatched font program type "
                                 f"(expected FontFile2, found {found_stream})"
