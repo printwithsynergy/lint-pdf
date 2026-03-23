@@ -24,6 +24,10 @@ function engineFetch(path: string, init?: RequestInit): Promise<Response> {
   if (adminKey) {
     headers["X-Admin-Key"] = adminKey;
   }
+  const apiKey = process.env.GROUNDED_API_KEY;
+  if (apiKey) {
+    headers["Authorization"] = `Bearer ${apiKey}`;
+  }
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
