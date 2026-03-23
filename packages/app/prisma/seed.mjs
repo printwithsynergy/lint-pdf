@@ -72,9 +72,7 @@ async function main() {
       isSuperAdmin: false,
     },
   });
-  console.log(
-    `Test customer: ${testCustomer.email} (id: ${testCustomer.id})`,
-  );
+  console.log(`Test customer: ${testCustomer.email} (id: ${testCustomer.id})`);
 
   const customerMembership = await prisma.tenantUser.findFirst({
     where: { userId: testCustomer.id },
