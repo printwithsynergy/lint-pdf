@@ -410,6 +410,9 @@ class TenantColorConfig(Base):
     package_surface_area_default: Mapped[Any | None] = mapped_column(Numeric(10, 2), nullable=True)
     target_market: Mapped[str | None] = mapped_column(String(50), nullable=True)
     epm_mode_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    custom_pantone_overrides: Mapped[dict[str, dict[str, Any]] | None] = mapped_column(
+        JSON, nullable=True, comment="Customer Pantone color overrides keyed by normalized name"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

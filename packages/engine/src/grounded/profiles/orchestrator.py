@@ -68,11 +68,13 @@ class PreflightOrchestrator:
         profile_id: str = "custom",
         ai_config: Any | None = None,
         pdf_bytes: bytes | None = None,
+        custom_pantone_overrides: dict[str, Any] | None = None,
     ) -> None:
         self._plan = voyage_plan
         self._profile_id = profile_id
         self._ai_config = ai_config
         self._pdf_bytes = pdf_bytes
+        self._custom_pantone_overrides = custom_pantone_overrides
 
     def run(self, pdf_bytes: bytes) -> PreflightResult:
         """Execute full preflight pipeline on raw PDF bytes."""
@@ -344,7 +346,7 @@ class PreflightOrchestrator:
             ProcessingStepAnalyzer(),
             # Color management analyzers
             IccProfileAnalyzer(),
-            SpotColorAnalyzer(),
+            SpotColorAnalyzer(custom_pantone_data=self._custom_pantone_overrides),
             InkCoverageAnalyzer(tac_limit=t.tac_limit),
             AdvancedColorAnalyzer(
                 rich_black_c=t.rich_black_c,

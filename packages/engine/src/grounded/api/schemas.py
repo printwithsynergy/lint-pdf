@@ -245,6 +245,7 @@ class ColorConfigResponse(BaseModel):
     package_surface_area_default: float | None = None
     target_market: str | None = None
     epm_mode_default: bool = False
+    custom_pantone_overrides: dict[str, dict[str, object]] | None = None
 
 
 class ColorConfigUpdateRequest(BaseModel):
@@ -265,6 +266,34 @@ class PaletteUpdateRequest(BaseModel):
     colors: list[dict[str, object]] = Field(
         description="Array of color definitions with name, value, and thresholds."
     )
+
+
+# --- Pantone override schemas ---
+
+
+class PantoneOverrideEntry(BaseModel):
+    """A single Pantone color override."""
+
+    name: str = Field(description="Pantone color name, e.g. 'PANTONE 485 C'")
+    lab: list[float] = Field(min_length=3, max_length=3, description="CIE L*a*b* values")
+    cmyk_bridge: list[float] | None = Field(
+        None, min_length=4, max_length=4, description="CMYK bridge values [C, M, Y, K]"
+    )
+
+
+class PantoneOverridesUpdateRequest(BaseModel):
+    """Bulk set / replace all Pantone overrides for a tenant."""
+
+    overrides: list[PantoneOverrideEntry] = Field(
+        description="List of Pantone color overrides to set."
+    )
+
+
+class PantoneOverridesResponse(BaseModel):
+    """Current Pantone overrides for a tenant."""
+
+    count: int
+    overrides: dict[str, dict[str, object]]
 
 
 class GamutConditionResponse(BaseModel):

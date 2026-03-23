@@ -17,6 +17,8 @@ from grounded.api.schemas import (
     GamutConditionResponse,
     IccProfileUploadResponse,
     PaletteUpdateRequest,
+    PantoneOverridesResponse,
+    PantoneOverridesUpdateRequest,
 )
 
 router = APIRouter(prefix="/tenants", tags=["color-config"])
@@ -51,6 +53,7 @@ async def get_color_config(
         ),
         target_market=config.target_market,
         epm_mode_default=config.epm_mode_default,
+        custom_pantone_overrides=config.custom_pantone_overrides,
     )
 
 
@@ -89,6 +92,7 @@ async def update_color_config(
         ),
         target_market=config.target_market,
         epm_mode_default=config.epm_mode_default,
+        custom_pantone_overrides=config.custom_pantone_overrides,
     )
 
 
@@ -192,6 +196,104 @@ async def set_brand_palette(
     db.commit()
 
     return {"message": "Brand palette updated", "colors": len(request.colors)}
+
+
+# --- Pantone override endpoints ---
+
+
+def _get_or_create_config(
+    db: Session, tenant_id: uuid_mod.UUID
+) -> TenantColorConfig:
+    config = db.query(TenantColorConfig).filter(
+        TenantColorConfig.tenant_id == tenant_id
+    ).first()
+    if not config:
+        config = TenantColorConfig(tenant_id=tenant_id)
+        db.add(config)
+    return config
+
+
+def _invalidate_pantone_cache(tenant_id: uuid_mod.UUID) -> None:
+    """Best-effort Redis cache invalidation after DB writes."""
+    try:
+        from grounded.api.middleware import get_redis_client
+        from grounded.profiles.icc.pantone_cache import invalidate
+
+        invalidate(get_redis_client(), str(tenant_id))
+    except Exception:
+        pass  # Non-critical — cache will expire via TTL
+
+
+@router.get(
+    "/{tenant_id}/color-config/pantone-overrides",
+    response_model=PantoneOverridesResponse,
+)
+async def get_pantone_overrides(
+    tenant_id: uuid_mod.UUID,
+    db: Session = Depends(get_db),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+) -> PantoneOverridesResponse:
+    """Get current Pantone color overrides for a tenant."""
+    config = db.query(TenantColorConfig).filter(
+        TenantColorConfig.tenant_id == tenant_id
+    ).first()
+    overrides = (config.custom_pantone_overrides or {}) if config else {}
+    return PantoneOverridesResponse(count=len(overrides), overrides=overrides)
+
+
+@router.put(
+    "/{tenant_id}/color-config/pantone-overrides",
+    response_model=PantoneOverridesResponse,
+)
+async def set_pantone_overrides(
+    tenant_id: uuid_mod.UUID,
+    request: PantoneOverridesUpdateRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+) -> PantoneOverridesResponse:
+    """Bulk set / replace all Pantone color overrides for a tenant.
+
+    Names are normalized to uppercase with collapsed whitespace so they
+    match ``PantoneManager`` lookup keys.
+    """
+    from grounded.profiles.icc.pantone_manager import _normalize_pantone_name
+
+    config = _get_or_create_config(db, tenant_id)
+
+    overrides: dict[str, dict[str, object]] = {}
+    for entry in request.overrides:
+        key = _normalize_pantone_name(entry.name)
+        data: dict[str, object] = {"lab": entry.lab}
+        if entry.cmyk_bridge is not None:
+            data["cmyk_bridge"] = entry.cmyk_bridge
+        overrides[key] = data
+
+    config.custom_pantone_overrides = overrides
+    db.commit()
+
+    _invalidate_pantone_cache(tenant_id)
+
+    return PantoneOverridesResponse(count=len(overrides), overrides=overrides)
+
+
+@router.delete(
+    "/{tenant_id}/color-config/pantone-overrides",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_pantone_overrides(
+    tenant_id: uuid_mod.UUID,
+    db: Session = Depends(get_db),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+) -> None:
+    """Clear all Pantone overrides for a tenant."""
+    config = db.query(TenantColorConfig).filter(
+        TenantColorConfig.tenant_id == tenant_id
+    ).first()
+    if config and config.custom_pantone_overrides:
+        config.custom_pantone_overrides = None
+        db.commit()
+
+    _invalidate_pantone_cache(tenant_id)
 
 
 @router.get(

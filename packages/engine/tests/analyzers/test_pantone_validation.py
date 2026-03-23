@@ -181,6 +181,54 @@ class TestSpotColorAnalyzerPantone:
         assert len(pantone_findings) == 0
 
 
+class TestOrchestratorPantoneOverrides:
+    """Tests that Pantone overrides flow through the orchestrator to analyzers."""
+
+    def test_orchestrator_passes_overrides_to_spot_analyzer(self):
+        """Overrides passed to orchestrator reach SpotColorAnalyzer."""
+        from unittest.mock import patch
+
+        from grounded.profiles.orchestrator import PreflightOrchestrator
+        from grounded.profiles.schema import PreflightProfile
+
+        # Minimal profile that enables spot color checking
+        profile = PreflightProfile.model_validate({
+            "name": "test",
+            "version": "1.0",
+            "conformance": "none",
+        })
+
+        overrides = {
+            "PANTONE 485 C": {"lab": [99.0, 0.0, 0.0], "cmyk_bridge": [0, 0, 0, 0]},
+        }
+
+        orch = PreflightOrchestrator(
+            profile,
+            custom_pantone_overrides=overrides,
+        )
+        analyzers = orch._create_analyzers()
+        spot_analyzers = [a for a in analyzers if isinstance(a, SpotColorAnalyzer)]
+        assert len(spot_analyzers) == 1
+        assert spot_analyzers[0]._custom_pantone_data == overrides
+
+    def test_orchestrator_none_overrides_gives_none_to_analyzer(self):
+        """When no overrides, SpotColorAnalyzer receives None."""
+        from grounded.profiles.orchestrator import PreflightOrchestrator
+        from grounded.profiles.schema import PreflightProfile
+
+        profile = PreflightProfile.model_validate({
+            "name": "test",
+            "version": "1.0",
+            "conformance": "none",
+        })
+
+        orch = PreflightOrchestrator(profile)
+        analyzers = orch._create_analyzers()
+        spot_analyzers = [a for a in analyzers if isinstance(a, SpotColorAnalyzer)]
+        assert len(spot_analyzers) == 1
+        assert spot_analyzers[0]._custom_pantone_data is None
+
+
 class TestEnrichedPantoneReference:
     """Tests for the enriched Pantone reference with library metadata."""
 
