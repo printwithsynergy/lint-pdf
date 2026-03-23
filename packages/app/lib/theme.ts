@@ -7,7 +7,7 @@ export default defineTheme({
     title: "LintPDF — Preflights you won't hate.",
     description:
       "LintPDF — the Pixie Dust-powered SaaS platform by Think Neverland.",
-    themeColor: "#0ea5e9",
+    themeColor: "#1e40af",
   },
   brand: {
     companyName: "Think Neverland",
@@ -23,9 +23,9 @@ export default defineTheme({
     mono: "JetBrains Mono",
   },
   cssVariables: {
-    "--primary": "199 89% 48%",
+    "--primary": "224 69% 40%",
     "--primary-foreground": "0 0% 100%",
-    "--accent": "199 95% 74%",
-    "--accent-foreground": "201 90% 27%",
+    "--accent": "217 91% 60%",
+    "--accent-foreground": "224 76% 33%",
   },
 });
