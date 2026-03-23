@@ -8,6 +8,17 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
+  // Ensure engineTenantId column exists (prisma db push may skip it
+  // when engine tables trigger data-loss warnings)
+  try {
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Tenant" ADD COLUMN IF NOT EXISTS "engineTenantId" TEXT`,
+    );
+    console.log("Ensured engineTenantId column exists.");
+  } catch (e) {
+    console.log("engineTenantId column check:", e.message ?? String(e));
+  }
+
   // Upsert super admin user
   const superAdmin = await prisma.user.upsert({
     where: { email: "quincy@thinkneverland.com" },
