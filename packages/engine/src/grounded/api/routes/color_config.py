@@ -201,12 +201,8 @@ async def set_brand_palette(
 # --- Pantone override endpoints ---
 
 
-def _get_or_create_config(
-    db: Session, tenant_id: uuid_mod.UUID
-) -> TenantColorConfig:
-    config = db.query(TenantColorConfig).filter(
-        TenantColorConfig.tenant_id == tenant_id
-    ).first()
+def _get_or_create_config(db: Session, tenant_id: uuid_mod.UUID) -> TenantColorConfig:
+    config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
     if not config:
         config = TenantColorConfig(tenant_id=tenant_id)
         db.add(config)
@@ -234,9 +230,7 @@ async def get_pantone_overrides(
     tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
 ) -> PantoneOverridesResponse:
     """Get current Pantone color overrides for a tenant."""
-    config = db.query(TenantColorConfig).filter(
-        TenantColorConfig.tenant_id == tenant_id
-    ).first()
+    config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
     overrides = (config.custom_pantone_overrides or {}) if config else {}
     return PantoneOverridesResponse(count=len(overrides), overrides=overrides)
 
@@ -286,9 +280,7 @@ async def delete_pantone_overrides(
     tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
 ) -> None:
     """Clear all Pantone overrides for a tenant."""
-    config = db.query(TenantColorConfig).filter(
-        TenantColorConfig.tenant_id == tenant_id
-    ).first()
+    config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
     if config and config.custom_pantone_overrides:
         config.custom_pantone_overrides = None
         db.commit()

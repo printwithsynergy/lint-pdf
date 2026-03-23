@@ -192,11 +192,13 @@ class TestOrchestratorPantoneOverrides:
         from grounded.profiles.schema import PreflightProfile
 
         # Minimal profile that enables spot color checking
-        profile = PreflightProfile.model_validate({
-            "name": "test",
-            "version": "1.0",
-            "conformance": "none",
-        })
+        profile = PreflightProfile.model_validate(
+            {
+                "name": "test",
+                "version": "1.0",
+                "conformance": "none",
+            }
+        )
 
         overrides = {
             "PANTONE 485 C": {"lab": [99.0, 0.0, 0.0], "cmyk_bridge": [0, 0, 0, 0]},
@@ -216,11 +218,13 @@ class TestOrchestratorPantoneOverrides:
         from grounded.profiles.orchestrator import PreflightOrchestrator
         from grounded.profiles.schema import PreflightProfile
 
-        profile = PreflightProfile.model_validate({
-            "name": "test",
-            "version": "1.0",
-            "conformance": "none",
-        })
+        profile = PreflightProfile.model_validate(
+            {
+                "name": "test",
+                "version": "1.0",
+                "conformance": "none",
+            }
+        )
 
         orch = PreflightOrchestrator(profile)
         analyzers = orch._create_analyzers()
