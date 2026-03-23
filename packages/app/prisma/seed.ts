@@ -25,7 +25,9 @@ async function main() {
       isSuperAdmin: true,
     },
   });
-  console.log(`Super admin: ${superAdmin.email} (id: ${superAdmin.id}, isSuperAdmin: ${superAdmin.isSuperAdmin})`);
+  console.log(
+    `Super admin: ${superAdmin.email} (id: ${superAdmin.id}, isSuperAdmin: ${superAdmin.isSuperAdmin})`,
+  );
 
   // Ensure a tenant exists for the super admin
   const existingMembership = await prisma.tenantUser.findFirst({
@@ -34,7 +36,9 @@ async function main() {
   });
 
   if (existingMembership) {
-    console.log(`Already has tenant: ${existingMembership.tenant.name} (${existingMembership.tenant.id})`);
+    console.log(
+      `Already has tenant: ${existingMembership.tenant.name} (${existingMembership.tenant.id})`,
+    );
   } else {
     const tenant = await prisma.tenant.create({
       data: {
