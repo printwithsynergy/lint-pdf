@@ -1,7 +1,7 @@
 """Nautical rebrand: rename columns and update severity values.
 
 Revision ID: 006_nautical_rebrand
-Revises: 005_add_ai_models
+Revises: 005
 Create Date: 2026-03-16
 """
 
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "006_nautical_rebrand"
-down_revision = "005_add_ai_models"
+down_revision = "005"
 branch_labels = None
 depends_on = None
 
