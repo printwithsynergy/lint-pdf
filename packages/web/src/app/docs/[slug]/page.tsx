@@ -40,7 +40,8 @@ const jsxPages: Record<
   webhooks: {
     component: WebhooksPage,
     title: "Webhooks",
-    description: "Register webhook endpoints for real-time event notifications.",
+    description:
+      "Register webhook endpoints for real-time event notifications.",
   },
   glossary: {
     component: GlossaryPage,
@@ -119,12 +120,14 @@ export default async function DocSlugPage({ params }: Props) {
 
   return (
     <article>
-      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">{doc.title}</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+        {doc.title}
+      </h1>
       {doc.description && (
         <p className="text-slate-500 mb-8">{doc.description}</p>
       )}
       <div
-        className="prose prose-slate max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-relaxed prose-p:text-slate-600 prose-a:text-brand-600 prose-a:no-underline hover:prose-a:underline prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-brand-950 prose-pre:border prose-pre:border-slate-200 prose-pre:rounded-lg prose-li:text-slate-600 prose-strong:text-slate-800 prose-table:text-sm prose-th:text-left prose-th:py-2 prose-th:px-3 prose-th:text-slate-500 prose-th:font-medium prose-td:py-2 prose-td:px-3"
+        className="prose prose-slate max-w-none prose-headings:font-bold prose-h2:text-2xl prose-h2:mt-10 prose-h2:mb-4 prose-h3:text-xl prose-h3:mt-8 prose-h3:mb-3 prose-p:leading-relaxed prose-p:text-slate-600 prose-a:text-brand-600 prose-a:no-underline hover:prose-a:underline prose-code:bg-slate-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:text-sm prose-code:font-mono prose-code:before:content-none prose-code:after:content-none prose-pre:bg-brand-950 prose-pre:text-slate-300 prose-pre:border prose-pre:border-slate-200 prose-pre:rounded-lg prose-li:text-slate-600 prose-strong:text-slate-800 prose-table:text-sm prose-th:text-left prose-th:py-2 prose-th:px-3 prose-th:text-slate-500 prose-th:font-medium prose-td:py-2 prose-td:px-3"
         // nosemgrep: react-dangerouslysetinnerhtml -- content is sanitized via rehype-sanitize in lib/docs.ts
         dangerouslySetInnerHTML={{ __html: doc.htmlContent ?? "" }}
       />
