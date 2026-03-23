@@ -18,6 +18,7 @@ from grounded.api.routes import (
     ai_presets,
     ai_usage,
     color_config,
+    endpoints,
     health,
     jobs,
     profiles,
@@ -132,7 +133,8 @@ def create_app() -> FastAPI:
     app.include_router(ai_generate.router)
     app.include_router(ai_interpret.router)
 
-    # Phase 7-8: Color config & user AI access routers
+    # Custom endpoints, color config & user AI access routers
+    app.include_router(endpoints.router)
     app.include_router(color_config.router, prefix="/api/v1")
     app.include_router(user_ai_access.router, prefix="/api/v1")
 
