@@ -243,9 +243,12 @@ class TestEnrichedPantoneReference:
         ref_path = Path(__file__).parent / "../../src/grounded/profiles/icc/pantone_reference.json"
         data = json.loads(ref_path.read_text(encoding="utf-8"))
         fg_colors = {
-            k: v for k, v in data["colors"].items()
+            k: v
+            for k, v in data["colors"].items()
             if v.get("library", "").startswith("Pantone Formula Guide")
         }
         assert len(fg_colors) > 4000  # Should be ~4,646
         missing_bridge = [k for k, v in fg_colors.items() if not v.get("cmyk_bridge")]
-        assert len(missing_bridge) == 0, f"Formula Guide colors missing cmyk_bridge: {missing_bridge[:5]}"
+        assert len(missing_bridge) == 0, (
+            f"Formula Guide colors missing cmyk_bridge: {missing_bridge[:5]}"
+        )
