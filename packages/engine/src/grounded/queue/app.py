@@ -5,7 +5,7 @@ from __future__ import annotations
 from celery import Celery
 
 
-def create_celery_app(broker_url: str = "redis://localhost:6379/0") -> Celery:
+def create_celery_app(broker_url: str) -> Celery:
     """Create and configure the Celery application.
 
     Args:
@@ -50,8 +50,9 @@ def create_celery_app(broker_url: str = "redis://localhost:6379/0") -> Celery:
 # Default app instance — read broker URL from environment
 import os as _os  # noqa: E402
 
-_broker = _os.environ.get(
-    "GROUNDED_REDIS_URL",
-    _os.environ.get("REDIS_URL", "redis://localhost:6379/0"),
-)
+_broker = _os.environ.get("GROUNDED_REDIS_URL") or _os.environ.get("REDIS_URL")
+if not _broker:
+    raise RuntimeError(
+        "GROUNDED_REDIS_URL or REDIS_URL environment variable is required"
+    )
 celery_app = create_celery_app(broker_url=_broker)

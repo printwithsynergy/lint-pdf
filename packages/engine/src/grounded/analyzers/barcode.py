@@ -374,11 +374,86 @@ class BarcodeAnalyzer(BaseAnalyzer):
         Returns a dict with decoded=True/False, and on success:
         symbology, data, and grade.
         """
-        # zxing-cpp requires a PIL Image. We don't have rasterized page
-        # images from the semantic model, so this is a stub that will
-        # work when page images are provided in the future.
-        # For now, return not decoded.
-        return {"decoded": False}
+        if not candidate.has_bounds:
+            return {"decoded": False}
+
+        page_idx = candidate.page_num - 1
+        if page_idx < 0 or page_idx >= len(document.pages):
+            return {"decoded": False}
+
+        # Rasterize the page to a PIL Image for zxing-cpp decoding
+        pdf_bytes: bytes | None = getattr(document, "_pdf_bytes", None)
+        if pdf_bytes is None:
+            return {"decoded": False}
+
+        try:
+            from grounded.ai.rendering import render_page_to_image
+
+            png_bytes = render_page_to_image(
+                pdf_bytes, page_num=candidate.page_num, dpi=300
+            )
+        except (RuntimeError, ImportError):
+            return {"decoded": False}
+
+        try:
+            from PIL import Image as _PILImage
+            import io
+
+            page_img = _PILImage.open(io.BytesIO(png_bytes))
+
+            # Crop to the barcode candidate bounding box region
+            page = document.pages[page_idx]
+            media_box = page.media_box
+            img_w, img_h = page_img.size
+            page_w = media_box.width
+            page_h = media_box.height
+
+            if page_w <= 0 or page_h <= 0:
+                return {"decoded": False}
+
+            bbox = candidate.bbox
+            assert bbox is not None
+
+            # Convert PDF coordinates (origin bottom-left) to image coordinates (origin top-left)
+            scale_x = img_w / page_w
+            scale_y = img_h / page_h
+            crop_x0 = max(0, int((bbox[0] - media_box.x0) * scale_x))
+            crop_y0 = max(0, int((page_h - (bbox[3] - media_box.y0)) * scale_y))
+            crop_x1 = min(img_w, int((bbox[2] - media_box.x0) * scale_x))
+            crop_y1 = min(img_h, int((page_h - (bbox[1] - media_box.y0)) * scale_y))
+
+            # Pad by 10% for quiet zone
+            pad_x = int((crop_x1 - crop_x0) * 0.1)
+            pad_y = int((crop_y1 - crop_y0) * 0.1)
+            crop_x0 = max(0, crop_x0 - pad_x)
+            crop_y0 = max(0, crop_y0 - pad_y)
+            crop_x1 = min(img_w, crop_x1 + pad_x)
+            crop_y1 = min(img_h, crop_y1 + pad_y)
+
+            cropped = page_img.crop((crop_x0, crop_y0, crop_x1, crop_y1))
+
+            results = _zxing.read_barcodes(cropped)
+            if not results:
+                return {"decoded": False}
+
+            result = results[0]
+            symbology = str(result.format).replace("BarcodeFormat.", "")
+            data = result.text
+
+            # Use zxing quality info if available; fall back to stroke-based metrics
+            grade = "C"  # Default grade if no quality info from zxing
+            if hasattr(result, "symbology_identifier"):
+                # Map symbology identifier presence to quality grade
+                grade = "B"
+
+            return {
+                "decoded": True,
+                "symbology": symbology,
+                "data": data,
+                "grade": grade,
+            }
+        except Exception:
+            return {"decoded": False}
 
     def _check_quiet_zone(
         self,

@@ -27,10 +27,11 @@ export type { OverageEvent, SetupResult } from "./types.js";
 // ── Engine admin API helper ─────────────────────────────────
 
 function engineAdminUrl(): string {
-  return (process.env.GROUNDED_API_URL ?? "http://localhost:8000").replace(
-    /\/$/,
-    "",
-  );
+  const url = process.env.GROUNDED_API_URL;
+  if (!url) {
+    throw new Error("GROUNDED_API_URL environment variable is required");
+  }
+  return url.replace(/\/$/, "");
 }
 
 function adminHeaders(): Record<string, string> {

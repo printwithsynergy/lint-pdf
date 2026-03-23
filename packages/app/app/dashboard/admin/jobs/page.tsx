@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface AdminJob {
   job_id: string;
@@ -62,7 +63,7 @@ export default function AdminJobsPage() {
       )}
 
       {loading ? (
-        <p className="mt-4 text-muted-foreground">Loading...</p>
+        <SkeletonDashboard type="table" />
       ) : (
         <>
           <div className="mt-6 overflow-x-auto">

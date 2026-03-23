@@ -72,5 +72,8 @@ EXPOSE 8080
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:8080/api/health || exit 1
+
 # Run Prisma db push on startup to ensure schema is in sync, then start the server
 CMD ["sh", "-c", "prisma db push --schema packages/app/prisma/schema --skip-generate --accept-data-loss 2>&1 || true && node packages/app/server.js"]

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface Job {
   job_id: string;
@@ -91,7 +92,7 @@ export default function PreflightPage() {
       )}
 
       {loading ? (
-        <p className="mt-4 text-muted-foreground">Loading...</p>
+        <SkeletonDashboard type="table" />
       ) : jobs.length === 0 ? (
         <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-muted-foreground">
           No preflight jobs yet. Submit a PDF via the API to get started.

@@ -78,6 +78,11 @@ export function SuperAdminToolbar() {
   }, [fetchMe]);
 
   async function startImpersonation(tenantId: string) {
+    const tenant = allTenants.find((t) => t.id === tenantId);
+    const label = tenant ? `${tenant.name} (${tenant.slug})` : tenantId;
+    if (!confirm(`Start assisting customer "${label}"? You will view their dashboard as them.`)) {
+      return;
+    }
     setSwitching(true);
     try {
       const resp = await fetch("/api/auth/impersonate", {
@@ -86,17 +91,19 @@ export function SuperAdminToolbar() {
         body: JSON.stringify({ tenantId }),
       });
       if (resp.ok) {
-        // Reload to re-render dashboard with new tenant context
         window.location.reload();
       }
-    } catch {
-      // Fallback
+    } catch (e) {
+      console.error("Failed to start impersonation:", e);
     } finally {
       setSwitching(false);
     }
   }
 
   async function stopImpersonation() {
+    if (!confirm("Stop assisting this customer and return to admin view?")) {
+      return;
+    }
     setSwitching(true);
     try {
       await fetch("/api/auth/impersonate", {
@@ -105,8 +112,8 @@ export function SuperAdminToolbar() {
         body: JSON.stringify({ tenantId: null }),
       });
       window.location.href = "/dashboard/admin";
-    } catch {
-      // Fallback
+    } catch (e) {
+      console.error("Failed to stop impersonation:", e);
     } finally {
       setSwitching(false);
     }

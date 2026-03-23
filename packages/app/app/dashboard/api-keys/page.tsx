@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface ApiKey {
   id: string;
@@ -75,18 +76,15 @@ export default function ApiKeysPage() {
   }
 
   function copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text).catch(() => {
+      setError("Failed to copy to clipboard. Please copy manually.");
+    });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">API Keys</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="table" />;
   }
 
   return (

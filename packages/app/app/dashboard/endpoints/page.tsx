@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface CustomEndpoint {
   id: string;
@@ -36,8 +37,7 @@ export default function EndpointsPage() {
   const [editProfileId, setEditProfileId] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  const apiBaseUrl =
-    process.env.NEXT_PUBLIC_GROUNDED_API_URL ?? "https://api.lintpdf.com";
+  const apiBaseUrl = process.env.NEXT_PUBLIC_GROUNDED_API_URL ?? "";
 
   const fetchData = useCallback(async () => {
     try {
@@ -140,14 +140,7 @@ export default function EndpointsPage() {
   }
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">
-          Custom API Endpoints
-        </h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="table" />;
   }
 
   return (

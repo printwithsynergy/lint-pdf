@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import uuid as uuid_mod
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
@@ -75,8 +78,7 @@ async def list_profiles(
                 )
             )
         except Exception:
-            # Skip malformed custom profiles
-            pass
+            logger.warning("Skipping malformed custom profile: %s", fp.name, exc_info=True)
 
     return ProfileListResponse(profiles=profiles)
 

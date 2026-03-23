@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface Job {
   job_id: string;
@@ -41,12 +42,7 @@ export default function ReportsPage() {
   }, [fetchJobs]);
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">Reports</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="table" />;
   }
 
   return (

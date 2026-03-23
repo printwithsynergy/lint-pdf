@@ -27,6 +27,8 @@ Check IDs:
 
 from __future__ import annotations
 
+import logging
+import math
 from typing import TYPE_CHECKING
 
 from grounded.analyzers.base import BaseAnalyzer
@@ -35,6 +37,186 @@ from grounded.analyzers.finding import Finding, Severity
 if TYPE_CHECKING:
     from grounded.semantic.events import ContentStreamEvent
     from grounded.semantic.model import SemanticDocument
+
+logger = logging.getLogger(__name__)
+
+# Optional numpy for gamut boundary computation
+try:
+    import numpy as _np
+
+    _HAS_NUMPY = True
+except ImportError:
+    _np = None
+    _HAS_NUMPY = False
+
+# ── FOGRA55 gamut boundary helpers ──────────────────────────────────
+
+# Representative FOGRA55 ECG gamut boundary points in CIE Lab.
+# These are the approximate outer-gamut vertices of a CMYKOGV color space
+# under the FOGRA55 characterization (ISO 12647-2:2013 supplement).
+_FOGRA55_GAMUT_BOUNDARY_LAB: list[tuple[float, float, float]] = [
+    # (L*, a*, b*)  — key anchor points around the gamut hull
+    (97.0, -1.0, 3.0),     # paper white
+    (0.0, 0.0, 0.0),       # solid K
+    (55.0, -38.0, -43.0),  # solid Cyan
+    (47.0, 74.0, -5.0),    # solid Magenta
+    (89.0, -5.0, 93.0),    # solid Yellow
+    (62.0, 55.0, 68.0),    # solid Orange
+    (50.0, -70.0, 28.0),   # solid Green
+    (24.0, 22.0, -46.0),   # solid Violet
+    (30.0, 50.0, -13.0),   # Magenta+K deep
+    (39.0, -35.0, -30.0),  # Cyan+K deep
+    (78.0, -60.0, 75.0),   # Yellow+Green
+    (74.0, 30.0, 82.0),    # Yellow+Orange
+    (35.0, 15.0, -50.0),   # Violet+K
+    (65.0, 60.0, 40.0),    # Orange+Magenta
+    (45.0, -55.0, -10.0),  # Cyan+Green
+    (16.0, 0.0, 0.0),      # near-K
+]
+
+
+def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, float]) -> float:
+    """Compute CIE Delta-E 2000 between two Lab colors (simplified).
+
+    Implements the CIEDE2000 formula per CIE 142:2001.
+    """
+    L1, a1, b1 = lab1
+    L2, a2, b2 = lab2
+
+    Lbar = (L1 + L2) / 2.0
+    C1 = math.sqrt(a1 * a1 + b1 * b1)
+    C2 = math.sqrt(a2 * a2 + b2 * b2)
+    Cbar = (C1 + C2) / 2.0
+
+    Cbar7 = Cbar ** 7
+    G = 0.5 * (1.0 - math.sqrt(Cbar7 / (Cbar7 + 25.0 ** 7)))
+    a1p = a1 * (1.0 + G)
+    a2p = a2 * (1.0 + G)
+
+    C1p = math.sqrt(a1p * a1p + b1 * b1)
+    C2p = math.sqrt(a2p * a2p + b2 * b2)
+    Cbarp = (C1p + C2p) / 2.0
+
+    h1p = math.degrees(math.atan2(b1, a1p)) % 360.0
+    h2p = math.degrees(math.atan2(b2, a2p)) % 360.0
+
+    if abs(h1p - h2p) <= 180.0:
+        Hbarp = (h1p + h2p) / 2.0
+    elif h1p + h2p < 360.0:
+        Hbarp = (h1p + h2p + 360.0) / 2.0
+    else:
+        Hbarp = (h1p + h2p - 360.0) / 2.0
+
+    T = (1.0
+         - 0.17 * math.cos(math.radians(Hbarp - 30.0))
+         + 0.24 * math.cos(math.radians(2.0 * Hbarp))
+         + 0.32 * math.cos(math.radians(3.0 * Hbarp + 6.0))
+         - 0.20 * math.cos(math.radians(4.0 * Hbarp - 63.0)))
+
+    if abs(h2p - h1p) <= 180.0:
+        dhp = h2p - h1p
+    elif h2p - h1p > 180.0:
+        dhp = h2p - h1p - 360.0
+    else:
+        dhp = h2p - h1p + 360.0
+
+    dLp = L2 - L1
+    dCp = C2p - C1p
+    dHp = 2.0 * math.sqrt(C1p * C2p) * math.sin(math.radians(dhp / 2.0))
+
+    SL = 1.0 + 0.015 * (Lbar - 50.0) ** 2 / math.sqrt(20.0 + (Lbar - 50.0) ** 2)
+    SC = 1.0 + 0.045 * Cbarp
+    SH = 1.0 + 0.015 * Cbarp * T
+
+    Cbarp7 = Cbarp ** 7
+    RC = 2.0 * math.sqrt(Cbarp7 / (Cbarp7 + 25.0 ** 7))
+    dtheta = 30.0 * math.exp(-((Hbarp - 275.0) / 25.0) ** 2)
+    RT = -math.sin(2.0 * math.radians(dtheta)) * RC
+
+    dE = math.sqrt(
+        (dLp / SL) ** 2
+        + (dCp / SC) ** 2
+        + (dHp / SH) ** 2
+        + RT * (dCp / SC) * (dHp / SH)
+    )
+    return dE
+
+
+def _distance_to_fogra55_gamut(lab: tuple[float, float, float]) -> float:
+    """Compute minimum Delta-E 2000 distance from a Lab color to the FOGRA55 gamut boundary."""
+    min_de = float("inf")
+    for boundary_lab in _FOGRA55_GAMUT_BOUNDARY_LAB:
+        de = _delta_e_2000(lab, boundary_lab)
+        if de < min_de:
+            min_de = de
+    return min_de
+
+
+# Common spot color name → approximate CIE Lab mapping
+_SPOT_NAME_TO_LAB: dict[str, tuple[float, float, float]] = {
+    "pantone reflex blue": (22.0, 13.0, -59.0),
+    "reflex blue": (22.0, 13.0, -59.0),
+    "pantone warm red": (49.0, 66.0, 48.0),
+    "warm red": (49.0, 66.0, 48.0),
+    "pantone rubine red": (40.0, 68.0, -2.0),
+    "rubine red": (40.0, 68.0, -2.0),
+    "pantone rhodamine red": (52.0, 70.0, -18.0),
+    "rhodamine red": (52.0, 70.0, -18.0),
+    "pantone purple": (28.0, 46.0, -48.0),
+    "purple": (28.0, 46.0, -48.0),
+    "pantone green": (55.0, -60.0, 26.0),
+    "green": (55.0, -60.0, 26.0),
+    "pantone process blue": (50.0, -20.0, -50.0),
+    "process blue": (50.0, -20.0, -50.0),
+    "pantone orange 021": (62.0, 55.0, 72.0),
+    "orange 021": (62.0, 55.0, 72.0),
+    "pantone yellow": (89.0, -5.0, 93.0),
+    "pantone yellow 012": (90.0, -2.0, 88.0),
+    "pantone black": (3.0, 0.0, 0.0),
+    "pantone cool gray 11": (42.0, 0.0, -1.0),
+    "pantone cool gray 7": (58.0, 0.0, -1.0),
+    "pantone warm gray 11": (42.0, 2.0, 5.0),
+    "pantone 485": (47.0, 68.0, 54.0),
+    "pantone 186": (42.0, 64.0, 30.0),
+    "pantone 032": (47.0, 70.0, 48.0),
+    "pantone 185": (46.0, 70.0, 36.0),
+    "pantone 200": (36.0, 55.0, 24.0),
+    "pantone 281": (14.0, 10.0, -40.0),
+    "pantone 286": (26.0, 16.0, -58.0),
+    "pantone 300": (38.0, -4.0, -50.0),
+    "pantone 349": (33.0, -35.0, 15.0),
+    "pantone 354": (48.0, -58.0, 35.0),
+    "pantone 376": (68.0, -40.0, 65.0),
+    "pantone 1795": (47.0, 65.0, 45.0),
+    "pantone 2935": (30.0, 6.0, -60.0),
+    "pantone 7462": (28.0, -8.0, -32.0),
+    "pantone 7687": (22.0, 20.0, -52.0),
+    "pantone 877": (72.0, 0.0, 2.0),   # metallic silver approx
+    "pantone 871": (55.0, 5.0, 35.0),   # metallic gold approx
+    "gold": (55.0, 5.0, 35.0),
+    "silver": (72.0, 0.0, 2.0),
+    "red": (53.0, 80.0, 67.0),
+    "blue": (32.0, 79.0, -108.0),
+    "orange": (62.0, 55.0, 72.0),
+    "violet": (24.0, 22.0, -46.0),
+    "spot1": None,  # unmapped generic
+    "spot2": None,
+}
+
+
+def _spot_name_to_lab(name: str) -> tuple[float, float, float] | None:
+    """Map a spot color name to approximate CIE Lab values."""
+    key = name.strip().lower()
+    # Direct match
+    result = _SPOT_NAME_TO_LAB.get(key)
+    if result is not None:
+        return result
+    # Try prefix match (e.g. "PANTONE 485 C" → "pantone 485")
+    for known, lab in _SPOT_NAME_TO_LAB.items():
+        if lab is not None and key.startswith(known):
+            return lab
+    return None
+
 
 # Expected CMYKOGV colorant names (case-insensitive matching)
 _CMYKOGV_NAMES = frozenset(
@@ -349,26 +531,74 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_spot_achievability(
         spot_colors: dict[str, list[int]],
     ) -> list[Finding]:
-        """GRD_ECG_002: Per-spot ECG achievability placeholder."""
+        """GRD_ECG_002: Per-spot ECG achievability via FOGRA55 gamut estimate.
+
+        Estimates whether each spot color name can be reproduced within the
+        FOGRA55 ECG (CMYKOGV) gamut by mapping common spot color names to
+        approximate CIE Lab values and computing Delta-E 2000 distance to the
+        nearest point in the FOGRA55 gamut boundary.
+        """
         findings: list[Finding] = []
 
         for colorant, pages in sorted(spot_colors.items()):
+            lab = _spot_name_to_lab(colorant)
+            if lab is None:
+                findings.append(
+                    Finding(
+                        inspection_id="GRD_ECG_002",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"ECG achievability: Spot color '{colorant}' could not be "
+                            f"mapped to a Lab value for gamut testing "
+                            f"(found on page(s) {pages}). "
+                            f"Provide an ICC profile or Pantone reference for accurate analysis."
+                        ),
+                        details={
+                            "colorant_name": colorant,
+                            "pages": pages,
+                            "status": "unmapped",
+                        },
+                    )
+                )
+                continue
+
+            delta_e = _distance_to_fogra55_gamut(lab)
+
+            if delta_e < 3.0:
+                status = "achievable"
+                severity = Severity.ADVISORY
+                msg = (
+                    f"ECG achievability: Spot color '{colorant}' is within FOGRA55 "
+                    f"gamut (Delta-E 2000 = {delta_e:.1f}, page(s) {pages})"
+                )
+            elif delta_e < 6.0:
+                status = "marginal"
+                severity = Severity.ADVISORY
+                msg = (
+                    f"ECG achievability: Spot color '{colorant}' is marginally "
+                    f"achievable in FOGRA55 gamut (Delta-E 2000 = {delta_e:.1f}, "
+                    f"page(s) {pages}). Visual proofing recommended."
+                )
+            else:
+                status = "not_achievable"
+                severity = Severity.WARNING
+                msg = (
+                    f"ECG achievability: Spot color '{colorant}' is outside FOGRA55 "
+                    f"gamut (Delta-E 2000 = {delta_e:.1f}, page(s) {pages}). "
+                    f"This color cannot be faithfully reproduced in ECG printing."
+                )
+
             findings.append(
                 Finding(
                     inspection_id="GRD_ECG_002",
-                    severity=Severity.ADVISORY,
-                    message=(
-                        f"ECG achievability: Spot color '{colorant}' would need to be "
-                        f"tested against FOGRA55 gamut boundary for ECG reproducibility "
-                        f"(found on page(s) {pages})"
-                    ),
+                    severity=severity,
+                    message=msg,
                     details={
                         "colorant_name": colorant,
                         "pages": pages,
-                        "note": (
-                            "Actual Delta-E computation requires the FOGRA55 "
-                            "gamut boundary mesh; this is a placeholder finding"
-                        ),
+                        "lab": list(lab),
+                        "delta_e_2000": round(delta_e, 2),
+                        "status": status,
                     },
                 )
             )

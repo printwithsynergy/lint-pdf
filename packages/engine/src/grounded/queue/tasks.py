@@ -98,7 +98,7 @@ def run_preflight(
                         if pdf_bytes is not None:
                             logger.info("Retrieved PDF from Redis cache for job %s", job_id)
                 except Exception:
-                    pass
+                    logger.debug("Redis cache fallback failed for job %s", job_id, exc_info=True)
 
                 if pdf_bytes is None:
                     raise RuntimeError(
