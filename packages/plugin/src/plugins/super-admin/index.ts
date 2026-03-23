@@ -103,7 +103,7 @@ export const groundedSuperAdminPlugin: PixieDustPlugin = {
             };
           }
 
-          const tenant = await createResp.json();
+          const tenant = (await createResp.json()) as Record<string, unknown>;
           const engineTenantId = tenant.id ?? tenant.tenant_id;
 
           // Apply unlimited entitlement overrides
