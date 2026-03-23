@@ -15,6 +15,8 @@ import { groundedConfigSchema } from "./config";
 import { webhookRoutes } from "./routes/index";
 import { jobRoutes } from "./routes/jobs";
 import { profileRoutes } from "./routes/profiles";
+import { aiConfigRoutes } from "./routes/ai-config";
+import { colorConfigRoutes } from "./routes/color-config";
 
 // ── Public exports ──────────────────────────────────────────
 
@@ -46,6 +48,8 @@ export { groundedReportsPlugin } from "./plugins/reports/index";
 export { groundedTeamPlugin } from "./plugins/team/index";
 export { groundedAccountPlugin } from "./plugins/account/index";
 export { groundedSiteAdminPlugin } from "./plugins/site-admin/index";
+export { groundedWebhooksPlugin } from "./plugins/webhooks/index";
+export { groundedEndpointsPlugin } from "./plugins/endpoints/index";
 
 // ── Client singleton ────────────────────────────────────────
 
@@ -148,6 +152,8 @@ export const groundedPlugin: PixieDustPlugin = {
       ...webhookRoutes(config, ctx),
       ...jobRoutes(),
       ...profileRoutes(),
+      ...aiConfigRoutes(),
+      ...colorConfigRoutes(),
     ]);
 
     // ── Hooks ──

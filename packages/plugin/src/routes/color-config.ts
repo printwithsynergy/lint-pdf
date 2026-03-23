@@ -1,5 +1,5 @@
 /**
- * Profile proxy routes — forward requests to the LintPDF API.
+ * Color configuration proxy routes — forward to the LintPDF engine.
  */
 
 import type {
@@ -7,7 +7,6 @@ import type {
   RouteRequest,
   RouteResponse,
 } from "@thinkneverland/pixie-dust-fairy-ring";
-import { getClient } from "../index";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
@@ -27,33 +26,16 @@ function engineFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
-export function profileRoutes(): RouteDefinition[] {
+export function colorConfigRoutes(): RouteDefinition[] {
   return [
     {
       method: "GET" as HttpMethod,
-      path: "/profiles",
+      path: "/color-config",
       auth: true,
-      permission: "preflight:view",
-      description: "List available preflight profiles (flight plans)",
-      handler: (async (): Promise<RouteResponse> => {
-        const client = getClient();
-        if (!client) {
-          return { status: 503, body: { error: "LintPDF API not configured" } };
-        }
-        const profiles = await client.listProfiles();
-        return { status: 200, body: profiles };
-      }) as RouteHandler,
-    },
-    {
-      method: "GET" as HttpMethod,
-      path: "/profiles/:profileId",
-      auth: true,
-      permission: "preflight:view",
-      description: "Get profile details",
-      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch(
-          `/api/v1/profiles/${req.params.profileId}`,
-        );
+      permission: "account:manage",
+      description: "Get tenant color management configuration",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch("/api/v1/color-config");
         if (!resp.ok) {
           const detail = await resp.text();
           return { status: resp.status, body: { error: detail } };
@@ -63,14 +45,14 @@ export function profileRoutes(): RouteDefinition[] {
       }) as RouteHandler,
     },
     {
-      method: "POST" as HttpMethod,
-      path: "/profiles",
+      method: "PUT" as HttpMethod,
+      path: "/color-config",
       auth: true,
-      permission: "flight-plan:manage",
-      description: "Create a custom preflight profile",
+      permission: "account:manage",
+      description: "Update tenant color management configuration",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch("/api/v1/profiles", {
-          method: "POST",
+        const resp = await engineFetch("/api/v1/color-config", {
+          method: "PUT",
           body: JSON.stringify(req.body),
         });
         if (!resp.ok) {
@@ -78,25 +60,44 @@ export function profileRoutes(): RouteDefinition[] {
           return { status: resp.status, body: { error: detail } };
         }
         const data = await resp.json();
-        return { status: 201, body: data };
+        return { status: 200, body: data };
       }) as RouteHandler,
     },
     {
-      method: "DELETE" as HttpMethod,
-      path: "/profiles/:profileId",
+      method: "PUT" as HttpMethod,
+      path: "/color-config/palette",
       auth: true,
-      permission: "flight-plan:manage",
-      description: "Delete a custom preflight profile",
+      permission: "account:manage",
+      description: "Update brand color palette",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch("/api/v1/color-config/palette", {
+          method: "PUT",
+          body: JSON.stringify(req.body),
+        });
+        if (!resp.ok) {
+          const detail = await resp.text();
+          return { status: resp.status, body: { error: detail } };
+        }
+        const data = await resp.json();
+        return { status: 200, body: data };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/color-config/gamut-conditions",
+      auth: true,
+      permission: "account:manage",
+      description: "List available gamut/output conditions",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
         const resp = await engineFetch(
-          `/api/v1/profiles/${req.params.profileId}`,
-          { method: "DELETE" },
+          "/api/v1/color-config/gamut-conditions",
         );
         if (!resp.ok) {
           const detail = await resp.text();
           return { status: resp.status, body: { error: detail } };
         }
-        return { status: 204 };
+        const data = await resp.json();
+        return { status: 200, body: data };
       }) as RouteHandler,
     },
   ];

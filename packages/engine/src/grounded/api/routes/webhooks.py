@@ -5,9 +5,11 @@ from __future__ import annotations
 import ipaddress
 import secrets
 import uuid as uuid_mod
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from grounded.api.auth import get_current_tenant
@@ -19,6 +21,16 @@ from grounded.api.schemas import (
     WebhookResponse,
     WebhookUpdateRequest,
 )
+from grounded.webhooks.dispatcher import WebhookDispatcher
+
+
+class WebhookTestResponse(BaseModel):
+    """Response from a webhook test delivery."""
+
+    success: bool
+    status_code: int = 0
+    error: str = ""
+    event: str = "test.ping"
 
 router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])
 
@@ -208,3 +220,54 @@ async def delete_webhook(
 
     db.delete(endpoint)
     db.commit()
+
+
+@router.post("/{webhook_id}/test", response_model=WebhookTestResponse)
+async def test_webhook(
+    webhook_id: str,
+    db: Session = Depends(get_db),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+) -> WebhookTestResponse:
+    """Send a test payload to a webhook endpoint to verify connectivity."""
+    try:
+        uid = uuid_mod.UUID(webhook_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid webhook ID format.",
+        ) from exc
+
+    endpoint: WebhookEndpoint | None = (
+        db.query(WebhookEndpoint)
+        .filter(WebhookEndpoint.id == uid, WebhookEndpoint.tenant_id == tenant.id)
+        .first()
+    )
+    if endpoint is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Webhook '{webhook_id}' not found.",
+        )
+
+    test_payload = {
+        "event": "test.ping",
+        "job_id": "00000000-0000-0000-0000-000000000000",
+        "tenant_id": str(tenant.id),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "test": True,
+        "message": "This is a test webhook delivery from LintPDF.",
+    }
+
+    dispatcher = WebhookDispatcher(max_retries=0, timeout=10.0)
+    result = dispatcher.deliver(
+        url=endpoint.url,
+        secret=endpoint.secret,
+        event="test.ping",
+        payload=test_payload,
+    )
+
+    return WebhookTestResponse(
+        success=result.success,
+        status_code=result.status_code,
+        error=result.error,
+        event="test.ping",
+    )

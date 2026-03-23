@@ -164,6 +164,48 @@ class WebhookListResponse(BaseModel):
     webhooks: list[WebhookResponse]
 
 
+# --- Custom endpoint schemas ---
+
+
+class EndpointCreateRequest(BaseModel):
+    """Request to create a custom API endpoint."""
+
+    slug: str = Field(
+        min_length=2,
+        max_length=255,
+        pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+        description="Lowercase kebab-case URL slug.",
+    )
+    profile_id: str = Field(description="Profile ID to bind this endpoint to.")
+    description: str = Field(default="", max_length=1024)
+
+
+class EndpointResponse(BaseModel):
+    """Custom endpoint details."""
+
+    id: uuid.UUID
+    slug: str
+    profile_id: str
+    description: str
+    is_active: bool
+    created_at: datetime
+
+
+class EndpointUpdateRequest(BaseModel):
+    """Request to update a custom endpoint. All fields optional."""
+
+    slug: str | None = Field(default=None, pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$")
+    profile_id: str | None = None
+    description: str | None = None
+    is_active: bool | None = None
+
+
+class EndpointListResponse(BaseModel):
+    """List of custom endpoints."""
+
+    endpoints: list[EndpointResponse]
+
+
 # --- Health schemas ---
 
 
