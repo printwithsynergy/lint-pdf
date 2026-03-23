@@ -30,7 +30,11 @@ type RouteRegistryEntry = {
       role: string;
       isSuperAdmin: boolean;
     };
-  }) => Promise<{ status: number; body?: unknown; headers?: Record<string, string> }>;
+  }) => Promise<{
+    status: number;
+    body?: unknown;
+    headers?: Record<string, string>;
+  }>;
 };
 
 /**
@@ -90,12 +94,14 @@ async function handleRequest(
   }
 
   // Authenticate if route requires it
-  let auth: {
-    userId: string;
-    tenantId: string;
-    role: string;
-    isSuperAdmin: boolean;
-  } | undefined;
+  let auth:
+    | {
+        userId: string;
+        tenantId: string;
+        role: string;
+        isSuperAdmin: boolean;
+      }
+    | undefined;
 
   if (matchedRoute.auth) {
     const cookieHeader = req.headers.get("cookie");
