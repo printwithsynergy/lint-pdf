@@ -44,7 +44,7 @@ export function DocsNav() {
   }
 
   const activeItems = activeSection
-    ? docSections.find((s) => s.heading === activeSection)?.items ?? []
+    ? (docSections.find((s) => s.heading === activeSection)?.items ?? [])
     : [];
 
   function navLink(slug: string, label: string) {
