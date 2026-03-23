@@ -55,6 +55,45 @@ async function main() {
     console.log(`Created tenant: ${tenant.name} (${tenant.id})`);
   }
 
+  // ── Test Customer ──────────────────────────────────────────
+  const testCustomer = await prisma.user.upsert({
+    where: { email: "testcustomer@lintpdf.com" },
+    update: {},
+    create: {
+      email: "testcustomer@lintpdf.com",
+      name: "Test Customer",
+      isSuperAdmin: false,
+    },
+  });
+  console.log(
+    `Test customer: ${testCustomer.email} (id: ${testCustomer.id})`,
+  );
+
+  const customerMembership = await prisma.tenantUser.findFirst({
+    where: { userId: testCustomer.id },
+    include: { tenant: true },
+  });
+
+  if (customerMembership) {
+    console.log(
+      `Already has tenant: ${customerMembership.tenant.name} (${customerMembership.tenant.id})`,
+    );
+  } else {
+    const customerTenant = await prisma.tenant.create({
+      data: {
+        name: "Test Customer Org",
+        slug: "test-customer",
+        users: {
+          create: {
+            userId: testCustomer.id,
+            role: "OWNER",
+          },
+        },
+      },
+    });
+    console.log(`Created tenant: ${customerTenant.name} (${customerTenant.id})`);
+  }
+
   console.log("Seed complete.");
 }
 
