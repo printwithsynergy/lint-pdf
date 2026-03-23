@@ -148,12 +148,12 @@ def run_preflight(
                 tenant_id_str = str(job.tenant_id)
                 custom_pantone = get_overrides(redis, tenant_id_str)
                 if custom_pantone is None:
-                    color_config = db.query(TenantColorConfig).filter(
-                        TenantColorConfig.tenant_id == job.tenant_id
-                    ).first()
-                    custom_pantone = (
-                        color_config.custom_pantone_overrides if color_config else None
+                    color_config = (
+                        db.query(TenantColorConfig)
+                        .filter(TenantColorConfig.tenant_id == job.tenant_id)
+                        .first()
                     )
+                    custom_pantone = color_config.custom_pantone_overrides if color_config else None
                     if custom_pantone:
                         set_overrides(redis, tenant_id_str, custom_pantone)
             except Exception:

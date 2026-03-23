@@ -20,9 +20,7 @@ def _cache_key(tenant_id: str) -> str:
     return f"{_CACHE_PREFIX}{tenant_id}"
 
 
-def get_overrides(
-    redis_client: Any, tenant_id: str
-) -> dict[str, dict[str, Any]] | None:
+def get_overrides(redis_client: Any, tenant_id: str) -> dict[str, dict[str, Any]] | None:
     """Get tenant Pantone overrides from Redis cache.
 
     Returns the cached dict on hit, or ``None`` on miss / error so the
@@ -49,13 +47,9 @@ def set_overrides(
     if redis_client is None:
         return
     try:
-        redis_client.setex(
-            _cache_key(tenant_id), _CACHE_TTL, json.dumps(overrides)
-        )
+        redis_client.setex(_cache_key(tenant_id), _CACHE_TTL, json.dumps(overrides))
     except Exception:
-        logger.debug(
-            "Failed to cache pantone overrides for %s", tenant_id, exc_info=True
-        )
+        logger.debug("Failed to cache pantone overrides for %s", tenant_id, exc_info=True)
 
 
 def invalidate(redis_client: Any, tenant_id: str) -> None:
@@ -65,6 +59,4 @@ def invalidate(redis_client: Any, tenant_id: str) -> None:
     try:
         redis_client.delete(_cache_key(tenant_id))
     except Exception:
-        logger.debug(
-            "Failed to invalidate pantone cache for %s", tenant_id, exc_info=True
-        )
+        logger.debug("Failed to invalidate pantone cache for %s", tenant_id, exc_info=True)
