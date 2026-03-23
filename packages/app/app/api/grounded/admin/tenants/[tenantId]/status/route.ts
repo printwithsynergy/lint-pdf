@@ -43,7 +43,10 @@ export async function PATCH(
     }
   } catch (e) {
     return NextResponse.json(
-      { error: "Engine unreachable", detail: e instanceof Error ? e.message : String(e) },
+      {
+        error: "Engine unreachable",
+        detail: e instanceof Error ? e.message : String(e),
+      },
       { status: 502 },
     );
   }
