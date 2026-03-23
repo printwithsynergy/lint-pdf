@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface TenantSummary {
   id: string;
@@ -102,7 +103,7 @@ export default function AdminTenantsPage() {
       )}
 
       {loading ? (
-        <p className="mt-4 text-muted-foreground">Loading...</p>
+        <SkeletonDashboard type="table" />
       ) : (
         <>
           <div className="mt-6 overflow-x-auto">
@@ -129,9 +130,7 @@ export default function AdminTenantsPage() {
                     <td className="py-2">
                       <select
                         value={t.plan}
-                        onChange={(e) =>
-                          handlePlanChange(t.id, e.target.value)
-                        }
+                        onChange={(e) => handlePlanChange(t.id, e.target.value)}
                         className="rounded border px-2 py-1 text-xs"
                       >
                         {PLANS.map((p) => (

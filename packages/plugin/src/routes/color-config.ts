@@ -89,9 +89,7 @@ export function colorConfigRoutes(): RouteDefinition[] {
       permission: "account:manage",
       description: "List available gamut/output conditions",
       handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await engineFetch(
-          "/api/v1/color-config/gamut-conditions",
-        );
+        const resp = await engineFetch("/api/v1/color-config/gamut-conditions");
         if (!resp.ok) {
           const detail = await resp.text();
           return { status: resp.status, body: { error: detail } };

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface AiConfig {
   ai_enabled: boolean;
@@ -78,19 +79,12 @@ export default function AiConfigPage() {
 
   function toggleCategory(catId: string) {
     setEnabledCategories((prev) =>
-      prev.includes(catId)
-        ? prev.filter((c) => c !== catId)
-        : [...prev, catId],
+      prev.includes(catId) ? prev.filter((c) => c !== catId) : [...prev, catId],
     );
   }
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">AI Configuration</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="form" />;
   }
 
   return (
@@ -141,10 +135,7 @@ export default function AiConfigPage() {
         </p>
         <div className="mt-3 space-y-2">
           {AI_CATEGORIES.map((cat) => (
-            <label
-              key={cat.id}
-              className="flex items-center gap-2 text-sm"
-            >
+            <label key={cat.id} className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={enabledCategories.includes(cat.id)}

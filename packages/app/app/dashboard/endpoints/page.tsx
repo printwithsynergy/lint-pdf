@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface CustomEndpoint {
   id: string;
@@ -36,7 +37,7 @@ export default function EndpointsPage() {
   const [editProfileId, setEditProfileId] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_GROUNDED_API_URL ?? "https://api.lintpdf.com";
+  const apiBaseUrl = process.env.NEXT_PUBLIC_GROUNDED_API_URL ?? "";
 
   const fetchData = useCallback(async () => {
     try {
@@ -139,14 +140,7 @@ export default function EndpointsPage() {
   }
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">
-          Custom API Endpoints
-        </h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="table" />;
   }
 
   return (
@@ -210,8 +204,7 @@ export default function EndpointsPage() {
                 <option value="">Select a profile...</option>
                 {profiles.map((p) => (
                   <option key={p.profile_id} value={p.profile_id}>
-                    {p.name} ({p.profile_id})
-                    {p.is_builtin ? " [built-in]" : ""}
+                    {p.name} ({p.profile_id}){p.is_builtin ? " [built-in]" : ""}
                   </option>
                 ))}
               </select>
@@ -294,9 +287,7 @@ export default function EndpointsPage() {
                       <span
                         className={`inline-block h-2 w-2 rounded-full ${ep.is_active ? "bg-green-500" : "bg-gray-300"}`}
                       />
-                      <code className="font-medium">
-                        /api/v1/e/{ep.slug}
-                      </code>
+                      <code className="font-medium">/api/v1/e/{ep.slug}</code>
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       Profile: <code>{ep.profile_id}</code>
@@ -307,8 +298,7 @@ export default function EndpointsPage() {
                       </p>
                     )}
                     <p className="mt-0.5 text-xs text-muted-foreground">
-                      Created{" "}
-                      {new Date(ep.created_at).toLocaleDateString()}
+                      Created {new Date(ep.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="ml-4 flex shrink-0 gap-1">

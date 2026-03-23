@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface Finding {
   inspection_id: string;
@@ -112,12 +113,7 @@ export default function JobDetailPage() {
   }, [fetchJob]);
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">Job Details</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="detail" />;
   }
 
   if (error || !job) {
@@ -153,7 +149,9 @@ export default function JobDetailPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">{job.file_name}</h1>
           <div className="mt-1 flex flex-wrap gap-3 text-sm text-muted-foreground">
-            <span>Profile: <code>{job.profile_id}</code></span>
+            <span>
+              Profile: <code>{job.profile_id}</code>
+            </span>
             <span>
               {(job.file_size / 1024 / 1024).toFixed(1)} MB
               {job.page_count ? ` / ${job.page_count} pages` : ""}

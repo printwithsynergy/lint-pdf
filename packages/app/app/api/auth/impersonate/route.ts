@@ -48,10 +48,7 @@ export async function POST(req: Request) {
     });
 
     if (!tenant) {
-      return NextResponse.json(
-        { error: "Tenant not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
     }
 
     // Update the session to set the impersonation target

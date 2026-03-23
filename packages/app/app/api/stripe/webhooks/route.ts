@@ -17,13 +17,21 @@ export async function POST(req: Request) {
   }
 
   const body = await req.text();
+  let parsedBody: unknown;
+  if (body) {
+    try {
+      parsedBody = JSON.parse(body);
+    } catch {
+      return NextResponse.json({ error: "Malformed JSON body" }, { status: 400 });
+    }
+  }
   const result = await route.handler({
     method: "POST",
     path: "/api/stripe/webhooks",
     headers: Object.fromEntries(req.headers.entries()),
     params: {},
     query: {},
-    body: body ? JSON.parse(body) : undefined,
+    body: parsedBody,
   });
 
   return NextResponse.json(result.body ?? null, {

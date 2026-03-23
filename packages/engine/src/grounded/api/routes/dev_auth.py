@@ -5,8 +5,11 @@ Gated by GROUNDED_DEV_AUTH_ENABLED=true.  Requires admin API key.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -85,14 +88,12 @@ async def seed_test_data(
     _key: str = Depends(_verify_admin_key),
 ) -> dict[str, Any]:
     """Seed test tenants (dev/test use only)."""
-    import traceback
-
     try:
         return _do_seed(db)
     except Exception as exc:
         db.rollback()
-        tb = traceback.format_exc()
-        raise HTTPException(status_code=500, detail=f"{exc!r}\n{tb}") from exc
+        logger.exception("Seed test data failed")
+        raise HTTPException(status_code=500, detail="Internal error during seeding") from exc
 
 
 def _do_seed(db: Session) -> dict[str, Any]:

@@ -164,17 +164,32 @@ class VersionDiffAnalyzer(BaseAIAnalyzer):
     def _get_reference_bytes(ai_config: TenantAIConfig | None) -> bytes | None:
         """Retrieve reference PDF bytes from configuration.
 
-        The reference file ID/bytes should be provided via ai_config details.
-        This is a placeholder — in production, the orchestrator would resolve
-        the reference_file_id to actual bytes from object storage.
+        Resolution order:
+        1. Pre-attached bytes on ``ai_config._reference_pdf_bytes`` (set by orchestrator).
+        2. ``reference_file_id`` in ai_config details → fetch from object storage.
         """
         if ai_config is None:
             return None
 
-        # The orchestrator is expected to attach reference bytes to a transient
-        # attribute. This avoids coupling the analyzer to storage backends.
+        # Fast path: orchestrator already resolved and attached bytes
         reference_bytes: bytes | None = getattr(ai_config, "_reference_pdf_bytes", None)
         if reference_bytes and isinstance(reference_bytes, bytes):
             return reference_bytes
+
+        # Slow path: resolve reference_file_id from storage
+        details = getattr(ai_config, "details", None) or {}
+        file_id = details.get("reference_file_id") if isinstance(details, dict) else None
+        if not file_id:
+            return None
+
+        try:
+            from grounded.api.storage import get_storage_backend
+
+            storage = get_storage_backend()
+            ref_bytes = storage.download(str(file_id))
+            if ref_bytes and isinstance(ref_bytes, bytes):
+                return ref_bytes
+        except Exception:
+            logger.debug("Failed to resolve reference_file_id=%s from storage", file_id)
 
         return None

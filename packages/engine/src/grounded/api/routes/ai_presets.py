@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
@@ -105,7 +108,7 @@ def _get_feature_info(slug: str) -> AIPresetFeature:
             if f["slug"] == slug:
                 return AIPresetFeature(slug=slug, category=f["category"], tier=f["tier"])
     except Exception:
-        pass
+        logger.debug("Failed to look up AI feature %s from registry", slug, exc_info=True)
     return AIPresetFeature(slug=slug, category="unknown", tier="unknown")
 
 

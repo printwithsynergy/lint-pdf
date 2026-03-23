@@ -32,6 +32,7 @@ class WebhookTestResponse(BaseModel):
     error: str = ""
     event: str = "test.ping"
 
+
 router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])
 
 # Private/reserved IP ranges that webhook URLs must not resolve to

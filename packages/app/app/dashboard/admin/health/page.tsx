@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface HealthStatus {
   status: string;
@@ -43,12 +44,7 @@ export default function AdminHealthPage() {
   }, [fetchHealth]);
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">System Health</h1>
-        <p className="mt-4 text-muted-foreground">Checking...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="cards" />;
   }
 
   return (
@@ -76,7 +72,9 @@ export default function AdminHealthPage() {
         <div className="mt-6 space-y-4">
           <div className="rounded-lg border p-4">
             <div className="flex items-center gap-3">
-              <StatusDot ok={health.status === "ok" || health.status === "healthy"} />
+              <StatusDot
+                ok={health.status === "ok" || health.status === "healthy"}
+              />
               <div>
                 <span className="text-lg font-semibold">
                   {health.service} Engine
@@ -93,7 +91,11 @@ export default function AdminHealthPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2">
-                <StatusDot ok={health.database === "ok" || health.database === "connected"} />
+                <StatusDot
+                  ok={
+                    health.database === "ok" || health.database === "connected"
+                  }
+                />
                 <span className="font-medium">Database</span>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -102,7 +104,9 @@ export default function AdminHealthPage() {
             </div>
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2">
-                <StatusDot ok={health.redis === "ok" || health.redis === "connected"} />
+                <StatusDot
+                  ok={health.redis === "ok" || health.redis === "connected"}
+                />
                 <span className="font-medium">Redis</span>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -127,7 +131,10 @@ export default function AdminHealthPage() {
               Object.keys(health.queue_depths).length > 0 && (
                 <div className="mt-2 space-y-1">
                   {Object.entries(health.queue_depths).map(([q, depth]) => (
-                    <div key={q} className="flex items-center justify-between text-sm">
+                    <div
+                      key={q}
+                      className="flex items-center justify-between text-sm"
+                    >
                       <span className="text-muted-foreground">{q}</span>
                       <span className="font-medium">{depth}</span>
                     </div>

@@ -24,10 +24,13 @@ function CheckoutContent() {
       sessionStorage.getItem("grounded_signup_plan");
     sessionStorage.removeItem("grounded_signup_plan");
 
-    if (!plan) {
+    const validPlans = ["starter", "growth", "scale", "enterprise"];
+    if (!plan || !validPlans.includes(plan)) {
       setStatus("error");
       setError(
-        "No plan specified. Please select a plan from the pricing page.",
+        plan
+          ? `Invalid plan "${plan}". Please select a valid plan from the pricing page.`
+          : "No plan specified. Please select a plan from the pricing page.",
       );
       return;
     }

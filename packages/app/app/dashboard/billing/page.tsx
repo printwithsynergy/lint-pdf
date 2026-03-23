@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface Subscription {
   plan: string;
@@ -74,7 +75,7 @@ export default function BillingPage() {
       }
       if (invResp.ok) {
         const data = await invResp.json();
-        setInvoices(Array.isArray(data) ? data : data.invoices ?? []);
+        setInvoices(Array.isArray(data) ? data : (data.invoices ?? []));
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load billing");
@@ -118,12 +119,7 @@ export default function BillingPage() {
   }
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">Billing</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="detail" />;
   }
 
   const currentPlan = subscription?.plan ?? "free";
@@ -161,13 +157,8 @@ export default function BillingPage() {
             </div>
             {subscription?.current_period_end && (
               <p className="mt-1 text-xs text-muted-foreground">
-                {subscription.cancel_at_period_end
-                  ? "Cancels"
-                  : "Renews"}{" "}
-                on{" "}
-                {new Date(
-                  subscription.current_period_end,
-                ).toLocaleDateString()}
+                {subscription.cancel_at_period_end ? "Cancels" : "Renews"} on{" "}
+                {new Date(subscription.current_period_end).toLocaleDateString()}
               </p>
             )}
           </div>

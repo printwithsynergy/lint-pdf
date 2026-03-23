@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface TeamMember {
   userId: string;
@@ -64,6 +65,12 @@ export default function TeamPage() {
   async function handleInvite() {
     setInviting(true);
     setError("");
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteEmail)) {
+      setError("Please enter a valid email address");
+      setInviting(false);
+      return;
+    }
     try {
       const resp = await fetch("/api/grounded/team/invite", {
         method: "POST",
@@ -119,12 +126,7 @@ export default function TeamPage() {
   }
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">Team</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="table" />;
   }
 
   return (
@@ -189,9 +191,7 @@ export default function TeamPage() {
 
       {/* Members */}
       <div className="mt-6 space-y-2">
-        <h2 className="text-lg font-semibold">
-          Members ({members.length})
-        </h2>
+        <h2 className="text-lg font-semibold">Members ({members.length})</h2>
         {members.map((m) => (
           <div
             key={m.userId}
@@ -202,9 +202,7 @@ export default function TeamPage() {
                 {(m.user.name ?? m.user.email).charAt(0).toUpperCase()}
               </div>
               <div>
-                <div className="font-medium">
-                  {m.user.name ?? m.user.email}
-                </div>
+                <div className="font-medium">{m.user.name ?? m.user.email}</div>
                 <div className="text-xs text-muted-foreground">
                   {m.user.email}
                 </div>

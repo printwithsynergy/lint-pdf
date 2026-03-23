@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface Job {
   job_id: string;
@@ -28,11 +29,7 @@ export default function ReportsPage() {
       if (!resp.ok) throw new Error("Failed to load jobs");
       const data = await resp.json();
       // Only show completed jobs that have reports
-      setJobs(
-        (data.jobs ?? []).filter(
-          (j: Job) => j.status === "complete",
-        ),
-      );
+      setJobs((data.jobs ?? []).filter((j: Job) => j.status === "complete"));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load reports");
     } finally {
@@ -45,12 +42,7 @@ export default function ReportsPage() {
   }, [fetchJobs]);
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">Reports</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="table" />;
   }
 
   return (
@@ -86,9 +78,7 @@ export default function ReportsPage() {
                 </Link>
                 <div className="mt-0.5 flex gap-2 text-xs text-muted-foreground">
                   <span>{job.profile_id}</span>
-                  <span>
-                    {new Date(job.created_at).toLocaleDateString()}
-                  </span>
+                  <span>{new Date(job.created_at).toLocaleDateString()}</span>
                   {job.summary && (
                     <span
                       className={

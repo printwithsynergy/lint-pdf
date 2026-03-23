@@ -2,12 +2,7 @@
 
 from __future__ import annotations
 
-import logging
-import warnings
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -18,21 +13,21 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="GROUNDED_")
 
-    # Database
-    database_url: str = "postgresql://localhost:5432/grounded"
+    # Database (required — set GROUNDED_DATABASE_URL)
+    database_url: str
 
-    # Redis
-    redis_url: str = "redis://localhost:6379/0"
+    # Redis (required — set GROUNDED_REDIS_URL)
+    redis_url: str
 
-    # veraPDF sidecar
-    verapdf_url: str = "http://localhost:8080"
+    # veraPDF sidecar (required — set GROUNDED_VERAPDF_URL)
+    verapdf_url: str
 
     # API server
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
-    # Auth
-    secret_key: str = "change-me-in-production"
+    # Auth (required — set GROUNDED_SECRET_KEY to a strong random value)
+    secret_key: str
 
     # Upload limits
     max_upload_size_mb: int = 1024
@@ -57,8 +52,8 @@ class Settings(BaseSettings):
     # Dev auth (impersonation endpoint)
     dev_auth_enabled: bool = False
 
-    # GPU inference service URL (for Tier 2 AI features)
-    gpu_inference_url: str = "http://localhost:8001"
+    # GPU inference service URL (required for AI features — set GROUNDED_GPU_INFERENCE_URL)
+    gpu_inference_url: str = ""
 
     # ClamAV malware scanning (optional — set to enable virus scanning on uploads)
     clamav_url: str | None = None
@@ -68,19 +63,9 @@ class Settings(BaseSettings):
         return self.max_upload_size_mb * 1024 * 1024
 
 
-_INSECURE_DEFAULT_SECRET = "change-me-in-production"
-
-
 def get_settings() -> Settings:
-    """Get cached settings instance."""
-    settings = Settings()
+    """Get cached settings instance.
 
-    if settings.secret_key == _INSECURE_DEFAULT_SECRET:
-        warnings.warn(
-            "GROUNDED_SECRET_KEY is set to the insecure default. "
-            "Set a strong secret via the GROUNDED_SECRET_KEY environment variable.",
-            stacklevel=2,
-        )
-        logger.warning("INSECURE: Using default secret_key — set GROUNDED_SECRET_KEY")
-
-    return settings
+    Raises ``ValidationError`` if required environment variables are missing.
+    """
+    return Settings()

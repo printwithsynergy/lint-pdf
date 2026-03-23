@@ -13,7 +13,7 @@ const envSchema = baseEnvSchema.extend({
   STRIPE_SANDBOX: z.string().default("true"),
 
   // LintPDF engine
-  GROUNDED_API_URL: z.string().url().default("http://localhost:8000"),
+  GROUNDED_API_URL: z.string().url(),
   GROUNDED_WEBHOOK_SECRET: z.string().default(""),
   GROUNDED_API_KEY: z.string().optional(),
   GROUNDED_ADMIN_API_KEY: z.string().optional(),

@@ -154,17 +154,90 @@ def _apply_western_electric_rules(  # skipcq: PY-R1000
 def _query_historical_data(tenant_id: Any) -> list[dict[str, Any]] | None:
     """Query historical job quality data for the tenant.
 
-    This is a placeholder — in production this would query the database
-    via a session to retrieve job results (pass/fail, finding counts).
+    Fetches completed jobs from the database and computes per-job finding
+    counts to build the time series needed for SPC analysis.
 
-    Returns None if data is unavailable.
+    Returns None if the database is unavailable or no data exists.
     """
-    # Placeholder: would execute something like:
-    #   SELECT job_id, created_at, status, finding_count, error_count, warning_count
-    #   FROM jobs WHERE tenant_id = :tenant_id
-    #   ORDER BY created_at DESC LIMIT 100
-    logger.debug("Historical data query is a placeholder — tenant_id=%s", tenant_id)
-    return None
+    try:
+        from sqlalchemy import func, text
+        from grounded.api.database import get_db_session
+        from grounded.api.models import Job, JobFinding, JobStatus
+    except (ImportError, RuntimeError):
+        logger.debug("Database not available for SPC historical query — tenant_id=%s", tenant_id)
+        return None
+
+    try:
+        db = get_db_session()
+    except RuntimeError:
+        logger.debug("Database session not initialized — tenant_id=%s", tenant_id)
+        return None
+
+    try:
+        # Subquery: per-job finding counts grouped by severity
+        finding_counts = (
+            db.query(
+                JobFinding.job_id,
+                func.count(JobFinding.id).label("finding_count"),
+                func.sum(
+                    func.cast(JobFinding.severity == "error", db.bind.dialect.name != "sqlite" and text("INTEGER") or text("INT"))
+                ).label("error_count_raw"),
+                func.sum(
+                    func.cast(JobFinding.severity == "warning", db.bind.dialect.name != "sqlite" and text("INTEGER") or text("INT"))
+                ).label("warning_count_raw"),
+            )
+            .group_by(JobFinding.job_id)
+            .subquery()
+        )
+
+        # Simpler approach: just get completed jobs and count findings separately
+        jobs = (
+            db.query(Job)
+            .filter(
+                Job.tenant_id == str(tenant_id),
+                Job.status.in_([JobStatus.COMPLETE, JobStatus.FAILED]),
+            )
+            .order_by(Job.created_at.desc())
+            .limit(100)
+            .all()
+        )
+
+        if not jobs:
+            return None
+
+        results: list[dict[str, Any]] = []
+        for job in jobs:
+            # Count findings per job
+            counts = (
+                db.query(
+                    func.count(JobFinding.id).label("total"),
+                    func.count(
+                        func.nullif(JobFinding.severity != "error", True)
+                    ).label("errors"),
+                    func.count(
+                        func.nullif(JobFinding.severity != "warning", True)
+                    ).label("warnings"),
+                )
+                .filter(JobFinding.job_id == job.id)
+                .one()
+            )
+
+            results.append({
+                "job_id": str(job.id),
+                "created_at": job.created_at.isoformat() if job.created_at else None,
+                "status": job.status.value if hasattr(job.status, "value") else str(job.status),
+                "finding_count": counts.total or 0,
+                "error_count": counts.errors or 0,
+                "warning_count": counts.warnings or 0,
+            })
+
+        return results if results else None
+
+    except Exception:
+        logger.debug("Failed to query historical data for SPC — tenant_id=%s", tenant_id, exc_info=True)
+        return None
+    finally:
+        db.close()
 
 
 @register_ai_analyzer

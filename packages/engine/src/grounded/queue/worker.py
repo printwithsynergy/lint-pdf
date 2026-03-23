@@ -21,10 +21,11 @@ def _on_worker_init(**_kwargs: object) -> None:
     """Initialize database and storage when the worker starts."""
     from grounded.api.database import init_db
 
-    database_url = os.environ.get(
-        "GROUNDED_DATABASE_URL",
-        "postgresql://grounded:grounded@localhost:5432/grounded",
-    )
+    database_url = os.environ.get("GROUNDED_DATABASE_URL")
+    if not database_url:
+        raise RuntimeError(
+            "GROUNDED_DATABASE_URL environment variable is required"
+        )
     init_db(database_url)
 
 

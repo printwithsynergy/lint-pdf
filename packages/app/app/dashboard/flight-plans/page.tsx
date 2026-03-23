@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface ProfileSummary {
   profile_id: string;
@@ -21,8 +22,9 @@ export default function FlightPlansPage() {
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedProfile, setSelectedProfile] =
-    useState<ProfileDetail | null>(null);
+  const [selectedProfile, setSelectedProfile] = useState<ProfileDetail | null>(
+    null,
+  );
 
   // Create/clone form
   const [showCreate, setShowCreate] = useState(false);
@@ -147,12 +149,7 @@ export default function FlightPlansPage() {
   }
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">Flight Plans</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="cards" />;
   }
 
   const builtins = profiles.filter((p) => p.is_builtin);
@@ -294,9 +291,7 @@ export default function FlightPlansPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium">
-                TAC Limit (%)
-              </label>
+              <label className="block text-xs font-medium">TAC Limit (%)</label>
               <input
                 type="number"
                 value={newThresholds.tac_limit}
@@ -327,9 +322,7 @@ export default function FlightPlansPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium">
-                Hairline (pt)
-              </label>
+              <label className="block text-xs font-medium">Hairline (pt)</label>
               <input
                 type="number"
                 step="0.05"

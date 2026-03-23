@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { SkeletonDashboard } from "@/components/skeleton";
 
 interface ColorConfig {
   default_output_condition: string | null;
@@ -92,12 +93,7 @@ export default function ColorConfigPage() {
   }
 
   if (loading) {
-    return (
-      <main className="p-8">
-        <h1 className="font-display text-2xl font-bold">Color Management</h1>
-        <p className="mt-4 text-muted-foreground">Loading...</p>
-      </main>
-    );
+    return <SkeletonDashboard type="form" />;
   }
 
   return (
@@ -144,9 +140,7 @@ export default function ColorConfigPage() {
         <h2 className="text-lg font-semibold">Default Thresholds</h2>
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium">
-              TAC Limit (%)
-            </label>
+            <label className="block text-sm font-medium">TAC Limit (%)</label>
             <input
               type="number"
               value={tacThreshold}
