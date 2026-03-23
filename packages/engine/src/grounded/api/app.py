@@ -63,7 +63,9 @@ def _run_migrations(database_url: str) -> None:
                 command.stamp(alembic_cfg, "head")
                 logger.info("Alembic version stamped to head.")
             except Exception:
-                logger.warning("Could not stamp alembic_version — future migrations may need manual intervention.")
+                logger.warning(
+                    "Could not stamp alembic_version — future migrations may need manual intervention."
+                )
         except Exception:
             logger.exception("create_all also failed.")
 
