@@ -211,14 +211,9 @@ function LoginContent() {
         {/* Branding — logo + wordmark matching marketing header */}
         <div className="mb-8 flex flex-col items-center gap-3">
           <img src="/logo.png" alt="LintPDF" className="h-12 w-12" />
-          <div className="flex flex-col items-center leading-none">
-            <span className="text-xl font-semibold tracking-tight text-brand-900">
-              LintPDF
-            </span>
-            <span className="mt-1 text-[10px] font-medium tracking-wide text-slate-400">
-              Lint your PDFs before they print.
-            </span>
-          </div>
+          <span className="text-xl font-semibold tracking-tight text-brand-900">
+            LintPDF
+          </span>
         </div>
 
         {/* Card */}
