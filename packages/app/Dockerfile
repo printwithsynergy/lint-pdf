@@ -78,4 +78,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
 # Run Prisma db push on startup to ensure schema is in sync, then start the server
 # IMPORTANT: Do NOT use --accept-data-loss here — it drops tables not in the Prisma
 # schema, which would wipe the engine tables (tenants, jobs, api_keys, etc.)
-CMD ["sh", "-c", "prisma db push --schema packages/app/prisma/schema --skip-generate 2>&1 || true && node packages/app/prisma/seed.mjs 2>&1 || true && node packages/app/server.js"]
+CMD ["sh", "-c", "prisma db push --schema packages/app/prisma/schema --skip-generate 2>&1 || echo 'prisma db push had warnings — continuing' && node packages/app/prisma/seed.mjs 2>&1 || true && node packages/app/server.js"]
