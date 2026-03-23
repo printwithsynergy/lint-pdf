@@ -62,15 +62,7 @@ const services: PluginServices = {
 // Next.js bundle isolation between instrumentation and page rendering)
 // ============================================
 
-type PluginRegistryBase = Awaited<ReturnType<PluginLoader["loadAndBoot"]>>;
-
-// The fairy-ring runtime provides getPageComponent but the type definition
-// does not yet export it. Augment locally until the package types are updated.
-type PluginRegistry = PluginRegistryBase & {
-  getPageComponent(
-    route: string,
-  ): React.ComponentType<Record<string, unknown>> | null;
-};
+type PluginRegistry = Awaited<ReturnType<PluginLoader["loadAndBoot"]>>;
 
 declare global {
   var __pixiedust_plugin_registry__: PluginRegistry | null | undefined;

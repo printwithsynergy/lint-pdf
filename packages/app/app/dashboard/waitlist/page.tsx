@@ -1,13 +1,4 @@
-import { ensureRegistry } from "@/lib/plugins";
-
-export default async function WaitlistPage() {
-  const registry = await ensureRegistry();
-  const PageComponent = registry.getPageComponent("/dashboard/waitlist");
-
-  if (PageComponent) {
-    return <PageComponent />;
-  }
-
+export default function WaitlistPage() {
   return (
     <main className="p-8">
       <h1 className="font-display text-2xl font-bold">Waitlist</h1>
