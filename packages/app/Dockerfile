@@ -76,4 +76,6 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:8080/api/health || exit 1
 
 # Run Prisma db push on startup to ensure schema is in sync, then start the server
-CMD ["sh", "-c", "prisma db push --schema packages/app/prisma/schema --skip-generate --accept-data-loss 2>&1 || true && node packages/app/server.js"]
+# IMPORTANT: Do NOT use --accept-data-loss here — it drops tables not in the Prisma
+# schema, which would wipe the engine tables (tenants, jobs, api_keys, etc.)
+CMD ["sh", "-c", "prisma db push --schema packages/app/prisma/schema --skip-generate 2>&1 || true && node packages/app/server.js"]
