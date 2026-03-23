@@ -123,6 +123,10 @@ pre code {
   }
 }
 
+/* Hide scrollbar for pill-bar navigation */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ── Mobile CSS-only particle dots ── */
 @keyframes particle-drift {
   0% {
