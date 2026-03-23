@@ -46,6 +46,15 @@ export function DocsNav() {
 
   return (
     <>
+      {/* Backdrop overlay — closes mobile nav on tap outside */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-20 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
       {/* Mobile docs nav toggle */}
       <div className="sticky top-16 z-30 bg-white border-b border-slate-200 px-6 py-2 lg:hidden">
         <button
@@ -68,9 +77,15 @@ export function DocsNav() {
           </svg>
           Documentation
         </button>
-        {mobileOpen && (
-          <nav className="mt-2 pb-3 max-h-[60vh] overflow-y-auto">{nav}</nav>
-        )}
+        <nav
+          className={`mt-2 pb-3 overflow-y-auto transition-all duration-200 ease-in-out ${
+            mobileOpen
+              ? "max-h-[60vh] opacity-100"
+              : "max-h-0 opacity-0 overflow-hidden"
+          }`}
+        >
+          {nav}
+        </nav>
       </div>
 
       {/* Desktop sidebar */}
