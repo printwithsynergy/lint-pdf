@@ -748,8 +748,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                     inspection_id="GRD_ADV_009",
                     severity=Severity.ADVISORY,
                     message=(
-                        "CxF spectral data does not specify measurement "
-                        "geometry (e.g., 45/0, d/8)"
+                        "CxF spectral data does not specify measurement geometry (e.g., 45/0, d/8)"
                     ),
                     details={"measurement_geometry": None},
                 )
@@ -929,8 +928,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                             inspection_id="GRD_ADV_013",
                             severity=Severity.ADVISORY,
                             message=(
-                                f"CxF spectral data references {prefix} "
-                                f"library color '{spot.name}'"
+                                f"CxF spectral data references {prefix} library color '{spot.name}'"
                             ),
                             details={
                                 "spot_name": spot.name,
@@ -965,10 +963,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 Finding(
                     inspection_id="GRD_ADV_014",
                     severity=Severity.ADVISORY,
-                    message=(
-                        "CxF spectral data includes substrate (paper white) "
-                        "measurement"
-                    ),
+                    message=("CxF spectral data includes substrate (paper white) measurement"),
                     details={
                         "substrate_measurement": True,
                     },

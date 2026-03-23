@@ -293,9 +293,7 @@ class TenantAIConfig(Base):
     delta_e_warning_threshold: Mapped[Any] = mapped_column(
         Numeric(6, 2), nullable=False, default=2.0
     )
-    delta_e_error_threshold: Mapped[Any] = mapped_column(
-        Numeric(6, 2), nullable=False, default=5.0
-    )
+    delta_e_error_threshold: Mapped[Any] = mapped_column(Numeric(6, 2), nullable=False, default=5.0)
     severity_labels: Mapped[dict[str, str] | None] = mapped_column(
         JSON,
         nullable=True,

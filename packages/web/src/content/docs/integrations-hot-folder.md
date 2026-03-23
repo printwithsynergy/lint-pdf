@@ -59,18 +59,18 @@ The LintPDF Hot Folders desktop app is a native application built with Tauri tha
 
 Each hot folder has these settings:
 
-| Setting         | Default            | Description                                           |
-| --------------- | ------------------ | ----------------------------------------------------- |
-| Name            | —                  | Display name for the folder                           |
-| Watch Directory | —                  | Path to monitor for new files                         |
+| Setting         | Default           | Description                                           |
+| --------------- | ----------------- | ----------------------------------------------------- |
+| Name            | —                 | Display name for the folder                           |
+| Watch Directory | —                 | Path to monitor for new files                         |
 | Profile         | `lintpdf-default` | Preflight profile ID                                  |
-| Pass Directory  | —                  | Move passed files here (leave empty to keep in place) |
-| Fail Directory  | —                  | Move failed files here                                |
-| Error Directory | —                  | Move files that couldn't be processed here            |
-| Write Sidecar   | On                 | Write a `.lintpdf.json` report alongside each file    |
-| Stabilization   | 2s                 | Wait for file size to stabilize before submitting     |
-| Poll Interval   | 5s                 | How often to check job status                         |
-| File Extensions | All supported      | Which file types to watch                             |
+| Pass Directory  | —                 | Move passed files here (leave empty to keep in place) |
+| Fail Directory  | —                 | Move failed files here                                |
+| Error Directory | —                 | Move files that couldn't be processed here            |
+| Write Sidecar   | On                | Write a `.lintpdf.json` report alongside each file    |
+| Stabilization   | 2s                | Wait for file size to stabilize before submitting     |
+| Poll Interval   | 5s                | How often to check job status                         |
+| File Extensions | All supported     | Which file types to watch                             |
 
 ### Running at Startup
 
@@ -247,13 +247,13 @@ Both the desktop app and CLI support automatic JDF/XJDF sidecar pairing. When a 
 
 The following JDF parameters override profile thresholds when present:
 
-| JDF Parameter       | LintPDF Override         | Example              |
-| ------------------- | ------------------------ | -------------------- |
-| Resolution (DPI)    | Minimum image DPI        | `300`                |
-| Bleed               | Minimum bleed distance   | `3mm`                |
-| TAC (Total Area Coverage) | Maximum ink coverage | `320%`               |
-| Output Condition    | ICC output intent        | `FOGRA39`            |
-| Conformance         | PDF/X conformance level  | `PDF/X-4`            |
+| JDF Parameter             | LintPDF Override        | Example   |
+| ------------------------- | ----------------------- | --------- |
+| Resolution (DPI)          | Minimum image DPI       | `300`     |
+| Bleed                     | Minimum bleed distance  | `3mm`     |
+| TAC (Total Area Coverage) | Maximum ink coverage    | `320%`    |
+| Output Condition          | ICC output intent       | `FOGRA39` |
+| Conformance               | PDF/X conformance level | `PDF/X-4` |
 
 ### CLI: `--jdf-timeout` Flag
 

@@ -7,9 +7,7 @@ export async function POST(req: Request) {
   const registry = await ensureRegistry();
   const route = registry
     .getRoutes()
-    .find(
-      (r) => r.method === "POST" && r.fullPath === "/api/lintpdf/webhooks",
-    );
+    .find((r) => r.method === "POST" && r.fullPath === "/api/lintpdf/webhooks");
 
   if (!route) {
     return NextResponse.json(

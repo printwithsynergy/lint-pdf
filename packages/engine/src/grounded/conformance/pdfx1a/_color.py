@@ -207,11 +207,7 @@ def validate_color(
         cs_resources = page.resources.get("/ColorSpace") or page.resources.get("ColorSpace")
         if isinstance(cs_resources, dict):
             for cs_name, cs_def in cs_resources.items():
-                if (
-                    isinstance(cs_def, list)
-                    and len(cs_def) >= 3
-                    and str(cs_def[0]) == "Separation"
-                ):
+                if isinstance(cs_def, list) and len(cs_def) >= 3 and str(cs_def[0]) == "Separation":
                     alt_space = str(cs_def[2])
                     if alt_space in ("DeviceRGB", "CalRGB"):
                         findings.append(

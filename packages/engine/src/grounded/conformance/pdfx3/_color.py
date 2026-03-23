@@ -130,7 +130,10 @@ def validate_color(  # skipcq: PY-R1000
                     if cs_type == "Separation":
                         alt_space = str(cs_def[2])
                         allowed_alternates = {
-                            "DeviceCMYK", "DeviceGray", "ICCBased", "Lab",
+                            "DeviceCMYK",
+                            "DeviceGray",
+                            "ICCBased",
+                            "Lab",
                         }
                         if alt_space not in allowed_alternates:
                             findings.append(
@@ -156,7 +159,10 @@ def validate_color(  # skipcq: PY-R1000
                     if cs_type == "DeviceN":
                         alt_space = str(cs_def[2])
                         allowed_alternates = {
-                            "DeviceCMYK", "DeviceGray", "ICCBased", "Lab",
+                            "DeviceCMYK",
+                            "DeviceGray",
+                            "ICCBased",
+                            "Lab",
                         }
                         if alt_space not in allowed_alternates:
                             findings.append(
@@ -214,9 +220,7 @@ def validate_color(  # skipcq: PY-R1000
     return findings
 
 
-def _has_color_space_intent(
-    document: SemanticDocument, color_space: str
-) -> bool:
+def _has_color_space_intent(document: SemanticDocument, color_space: str) -> bool:
     """Check if any output intent matches the given color space."""
     for intent in document.output_intents:
         dest_profile = intent.get("/DestOutputProfile") or intent.get("DestOutputProfile")

@@ -20,15 +20,15 @@ if TYPE_CHECKING:
 
 # Severity colors (RGBA)
 _SEVERITY_COLORS = {
-    "error": (239, 68, 68, 128),    # Red, semi-transparent
-    "warning": (245, 158, 11, 128),    # Amber, semi-transparent
+    "error": (239, 68, 68, 128),  # Red, semi-transparent
+    "warning": (245, 158, 11, 128),  # Amber, semi-transparent
     "advisory": (59, 130, 246, 128),  # Blue, semi-transparent
 }
 
 _SEVERITY_STROKE = {
-    "error": (220, 38, 38),    # Darker red
-    "warning": (217, 119, 6),     # Darker amber
-    "advisory": (37, 99, 235),   # Darker blue
+    "error": (220, 38, 38),  # Darker red
+    "warning": (217, 119, 6),  # Darker amber
+    "advisory": (37, 99, 235),  # Darker blue
 }
 
 # Default DPI for page rendering
@@ -102,9 +102,7 @@ def generate_annotated_pdf(
                     "/Resources": pikepdf.Dictionary({}),
                 }
             )
-            overlay_obj = pdf.make_stream(
-                overlay_stream.encode("latin-1"), overlay_dict
-            )
+            overlay_obj = pdf.make_stream(overlay_stream.encode("latin-1"), overlay_dict)
 
             # Add overlay to page resources
             if "/XObject" not in page.get("/Resources", pikepdf.Dictionary()):
@@ -128,9 +126,7 @@ def generate_annotated_pdf(
                 if isinstance(existing_contents, pikepdf.Array):
                     existing_contents.append(overlay_ref_stream)
                 else:
-                    page["/Contents"] = pikepdf.Array(
-                        [existing_contents, overlay_ref_stream]
-                    )
+                    page["/Contents"] = pikepdf.Array([existing_contents, overlay_ref_stream])
 
     # Write output
     output = io.BytesIO()

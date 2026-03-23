@@ -77,8 +77,7 @@ def validate_transparency(
                     inspection_id=f"{_PREFIX}-030",
                     severity=Severity.ERROR,
                     message=(
-                        f"Page {page.page_num} has a transparency group "
-                        f"(prohibited in PDF/X-1a)"
+                        f"Page {page.page_num} has a transparency group (prohibited in PDF/X-1a)"
                     ),
                     page_num=page.page_num,
                     iso_clause="ISO 15930-4:2003 6.2.5",

@@ -16,13 +16,31 @@ if TYPE_CHECKING:
 _PREFIX = "PDFX3"
 
 _REGISTERED_CONDITIONS = {
-    "CGATS TR 001", "CGATS TR 003", "CGATS TR 006",
-    "FOGRA39", "FOGRA47", "FOGRA51", "FOGRA52", "FOGRA53",
-    "FOGRA54", "FOGRA55", "FOGRA56", "FOGRA57", "FOGRA58", "FOGRA59",
-    "GRACoL2006_Coated1v2", "GRACoL2013_CRPC6", "IFRA26",
-    "Japan Color 2001 Coated", "Japan Color 2002 Newspaper",
-    "Japan Color 2003 Web Coated", "Japan Color 2011 Coated",
-    "SNAP 2007", "SWOP2006_Coated3v2", "SWOP2006_Coated5v2", "SWOP2013_CRPC5",
+    "CGATS TR 001",
+    "CGATS TR 003",
+    "CGATS TR 006",
+    "FOGRA39",
+    "FOGRA47",
+    "FOGRA51",
+    "FOGRA52",
+    "FOGRA53",
+    "FOGRA54",
+    "FOGRA55",
+    "FOGRA56",
+    "FOGRA57",
+    "FOGRA58",
+    "FOGRA59",
+    "GRACoL2006_Coated1v2",
+    "GRACoL2013_CRPC6",
+    "IFRA26",
+    "Japan Color 2001 Coated",
+    "Japan Color 2002 Newspaper",
+    "Japan Color 2003 Web Coated",
+    "Japan Color 2011 Coated",
+    "SNAP 2007",
+    "SWOP2006_Coated3v2",
+    "SWOP2006_Coated5v2",
+    "SWOP2013_CRPC5",
 }
 
 

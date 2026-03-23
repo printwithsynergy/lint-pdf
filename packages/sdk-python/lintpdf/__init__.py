@@ -28,6 +28,7 @@ class AuthenticationError(LintPDFError):
 
 class RateLimitError(LintPDFError):
     """Rate limit exceeded."""
+
     def __init__(self, retry_after: int = 60):
         self.retry_after = retry_after
         super().__init__(f"Rate limit exceeded. Retry after {retry_after}s")
@@ -35,6 +36,7 @@ class RateLimitError(LintPDFError):
 
 class Finding:
     """A single preflight finding."""
+
     def __init__(self, data: dict):
         self.inspection_id: str = data.get("inspection_id", "")
         self.severity: str = data.get("severity", "")
@@ -50,6 +52,7 @@ class Finding:
 
 class PreflightResult:
     """Result of a preflight check."""
+
     def __init__(self, data: dict):
         self.job_id: str = data.get("job_id", "")
         self.profile_id: str = data.get("profile_id", "")
@@ -157,6 +160,7 @@ class LintPDF:
 
         # Poll for completion
         import time
+
         for _ in range(t):
             response = httpx.get(
                 f"{self.base_url}/api/v1/jobs/{job_id}",
@@ -174,6 +178,7 @@ class LintPDF:
     def list_profiles(self) -> list[dict]:
         """List available Preflight Profiles."""
         import httpx
+
         response = httpx.get(
             f"{self.base_url}/api/v1/profiles",
             headers={"Authorization": f"Bearer {self.api_key}"},

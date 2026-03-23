@@ -257,10 +257,7 @@ class FontAnalyzer(BaseAnalyzer):
                 )
 
         # GRD_FONT_011: Multiple Master font detected
-        if (
-            font.font_type == "MMType1"
-            or (font.base_font and font.base_font.endswith("MM"))
-        ):
+        if font.font_type == "MMType1" or (font.base_font and font.base_font.endswith("MM")):
             findings.append(
                 Finding(
                     inspection_id="GRD_FONT_011",
@@ -287,8 +284,7 @@ class FontAnalyzer(BaseAnalyzer):
             stem_v = font.font_descriptor.get("/StemV")
             base_lower = (font.base_font or "").lower()
             if (
-                (weight is not None and weight >= 700)
-                or (stem_v is not None and stem_v > 165)
+                (weight is not None and weight >= 700) or (stem_v is not None and stem_v > 165)
             ) and "bold" not in base_lower:
                 display_weight = weight if weight is not None else f"StemV={stem_v}"
                 findings.append(

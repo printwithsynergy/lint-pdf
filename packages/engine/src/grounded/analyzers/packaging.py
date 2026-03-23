@@ -80,9 +80,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                 Finding(
                     inspection_id="GRD_PKG_001",
                     severity=Severity.ADVISORY,
-                    message=(
-                        f"Dieline layer detected: {', '.join(sorted(dieline_layers))}"
-                    ),
+                    message=(f"Dieline layer detected: {', '.join(sorted(dieline_layers))}"),
                     details={"dieline_layers": sorted(dieline_layers)},
                     category="packaging",
                 )
@@ -106,9 +104,7 @@ class PackagingAnalyzer(BaseAnalyzer):
         # --- GRD_PKG_003: Dieline on wrong layer ---
         # Check if any dieline layer is marked as non-printing in OCProperties
         if dieline_layers:
-            non_printing_dielines = self._find_non_printing_layers(
-                oc_properties, dieline_layers
-            )
+            non_printing_dielines = self._find_non_printing_layers(oc_properties, dieline_layers)
             for layer_name in non_printing_dielines:
                 findings.append(
                     Finding(
@@ -239,11 +235,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                 "bottom": bleed_bottom,
                 "top": bleed_top,
             }
-            inadequate = {
-                side: dist
-                for side, dist in bleeds.items()
-                if dist < self._min_bleed_pts
-            }
+            inadequate = {side: dist for side, dist in bleeds.items() if dist < self._min_bleed_pts}
 
             if inadequate:
                 findings.append(
@@ -252,10 +244,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                         severity=Severity.WARNING,
                         message=(
                             f"Packaging bleed insufficient on page {page.page_num}: "
-                            + ", ".join(
-                                f"{side} {dist:.1f}pt"
-                                for side, dist in inadequate.items()
-                            )
+                            + ", ".join(f"{side} {dist:.1f}pt" for side, dist in inadequate.items())
                             + f" (minimum {self._min_bleed_pts:.1f}pt / "
                             f"{self.min_bleed_mm:.1f}mm for packaging)"
                         ),
@@ -322,8 +311,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                     inspection_id="GRD_PKG_009",
                     severity=Severity.ADVISORY,
                     message=(
-                        f"Varnish/coating layer detected: "
-                        f"{', '.join(sorted(coating_layers))}"
+                        f"Varnish/coating layer detected: {', '.join(sorted(coating_layers))}"
                     ),
                     details={"coating_layers": sorted(coating_layers)},
                     category="packaging",
@@ -341,10 +329,7 @@ class PackagingAnalyzer(BaseAnalyzer):
         if not white_detected:
             for page in document.pages:
                 for _cs_name, cs in page.color_spaces.items():
-                    if (
-                        cs.cs_type == "Separation"
-                        and "White" in cs.colorant_names
-                    ):
+                    if cs.cs_type == "Separation" and "White" in cs.colorant_names:
                         white_detected = True
                         break
                 if white_detected:
@@ -387,21 +372,13 @@ class PackagingAnalyzer(BaseAnalyzer):
         return groups
 
     @staticmethod
-    def _find_matching_layers(
-        layer_names: set[str], target_names: set[str]
-    ) -> set[str]:
+    def _find_matching_layers(layer_names: set[str], target_names: set[str]) -> set[str]:
         """Find layers whose names match any target name (case-insensitive)."""
         target_lower = {t.lower() for t in target_names}
-        return {
-            name
-            for name in layer_names
-            if name.lower() in target_lower
-        }
+        return {name for name in layer_names if name.lower() in target_lower}
 
     @staticmethod
-    def _find_non_printing_layers(
-        oc_properties: dict, target_layers: set[str]
-    ) -> list[str]:
+    def _find_non_printing_layers(oc_properties: dict, target_layers: set[str]) -> list[str]:
         """Find layers from target set that are marked as non-printing.
 
         Checks the Usage dict of each OCG for a Print entry with

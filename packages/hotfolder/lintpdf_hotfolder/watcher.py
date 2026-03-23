@@ -148,7 +148,9 @@ class _StabilizationHandler(FileSystemEventHandler):
                     waiting_timer = self._waiting.pop(str(jdf_companion), None)
                     if waiting_timer:
                         waiting_timer.cancel()
-                log.info("Found JDF companion %s for %s", jdf_companion.name, file_path.name)
+                log.info(
+                    "Found JDF companion %s for %s", jdf_companion.name, file_path.name
+                )
                 self._ready_queue.put((file_path, jdf_companion))
             else:
                 # Wait for a JDF to appear
@@ -198,7 +200,9 @@ class _StabilizationHandler(FileSystemEventHandler):
             log.warning("No companion PDF found for %s, skipping", file_path.name)
         else:
             # PDF with no matching JDF — submit without JDF
-            log.info("No JDF companion found for %s, submitting without", file_path.name)
+            log.info(
+                "No JDF companion found for %s, submitting without", file_path.name
+            )
             self._ready_queue.put((file_path, None))
 
     def cancel_all(self) -> None:

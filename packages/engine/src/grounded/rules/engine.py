@@ -181,9 +181,7 @@ def _matches_value(ctx_value: Any, condition: Any, context: CheckContext) -> boo
                 return False
             # Resolve negative page numbers
             resolved = [
-                _resolve_page(v, context.total_pages)
-                if isinstance(v, int) and v < 0
-                else v
+                _resolve_page(v, context.total_pages) if isinstance(v, int) and v < 0 else v
                 for v in op_value
             ]
             if ctx_value not in resolved:
@@ -192,9 +190,7 @@ def _matches_value(ctx_value: Any, condition: Any, context: CheckContext) -> boo
             if not isinstance(op_value, list):
                 return False
             resolved = [
-                _resolve_page(v, context.total_pages)
-                if isinstance(v, int) and v < 0
-                else v
+                _resolve_page(v, context.total_pages) if isinstance(v, int) and v < 0 else v
                 for v in op_value
             ]
             if ctx_value in resolved:

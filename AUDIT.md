@@ -173,8 +173,8 @@
 
 #### AI Preflight Profile Generation (`routes/ai_generate.py`)
 
-| Method | Path                                | Auth               | Description                                     |
-| ------ | ----------------------------------- | ------------------ | ----------------------------------------------- |
+| Method | Path                                  | Auth               | Description                                      |
+| ------ | ------------------------------------- | ------------------ | ------------------------------------------------ |
 | `POST` | `/api/v1/preflight-profiles/generate` | Tenant + AI access | Generate Preflight Profile from natural language |
 
 #### AI Report Interpretation (`routes/ai_interpret.py`)

@@ -279,8 +279,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                 inspection_id="GRD_PATH_002",
                 severity=Severity.ADVISORY,
                 message=(
-                    f"White fill path on page {event.page_num} "
-                    f"(may knock out background content)"
+                    f"White fill path on page {event.page_num} (may knock out background content)"
                 ),
                 page_num=event.page_num,
                 details={

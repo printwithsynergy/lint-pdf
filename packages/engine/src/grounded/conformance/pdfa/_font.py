@@ -103,8 +103,7 @@ def _check_font(  # skipcq: PY-R1000
                             inspection_id=f"{_PREFIX}-019",
                             severity=Severity.ERROR,
                             message=(
-                                f"CID font '{base_font}' is not embedded "
-                                f"(required for PDF/A)"
+                                f"CID font '{base_font}' is not embedded (required for PDF/A)"
                             ),
                             page_num=page_num,
                             iso_clause="ISO 19005 6.3.3",
@@ -133,9 +132,12 @@ def _check_font(  # skipcq: PY-R1000
     # ToUnicode not required for symbolic fonts, Type 1 with standard encoding,
     # or CID fonts with certain CMap names. Check for simple/TrueType fonts mainly.
     if to_unicode is None and subtype not in (
-        "Type0", "/Type0",
-        "CIDFontType0", "/CIDFontType0",
-        "CIDFontType2", "/CIDFontType2",
+        "Type0",
+        "/Type0",
+        "CIDFontType0",
+        "/CIDFontType0",
+        "CIDFontType2",
+        "/CIDFontType2",
     ):
         findings.append(
             Finding(
@@ -155,10 +157,14 @@ def _check_font(  # skipcq: PY-R1000
     # PDFA-021: Font missing /Widths array
     widths = font_dict.get("/Widths") or font_dict.get("Widths")
     if widths is None and subtype not in (
-        "Type0", "/Type0",
-        "CIDFontType0", "/CIDFontType0",
-        "CIDFontType2", "/CIDFontType2",
-        "Type3", "/Type3",
+        "Type0",
+        "/Type0",
+        "CIDFontType0",
+        "/CIDFontType0",
+        "CIDFontType2",
+        "/CIDFontType2",
+        "Type3",
+        "/Type3",
     ):
         findings.append(
             Finding(
@@ -175,10 +181,14 @@ def _check_font(  # skipcq: PY-R1000
     # PDFA-024: Font missing encoding
     encoding = font_dict.get("/Encoding") or font_dict.get("Encoding")
     if encoding is None and subtype not in (
-        "Type3", "/Type3",
-        "Type0", "/Type0",
-        "CIDFontType0", "/CIDFontType0",
-        "CIDFontType2", "/CIDFontType2",
+        "Type3",
+        "/Type3",
+        "Type0",
+        "/Type0",
+        "CIDFontType0",
+        "/CIDFontType0",
+        "CIDFontType2",
+        "/CIDFontType2",
     ):
         findings.append(
             Finding(
@@ -205,8 +215,7 @@ def _check_font(  # skipcq: PY-R1000
                         inspection_id=f"{_PREFIX}-025",
                         severity=Severity.WARNING,
                         message=(
-                            f"TrueType font '{base_font}' missing required tables: "
-                            f"{missing_tables}"
+                            f"TrueType font '{base_font}' missing required tables: {missing_tables}"
                         ),
                         page_num=page_num,
                         iso_clause="ISO 19005 6.3.5",

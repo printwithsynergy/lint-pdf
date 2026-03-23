@@ -10,6 +10,7 @@ Supported fields:
 - Color requirements (CMYK, spot colors)
 - Conformance standard (PDF/X-1a, X-3, X-4)
 """
+
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
@@ -20,6 +21,7 @@ from typing import Any
 @dataclass
 class JobTicketParams:
     """Parameters extracted from a JDF/XJDF job ticket."""
+
     conformance: str | None = None  # e.g., "pdfx4", "pdfx1a"
     output_condition: str = ""
     media_type: str = ""

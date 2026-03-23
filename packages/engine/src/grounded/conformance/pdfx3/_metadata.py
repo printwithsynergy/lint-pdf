@@ -34,8 +34,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
                     inspection_id=f"{_PREFIX}-014",
                     severity=Severity.ERROR,
                     message=(
-                        f"PDF version {version} exceeds 1.4 "
-                        f"(PDF/X-3 requires PDF 1.4 or earlier)"
+                        f"PDF version {version} exceeds 1.4 (PDF/X-3 requires PDF 1.4 or earlier)"
                     ),
                     iso_clause="ISO 15930-6:2003 6.1",
                     details={"pdf_version": version},
@@ -73,10 +72,7 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
                 Finding(
                     inspection_id=f"{_PREFIX}-016",
                     severity=Severity.ERROR,
-                    message=(
-                        f"GTS_PDFXVersion is '{xmp.pdfx_version}' "
-                        f"(expected 'PDF/X-3:2003')"
-                    ),
+                    message=(f"GTS_PDFXVersion is '{xmp.pdfx_version}' (expected 'PDF/X-3:2003')"),
                     iso_clause="ISO 15930-6:2003 6.7.3",
                     details={"pdfx_version": xmp.pdfx_version},
                 )

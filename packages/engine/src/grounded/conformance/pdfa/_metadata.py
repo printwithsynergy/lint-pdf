@@ -99,7 +99,11 @@ def validate_metadata(  # skipcq: PY-R1000
                             f"XMP {xmp_key} ('{xmp_val}')"
                         ),
                         iso_clause="ISO 19005 6.7.3",
-                        details={"info_key": info_key, "info_val": str(info_val), "xmp_val": str(xmp_val)},
+                        details={
+                            "info_key": info_key,
+                            "info_val": str(info_val),
+                            "xmp_val": str(xmp_val),
+                        },
                     )
                 )
 
@@ -152,9 +156,8 @@ def validate_metadata(  # skipcq: PY-R1000
             # Check for registered output condition identifier
             has_registered = False
             for intent in intents:
-                oci = (
-                    intent.get("/OutputConditionIdentifier")
-                    or intent.get("OutputConditionIdentifier")
+                oci = intent.get("/OutputConditionIdentifier") or intent.get(
+                    "OutputConditionIdentifier"
                 )
                 if oci:
                     has_registered = True

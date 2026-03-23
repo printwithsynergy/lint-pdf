@@ -86,7 +86,11 @@ class Submitter:
                 files = {"file": (file_path.name, f, "application/octet-stream")}
                 if jdf_path and jdf_path.exists():
                     jdf_fh = open(jdf_path, "rb")
-                    files["jdf_file"] = (jdf_path.name, jdf_fh, "application/octet-stream")
+                    files["jdf_file"] = (
+                        jdf_path.name,
+                        jdf_fh,
+                        "application/octet-stream",
+                    )
                 else:
                     jdf_fh = None
 

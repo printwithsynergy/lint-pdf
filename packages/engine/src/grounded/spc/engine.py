@@ -10,6 +10,7 @@ Metrics tracked:
 - Page count trend
 - DPI distribution
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -19,6 +20,7 @@ from typing import Any
 @dataclass
 class SpcDataPoint:
     """A single data point for SPC analysis."""
+
     job_id: str = ""
     timestamp: str = ""
     value: float = 0.0
@@ -28,6 +30,7 @@ class SpcDataPoint:
 @dataclass
 class ControlLimits:
     """Control chart limits."""
+
     ucl: float = 0.0  # Upper Control Limit (mean + 3*sigma)
     lcl: float = 0.0  # Lower Control Limit (mean - 3*sigma)
     mean: float = 0.0
@@ -39,6 +42,7 @@ class ControlLimits:
 @dataclass
 class SpcAlert:
     """An SPC alert for an out-of-control condition."""
+
     rule: str = ""  # e.g., "western_electric_1", "nelson_2"
     metric: str = ""
     description: str = ""
@@ -49,6 +53,7 @@ class SpcAlert:
 @dataclass
 class SpcResult:
     """Result of SPC analysis for a metric."""
+
     metric: str = ""
     data_points: list[SpcDataPoint] = field(default_factory=list)
     limits: ControlLimits = field(default_factory=ControlLimits)
@@ -100,7 +105,7 @@ class SpcEngine:
             )
 
         variance = sum((v - mean) ** 2 for v in values) / (n - 1)
-        sigma = variance ** 0.5
+        sigma = variance**0.5
 
         return ControlLimits(
             ucl=mean + 3 * sigma,
@@ -226,8 +231,7 @@ class SpcEngine:
                         rule="western_electric_2",
                         metric=metric,
                         description=(
-                            f"Two of three consecutive points above UWL "
-                            f"(2-sigma={limits.uwl:.4f})"
+                            f"Two of three consecutive points above UWL (2-sigma={limits.uwl:.4f})"
                         ),
                         severity="warning",
                         data_points=list(window),
@@ -242,8 +246,7 @@ class SpcEngine:
                         rule="western_electric_2",
                         metric=metric,
                         description=(
-                            f"Two of three consecutive points below LWL "
-                            f"(2-sigma={limits.lwl:.4f})"
+                            f"Two of three consecutive points below LWL (2-sigma={limits.lwl:.4f})"
                         ),
                         severity="warning",
                         data_points=list(window),
@@ -283,8 +286,7 @@ class SpcEngine:
                         rule="western_electric_3",
                         metric=metric,
                         description=(
-                            f"Four of five consecutive points above "
-                            f"1-sigma ({one_sigma_upper:.4f})"
+                            f"Four of five consecutive points above 1-sigma ({one_sigma_upper:.4f})"
                         ),
                         severity="advisory",
                         data_points=list(window),
@@ -299,8 +301,7 @@ class SpcEngine:
                         rule="western_electric_3",
                         metric=metric,
                         description=(
-                            f"Four of five consecutive points below "
-                            f"1-sigma ({one_sigma_lower:.4f})"
+                            f"Four of five consecutive points below 1-sigma ({one_sigma_lower:.4f})"
                         ),
                         severity="advisory",
                         data_points=list(window),
@@ -338,8 +339,7 @@ class SpcEngine:
                         rule="western_electric_4",
                         metric=metric,
                         description=(
-                            f"Eight consecutive points above center line "
-                            f"(mean={limits.mean:.4f})"
+                            f"Eight consecutive points above center line (mean={limits.mean:.4f})"
                         ),
                         severity="advisory",
                         data_points=list(window),
@@ -351,8 +351,7 @@ class SpcEngine:
                         rule="western_electric_4",
                         metric=metric,
                         description=(
-                            f"Eight consecutive points below center line "
-                            f"(mean={limits.mean:.4f})"
+                            f"Eight consecutive points below center line (mean={limits.mean:.4f})"
                         ),
                         severity="advisory",
                         data_points=list(window),

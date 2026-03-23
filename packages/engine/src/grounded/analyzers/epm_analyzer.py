@@ -615,7 +615,11 @@ class EpmAnalyzer(BaseAnalyzer):
 
         for oi in document.output_intents:
             profile_class = oi.get("profile_class", oi.get("/ProfileClass", ""))
-            if isinstance(profile_class, str) and profile_class and profile_class not in _VALID_CLASSES:
+            if (
+                isinstance(profile_class, str)
+                and profile_class
+                and profile_class not in _VALID_CLASSES
+            ):
                 findings.append(
                     Finding(
                         inspection_id="GRD_EPM_014",

@@ -273,9 +273,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                 Finding(
                     inspection_id="GRD_BOX_008",
                     severity=Severity.ADVISORY,
-                    message=(
-                        f"Page {page.page_num} has non-standard rotation ({rotate}\u00b0)"
-                    ),
+                    message=(f"Page {page.page_num} has non-standard rotation ({rotate}\u00b0)"),
                     page_num=page.page_num,
                     details={"rotate": rotate},
                     iso_clause="ISO 32000-2:2020 14.11.2",
