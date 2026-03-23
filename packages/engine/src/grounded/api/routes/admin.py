@@ -23,6 +23,12 @@ _verify_admin_key = verify_admin_key
 # ── Request/Response models ──────────────────────────────────
 
 
+class CreateTenantRequest(BaseModel):
+    name: str
+    contact_email: str | None = None
+    plan: str = "free"
+
+
 class UpdatePlanRequest(BaseModel):
     plan: str
     overage_enabled: bool | None = None
@@ -191,6 +197,71 @@ async def update_tenant_stripe(
     db.commit()
 
     return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
+
+
+# ── Tenant creation ──────────────────────────────────────────
+
+
+class CreateTenantResponse(BaseModel):
+    id: str
+    name: str
+    plan: str
+    api_key: str
+
+
+@router.post("/tenants", response_model=CreateTenantResponse, status_code=status.HTTP_201_CREATED)
+async def create_tenant(
+    body: CreateTenantRequest,
+    db: Session = Depends(get_db),  # noqa: B008
+    _key: str = Depends(_verify_admin_key),
+) -> CreateTenantResponse:
+    """Create a new tenant with an API key.
+
+    Used by super-admin provisioning and account onboarding flows.
+    The raw API key is returned only in this response.
+    """
+    from grounded.tenants.models import PLAN_LIMITS, TenantPlan
+
+    try:
+        plan_enum = TenantPlan(body.plan.lower())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid plan: {body.plan}",
+        ) from exc
+
+    limits = PLAN_LIMITS[plan_enum]
+    raw_key = generate_api_key()
+    key_hash = hash_api_key(raw_key)
+    tenant_id = uuid_mod.uuid4()
+
+    tenant = Tenant(
+        id=tenant_id,
+        name=body.name,
+        api_key_hash=key_hash,
+        plan=plan_enum,
+        rate_limit_daily=limits["rate_limit_daily"],
+        max_file_size_mb=limits["max_file_size_mb"],
+        contact_email=body.contact_email,
+        is_active=True,
+    )
+    db.add(tenant)
+
+    api_key_record = ApiKey(
+        tenant_id=tenant_id,
+        key_hash=key_hash,
+        label="Default",
+        key_prefix=raw_key[:12],
+    )
+    db.add(api_key_record)
+    db.commit()
+
+    return CreateTenantResponse(
+        id=str(tenant_id),
+        name=body.name,
+        plan=body.plan,
+        api_key=raw_key,
+    )
 
 
 # ── Tenant list/detail/status (for site admin) ──────────────

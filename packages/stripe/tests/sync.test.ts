@@ -63,8 +63,8 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
     vi.resetModules();
     vi.clearAllMocks();
     mockFetch.mockReset();
-    delete process.env.LINTPDF_API_URL;
-    delete process.env.LINTPDF_ADMIN_API_KEY;
+    delete process.env.GROUNDED_API_URL;
+    delete process.env.GROUNDED_ADMIN_API_KEY;
   });
 
   afterEach(() => {
@@ -81,8 +81,8 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("syncPlanToEngine", () => {
     it("calls engine admin API with correct URL and plan", async () => {
-      process.env.LINTPDF_API_URL = "https://engine.lintpdf.com";
-      process.env.LINTPDF_ADMIN_API_KEY = "admin_key_123";
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com";
+      process.env.GROUNDED_ADMIN_API_KEY = "admin_key_123";
       mockFetch.mockResolvedValue({ ok: true });
 
       const ctx = createMockContext();
@@ -127,7 +127,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
       );
     });
 
-    it("uses default localhost URL when LINTPDF_API_URL is not set", async () => {
+    it("uses default localhost URL when GROUNDED_API_URL is not set", async () => {
       mockFetch.mockResolvedValue({ ok: true });
 
       const ctx = createMockContext();
@@ -310,7 +310,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("syncStripeIds", () => {
     it("calls engine admin API with stripe customer and subscription item IDs", async () => {
-      process.env.LINTPDF_API_URL = "https://engine.lintpdf.com";
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com";
       // Return ok for both syncPlanToEngine and syncStripeIds calls
       mockFetch.mockResolvedValue({ ok: true });
 
@@ -404,8 +404,8 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
       );
     });
 
-    it("does not include admin key header when LINTPDF_ADMIN_API_KEY is not set", async () => {
-      delete process.env.LINTPDF_ADMIN_API_KEY;
+    it("does not include admin key header when GROUNDED_ADMIN_API_KEY is not set", async () => {
+      delete process.env.GROUNDED_ADMIN_API_KEY;
       mockFetch.mockResolvedValue({ ok: true });
 
       const ctx = createMockContext();
@@ -516,8 +516,8 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
   });
 
   describe("engineAdminUrl", () => {
-    it("strips trailing slash from LINTPDF_API_URL", async () => {
-      process.env.LINTPDF_API_URL = "https://engine.lintpdf.com/";
+    it("strips trailing slash from GROUNDED_API_URL", async () => {
+      process.env.GROUNDED_API_URL = "https://engine.lintpdf.com/";
       mockFetch.mockResolvedValue({ ok: true });
 
       const ctx = createMockContext();

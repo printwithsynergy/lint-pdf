@@ -78,9 +78,9 @@ export const groundedPlugin: PixieDustPlugin = {
 
     const env = process.env as Record<string, string>;
     const parsed = groundedConfigSchema.safeParse({
-      apiUrl: env.LINTPDF_API_URL ?? "https://api.lintpdf.com",
-      webhookSecret: env.LINTPDF_WEBHOOK_SECRET ?? "",
-      apiKey: env.LINTPDF_API_KEY,
+      apiUrl: env.GROUNDED_API_URL ?? "https://api.lintpdf.com",
+      webhookSecret: env.GROUNDED_WEBHOOK_SECRET ?? "",
+      apiKey: env.GROUNDED_API_KEY,
     });
 
     if (!parsed.success) {
