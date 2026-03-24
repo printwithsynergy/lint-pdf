@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+export PATH="/opt/homebrew/bin:$PATH"
+
+FAIL=0
+
+# ── Python tests ──────────────────────────────────────────────────────────
+if [ -d "packages/engine" ] && command -v pytest &>/dev/null; then
+  echo "🧪 [engine] pytest..."
+  (cd packages/engine && pytest tests/ -v --tb=short -m "not corpus and not integration" -q) || FAIL=1
+elif [ -d "packages/engine" ]; then
+  echo "⚠️  pytest not installed — skipping engine tests"
+fi
+if [ -d "packages/inference" ] && command -v pytest &>/dev/null; then
+  echo "🧪 [inference] pytest..."
+  (cd packages/inference && pytest tests/ -v --tb=short -q) || FAIL=1
+elif [ -d "packages/inference" ]; then
+  echo "⚠️  pytest not installed — skipping inference tests"
+fi
+
+# ── Node tests ────────────────────────────────────────────────────────────
+echo "🧪 [node] tests..."
+pnpm test || FAIL=1
+
+# ── Semgrep ───────────────────────────────────────────────────────────────
+echo "🔍 Running Semgrep..."
+if command -v semgrep &>/dev/null; then
+  semgrep scan --config auto --severity ERROR --severity WARNING --error packages/ || FAIL=1
+else
+  echo "⚠️  Semgrep not installed — skipping. Install: brew install semgrep"
+fi
+
+if [ $FAIL -ne 0 ]; then
+  echo "❌ Pre-push checks failed. Fix errors before pushing."
+  echo "   To skip: git push --no-verify"
+  exit 1
+fi
+echo "✅ All pre-push checks passed."

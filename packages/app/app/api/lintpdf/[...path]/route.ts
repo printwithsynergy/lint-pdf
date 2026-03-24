@@ -52,9 +52,11 @@ function matchPath(
 
   const params: Record<string, string> = {};
   for (let i = 0; i < patternParts.length; i++) {
-    if (patternParts[i].startsWith(":")) {
-      params[patternParts[i].slice(1)] = requestParts[i];
-    } else if (patternParts[i] !== requestParts[i]) {
+    const patternPart = patternParts[i]!;
+    const requestPart = requestParts[i]!;
+    if (patternPart.startsWith(":")) {
+      params[patternPart.slice(1)] = requestPart;
+    } else if (patternPart !== requestPart) {
       return null;
     }
   }
@@ -70,7 +72,7 @@ async function handleRequest(
   const method = req.method;
 
   const registry = await ensureRegistry();
-  const routes = registry.getRoutes() as RouteRegistryEntry[];
+  const routes = registry.getRoutes() as unknown as RouteRegistryEntry[];
 
   // Find matching route
   let matchedRoute: RouteRegistryEntry | null = null;
@@ -96,11 +98,11 @@ async function handleRequest(
   // Authenticate if route requires it
   let auth:
     | {
-        userId: string;
-        tenantId: string;
-        role: string;
-        isSuperAdmin: boolean;
-      }
+      userId: string;
+      tenantId: string;
+      role: string;
+      isSuperAdmin: boolean;
+    }
     | undefined;
 
   if (matchedRoute.auth) {

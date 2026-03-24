@@ -356,6 +356,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
     });
 
     it("logs error when syncStripeIds fails", async () => {
+      process.env.LINTPDF_API_URL = "https://engine.lintpdf.com";
       // syncPlanToEngine succeeds, syncStripeIds fails
       mockFetch
         .mockResolvedValueOnce({ ok: true }) // syncPlanToEngine
@@ -447,6 +448,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
   describe("subscription.deleted webhook", () => {
     it("syncs plan to free when subscription is deleted", async () => {
+      process.env.LINTPDF_API_URL = "https://engine.lintpdf.com";
       mockFetch.mockResolvedValue({ ok: true });
 
       const ctx = createMockContext();
@@ -481,6 +483,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
     });
 
     it("logs error when downgrade sync fails", async () => {
+      process.env.LINTPDF_API_URL = "https://engine.lintpdf.com";
       mockFetch.mockResolvedValue({
         ok: false,
         status: 500,

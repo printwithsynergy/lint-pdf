@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import Link from "next/link";
 
 export default function CheckoutPage() {
   return (
@@ -76,12 +77,12 @@ function CheckoutContent() {
         {status === "error" && (
           <div className="max-w-md">
             <p className="text-destructive mb-4">{error}</p>
-            <a
+            <Link
               href="/dashboard"
               className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"
             >
               Back to Dashboard
-            </a>
+            </Link>
           </div>
         )}
       </div>

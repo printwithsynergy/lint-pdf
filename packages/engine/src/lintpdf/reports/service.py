@@ -177,9 +177,9 @@ class ReportService:
                 file_key = f"reports/{record.tenant_id}/{record.job_id}/report.{record.format}"
                 self._storage.delete_file(file_key)
             except Exception:
-                logger.debug(
+                logger.debug(  # nosemgrep: python.lang.security.audit.logging.logger-credential-leak.python-logger-credential-disclosure
                     "Failed to delete report file for token %s", record.token
-                )  # nosemgrep: python-logger-credential-disclosure
+                )
 
             self._db.delete(record)
             count += 1

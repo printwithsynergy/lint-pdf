@@ -64,7 +64,7 @@ export function SuperAdminToolbar() {
           (data.tenants ?? []).map((t: Record<string, string>) => ({
             id: t.id,
             name: t.name,
-            slug: t.slug ?? t.id.slice(0, 8),
+            slug: t.slug ?? (t.id ?? "").slice(0, 8),
           })),
         );
       }

@@ -39,25 +39,12 @@ async function main() {
     console.log(
       `Already has tenant: ${existingMembership.tenant.name} (${existingMembership.tenant.id})`,
     );
-    // Ensure engineTenantId is set
-    if (
-      !existingMembership.tenant.engineTenantId &&
-      process.env.ENGINE_ADMIN_TENANT_ID
-    ) {
-      await prisma.tenant.update({
-        where: { id: existingMembership.tenant.id },
-        data: { engineTenantId: process.env.ENGINE_ADMIN_TENANT_ID },
-      });
-      console.log(
-        `  Linked to engine tenant: ${process.env.ENGINE_ADMIN_TENANT_ID}`,
-      );
-    }
+    // engineTenantId removed from schema — linking skipped
   } else {
     const tenant = await prisma.tenant.create({
       data: {
         name: "ThinkNeverland",
         slug: "thinkneverland",
-        engineTenantId: process.env.ENGINE_ADMIN_TENANT_ID ?? null,
         users: {
           create: {
             userId: superAdmin.id,

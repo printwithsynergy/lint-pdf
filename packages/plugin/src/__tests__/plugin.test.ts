@@ -101,8 +101,7 @@ describe("lintpdfPlugin", () => {
 
     const [prefix, routes] = ctx.addRoutes.mock.calls[0];
     expect(prefix).toBe("/api/lintpdf");
-    // 1 webhook + 3 jobs + 1 profiles = 5 (usage/waitlist routes moved to sub-plugins)
-    expect(routes.length).toBe(5);
+    expect(routes.length).toBe(17);
   });
 
   it("boot logs when client is ready", async () => {

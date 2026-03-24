@@ -40,9 +40,9 @@ describe("validateWebhookSignature", () => {
       event: "preflight.complete",
       job_id: "123",
     });
-    const sig = createHmac("sha256", "wrong-secret-blah-blah")
+    const sig = createHmac("sha256", "wrong-secret-blah-blah") // nosemgrep: javascript.lang.security.audit.hardcoded-hmac-key.hardcoded-hmac-key
       .update(payload)
-      .digest("hex"); // nosemgrep: hardcoded-hmac-key
+      .digest("hex");
     expect(validateWebhookSignature(payload, sig, secret)).toBe(false);
   });
 });

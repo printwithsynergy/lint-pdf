@@ -224,7 +224,7 @@ export default function ColorConfigPage() {
       let imported = 0;
 
       for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
+        const line = lines[i]!.trim();
         if (!line || (i === 0 && line.toLowerCase().includes("name"))) continue;
 
         // Support comma or pipe delimiter
@@ -242,7 +242,7 @@ export default function ColorConfigPage() {
           if (!cmyk.some(isNaN)) entry.cmyk_bridge = cmyk;
         }
 
-        merged[name.toUpperCase()] = entry;
+        merged[name!.toUpperCase()] = entry;
         imported++;
       }
 

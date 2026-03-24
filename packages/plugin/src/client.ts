@@ -34,7 +34,7 @@ export class LintPDFClient {
       resp = await fetch(url, init);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`LintPDF API network error: ${message}`);
+      throw new Error(`LintPDF API network error: ${message}`, { cause: err });
     }
     if (!resp.ok) {
       const detail = resp.statusText ? ` ${resp.statusText}` : "";

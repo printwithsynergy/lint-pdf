@@ -31,7 +31,7 @@ function createMockRequest(
 function createMockClient(
   methods: Record<string, ReturnType<typeof vi.fn>>,
 ): ReturnType<typeof getClient> {
-  return methods as ReturnType<typeof getClient>;
+  return methods as unknown as ReturnType<typeof getClient>;
 }
 
 describe("jobRoutes", () => {
@@ -103,7 +103,7 @@ describe("jobRoutes", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJobs);
       expect(
-        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listJobs,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).listJobs,
       ).toHaveBeenCalledWith(1, 20);
     });
 
@@ -121,7 +121,7 @@ describe("jobRoutes", () => {
       );
 
       expect(
-        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listJobs,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).listJobs,
       ).toHaveBeenCalledWith(3, 10);
     });
   });
@@ -156,7 +156,7 @@ describe("jobRoutes", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJob);
       expect(
-        (mockClient as Record<string, ReturnType<typeof vi.fn>>).getJob,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).getJob,
       ).toHaveBeenCalledWith("abc");
     });
   });
@@ -189,7 +189,7 @@ describe("jobRoutes", () => {
 
       expect(res.status).toBe(204);
       expect(
-        (mockClient as Record<string, ReturnType<typeof vi.fn>>).deleteJob,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).deleteJob,
       ).toHaveBeenCalledWith("del_123");
     });
   });
@@ -203,8 +203,8 @@ describe("profileRoutes", () => {
     routes = profileRoutes();
   });
 
-  it("returns 1 route definition", () => {
-    expect(routes).toHaveLength(1);
+  it("returns 4 route definitions", () => {
+    expect(routes).toHaveLength(4);
   });
 
   it("defines GET /profiles route with correct metadata", () => {
@@ -238,7 +238,7 @@ describe("profileRoutes", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockProfiles);
       expect(
-        (mockClient as Record<string, ReturnType<typeof vi.fn>>).listProfiles,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).listProfiles,
       ).toHaveBeenCalled();
     });
   });

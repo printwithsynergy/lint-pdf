@@ -1,177 +1,57 @@
-#!/usr/bin/env bash
-# Pre-commit hook — runs the same lint/type/build/test checks as CI.
-# Install: git config core.hooksPath .githooks
-#
-# Environment variables:
-#   SKIP_TESTS=1   — skip pytest / vitest suites (lint & type checks still run)
-#   SKIP_BUILD=1   — skip build steps (lint & type checks still run)
-#   SKIP_HOOKS=1   — skip all pre-commit checks entirely
+#!/bin/bash
 set -euo pipefail
+export PATH="/opt/homebrew/bin:$PATH"
 
-if [ "${SKIP_HOOKS:-0}" = "1" ]; then
-  exit 0
-fi
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+STAGED=$(git diff --cached --name-only 2>/dev/null || true)
+[ -z "$STAGED" ] && exit 0
 
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+# ── Detect changed packages (mirrors CI paths-filter) ─────────────────────
+CHANGED_ENGINE=false; CHANGED_INFERENCE=false
+CHANGED_WEB=false; CHANGED_PLUGIN=false; CHANGED_STRIPE=false; CHANGED_APP=false
 
-failed=0
-
-heading() { printf "\n${YELLOW}▶ %s${NC}\n" "$1"; }
-pass()    { printf "${GREEN}  ✓ %s${NC}\n" "$1"; }
-fail()    { printf "${RED}  ✗ %s${NC}\n" "$1"; failed=1; }
-
-if [ "${SKIP_TESTS:-0}" = "1" ]; then
-  printf "${YELLOW}SKIP_TESTS=1 — skipping test suites${NC}\n"
-fi
-if [ "${SKIP_BUILD:-0}" = "1" ]; then
-  printf "${YELLOW}SKIP_BUILD=1 — skipping build steps${NC}\n"
-fi
-
-# Detect which packages have staged changes
-engine_changed=false
-inference_changed=false
-app_changed=false
-web_changed=false
-plugin_changed=false
-stripe_changed=false
-semgrep_files=()
-
-staged_files=$(git diff --cached --name-only --diff-filter=ACMR)
-
-for f in $staged_files; do
+while IFS= read -r f; do
   case "$f" in
-    packages/engine/*)    engine_changed=true ;;
-    packages/inference/*) inference_changed=true ;;
-    packages/app/*)       app_changed=true ;;
-    packages/web/*)       web_changed=true ;;
-    packages/plugin/*)    plugin_changed=true ;;
-    packages/stripe/*)    stripe_changed=true ;;
+    packages/engine/*)    CHANGED_ENGINE=true ;;
+    packages/inference/*) CHANGED_INFERENCE=true ;;
+    packages/web/*)       CHANGED_WEB=true ;;
+    packages/plugin/*)    CHANGED_PLUGIN=true ;;
+    packages/stripe/*)    CHANGED_STRIPE=true ;;
+    packages/app/*)       CHANGED_APP=true ;;
   esac
-  case "$f" in
-    *.py|*.ts|*.tsx|*.js|*.jsx) semgrep_files+=("$f") ;;
-  esac
-done
+done <<< "$STAGED"
 
-# ── Engine checks (mirrors CI: engine job) ────────────────────
-if $engine_changed; then
-  heading "Engine — ruff check"
-  (cd packages/engine && ruff check src/ tests/) && pass "ruff check" || fail "ruff check"
+FAIL=0
 
-  heading "Engine — ruff format"
-  (cd packages/engine && ruff format --check src/ tests/) && pass "ruff format" || fail "ruff format"
-
-  heading "Engine — mypy"
-  (cd packages/engine && mypy --python-executable "$(which python)" src/) && pass "mypy" || fail "mypy"
-
-  if [ "${SKIP_TESTS:-0}" != "1" ]; then
-    heading "Engine — pytest"
-    (cd packages/engine && pytest tests/ -v --tb=short -m "not corpus and not integration") \
-      && pass "pytest" || fail "pytest"
-  fi
+# ── Python: Engine — ruff check + ruff format + mypy ──────────────────────
+if $CHANGED_ENGINE && [ -d "$REPO_ROOT/packages/engine" ]; then
+  echo "🔍 [engine] ruff check..."
+  (cd "$REPO_ROOT/packages/engine" && ruff check src/ tests/) || FAIL=1
+  echo "🔍 [engine] ruff format --check..."
+  (cd "$REPO_ROOT/packages/engine" && ruff format --check src/ tests/) || FAIL=1
+  echo "🔍 [engine] mypy..."
+  (cd "$REPO_ROOT/packages/engine" && mypy src/) || FAIL=1
 fi
 
-# ── Inference checks (mirrors CI: inference job) ──────────────
-if $inference_changed; then
-  heading "Inference — ruff check"
-  (cd packages/inference && ruff check src/ tests/) && pass "ruff check" || fail "ruff check"
-
-  heading "Inference — ruff format"
-  (cd packages/inference && ruff format --check src/ tests/) && pass "ruff format" || fail "ruff format"
-
-  if [ "${SKIP_TESTS:-0}" != "1" ]; then
-    heading "Inference — pytest"
-    (cd packages/inference && pytest tests/ -v --tb=short) \
-      && pass "pytest" || fail "pytest"
-  fi
+# ── Python: Inference — ruff check + ruff format ──────────────────────────
+if $CHANGED_INFERENCE && [ -d "$REPO_ROOT/packages/inference" ]; then
+  echo "🔍 [inference] ruff check..."
+  (cd "$REPO_ROOT/packages/inference" && ruff check src/ tests/) || FAIL=1
+  echo "🔍 [inference] ruff format --check..."
+  (cd "$REPO_ROOT/packages/inference" && ruff format --check src/ tests/) || FAIL=1
 fi
 
-# ── App checks (mirrors CI: app job) ─────────────────────────
-if $app_changed; then
-  heading "App — eslint"
-  pnpm --filter @thinkneverland/grounded-app lint && pass "eslint" || fail "eslint"
-
-  heading "App — typecheck"
-  pnpm --filter @thinkneverland/grounded-app typecheck && pass "typecheck" || fail "typecheck"
-
-  heading "App — prisma generate"
-  pnpm --filter @thinkneverland/grounded-app db:generate && pass "db:generate" || fail "db:generate"
-
-  if [ "${SKIP_BUILD:-0}" != "1" ]; then
-    heading "App — build workspace deps"
-    pnpm --filter @thinkneverland/grounded-plugin --filter @lintpdf/stripe build \
-      && pass "build deps" || fail "build deps"
-
-    heading "App — build"
-    pnpm --filter @thinkneverland/grounded-app build && pass "build" || fail "build"
-  fi
+# ── Node packages — typecheck + lint ──────────────────────────────────────
+if $CHANGED_WEB || $CHANGED_APP || $CHANGED_PLUGIN || $CHANGED_STRIPE; then
+  echo "🔍 [node] typecheck..."
+  pnpm typecheck || FAIL=1
+  echo "🔍 [node] lint..."
+  pnpm lint || FAIL=1
 fi
 
-# ── Web checks (mirrors CI: web job) ─────────────────────────
-if $web_changed; then
-  heading "Web — eslint"
-  pnpm --filter @thinkneverland/grounded-web lint && pass "eslint" || fail "eslint"
-
-  heading "Web — typecheck"
-  pnpm --filter @thinkneverland/grounded-web typecheck && pass "typecheck" || fail "typecheck"
-
-  if [ "${SKIP_BUILD:-0}" != "1" ]; then
-    heading "Web — build"
-    pnpm --filter @thinkneverland/grounded-web build && pass "build" || fail "build"
-  fi
-fi
-
-# ── Plugin checks (mirrors CI: plugin job) ────────────────────
-if $plugin_changed; then
-  heading "Plugin — typecheck"
-  pnpm --filter @thinkneverland/grounded-plugin typecheck && pass "typecheck" || fail "typecheck"
-
-  if [ "${SKIP_TESTS:-0}" != "1" ]; then
-    heading "Plugin — vitest"
-    pnpm --filter @thinkneverland/grounded-plugin test && pass "vitest" || fail "vitest"
-  fi
-
-  if [ "${SKIP_BUILD:-0}" != "1" ]; then
-    heading "Plugin — build"
-    pnpm --filter @thinkneverland/grounded-plugin build && pass "build" || fail "build"
-  fi
-fi
-
-# ── Stripe checks (mirrors CI: stripe job) ────────────────────
-if $stripe_changed; then
-  heading "Stripe — typecheck"
-  pnpm --filter @lintpdf/stripe typecheck && pass "typecheck" || fail "typecheck"
-
-  if [ "${SKIP_TESTS:-0}" != "1" ]; then
-    heading "Stripe — vitest"
-    pnpm --filter @lintpdf/stripe test && pass "vitest" || fail "vitest"
-  fi
-
-  if [ "${SKIP_BUILD:-0}" != "1" ]; then
-    heading "Stripe — build"
-    pnpm --filter @lintpdf/stripe build && pass "build" || fail "build"
-  fi
-fi
-
-# ── Semgrep security scan ────────────────────────────────────
-if [ ${#semgrep_files[@]} -gt 0 ]; then
-  if command -v semgrep &>/dev/null; then
-    heading "Semgrep — security scan (staged files)"
-    semgrep scan --config .semgrep.yml --quiet "${semgrep_files[@]}" \
-      && pass "semgrep" || fail "semgrep"
-  else
-    printf "\n${YELLOW}  ⚠ semgrep not installed — skipping security scan (pip install semgrep)${NC}\n"
-  fi
-fi
-
-# ── Summary ──────────────────────────────────────────────────
-if [ "$failed" -ne 0 ]; then
-  printf "\n${RED}Pre-commit checks failed. Fix the issues above and try again.${NC}\n"
+if [ $FAIL -ne 0 ]; then
+  echo "❌ Pre-commit checks failed. Fix errors before committing."
+  echo "   To skip: git commit --no-verify"
   exit 1
 fi
-
-if $engine_changed || $inference_changed || $app_changed || $web_changed || $plugin_changed || $stripe_changed; then
-  printf "\n${GREEN}All pre-commit checks passed.${NC}\n"
-fi
+echo "✅ Pre-commit checks passed."

@@ -35,16 +35,6 @@ export default async function DashboardLayout({
   });
   if (!user) redirect("/auth/login");
 
-  // Check if super admin is impersonating a tenant
-  let impersonatingTenantId: string | null = null;
-  if (user.isSuperAdmin) {
-    const sessionRecord = await prisma.session.findUnique({
-      where: { token },
-      select: { impersonatingTenantId: true },
-    });
-    impersonatingTenantId = sessionRecord?.impersonatingTenantId ?? null;
-  }
-
   const registry = await ensureRegistry();
   const navItems = filterNavByUser(registry.getNavItems(), user);
 

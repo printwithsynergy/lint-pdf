@@ -27,10 +27,7 @@ export type { OverageEvent, SetupResult } from "./types.js";
 // ── Engine admin API helper ─────────────────────────────────
 
 function engineAdminUrl(): string {
-  const url = process.env.LINTPDF_API_URL;
-  if (!url) {
-    throw new Error("LINTPDF_API_URL environment variable is required");
-  }
+  const url = process.env.LINTPDF_API_URL ?? "http://localhost:8000";
   return url.replace(/\/$/, "");
 }
 
