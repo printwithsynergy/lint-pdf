@@ -3,7 +3,7 @@
   <title>LintPDF-style bracket logo</title>
   <desc>Vector recreation of the uploaded flat bracket logo.</desc>
   <!-- Background -->
-  <rect x="18" y="18" width="988" height="988" rx="165" fill="#1FA0DB"/>
+  <rect x="18" y="18" width="988" height="988" rx="165" fill="#4087F7"/>
   <!-- Center content area -->
   <!-- Brackets -->
   <path d="M210 270
@@ -35,7 +35,7 @@
            V270Z"
         fill="#F2F2F2"/>
   <!-- Text lines -->
-  <rect x="347" y="356" width="330" height="36" rx="18" fill="#8ED1F0"/>
-  <rect x="392" y="455" width="240" height="36" rx="18" fill="#8ED1F0"/>
-  <rect x="366" y="554" width="294" height="36" rx="18" fill="#8ED1F0"/>
+  <rect x="347" y="356" width="330" height="36" rx="18" fill="#93C5FD"/>
+  <rect x="392" y="455" width="240" height="36" rx="18" fill="#93C5FD"/>
+  <rect x="366" y="554" width="294" height="36" rx="18" fill="#93C5FD"/>
 </svg>
