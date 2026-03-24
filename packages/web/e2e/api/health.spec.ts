@@ -20,7 +20,9 @@ test.describe("Health & Status Endpoints", () => {
     expect(body).toHaveProperty("worker_count");
   });
 
-  test("GET /api/v1/beta/status returns beta mode flag", async ({ request }) => {
+  test("GET /api/v1/beta/status returns beta mode flag", async ({
+    request,
+  }) => {
     const res = await request.get("/api/v1/beta/status");
     expect(res.status()).toBe(200);
     const body = await res.json();

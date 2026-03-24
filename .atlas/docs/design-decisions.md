@@ -32,12 +32,15 @@ Delegate PDF/A validation to specialist. MPL 2.0 compatible. REST API on port 80
 ## Design Tokens
 
 ### Finding Severity
+
 Three levels only: no-fly (spec violation), delay (warning), advisory (informational).
 
 ### API Status Values
+
 queued -> taxiing -> arrived
 
 ### Report Verdict
+
 - clear-to-fly: Zero no-fly findings
 - lintpdf: One or more no-fly findings
 - delay: Zero no-fly, one or more delay findings
