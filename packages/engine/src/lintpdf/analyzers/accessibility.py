@@ -91,7 +91,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # --- Additional accessibility checks (LPDF_ACCESS_004–013) ---
+        # --- Additional accessibility checks (LPDF_ACCESS_004-013) ---
 
         struct_tree = catalog.get("/StructTreeRoot")
 
@@ -132,7 +132,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                         )
                     )
 
-        # Structure-tree based checks (006–010)
+        # Structure-tree based checks (006-010)
         if isinstance(struct_tree, dict):
             k_array = struct_tree.get("/K")
 

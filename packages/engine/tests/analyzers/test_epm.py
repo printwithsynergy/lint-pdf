@@ -2,9 +2,9 @@
 
 from lintpdf.analyzers.epm_analyzer import EpmAnalyzer
 from lintpdf.analyzers.finding import Severity
-from lintpdf.semantic.model import SemanticDocument, SemanticPage, PdfBox
-from lintpdf.semantic.events import TextRenderedEvent, PathPaintingEvent
+from lintpdf.semantic.events import PathPaintingEvent, TextRenderedEvent
 from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_doc():

@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import hashlib
 import logging
-import math
 from typing import TYPE_CHECKING, Any
 
 from lintpdf.analyzers.base import BaseAnalyzer
@@ -22,7 +21,7 @@ from lintpdf.profiles.icc.profile_manager import get_gamut_boundary
 
 if TYPE_CHECKING:
     from lintpdf.profiles.icc.gamut_boundary import GamutBoundary
-    from lintpdf.semantic.events import ColorChangedEvent, ContentStreamEvent
+    from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
 logger = logging.getLogger(__name__)
@@ -143,12 +142,13 @@ def _cmyk_to_lab_via_icc(
     """
     try:
         import io
+
         from PIL import Image, ImageCms
     except ImportError:
         return None
 
     # Cache transforms by profile hash
-    profile_hash = hashlib.md5(profile_bytes).hexdigest()  # noqa: S324
+    profile_hash = hashlib.md5(profile_bytes).hexdigest()
     transform = _cmyk_transform_cache.get(profile_hash)
 
     if transform is None:
@@ -168,12 +168,12 @@ def _cmyk_to_lab_via_icc(
 
     try:
         # ImageCms expects 0-255 CMYK values
-        c_byte = int(round(c * 255))
-        m_byte = int(round(m * 255))
-        y_byte = int(round(y * 255))
-        k_byte = int(round(k * 255))
+        c_byte = round(c * 255)
+        m_byte = round(m * 255)
+        y_byte = round(y * 255)
+        k_byte = round(k * 255)
 
-        # Create a 1×1 CMYK image and apply the transform
+        # Create a 1x1 CMYK image and apply the transform
         src_img = Image.new("CMYK", (1, 1), (c_byte, m_byte, y_byte, k_byte))
         lab_img = ImageCms.applyTransform(src_img, transform)
         pixel = lab_img.getpixel((0, 0))

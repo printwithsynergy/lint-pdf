@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from lintpdf.analyzers.finding import Severity
 from lintpdf.profiles.orchestrator import PreflightOrchestrator, PreflightResult
-from lintpdf.profiles.schema import CheckConfig, ThresholdConfig, PreflightProfile
+from lintpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConfig
 from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 

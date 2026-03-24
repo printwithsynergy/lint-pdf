@@ -103,41 +103,38 @@ def validate_metadata(document: SemanticDocument) -> list[Finding]:  # skipcq: P
 
     # PDFX3-018: /CreationDate must be present
     info_create = document.info_dict.get("/CreationDate") or document.info_dict.get("CreationDate")
-    if not info_create:
-        if not xmp.create_date:
-            findings.append(
-                Finding(
-                    inspection_id=f"{_PREFIX}-018",
-                    severity=Severity.WARNING,
-                    message="CreationDate missing from both Info dict and XMP metadata",
-                    iso_clause="ISO 15930-6:2003 6.7.5",
-                )
+    if not info_create and not xmp.create_date:
+        findings.append(
+            Finding(
+                inspection_id=f"{_PREFIX}-018",
+                severity=Severity.WARNING,
+                message="CreationDate missing from both Info dict and XMP metadata",
+                iso_clause="ISO 15930-6:2003 6.7.5",
             )
+        )
 
     # PDFX3-019: /ModDate must be present
     info_mod = document.info_dict.get("/ModDate") or document.info_dict.get("ModDate")
-    if not info_mod:
-        if not xmp.modify_date:
-            findings.append(
-                Finding(
-                    inspection_id=f"{_PREFIX}-019",
-                    severity=Severity.WARNING,
-                    message="ModDate missing from both Info dict and XMP metadata",
-                    iso_clause="ISO 15930-6:2003 6.7.5",
-                )
+    if not info_mod and not xmp.modify_date:
+        findings.append(
+            Finding(
+                inspection_id=f"{_PREFIX}-019",
+                severity=Severity.WARNING,
+                message="ModDate missing from both Info dict and XMP metadata",
+                iso_clause="ISO 15930-6:2003 6.7.5",
             )
+        )
 
     # PDFX3-020: /Title must be present
     info_title = document.info_dict.get("/Title") or document.info_dict.get("Title")
-    if not info_title:
-        if not xmp.title:
-            findings.append(
-                Finding(
-                    inspection_id=f"{_PREFIX}-020",
-                    severity=Severity.WARNING,
-                    message="Title missing from both Info dict and XMP metadata",
-                    iso_clause="ISO 15930-6:2003 6.7.5",
-                )
+    if not info_title and not xmp.title:
+        findings.append(
+            Finding(
+                inspection_id=f"{_PREFIX}-020",
+                severity=Severity.WARNING,
+                message="Title missing from both Info dict and XMP metadata",
+                iso_clause="ISO 15930-6:2003 6.7.5",
             )
+        )
 
     return findings

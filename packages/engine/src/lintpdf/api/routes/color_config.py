@@ -9,12 +9,12 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import Tenant, TenantColorConfig  # noqa: TC001
+from lintpdf.api.models import Tenant, TenantColorConfig
 from lintpdf.api.schemas import (
     ColorConfigResponse,
     ColorConfigUpdateRequest,
-    GamutConditionsListResponse,
     GamutConditionResponse,
+    GamutConditionsListResponse,
     IccProfileUploadResponse,
     PaletteUpdateRequest,
     PantoneOverridesResponse,

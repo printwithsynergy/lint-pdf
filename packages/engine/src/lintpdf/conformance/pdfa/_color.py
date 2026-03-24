@@ -201,22 +201,26 @@ def validate_color(  # skipcq: PY-R1000
         cs_resources = page.resources.get("/ColorSpace") or page.resources.get("ColorSpace")
         if isinstance(cs_resources, dict):
             for cs_name, cs_def in cs_resources.items():
-                if isinstance(cs_def, list) and cs_def and str(cs_def[0]) == "Pattern":
-                    if len(cs_def) >= 2:
-                        base_cs = str(cs_def[1])
-                        if base_cs in _DEVICE_DEPENDENT_SPACES and not has_output_intent:
-                            findings.append(
-                                Finding(
-                                    inspection_id=f"{_PREFIX}-017",
-                                    severity=Severity.ERROR,
-                                    message=(
-                                        f"Pattern color space '{cs_name}' has device-dependent "
-                                        f"base '{base_cs}' without OutputIntent"
-                                    ),
-                                    page_num=page.page_num,
-                                    iso_clause="ISO 19005 6.2.4",
-                                )
+                if (
+                    isinstance(cs_def, list)
+                    and cs_def
+                    and str(cs_def[0]) == "Pattern"
+                    and len(cs_def) >= 2
+                ):
+                    base_cs = str(cs_def[1])
+                    if base_cs in _DEVICE_DEPENDENT_SPACES and not has_output_intent:
+                        findings.append(
+                            Finding(
+                                inspection_id=f"{_PREFIX}-017",
+                                severity=Severity.ERROR,
+                                message=(
+                                    f"Pattern color space '{cs_name}' has device-dependent "
+                                    f"base '{base_cs}' without OutputIntent"
+                                ),
+                                page_num=page.page_num,
+                                iso_clause="ISO 19005 6.2.4",
                             )
+                        )
 
     # PDFA-018: Indexed color space with device-dependent base
     for page in document.pages:

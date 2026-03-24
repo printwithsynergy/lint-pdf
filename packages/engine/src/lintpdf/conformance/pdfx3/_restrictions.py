@@ -178,16 +178,17 @@ def _check_javascript(catalog: dict[str, Any]) -> list[Finding]:
                 )
                 return findings
     names = catalog.get("/Names") or catalog.get("Names")
-    if isinstance(names, dict):
-        if names.get("/JavaScript") is not None or names.get("JavaScript") is not None:
-            findings.append(
-                Finding(
-                    inspection_id=f"{_PREFIX}-032",
-                    severity=Severity.ERROR,
-                    message="JavaScript name tree — prohibited in PDF/X-3",
-                    iso_clause="ISO 15930-6:2003 6.2.8",
-                )
+    if isinstance(names, dict) and (
+        names.get("/JavaScript") is not None or names.get("JavaScript") is not None
+    ):
+        findings.append(
+            Finding(
+                inspection_id=f"{_PREFIX}-032",
+                severity=Severity.ERROR,
+                message="JavaScript name tree - prohibited in PDF/X-3",
+                iso_clause="ISO 15930-6:2003 6.2.8",
             )
+        )
     open_action = catalog.get("/OpenAction") or catalog.get("OpenAction")
     if isinstance(open_action, dict) and (
         open_action.get("/S") == "/JavaScript" or open_action.get("S") == "JavaScript"

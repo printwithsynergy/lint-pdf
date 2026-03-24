@@ -32,9 +32,9 @@ class PdfAValidator(BaseConformanceValidator):
         analyzer_findings: list[Finding] | None = None,
     ) -> list[Finding]:
         """Run PDF/A conformance checks for the configured level."""
-        from lintpdf.conformance.pdfa._metadata import validate_metadata
         from lintpdf.conformance.pdfa._color import validate_color
         from lintpdf.conformance.pdfa._font import validate_fonts
+        from lintpdf.conformance.pdfa._metadata import validate_metadata
         from lintpdf.conformance.pdfa._restrictions import validate_restrictions
 
         findings: list[Finding] = []

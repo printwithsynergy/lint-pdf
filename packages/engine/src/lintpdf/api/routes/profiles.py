@@ -7,21 +7,21 @@ import uuid as uuid_mod
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session  # noqa: TC002
+from fastapi import APIRouter, Depends, HTTPException, status  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: TC002, E402
 
-from lintpdf.api.auth import get_current_tenant
-from lintpdf.api.database import get_db
-from lintpdf.api.models import CustomProfile, Tenant
-from lintpdf.api.schemas import (
+from lintpdf.api.auth import get_current_tenant  # noqa: E402
+from lintpdf.api.database import get_db  # noqa: E402
+from lintpdf.api.models import CustomProfile, Tenant  # noqa: E402
+from lintpdf.api.schemas import (  # noqa: E402
     ProfileCreateRequest,
     ProfileCreateResponse,
     ProfileDetailResponse,
     ProfileListResponse,
     ProfileSummaryResponse,
 )
-from lintpdf.profiles.registry import ProfileRegistry
-from lintpdf.profiles.schema import PreflightProfile
+from lintpdf.profiles.registry import ProfileRegistry  # noqa: E402
+from lintpdf.profiles.schema import PreflightProfile  # noqa: E402
 
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
 

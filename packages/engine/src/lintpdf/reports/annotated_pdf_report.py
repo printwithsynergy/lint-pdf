@@ -11,12 +11,10 @@ from __future__ import annotations
 
 import io
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    pass
 
 # Severity colors (RGBA)
 _SEVERITY_COLORS = {

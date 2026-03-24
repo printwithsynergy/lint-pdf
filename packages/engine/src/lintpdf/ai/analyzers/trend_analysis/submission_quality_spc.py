@@ -161,6 +161,7 @@ def _query_historical_data(tenant_id: Any) -> list[dict[str, Any]] | None:
     """
     try:
         from sqlalchemy import func, text
+
         from lintpdf.api.database import get_db_session
         from lintpdf.api.models import Job, JobFinding, JobStatus
     except (ImportError, RuntimeError):
@@ -175,20 +176,20 @@ def _query_historical_data(tenant_id: Any) -> list[dict[str, Any]] | None:
 
     try:
         # Subquery: per-job finding counts grouped by severity
-        finding_counts = (
+        (
             db.query(
                 JobFinding.job_id,
                 func.count(JobFinding.id).label("finding_count"),
                 func.sum(
                     func.cast(
                         JobFinding.severity == "error",
-                        db.bind.dialect.name != "sqlite" and text("INTEGER") or text("INT"),
+                        (db.bind.dialect.name != "sqlite" and text("INTEGER")) or text("INT"),
                     )
                 ).label("error_count_raw"),
                 func.sum(
                     func.cast(
                         JobFinding.severity == "warning",
-                        db.bind.dialect.name != "sqlite" and text("INTEGER") or text("INT"),
+                        (db.bind.dialect.name != "sqlite" and text("INTEGER")) or text("INT"),
                     )
                 ).label("warning_count_raw"),
             )

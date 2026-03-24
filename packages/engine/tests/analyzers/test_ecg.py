@@ -1,7 +1,7 @@
 """Tests for EcgAnalyzer."""
 
 from lintpdf.analyzers.ecg_analyzer import EcgAnalyzer
-from lintpdf.semantic.model import SemanticDocument, SemanticPage, PdfBox, PdfColorSpace
+from lintpdf.semantic.model import PdfBox, PdfColorSpace, SemanticDocument, SemanticPage
 
 
 def _make_doc(color_spaces=None):

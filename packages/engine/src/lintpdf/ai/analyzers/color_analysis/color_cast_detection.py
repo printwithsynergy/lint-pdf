@@ -8,7 +8,7 @@ means) with CLIP-IQA perceptual quality assessment for color accuracy.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.gpu_client import GPUInferenceClient, GPUServiceUnavailableError

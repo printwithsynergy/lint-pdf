@@ -15,9 +15,11 @@ Each regulatory reference tracks:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date
 from enum import StrEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from datetime import date
 
 
 class RegulatoryStatus(StrEnum):

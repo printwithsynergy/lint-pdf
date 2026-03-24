@@ -248,61 +248,42 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     continue
 
                 # If alternate is CMYK, validate via Delta-E
-                if cs.alternate and alt_type in ("DeviceCMYK", "ICCBased"):
+                if (
+                    cs.alternate
+                    and alt_type in ("DeviceCMYK", "ICCBased")
                     # Use reference CMYK bridge as proxy for the fallback values
                     # (actual tintTransform values would require evaluation)
-                    if ref.cmyk_bridge:
-                        cmyk_01 = (
-                            ref.cmyk_bridge[0] / 100.0,
-                            ref.cmyk_bridge[1] / 100.0,
-                            ref.cmyk_bridge[2] / 100.0,
-                            ref.cmyk_bridge[3] / 100.0,
-                        )
-                        de_result = manager.validate_cmyk_fallback(
-                            colorant,
-                            cmyk_01,
-                            icc_profile_bytes=self._icc_profile_bytes,
-                            warning_threshold=self._delta_e_warning,
-                            advisory_threshold=self._delta_e_advisory,
-                        )
+                    and ref.cmyk_bridge
+                ):
+                    cmyk_01 = (
+                        ref.cmyk_bridge[0] / 100.0,
+                        ref.cmyk_bridge[1] / 100.0,
+                        ref.cmyk_bridge[2] / 100.0,
+                        ref.cmyk_bridge[3] / 100.0,
+                    )
+                    de_result = manager.validate_cmyk_fallback(
+                        colorant,
+                        cmyk_01,
+                        icc_profile_bytes=self._icc_profile_bytes,
+                        warning_threshold=self._delta_e_warning,
+                        advisory_threshold=self._delta_e_advisory,
+                    )
 
-                        if de_result:
-                            if de_result.delta_e > self._delta_e_warning:
-                                severity = Severity.WARNING
-                            elif de_result.delta_e > self._delta_e_advisory:
-                                severity = Severity.ADVISORY
-                            else:
-                                # Delta-E is acceptable — emit informational
-                                findings.append(
-                                    Finding(
-                                        inspection_id="LPDF_SPOT_002",
-                                        severity=Severity.ADVISORY,
-                                        message=(
-                                            f"Pantone '{colorant}' CMYK fallback "
-                                            f"Delta-E = {de_result.delta_e:.1f} "
-                                            f"(acceptable)"
-                                        ),
-                                        page_num=page.page_num,
-                                        details={
-                                            "colorant_name": colorant,
-                                            "delta_e": de_result.delta_e,
-                                            "reference_lab": list(de_result.reference_lab),
-                                            "fallback_lab": list(de_result.fallback_lab),
-                                            "acceptable": True,
-                                        },
-                                        iso_clause="ISO 32000-2:2020 8.6.6.4",
-                                    )
-                                )
-                                continue
-
+                    if de_result:
+                        if de_result.delta_e > self._delta_e_warning:
+                            severity = Severity.WARNING
+                        elif de_result.delta_e > self._delta_e_advisory:
+                            severity = Severity.ADVISORY
+                        else:
+                            # Delta-E is acceptable — emit informational
                             findings.append(
                                 Finding(
                                     inspection_id="LPDF_SPOT_002",
-                                    severity=severity,
+                                    severity=Severity.ADVISORY,
                                     message=(
                                         f"Pantone '{colorant}' CMYK fallback "
                                         f"Delta-E = {de_result.delta_e:.1f} "
-                                        f"(threshold: {self._delta_e_warning})"
+                                        f"(acceptable)"
                                     ),
                                     page_num=page.page_num,
                                     details={
@@ -310,13 +291,35 @@ class SpotColorAnalyzer(BaseAnalyzer):
                                         "delta_e": de_result.delta_e,
                                         "reference_lab": list(de_result.reference_lab),
                                         "fallback_lab": list(de_result.fallback_lab),
-                                        "acceptable": de_result.acceptable,
-                                        "alternate_type": alt_type,
+                                        "acceptable": True,
                                     },
                                     iso_clause="ISO 32000-2:2020 8.6.6.4",
                                 )
                             )
                             continue
+
+                        findings.append(
+                            Finding(
+                                inspection_id="LPDF_SPOT_002",
+                                severity=severity,
+                                message=(
+                                    f"Pantone '{colorant}' CMYK fallback "
+                                    f"Delta-E = {de_result.delta_e:.1f} "
+                                    f"(threshold: {self._delta_e_warning})"
+                                ),
+                                page_num=page.page_num,
+                                details={
+                                    "colorant_name": colorant,
+                                    "delta_e": de_result.delta_e,
+                                    "reference_lab": list(de_result.reference_lab),
+                                    "fallback_lab": list(de_result.fallback_lab),
+                                    "acceptable": de_result.acceptable,
+                                    "alternate_type": alt_type,
+                                },
+                                iso_clause="ISO 32000-2:2020 8.6.6.4",
+                            )
+                        )
+                        continue
 
                 # No CMYK alternate or no bridge data — report informational
                 findings.append(
@@ -919,16 +922,24 @@ class SpotColorAnalyzer(BaseAnalyzer):
             page_num: int = 0
 
             # Duck-type: look for fill/stroke separation colors
-            if hasattr(event, "fill_color_space") and hasattr(event, "fill_color_values"):
-                if event.fill_color_space and "Separation" in str(event.fill_color_space):
-                    color_space = event.fill_color_space
-                    color_values = event.fill_color_values
-                    page_num = event.page_num
-            if hasattr(event, "color_space") and hasattr(event, "color_values"):
-                if event.color_space and "Separation" in str(event.color_space):
-                    color_space = event.color_space
-                    color_values = event.color_values
-                    page_num = event.page_num
+            if (
+                hasattr(event, "fill_color_space")
+                and hasattr(event, "fill_color_values")
+                and event.fill_color_space
+                and "Separation" in str(event.fill_color_space)
+            ):
+                color_space = event.fill_color_space
+                color_values = event.fill_color_values
+                page_num = event.page_num
+            if (
+                hasattr(event, "color_space")
+                and hasattr(event, "color_values")
+                and event.color_space
+                and "Separation" in str(event.color_space)
+            ):
+                color_space = event.color_space
+                color_values = event.color_values
+                page_num = event.page_num
 
             if color_space is None or not color_values:
                 continue

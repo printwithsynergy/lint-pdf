@@ -230,8 +230,8 @@ class PantoneManager:
         Uses colour-science if available, otherwise falls back to CIE76.
         """
         try:
-            import numpy as np
             import colour as colour_science
+            import numpy as np
 
             a1 = np.array(lab1)
             a2 = np.array(lab2)

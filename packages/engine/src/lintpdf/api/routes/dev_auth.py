@@ -11,15 +11,15 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from sqlalchemy.orm import Session  # noqa: TC002
+from fastapi import APIRouter, Depends, HTTPException, status  # noqa: E402
+from pydantic import BaseModel  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: TC002, E402
 
-from lintpdf.api.auth import generate_api_key, hash_api_key
-from lintpdf.api.auth import verify_admin_key as _verify_admin_key
-from lintpdf.api.database import get_db
-from lintpdf.api.models import ApiKey, Tenant
-from lintpdf.tenants.models import TenantPlan
+from lintpdf.api.auth import generate_api_key, hash_api_key  # noqa: E402
+from lintpdf.api.auth import verify_admin_key as _verify_admin_key  # noqa: E402
+from lintpdf.api.database import get_db  # noqa: E402
+from lintpdf.api.models import ApiKey, Tenant  # noqa: E402
+from lintpdf.tenants.models import TenantPlan  # noqa: E402
 
 router = APIRouter(prefix="/api/v1/dev", tags=["dev"])
 

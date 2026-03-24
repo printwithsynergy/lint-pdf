@@ -1,23 +1,21 @@
 """Tests for the Pantone reference enrichment script."""
 
 import json
-import tempfile
-from pathlib import Path
-
-import pytest
 
 # Import from the scripts directory
 import sys
+from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parent / "../../scripts"))
 from enrich_pantone_reference import (
     cross_reference,
     delta_e_76,
+    main,
     normalize_pantone_name,
     parse_csv,
-    main,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -169,20 +167,29 @@ class TestCrossReference:
 
 class TestMainCLI:
     def test_dry_run(self, sample_csv: Path, existing_json: Path):
-        exit_code = main([
-            "--csv", str(sample_csv),
-            "--existing", str(existing_json),
-            "--dry-run",
-        ])
+        exit_code = main(
+            [
+                "--csv",
+                str(sample_csv),
+                "--existing",
+                str(existing_json),
+                "--dry-run",
+            ]
+        )
         assert exit_code == 0
 
     def test_output_write(self, sample_csv: Path, existing_json: Path, tmp_path: Path):
         output_path = tmp_path / "enriched.json"
-        exit_code = main([
-            "--csv", str(sample_csv),
-            "--existing", str(existing_json),
-            "--output", str(output_path),
-        ])
+        exit_code = main(
+            [
+                "--csv",
+                str(sample_csv),
+                "--existing",
+                str(existing_json),
+                "--output",
+                str(output_path),
+            ]
+        )
         assert exit_code == 0
         assert output_path.exists()
 

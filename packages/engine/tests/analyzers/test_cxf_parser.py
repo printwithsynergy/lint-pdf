@@ -1,7 +1,6 @@
 """Tests for CxF/X-4 spectral data parser."""
 
-from lintpdf.analyzers.cxf_parser import CxfData, CxfSpotColor, parse_cxf_xml
-
+from lintpdf.analyzers.cxf_parser import CxfSpotColor, parse_cxf_xml
 
 _VALID_CXF_XML = b"""\
 <?xml version="1.0" encoding="UTF-8"?>

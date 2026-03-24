@@ -100,7 +100,7 @@ def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skip
 async def submit_job(  # skipcq: PY-R1000
     file: UploadFile = _file_param,
     profile_id: str = _profile_param,
-    jdf_file: UploadFile | None = File(default=None, description="Optional JDF/XJDF sidecar"),
+    jdf_file: UploadFile | None = File(default=None, description="Optional JDF/XJDF sidecar"),  # noqa: B008
     db: Session = Depends(get_db),  # noqa: B008
     tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
 ) -> JSONResponse:

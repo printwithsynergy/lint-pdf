@@ -1,14 +1,11 @@
 """Tests for GamutAnalyzer — CMYK and RGB gamut boundary checking."""
 
-import pytest
-
 from lintpdf.analyzers.finding import Severity
 from lintpdf.analyzers.gamut_analyzer import (
     GamutAnalyzer,
     cmyk_to_lab,
     srgb_to_lab,
 )
-from lintpdf.profiles.icc.gamut_boundary import GamutBoundary, load_gamut_boundary
 from lintpdf.profiles.icc.profile_manager import get_gamut_boundary
 from lintpdf.semantic.events import ColorChangedEvent
 from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage

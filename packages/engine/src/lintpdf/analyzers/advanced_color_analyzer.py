@@ -684,7 +684,6 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         Parses CxF XML from output intents and checks that the wavelength
         range spans at least 380nm to 730nm.
         """
-        from lintpdf.analyzers.cxf_parser import CxfData, parse_cxf_xml
 
         findings: list[Finding] = []
         cxf_data = _extract_cxf_data(document)
@@ -1027,7 +1026,7 @@ def _extract_cxf_data(document: SemanticDocument) -> object | None:
 
     Returns a CxfData object if CxF XML is found and parseable, else None.
     """
-    from lintpdf.analyzers.cxf_parser import CxfData, parse_cxf_xml
+    from lintpdf.analyzers.cxf_parser import parse_cxf_xml
 
     for oi in document.output_intents:
         for key in oi:

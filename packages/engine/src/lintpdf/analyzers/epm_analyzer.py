@@ -119,14 +119,17 @@ class EpmAnalyzer(BaseAnalyzer):
                     overprint_pages.add(event.page_num)
 
                 # LPDF_EPM_018: Minimum line weight for digital
-                if event.stroke and hasattr(event, "line_width"):
-                    if (
+                if (
+                    event.stroke
+                    and hasattr(event, "line_width")
+                    and (
                         event.line_width is not None
                         and event.line_width > 0
                         and event.line_width < self.epm_min_line_weight
-                    ):
-                        thin_line_count += 1
-                        thin_line_pages.add(event.page_num)
+                    )
+                ):
+                    thin_line_count += 1
+                    thin_line_pages.add(event.page_num)
 
                 # Process fill colors
                 if event.fill and event.fill_color_space == "DeviceCMYK":

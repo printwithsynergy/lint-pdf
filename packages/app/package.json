@@ -11,7 +11,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "npx tsx prisma/seed.ts",
     "test:e2e": "playwright test",
     "test:api": "playwright test --project=api-tests",
     "test:ui": "playwright test --project=ui-tests"
@@ -45,7 +45,7 @@
   },
   "prisma": {
     "schema": "prisma/schema",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
@@ -61,7 +61,6 @@
     "postcss": "^8.4.0",
     "prisma": "^6.0.0",
     "tailwindcss": "^4.0.0",
-    "tsx": "^4.19.0",
     "typescript": "^5.8.0"
   }
 }

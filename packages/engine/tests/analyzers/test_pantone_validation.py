@@ -186,7 +186,6 @@ class TestOrchestratorPantoneOverrides:
 
     def test_orchestrator_passes_overrides_to_spot_analyzer(self):
         """Overrides passed to orchestrator reach SpotColorAnalyzer."""
-        from unittest.mock import patch
 
         from lintpdf.profiles.orchestrator import PreflightOrchestrator
         from lintpdf.profiles.schema import PreflightProfile

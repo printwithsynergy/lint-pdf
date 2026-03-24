@@ -13,6 +13,7 @@ Supported fields:
 
 from __future__ import annotations
 
+import contextlib
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from typing import Any
@@ -95,10 +96,8 @@ def _extract_jdf_params(
     for layout in root.iter("LayoutPreparationParams"):
         bleed = layout.get("BleedMargin", "")
         if bleed:
-            try:
+            with contextlib.suppress(ValueError):
                 params.bleed_mm = float(bleed) * 0.352778
-            except ValueError:
-                pass
 
 
 def params_to_overrides(params: JobTicketParams) -> dict[str, Any]:
