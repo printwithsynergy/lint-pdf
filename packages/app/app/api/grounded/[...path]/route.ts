@@ -72,17 +72,6 @@ async function handleRequest(
   const registry = await ensureRegistry();
   const routes = registry.getRoutes() as RouteRegistryEntry[];
 
-  // Debug mode: list all registered routes
-  if (pathSegments[0] === "_debug_routes") {
-    return NextResponse.json(
-      routes.map((r) => ({
-        method: r.method,
-        fullPath: r.fullPath,
-        path: r.path,
-      })),
-    );
-  }
-
   // Find matching route
   let matchedRoute: RouteRegistryEntry | null = null;
   let matchedParams: Record<string, string> = {};
