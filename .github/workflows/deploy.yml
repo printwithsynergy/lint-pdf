@@ -124,7 +124,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Build app
-        run: pnpm --filter @thinkneverland/grounded-app build
+        run: pnpm --filter @thinkneverland/lintpdf-app build
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

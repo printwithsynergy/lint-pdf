@@ -48,7 +48,13 @@ export default function AdminTrialsPage() {
     try {
       const qs = `page=${page}&page_size=${pageSize}${statusFilter ? `&status=${statusFilter}` : ""}`;
       const resp = await fetch(`/api/lintpdf/admin/trials?${qs}`);
-      if (!resp.ok) throw new Error("Failed to load trials");
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error ??
+            `Failed to load trials (${resp.status})`,
+        );
+      }
       const data = await resp.json();
       setSubmissions(data.submissions ?? []);
       setTotal(data.total ?? 0);

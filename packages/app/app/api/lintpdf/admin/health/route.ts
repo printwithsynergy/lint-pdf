@@ -1,9 +1,13 @@
 export const dynamic = "force-dynamic";
 
+import { requireSuperAdmin } from "@/lib/admin-auth";
 import { env } from "@/lib/env";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = await requireSuperAdmin(req);
+  if (denied) return denied;
+
   const adminKey = env.LINTPDF_ADMIN_API_KEY;
   if (!adminKey) {
     return NextResponse.json(

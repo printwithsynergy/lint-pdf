@@ -7,7 +7,7 @@ interface TenantSummary {
   id: string;
   name: string;
   plan: string;
-  status: string;
+  is_active: boolean;
   contact_email: string;
   rate_limit_daily: number;
   created_at: string;
@@ -30,7 +30,13 @@ export default function AdminTenantsPage() {
       const resp = await fetch(
         `/api/lintpdf/admin/tenants?page=${page}&page_size=${pageSize}`,
       );
-      if (!resp.ok) throw new Error("Failed to load tenants");
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error ??
+            `Failed to load tenants (${resp.status})`,
+        );
+      }
       const data = await resp.json();
       setTenants(data.tenants ?? []);
       setTotal(data.total ?? 0);
@@ -63,7 +69,7 @@ export default function AdminTenantsPage() {
       await fetch(`/api/lintpdf/admin/tenants/${tenantId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ is_active: newStatus === "active" }),
       });
       await fetchTenants();
     } catch {
@@ -142,7 +148,7 @@ export default function AdminTenantsPage() {
                     </td>
                     <td className="py-2">
                       <select
-                        value={t.status}
+                        value={t.is_active ? "active" : "suspended"}
                         onChange={(e) =>
                           handleStatusChange(t.id, e.target.value)
                         }

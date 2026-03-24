@@ -11,12 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ─── Detect which packages changed ───────────────────────────
   changes:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
     outputs:
       engine: ${{ steps.filter.outputs.engine }}
       web: ${{ steps.filter.outputs.web }}
@@ -26,30 +22,24 @@ jobs:
       inference: ${{ steps.filter.outputs.inference }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v3
-        id: filter
         with:
-          filters: |
-            engine:
-              - 'packages/engine/**'
-              - '.github/workflows/ci.yml'
-            web:
-              - 'packages/web/**'
-              - '.github/workflows/ci.yml'
-            plugin:
-              - 'packages/plugin/**'
-              - '.github/workflows/ci.yml'
-            stripe:
-              - 'packages/stripe/**'
-              - '.github/workflows/ci.yml'
-            app:
-              - 'packages/app/**'
-              - '.github/workflows/ci.yml'
-            inference:
-              - 'packages/inference/**'
-              - '.github/workflows/ci.yml'
+          fetch-depth: 0
+      - name: Detect changed packages
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          CHANGED=$(git diff --name-only "$BASE" HEAD || echo ".github/workflows/ci.yml")
+          echo "engine=$( echo "$CHANGED" | grep -qE '^packages/engine/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "web=$( echo "$CHANGED" | grep -qE '^packages/web/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "app=$( echo "$CHANGED" | grep -qE '^packages/app/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "plugin=$( echo "$CHANGED" | grep -qE '^packages/plugin/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "stripe=$( echo "$CHANGED" | grep -qE '^packages/stripe/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "inference=$( echo "$CHANGED" | grep -qE '^packages/inference/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
-  # ─── Python: Engine ──────────────────────────────────────────
   engine:
     needs: changes
     if: needs.changes.outputs.engine == 'true' || github.event_name == 'push'
@@ -83,7 +73,6 @@ jobs:
         env:
           DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
 
-  # ─── Python: Inference ───────────────────────────────────────
   inference:
     needs: changes
     if: needs.changes.outputs.inference == 'true' || github.event_name == 'push'
@@ -115,7 +104,6 @@ jobs:
         env:
           DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
 
-  # ─── Node: Web ───────────────────────────────────────────────
   web:
     needs: changes
     if: needs.changes.outputs.web == 'true' || github.event_name == 'push'
@@ -137,7 +125,6 @@ jobs:
       - name: Build
         run: pnpm --filter @thinkneverland/grounded-web build
 
-  # ─── Node: Plugin ────────────────────────────────────────────
   plugin:
     needs: changes
     if: needs.changes.outputs.plugin == 'true' || github.event_name == 'push'
@@ -159,7 +146,6 @@ jobs:
       - name: Build
         run: pnpm --filter @thinkneverland/grounded-plugin build
 
-  # ─── Node: Stripe Plugin ────────────────────────────────────
   stripe:
     needs: changes
     if: needs.changes.outputs.stripe == 'true' || github.event_name == 'push'
@@ -181,7 +167,6 @@ jobs:
       - name: Build
         run: pnpm --filter @lintpdf/stripe build
 
-  # ─── Node: App ─────────────────────────────────────────────
   app:
     needs: changes
     if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
@@ -197,12 +182,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Lint
-        run: pnpm --filter @thinkneverland/grounded-app lint
+        run: pnpm --filter @thinkneverland/lintpdf-app lint
       - name: Typecheck
-        run: pnpm --filter @thinkneverland/grounded-app typecheck
+        run: pnpm --filter @thinkneverland/lintpdf-app typecheck
       - name: Generate Prisma client
-        run: pnpm --filter @thinkneverland/grounded-app db:generate
+        run: pnpm --filter @thinkneverland/lintpdf-app db:generate
       - name: Build workspace deps
         run: pnpm --filter @thinkneverland/grounded-plugin --filter @lintpdf/stripe build
       - name: Build
-        run: pnpm --filter @thinkneverland/grounded-app build
+        run: pnpm --filter @thinkneverland/lintpdf-app build
