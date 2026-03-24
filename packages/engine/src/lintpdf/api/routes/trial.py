@@ -182,7 +182,9 @@ async def submit_trial(
 
     # Basic email validation
     if not re.match(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", email):
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid email.")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Invalid email."
+        )
 
     if len(files) > MAX_TRIAL_FILES:
         raise HTTPException(
@@ -399,11 +401,7 @@ async def download_trial_file(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail="Invalid ID.") from exc
 
-    tf = (
-        db.query(TrialFile)
-        .filter(TrialFile.id == f_uid, TrialFile.submission_id == s_uid)
-        .first()
-    )
+    tf = db.query(TrialFile).filter(TrialFile.id == f_uid, TrialFile.submission_id == s_uid).first()
     if tf is None:
         raise HTTPException(status_code=404, detail="File not found.")
 
@@ -430,11 +428,7 @@ async def run_trial_preflight(
     except ValueError as exc:
         raise HTTPException(status_code=422, detail="Invalid ID.") from exc
 
-    tf = (
-        db.query(TrialFile)
-        .filter(TrialFile.id == f_uid, TrialFile.submission_id == s_uid)
-        .first()
-    )
+    tf = db.query(TrialFile).filter(TrialFile.id == f_uid, TrialFile.submission_id == s_uid).first()
     if tf is None:
         raise HTTPException(status_code=404, detail="File not found.")
 

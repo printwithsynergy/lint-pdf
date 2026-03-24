@@ -242,7 +242,7 @@ def send_trial_report_email(
 
     report_links = "\n".join(
         f'    <a href="{url}" style="display: inline-block; margin: 4px 0; padding: 10px 20px; '
-        f'background: #1e3a8a; color: white; text-decoration: none; border-radius: 6px; '
+        f"background: #1e3a8a; color: white; text-decoration: none; border-radius: 6px; "
         f'font-weight: bold; font-size: 14px;">View Report {i + 1}</a><br>'
         for i, url in enumerate(report_urls)
     )

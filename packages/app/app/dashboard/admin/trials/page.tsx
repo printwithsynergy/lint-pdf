@@ -164,14 +164,11 @@ export default function AdminTrialsPage() {
   const handleStatusUpdate = useCallback(
     async (submissionId: string, newStatus: string) => {
       try {
-        const resp = await fetch(
-          `/api/lintpdf/admin/trials/${submissionId}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status: newStatus }),
-          },
-        );
+        const resp = await fetch(`/api/lintpdf/admin/trials/${submissionId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus }),
+        });
         if (!resp.ok) throw new Error("Update failed");
         await fetchSubmissions();
       } catch {
@@ -305,9 +302,7 @@ export default function AdminTrialsPage() {
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <button
-                                onClick={() =>
-                                  handleDownload(sub.id, f.id)
-                                }
+                                onClick={() => handleDownload(sub.id, f.id)}
                                 disabled={actionLoading === `dl-${f.id}`}
                                 className="rounded border px-2 py-1 text-xs hover:bg-muted disabled:opacity-50"
                               >
@@ -316,9 +311,7 @@ export default function AdminTrialsPage() {
                                   : "Download"}
                               </button>
                               <button
-                                onClick={() =>
-                                  handlePreflight(sub.id, f.id)
-                                }
+                                onClick={() => handlePreflight(sub.id, f.id)}
                                 disabled={
                                   actionLoading === `pf-${f.id}` ||
                                   f.job_status === "pending" ||
@@ -351,9 +344,7 @@ export default function AdminTrialsPage() {
                         onClick={() => handleSendReport(sub.id)}
                         disabled={
                           actionLoading === `report-${sub.id}` ||
-                          !sub.files?.some(
-                            (f) => f.job_status === "complete",
-                          )
+                          !sub.files?.some((f) => f.job_status === "complete")
                         }
                         className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50"
                       >

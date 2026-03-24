@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
-const ENGINE_URL =
-  process.env.LINTPDF_ENGINE_URL ?? "http://localhost:8000";
+const ENGINE_URL = process.env.LINTPDF_ENGINE_URL ?? "http://localhost:8000";
 const TRIAL_SECRET = process.env.LINTPDF_TRIAL_SECRET ?? "";
 
 /** Simple time-window rate limit: max 3 submissions per IP per 10 minutes. */

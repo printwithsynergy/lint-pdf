@@ -30,13 +30,13 @@ export default function TryItPage() {
       const toAdd: SelectedFile[] = [];
       for (const file of Array.from(newFiles)) {
         if (file.type !== "application/pdf") {
-          setErrorMsg(`"${file.name}" is not a PDF. Only PDF files are accepted.`);
+          setErrorMsg(
+            `"${file.name}" is not a PDF. Only PDF files are accepted.`,
+          );
           continue;
         }
         if (file.size > MAX_FILE_SIZE) {
-          setErrorMsg(
-            `"${file.name}" exceeds 50 MB limit.`,
-          );
+          setErrorMsg(`"${file.name}" exceeds 50 MB limit.`);
           continue;
         }
         if (files.length + toAdd.length >= MAX_FILES) {
