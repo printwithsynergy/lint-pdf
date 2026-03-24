@@ -25,5 +25,5 @@ export default async function AdminLayout({
     redirect("/dashboard");
   }
 
-  return <>{children}</>;
+  return children as React.JSX.Element;
 }
