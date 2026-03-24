@@ -11,6 +11,7 @@ Each regulatory reference tracks:
 - Linked check IDs that implement the requirement
 - Source URL for the regulation text
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -30,6 +31,7 @@ class RegulatoryStatus(StrEnum):
 @dataclass
 class RegulatoryReference:
     """A regulatory reference record."""
+
     id: str  # e.g., "FDA-CFR-21-211"
     name: str
     authority: str  # e.g., "FDA", "EU", "ISO"
@@ -74,7 +76,13 @@ class RegulatoryRegistry:
                 authority="FDA",
                 version="2024",
                 status=RegulatoryStatus.ACTIVE,
-                linked_checks=["AI_FDA_001", "AI_FDA_002", "AI_FDA_003", "AI_FDA_004", "AI_FDA_005"],
+                linked_checks=[
+                    "AI_FDA_001",
+                    "AI_FDA_002",
+                    "AI_FDA_003",
+                    "AI_FDA_004",
+                    "AI_FDA_005",
+                ],
                 description="Current Good Manufacturing Practice for pharma labeling",
             ),
             RegulatoryReference(
@@ -92,8 +100,16 @@ class RegulatoryRegistry:
                 authority="UN",
                 version="Rev.9 (2021)",
                 status=RegulatoryStatus.ACTIVE,
-                linked_checks=["AI_GHS_001", "AI_GHS_002", "AI_GHS_003", "AI_GHS_004",
-                               "AI_GHS_005", "AI_GHS_006", "AI_GHS_007", "AI_GHS_008"],
+                linked_checks=[
+                    "AI_GHS_001",
+                    "AI_GHS_002",
+                    "AI_GHS_003",
+                    "AI_GHS_004",
+                    "AI_GHS_005",
+                    "AI_GHS_006",
+                    "AI_GHS_007",
+                    "AI_GHS_008",
+                ],
                 description="Chemical classification and labeling",
             ),
             RegulatoryReference(
@@ -120,8 +136,14 @@ class RegulatoryRegistry:
                 authority="ISO",
                 version="2016",
                 status=RegulatoryStatus.ACTIVE,
-                linked_checks=["GRD_BARCODE_005", "GRD_BARCODE_007", "GRD_BARCODE_008",
-                               "GRD_BARCODE_010", "GRD_BARCODE_012", "GRD_BARCODE_013"],
+                linked_checks=[
+                    "GRD_BARCODE_005",
+                    "GRD_BARCODE_007",
+                    "GRD_BARCODE_008",
+                    "GRD_BARCODE_010",
+                    "GRD_BARCODE_012",
+                    "GRD_BARCODE_013",
+                ],
                 description="Linear barcode print quality grading specification",
             ),
             RegulatoryReference(

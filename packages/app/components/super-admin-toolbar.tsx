@@ -80,7 +80,11 @@ export function SuperAdminToolbar() {
   async function startImpersonation(tenantId: string) {
     const tenant = allTenants.find((t) => t.id === tenantId);
     const label = tenant ? `${tenant.name} (${tenant.slug})` : tenantId;
-    if (!confirm(`Start assisting customer "${label}"? You will view their dashboard as them.`)) {
+    if (
+      !confirm(
+        `Start assisting customer "${label}"? You will view their dashboard as them.`,
+      )
+    ) {
       return;
     }
     setSwitching(true);

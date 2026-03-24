@@ -56,22 +56,22 @@ except ImportError:
 # under the FOGRA55 characterization (ISO 12647-2:2013 supplement).
 _FOGRA55_GAMUT_BOUNDARY_LAB: list[tuple[float, float, float]] = [
     # (L*, a*, b*)  — key anchor points around the gamut hull
-    (97.0, -1.0, 3.0),     # paper white
-    (0.0, 0.0, 0.0),       # solid K
+    (97.0, -1.0, 3.0),  # paper white
+    (0.0, 0.0, 0.0),  # solid K
     (55.0, -38.0, -43.0),  # solid Cyan
-    (47.0, 74.0, -5.0),    # solid Magenta
-    (89.0, -5.0, 93.0),    # solid Yellow
-    (62.0, 55.0, 68.0),    # solid Orange
-    (50.0, -70.0, 28.0),   # solid Green
-    (24.0, 22.0, -46.0),   # solid Violet
-    (30.0, 50.0, -13.0),   # Magenta+K deep
+    (47.0, 74.0, -5.0),  # solid Magenta
+    (89.0, -5.0, 93.0),  # solid Yellow
+    (62.0, 55.0, 68.0),  # solid Orange
+    (50.0, -70.0, 28.0),  # solid Green
+    (24.0, 22.0, -46.0),  # solid Violet
+    (30.0, 50.0, -13.0),  # Magenta+K deep
     (39.0, -35.0, -30.0),  # Cyan+K deep
-    (78.0, -60.0, 75.0),   # Yellow+Green
-    (74.0, 30.0, 82.0),    # Yellow+Orange
-    (35.0, 15.0, -50.0),   # Violet+K
-    (65.0, 60.0, 40.0),    # Orange+Magenta
+    (78.0, -60.0, 75.0),  # Yellow+Green
+    (74.0, 30.0, 82.0),  # Yellow+Orange
+    (35.0, 15.0, -50.0),  # Violet+K
+    (65.0, 60.0, 40.0),  # Orange+Magenta
     (45.0, -55.0, -10.0),  # Cyan+Green
-    (16.0, 0.0, 0.0),      # near-K
+    (16.0, 0.0, 0.0),  # near-K
 ]
 
 
@@ -88,8 +88,8 @@ def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, fl
     C2 = math.sqrt(a2 * a2 + b2 * b2)
     Cbar = (C1 + C2) / 2.0
 
-    Cbar7 = Cbar ** 7
-    G = 0.5 * (1.0 - math.sqrt(Cbar7 / (Cbar7 + 25.0 ** 7)))
+    Cbar7 = Cbar**7
+    G = 0.5 * (1.0 - math.sqrt(Cbar7 / (Cbar7 + 25.0**7)))
     a1p = a1 * (1.0 + G)
     a2p = a2 * (1.0 + G)
 
@@ -107,11 +107,13 @@ def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, fl
     else:
         Hbarp = (h1p + h2p - 360.0) / 2.0
 
-    T = (1.0
-         - 0.17 * math.cos(math.radians(Hbarp - 30.0))
-         + 0.24 * math.cos(math.radians(2.0 * Hbarp))
-         + 0.32 * math.cos(math.radians(3.0 * Hbarp + 6.0))
-         - 0.20 * math.cos(math.radians(4.0 * Hbarp - 63.0)))
+    T = (
+        1.0
+        - 0.17 * math.cos(math.radians(Hbarp - 30.0))
+        + 0.24 * math.cos(math.radians(2.0 * Hbarp))
+        + 0.32 * math.cos(math.radians(3.0 * Hbarp + 6.0))
+        - 0.20 * math.cos(math.radians(4.0 * Hbarp - 63.0))
+    )
 
     if abs(h2p - h1p) <= 180.0:
         dhp = h2p - h1p
@@ -128,16 +130,13 @@ def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, fl
     SC = 1.0 + 0.045 * Cbarp
     SH = 1.0 + 0.015 * Cbarp * T
 
-    Cbarp7 = Cbarp ** 7
-    RC = 2.0 * math.sqrt(Cbarp7 / (Cbarp7 + 25.0 ** 7))
-    dtheta = 30.0 * math.exp(-((Hbarp - 275.0) / 25.0) ** 2)
+    Cbarp7 = Cbarp**7
+    RC = 2.0 * math.sqrt(Cbarp7 / (Cbarp7 + 25.0**7))
+    dtheta = 30.0 * math.exp(-(((Hbarp - 275.0) / 25.0) ** 2))
     RT = -math.sin(2.0 * math.radians(dtheta)) * RC
 
     dE = math.sqrt(
-        (dLp / SL) ** 2
-        + (dCp / SC) ** 2
-        + (dHp / SH) ** 2
-        + RT * (dCp / SC) * (dHp / SH)
+        (dLp / SL) ** 2 + (dCp / SC) ** 2 + (dHp / SH) ** 2 + RT * (dCp / SC) * (dHp / SH)
     )
     return dE
 
@@ -191,8 +190,8 @@ _SPOT_NAME_TO_LAB: dict[str, tuple[float, float, float]] = {
     "pantone 2935": (30.0, 6.0, -60.0),
     "pantone 7462": (28.0, -8.0, -32.0),
     "pantone 7687": (22.0, 20.0, -52.0),
-    "pantone 877": (72.0, 0.0, 2.0),   # metallic silver approx
-    "pantone 871": (55.0, 5.0, 35.0),   # metallic gold approx
+    "pantone 877": (72.0, 0.0, 2.0),  # metallic silver approx
+    "pantone 871": (55.0, 5.0, 35.0),  # metallic gold approx
     "gold": (55.0, 5.0, 35.0),
     "silver": (72.0, 0.0, 2.0),
     "red": (53.0, 80.0, 67.0),

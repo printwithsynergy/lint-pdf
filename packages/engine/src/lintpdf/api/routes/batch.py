@@ -3,6 +3,7 @@
 Allows submitting multiple PDFs for preflight in a single request,
 checking batch status, and getting aggregated results.
 """
+
 from __future__ import annotations
 
 import uuid
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/api/v1/batch", tags=["batch"])
 
 class BatchSubmitRequest(BaseModel):
     """Request to submit a batch of PDFs for preflight."""
+
     profile_id: str = Field(description="Voyage Plan profile ID to use for all jobs.")
     file_keys: list[str] = Field(description="List of S3 file keys to process.")
     webhook_url: str | None = Field(default=None, description="Webhook URL for batch completion.")
@@ -25,6 +27,7 @@ class BatchSubmitRequest(BaseModel):
 
 class BatchJobInfo(BaseModel):
     """Information about a single job in a batch."""
+
     job_id: str
     file_key: str
     status: str = "pending"
@@ -32,6 +35,7 @@ class BatchJobInfo(BaseModel):
 
 class BatchSubmitResponse(BaseModel):
     """Response after submitting a batch."""
+
     batch_id: str
     job_count: int
     jobs: list[BatchJobInfo]
@@ -40,6 +44,7 @@ class BatchSubmitResponse(BaseModel):
 
 class BatchStatusResponse(BaseModel):
     """Status of a batch operation."""
+
     batch_id: str
     total_jobs: int
     completed_jobs: int
@@ -57,11 +62,13 @@ async def submit_batch(request: BatchSubmitRequest) -> BatchSubmitResponse:
 
     for file_key in request.file_keys:
         job_id = str(uuid.uuid4())
-        jobs.append(BatchJobInfo(
-            job_id=job_id,
-            file_key=file_key,
-            status="pending",
-        ))
+        jobs.append(
+            BatchJobInfo(
+                job_id=job_id,
+                file_key=file_key,
+                status="pending",
+            )
+        )
 
     # In production: create BatchJob + Job records, enqueue tasks
     return BatchSubmitResponse(

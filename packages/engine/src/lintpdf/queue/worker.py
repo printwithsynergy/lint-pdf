@@ -23,9 +23,7 @@ def _on_worker_init(**_kwargs: object) -> None:
 
     database_url = os.environ.get("LINTPDF_DATABASE_URL")
     if not database_url:
-        raise RuntimeError(
-            "LINTPDF_DATABASE_URL environment variable is required"
-        )
+        raise RuntimeError("LINTPDF_DATABASE_URL environment variable is required")
     init_db(database_url)
 
 
