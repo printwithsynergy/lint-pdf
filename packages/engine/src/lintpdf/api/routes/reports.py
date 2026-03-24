@@ -277,13 +277,13 @@ async def serve_html_report(
     db: Session = Depends(get_db),  # noqa: B008
 ) -> Response:
     """Serve an interactive HTML report by token (public, no auth)."""
-    from datetime import UTC, datetime
+    from datetime import datetime, timezone
 
     record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
 
-    if record.expires_at is not None and datetime.now(UTC) > record.expires_at:
+    if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Report has expired.")
 
     if record.format != "html":
@@ -294,7 +294,7 @@ async def serve_html_report(
 
     # Increment access count
     record.accessed_count += 1
-    record.last_accessed_at = datetime.now(UTC)
+    record.last_accessed_at = datetime.now(timezone.utc)
     db.commit()
 
     # Fetch from storage (run in thread to avoid blocking event loop)
@@ -316,13 +316,13 @@ async def serve_pdf_report(
     db: Session = Depends(get_db),  # noqa: B008
 ) -> Response:
     """Serve a PDF report by token (public, no auth)."""
-    from datetime import UTC, datetime
+    from datetime import datetime, timezone
 
     record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
 
-    if record.expires_at is not None and datetime.now(UTC) > record.expires_at:
+    if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Report has expired.")
 
     if record.format != "pdf":
@@ -333,7 +333,7 @@ async def serve_pdf_report(
 
     # Increment access count
     record.accessed_count += 1
-    record.last_accessed_at = datetime.now(UTC)
+    record.last_accessed_at = datetime.now(timezone.utc)
     db.commit()
 
     # Fetch from storage (run in thread to avoid blocking event loop)

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -80,7 +80,7 @@ async def start_user_trial(
         )
 
     access.trial_enabled = True
-    access.trial_expires_at = datetime.now(UTC) + timedelta(days=30)
+    access.trial_expires_at = datetime.now(timezone.utc) + timedelta(days=30)
     access.ai_enabled = True
 
     db.commit()

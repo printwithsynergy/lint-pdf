@@ -9,7 +9,7 @@ import json
 import logging
 import threading
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import HTTPException, Request, Response, status
@@ -101,7 +101,7 @@ def get_current_usage(tenant: Any) -> int:
         return 0
 
     tenant_id = str(tenant.id)
-    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     rate_key = f"rate:{tenant_id}:{today}"
 
     try:
@@ -181,7 +181,7 @@ def check_rate_limit(tenant: Any) -> UsageInfo | None:
         return None
 
     tenant_id = str(tenant.id)
-    today = datetime.now(UTC).strftime("%Y-%m-%d")
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     rate_key = f"rate:{tenant_id}:{today}"
 
     try:
@@ -250,7 +250,7 @@ def attach_rate_limit_headers(response: Response, usage: UsageInfo) -> None:
                            (midnight UTC of the next day).
     """
     # Compute seconds until midnight UTC
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0)
     # Move to next day
     tomorrow = tomorrow.replace(day=now.day + 1) if now.day < 28 else tomorrow  # rough

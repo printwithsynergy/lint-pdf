@@ -87,9 +87,9 @@ def _check_trial_rate_limit(email: str) -> None:
         redis = get_redis_client()
         if redis is None:
             return
-        from datetime import UTC, datetime
+        from datetime import datetime, timezone
 
-        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         key = f"trial_rate:{email.lower()}:{today}"
         count = redis.incr(key)
         if count == 1:

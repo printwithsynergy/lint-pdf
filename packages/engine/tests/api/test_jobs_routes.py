@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import TYPE_CHECKING
 
@@ -52,7 +52,7 @@ def _seed_job(
         result_json=result_json,
         duration_ms=duration_ms,
         error_message=error_message,
-        created_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
     )
     db.add(job)
     db.commit()
@@ -299,7 +299,7 @@ class TestGetJob:
             file_key="other/key.pdf",
             file_name="other.pdf",
             file_size=100,
-            created_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
         )
         # Don't add via relationship to avoid FK constraint on SQLite
         # Instead, directly insert without FK check (SQLite FK may not enforce on different table)

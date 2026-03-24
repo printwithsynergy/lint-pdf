@@ -15,6 +15,9 @@ declare module "@thinkneverland/grounded-plugin" {
   export const lintpdfTeamPlugin: PixieDustPlugin;
   export const lintpdfAccountPlugin: PixieDustPlugin;
   export const lintpdfSiteAdminPlugin: PixieDustPlugin;
+  export const lintpdfWebhooksPlugin: PixieDustPlugin;
+  export const lintpdfEndpointsPlugin: PixieDustPlugin;
+  export const lintpdfSuperAdminPlugin: PixieDustPlugin;
 }
 
 declare module "@lintpdf/stripe" {

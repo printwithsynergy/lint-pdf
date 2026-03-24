@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
@@ -52,11 +52,11 @@ class TestGetCreditBalance:
         # Create mock credit packages
         pkg_active = MagicMock()
         pkg_active.credits_remaining = 50
-        pkg_active.expires_at = datetime.now(UTC) + timedelta(days=30)
+        pkg_active.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
 
         pkg_expired = MagicMock()
         pkg_expired.credits_remaining = 25
-        pkg_expired.expires_at = datetime.now(UTC) - timedelta(days=1)
+        pkg_expired.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
 
         pkg_no_expiry = MagicMock()
         pkg_no_expiry.credits_remaining = 100
@@ -188,13 +188,13 @@ class TestDeductCredits:
         # Two packages: older one should be deducted first
         pkg_old = MagicMock()
         pkg_old.credits_remaining = 3
-        pkg_old.purchased_at = datetime.now(UTC) - timedelta(days=30)
-        pkg_old.expires_at = datetime.now(UTC) + timedelta(days=30)
+        pkg_old.purchased_at = datetime.now(timezone.utc) - timedelta(days=30)
+        pkg_old.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
 
         pkg_new = MagicMock()
         pkg_new.credits_remaining = 10
-        pkg_new.purchased_at = datetime.now(UTC) - timedelta(days=1)
-        pkg_new.expires_at = datetime.now(UTC) + timedelta(days=60)
+        pkg_new.purchased_at = datetime.now(timezone.utc) - timedelta(days=1)
+        pkg_new.expires_at = datetime.now(timezone.utc) + timedelta(days=60)
 
         mock_db_session.query.return_value.filter.return_value.order_by.return_value.all.return_value = [
             pkg_old,
@@ -229,11 +229,11 @@ class TestDeductCredits:
 
         pkg_expired = MagicMock()
         pkg_expired.credits_remaining = 50
-        pkg_expired.expires_at = datetime.now(UTC) - timedelta(days=1)
+        pkg_expired.expires_at = datetime.now(timezone.utc) - timedelta(days=1)
 
         pkg_valid = MagicMock()
         pkg_valid.credits_remaining = 10
-        pkg_valid.expires_at = datetime.now(UTC) + timedelta(days=30)
+        pkg_valid.expires_at = datetime.now(timezone.utc) + timedelta(days=30)
 
         mock_db_session.query.return_value.filter.return_value.order_by.return_value.all.return_value = [
             pkg_expired,

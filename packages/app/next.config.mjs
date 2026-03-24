@@ -22,7 +22,7 @@ const config = {
     "@thinkneverland/pixie-dust-ui",
     "@thinkneverland/pixie-dust-waitlist",
     "@thinkneverland/grounded-plugin",
-    "@grounded/stripe",
+    "@lintpdf/stripe",
   ],
   serverExternalPackages: ["@prisma/client", "prisma"],
   webpack: (config, { isServer }) => {

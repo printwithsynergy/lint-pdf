@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Query
@@ -100,7 +100,7 @@ async def get_usage_trends(
     check_ai_access(tenant, db)
 
     days = {"7d": 7, "30d": 30, "90d": 90}.get(period, 30)
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     start = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     from datetime import timedelta

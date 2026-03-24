@@ -60,9 +60,9 @@ def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skip
     # Deduplicate via Redis — one warning per threshold per day
     redis = get_redis_client()
     if redis is not None:
-        from datetime import UTC, datetime
+        from datetime import datetime, timezone
 
-        today = datetime.now(UTC).strftime("%Y-%m-%d")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         warn_key = f"rate_warn:{tenant.id}:{today}:{threshold}"
         try:
             already_sent = redis.set(warn_key, "1", nx=True, ex=86400)

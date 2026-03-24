@@ -128,9 +128,9 @@ class TestAdminUpdateAIConfig:
         self, mock_db_session: MagicMock, mock_ai_config: MagicMock, tenant_id
     ) -> None:
         mock_db_session.query.return_value.filter.return_value.first.return_value = mock_ai_config
-        from datetime import UTC, datetime, timedelta
+        from datetime import datetime, timedelta, timezone
 
-        expiry = datetime.now(UTC) + timedelta(days=14)
+        expiry = datetime.now(timezone.utc) + timedelta(days=14)
         result = admin_update_ai_config(
             tenant_id,
             {"trial_enabled": True, "trial_expires_at": expiry},

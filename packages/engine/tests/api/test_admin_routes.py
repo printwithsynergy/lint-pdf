@@ -454,7 +454,7 @@ class TestAdminListJobsRoute:
 
     @staticmethod
     def test_list_with_jobs(admin_client: TestClient, admin_db: Session) -> None:
-        from datetime import UTC, datetime
+        from datetime import datetime, timezone
 
         job = Job(
             id=uuid.uuid4(),
@@ -464,7 +464,7 @@ class TestAdminListJobsRoute:
             file_key="admin/test.pdf",
             file_name="admin-test.pdf",
             file_size=100,
-            created_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
         )
         admin_db.add(job)
         admin_db.commit()
@@ -475,7 +475,7 @@ class TestAdminListJobsRoute:
 
     @staticmethod
     def test_pagination(admin_client: TestClient, admin_db: Session) -> None:
-        from datetime import UTC, datetime
+        from datetime import datetime, timezone
 
         for i in range(5):
             admin_db.add(
@@ -487,7 +487,7 @@ class TestAdminListJobsRoute:
                     file_key=f"admin/test{i}.pdf",
                     file_name=f"test{i}.pdf",
                     file_size=100,
-                    created_at=datetime.now(UTC),
+                    created_at=datetime.now(timezone.utc),
                 )
             )
         admin_db.commit()
@@ -502,7 +502,7 @@ class TestAdminListJobsRoute:
 
     @staticmethod
     def test_job_summary_fields(admin_client: TestClient, admin_db: Session) -> None:
-        from datetime import UTC, datetime
+        from datetime import datetime, timezone
 
         admin_db.add(
             Job(
@@ -513,7 +513,7 @@ class TestAdminListJobsRoute:
                 file_key="admin/fields.pdf",
                 file_name="fields.pdf",
                 file_size=999,
-                created_at=datetime.now(UTC),
+                created_at=datetime.now(timezone.utc),
             )
         )
         admin_db.commit()

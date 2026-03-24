@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import logging
 import secrets
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from fastapi import Depends, Header, HTTPException, Security, status
@@ -58,7 +58,7 @@ def _resolve_tenant_by_key(db: Session, key_hash: str) -> Tenant | None:
         db.query(ApiKey).filter(ApiKey.key_hash == key_hash, ApiKey.is_active.is_(True)).first()
     )
     if api_key_row is not None:
-        api_key_row.last_used_at = datetime.now(UTC)
+        api_key_row.last_used_at = datetime.now(timezone.utc)
         tenant = db.query(Tenant).filter(Tenant.id == api_key_row.tenant_id).first()
         if tenant is not None:
             db.commit()
