@@ -73,6 +73,45 @@ async function main() {
     console.log(`Created tenant: ${tenant.name} (${tenant.id})`);
   }
 
+  // ── MCP Backdoor Admin (if MCP_BACKDOOR is enabled) ──────────
+  if (process.env.MCP_BACKDOOR === "true") {
+    const mcpEmail = "admin@lintpdf.com";
+    const mcpAdmin = await prisma.user.upsert({
+      where: { email: mcpEmail },
+      update: { isSuperAdmin: true },
+      create: {
+        email: mcpEmail,
+        name: "MCP Test User (admin@lintpdf.com)",
+        isSuperAdmin: true,
+      },
+    });
+    console.log(
+      `MCP admin: ${mcpAdmin.email} (id: ${mcpAdmin.id}, isSuperAdmin: ${mcpAdmin.isSuperAdmin})`,
+    );
+
+    const mcpMembership = await prisma.tenantUser.findFirst({
+      where: { userId: mcpAdmin.id },
+    });
+    if (!mcpMembership) {
+      // Find the ThinkNeverland tenant or create one
+      const adminTenant = await prisma.tenant.findFirst({
+        where: { slug: "thinkneverland" },
+      });
+      if (adminTenant) {
+        await prisma.tenantUser.create({
+          data: {
+            userId: mcpAdmin.id,
+            tenantId: adminTenant.id,
+            role: "OWNER",
+          },
+        });
+        console.log(`  Added MCP admin to tenant: ${adminTenant.name}`);
+      }
+    } else {
+      console.log(`  MCP admin already has tenant membership`);
+    }
+  }
+
   // ── Test Customer ──────────────────────────────────────────
   const testCustomer = await prisma.user.upsert({
     where: { email: "testcustomer@lintpdf.com" },

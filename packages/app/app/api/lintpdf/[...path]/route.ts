@@ -113,6 +113,12 @@ async function handleRequest(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    // Check for super admin status first (needed for impersonation + tenant-less access)
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { isSuperAdmin: true },
+    });
+
     // Get user's tenant membership
     const tenantUser = await prisma.tenantUser.findFirst({
       where: { userId: session.userId },
@@ -120,20 +126,10 @@ async function handleRequest(
       orderBy: { joinedAt: "asc" },
     });
 
-    if (!tenantUser) {
-      return NextResponse.json(
-        { error: "No tenant membership found" },
-        { status: 403 },
-      );
-    }
+    // Super admins may not have a tenant membership — check impersonation first
+    let tenantId = tenantUser?.tenantId ?? "";
+    let role = tenantUser?.role ?? "OWNER";
 
-    // Check for super admin impersonation
-    const user = await prisma.user.findUnique({
-      where: { id: session.userId },
-      select: { isSuperAdmin: true },
-    });
-
-    let tenantId = tenantUser.tenantId;
     if (user?.isSuperAdmin) {
       const cookieName = getCookieName();
       const cookies =
@@ -152,10 +148,18 @@ async function handleRequest(
       }
     }
 
+    // Non-super-admin users must have a tenant membership
+    if (!tenantUser && !user?.isSuperAdmin) {
+      return NextResponse.json(
+        { error: "No tenant membership found" },
+        { status: 403 },
+      );
+    }
+
     auth = {
       userId: session.userId,
       tenantId,
-      role: tenantUser.role,
+      role,
       isSuperAdmin: user?.isSuperAdmin ?? false,
     };
   }

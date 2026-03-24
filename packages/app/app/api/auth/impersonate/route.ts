@@ -42,10 +42,17 @@ export async function POST(req: Request) {
 
   // Validate the target tenant exists (if starting impersonation)
   if (targetTenantId) {
-    const tenant = await prisma.tenant.findUnique({
+    // Try looking up by Prisma ID first, then by engine tenant ID
+    let tenant = await prisma.tenant.findUnique({
       where: { id: targetTenantId },
       select: { id: true, name: true, slug: true },
     });
+    if (!tenant) {
+      tenant = await prisma.tenant.findFirst({
+        where: { engineTenantId: targetTenantId },
+        select: { id: true, name: true, slug: true },
+      });
+    }
 
     if (!tenant) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
@@ -59,20 +66,21 @@ export async function POST(req: Request) {
       ?.split("=")[1];
 
     if (sessionCookie) {
+      // Store the Prisma tenant ID (not the engine UUID) for session impersonation
       await prisma.session.updateMany({
         where: { token: sessionCookie, userId: user.id },
-        data: { impersonatingTenantId: targetTenantId },
+        data: { impersonatingTenantId: tenant.id },
       });
     }
 
     // Audit log
     await prisma.auditLog.create({
       data: {
-        tenantId: targetTenantId,
+        tenantId: tenant.id,
         userId: user.id,
         action: "admin.impersonation.started",
         entity: "Tenant",
-        entityId: targetTenantId,
+        entityId: tenant.id,
         impersonatedBy: user.id,
         metadata: { tenantName: tenant.name },
       },
