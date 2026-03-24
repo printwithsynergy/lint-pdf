@@ -11,30 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  changes:
-    runs-on: ubuntu-latest
-    outputs:
-      engine: ${{ steps.filter.outputs.engine }}
-      web: ${{ steps.filter.outputs.web }}
-      app: ${{ steps.filter.outputs.app }}
-      plugin: ${{ steps.filter.outputs.plugin }}
-      stripe: ${{ steps.filter.outputs.stripe }}
-      inference: ${{ steps.filter.outputs.inference }}
-    steps:
-      - name: Detect changed packages
-        id: filter
-        run: |
-          echo "engine=true" >> "$GITHUB_OUTPUT"
-          echo "web=true" >> "$GITHUB_OUTPUT"
-          echo "app=true" >> "$GITHUB_OUTPUT"
-          echo "plugin=true" >> "$GITHUB_OUTPUT"
-          echo "stripe=true" >> "$GITHUB_OUTPUT"
-          echo "inference=true" >> "$GITHUB_OUTPUT"
-
-  # ─── Python: Engine ──────────────────────────────────────────
   engine:
-    needs: changes
-    if: needs.changes.outputs.engine == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -65,10 +42,7 @@ jobs:
         env:
           DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
 
-  # ─── Python: Inference ───────────────────────────────────────
   inference:
-    needs: changes
-    if: needs.changes.outputs.inference == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -97,10 +71,7 @@ jobs:
         env:
           DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
 
-  # ─── Node: Web ───────────────────────────────────────────────
   web:
-    needs: changes
-    if: needs.changes.outputs.web == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -119,10 +90,7 @@ jobs:
       - name: Build
         run: pnpm --filter @thinkneverland/grounded-web build
 
-  # ─── Node: Plugin ────────────────────────────────────────────
   plugin:
-    needs: changes
-    if: needs.changes.outputs.plugin == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -141,10 +109,7 @@ jobs:
       - name: Build
         run: pnpm --filter @thinkneverland/grounded-plugin build
 
-  # ─── Node: Stripe Plugin ────────────────────────────────────
   stripe:
-    needs: changes
-    if: needs.changes.outputs.stripe == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -163,10 +128,7 @@ jobs:
       - name: Build
         run: pnpm --filter @lintpdf/stripe build
 
-  # ─── Node: App ─────────────────────────────────────────────
   app:
-    needs: changes
-    if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
