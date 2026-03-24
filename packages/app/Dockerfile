@@ -12,7 +12,7 @@ COPY packages/stripe/package.json packages/stripe/package.json
 # Private @thinkneverland packages need auth
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
-RUN pnpm install --filter=@thinkneverland/grounded-app...
+RUN pnpm install --filter=@thinkneverland/lintpdf-app...
 
 # Stage 2: Build
 FROM node:22-alpine AS builder
@@ -32,7 +32,7 @@ COPY --from=deps /app/packages/stripe/node_modules ./packages/stripe/node_module
 # Re-run install to fix workspace symlinks (uses cached deps, just recreates links)
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
-RUN pnpm install --filter=@thinkneverland/grounded-app... --prefer-offline
+RUN pnpm install --filter=@thinkneverland/lintpdf-app... --prefer-offline
 
 # Build workspace dependencies first (they export from dist/)
 RUN pnpm --filter=@thinkneverland/grounded-plugin build && \

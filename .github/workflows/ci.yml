@@ -197,12 +197,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Lint
-        run: pnpm --filter @thinkneverland/grounded-app lint
+        run: pnpm --filter @thinkneverland/lintpdf-app lint
       - name: Typecheck
-        run: pnpm --filter @thinkneverland/grounded-app typecheck
+        run: pnpm --filter @thinkneverland/lintpdf-app typecheck
       - name: Generate Prisma client
-        run: pnpm --filter @thinkneverland/grounded-app db:generate
+        run: pnpm --filter @thinkneverland/lintpdf-app db:generate
       - name: Build workspace deps
         run: pnpm --filter @thinkneverland/grounded-plugin --filter @lintpdf/stripe build
       - name: Build
-        run: pnpm --filter @thinkneverland/grounded-app build
+        run: pnpm --filter @thinkneverland/lintpdf-app build

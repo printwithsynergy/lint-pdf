@@ -4,18 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 
 interface AdminJob {
-  job_id: string;
+  id: string;
   tenant_id: string;
   tenant_name?: string;
   status: string;
   profile_id: string;
   file_name: string;
   created_at: string;
-  summary?: {
-    total_findings: number;
-    error_count: number;
-    passed: boolean;
-  };
 }
 
 export default function AdminJobsPage() {
@@ -32,7 +27,13 @@ export default function AdminJobsPage() {
       const resp = await fetch(
         `/api/lintpdf/admin/jobs?page=${page}&page_size=${pageSize}`,
       );
-      if (!resp.ok) throw new Error("Failed to load jobs");
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error ??
+            `Failed to load jobs (${resp.status})`,
+        );
+      }
       const data = await resp.json();
       setJobs(data.jobs ?? []);
       setTotal(data.total ?? 0);
@@ -74,13 +75,12 @@ export default function AdminJobsPage() {
                   <th className="pb-2 font-medium">Tenant</th>
                   <th className="pb-2 font-medium">Profile</th>
                   <th className="pb-2 font-medium">Status</th>
-                  <th className="pb-2 font-medium">Result</th>
                   <th className="pb-2 font-medium">Date</th>
                 </tr>
               </thead>
               <tbody>
                 {jobs.map((job) => (
-                  <tr key={job.job_id} className="border-b">
+                  <tr key={job.id} className="border-b">
                     <td className="py-2 font-medium">{job.file_name}</td>
                     <td className="py-2 text-xs">
                       {job.tenant_name ?? job.tenant_id.slice(0, 8)}
@@ -100,13 +100,6 @@ export default function AdminJobsPage() {
                       >
                         {job.status}
                       </span>
-                    </td>
-                    <td className="py-2 text-xs">
-                      {job.summary
-                        ? job.summary.passed
-                          ? "Passed"
-                          : `${job.summary.error_count} errors`
-                        : "--"}
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">
                       {new Date(job.created_at).toLocaleDateString()}

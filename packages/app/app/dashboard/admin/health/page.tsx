@@ -30,7 +30,13 @@ export default function AdminHealthPage() {
   const fetchHealth = useCallback(async () => {
     try {
       const resp = await fetch("/api/lintpdf/admin/health");
-      if (!resp.ok) throw new Error("Health check failed");
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(
+          (data as { error?: string }).error ??
+            `Health check failed (${resp.status})`,
+        );
+      }
       setHealth(await resp.json());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Health check failed");
