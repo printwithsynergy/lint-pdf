@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
@@ -44,8 +44,8 @@ def _seed_completed_job(db: Session, *, result_json: dict | None = None) -> Job:
         page_count=1,
         result_json=result_json,
         duration_ms=100,
-        created_at=datetime.now(UTC),
-        completed_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
+        completed_at=datetime.now(timezone.utc),
     )
     db.add(job)
     db.commit()
@@ -62,7 +62,7 @@ def _seed_pending_job(db: Session) -> Job:
         file_key="fake/pending.pdf",
         file_name="pending.pdf",
         file_size=100,
-        created_at=datetime.now(UTC),
+        created_at=datetime.now(timezone.utc),
     )
     db.add(job)
     db.commit()
@@ -244,7 +244,7 @@ class TestServeHtmlReportRoute:
         job = _seed_completed_job(db_session)
         _seed_report_token(db_session, job.id, fmt="html", token="tok_expired", expired=True)
         # The record has a naive past expires_at from utcnow() - 1h.
-        # The route calls datetime.now(UTC) which returns tz-aware.
+        # The route calls datetime.now(timezone.utc) which returns tz-aware.
         # Monkeypatch the datetime class in the datetime module so that
         # .now(tz) returns a naive datetime.
         _real_dt_class = dt_module.datetime

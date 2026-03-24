@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 from unittest.mock import MagicMock
@@ -113,7 +113,7 @@ def mock_ai_config_trial_expired(tenant_id: uuid.UUID) -> MagicMock:
     return _make_ai_config(
         tenant_id,
         trial_enabled=True,
-        trial_expires_at=datetime.now(UTC) - timedelta(days=1),
+        trial_expires_at=datetime.now(timezone.utc) - timedelta(days=1),
     )
 
 
@@ -123,7 +123,7 @@ def mock_ai_config_trial_active(tenant_id: uuid.UUID) -> MagicMock:
     return _make_ai_config(
         tenant_id,
         trial_enabled=True,
-        trial_expires_at=datetime.now(UTC) + timedelta(days=7),
+        trial_expires_at=datetime.now(timezone.utc) + timedelta(days=7),
     )
 
 

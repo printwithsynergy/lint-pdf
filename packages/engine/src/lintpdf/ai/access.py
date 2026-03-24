@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from fastapi import HTTPException, status
@@ -49,7 +49,7 @@ def check_ai_access(tenant: Tenant, db: Session) -> TenantAIConfig:
     if (
         config.trial_enabled
         and config.trial_expires_at
-        and datetime.now(UTC) > config.trial_expires_at
+        and datetime.now(timezone.utc) > config.trial_expires_at
     ):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -70,7 +70,7 @@ def is_ai_available(tenant: Tenant, db: Session) -> bool:
     return not (
         config.trial_enabled
         and config.trial_expires_at
-        and datetime.now(UTC) > config.trial_expires_at
+        and datetime.now(timezone.utc) > config.trial_expires_at
     )
 
 
