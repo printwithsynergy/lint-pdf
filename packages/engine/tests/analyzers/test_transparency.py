@@ -23,7 +23,7 @@ def _make_document() -> SemanticDocument:
 
 
 class TestBlendModes:
-    """Test GRD_TRANS_001: risky blend mode detection."""
+    """Test LPDF_TRANS_001: risky blend mode detection."""
 
     @staticmethod
     def test_safe_blend_mode_no_finding() -> None:
@@ -35,7 +35,7 @@ class TestBlendModes:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        blend_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_001"]
+        blend_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_001"]
         assert len(blend_findings) == 0
 
     @staticmethod
@@ -48,7 +48,7 @@ class TestBlendModes:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        blend_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_001"]
+        blend_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_001"]
         assert len(blend_findings) == 1
         assert blend_findings[0].severity == Severity.WARNING
 
@@ -62,7 +62,7 @@ class TestBlendModes:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        blend_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_001"]
+        blend_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_001"]
         assert len(blend_findings) == 0
 
     @staticmethod
@@ -99,7 +99,7 @@ class TestBlendModes:
 
 
 class TestTransparencyOverprintConflict:
-    """Test GRD_TRANS_002: transparency + overprint conflict."""
+    """Test LPDF_TRANS_002: transparency + overprint conflict."""
 
     @staticmethod
     def test_conflict_detected() -> None:
@@ -119,7 +119,7 @@ class TestTransparencyOverprintConflict:
         ]
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        conflict_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_002"]
+        conflict_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_002"]
         assert len(conflict_findings) == 1
         assert conflict_findings[0].severity == Severity.WARNING
 
@@ -135,7 +135,7 @@ class TestTransparencyOverprintConflict:
         ]
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        conflict_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_002"]
+        conflict_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_002"]
         assert len(conflict_findings) == 0
 
     @staticmethod
@@ -150,12 +150,12 @@ class TestTransparencyOverprintConflict:
         ]
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        conflict_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_002"]
+        conflict_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_002"]
         assert len(conflict_findings) == 0
 
 
 class TestSoftMask:
-    """Test GRD_TRANS_003: soft mask detection."""
+    """Test LPDF_TRANS_003: soft mask detection."""
 
     @staticmethod
     def test_soft_mask_advisory() -> None:
@@ -171,7 +171,7 @@ class TestSoftMask:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        mask_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_003"]
+        mask_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_003"]
         assert len(mask_findings) == 1
         assert mask_findings[0].severity == Severity.ADVISORY
 
@@ -189,16 +189,16 @@ class TestSoftMask:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        mask_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_003"]
+        mask_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_003"]
         assert len(mask_findings) == 0
 
 
 class TestTransparencyGroupNonCMYK:
-    """Test GRD_TRANS_005: transparency group with non-CMYK color space."""
+    """Test LPDF_TRANS_005: transparency group with non-CMYK color space."""
 
     @staticmethod
     def test_rgb_group_advisory() -> None:
-        """Transparency group with DeviceRGB triggers GRD_TRANS_005."""
+        """Transparency group with DeviceRGB triggers LPDF_TRANS_005."""
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
@@ -213,14 +213,14 @@ class TestTransparencyGroupNonCMYK:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        grp_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_005"]
+        grp_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_005"]
         assert len(grp_findings) == 1
         assert grp_findings[0].severity == Severity.ADVISORY
         assert "DeviceRGB" in grp_findings[0].message
 
     @staticmethod
     def test_cmyk_group_no_finding() -> None:
-        """Transparency group with DeviceCMYK does not trigger GRD_TRANS_005."""
+        """Transparency group with DeviceCMYK does not trigger LPDF_TRANS_005."""
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
@@ -235,21 +235,21 @@ class TestTransparencyGroupNonCMYK:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        grp_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_005"]
+        grp_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_005"]
         assert len(grp_findings) == 0
 
     @staticmethod
     def test_no_group_no_finding() -> None:
-        """No transparency group does not trigger GRD_TRANS_005."""
+        """No transparency group does not trigger LPDF_TRANS_005."""
         doc = _make_document()
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        grp_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_005"]
+        grp_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_005"]
         assert len(grp_findings) == 0
 
     @staticmethod
     def test_empty_cs_no_finding() -> None:
-        """Transparency group with empty /CS does not trigger GRD_TRANS_005."""
+        """Transparency group with empty /CS does not trigger LPDF_TRANS_005."""
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
@@ -264,16 +264,16 @@ class TestTransparencyGroupNonCMYK:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        grp_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_005"]
+        grp_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_005"]
         assert len(grp_findings) == 0
 
 
 class TestKnockoutTransparencyGroup:
-    """Test GRD_TRANS_006: knockout transparency group."""
+    """Test LPDF_TRANS_006: knockout transparency group."""
 
     @staticmethod
     def test_knockout_group_advisory() -> None:
-        """Knockout transparency group triggers GRD_TRANS_006."""
+        """Knockout transparency group triggers LPDF_TRANS_006."""
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
@@ -288,14 +288,14 @@ class TestKnockoutTransparencyGroup:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        ko_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_006"]
+        ko_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_006"]
         assert len(ko_findings) == 1
         assert ko_findings[0].severity == Severity.ADVISORY
         assert ko_findings[0].details["knockout"] is True
 
     @staticmethod
     def test_non_knockout_group_no_finding() -> None:
-        """Non-knockout transparency group does not trigger GRD_TRANS_006."""
+        """Non-knockout transparency group does not trigger LPDF_TRANS_006."""
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
@@ -310,16 +310,16 @@ class TestKnockoutTransparencyGroup:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        ko_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_006"]
+        ko_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_006"]
         assert len(ko_findings) == 0
 
     @staticmethod
     def test_no_group_no_knockout_finding() -> None:
-        """No transparency group does not trigger GRD_TRANS_006."""
+        """No transparency group does not trigger LPDF_TRANS_006."""
         doc = _make_document()
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        ko_findings = [f for f in findings if f.inspection_id == "GRD_TRANS_006"]
+        ko_findings = [f for f in findings if f.inspection_id == "LPDF_TRANS_006"]
         assert len(ko_findings) == 0
 
     @staticmethod
@@ -340,12 +340,12 @@ class TestKnockoutTransparencyGroup:
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
         ids = {f.inspection_id for f in findings}
-        assert "GRD_TRANS_005" in ids
-        assert "GRD_TRANS_006" in ids
+        assert "LPDF_TRANS_005" in ids
+        assert "LPDF_TRANS_006" in ids
 
 
 class TestShadingPatternBanding:
-    """Test GRD_TRANS_007: shading pattern with banding risk."""
+    """Test LPDF_TRANS_007: shading pattern with banding risk."""
 
     @staticmethod
     def test_shading_detected() -> None:
@@ -363,7 +363,7 @@ class TestShadingPatternBanding:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_TRANS_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_TRANS_007"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
         assert f[0].details["shading_count"] == 1
@@ -389,7 +389,7 @@ class TestShadingPatternBanding:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_TRANS_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_TRANS_007"]
         assert len(f) == 1
         assert f[0].details["shading_count"] == 2
 
@@ -409,7 +409,7 @@ class TestShadingPatternBanding:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_TRANS_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_TRANS_007"]
         assert len(f) == 0
 
     @staticmethod
@@ -428,5 +428,5 @@ class TestShadingPatternBanding:
         )
         analyzer = TransparencyAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_TRANS_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_TRANS_007"]
         assert len(f) == 0

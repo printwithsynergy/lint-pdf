@@ -4,17 +4,17 @@ Processes SemanticDocument color space data to detect spot color naming,
 structural, and consistency issues across pages.
 
 Check IDs:
-    GRD_SPOT_001 — Full spot color inventory
-    GRD_SPOT_002 — Spot color fallback Delta-E validation
-    GRD_SPOT_003 — Spot color naming issues
-    GRD_SPOT_004 — DeviceN structural validation
-    GRD_SPOT_005 — DeviceN process color consistency
-    GRD_SPOT_006 — Pantone not in reference database
-    GRD_SPOT_007 — Unknown spot color name (not in any known library)
-    GRD_SPOT_008 — Spot color alternate space mismatch for color library
-    GRD_SPOT_009 — Duplicate spot color definitions on same page
-    GRD_SPOT_010 — Spot color count exceeds maximum
-    GRD_SPOT_011 — Spot color with zero tint (invisible)
+    LPDF_SPOT_001 — Full spot color inventory
+    LPDF_SPOT_002 — Spot color fallback Delta-E validation
+    LPDF_SPOT_003 — Spot color naming issues
+    LPDF_SPOT_004 — DeviceN structural validation
+    LPDF_SPOT_005 — DeviceN process color consistency
+    LPDF_SPOT_006 — Pantone not in reference database
+    LPDF_SPOT_007 — Unknown spot color name (not in any known library)
+    LPDF_SPOT_008 — Spot color alternate space mismatch for color library
+    LPDF_SPOT_009 — Duplicate spot color definitions on same page
+    LPDF_SPOT_010 — Spot color count exceeds maximum
+    LPDF_SPOT_011 — Spot color with zero tint (invisible)
 """
 
 from __future__ import annotations
@@ -104,7 +104,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
     def _check_spot_inventory(  # skipcq: PY-R1000
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Build full spot color inventory and check consistency (GRD_SPOT_001).
+        """Build full spot color inventory and check consistency (LPDF_SPOT_001).
 
         Collects all Separation and DeviceN color spaces across all pages,
         reports the complete inventory, and flags inconsistencies when the
@@ -148,7 +148,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
 
             findings.append(
                 Finding(
-                    inspection_id="GRD_SPOT_001",
+                    inspection_id="LPDF_SPOT_001",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Spot color '{colorant}' found on "
@@ -171,7 +171,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
             if len(alternates) > 1:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_SPOT_001",
+                        inspection_id="LPDF_SPOT_001",
                         severity=Severity.WARNING,
                         message=(
                             f"Spot color '{colorant}' has inconsistent alternate "
@@ -193,11 +193,11 @@ class SpotColorAnalyzer(BaseAnalyzer):
         self,
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Validate Pantone spot color CMYK fallbacks via Delta-E (GRD_SPOT_002).
+        """Validate Pantone spot color CMYK fallbacks via Delta-E (LPDF_SPOT_002).
 
         Compares the CMYK alternate values for each Pantone spot color
         against the Pantone reference Lab database using CIEDE2000 Delta-E.
-        Also emits GRD_SPOT_006 for Pantone colors not found in the
+        Also emits LPDF_SPOT_006 for Pantone colors not found in the
         reference database.
         """
         from lintpdf.profiles.icc.pantone_manager import PantoneManager
@@ -229,7 +229,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 if ref is None:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_SPOT_006",
+                            inspection_id="LPDF_SPOT_006",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Pantone spot color '{colorant}' not found in "
@@ -275,7 +275,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                                 # Delta-E is acceptable — emit informational
                                 findings.append(
                                     Finding(
-                                        inspection_id="GRD_SPOT_002",
+                                        inspection_id="LPDF_SPOT_002",
                                         severity=Severity.ADVISORY,
                                         message=(
                                             f"Pantone '{colorant}' CMYK fallback "
@@ -297,7 +297,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
 
                             findings.append(
                                 Finding(
-                                    inspection_id="GRD_SPOT_002",
+                                    inspection_id="LPDF_SPOT_002",
                                     severity=severity,
                                     message=(
                                         f"Pantone '{colorant}' CMYK fallback "
@@ -321,7 +321,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 # No CMYK alternate or no bridge data — report informational
                 findings.append(
                     Finding(
-                        inspection_id="GRD_SPOT_002",
+                        inspection_id="LPDF_SPOT_002",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Pantone spot color '{colorant}' uses alternate space '{alt_desc}'"
@@ -342,7 +342,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
     def _check_spot_naming(  # skipcq: PY-R1000
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Check spot color naming conventions (GRD_SPOT_003).
+        """Check spot color naming conventions (LPDF_SPOT_003).
 
         Flags:
         - Ambiguous Pantone naming (C and U variants, or missing suffix)
@@ -370,7 +370,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     if not colorant or not colorant.strip():
                         findings.append(
                             Finding(
-                                inspection_id="GRD_SPOT_003",
+                                inspection_id="LPDF_SPOT_003",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"Empty or unnamed colorant in {cs.cs_type} "
@@ -395,7 +395,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                         if has_c and has_u:
                             findings.append(
                                 Finding(
-                                    inspection_id="GRD_SPOT_003",
+                                    inspection_id="LPDF_SPOT_003",
                                     severity=Severity.WARNING,
                                     message=(
                                         f"Ambiguous Pantone name '{colorant}' "
@@ -422,7 +422,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                         ):
                             findings.append(
                                 Finding(
-                                    inspection_id="GRD_SPOT_003",
+                                    inspection_id="LPDF_SPOT_003",
                                     severity=Severity.WARNING,
                                     message=(
                                         f"Pantone name '{colorant}' is missing a "
@@ -445,7 +445,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                             continue
                         findings.append(
                             Finding(
-                                inspection_id="GRD_SPOT_003",
+                                inspection_id="LPDF_SPOT_003",
                                 severity=Severity.ADVISORY,
                                 message=(
                                     f"Spot color '{colorant}' does not follow standard "
@@ -466,7 +466,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
     def _check_devicen_structure(  # skipcq: PY-R1000
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Validate DeviceN color space structure (GRD_SPOT_004).
+        """Validate DeviceN color space structure (LPDF_SPOT_004).
 
         For each DeviceN color space:
         - Verify colorant count matches components field
@@ -484,7 +484,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 if cs.colorant_names and len(cs.colorant_names) != cs.components:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_SPOT_004",
+                            inspection_id="LPDF_SPOT_004",
                             severity=Severity.ERROR,
                             message=(
                                 f"DeviceN '{cs_name}' on page {page.page_num}: "
@@ -506,7 +506,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 if cs.alternate is None:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_SPOT_004",
+                            inspection_id="LPDF_SPOT_004",
                             severity=Severity.ERROR,
                             message=(
                                 f"DeviceN '{cs_name}' on page {page.page_num} "
@@ -525,7 +525,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 if not cs.colorant_names:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_SPOT_004",
+                            inspection_id="LPDF_SPOT_004",
                             severity=Severity.ERROR,
                             message=(
                                 f"DeviceN '{cs_name}' on page {page.page_num} "
@@ -549,7 +549,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     if empty_indices:
                         findings.append(
                             Finding(
-                                inspection_id="GRD_SPOT_004",
+                                inspection_id="LPDF_SPOT_004",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"DeviceN '{cs_name}' on page {page.page_num} "
@@ -574,7 +574,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
     def _check_devicen_process_consistency(  # skipcq: PY-R1000
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Check DeviceN process color consistency (GRD_SPOT_005).
+        """Check DeviceN process color consistency (LPDF_SPOT_005).
 
         For DeviceN spaces that include process color names (Cyan, Magenta,
         Yellow, Black), verify that the process color set is consistent
@@ -611,7 +611,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
         for page_num, cs_name, process_colors in all_devicen_with_process:
             findings.append(
                 Finding(
-                    inspection_id="GRD_SPOT_005",
+                    inspection_id="LPDF_SPOT_005",
                     severity=Severity.ADVISORY,
                     message=(
                         f"DeviceN '{cs_name}' on page {page_num} includes "
@@ -638,7 +638,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
 
             findings.append(
                 Finding(
-                    inspection_id="GRD_SPOT_005",
+                    inspection_id="LPDF_SPOT_005",
                     severity=Severity.WARNING,
                     message=(
                         f"Inconsistent process color sets in DeviceN spaces: "
@@ -657,14 +657,14 @@ class SpotColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_SPOT_007 — Unknown spot color name
+    # LPDF_SPOT_007 — Unknown spot color name
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_unknown_spot_color(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag spot colors whose name doesn't match any known library (GRD_SPOT_007).
+        """Flag spot colors whose name doesn't match any known library (LPDF_SPOT_007).
 
         Checks colorant names against PANTONE, HKS, TOYO, DIC, and RAL
         prefixes.  Process color names (Cyan, Magenta, Yellow, Black) and
@@ -693,7 +693,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     if not any(upper.startswith(prefix) for prefix in _ALL_KNOWN_LIBRARY_PREFIXES):
                         findings.append(
                             Finding(
-                                inspection_id="GRD_SPOT_007",
+                                inspection_id="LPDF_SPOT_007",
                                 severity=Severity.ADVISORY,
                                 message=(
                                     f"Unknown spot color '{colorant}' does not match "
@@ -712,14 +712,14 @@ class SpotColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_SPOT_008 — Spot color alternate space mismatch
+    # LPDF_SPOT_008 — Spot color alternate space mismatch
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_alternate_space_mismatch(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag spot colors whose alternate space doesn't match library expectations (GRD_SPOT_008).
+        """Flag spot colors whose alternate space doesn't match library expectations (LPDF_SPOT_008).
 
         For each known library prefix, verifies the alternate color space
         type matches the expected set (e.g., PANTONE expects DeviceCMYK
@@ -760,7 +760,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 if alt_type not in expected:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_SPOT_008",
+                            inspection_id="LPDF_SPOT_008",
                             severity=Severity.WARNING,
                             message=(
                                 f"Spot color '{colorant}' ({matched_library} library) "
@@ -781,14 +781,14 @@ class SpotColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_SPOT_009 — Duplicate spot color definitions
+    # LPDF_SPOT_009 — Duplicate spot color definitions
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_duplicate_spot_definitions(  # skipcq: PY-R1000
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag duplicate spot color definitions on the same page (GRD_SPOT_009).
+        """Flag duplicate spot color definitions on the same page (LPDF_SPOT_009).
 
         Detects when the same colorant name appears in multiple
         Separation color spaces on a single page with different
@@ -823,7 +823,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 if len(alt_descriptions) > 1:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_SPOT_009",
+                            inspection_id="LPDF_SPOT_009",
                             severity=Severity.WARNING,
                             message=(
                                 f"Duplicate spot color '{colorant}' on page "
@@ -845,14 +845,14 @@ class SpotColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_SPOT_010 — Spot color count exceeds maximum
+    # LPDF_SPOT_010 — Spot color count exceeds maximum
     # ------------------------------------------------------------------
 
     def _check_spot_color_count(
         self,
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag when spot color count exceeds configurable maximum (GRD_SPOT_010).
+        """Flag when spot color count exceeds configurable maximum (LPDF_SPOT_010).
 
         Counts distinct spot colorant names (excluding process colors
         and All/None) across the entire document.
@@ -877,7 +877,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
         if len(all_spots) > self._max_spot_colors:
             findings.append(
                 Finding(
-                    inspection_id="GRD_SPOT_010",
+                    inspection_id="LPDF_SPOT_010",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Document uses {len(all_spots)} spot color(s), "
@@ -896,7 +896,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_SPOT_011 — Spot color with zero tint
+    # LPDF_SPOT_011 — Spot color with zero tint
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -904,7 +904,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
         document: SemanticDocument,
         events: list[ContentStreamEvent],
     ) -> list[Finding]:
-        """Flag spot colors used at 0% tint, making them invisible (GRD_SPOT_011).
+        """Flag spot colors used at 0% tint, making them invisible (LPDF_SPOT_011).
 
         Checks content stream events for Separation color space usage
         where the tint value is 0.0 (fully transparent).
@@ -942,7 +942,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
 
                 findings.append(
                     Finding(
-                        inspection_id="GRD_SPOT_011",
+                        inspection_id="LPDF_SPOT_011",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Spot color '{color_space}' used at 0% tint "

@@ -5,7 +5,7 @@
   "conformance": "pdfx4",
   "workflow": "CMYK",
   "checks": {
-    "enabled": ["GRD_*", "PDFX4-*"],
+    "enabled": ["LPDF_*", "PDFX4-*"],
     "disabled": [],
     "severity_overrides": {}
   },

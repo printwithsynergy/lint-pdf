@@ -52,9 +52,5 @@ def create_celery_app(broker_url: str) -> Celery:
 # is configured, which allows test collection and local dev without Redis.
 import os as _os  # noqa: E402
 
-_broker = (
-    _os.environ.get("LINTPDF_REDIS_URL")
-    or _os.environ.get("REDIS_URL")
-    or "memory://"
-)
+_broker = _os.environ.get("LINTPDF_REDIS_URL") or _os.environ.get("REDIS_URL") or "memory://"
 celery_app = create_celery_app(broker_url=_broker)

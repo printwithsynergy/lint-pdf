@@ -39,7 +39,7 @@ class TestIccProfileAnalyzer:
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
         # No ICCBased spaces, no output intents = no ICC findings
-        icc_findings = [f for f in findings if f.inspection_id.startswith("GRD_ICC_")]
+        icc_findings = [f for f in findings if f.inspection_id.startswith("LPDF_ICC_")]
         assert len(icc_findings) == 0
 
     def test_valid_icc_based_color_space(self):
@@ -50,7 +50,7 @@ class TestIccProfileAnalyzer:
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
         # Should have ICC_002 advisory for detected profile
-        icc_002 = [f for f in findings if f.inspection_id == "GRD_ICC_002"]
+        icc_002 = [f for f in findings if f.inspection_id == "LPDF_ICC_002"]
         assert len(icc_002) >= 1
 
     def test_invalid_icc_component_count(self):
@@ -60,7 +60,7 @@ class TestIccProfileAnalyzer:
         doc = _make_doc(color_spaces={"CS1": cs})
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
-        icc_001 = [f for f in findings if f.inspection_id == "GRD_ICC_001"]
+        icc_001 = [f for f in findings if f.inspection_id == "LPDF_ICC_001"]
         assert len(icc_001) >= 1
         assert icc_001[0].severity == Severity.ERROR
 
@@ -69,7 +69,7 @@ class TestIccProfileAnalyzer:
         doc = _make_doc(color_spaces={"CS1": cs})
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
-        icc_003 = [f for f in findings if f.inspection_id == "GRD_ICC_003"]
+        icc_003 = [f for f in findings if f.inspection_id == "LPDF_ICC_003"]
         assert len(icc_003) >= 1
         assert icc_003[0].severity == Severity.ERROR
 
@@ -77,14 +77,14 @@ class TestIccProfileAnalyzer:
         doc = _make_doc(output_intents=[{"S": "GTS_PDFX", "OutputConditionIdentifier": "FOGRA39"}])
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
-        icc_005 = [f for f in findings if f.inspection_id == "GRD_ICC_005"]
+        icc_005 = [f for f in findings if f.inspection_id == "LPDF_ICC_005"]
         assert len(icc_005) >= 1
 
     def test_invalid_output_intent(self):
         doc = _make_doc(output_intents=[{"S": "INVALID_TYPE"}])
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
-        icc_004 = [f for f in findings if f.inspection_id == "GRD_ICC_004"]
+        icc_004 = [f for f in findings if f.inspection_id == "LPDF_ICC_004"]
         assert len(icc_004) >= 1
         assert icc_004[0].severity == Severity.WARNING
 
@@ -97,7 +97,7 @@ class TestIccProfileAnalyzer:
         )
         analyzer = IccProfileAnalyzer()
         findings = analyzer.analyze(doc, [])
-        icc_006 = [f for f in findings if f.inspection_id == "GRD_ICC_006"]
+        icc_006 = [f for f in findings if f.inspection_id == "LPDF_ICC_006"]
         assert len(icc_006) >= 1
 
 
@@ -290,7 +290,7 @@ class TestValidateIccProfileBytes:
 
 class TestIccAnalyzerNewChecks:
     def test_icc_007_missing_tags(self):
-        """GRD_ICC_007 fires when required tags are missing."""
+        """LPDF_ICC_007 fires when required tags are missing."""
         tags = {
             b"desc": b"desc" + b"\x00" * 4 + struct.pack(">I", 5) + b"Test\x00",
         }
@@ -306,12 +306,12 @@ class TestIccAnalyzerNewChecks:
             icc_profile_bytes_map={"profile_1": profile},
         )
         findings = analyzer.analyze(doc, [])
-        icc_007 = [f for f in findings if f.inspection_id == "GRD_ICC_007"]
+        icc_007 = [f for f in findings if f.inspection_id == "LPDF_ICC_007"]
         assert len(icc_007) >= 1
         assert icc_007[0].severity == Severity.WARNING
 
     def test_icc_007_no_fire_when_complete(self):
-        """GRD_ICC_007 does not fire when all required tags present."""
+        """LPDF_ICC_007 does not fire when all required tags present."""
         profile = _build_minimal_icc()
         cs = PdfColorSpace(
             name="CS1",
@@ -324,11 +324,11 @@ class TestIccAnalyzerNewChecks:
             icc_profile_bytes_map={"profile_1": profile},
         )
         findings = analyzer.analyze(doc, [])
-        icc_007 = [f for f in findings if f.inspection_id == "GRD_ICC_007"]
+        icc_007 = [f for f in findings if f.inspection_id == "LPDF_ICC_007"]
         assert len(icc_007) == 0
 
     def test_icc_009_bad_illuminant(self):
-        """GRD_ICC_009 fires when PCS illuminant is not D50."""
+        """LPDF_ICC_009 fires when PCS illuminant is not D50."""
         profile = _build_minimal_icc(d50_x=1.0, d50_y=1.0, d50_z=1.0)
         cs = PdfColorSpace(
             name="CS1",
@@ -341,12 +341,12 @@ class TestIccAnalyzerNewChecks:
             icc_profile_bytes_map={"profile_1": profile},
         )
         findings = analyzer.analyze(doc, [])
-        icc_009 = [f for f in findings if f.inspection_id == "GRD_ICC_009"]
+        icc_009 = [f for f in findings if f.inspection_id == "LPDF_ICC_009"]
         assert len(icc_009) >= 1
         assert icc_009[0].severity == Severity.WARNING
 
     def test_icc_009_no_fire_when_d50(self):
-        """GRD_ICC_009 does not fire with correct D50 illuminant."""
+        """LPDF_ICC_009 does not fire with correct D50 illuminant."""
         profile = _build_minimal_icc()
         cs = PdfColorSpace(
             name="CS1",
@@ -359,5 +359,5 @@ class TestIccAnalyzerNewChecks:
             icc_profile_bytes_map={"profile_1": profile},
         )
         findings = analyzer.analyze(doc, [])
-        icc_009 = [f for f in findings if f.inspection_id == "GRD_ICC_009"]
+        icc_009 = [f for f in findings if f.inspection_id == "LPDF_ICC_009"]
         assert len(icc_009) == 0

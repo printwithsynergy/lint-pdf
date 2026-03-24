@@ -8,9 +8,9 @@ Example PreflightProfile JSON with conditions:
 
     {
         "checks": {
-            "enabled": ["GRD_*"],
+            "enabled": ["LPDF_*"],
             "per_check": {
-                "GRD_IMG_001": {
+                "LPDF_IMG_001": {
                     "conditions": [
                         {
                             "when": {"page": {"in": [1, -1]}},

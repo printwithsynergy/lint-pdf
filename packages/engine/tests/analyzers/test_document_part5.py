@@ -1,4 +1,4 @@
-"""Tests for DocumentAnalyzer Part 5 checks — GRD_DOC_005, 006, 007."""
+"""Tests for DocumentAnalyzer Part 5 checks — LPDF_DOC_005, 006, 007."""
 
 from __future__ import annotations
 
@@ -24,14 +24,14 @@ def _make_document(
 
 
 class TestLinearizedPdf:
-    """Test GRD_DOC_005: Linearized PDF detected."""
+    """Test LPDF_DOC_005: Linearized PDF detected."""
 
     @staticmethod
     def test_linearized_in_catalog_flags() -> None:
         doc = _make_document(catalog={"/Linearized": "1.0"})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_005"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_005"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
@@ -40,7 +40,7 @@ class TestLinearizedPdf:
         doc = _make_document(trailer={"/Linearized": "1.0"})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_005"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_005"]
         assert len(f) == 1
 
     @staticmethod
@@ -48,19 +48,19 @@ class TestLinearizedPdf:
         doc = _make_document()
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_005"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_005"]
         assert len(f) == 0
 
 
 class TestIncrementalUpdates:
-    """Test GRD_DOC_006: Incremental updates detected."""
+    """Test LPDF_DOC_006: Incremental updates detected."""
 
     @staticmethod
     def test_prev_in_trailer_flags() -> None:
         doc = _make_document(trailer={"/Prev": 12345})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_006"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_006"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
@@ -69,12 +69,12 @@ class TestIncrementalUpdates:
         doc = _make_document(trailer={})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_006"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_006"]
         assert len(f) == 0
 
 
 class TestFileSizeThreshold:
-    """Test GRD_DOC_007: File size exceeds threshold."""
+    """Test LPDF_DOC_007: File size exceeds threshold."""
 
     @staticmethod
     def test_large_file_flags() -> None:
@@ -82,7 +82,7 @@ class TestFileSizeThreshold:
         doc = _make_document(info_dict={"/Title": "Big", "/FileSize": str(size)})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_007"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
         assert f[0].details["file_size_bytes"] == size
@@ -93,7 +93,7 @@ class TestFileSizeThreshold:
         doc = _make_document(info_dict={"/Title": "Small", "/FileSize": str(size)})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_007"]
         assert len(f) == 0
 
     @staticmethod
@@ -102,7 +102,7 @@ class TestFileSizeThreshold:
         doc = _make_document(info_dict={"/Title": "Med", "/FileSize": str(size)})
         analyzer = DocumentAnalyzer(max_file_size_bytes=30 * 1024 * 1024)
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_007"]
         assert len(f) == 1
 
     @staticmethod
@@ -110,7 +110,7 @@ class TestFileSizeThreshold:
         doc = _make_document(info_dict={"/Title": "NoSize"})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_007"]
         assert len(f) == 0
 
     @staticmethod
@@ -118,5 +118,5 @@ class TestFileSizeThreshold:
         doc = _make_document(info_dict={"/Title": "Bad", "/FileSize": "not_a_number"})
         analyzer = DocumentAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_DOC_007"]
+        f = [f for f in findings if f.inspection_id == "LPDF_DOC_007"]
         assert len(f) == 0

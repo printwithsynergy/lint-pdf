@@ -1,4 +1,5 @@
 """Cannabis labeling compliance analyzer (state-specific requirements)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

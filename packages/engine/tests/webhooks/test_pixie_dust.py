@@ -21,7 +21,7 @@ class _Severity(StrEnum):
 
 @dataclass
 class _Finding:
-    inspection_id: str = "GRD_TEST_001"
+    inspection_id: str = "LPDF_TEST_001"
     severity: _Severity = _Severity.ADVISORY
     message: str = "Test finding"
     page_num: int = 1
@@ -155,19 +155,19 @@ class TestFormatPixieDustPayload:
     def test_findings_grouped_by_severity() -> None:
         findings = [
             _Finding(
-                inspection_id="GRD_FONT_001",
+                inspection_id="LPDF_FONT_001",
                 severity=_Severity.ERROR,
                 message="Font not embedded",
                 page_num=1,
             ),
             _Finding(
-                inspection_id="GRD_IMG_001",
+                inspection_id="LPDF_IMG_001",
                 severity=_Severity.WARNING,
                 message="Low resolution",
                 page_num=2,
             ),
             _Finding(
-                inspection_id="GRD_COLOR_001",
+                inspection_id="LPDF_COLOR_001",
                 severity=_Severity.ADVISORY,
                 message="RGB detected",
                 page_num=1,
@@ -184,7 +184,7 @@ class TestFormatPixieDustPayload:
     def test_finding_structure() -> None:
         findings = [
             _Finding(
-                inspection_id="GRD_FONT_001",
+                inspection_id="LPDF_FONT_001",
                 severity=_Severity.ERROR,
                 message="Font not embedded",
                 page_num=3,
@@ -195,7 +195,7 @@ class TestFormatPixieDustPayload:
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]
 
         finding = payload["findings"]["error"][0]
-        assert finding["check_id"] == "GRD_FONT_001"
+        assert finding["check_id"] == "LPDF_FONT_001"
         assert finding["message"] == "Font not embedded"
         assert finding["page"] == 3
         assert finding["object"] == "F1"
@@ -212,9 +212,9 @@ class TestFormatPixieDustPayload:
     @staticmethod
     def test_multiple_findings_same_severity() -> None:
         findings = [
-            _Finding(severity=_Severity.ADVISORY, inspection_id="GRD_A"),
-            _Finding(severity=_Severity.ADVISORY, inspection_id="GRD_B"),
-            _Finding(severity=_Severity.ADVISORY, inspection_id="GRD_C"),
+            _Finding(severity=_Severity.ADVISORY, inspection_id="LPDF_A"),
+            _Finding(severity=_Severity.ADVISORY, inspection_id="LPDF_B"),
+            _Finding(severity=_Severity.ADVISORY, inspection_id="LPDF_C"),
         ]
         result = _PreflightResult(findings=findings)
         payload = format_pixie_dust_payload(result)  # type: ignore[arg-type]

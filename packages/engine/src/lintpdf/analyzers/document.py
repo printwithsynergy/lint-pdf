@@ -4,14 +4,14 @@ Inspects document-wide properties for print workflow issues:
 mixed page sizes, inconsistent rotation, missing metadata, encryption.
 
 Check IDs:
-    GRD_DOC_001 — Mixed page sizes
-    GRD_DOC_002 — Inconsistent page rotation
-    GRD_DOC_003 — Missing document title
-    GRD_DOC_004 — Document is encrypted
-    GRD_DOC_005 — Linearized PDF detected
-    GRD_DOC_006 — Incremental updates detected
-    GRD_DOC_007 — File size exceeds threshold
-    GRD_DOC_008 — Pre-separated pages detected
+    LPDF_DOC_001 — Mixed page sizes
+    LPDF_DOC_002 — Inconsistent page rotation
+    LPDF_DOC_003 — Missing document title
+    LPDF_DOC_004 — Document is encrypted
+    LPDF_DOC_005 — Linearized PDF detected
+    LPDF_DOC_006 — Incremental updates detected
+    LPDF_DOC_007 — File size exceeds threshold
+    LPDF_DOC_008 — Pre-separated pages detected
 """
 
 from __future__ import annotations
@@ -51,30 +51,30 @@ class DocumentAnalyzer(BaseAnalyzer):
         """Analyze document-level properties."""
         findings: list[Finding] = []
 
-        # GRD_DOC_004: Encryption
+        # LPDF_DOC_004: Encryption
         if document.is_encrypted:
             findings.append(
                 Finding(
-                    inspection_id="GRD_DOC_004",
+                    inspection_id="LPDF_DOC_004",
                     severity=Severity.ERROR,
                     message="Document is encrypted (not allowed in print workflows)",
                     iso_clause="ISO 15930-7:2010 6.2.2",
                 )
             )
 
-        # GRD_DOC_003: Missing title
+        # LPDF_DOC_003: Missing title
         title = document.info_dict.get("/Title") or document.info_dict.get("Title")
         if not title:
             findings.append(
                 Finding(
-                    inspection_id="GRD_DOC_003",
+                    inspection_id="LPDF_DOC_003",
                     severity=Severity.ADVISORY,
                     message="Document has no title in Info dictionary",
                     iso_clause="ISO 32000-2:2020 14.3.3",
                 )
             )
 
-        # GRD_DOC_005: Linearized PDF
+        # LPDF_DOC_005: Linearized PDF
         is_linearized = (
             document.catalog.get("/Linearized") is not None
             or document.trailer.get("/Linearized") is not None
@@ -82,18 +82,18 @@ class DocumentAnalyzer(BaseAnalyzer):
         if is_linearized:
             findings.append(
                 Finding(
-                    inspection_id="GRD_DOC_005",
+                    inspection_id="LPDF_DOC_005",
                     severity=Severity.ADVISORY,
                     message="Linearized PDF detected (web-optimized, may need re-saving for print)",
                     iso_clause="ISO 32000-2:2020 Annex F",
                 )
             )
 
-        # GRD_DOC_006: Incremental updates
+        # LPDF_DOC_006: Incremental updates
         if document.trailer.get("/Prev") is not None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_DOC_006",
+                    inspection_id="LPDF_DOC_006",
                     severity=Severity.ADVISORY,
                     message=(
                         "Incremental updates detected (trailer has /Prev reference, "
@@ -103,7 +103,7 @@ class DocumentAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_DOC_007: File size exceeds threshold
+        # LPDF_DOC_007: File size exceeds threshold
         file_size = document.info_dict.get("/FileSize") or document.info_dict.get("FileSize")
         if file_size is not None:
             try:
@@ -115,7 +115,7 @@ class DocumentAnalyzer(BaseAnalyzer):
                 max_mb = self.max_file_size_bytes / (1024 * 1024)
                 findings.append(
                     Finding(
-                        inspection_id="GRD_DOC_007",
+                        inspection_id="LPDF_DOC_007",
                         severity=Severity.ADVISORY,
                         message=(
                             f"File size ({size_mb:.1f} MB) exceeds threshold ({max_mb:.1f} MB)"
@@ -127,13 +127,13 @@ class DocumentAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_DOC_008: Pre-separated pages detected
+        # LPDF_DOC_008: Pre-separated pages detected
         findings.extend(self._check_pre_separated_pages(document))
 
         if len(document.pages) < 2:
             return findings
 
-        # GRD_DOC_001: Mixed page sizes
+        # LPDF_DOC_001: Mixed page sizes
         sizes: set[tuple[float, float]] = set()
         for page in document.pages:
             w = round(page.media_box.width, 1)
@@ -143,7 +143,7 @@ class DocumentAnalyzer(BaseAnalyzer):
         if len(sizes) > 1:
             findings.append(
                 Finding(
-                    inspection_id="GRD_DOC_001",
+                    inspection_id="LPDF_DOC_001",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Document has {len(sizes)} different page sizes "
@@ -155,7 +155,7 @@ class DocumentAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_DOC_002: Inconsistent rotation
+        # LPDF_DOC_002: Inconsistent rotation
         rotations: set[int] = set()
         for page in document.pages:
             rotations.add(page.rotate)
@@ -163,7 +163,7 @@ class DocumentAnalyzer(BaseAnalyzer):
         if len(rotations) > 1:
             findings.append(
                 Finding(
-                    inspection_id="GRD_DOC_002",
+                    inspection_id="LPDF_DOC_002",
                     severity=Severity.ADVISORY,
                     message=(f"Document has inconsistent page rotations: {sorted(rotations)}"),
                     details={
@@ -176,7 +176,7 @@ class DocumentAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_pre_separated_pages(document: SemanticDocument) -> list[Finding]:
-        """Check for pre-separated pages (GRD_DOC_008).
+        """Check for pre-separated pages (LPDF_DOC_008).
 
         Pre-separated PDFs have individual color separations as separate pages
         (one page per ink). Detected by looking for /Separation color spaces
@@ -191,7 +191,7 @@ class DocumentAnalyzer(BaseAnalyzer):
         if isinstance(sep_info, dict):
             findings.append(
                 Finding(
-                    inspection_id="GRD_DOC_008",
+                    inspection_id="LPDF_DOC_008",
                     severity=Severity.WARNING,
                     message=("Pre-separated pages detected (document contains /SeparationInfo)"),
                     details={"source": "catalog_separation_info"},
@@ -225,7 +225,7 @@ class DocumentAnalyzer(BaseAnalyzer):
         if len(separation_pages) >= 2:
             findings.append(
                 Finding(
-                    inspection_id="GRD_DOC_008",
+                    inspection_id="LPDF_DOC_008",
                     severity=Severity.WARNING,
                     message=(
                         f"Pre-separated pages detected "

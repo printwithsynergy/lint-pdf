@@ -5,24 +5,24 @@ DeviceN color spaces, spot color usage, 7-channel TAC, and ink build
 constraints.
 
 Check IDs:
-    GRD_ECG_001 — ECG readiness assessment
-    GRD_ECG_002 — Per-spot ECG achievability placeholder
-    GRD_ECG_003 — 7-channel TAC verification
-    GRD_ECG_004 — DeviceN colorant consistency for CMYKOGV
-    GRD_ECG_005 — Max 3-ink build validation
-    GRD_ECG_006 — Spot color convertible to ECG process
-    GRD_ECG_007 — ECG color out of build range
-    GRD_ECG_008 — Gray balance drift risk
-    GRD_ECG_009 — Overinking in expanded gamut
-    GRD_ECG_010 — Missing ECG characterization data
-    GRD_ECG_011 — Non-uniform ink limits
-    GRD_ECG_012 — Gamut boundary mapping required
-    GRD_ECG_013 — K-only text in ECG
-    GRD_ECG_014 — Rich black recipe for ECG
-    GRD_ECG_015 — Trap zone width recommendation
-    GRD_ECG_016 — ECG profile ICC version
-    GRD_ECG_017 — Multicolor DeviceN ordering
-    GRD_ECG_018 — Total ink limit per channel
+    LPDF_ECG_001 — ECG readiness assessment
+    LPDF_ECG_002 — Per-spot ECG achievability placeholder
+    LPDF_ECG_003 — 7-channel TAC verification
+    LPDF_ECG_004 — DeviceN colorant consistency for CMYKOGV
+    LPDF_ECG_005 — Max 3-ink build validation
+    LPDF_ECG_006 — Spot color convertible to ECG process
+    LPDF_ECG_007 — ECG color out of build range
+    LPDF_ECG_008 — Gray balance drift risk
+    LPDF_ECG_009 — Overinking in expanded gamut
+    LPDF_ECG_010 — Missing ECG characterization data
+    LPDF_ECG_011 — Non-uniform ink limits
+    LPDF_ECG_012 — Gamut boundary mapping required
+    LPDF_ECG_013 — K-only text in ECG
+    LPDF_ECG_014 — Rich black recipe for ECG
+    LPDF_ECG_015 — Trap zone width recommendation
+    LPDF_ECG_016 — ECG profile ICC version
+    LPDF_ECG_017 — Multicolor DeviceN ordering
+    LPDF_ECG_018 — Total ink limit per channel
 """
 
 from __future__ import annotations
@@ -56,22 +56,22 @@ except ImportError:
 # under the FOGRA55 characterization (ISO 12647-2:2013 supplement).
 _FOGRA55_GAMUT_BOUNDARY_LAB: list[tuple[float, float, float]] = [
     # (L*, a*, b*)  — key anchor points around the gamut hull
-    (97.0, -1.0, 3.0),     # paper white
-    (0.0, 0.0, 0.0),       # solid K
+    (97.0, -1.0, 3.0),  # paper white
+    (0.0, 0.0, 0.0),  # solid K
     (55.0, -38.0, -43.0),  # solid Cyan
-    (47.0, 74.0, -5.0),    # solid Magenta
-    (89.0, -5.0, 93.0),    # solid Yellow
-    (62.0, 55.0, 68.0),    # solid Orange
-    (50.0, -70.0, 28.0),   # solid Green
-    (24.0, 22.0, -46.0),   # solid Violet
-    (30.0, 50.0, -13.0),   # Magenta+K deep
+    (47.0, 74.0, -5.0),  # solid Magenta
+    (89.0, -5.0, 93.0),  # solid Yellow
+    (62.0, 55.0, 68.0),  # solid Orange
+    (50.0, -70.0, 28.0),  # solid Green
+    (24.0, 22.0, -46.0),  # solid Violet
+    (30.0, 50.0, -13.0),  # Magenta+K deep
     (39.0, -35.0, -30.0),  # Cyan+K deep
-    (78.0, -60.0, 75.0),   # Yellow+Green
-    (74.0, 30.0, 82.0),    # Yellow+Orange
-    (35.0, 15.0, -50.0),   # Violet+K
-    (65.0, 60.0, 40.0),    # Orange+Magenta
+    (78.0, -60.0, 75.0),  # Yellow+Green
+    (74.0, 30.0, 82.0),  # Yellow+Orange
+    (35.0, 15.0, -50.0),  # Violet+K
+    (65.0, 60.0, 40.0),  # Orange+Magenta
     (45.0, -55.0, -10.0),  # Cyan+Green
-    (16.0, 0.0, 0.0),      # near-K
+    (16.0, 0.0, 0.0),  # near-K
 ]
 
 
@@ -88,8 +88,8 @@ def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, fl
     C2 = math.sqrt(a2 * a2 + b2 * b2)
     Cbar = (C1 + C2) / 2.0
 
-    Cbar7 = Cbar ** 7
-    G = 0.5 * (1.0 - math.sqrt(Cbar7 / (Cbar7 + 25.0 ** 7)))
+    Cbar7 = Cbar**7
+    G = 0.5 * (1.0 - math.sqrt(Cbar7 / (Cbar7 + 25.0**7)))
     a1p = a1 * (1.0 + G)
     a2p = a2 * (1.0 + G)
 
@@ -107,11 +107,13 @@ def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, fl
     else:
         Hbarp = (h1p + h2p - 360.0) / 2.0
 
-    T = (1.0
-         - 0.17 * math.cos(math.radians(Hbarp - 30.0))
-         + 0.24 * math.cos(math.radians(2.0 * Hbarp))
-         + 0.32 * math.cos(math.radians(3.0 * Hbarp + 6.0))
-         - 0.20 * math.cos(math.radians(4.0 * Hbarp - 63.0)))
+    T = (
+        1.0
+        - 0.17 * math.cos(math.radians(Hbarp - 30.0))
+        + 0.24 * math.cos(math.radians(2.0 * Hbarp))
+        + 0.32 * math.cos(math.radians(3.0 * Hbarp + 6.0))
+        - 0.20 * math.cos(math.radians(4.0 * Hbarp - 63.0))
+    )
 
     if abs(h2p - h1p) <= 180.0:
         dhp = h2p - h1p
@@ -128,16 +130,13 @@ def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, fl
     SC = 1.0 + 0.045 * Cbarp
     SH = 1.0 + 0.015 * Cbarp * T
 
-    Cbarp7 = Cbarp ** 7
-    RC = 2.0 * math.sqrt(Cbarp7 / (Cbarp7 + 25.0 ** 7))
-    dtheta = 30.0 * math.exp(-((Hbarp - 275.0) / 25.0) ** 2)
+    Cbarp7 = Cbarp**7
+    RC = 2.0 * math.sqrt(Cbarp7 / (Cbarp7 + 25.0**7))
+    dtheta = 30.0 * math.exp(-(((Hbarp - 275.0) / 25.0) ** 2))
     RT = -math.sin(2.0 * math.radians(dtheta)) * RC
 
     dE = math.sqrt(
-        (dLp / SL) ** 2
-        + (dCp / SC) ** 2
-        + (dHp / SH) ** 2
-        + RT * (dCp / SC) * (dHp / SH)
+        (dLp / SL) ** 2 + (dCp / SC) ** 2 + (dHp / SH) ** 2 + RT * (dCp / SC) * (dHp / SH)
     )
     return dE
 
@@ -191,8 +190,8 @@ _SPOT_NAME_TO_LAB: dict[str, tuple[float, float, float]] = {
     "pantone 2935": (30.0, 6.0, -60.0),
     "pantone 7462": (28.0, -8.0, -32.0),
     "pantone 7687": (22.0, 20.0, -52.0),
-    "pantone 877": (72.0, 0.0, 2.0),   # metallic silver approx
-    "pantone 871": (55.0, 5.0, 35.0),   # metallic gold approx
+    "pantone 877": (72.0, 0.0, 2.0),  # metallic silver approx
+    "pantone 871": (55.0, 5.0, 35.0),  # metallic gold approx
     "gold": (55.0, 5.0, 35.0),
     "silver": (72.0, 0.0, 2.0),
     "red": (53.0, 80.0, 67.0),
@@ -428,58 +427,58 @@ class EcgAnalyzer(BaseAnalyzer):
                     }
                 )
 
-        # GRD_ECG_001: ECG readiness assessment
+        # LPDF_ECG_001: ECG readiness assessment
         findings.extend(self._check_ecg_readiness(spot_colors, devicen_spaces))
 
-        # GRD_ECG_002: Per-spot ECG achievability placeholder
+        # LPDF_ECG_002: Per-spot ECG achievability placeholder
         findings.extend(self._check_spot_achievability(spot_colors))
 
-        # GRD_ECG_003: 7-channel TAC verification
+        # LPDF_ECG_003: 7-channel TAC verification
         findings.extend(self._check_7channel_tac(devicen_color_events))
 
-        # GRD_ECG_004: DeviceN colorant consistency for CMYKOGV
+        # LPDF_ECG_004: DeviceN colorant consistency for CMYKOGV
         findings.extend(self._check_colorant_consistency(devicen_spaces))
 
-        # GRD_ECG_005: Max 3-ink build validation
+        # LPDF_ECG_005: Max 3-ink build validation
         findings.extend(self._check_ink_build(devicen_color_events))
 
-        # GRD_ECG_006: Spot color convertible to ECG process
+        # LPDF_ECG_006: Spot color convertible to ECG process
         findings.extend(self._check_spot_convertible(spot_colors))
 
-        # GRD_ECG_007: ECG color out of build range
+        # LPDF_ECG_007: ECG color out of build range
         findings.extend(self._check_ecg_build_range(devicen_color_events))
 
-        # GRD_ECG_008: Gray balance drift risk
+        # LPDF_ECG_008: Gray balance drift risk
         findings.extend(self._check_gray_balance_drift(cmyk_color_events))
 
-        # GRD_ECG_009: Overinking in expanded gamut
+        # LPDF_ECG_009: Overinking in expanded gamut
         findings.extend(self._check_ecg_overinking(devicen_color_events))
 
-        # GRD_ECG_010: Missing ECG characterization data
+        # LPDF_ECG_010: Missing ECG characterization data
         findings.extend(self._check_ecg_characterization(document))
 
-        # GRD_ECG_011: Non-uniform ink limits
+        # LPDF_ECG_011: Non-uniform ink limits
         findings.extend(self._check_ink_channel_limits(devicen_color_events))
 
-        # GRD_ECG_012: Gamut boundary mapping required
+        # LPDF_ECG_012: Gamut boundary mapping required
         findings.extend(self._check_gamut_mapping(spot_colors))
 
-        # GRD_ECG_013: K-only text in ECG
+        # LPDF_ECG_013: K-only text in ECG
         findings.extend(self._check_k_only_text(text_events))
 
-        # GRD_ECG_014: Rich black recipe for ECG
+        # LPDF_ECG_014: Rich black recipe for ECG
         findings.extend(self._check_rich_black_ecg(cmyk_color_events))
 
-        # GRD_ECG_015: Trap zone width recommendation
+        # LPDF_ECG_015: Trap zone width recommendation
         findings.extend(self._check_trap_zone_width(path_events))
 
-        # GRD_ECG_016: ECG profile ICC version
+        # LPDF_ECG_016: ECG profile ICC version
         findings.extend(self._check_icc_version(document))
 
-        # GRD_ECG_017: Multicolor DeviceN ordering
+        # LPDF_ECG_017: Multicolor DeviceN ordering
         findings.extend(self._check_devicen_ordering(devicen_spaces))
 
-        # GRD_ECG_018: Total ink limit per channel
+        # LPDF_ECG_018: Total ink limit per channel
         findings.extend(self._check_channel_ink_limit(devicen_color_events))
 
         return findings
@@ -489,7 +488,7 @@ class EcgAnalyzer(BaseAnalyzer):
         spot_colors: dict[str, list[int]],
         devicen_spaces: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_001: Assess ECG readiness."""
+        """LPDF_ECG_001: Assess ECG readiness."""
         findings: list[Finding] = []
 
         # Check for CMYKOGV-like DeviceN spaces
@@ -508,7 +507,7 @@ class EcgAnalyzer(BaseAnalyzer):
 
         findings.append(
             Finding(
-                inspection_id="GRD_ECG_001",
+                inspection_id="LPDF_ECG_001",
                 severity=Severity.ADVISORY,
                 message=(
                     f"ECG readiness: {len(spot_colors)} spot color(s) found, "
@@ -531,7 +530,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_spot_achievability(
         spot_colors: dict[str, list[int]],
     ) -> list[Finding]:
-        """GRD_ECG_002: Per-spot ECG achievability via FOGRA55 gamut estimate.
+        """LPDF_ECG_002: Per-spot ECG achievability via FOGRA55 gamut estimate.
 
         Estimates whether each spot color name can be reproduced within the
         FOGRA55 ECG (CMYKOGV) gamut by mapping common spot color names to
@@ -545,7 +544,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if lab is None:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_002",
+                        inspection_id="LPDF_ECG_002",
                         severity=Severity.ADVISORY,
                         message=(
                             f"ECG achievability: Spot color '{colorant}' could not be "
@@ -590,7 +589,7 @@ class EcgAnalyzer(BaseAnalyzer):
 
             findings.append(
                 Finding(
-                    inspection_id="GRD_ECG_002",
+                    inspection_id="LPDF_ECG_002",
                     severity=severity,
                     message=msg,
                     details={
@@ -609,7 +608,7 @@ class EcgAnalyzer(BaseAnalyzer):
         self,
         devicen_color_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_003: 7-channel TAC verification."""
+        """LPDF_ECG_003: 7-channel TAC verification."""
         findings: list[Finding] = []
 
         for event_info in devicen_color_events:
@@ -620,7 +619,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if tac > self.tac_limit:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_003",
+                        inspection_id="LPDF_ECG_003",
                         severity=Severity.WARNING,
                         message=(
                             f"ECG TAC {tac:.0f}% exceeds {self.tac_limit:.0f}% limit "
@@ -643,7 +642,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_colorant_consistency(
         devicen_spaces: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_004: DeviceN colorant consistency for CMYKOGV."""
+        """LPDF_ECG_004: DeviceN colorant consistency for CMYKOGV."""
         findings: list[Finding] = []
 
         seven_channel_spaces: list[dict[str, object]] = []
@@ -673,7 +672,7 @@ class EcgAnalyzer(BaseAnalyzer):
                     # Abbreviation naming convention — still report for awareness
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ECG_004",
+                            inspection_id="LPDF_ECG_004",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"DeviceN 7-colorant space '{dn['cs_name']}' on page "
@@ -692,7 +691,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if missing or unexpected:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_004",
+                        inspection_id="LPDF_ECG_004",
                         severity=Severity.WARNING,
                         message=(
                             f"DeviceN 7-colorant space '{dn['cs_name']}' on page "
@@ -712,7 +711,7 @@ class EcgAnalyzer(BaseAnalyzer):
             else:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_004",
+                        inspection_id="LPDF_ECG_004",
                         severity=Severity.ADVISORY,
                         message=(
                             f"DeviceN 7-colorant space '{dn['cs_name']}' on page "
@@ -732,7 +731,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_ink_build(
         devicen_color_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_005: Max 3-ink build validation."""
+        """LPDF_ECG_005: Max 3-ink build validation."""
         findings: list[Finding] = []
 
         for event_info in devicen_color_events:
@@ -745,7 +744,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if active_inks > 3:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_005",
+                        inspection_id="LPDF_ECG_005",
                         severity=Severity.WARNING,
                         message=(
                             f"ECG ink build: {active_inks} active inks (>{_SIGNIFICANT_INK * 100:.0f}%) "
@@ -767,7 +766,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_spot_convertible(
         spot_colors: dict[str, list[int]],
     ) -> list[Finding]:
-        """GRD_ECG_006: Spot color convertible to ECG process."""
+        """LPDF_ECG_006: Spot color convertible to ECG process."""
         findings: list[Finding] = []
 
         for colorant, pages in sorted(spot_colors.items()):
@@ -776,7 +775,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if ecg_process is not None:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_006",
+                        inspection_id="LPDF_ECG_006",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Spot color '{colorant}' could be replaced by ECG process "
@@ -796,7 +795,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_ecg_build_range(
         devicen_color_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_007: ECG color out of build range."""
+        """LPDF_ECG_007: ECG color out of build range."""
         findings: list[Finding] = []
 
         for event_info in devicen_color_events:
@@ -807,7 +806,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if tac > 400.0:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_007",
+                        inspection_id="LPDF_ECG_007",
                         severity=Severity.ERROR,
                         message=(
                             f"ECG color out of build range: CMYK+OGV TAC {tac:.0f}% "
@@ -829,7 +828,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_gray_balance_drift(
         cmyk_color_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_008: Gray balance drift risk."""
+        """LPDF_ECG_008: Gray balance drift risk."""
         findings: list[Finding] = []
         drift_count = 0
         drift_pages: set[int] = set()
@@ -854,7 +853,7 @@ class EcgAnalyzer(BaseAnalyzer):
         if drift_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ECG_008",
+                    inspection_id="LPDF_ECG_008",
                     severity=Severity.WARNING,
                     message=(
                         f"ECG gray balance drift risk: {drift_count} object(s) with "
@@ -877,7 +876,7 @@ class EcgAnalyzer(BaseAnalyzer):
         self,
         devicen_color_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_009: Overinking in expanded gamut."""
+        """LPDF_ECG_009: Overinking in expanded gamut."""
         findings: list[Finding] = []
 
         for event_info in devicen_color_events:
@@ -888,7 +887,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if tac > self.ecg_tac_limit:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_009",
+                        inspection_id="LPDF_ECG_009",
                         severity=Severity.WARNING,
                         message=(
                             f"ECG overinking: TAC {tac:.0f}% exceeds ECG threshold "
@@ -910,7 +909,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_ecg_characterization(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_ECG_010: Missing ECG characterization data."""
+        """LPDF_ECG_010: Missing ECG characterization data."""
         findings: list[Finding] = []
 
         # Check output intents for ECG-specific characterization references
@@ -930,7 +929,7 @@ class EcgAnalyzer(BaseAnalyzer):
         if not has_ecg_characterization:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ECG_010",
+                    inspection_id="LPDF_ECG_010",
                     severity=Severity.WARNING,
                     message=(
                         "Missing ECG characterization data: no ECG-specific output "
@@ -950,7 +949,7 @@ class EcgAnalyzer(BaseAnalyzer):
         self,
         devicen_color_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_011: Non-uniform ink limits."""
+        """LPDF_ECG_011: Non-uniform ink limits."""
         findings: list[Finding] = []
 
         for event_info in devicen_color_events:
@@ -965,7 +964,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if exceeded_channels:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_011",
+                        inspection_id="LPDF_ECG_011",
                         severity=Severity.WARNING,
                         message=(
                             f"ECG ink channel limit exceeded: channel(s) "
@@ -987,7 +986,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_gamut_mapping(
         spot_colors: dict[str, list[int]],
     ) -> list[Finding]:
-        """GRD_ECG_012: Gamut boundary mapping required."""
+        """LPDF_ECG_012: Gamut boundary mapping required."""
         findings: list[Finding] = []
 
         # Spot colors not in the ECG convertible set likely need gamut mapping
@@ -999,7 +998,7 @@ class EcgAnalyzer(BaseAnalyzer):
 
             findings.append(
                 Finding(
-                    inspection_id="GRD_ECG_012",
+                    inspection_id="LPDF_ECG_012",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Gamut boundary mapping required: spot color '{colorant}' "
@@ -1019,7 +1018,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_k_only_text(
         text_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_013: K-only text in ECG."""
+        """LPDF_ECG_013: K-only text in ECG."""
         findings: list[Finding] = []
         multi_ink_text_count = 0
         multi_ink_text_pages: set[int] = set()
@@ -1044,7 +1043,7 @@ class EcgAnalyzer(BaseAnalyzer):
         if multi_ink_text_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ECG_013",
+                    inspection_id="LPDF_ECG_013",
                     severity=Severity.WARNING,
                     message=(
                         f"ECG multi-ink small text: {multi_ink_text_count} text "
@@ -1067,7 +1066,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_rich_black_ecg(
         cmyk_color_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_014: Rich black recipe for ECG."""
+        """LPDF_ECG_014: Rich black recipe for ECG."""
         findings: list[Finding] = []
         bad_recipe_count = 0
         bad_recipe_pages: set[int] = set()
@@ -1091,7 +1090,7 @@ class EcgAnalyzer(BaseAnalyzer):
         if bad_recipe_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ECG_014",
+                    inspection_id="LPDF_ECG_014",
                     severity=Severity.ADVISORY,
                     message=(
                         f"ECG rich black recipe: {bad_recipe_count} object(s) use "
@@ -1119,7 +1118,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_trap_zone_width(
         path_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_015: Trap zone width recommendation."""
+        """LPDF_ECG_015: Trap zone width recommendation."""
         findings: list[Finding] = []
         thin_count = 0
         thin_pages: set[int] = set()
@@ -1135,7 +1134,7 @@ class EcgAnalyzer(BaseAnalyzer):
         if thin_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ECG_015",
+                    inspection_id="LPDF_ECG_015",
                     severity=Severity.ADVISORY,
                     message=(
                         f"ECG trap zone warning: {thin_count} path element(s) with "
@@ -1158,7 +1157,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_icc_version(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_ECG_016: ECG profile ICC version."""
+        """LPDF_ECG_016: ECG profile ICC version."""
         findings: list[Finding] = []
 
         if hasattr(document, "output_intents"):
@@ -1170,7 +1169,7 @@ class EcgAnalyzer(BaseAnalyzer):
                 if icc_version is not None and icc_version < 4.0:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ECG_016",
+                            inspection_id="LPDF_ECG_016",
                             severity=Severity.WARNING,
                             message=(
                                 f"ECG ICC profile version {icc_version} is below "
@@ -1190,7 +1189,7 @@ class EcgAnalyzer(BaseAnalyzer):
     def _check_devicen_ordering(
         devicen_spaces: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_017: Multicolor DeviceN ordering."""
+        """LPDF_ECG_017: Multicolor DeviceN ordering."""
         findings: list[Finding] = []
 
         for dn in devicen_spaces:
@@ -1209,7 +1208,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if lower_names != _CMYKOGV_ORDER:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_017",
+                        inspection_id="LPDF_ECG_017",
                         severity=Severity.WARNING,
                         message=(
                             f"DeviceN colorant order {colorants} on page {page_num} "
@@ -1231,7 +1230,7 @@ class EcgAnalyzer(BaseAnalyzer):
         self,
         devicen_color_events: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_ECG_018: Total ink limit per channel."""
+        """LPDF_ECG_018: Total ink limit per channel."""
         findings: list[Finding] = []
         high_ink_threshold = 0.90  # 90% advisory threshold
 
@@ -1247,7 +1246,7 @@ class EcgAnalyzer(BaseAnalyzer):
             if high_channels:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ECG_018",
+                        inspection_id="LPDF_ECG_018",
                         severity=Severity.ADVISORY,
                         message=(
                             f"ECG high ink per channel: channel(s) {high_channels} "

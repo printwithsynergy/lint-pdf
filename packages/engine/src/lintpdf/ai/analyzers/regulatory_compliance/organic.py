@@ -1,4 +1,5 @@
 """Organic certification labeling compliance analyzer (USDA, EU organic)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

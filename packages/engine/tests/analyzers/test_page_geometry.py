@@ -37,14 +37,14 @@ def _make_document(
 
 
 class TestBoxPresence:
-    """Test GRD_BOX_001: required boxes present."""
+    """Test LPDF_BOX_001: required boxes present."""
 
     @staticmethod
     def test_missing_trim_box() -> None:
         doc = _make_document(trim_box=None, bleed_box=PdfBox(5, 5, 607, 787))
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        box_findings = [f for f in findings if f.inspection_id == "GRD_BOX_001"]
+        box_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_001"]
         trim_missing = [f for f in box_findings if "TrimBox" in f.message]
         assert len(trim_missing) == 1
         assert trim_missing[0].severity == Severity.WARNING
@@ -54,7 +54,7 @@ class TestBoxPresence:
         doc = _make_document(trim_box=PdfBox(20, 20, 592, 772), bleed_box=None)
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        box_findings = [f for f in findings if f.inspection_id == "GRD_BOX_001"]
+        box_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_001"]
         bleed_missing = [f for f in box_findings if "BleedBox" in f.message]
         assert len(bleed_missing) == 1
 
@@ -66,7 +66,7 @@ class TestBoxPresence:
         )
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        box_findings = [f for f in findings if f.inspection_id == "GRD_BOX_001"]
+        box_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_001"]
         assert len(box_findings) == 0
 
     @staticmethod
@@ -74,12 +74,12 @@ class TestBoxPresence:
         doc = _make_document(trim_box=None, bleed_box=None)
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        box_findings = [f for f in findings if f.inspection_id == "GRD_BOX_001"]
+        box_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_001"]
         assert len(box_findings) == 2
 
 
 class TestBoxHierarchy:
-    """Test GRD_BOX_002: box containment hierarchy."""
+    """Test LPDF_BOX_002: box containment hierarchy."""
 
     @staticmethod
     def test_valid_hierarchy() -> None:
@@ -91,7 +91,7 @@ class TestBoxHierarchy:
         )
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        hierarchy_findings = [f for f in findings if f.inspection_id == "GRD_BOX_002"]
+        hierarchy_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_002"]
         assert len(hierarchy_findings) == 0
 
     @staticmethod
@@ -102,7 +102,7 @@ class TestBoxHierarchy:
         )
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        hierarchy_findings = [f for f in findings if f.inspection_id == "GRD_BOX_002"]
+        hierarchy_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_002"]
         assert len(hierarchy_findings) == 1
         assert "CropBox" in hierarchy_findings[0].message
 
@@ -114,13 +114,13 @@ class TestBoxHierarchy:
         )
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        hierarchy_findings = [f for f in findings if f.inspection_id == "GRD_BOX_002"]
+        hierarchy_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_002"]
         trim_outside = [f for f in hierarchy_findings if "TrimBox" in f.message]
         assert len(trim_outside) == 1
 
 
 class TestBleedDistance:
-    """Test GRD_BOX_003: adequate bleed distance."""
+    """Test LPDF_BOX_003: adequate bleed distance."""
 
     @staticmethod
     def test_adequate_bleed() -> None:
@@ -131,7 +131,7 @@ class TestBleedDistance:
         )
         analyzer = PageGeometryAnalyzer(min_bleed_pts=8.5)
         findings = analyzer.analyze(doc, [])
-        bleed_findings = [f for f in findings if f.inspection_id == "GRD_BOX_003"]
+        bleed_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_003"]
         assert len(bleed_findings) == 0
 
     @staticmethod
@@ -143,7 +143,7 @@ class TestBleedDistance:
         )
         analyzer = PageGeometryAnalyzer(min_bleed_pts=8.5)
         findings = analyzer.analyze(doc, [])
-        bleed_findings = [f for f in findings if f.inspection_id == "GRD_BOX_003"]
+        bleed_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_003"]
         assert len(bleed_findings) == 1
         assert bleed_findings[0].severity == Severity.WARNING
 
@@ -156,7 +156,7 @@ class TestBleedDistance:
         )
         analyzer = PageGeometryAnalyzer(min_bleed_pts=8.5)
         findings = analyzer.analyze(doc, [])
-        bleed_findings = [f for f in findings if f.inspection_id == "GRD_BOX_003"]
+        bleed_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_003"]
         assert len(bleed_findings) == 1
 
     @staticmethod
@@ -169,13 +169,13 @@ class TestBleedDistance:
         # 8.5pt is fine for 3mm requirement
         analyzer_3mm = PageGeometryAnalyzer(min_bleed_pts=8.5)
         assert (
-            len([f for f in analyzer_3mm.analyze(doc, []) if f.inspection_id == "GRD_BOX_003"]) == 0
+            len([f for f in analyzer_3mm.analyze(doc, []) if f.inspection_id == "LPDF_BOX_003"]) == 0
         )
 
         # 8.5pt is NOT fine for 5mm requirement (14.17pt)
         analyzer_5mm = PageGeometryAnalyzer(min_bleed_pts=14.17)
         assert (
-            len([f for f in analyzer_5mm.analyze(doc, []) if f.inspection_id == "GRD_BOX_003"]) == 1
+            len([f for f in analyzer_5mm.analyze(doc, []) if f.inspection_id == "LPDF_BOX_003"]) == 1
         )
 
 
@@ -205,17 +205,17 @@ class TestMultiplePages:
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
         # Page 1: OK. Page 2: missing TrimBox + BleedBox
-        box_findings = [f for f in findings if f.inspection_id == "GRD_BOX_001"]
+        box_findings = [f for f in findings if f.inspection_id == "LPDF_BOX_001"]
         assert len(box_findings) == 2
         assert all(f.page_num == 2 for f in box_findings)
 
 
 class TestEmptyPage:
-    """Test GRD_BOX_004: empty page (no content stream)."""
+    """Test LPDF_BOX_004: empty page (no content stream)."""
 
     @staticmethod
     def test_empty_page_advisory() -> None:
-        """Page with no content stream triggers GRD_BOX_004."""
+        """Page with no content stream triggers LPDF_BOX_004."""
         doc = SemanticDocument(
             version="1.7",
             page_count=1,
@@ -232,14 +232,14 @@ class TestEmptyPage:
         )
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        empty = [f for f in findings if f.inspection_id == "GRD_BOX_004"]
+        empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
         assert len(empty) == 1
         assert empty[0].severity == Severity.ADVISORY
         assert empty[0].page_num == 1
 
     @staticmethod
     def test_page_with_content_no_finding() -> None:
-        """Page with content stream does not trigger GRD_BOX_004."""
+        """Page with content stream does not trigger LPDF_BOX_004."""
         doc = SemanticDocument(
             version="1.7",
             page_count=1,
@@ -256,12 +256,12 @@ class TestEmptyPage:
         )
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        empty = [f for f in findings if f.inspection_id == "GRD_BOX_004"]
+        empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
         assert len(empty) == 0
 
     @staticmethod
     def test_mixed_pages_only_empty_flagged() -> None:
-        """Only pages without content trigger GRD_BOX_004."""
+        """Only pages without content trigger LPDF_BOX_004."""
         doc = SemanticDocument(
             version="1.7",
             page_count=3,
@@ -292,13 +292,13 @@ class TestEmptyPage:
         )
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, [])
-        empty = [f for f in findings if f.inspection_id == "GRD_BOX_004"]
+        empty = [f for f in findings if f.inspection_id == "LPDF_BOX_004"]
         assert len(empty) == 1
         assert empty[0].page_num == 2
 
 
 class TestContentSafetyMargin:
-    """Test GRD_BOX_005: content within safety margin of trim edge."""
+    """Test LPDF_BOX_005: content within safety margin of trim edge."""
 
     @staticmethod
     def _make_doc_with_trim() -> SemanticDocument:
@@ -336,7 +336,7 @@ class TestContentSafetyMargin:
         ]
         analyzer = PageGeometryAnalyzer(safety_margin_pts=8.5)
         findings = analyzer.analyze(doc, events)
-        f = [f for f in findings if f.inspection_id == "GRD_BOX_005"]
+        f = [f for f in findings if f.inspection_id == "LPDF_BOX_005"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
@@ -358,7 +358,7 @@ class TestContentSafetyMargin:
         ]
         analyzer = PageGeometryAnalyzer(safety_margin_pts=8.5)
         findings = analyzer.analyze(doc, events)
-        f = [f for f in findings if f.inspection_id == "GRD_BOX_005"]
+        f = [f for f in findings if f.inspection_id == "LPDF_BOX_005"]
         assert len(f) == 0
 
     def test_text_event_in_safety_margin(self) -> None:
@@ -379,7 +379,7 @@ class TestContentSafetyMargin:
         ]
         analyzer = PageGeometryAnalyzer(safety_margin_pts=8.5)
         findings = analyzer.analyze(doc, events)
-        f = [f for f in findings if f.inspection_id == "GRD_BOX_005"]
+        f = [f for f in findings if f.inspection_id == "LPDF_BOX_005"]
         assert len(f) == 1
 
     @staticmethod
@@ -413,7 +413,7 @@ class TestContentSafetyMargin:
         ]
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, events)
-        f = [f for f in findings if f.inspection_id == "GRD_BOX_005"]
+        f = [f for f in findings if f.inspection_id == "LPDF_BOX_005"]
         assert len(f) == 0
 
     def test_event_without_bbox_skipped(self) -> None:
@@ -434,12 +434,12 @@ class TestContentSafetyMargin:
         ]
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, events)
-        f = [f for f in findings if f.inspection_id == "GRD_BOX_005"]
+        f = [f for f in findings if f.inspection_id == "LPDF_BOX_005"]
         assert len(f) == 0
 
 
 class TestContentBeyondBleed:
-    """Test GRD_BOX_006: content extends beyond bleed box."""
+    """Test LPDF_BOX_006: content extends beyond bleed box."""
 
     @staticmethod
     def _make_doc_with_bleed() -> SemanticDocument:
@@ -475,7 +475,7 @@ class TestContentBeyondBleed:
         ]
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, events)
-        f = [f for f in findings if f.inspection_id == "GRD_BOX_006"]
+        f = [f for f in findings if f.inspection_id == "LPDF_BOX_006"]
         assert len(f) == 1
         assert f[0].severity == Severity.WARNING
 
@@ -496,7 +496,7 @@ class TestContentBeyondBleed:
         ]
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, events)
-        f = [f for f in findings if f.inspection_id == "GRD_BOX_006"]
+        f = [f for f in findings if f.inspection_id == "LPDF_BOX_006"]
         assert len(f) == 0
 
     @staticmethod
@@ -529,5 +529,5 @@ class TestContentBeyondBleed:
         ]
         analyzer = PageGeometryAnalyzer()
         findings = analyzer.analyze(doc, events)
-        f = [f for f in findings if f.inspection_id == "GRD_BOX_006"]
+        f = [f for f in findings if f.inspection_id == "LPDF_BOX_006"]
         assert len(f) == 0

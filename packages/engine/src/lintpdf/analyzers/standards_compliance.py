@@ -4,9 +4,9 @@ Validates PDF documents against industry printing standards by inspecting
 OutputIntent profiles, TAC limits, and color space usage.
 
 Check IDs:
-    GRD_STD_001 — G7 pre-compliance readiness
-    GRD_STD_002 — GRACoL compliance validation
-    GRD_STD_003 — ISO 12647 compliance validation
+    LPDF_STD_001 — G7 pre-compliance readiness
+    LPDF_STD_002 — GRACoL compliance validation
+    LPDF_STD_003 — ISO 12647 compliance validation
 """
 
 from __future__ import annotations
@@ -118,17 +118,17 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
                             max_tac_page = event.page_num
                             max_tac_values = vals
 
-        # GRD_STD_001: G7 pre-compliance
+        # LPDF_STD_001: G7 pre-compliance
         findings.extend(self._check_g7_compliance(document, max_tac, max_tac_page, max_tac_values))
 
-        # GRD_STD_002: GRACoL compliance
+        # LPDF_STD_002: GRACoL compliance
         findings.extend(
             self._check_gracol_compliance(
                 document, max_tac, max_tac_page, max_tac_values, light_fills
             )
         )
 
-        # GRD_STD_003: ISO 12647 compliance
+        # LPDF_STD_003: ISO 12647 compliance
         findings.extend(self._check_iso_12647_compliance(document))
 
         return findings
@@ -162,7 +162,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         max_tac_page: int,
         max_tac_values: tuple[float, ...],
     ) -> list[Finding]:
-        """GRD_STD_001: G7 pre-compliance readiness check."""
+        """LPDF_STD_001: G7 pre-compliance readiness check."""
         findings: list[Finding] = []
 
         matched_profile = self._find_profile_match(document.output_intents, _G7_IDENTIFIERS)
@@ -172,7 +172,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         if not has_g7_profile:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_001",
+                    inspection_id="LPDF_STD_001",
                     severity=Severity.WARNING,
                     message=(
                         "G7 pre-compliance: No G7-compatible OutputIntent profile found "
@@ -187,7 +187,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         else:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_001",
+                    inspection_id="LPDF_STD_001",
                     severity=Severity.ADVISORY,
                     message=(
                         f"G7 pre-compliance: G7-compatible profile '{matched_profile}' "
@@ -203,7 +203,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         if not tac_compliant:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_001",
+                    inspection_id="LPDF_STD_001",
                     severity=Severity.WARNING,
                     message=(
                         f"G7 pre-compliance: TAC {max_tac:.0f}% exceeds G7 limit "
@@ -220,7 +220,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         elif max_tac > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_001",
+                    inspection_id="LPDF_STD_001",
                     severity=Severity.ADVISORY,
                     message=(
                         f"G7 pre-compliance: TAC {max_tac:.0f}% is within G7 limit "
@@ -243,7 +243,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         max_tac_values: tuple[float, ...],
         light_fills: list[dict[str, object]],
     ) -> list[Finding]:
-        """GRD_STD_002: GRACoL compliance validation."""
+        """LPDF_STD_002: GRACoL compliance validation."""
         findings: list[Finding] = []
 
         matched_profile = self._find_profile_match(document.output_intents, _GRACOL_IDENTIFIERS)
@@ -252,7 +252,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         if not has_gracol_profile:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_002",
+                    inspection_id="LPDF_STD_002",
                     severity=Severity.WARNING,
                     message=("GRACoL compliance: No GRACoL-compatible OutputIntent profile found"),
                     details={
@@ -264,7 +264,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         else:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_002",
+                    inspection_id="LPDF_STD_002",
                     severity=Severity.ADVISORY,
                     message=(
                         f"GRACoL compliance: GRACoL profile '{matched_profile}' "
@@ -281,7 +281,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         if max_tac > _GRACOL_TAC_LIMIT:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_002",
+                    inspection_id="LPDF_STD_002",
                     severity=Severity.WARNING,
                     message=(
                         f"GRACoL compliance: TAC {max_tac:.0f}% exceeds GRACoL 2006 limit "
@@ -301,7 +301,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
             first = light_fills[0]
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_002",
+                    inspection_id="LPDF_STD_002",
                     severity=Severity.WARNING,
                     message=(
                         f"GRACoL compliance: CMYK {first['channel']} channel value "
@@ -325,7 +325,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
     def _check_iso_12647_compliance(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_STD_003: ISO 12647 compliance validation."""
+        """LPDF_STD_003: ISO 12647 compliance validation."""
         findings: list[Finding] = []
 
         # Check OutputIntents for ISO 12647-2 reference conditions
@@ -350,7 +350,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         if not document.output_intents:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_003",
+                    inspection_id="LPDF_STD_003",
                     severity=Severity.WARNING,
                     message=(
                         "ISO 12647 compliance: No OutputIntent defined; "
@@ -366,7 +366,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         elif matched_condition is None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_003",
+                    inspection_id="LPDF_STD_003",
                     severity=Severity.WARNING,
                     message=(
                         "ISO 12647 compliance: OutputIntent ICC profile does not match "
@@ -384,7 +384,7 @@ class StandardsComplianceAnalyzer(BaseAnalyzer):
         else:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STD_003",
+                    inspection_id="LPDF_STD_003",
                     severity=Severity.ADVISORY,
                     message=(
                         f"ISO 12647 compliance: OutputIntent matches ISO 12647-2 "

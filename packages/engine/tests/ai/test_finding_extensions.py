@@ -11,7 +11,7 @@ class TestFindingSourceAndCategory:
     @staticmethod
     def test_default_source_is_engine() -> None:
         f = Finding(
-            inspection_id="GRD_FONT_001",
+            inspection_id="LPDF_FONT_001",
             severity=Severity.ERROR,
             message="Font not embedded",
         )
@@ -20,7 +20,7 @@ class TestFindingSourceAndCategory:
     @staticmethod
     def test_default_category_is_empty() -> None:
         f = Finding(
-            inspection_id="GRD_FONT_001",
+            inspection_id="LPDF_FONT_001",
             severity=Severity.ERROR,
             message="Font not embedded",
         )
@@ -54,7 +54,7 @@ class TestFindingSourceAndCategory:
     def test_backward_compat_no_source_kwarg() -> None:
         """Existing engine code that doesn't pass source/category should still work."""
         f = Finding(
-            inspection_id="GRD_IMG_001",
+            inspection_id="LPDF_IMG_001",
             severity=Severity.WARNING,
             message="Low resolution image",
             page_num=1,
@@ -96,13 +96,13 @@ class TestFindingSourceAndCategory:
     @staticmethod
     def test_finding_inequality_on_source() -> None:
         f_engine = Finding(
-            inspection_id="GRD_BC_001",
+            inspection_id="LPDF_BC_001",
             severity=Severity.ADVISORY,
             message="Barcode check",
             source="engine",
         )
         f_ai = Finding(
-            inspection_id="GRD_BC_001",
+            inspection_id="LPDF_BC_001",
             severity=Severity.ADVISORY,
             message="Barcode check",
             source="ai",

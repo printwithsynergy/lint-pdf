@@ -4,9 +4,9 @@ Processes ColorChangedEvent events and checks color values against
 precomputed gamut boundaries to detect out-of-gamut colors.
 
 Check IDs:
-    GRD_GAMUT_001 — Per-object gamut check
-    GRD_GAMUT_002 — Gamut volume comparison
-    GRD_GAMUT_003 — Out-of-gamut summary
+    LPDF_GAMUT_001 — Per-object gamut check
+    LPDF_GAMUT_002 — Gamut volume comparison
+    LPDF_GAMUT_003 — Out-of-gamut summary
 """
 
 from __future__ import annotations
@@ -220,13 +220,13 @@ class GamutAnalyzer(BaseAnalyzer):
         if self.target_condition:
             boundary = get_gamut_boundary(self.target_condition)
 
-        # GRD_GAMUT_001 — Per-object gamut check
+        # LPDF_GAMUT_001 — Per-object gamut check
         findings.extend(self._check_per_object_gamut(events, boundary))
 
-        # GRD_GAMUT_002 — Gamut volume comparison
+        # LPDF_GAMUT_002 — Gamut volume comparison
         findings.extend(self._check_gamut_volume(document, boundary))
 
-        # GRD_GAMUT_003 — Out-of-gamut summary
+        # LPDF_GAMUT_003 — Out-of-gamut summary
         findings.extend(self._summarize_gamut_results(events, boundary))
 
         return findings
@@ -236,7 +236,7 @@ class GamutAnalyzer(BaseAnalyzer):
         events: list[ContentStreamEvent],
         boundary: GamutBoundary | None,
     ) -> list[Finding]:
-        """Check each color change event against the gamut boundary (GRD_GAMUT_001)."""
+        """Check each color change event against the gamut boundary (LPDF_GAMUT_001)."""
         from lintpdf.semantic.events import ColorChangedEvent
 
         findings: list[Finding] = []
@@ -244,7 +244,7 @@ class GamutAnalyzer(BaseAnalyzer):
         if not self.target_condition:
             findings.append(
                 Finding(
-                    inspection_id="GRD_GAMUT_001",
+                    inspection_id="LPDF_GAMUT_001",
                     severity=Severity.ADVISORY,
                     message="No target output condition specified; gamut checking skipped",
                     details={"target_condition": ""},
@@ -255,7 +255,7 @@ class GamutAnalyzer(BaseAnalyzer):
         if boundary is None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_GAMUT_001",
+                    inspection_id="LPDF_GAMUT_001",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Gamut boundary not available for condition: {self.target_condition}"
@@ -287,7 +287,7 @@ class GamutAnalyzer(BaseAnalyzer):
                     distance = boundary.distance_to_boundary(lab)
                     findings.append(
                         Finding(
-                            inspection_id="GRD_GAMUT_001",
+                            inspection_id="LPDF_GAMUT_001",
                             severity=Severity.WARNING,
                             message=(
                                 f"RGB color ({r:.2f}, {g:.2f}, {b:.2f}) is "
@@ -329,7 +329,7 @@ class GamutAnalyzer(BaseAnalyzer):
                     conversion = "ICC profile" if self._icc_profile_bytes else "naive"
                     findings.append(
                         Finding(
-                            inspection_id="GRD_GAMUT_001",
+                            inspection_id="LPDF_GAMUT_001",
                             severity=Severity.WARNING,
                             message=(
                                 f"CMYK color ({c_val:.2f}, {m_val:.2f}, "
@@ -361,7 +361,7 @@ class GamutAnalyzer(BaseAnalyzer):
         document: SemanticDocument,
         boundary: GamutBoundary | None,
     ) -> list[Finding]:
-        """Report gamut volume and compare source vs target (GRD_GAMUT_002)."""
+        """Report gamut volume and compare source vs target (LPDF_GAMUT_002)."""
         findings: list[Finding] = []
 
         if boundary is None:
@@ -385,7 +385,7 @@ class GamutAnalyzer(BaseAnalyzer):
 
         findings.append(
             Finding(
-                inspection_id="GRD_GAMUT_002",
+                inspection_id="LPDF_GAMUT_002",
                 severity=Severity.ADVISORY,
                 message=(
                     f"Target gamut volume for {boundary.condition_name}: "
@@ -403,7 +403,7 @@ class GamutAnalyzer(BaseAnalyzer):
         events: list[ContentStreamEvent],
         boundary: GamutBoundary | None,
     ) -> list[Finding]:
-        """Produce a summary finding of gamut check results (GRD_GAMUT_003)."""
+        """Produce a summary finding of gamut check results (LPDF_GAMUT_003)."""
         from lintpdf.semantic.events import ColorChangedEvent
 
         findings: list[Finding] = []
@@ -457,7 +457,7 @@ class GamutAnalyzer(BaseAnalyzer):
 
         findings.append(
             Finding(
-                inspection_id="GRD_GAMUT_003",
+                inspection_id="LPDF_GAMUT_003",
                 severity=Severity.ADVISORY,
                 message=(
                     f"Gamut summary for {boundary.condition_name}: "

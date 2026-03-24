@@ -20,14 +20,14 @@ def _make_document(
 
 
 class TestNoStructureTree:
-    """Test GRD_ACCESS_001: No structure tree."""
+    """Test LPDF_ACCESS_001: No structure tree."""
 
     @staticmethod
     def test_no_struct_tree_flags() -> None:
         doc = _make_document(catalog={})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_ACCESS_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_ACCESS_001"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
@@ -36,19 +36,19 @@ class TestNoStructureTree:
         doc = _make_document(catalog={"/StructTreeRoot": {"Type": "StructTreeRoot"}})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_ACCESS_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_ACCESS_001"]
         assert len(f) == 0
 
 
 class TestNoDocumentLanguage:
-    """Test GRD_ACCESS_002: No document language."""
+    """Test LPDF_ACCESS_002: No document language."""
 
     @staticmethod
     def test_no_lang_flags() -> None:
         doc = _make_document(catalog={})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_ACCESS_002"]
+        f = [f for f in findings if f.inspection_id == "LPDF_ACCESS_002"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
@@ -57,12 +57,12 @@ class TestNoDocumentLanguage:
         doc = _make_document(catalog={"/Lang": "en-US"})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_ACCESS_002"]
+        f = [f for f in findings if f.inspection_id == "LPDF_ACCESS_002"]
         assert len(f) == 0
 
 
 class TestTaggedPdf:
-    """Test GRD_ACCESS_003: Tagged PDF present."""
+    """Test LPDF_ACCESS_003: Tagged PDF present."""
 
     @staticmethod
     def test_tagged_pdf_flagged() -> None:
@@ -74,7 +74,7 @@ class TestTaggedPdf:
         )
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_ACCESS_003"]
+        f = [f for f in findings if f.inspection_id == "LPDF_ACCESS_003"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
@@ -83,7 +83,7 @@ class TestTaggedPdf:
         doc = _make_document(catalog={"/StructTreeRoot": {"Type": "StructTreeRoot"}})
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_ACCESS_003"]
+        f = [f for f in findings if f.inspection_id == "LPDF_ACCESS_003"]
         assert len(f) == 0
 
     @staticmethod
@@ -96,7 +96,7 @@ class TestTaggedPdf:
         )
         analyzer = AccessibilityAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_ACCESS_003"]
+        f = [f for f in findings if f.inspection_id == "LPDF_ACCESS_003"]
         assert len(f) == 0
 
     @staticmethod
@@ -113,6 +113,6 @@ class TestTaggedPdf:
         findings = analyzer.analyze(doc, [])
         # Should only have ACCESS_003 (tagged), no ACCESS_001 or 002
         ids = {f.inspection_id for f in findings}
-        assert "GRD_ACCESS_001" not in ids
-        assert "GRD_ACCESS_002" not in ids
-        assert "GRD_ACCESS_003" in ids
+        assert "LPDF_ACCESS_001" not in ids
+        assert "LPDF_ACCESS_002" not in ids
+        assert "LPDF_ACCESS_003" in ids

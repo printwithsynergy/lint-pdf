@@ -196,7 +196,7 @@ class QRHumanReadableMatching(BaseAIAnalyzer):
                 if not nearby_text.strip():
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_QHR_001",
+                            inspection_id="LPDF_QHR_001",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"No human-readable text detected near QR code on page {page_num}"
@@ -224,7 +224,7 @@ class QRHumanReadableMatching(BaseAIAnalyzer):
                 if url_found_in_text or sim >= _MATCH_THRESHOLD:
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_QHR_002",
+                            inspection_id="LPDF_QHR_002",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"QR code on page {page_num}: human-readable text "
@@ -243,7 +243,7 @@ class QRHumanReadableMatching(BaseAIAnalyzer):
                 else:
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_QHR_003",
+                            inspection_id="LPDF_QHR_003",
                             severity=Severity.WARNING,
                             message=(
                                 f"QR code on page {page_num}: human-readable text "

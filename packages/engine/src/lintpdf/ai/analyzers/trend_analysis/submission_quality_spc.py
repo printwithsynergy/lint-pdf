@@ -180,10 +180,16 @@ def _query_historical_data(tenant_id: Any) -> list[dict[str, Any]] | None:
                 JobFinding.job_id,
                 func.count(JobFinding.id).label("finding_count"),
                 func.sum(
-                    func.cast(JobFinding.severity == "error", db.bind.dialect.name != "sqlite" and text("INTEGER") or text("INT"))
+                    func.cast(
+                        JobFinding.severity == "error",
+                        db.bind.dialect.name != "sqlite" and text("INTEGER") or text("INT"),
+                    )
                 ).label("error_count_raw"),
                 func.sum(
-                    func.cast(JobFinding.severity == "warning", db.bind.dialect.name != "sqlite" and text("INTEGER") or text("INT"))
+                    func.cast(
+                        JobFinding.severity == "warning",
+                        db.bind.dialect.name != "sqlite" and text("INTEGER") or text("INT"),
+                    )
                 ).label("warning_count_raw"),
             )
             .group_by(JobFinding.job_id)
@@ -211,30 +217,32 @@ def _query_historical_data(tenant_id: Any) -> list[dict[str, Any]] | None:
             counts = (
                 db.query(
                     func.count(JobFinding.id).label("total"),
-                    func.count(
-                        func.nullif(JobFinding.severity != "error", True)
-                    ).label("errors"),
-                    func.count(
-                        func.nullif(JobFinding.severity != "warning", True)
-                    ).label("warnings"),
+                    func.count(func.nullif(JobFinding.severity != "error", True)).label("errors"),
+                    func.count(func.nullif(JobFinding.severity != "warning", True)).label(
+                        "warnings"
+                    ),
                 )
                 .filter(JobFinding.job_id == job.id)
                 .one()
             )
 
-            results.append({
-                "job_id": str(job.id),
-                "created_at": job.created_at.isoformat() if job.created_at else None,
-                "status": job.status.value if hasattr(job.status, "value") else str(job.status),
-                "finding_count": counts.total or 0,
-                "error_count": counts.errors or 0,
-                "warning_count": counts.warnings or 0,
-            })
+            results.append(
+                {
+                    "job_id": str(job.id),
+                    "created_at": job.created_at.isoformat() if job.created_at else None,
+                    "status": job.status.value if hasattr(job.status, "value") else str(job.status),
+                    "finding_count": counts.total or 0,
+                    "error_count": counts.errors or 0,
+                    "warning_count": counts.warnings or 0,
+                }
+            )
 
         return results if results else None
 
     except Exception:
-        logger.debug("Failed to query historical data for SPC — tenant_id=%s", tenant_id, exc_info=True)
+        logger.debug(
+            "Failed to query historical data for SPC — tenant_id=%s", tenant_id, exc_info=True
+        )
         return None
     finally:
         db.close()

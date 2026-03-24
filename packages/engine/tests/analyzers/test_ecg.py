@@ -22,9 +22,9 @@ class TestEcgAnalyzer:
     def test_no_findings_without_spot_colors(self):
         doc = _make_doc()
         findings = EcgAnalyzer().analyze(doc, [])
-        ecg = [f for f in findings if f.inspection_id.startswith("GRD_ECG_")]
+        ecg = [f for f in findings if f.inspection_id.startswith("LPDF_ECG_")]
         # Should get readiness advisory
-        assert any(f.inspection_id == "GRD_ECG_001" for f in ecg)
+        assert any(f.inspection_id == "LPDF_ECG_001" for f in ecg)
 
     def test_spot_colors_detected(self):
         cs = PdfColorSpace(
@@ -35,5 +35,5 @@ class TestEcgAnalyzer:
         )
         doc = _make_doc(color_spaces={"CS1": cs})
         findings = EcgAnalyzer().analyze(doc, [])
-        ecg_001 = [f for f in findings if f.inspection_id == "GRD_ECG_001"]
+        ecg_001 = [f for f in findings if f.inspection_id == "LPDF_ECG_001"]
         assert len(ecg_001) >= 1

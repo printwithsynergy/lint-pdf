@@ -16,7 +16,7 @@ def sample_result() -> PreflightResult:
     """Create a sample PreflightResult for testing."""
     findings = [
         Finding(
-            inspection_id="GRD_FONT_001",
+            inspection_id="LPDF_FONT_001",
             severity=Severity.ERROR,
             message="Font 'Arial' is not embedded",
             page_num=1,
@@ -159,7 +159,7 @@ class TestToJson:
         data = json.loads(result)
         assert len(data["findings"]) == 1
         finding = data["findings"][0]
-        assert finding["inspection_id"] == "GRD_FONT_001"
+        assert finding["inspection_id"] == "LPDF_FONT_001"
         assert finding["severity"] == "error"
         assert finding["page_num"] == 1
 

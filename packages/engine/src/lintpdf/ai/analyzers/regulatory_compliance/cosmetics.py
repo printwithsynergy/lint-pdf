@@ -1,4 +1,5 @@
 """Cosmetics labeling compliance analyzer (EU Cosmetics Directive, FDA)."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

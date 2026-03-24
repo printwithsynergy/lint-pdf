@@ -4,20 +4,20 @@ Inspects the document catalog for features that cause print issues:
 JavaScript, form fields, layers (OCG), embedded files, 3D content.
 
 Check IDs:
-    GRD_STRUCT_001 — JavaScript present
-    GRD_STRUCT_002 — Form fields present
-    GRD_STRUCT_003 — Layers (OCG) detected
-    GRD_STRUCT_004 — Embedded files present
-    GRD_STRUCT_005 — 3D content present
-    GRD_STRUCT_006 — XFA forms detected
-    GRD_STRUCT_007 — Tagged PDF (structure tree present)
-    GRD_STRUCT_008 — JavaScript detected in PDF (via /JS or /JavaScript actions)
-    GRD_STRUCT_009 — Interactive form fields detected
-    GRD_STRUCT_010 — Layer print state mismatch (screen vs print)
-    GRD_STRUCT_011 — PostScript fragments detected
-    GRD_STRUCT_012 — Bookmarks/outlines detected
-    GRD_STRUCT_013 — Embedded page thumbnails detected
-    GRD_STRUCT_014 — Non-JavaScript action detected
+    LPDF_STRUCT_001 — JavaScript present
+    LPDF_STRUCT_002 — Form fields present
+    LPDF_STRUCT_003 — Layers (OCG) detected
+    LPDF_STRUCT_004 — Embedded files present
+    LPDF_STRUCT_005 — 3D content present
+    LPDF_STRUCT_006 — XFA forms detected
+    LPDF_STRUCT_007 — Tagged PDF (structure tree present)
+    LPDF_STRUCT_008 — JavaScript detected in PDF (via /JS or /JavaScript actions)
+    LPDF_STRUCT_009 — Interactive form fields detected
+    LPDF_STRUCT_010 — Layer print state mismatch (screen vs print)
+    LPDF_STRUCT_011 — PostScript fragments detected
+    LPDF_STRUCT_012 — Bookmarks/outlines detected
+    LPDF_STRUCT_013 — Embedded page thumbnails detected
+    LPDF_STRUCT_014 — Non-JavaScript action detected
 """
 
 from __future__ import annotations
@@ -44,11 +44,11 @@ class StructureAnalyzer(BaseAnalyzer):
         findings: list[Finding] = []
         catalog = document.catalog
 
-        # GRD_STRUCT_001: JavaScript
+        # LPDF_STRUCT_001: JavaScript
         if self._has_javascript(catalog):
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_001",
+                    inspection_id="LPDF_STRUCT_001",
                     severity=Severity.ERROR,
                     message="Document contains JavaScript (not allowed in print workflows)",
                     details={"source": "catalog"},
@@ -56,14 +56,14 @@ class StructureAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_STRUCT_002: Form fields (AcroForm)
+        # LPDF_STRUCT_002: Form fields (AcroForm)
         acro_form = catalog.get("/AcroForm")
         if isinstance(acro_form, dict):
             fields = acro_form.get("/Fields", [])
             if isinstance(fields, list) and len(fields) > 0:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_STRUCT_002",
+                        inspection_id="LPDF_STRUCT_002",
                         severity=Severity.WARNING,
                         message=(
                             f"Document contains {len(fields)} form field(s) "
@@ -74,14 +74,14 @@ class StructureAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_STRUCT_003: Optional Content (Layers/OCG)
+        # LPDF_STRUCT_003: Optional Content (Layers/OCG)
         oc_properties = catalog.get("/OCProperties")
         if isinstance(oc_properties, dict):
             ocgs = oc_properties.get("/OCGs", [])
             count = len(ocgs) if isinstance(ocgs, list) else 0
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_003",
+                    inspection_id="LPDF_STRUCT_003",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Document contains optional content / layers "
@@ -92,26 +92,26 @@ class StructureAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_STRUCT_004: Embedded files
+        # LPDF_STRUCT_004: Embedded files
         names = catalog.get("/Names")
         if isinstance(names, dict):
             ef = names.get("/EmbeddedFiles")
             if ef is not None:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_STRUCT_004",
+                        inspection_id="LPDF_STRUCT_004",
                         severity=Severity.WARNING,
                         message="Document contains embedded files",
                         iso_clause="ISO 15930-7:2010 6.2.8",
                     )
                 )
 
-        # GRD_STRUCT_005: 3D content (check annotations on pages)
+        # LPDF_STRUCT_005: 3D content (check annotations on pages)
         for page in document.pages:
             if self._page_has_3d(page):
                 findings.append(
                     Finding(
-                        inspection_id="GRD_STRUCT_005",
+                        inspection_id="LPDF_STRUCT_005",
                         severity=Severity.ERROR,
                         message=f"3D annotation found on page {page.page_num}",
                         page_num=page.page_num,
@@ -120,23 +120,23 @@ class StructureAnalyzer(BaseAnalyzer):
                 )
                 break  # One finding is enough
 
-        # GRD_STRUCT_006: XFA forms
+        # LPDF_STRUCT_006: XFA forms
         acro_form_xfa = catalog.get("/AcroForm")
         if isinstance(acro_form_xfa, dict) and acro_form_xfa.get("/XFA") is not None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_006",
+                    inspection_id="LPDF_STRUCT_006",
                     severity=Severity.ERROR,
                     message="Document contains XFA forms (not supported in print workflows)",
                     iso_clause="ISO 15930-7:2010 6.2.8",
                 )
             )
 
-        # GRD_STRUCT_007: Tagged PDF (structure tree present)
+        # LPDF_STRUCT_007: Tagged PDF (structure tree present)
         if catalog.get("/MarkInfo") is not None or catalog.get("/StructTreeRoot") is not None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_007",
+                    inspection_id="LPDF_STRUCT_007",
                     severity=Severity.ADVISORY,
                     message="Document is a tagged PDF (structure tree present)",
                     details={
@@ -147,25 +147,25 @@ class StructureAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_STRUCT_008: JavaScript detected via /JS or /JavaScript in actions
+        # LPDF_STRUCT_008: JavaScript detected via /JS or /JavaScript in actions
         findings.extend(self._check_javascript_actions(catalog, document))
 
-        # GRD_STRUCT_009: Interactive form fields detected
+        # LPDF_STRUCT_009: Interactive form fields detected
         findings.extend(self._check_interactive_forms(catalog))
 
-        # GRD_STRUCT_010: Layer print state mismatch
+        # LPDF_STRUCT_010: Layer print state mismatch
         findings.extend(self._check_layer_print_mismatch(catalog))
 
-        # GRD_STRUCT_011: PostScript fragments
+        # LPDF_STRUCT_011: PostScript fragments
         findings.extend(self._check_postscript_fragments(document))
 
-        # GRD_STRUCT_012: Bookmarks/outlines
+        # LPDF_STRUCT_012: Bookmarks/outlines
         findings.extend(self._check_bookmarks(catalog))
 
-        # GRD_STRUCT_013: Embedded page thumbnails
+        # LPDF_STRUCT_013: Embedded page thumbnails
         findings.extend(self._check_page_thumbnails(document))
 
-        # GRD_STRUCT_014: Non-JavaScript actions
+        # LPDF_STRUCT_014: Non-JavaScript actions
         findings.extend(self._check_non_js_actions(catalog))
 
         return findings
@@ -193,9 +193,9 @@ class StructureAnalyzer(BaseAnalyzer):
     def _check_javascript_actions(  # skipcq: PY-R1000
         catalog: dict[str, Any], document: SemanticDocument
     ) -> list[Finding]:
-        """Check for /JS or /JavaScript in page actions (GRD_STRUCT_008).
+        """Check for /JS or /JavaScript in page actions (LPDF_STRUCT_008).
 
-        Complements GRD_STRUCT_001 by also scanning page-level /AA dictionaries
+        Complements LPDF_STRUCT_001 by also scanning page-level /AA dictionaries
         for JavaScript action triggers.
         """
         findings: list[Finding] = []
@@ -212,7 +212,7 @@ class StructureAnalyzer(BaseAnalyzer):
                 if action_type == "/JavaScript" or "/JS" in action:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_STRUCT_008",
+                            inspection_id="LPDF_STRUCT_008",
                             severity=Severity.ERROR,
                             message=(
                                 f"JavaScript action detected in page {page.page_num} "
@@ -239,7 +239,7 @@ class StructureAnalyzer(BaseAnalyzer):
                         ):
                             findings.append(
                                 Finding(
-                                    inspection_id="GRD_STRUCT_008",
+                                    inspection_id="LPDF_STRUCT_008",
                                     severity=Severity.ERROR,
                                     message=(
                                         f"JavaScript action detected in annotation "
@@ -257,7 +257,7 @@ class StructureAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_interactive_forms(catalog: dict[str, Any]) -> list[Finding]:
-        """Check for interactive form fields with widgets (GRD_STRUCT_009).
+        """Check for interactive form fields with widgets (LPDF_STRUCT_009).
 
         Looks for /AcroForm with non-empty /Fields that have /Widget subtypes,
         indicating interactive elements that may not render correctly in print.
@@ -282,7 +282,7 @@ class StructureAnalyzer(BaseAnalyzer):
         if widget_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_009",
+                    inspection_id="LPDF_STRUCT_009",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Document contains {widget_count} interactive form field(s) "
@@ -299,7 +299,7 @@ class StructureAnalyzer(BaseAnalyzer):
             # Fields exist but types not identified — still flag
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_009",
+                    inspection_id="LPDF_STRUCT_009",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Document contains {len(fields)} form field(s) "
@@ -314,7 +314,7 @@ class StructureAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_layer_print_mismatch(catalog: dict[str, Any]) -> list[Finding]:  # skipcq: PY-R1000
-        """Check for OCG layers where print state differs from screen (GRD_STRUCT_010).
+        """Check for OCG layers where print state differs from screen (LPDF_STRUCT_010).
 
         Looks at /OCProperties -> /D -> /AS (usage application) or individual
         OCG dictionaries for /Usage/Print vs /Usage/View mismatches.
@@ -345,7 +345,7 @@ class StructureAnalyzer(BaseAnalyzer):
                     layer_name = ocg.get("/Name", "unnamed")
                     findings.append(
                         Finding(
-                            inspection_id="GRD_STRUCT_010",
+                            inspection_id="LPDF_STRUCT_010",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Layer '{layer_name}' has print/screen state mismatch "
@@ -374,7 +374,7 @@ class StructureAnalyzer(BaseAnalyzer):
                         if isinstance(ocg_refs, list) and len(ocg_refs) > 0:
                             findings.append(
                                 Finding(
-                                    inspection_id="GRD_STRUCT_010",
+                                    inspection_id="LPDF_STRUCT_010",
                                     severity=Severity.ADVISORY,
                                     message=(
                                         f"Layer configuration has print-specific visibility "
@@ -393,7 +393,7 @@ class StructureAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_postscript_fragments(document: SemanticDocument) -> list[Finding]:
-        """Check for PostScript XObject fragments on pages (GRD_STRUCT_011).
+        """Check for PostScript XObject fragments on pages (LPDF_STRUCT_011).
 
         PostScript Type 1 XObjects (/Subtype /PS) are prohibited in modern
         PDF/X print workflows.
@@ -407,7 +407,7 @@ class StructureAnalyzer(BaseAnalyzer):
                 if isinstance(xobj, dict) and xobj.get("/Subtype") == "/PS":
                     findings.append(
                         Finding(
-                            inspection_id="GRD_STRUCT_011",
+                            inspection_id="LPDF_STRUCT_011",
                             severity=Severity.ERROR,
                             message=(
                                 f"PostScript fragment (Type 1 XObject) detected on page "
@@ -423,7 +423,7 @@ class StructureAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_bookmarks(catalog: dict[str, Any]) -> list[Finding]:
-        """Check for bookmarks/outlines in the document catalog (GRD_STRUCT_012)."""
+        """Check for bookmarks/outlines in the document catalog (LPDF_STRUCT_012)."""
         findings: list[Finding] = []
         outlines = catalog.get("/Outlines")
         if not isinstance(outlines, dict):
@@ -435,7 +435,7 @@ class StructureAnalyzer(BaseAnalyzer):
         if isinstance(count, int) and count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_012",
+                    inspection_id="LPDF_STRUCT_012",
                     severity=Severity.ADVISORY,
                     message=f"Document contains bookmarks/outlines ({count} entries)",
                     details={"count": count},
@@ -445,7 +445,7 @@ class StructureAnalyzer(BaseAnalyzer):
         elif has_first:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_012",
+                    inspection_id="LPDF_STRUCT_012",
                     severity=Severity.ADVISORY,
                     message="Document contains bookmarks/outlines detected",
                     details={"has_first": True},
@@ -457,7 +457,7 @@ class StructureAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_page_thumbnails(document: SemanticDocument) -> list[Finding]:
-        """Check for embedded page thumbnails (GRD_STRUCT_013).
+        """Check for embedded page thumbnails (LPDF_STRUCT_013).
 
         Embedded thumbnails are unnecessary in modern PDF and waste file size.
         Only reports once (first page found).
@@ -467,7 +467,7 @@ class StructureAnalyzer(BaseAnalyzer):
             if page.resources.get("/Thumb") is not None:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_STRUCT_013",
+                        inspection_id="LPDF_STRUCT_013",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Embedded page thumbnails detected (starting on page "
@@ -483,7 +483,7 @@ class StructureAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_non_js_actions(catalog: dict[str, Any]) -> list[Finding]:
-        """Check for non-JavaScript actions in document catalog (GRD_STRUCT_014).
+        """Check for non-JavaScript actions in document catalog (LPDF_STRUCT_014).
 
         Flags action types that are problematic for print workflows:
         /Launch, /URI, /SubmitForm, /ResetForm, /ImportData.
@@ -507,7 +507,7 @@ class StructureAnalyzer(BaseAnalyzer):
                 if action_type is not None:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_STRUCT_014",
+                            inspection_id="LPDF_STRUCT_014",
                             severity=Severity.WARNING,
                             message=(
                                 f"Non-JavaScript action '{action_type}' detected in document "
@@ -524,7 +524,7 @@ class StructureAnalyzer(BaseAnalyzer):
         if action_type is not None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STRUCT_014",
+                    inspection_id="LPDF_STRUCT_014",
                     severity=Severity.WARNING,
                     message=(
                         f"Non-JavaScript action '{action_type}' detected in document "

@@ -59,7 +59,7 @@ class TestZeroWidthStroke:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.0)])
         assert len(findings) == 1
-        assert findings[0].inspection_id == "GRD_STROKE_002"
+        assert findings[0].inspection_id == "LPDF_STROKE_002"
         assert findings[0].severity == Severity.ERROR
 
     @staticmethod
@@ -67,7 +67,7 @@ class TestZeroWidthStroke:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(-0.1)])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STROKE_002" in ids
+        assert "LPDF_STROKE_002" in ids
 
 
 class TestHairlineStroke:
@@ -76,21 +76,21 @@ class TestHairlineStroke:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.1)])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STROKE_001" in ids
+        assert "LPDF_STROKE_001" in ids
 
     @staticmethod
     def test_above_threshold_no_finding() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.5)])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STROKE_001" not in ids
+        assert "LPDF_STROKE_001" not in ids
 
     @staticmethod
     def test_custom_threshold() -> None:
         analyzer = HairlineAnalyzer(hairline_threshold=0.5)
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.3)])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STROKE_001" in ids
+        assert "LPDF_STROKE_001" in ids
 
 
 class TestButtCapThinStroke:
@@ -99,21 +99,21 @@ class TestButtCapThinStroke:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.3, line_cap=0)])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STROKE_003" in ids
+        assert "LPDF_STROKE_003" in ids
 
     @staticmethod
     def test_round_cap_no_finding() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(0.3, line_cap=1)])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STROKE_003" not in ids
+        assert "LPDF_STROKE_003" not in ids
 
     @staticmethod
     def test_thick_stroke_no_finding() -> None:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_stroke_event(1.0, line_cap=0)])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STROKE_003" not in ids
+        assert "LPDF_STROKE_003" not in ids
 
 
 class TestSmallText:
@@ -122,7 +122,7 @@ class TestSmallText:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_text_event(5.0)])
         assert len(findings) == 1
-        assert findings[0].inspection_id == "GRD_TEXT_001"
+        assert findings[0].inspection_id == "LPDF_TEXT_001"
         assert findings[0].severity == Severity.ADVISORY
 
     @staticmethod
@@ -130,7 +130,7 @@ class TestSmallText:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_text_event(3.0)])
         assert len(findings) == 1
-        assert findings[0].inspection_id == "GRD_TEXT_002"
+        assert findings[0].inspection_id == "LPDF_TEXT_002"
         assert findings[0].severity == Severity.WARNING
 
     @staticmethod
@@ -145,7 +145,7 @@ class TestSmallText:
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [_text_event(12.0, ctm_scale=0.25)])
         assert len(findings) == 1
-        assert findings[0].inspection_id == "GRD_TEXT_002"
+        assert findings[0].inspection_id == "LPDF_TEXT_002"
 
     @staticmethod
     def test_object_type_set() -> None:

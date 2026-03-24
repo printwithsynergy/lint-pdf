@@ -20,7 +20,7 @@ def _make_document(
 
 
 class TestProcessingStepLayers:
-    """Test GRD_PROC_001: Processing step layers detected."""
+    """Test LPDF_PROC_001: Processing step layers detected."""
 
     @staticmethod
     def test_dieline_layer_detected() -> None:
@@ -33,7 +33,7 @@ class TestProcessingStepLayers:
         )
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_001"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
         assert "Dieline" in f[0].details["layer_names"]
@@ -43,7 +43,7 @@ class TestProcessingStepLayers:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "Spot Varnish"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_001"]
         assert len(f) == 1
 
     @staticmethod
@@ -51,7 +51,7 @@ class TestProcessingStepLayers:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "Gold Foil Layer"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_001"]
         assert len(f) == 1
 
     @staticmethod
@@ -59,7 +59,7 @@ class TestProcessingStepLayers:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "CutContour"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_001"]
         assert len(f) == 1
 
     @staticmethod
@@ -67,7 +67,7 @@ class TestProcessingStepLayers:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "Cut Contour"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_001"]
         assert len(f) == 1
 
     @staticmethod
@@ -75,7 +75,7 @@ class TestProcessingStepLayers:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "Background Image"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_001"]
         assert len(f) == 0
 
     @staticmethod
@@ -100,7 +100,7 @@ class TestProcessingStepLayers:
         )
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_001"]
         assert len(f) == 1
         assert f[0].details["layer_count"] == 3
 
@@ -109,19 +109,19 @@ class TestProcessingStepLayers:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "DIELINE"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_001"]
         assert len(f) == 1
 
 
 class TestWhiteInkLayer:
-    """Test GRD_PROC_002: White ink layer detected."""
+    """Test LPDF_PROC_002: White ink layer detected."""
 
     @staticmethod
     def test_white_ink_layer_flagged() -> None:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "White Ink"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_002"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_002"]
         assert len(f) == 1
         assert f[0].severity == Severity.ADVISORY
 
@@ -130,7 +130,7 @@ class TestWhiteInkLayer:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "White"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_002"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_002"]
         assert len(f) == 1
 
     @staticmethod
@@ -138,7 +138,7 @@ class TestWhiteInkLayer:
         doc = _make_document(catalog={"/OCProperties": {"/OCGs": [{"/Name": "Varnish"}]}})
         analyzer = ProcessingStepAnalyzer()
         findings = analyzer.analyze(doc, [])
-        f = [f for f in findings if f.inspection_id == "GRD_PROC_002"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PROC_002"]
         assert len(f) == 0
 
     @staticmethod

@@ -83,7 +83,7 @@ class DielineByColorNameAnalyzer(BaseAIAnalyzer):
                         seen.add(lower_name)
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_AI_DIEL_002",
+                                inspection_id="LPDF_AI_DIEL_002",
                                 severity=Severity.ADVISORY,
                                 message=(
                                     f"Dieline spot color detected: '{colorant}' "

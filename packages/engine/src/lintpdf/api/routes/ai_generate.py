@@ -31,7 +31,7 @@ Available fields:
 - version: "1.0"
 - conformance: "pdfx4" or null
 - workflow: "CMYK", "RGB", or "auto"
-- checks: {enabled: ["GRD_*"], disabled: [], severity_overrides: {}}
+- checks: {enabled: ["LPDF_*"], disabled: [], severity_overrides: {}}
 - thresholds: {min_dpi, max_dpi, tac_limit, min_bleed_mm, hairline_threshold, small_text_threshold, very_small_text_threshold, safety_margin_mm, max_file_size_mb, barcode_min_dpi, barcode_min_grade, barcode_quiet_zone_mm}
 - ai: {enabled: true/false, categories: ["all" or specific], features: [], language_for_reports: "en"}
 
@@ -111,7 +111,7 @@ def _generate_rule_based(description: str) -> dict[str, Any]:  # skipcq: PY-R100
         "version": "1.0",
         "conformance": None,
         "workflow": "CMYK",
-        "checks": {"enabled": ["GRD_*"], "disabled": [], "severity_overrides": {}},
+        "checks": {"enabled": ["LPDF_*"], "disabled": [], "severity_overrides": {}},
         "thresholds": {},
         "ai": {"enabled": False, "categories": [], "features": [], "language_for_reports": "en"},
     }
@@ -123,7 +123,7 @@ def _generate_rule_based(description: str) -> dict[str, Any]:  # skipcq: PY-R100
     # Detect conformance
     if "pdf/x-4" in desc_lower or "pdfx4" in desc_lower or "pdf/x" in desc_lower:
         plan["conformance"] = "pdfx4"
-        plan["checks"]["enabled"] = ["GRD_*", "PDFX4-*"]
+        plan["checks"]["enabled"] = ["LPDF_*", "PDFX4-*"]
 
     # DPI thresholds
     if "300 dpi" in desc_lower or "300dpi" in desc_lower:

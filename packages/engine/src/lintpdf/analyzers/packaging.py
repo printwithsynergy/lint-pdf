@@ -4,16 +4,16 @@ Validates PDF documents for packaging print readiness: dieline detection,
 panel identification, safe zones, substrate compatibility.
 
 Check IDs:
-    GRD_PKG_001 — Dieline layer detected
-    GRD_PKG_002 — Missing dieline layer
-    GRD_PKG_003 — Dieline on wrong layer
-    GRD_PKG_004 — Content outside dieline boundary
-    GRD_PKG_005 — Insufficient safe zone from dieline
-    GRD_PKG_006 — Bleed insufficient for packaging
-    GRD_PKG_007 — Multiple panel sizes detected
-    GRD_PKG_008 — Crossover alignment check
-    GRD_PKG_009 — Varnish/coating layer detected
-    GRD_PKG_010 — White ink separation detected
+    LPDF_PKG_001 — Dieline layer detected
+    LPDF_PKG_002 — Missing dieline layer
+    LPDF_PKG_003 — Dieline on wrong layer
+    LPDF_PKG_004 — Content outside dieline boundary
+    LPDF_PKG_005 — Insufficient safe zone from dieline
+    LPDF_PKG_006 — Bleed insufficient for packaging
+    LPDF_PKG_007 — Multiple panel sizes detected
+    LPDF_PKG_008 — Crossover alignment check
+    LPDF_PKG_009 — Varnish/coating layer detected
+    LPDF_PKG_010 — White ink separation detected
 """
 
 from __future__ import annotations
@@ -73,12 +73,12 @@ class PackagingAnalyzer(BaseAnalyzer):
         oc_groups = self._extract_oc_groups(oc_properties)
         layer_names = {name.strip() for name in oc_groups.values()}
 
-        # --- GRD_PKG_001 / GRD_PKG_002: Dieline layer detection ---
+        # --- LPDF_PKG_001 / LPDF_PKG_002: Dieline layer detection ---
         dieline_layers = self._find_matching_layers(layer_names, _DIELINE_LAYER_NAMES)
         if dieline_layers:
             findings.append(
                 Finding(
-                    inspection_id="GRD_PKG_001",
+                    inspection_id="LPDF_PKG_001",
                     severity=Severity.ADVISORY,
                     message=(f"Dieline layer detected: {', '.join(sorted(dieline_layers))}"),
                     details={"dieline_layers": sorted(dieline_layers)},
@@ -88,7 +88,7 @@ class PackagingAnalyzer(BaseAnalyzer):
         else:
             findings.append(
                 Finding(
-                    inspection_id="GRD_PKG_002",
+                    inspection_id="LPDF_PKG_002",
                     severity=Severity.WARNING,
                     message=(
                         "No dieline layer found. Packaging artwork should include a "
@@ -101,14 +101,14 @@ class PackagingAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # --- GRD_PKG_003: Dieline on wrong layer ---
+        # --- LPDF_PKG_003: Dieline on wrong layer ---
         # Check if any dieline layer is marked as non-printing in OCProperties
         if dieline_layers:
             non_printing_dielines = self._find_non_printing_layers(oc_properties, dieline_layers)
             for layer_name in non_printing_dielines:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_PKG_003",
+                        inspection_id="LPDF_PKG_003",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Dieline layer '{layer_name}' is on a non-printing layer. "
@@ -119,7 +119,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # --- GRD_PKG_004: Content outside dieline boundary ---
+        # --- LPDF_PKG_004: Content outside dieline boundary ---
         # Approximate: check for content positioned significantly outside trim box
         from lintpdf.semantic.events import PathPaintingEvent, TextRenderedEvent
 
@@ -148,7 +148,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                 if significantly_outside:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_PKG_004",
+                            inspection_id="LPDF_PKG_004",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Content on page {page.page_num} is positioned "
@@ -167,7 +167,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                     # Only report once per page
                     break
 
-        # --- GRD_PKG_005: Insufficient safe zone from dieline/trim edge ---
+        # --- LPDF_PKG_005: Insufficient safe zone from dieline/trim edge ---
         for page in document.pages:
             trim_box = page.trim_box
             if trim_box is None:
@@ -198,7 +198,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                 if in_safety and in_trim:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_PKG_005",
+                            inspection_id="LPDF_PKG_005",
                             severity=Severity.WARNING,
                             message=(
                                 f"Content within {self.min_safe_zone_mm:.1f}mm "
@@ -217,7 +217,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                     # Only report once per page
                     break
 
-        # --- GRD_PKG_006: Bleed insufficient for packaging ---
+        # --- LPDF_PKG_006: Bleed insufficient for packaging ---
         for page in document.pages:
             trim_box = page.trim_box
             bleed_box = page.bleed_box
@@ -240,7 +240,7 @@ class PackagingAnalyzer(BaseAnalyzer):
             if inadequate:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_PKG_006",
+                        inspection_id="LPDF_PKG_006",
                         severity=Severity.WARNING,
                         message=(
                             f"Packaging bleed insufficient on page {page.page_num}: "
@@ -259,7 +259,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # --- GRD_PKG_007: Multiple panel sizes ---
+        # --- LPDF_PKG_007: Multiple panel sizes ---
         if len(document.pages) > 1:
             page_sizes: dict[tuple[float, float], list[int]] = {}
             for page in document.pages:
@@ -275,7 +275,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                 ]
                 findings.append(
                     Finding(
-                        inspection_id="GRD_PKG_007",
+                        inspection_id="LPDF_PKG_007",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Multiple distinct panel sizes detected across "
@@ -287,11 +287,11 @@ class PackagingAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # --- GRD_PKG_008: Crossover alignment advisory ---
+        # --- LPDF_PKG_008: Crossover alignment advisory ---
         if len(document.pages) > 1:
             findings.append(
                 Finding(
-                    inspection_id="GRD_PKG_008",
+                    inspection_id="LPDF_PKG_008",
                     severity=Severity.ADVISORY,
                     message=(
                         "Multi-page packaging layout detected. Verify crossover "
@@ -303,12 +303,12 @@ class PackagingAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # --- GRD_PKG_009: Varnish/coating layer detected ---
+        # --- LPDF_PKG_009: Varnish/coating layer detected ---
         coating_layers = self._find_matching_layers(layer_names, _COATING_LAYER_NAMES)
         if coating_layers:
             findings.append(
                 Finding(
-                    inspection_id="GRD_PKG_009",
+                    inspection_id="LPDF_PKG_009",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Varnish/coating layer detected: {', '.join(sorted(coating_layers))}"
@@ -318,7 +318,7 @@ class PackagingAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # --- GRD_PKG_010: White ink separation detected ---
+        # --- LPDF_PKG_010: White ink separation detected ---
         white_detected = False
         # Check layers for "White"
         white_layers = self._find_matching_layers(layer_names, _WHITE_LAYER_NAMES)
@@ -338,7 +338,7 @@ class PackagingAnalyzer(BaseAnalyzer):
         if white_detected:
             findings.append(
                 Finding(
-                    inspection_id="GRD_PKG_010",
+                    inspection_id="LPDF_PKG_010",
                     severity=Severity.ADVISORY,
                     message=(
                         "White ink separation detected. Ensure white ink layer "

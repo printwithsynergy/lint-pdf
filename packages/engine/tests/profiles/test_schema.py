@@ -34,15 +34,15 @@ class TestCheckConfig:
     @staticmethod
     def test_defaults() -> None:
         c = CheckConfig()
-        assert "GRD_*" in c.enabled
+        assert "LPDF_*" in c.enabled
         assert "PDFX4-*" in c.enabled
         assert len(c.disabled) == 0
         assert len(c.severity_overrides) == 0
 
     @staticmethod
     def test_custom_disabled() -> None:
-        c = CheckConfig(disabled=["GRD_IMG_002"])
-        assert "GRD_IMG_002" in c.disabled
+        c = CheckConfig(disabled=["LPDF_IMG_002"])
+        assert "LPDF_IMG_002" in c.disabled
 
 
 class TestPreflightProfile:
@@ -79,35 +79,35 @@ class TestCheckEnabled:
     @staticmethod
     def test_default_enables_all_grd() -> None:
         fp = PreflightProfile(name="Test")
-        assert fp.is_check_enabled("GRD_IMG_001")
-        assert fp.is_check_enabled("GRD_FONT_003")
+        assert fp.is_check_enabled("LPDF_IMG_001")
+        assert fp.is_check_enabled("LPDF_FONT_003")
         assert fp.is_check_enabled("PDFX4-001")
 
     @staticmethod
     def test_disabled_overrides_enabled() -> None:
         fp = PreflightProfile(
             name="Test",
-            checks=CheckConfig(disabled=["GRD_IMG_002"]),
+            checks=CheckConfig(disabled=["LPDF_IMG_002"]),
         )
-        assert not fp.is_check_enabled("GRD_IMG_002")
-        assert fp.is_check_enabled("GRD_IMG_001")
+        assert not fp.is_check_enabled("LPDF_IMG_002")
+        assert fp.is_check_enabled("LPDF_IMG_001")
 
     @staticmethod
     def test_ignore_severity_disables() -> None:
         fp = PreflightProfile(
             name="Test",
-            checks=CheckConfig(severity_overrides={"GRD_IMG_005": "ignore"}),
+            checks=CheckConfig(severity_overrides={"LPDF_IMG_005": "ignore"}),
         )
-        assert not fp.is_check_enabled("GRD_IMG_005")
+        assert not fp.is_check_enabled("LPDF_IMG_005")
 
     @staticmethod
     def test_pattern_matching() -> None:
         fp = PreflightProfile(
             name="Test",
-            checks=CheckConfig(enabled=["GRD_IMG_*"], disabled=[]),
+            checks=CheckConfig(enabled=["LPDF_IMG_*"], disabled=[]),
         )
-        assert fp.is_check_enabled("GRD_IMG_001")
-        assert not fp.is_check_enabled("GRD_FONT_001")
+        assert fp.is_check_enabled("LPDF_IMG_001")
+        assert not fp.is_check_enabled("LPDF_FONT_001")
 
     @staticmethod
     def test_disable_pattern() -> None:
@@ -116,19 +116,19 @@ class TestCheckEnabled:
             checks=CheckConfig(disabled=["PDFX4-*"]),
         )
         assert not fp.is_check_enabled("PDFX4-001")
-        assert fp.is_check_enabled("GRD_IMG_001")
+        assert fp.is_check_enabled("LPDF_IMG_001")
 
 
 class TestSeverityOverride:
     @staticmethod
     def test_no_override_returns_none() -> None:
         fp = PreflightProfile(name="Test")
-        assert fp.get_severity_override("GRD_IMG_001") is None
+        assert fp.get_severity_override("LPDF_IMG_001") is None
 
     @staticmethod
     def test_override_returns_value() -> None:
         fp = PreflightProfile(
             name="Test",
-            checks=CheckConfig(severity_overrides={"GRD_IMG_001": "advisory"}),
+            checks=CheckConfig(severity_overrides={"LPDF_IMG_001": "advisory"}),
         )
-        assert fp.get_severity_override("GRD_IMG_001") == "advisory"
+        assert fp.get_severity_override("LPDF_IMG_001") == "advisory"

@@ -3,20 +3,20 @@
 Processes SemanticDocument font data to detect font-related preflight issues.
 
 Check IDs:
-    GRD_FONT_001 — Font not embedded
-    GRD_FONT_002 — Font not subsetted (full font embedded)
-    GRD_FONT_003 — Standard 14 font used (may render differently)
-    GRD_FONT_004 — Type 3 font detected (user-drawn glyphs)
-    GRD_FONT_005 — CID font missing ToUnicode CMap
-    GRD_FONT_006 — CID font missing CIDSystemInfo
-    GRD_FONT_007 — Font has no encoding specified
-    GRD_FONT_008 — TrueType font not embedded (rendering issues)
-    GRD_FONT_009 — OpenType/CFF font not embedded
-    GRD_FONT_010 — Font embedding incomplete (descriptor present but no font file)
-    GRD_FONT_011 — Multiple Master font detected
-    GRD_FONT_012 — Faux bold detected
-    GRD_FONT_013 — Faux italic detected
-    GRD_FONT_014 — Corrupt/damaged font program (type/stream mismatch)
+    LPDF_FONT_001 — Font not embedded
+    LPDF_FONT_002 — Font not subsetted (full font embedded)
+    LPDF_FONT_003 — Standard 14 font used (may render differently)
+    LPDF_FONT_004 — Type 3 font detected (user-drawn glyphs)
+    LPDF_FONT_005 — CID font missing ToUnicode CMap
+    LPDF_FONT_006 — CID font missing CIDSystemInfo
+    LPDF_FONT_007 — Font has no encoding specified
+    LPDF_FONT_008 — TrueType font not embedded (rendering issues)
+    LPDF_FONT_009 — OpenType/CFF font not embedded
+    LPDF_FONT_010 — Font embedding incomplete (descriptor present but no font file)
+    LPDF_FONT_011 — Multiple Master font detected
+    LPDF_FONT_012 — Faux bold detected
+    LPDF_FONT_013 — Faux italic detected
+    LPDF_FONT_014 — Corrupt/damaged font program (type/stream mismatch)
 """
 
 from __future__ import annotations
@@ -61,11 +61,11 @@ class FontAnalyzer(BaseAnalyzer):
         """Run all checks on a single font."""
         findings: list[Finding] = []
 
-        # GRD_FONT_001: Font not embedded (skip Standard 14)
+        # LPDF_FONT_001: Font not embedded (skip Standard 14)
         if not font.embedded and not font.is_standard_14():
             findings.append(
                 Finding(
-                    inspection_id="GRD_FONT_001",
+                    inspection_id="LPDF_FONT_001",
                     severity=Severity.ERROR,
                     message=f"Font '{font.base_font}' is not embedded",
                     page_num=page_num,
@@ -80,11 +80,11 @@ class FontAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_FONT_002: Font embedded but not subsetted
+        # LPDF_FONT_002: Font embedded but not subsetted
         if font.embedded and not font.subset:
             findings.append(
                 Finding(
-                    inspection_id="GRD_FONT_002",
+                    inspection_id="LPDF_FONT_002",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Font '{font.base_font}' is fully embedded "
@@ -99,11 +99,11 @@ class FontAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_FONT_003: Standard 14 font
+        # LPDF_FONT_003: Standard 14 font
         if font.is_standard_14():
             findings.append(
                 Finding(
-                    inspection_id="GRD_FONT_003",
+                    inspection_id="LPDF_FONT_003",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Standard 14 font '{font.base_font}' used "
@@ -118,11 +118,11 @@ class FontAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_FONT_004: Type 3 font
+        # LPDF_FONT_004: Type 3 font
         if font.is_type3():
             findings.append(
                 Finding(
-                    inspection_id="GRD_FONT_004",
+                    inspection_id="LPDF_FONT_004",
                     severity=Severity.WARNING,
                     message=(
                         f"Type 3 font '{font.base_font}' detected "
@@ -139,11 +139,11 @@ class FontAnalyzer(BaseAnalyzer):
 
         # CID font checks
         if font.is_cid_font():
-            # GRD_FONT_005: CID font missing ToUnicode
+            # LPDF_FONT_005: CID font missing ToUnicode
             if not font.has_to_unicode:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_FONT_005",
+                        inspection_id="LPDF_FONT_005",
                         severity=Severity.WARNING,
                         message=(
                             f"CID font '{font.base_font}' missing "
@@ -158,11 +158,11 @@ class FontAnalyzer(BaseAnalyzer):
                     )
                 )
 
-            # GRD_FONT_006: CID font missing CIDSystemInfo
+            # LPDF_FONT_006: CID font missing CIDSystemInfo
             if font.cid_system_info is None:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_FONT_006",
+                        inspection_id="LPDF_FONT_006",
                         severity=Severity.WARNING,
                         message=(f"CID font '{font.base_font}' missing CIDSystemInfo dictionary"),
                         page_num=page_num,
@@ -174,11 +174,11 @@ class FontAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_FONT_007: No encoding
+        # LPDF_FONT_007: No encoding
         if font.encoding is None and not font.is_type3() and not font.is_cid_font():
             findings.append(
                 Finding(
-                    inspection_id="GRD_FONT_007",
+                    inspection_id="LPDF_FONT_007",
                     severity=Severity.ADVISORY,
                     message=(f"Font '{font.base_font}' has no encoding specified"),
                     page_num=page_num,
@@ -191,11 +191,11 @@ class FontAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_FONT_008: TrueType not embedded
+        # LPDF_FONT_008: TrueType not embedded
         if font.font_type == "TrueType" and not font.embedded:
             findings.append(
                 Finding(
-                    inspection_id="GRD_FONT_008",
+                    inspection_id="LPDF_FONT_008",
                     severity=Severity.ERROR,
                     message=(
                         f"TrueType font '{font.base_font}' is not embedded "
@@ -210,11 +210,11 @@ class FontAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_FONT_009: Type0/CID not embedded
+        # LPDF_FONT_009: Type0/CID not embedded
         if font.font_type == "Type0" and not font.embedded:
             findings.append(
                 Finding(
-                    inspection_id="GRD_FONT_009",
+                    inspection_id="LPDF_FONT_009",
                     severity=Severity.ERROR,
                     message=(f"Composite font '{font.base_font}' is not embedded"),
                     page_num=page_num,
@@ -226,7 +226,7 @@ class FontAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_FONT_010: Font descriptor present but no font file
+        # LPDF_FONT_010: Font descriptor present but no font file
         if (
             font.font_descriptor is not None
             and not font.embedded
@@ -241,7 +241,7 @@ class FontAnalyzer(BaseAnalyzer):
             if has_descriptor_but_no_file:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_FONT_010",
+                        inspection_id="LPDF_FONT_010",
                         severity=Severity.WARNING,
                         message=(
                             f"Font '{font.base_font}' has FontDescriptor "
@@ -256,11 +256,11 @@ class FontAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_FONT_011: Multiple Master font detected
+        # LPDF_FONT_011: Multiple Master font detected
         if font.font_type == "MMType1" or (font.base_font and font.base_font.endswith("MM")):
             findings.append(
                 Finding(
-                    inspection_id="GRD_FONT_011",
+                    inspection_id="LPDF_FONT_011",
                     severity=Severity.WARNING,
                     message=(
                         f"Multiple Master font '{font.base_font}' detected "
@@ -278,7 +278,7 @@ class FontAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_FONT_012: Faux bold detected
+        # LPDF_FONT_012: Faux bold detected
         if font.font_descriptor is not None:
             weight = font.font_descriptor.get("/FontWeight")
             stem_v = font.font_descriptor.get("/StemV")
@@ -289,7 +289,7 @@ class FontAnalyzer(BaseAnalyzer):
                 display_weight = weight if weight is not None else f"StemV={stem_v}"
                 findings.append(
                     Finding(
-                        inspection_id="GRD_FONT_012",
+                        inspection_id="LPDF_FONT_012",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Font '{font.base_font}' appears to use faux bold "
@@ -306,7 +306,7 @@ class FontAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_FONT_013: Faux italic detected
+        # LPDF_FONT_013: Faux italic detected
         if font.font_descriptor is not None:
             italic_angle = font.font_descriptor.get("/ItalicAngle")
             base_lower = (font.base_font or "").lower()
@@ -318,7 +318,7 @@ class FontAnalyzer(BaseAnalyzer):
             ):
                 findings.append(
                     Finding(
-                        inspection_id="GRD_FONT_013",
+                        inspection_id="LPDF_FONT_013",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Font '{font.base_font}' appears to use faux italic "
@@ -334,7 +334,7 @@ class FontAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_FONT_014: Mismatched font program type
+        # LPDF_FONT_014: Mismatched font program type
         if font.embedded and font.font_descriptor is not None:
             font_file = font.font_descriptor.get("FontFile")
             font_file2 = font.font_descriptor.get("FontFile2")
@@ -345,7 +345,7 @@ class FontAnalyzer(BaseAnalyzer):
                     found_stream = "FontFile2" if font_file2 is not None else "FontFile3"
                     findings.append(
                         Finding(
-                            inspection_id="GRD_FONT_014",
+                            inspection_id="LPDF_FONT_014",
                             severity=Severity.WARNING,
                             message=(
                                 f"Font '{font.base_font}' has mismatched font program type "
@@ -366,7 +366,7 @@ class FontAnalyzer(BaseAnalyzer):
                     found_stream = "FontFile" if font_file is not None else "FontFile3"
                     findings.append(
                         Finding(
-                            inspection_id="GRD_FONT_014",
+                            inspection_id="LPDF_FONT_014",
                             severity=Severity.WARNING,
                             message=(
                                 f"Font '{font.base_font}' has mismatched font program type "

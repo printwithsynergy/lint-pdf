@@ -33,14 +33,14 @@ def _narrow_stroke(page_num: int = 1, index: int = 0, width: float = 0.5) -> Pat
 
 
 class TestBarcodePatternDetection:
-    """Test GRD_BARCODE_001: Potential barcode pattern on page."""
+    """Test LPDF_BARCODE_001: Potential barcode pattern on page."""
 
     @staticmethod
     def test_many_narrow_strokes_flags_barcode() -> None:
         events = [_narrow_stroke(index=i) for i in range(25)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 1
         assert barcode[0].severity == Severity.ADVISORY
         assert barcode[0].page_num == 1
@@ -51,7 +51,7 @@ class TestBarcodePatternDetection:
         events = [_narrow_stroke(index=i) for i in range(15)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 0
 
     @staticmethod
@@ -59,7 +59,7 @@ class TestBarcodePatternDetection:
         events = [_narrow_stroke(index=i) for i in range(20)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 1
 
     @staticmethod
@@ -67,7 +67,7 @@ class TestBarcodePatternDetection:
         events = [_narrow_stroke(index=i) for i in range(10)]
         analyzer = BarcodeAnalyzer(min_narrow_strokes=5)
         findings = analyzer.analyze(_make_document(), events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 1
 
     @staticmethod
@@ -75,7 +75,7 @@ class TestBarcodePatternDetection:
         events = [_narrow_stroke(index=i, width=2.0) for i in range(30)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 0
 
     @staticmethod
@@ -83,7 +83,7 @@ class TestBarcodePatternDetection:
         events = [_narrow_stroke(index=i, width=1.5) for i in range(25)]
         analyzer = BarcodeAnalyzer(narrow_stroke_width=2.0)
         findings = analyzer.analyze(_make_document(), events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 1
 
     @staticmethod
@@ -103,7 +103,7 @@ class TestBarcodePatternDetection:
         ]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 0
 
     @staticmethod
@@ -121,7 +121,7 @@ class TestBarcodePatternDetection:
         events += [_narrow_stroke(page_num=2, index=i + 25) for i in range(25)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(doc, events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 2
         pages = {f.page_num for f in barcode}
         assert pages == {1, 2}
@@ -132,5 +132,5 @@ class TestBarcodePatternDetection:
         events = [_narrow_stroke(index=i, width=0.0) for i in range(30)]
         analyzer = BarcodeAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        barcode = [f for f in findings if f.inspection_id == "GRD_BARCODE_001"]
+        barcode = [f for f in findings if f.inspection_id == "LPDF_BARCODE_001"]
         assert len(barcode) == 0

@@ -68,7 +68,7 @@ class TestBarcodeDecode:
 
         assert len(findings) == 1
         f = findings[0]
-        assert f.inspection_id == "GRD_BC_001"
+        assert f.inspection_id == "LPDF_BC_001"
         assert f.severity == Severity.ADVISORY
         assert f.source == "ai"
         assert f.category == "barcode"

@@ -35,7 +35,7 @@ class TestSpotColorAnalyzer:
     def test_no_spot_colors(self):
         doc = _make_doc()
         findings = SpotColorAnalyzer().analyze(doc, [])
-        spot_findings = [f for f in findings if f.inspection_id.startswith("GRD_SPOT_")]
+        spot_findings = [f for f in findings if f.inspection_id.startswith("LPDF_SPOT_")]
         assert len(spot_findings) == 0
 
     def test_spot_color_inventory(self):
@@ -48,7 +48,7 @@ class TestSpotColorAnalyzer:
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
         findings = SpotColorAnalyzer().analyze(doc, [])
-        spot_001 = [f for f in findings if f.inspection_id == "GRD_SPOT_001"]
+        spot_001 = [f for f in findings if f.inspection_id == "LPDF_SPOT_001"]
         assert len(spot_001) >= 1
 
     def test_spot_color_naming_issue(self):
@@ -60,7 +60,7 @@ class TestSpotColorAnalyzer:
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
         findings = SpotColorAnalyzer().analyze(doc, [])
-        spot_003 = [f for f in findings if f.inspection_id == "GRD_SPOT_003"]
+        spot_003 = [f for f in findings if f.inspection_id == "LPDF_SPOT_003"]
         assert len(spot_003) >= 1
 
     def test_devicen_validation(self):
@@ -73,7 +73,7 @@ class TestSpotColorAnalyzer:
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
         findings = SpotColorAnalyzer().analyze(doc, [])
-        spot_004 = [f for f in findings if f.inspection_id == "GRD_SPOT_004"]
+        spot_004 = [f for f in findings if f.inspection_id == "LPDF_SPOT_004"]
         # Well-formed DeviceN should not trigger structural errors
         errors = [f for f in spot_004 if f.severity == Severity.ERROR]
         assert len(errors) == 0
@@ -87,5 +87,5 @@ class TestSpotColorAnalyzer:
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
         findings = SpotColorAnalyzer().analyze(doc, [])
-        spot_004 = [f for f in findings if f.inspection_id == "GRD_SPOT_004"]
+        spot_004 = [f for f in findings if f.inspection_id == "LPDF_SPOT_004"]
         assert len(spot_004) >= 1

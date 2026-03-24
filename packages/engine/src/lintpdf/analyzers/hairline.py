@@ -4,20 +4,20 @@ Processes PathPaintingEvent and TextRenderedEvent events to detect
 hairlines and small text that may not reproduce in print.
 
 Check IDs:
-    GRD_STROKE_001 — Hairline stroke (<0.25pt effective)
-    GRD_STROKE_002 — Zero-width stroke
-    GRD_STROKE_003 — Butt cap on thin stroke (<0.5pt)
-    GRD_STROKE_004 — Multi-ink thin stroke (<0.5pt, >1 CMYK separation)
-    GRD_STROKE_005 — Invisible line art (zero opacity stroke)
-    GRD_STROKE_006 — Flatness tolerance override
-    GRD_PATH_001 — Excessive path points (>10,000)
-    GRD_PATH_002 — White fill detected on paths
-    GRD_TEXT_001 — Small text (<6pt effective)
-    GRD_TEXT_002 — Very small text (<4pt effective)
-    GRD_TEXT_003 — Invisible text (rendering mode 3)
-    GRD_TEXT_004 — White text detected
-    GRD_TEXT_005 — Text on registration color
-    GRD_TEXT_006 — Small multi-ink text (<8pt, >1 separation)
+    LPDF_STROKE_001 — Hairline stroke (<0.25pt effective)
+    LPDF_STROKE_002 — Zero-width stroke
+    LPDF_STROKE_003 — Butt cap on thin stroke (<0.5pt)
+    LPDF_STROKE_004 — Multi-ink thin stroke (<0.5pt, >1 CMYK separation)
+    LPDF_STROKE_005 — Invisible line art (zero opacity stroke)
+    LPDF_STROKE_006 — Flatness tolerance override
+    LPDF_PATH_001 — Excessive path points (>10,000)
+    LPDF_PATH_002 — White fill detected on paths
+    LPDF_TEXT_001 — Small text (<6pt effective)
+    LPDF_TEXT_002 — Very small text (<4pt effective)
+    LPDF_TEXT_003 — Invisible text (rendering mode 3)
+    LPDF_TEXT_004 — White text detected
+    LPDF_TEXT_005 — Text on registration color
+    LPDF_TEXT_006 — Small multi-ink text (<8pt, >1 separation)
 """
 
 from __future__ import annotations
@@ -75,18 +75,18 @@ class HairlineAnalyzer(BaseAnalyzer):
                 if event.stroke:
                     findings.extend(self._check_stroke(event))
 
-                # GRD_PATH_002: White fill detected on paths
+                # LPDF_PATH_002: White fill detected on paths
                 if event.page_num not in white_fill_pages:
                     result = self._check_white_fill(event)
                     if result:
                         findings.append(result)
                         white_fill_pages.add(event.page_num)
 
-                # GRD_PATH_001: Excessive path points
+                # LPDF_PATH_001: Excessive path points
                 if event.point_count > 10000:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_PATH_001",
+                            inspection_id="LPDF_PATH_001",
                             severity=Severity.WARNING,
                             message=(
                                 f"Excessive path points ({event.point_count:,}) "
@@ -111,11 +111,11 @@ class HairlineAnalyzer(BaseAnalyzer):
         findings: list[Finding] = []
         line_width = event.line_width
 
-        # GRD_STROKE_002: Zero-width stroke
+        # LPDF_STROKE_002: Zero-width stroke
         if line_width <= 0.0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STROKE_002",
+                    inspection_id="LPDF_STROKE_002",
                     severity=Severity.ERROR,
                     message=(
                         f"Zero-width stroke on page {event.page_num} (will not render in print)"
@@ -131,11 +131,11 @@ class HairlineAnalyzer(BaseAnalyzer):
             )
             return findings
 
-        # GRD_STROKE_001: Hairline stroke
+        # LPDF_STROKE_001: Hairline stroke
         if line_width < self.hairline_threshold:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STROKE_001",
+                    inspection_id="LPDF_STROKE_001",
                     severity=Severity.WARNING,
                     message=(
                         f"Hairline stroke ({line_width:.3f}pt) on page {event.page_num} "
@@ -151,11 +151,11 @@ class HairlineAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_STROKE_003: Butt cap on thin stroke
+        # LPDF_STROKE_003: Butt cap on thin stroke
         if line_width < THIN_STROKE_THRESHOLD and event.line_cap == 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STROKE_003",
+                    inspection_id="LPDF_STROKE_003",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Butt cap on thin stroke ({line_width:.3f}pt) "
@@ -171,7 +171,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_STROKE_004: Multi-ink thin stroke (<0.5pt, >1 CMYK separation)
+        # LPDF_STROKE_004: Multi-ink thin stroke (<0.5pt, >1 CMYK separation)
         if (
             line_width < THIN_STROKE_THRESHOLD
             and event.stroke_color_space == "DeviceCMYK"
@@ -181,7 +181,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             if non_zero > 1:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_STROKE_004",
+                        inspection_id="LPDF_STROKE_004",
                         severity=Severity.WARNING,
                         message=(
                             f"Multi-ink thin stroke ({line_width:.3f}pt, "
@@ -198,12 +198,12 @@ class HairlineAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_STROKE_005: Invisible line art (zero opacity stroke)
+        # LPDF_STROKE_005: Invisible line art (zero opacity stroke)
         stroke_alpha = getattr(event, "stroke_alpha", None)
         if stroke_alpha is not None and abs(stroke_alpha) < 1e-6:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STROKE_005",
+                    inspection_id="LPDF_STROKE_005",
                     severity=Severity.WARNING,
                     message=(
                         f"Invisible stroke (white/zero-opacity) on page {event.page_num} "
@@ -229,7 +229,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             ):
                 findings.append(
                     Finding(
-                        inspection_id="GRD_STROKE_005",
+                        inspection_id="LPDF_STROKE_005",
                         severity=Severity.WARNING,
                         message=(
                             f"Invisible stroke (white/zero-opacity) on page {event.page_num} "
@@ -245,12 +245,12 @@ class HairlineAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_STROKE_006: Flatness tolerance override
+        # LPDF_STROKE_006: Flatness tolerance override
         flatness = getattr(event, "flatness", None)
         if flatness is not None and flatness != 0 and flatness != 1.0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_STROKE_006",
+                    inspection_id="LPDF_STROKE_006",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Non-default flatness tolerance ({flatness}) on page {event.page_num} "
@@ -267,7 +267,7 @@ class HairlineAnalyzer(BaseAnalyzer):
         return findings
 
     def _check_white_fill(self, event: PathPaintingEvent) -> Finding | None:
-        """Check if a path has a white fill (GRD_PATH_002)."""
+        """Check if a path has a white fill (LPDF_PATH_002)."""
         if not getattr(event, "fill", False):
             return None
         fill_cs = getattr(event, "fill_color_space", None)
@@ -276,7 +276,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             return None
         if self._is_white_color(fill_cs, tuple(fill_cv)):
             return Finding(
-                inspection_id="GRD_PATH_002",
+                inspection_id="LPDF_PATH_002",
                 severity=Severity.ADVISORY,
                 message=(
                     f"White fill path on page {event.page_num} (may knock out background content)"
@@ -305,11 +305,11 @@ class HairlineAnalyzer(BaseAnalyzer):
         """Check effective text size for small text issues."""
         findings: list[Finding] = []
 
-        # GRD_TEXT_003: Invisible text (rendering mode 3 = neither fill nor stroke)
+        # LPDF_TEXT_003: Invisible text (rendering mode 3 = neither fill nor stroke)
         if event.rendering_mode == 3:
             findings.append(
                 Finding(
-                    inspection_id="GRD_TEXT_003",
+                    inspection_id="LPDF_TEXT_003",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Invisible text (rendering mode 3) on page {event.page_num} "
@@ -324,11 +324,11 @@ class HairlineAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_TEXT_004: White text
+        # LPDF_TEXT_004: White text
         if self._is_white_color(event.color_space, event.color_values):
             findings.append(
                 Finding(
-                    inspection_id="GRD_TEXT_004",
+                    inspection_id="LPDF_TEXT_004",
                     severity=Severity.ADVISORY,
                     message=f"White text detected on page {event.page_num}",
                     page_num=event.page_num,
@@ -341,7 +341,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_TEXT_005: Text on registration color (all CMYK at 100%)
+        # LPDF_TEXT_005: Text on registration color (all CMYK at 100%)
         if (
             event.color_space == "DeviceCMYK"
             and len(event.color_values) == 4
@@ -349,7 +349,7 @@ class HairlineAnalyzer(BaseAnalyzer):
         ):
             findings.append(
                 Finding(
-                    inspection_id="GRD_TEXT_005",
+                    inspection_id="LPDF_TEXT_005",
                     severity=Severity.WARNING,
                     message=(
                         f"Text on registration color (100% all CMYK) on page {event.page_num}"
@@ -371,7 +371,7 @@ class HairlineAnalyzer(BaseAnalyzer):
         if effective_size <= 0:
             return findings
 
-        # GRD_TEXT_006: Small multi-ink text (<8pt, >1 separation)
+        # LPDF_TEXT_006: Small multi-ink text (<8pt, >1 separation)
         if (
             effective_size < 8.0
             and event.color_space == "DeviceCMYK"
@@ -381,7 +381,7 @@ class HairlineAnalyzer(BaseAnalyzer):
             if non_zero > 1:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_TEXT_006",
+                        inspection_id="LPDF_TEXT_006",
                         severity=Severity.WARNING,
                         message=(
                             f"Small multi-ink text ({effective_size:.1f}pt, "
@@ -399,11 +399,11 @@ class HairlineAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_TEXT_002: Very small text (check first — more severe)
+        # LPDF_TEXT_002: Very small text (check first — more severe)
         if effective_size < self.very_small_text_threshold:
             findings.append(
                 Finding(
-                    inspection_id="GRD_TEXT_002",
+                    inspection_id="LPDF_TEXT_002",
                     severity=Severity.WARNING,
                     message=(
                         f"Very small text ({effective_size:.1f}pt effective) "
@@ -421,11 +421,11 @@ class HairlineAnalyzer(BaseAnalyzer):
                     object_type="text",
                 )
             )
-        # GRD_TEXT_001: Small text
+        # LPDF_TEXT_001: Small text
         elif effective_size < self.small_text_threshold:
             findings.append(
                 Finding(
-                    inspection_id="GRD_TEXT_001",
+                    inspection_id="LPDF_TEXT_001",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Small text ({effective_size:.1f}pt effective) "

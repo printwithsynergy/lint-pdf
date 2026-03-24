@@ -111,7 +111,7 @@ class BarcodeDecode(BaseAIAnalyzer):
 
                 findings.append(
                     self._make_finding(
-                        inspection_id="GRD_BC_001",
+                        inspection_id="LPDF_BC_001",
                         severity=Severity.ADVISORY,
                         message=(f"Decoded {display_type} barcode on page {page_num}: '{data}'"),
                         page_num=page_num,
@@ -141,7 +141,7 @@ class BarcodeDecode(BaseAIAnalyzer):
 
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_BC_001",
+                            inspection_id="LPDF_BC_001",
                             severity=Severity.ADVISORY,
                             message=(f"Decoded DataMatrix barcode on page {page_num}: '{data}'"),
                             page_num=page_num,
@@ -159,7 +159,7 @@ class BarcodeDecode(BaseAIAnalyzer):
         if not findings:
             findings.append(
                 self._make_finding(
-                    inspection_id="GRD_BC_001",
+                    inspection_id="LPDF_BC_001",
                     severity=Severity.ADVISORY,
                     message="No barcodes detected in document",
                 )

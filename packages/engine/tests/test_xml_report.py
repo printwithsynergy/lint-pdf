@@ -16,7 +16,7 @@ def sample_result() -> PreflightResult:
     """Sample result with multiple findings."""
     findings = [
         Finding(
-            inspection_id="GRD_FONT_001",
+            inspection_id="LPDF_FONT_001",
             severity=Severity.ERROR,
             message="Font 'Arial' is not embedded",
             page_num=1,
@@ -25,7 +25,7 @@ def sample_result() -> PreflightResult:
             iso_clause="ISO 32000-2:2020 9.6",
         ),
         Finding(
-            inspection_id="GRD_IMG_001",
+            inspection_id="LPDF_IMG_001",
             severity=Severity.WARNING,
             message="Image resolution below minimum (72 DPI < 150 DPI)",
             page_num=1,
@@ -34,7 +34,7 @@ def sample_result() -> PreflightResult:
             details={"actual_dpi": 72, "min_dpi": 150},
         ),
         Finding(
-            inspection_id="GRD_COLOR_003",
+            inspection_id="LPDF_COLOR_003",
             severity=Severity.ADVISORY,
             message="RGB color space detected",
             page_num=2,
@@ -257,7 +257,7 @@ class TestXmlFindings:
         root = _parse_xml(generate_xml_report(sample_result))
         findings = root.findall("Findings/Finding")
         first = findings[0]
-        assert first.find("InspectionId").text == "GRD_FONT_001"
+        assert first.find("InspectionId").text == "LPDF_FONT_001"
         assert first.find("Severity").text == "error"
         assert first.find("Message").text == "Font 'Arial' is not embedded"
         assert first.find("PageNum").text == "1"
@@ -303,7 +303,7 @@ class TestXmlFindings:
             profile_id="default",
             findings=[
                 Finding(
-                    inspection_id="GRD_DOC_001",
+                    inspection_id="LPDF_DOC_001",
                     severity=Severity.ADVISORY,
                     message="Document-level finding",
                     page_num=0,  # No page
@@ -349,7 +349,7 @@ class TestXmlReportSeverityValues:
             profile_id="default",
             findings=[
                 Finding(
-                    inspection_id="GRD_TEST",
+                    inspection_id="LPDF_TEST",
                     severity=severity,
                     message="Test",
                     page_num=1,

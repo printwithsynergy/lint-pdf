@@ -43,7 +43,7 @@ class TestJsonReport:
         data = json.loads(generate_json_report(sample_result))
         assert len(data["findings"]) == 3
         first = data["findings"][0]
-        assert first["inspection_id"] == "GRD_FONT_001"
+        assert first["inspection_id"] == "LPDF_FONT_001"
         assert first["severity"] == "error"
         assert "not embedded" in first["message"]
 

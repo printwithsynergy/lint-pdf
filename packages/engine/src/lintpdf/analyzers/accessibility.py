@@ -4,19 +4,19 @@ Inspects the document catalog for structure tree, language, and tagging
 metadata required for accessible PDFs (PDF/UA compliance).
 
 Check IDs:
-    GRD_ACCESS_001 — No structure tree (not tagged)
-    GRD_ACCESS_002 — No document language specified
-    GRD_ACCESS_003 — Tagged PDF present (informational)
-    GRD_ACCESS_004 — Missing document language (/Lang in catalog)
-    GRD_ACCESS_005 — Missing alternative text on images
-    GRD_ACCESS_006 — Heading structure missing (no H1..H6)
-    GRD_ACCESS_007 — Empty table headers
-    GRD_ACCESS_008 — Missing list structure (/L, /LI, /Lbl)
-    GRD_ACCESS_009 — Artifact marking missing
-    GRD_ACCESS_010 — Reading order undefined (/StructTreeRoot without /K)
-    GRD_ACCESS_011 — Color-only information conveyed
-    GRD_ACCESS_012 — Insufficient text-background contrast
-    GRD_ACCESS_013 — Tab order not specified (/Tabs in page dict)
+    LPDF_ACCESS_001 — No structure tree (not tagged)
+    LPDF_ACCESS_002 — No document language specified
+    LPDF_ACCESS_003 — Tagged PDF present (informational)
+    LPDF_ACCESS_004 — Missing document language (/Lang in catalog)
+    LPDF_ACCESS_005 — Missing alternative text on images
+    LPDF_ACCESS_006 — Heading structure missing (no H1..H6)
+    LPDF_ACCESS_007 — Empty table headers
+    LPDF_ACCESS_008 — Missing list structure (/L, /LI, /Lbl)
+    LPDF_ACCESS_009 — Artifact marking missing
+    LPDF_ACCESS_010 — Reading order undefined (/StructTreeRoot without /K)
+    LPDF_ACCESS_011 — Color-only information conveyed
+    LPDF_ACCESS_012 — Insufficient text-background contrast
+    LPDF_ACCESS_013 — Tab order not specified (/Tabs in page dict)
 """
 
 from __future__ import annotations
@@ -46,11 +46,11 @@ class AccessibilityAnalyzer(BaseAnalyzer):
         has_struct_tree = catalog.get("/StructTreeRoot") is not None
         has_lang = catalog.get("/Lang") is not None
 
-        # GRD_ACCESS_001: No structure tree
+        # LPDF_ACCESS_001: No structure tree
         if not has_struct_tree:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ACCESS_001",
+                    inspection_id="LPDF_ACCESS_001",
                     severity=Severity.ADVISORY,
                     message="Document has no structure tree (not tagged for accessibility)",
                     details={"has_struct_tree": False},
@@ -58,11 +58,11 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_ACCESS_002: No document language
+        # LPDF_ACCESS_002: No document language
         if not has_lang:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ACCESS_002",
+                    inspection_id="LPDF_ACCESS_002",
                     severity=Severity.ADVISORY,
                     message="Document has no language specified (/Lang missing from catalog)",
                     details={"has_lang": False},
@@ -70,7 +70,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_ACCESS_003: Tagged PDF present (informational)
+        # LPDF_ACCESS_003: Tagged PDF present (informational)
         if has_struct_tree:
             mark_info = catalog.get("/MarkInfo")
             is_marked = False
@@ -80,7 +80,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
             if is_marked:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ACCESS_003",
+                        inspection_id="LPDF_ACCESS_003",
                         severity=Severity.ADVISORY,
                         message="Document is a tagged PDF (StructTreeRoot and MarkInfo present)",
                         details={
@@ -91,16 +91,16 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # --- Additional accessibility checks (GRD_ACCESS_004–013) ---
+        # --- Additional accessibility checks (LPDF_ACCESS_004–013) ---
 
         struct_tree = catalog.get("/StructTreeRoot")
 
-        # GRD_ACCESS_004: Missing document language (/Lang in catalog)
+        # LPDF_ACCESS_004: Missing document language (/Lang in catalog)
         lang = catalog.get("/Lang")
         if not lang or (isinstance(lang, str) and not lang.strip()):
             findings.append(
                 Finding(
-                    inspection_id="GRD_ACCESS_004",
+                    inspection_id="LPDF_ACCESS_004",
                     severity=Severity.WARNING,
                     message="Document language not specified (/Lang missing or empty in catalog)",
                     details={"lang": lang},
@@ -108,7 +108,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_ACCESS_005: Missing alternative text on images
+        # LPDF_ACCESS_005: Missing alternative text on images
         # Check each page for images that lack /Alt in annotations or struct tree
         for page in document.pages:
             for img in page.images:
@@ -118,7 +118,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                 if has_struct_tree:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ACCESS_005",
+                            inspection_id="LPDF_ACCESS_005",
                             severity=Severity.WARNING,
                             message=(
                                 f"Image '{img.name}' on page {page.page_num} may lack "
@@ -136,11 +136,11 @@ class AccessibilityAnalyzer(BaseAnalyzer):
         if isinstance(struct_tree, dict):
             k_array = struct_tree.get("/K")
 
-            # GRD_ACCESS_010: Reading order undefined (/StructTreeRoot without /K)
+            # LPDF_ACCESS_010: Reading order undefined (/StructTreeRoot without /K)
             if k_array is None:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ACCESS_010",
+                        inspection_id="LPDF_ACCESS_010",
                         severity=Severity.WARNING,
                         message="Reading order undefined (/StructTreeRoot has no /K children)",
                         details={"has_k": False},
@@ -151,12 +151,12 @@ class AccessibilityAnalyzer(BaseAnalyzer):
             # Collect structure element types from the tree
             struct_types = self._collect_struct_types(struct_tree)
 
-            # GRD_ACCESS_006: Heading structure missing
+            # LPDF_ACCESS_006: Heading structure missing
             heading_tags = {"/H1", "/H2", "/H3", "/H4", "/H5", "/H6", "/H"}
             if not struct_types.intersection(heading_tags):
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ACCESS_006",
+                        inspection_id="LPDF_ACCESS_006",
                         severity=Severity.ADVISORY,
                         message="No heading structure found in document (missing /H1../H6 tags)",
                         details={"heading_tags_found": []},
@@ -164,13 +164,13 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
-            # GRD_ACCESS_007: Empty table headers
+            # LPDF_ACCESS_007: Empty table headers
             has_table = "/Table" in struct_types or "/TR" in struct_types
             has_th = "/TH" in struct_types
             if has_table and not has_th:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ACCESS_007",
+                        inspection_id="LPDF_ACCESS_007",
                         severity=Severity.WARNING,
                         message="Table structure found but no table header (/TH) elements present",
                         details={"has_table": True, "has_th": False},
@@ -178,13 +178,13 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
-            # GRD_ACCESS_008: Missing list structure
+            # LPDF_ACCESS_008: Missing list structure
             has_list_items = "/LI" in struct_types or "/Lbl" in struct_types
             has_list_container = "/L" in struct_types
             if has_list_items and not has_list_container:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ACCESS_008",
+                        inspection_id="LPDF_ACCESS_008",
                         severity=Severity.ADVISORY,
                         message="List items found without proper list container (/L) structure",
                         details={"has_L": False, "has_LI": "/LI" in struct_types},
@@ -192,12 +192,12 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
-            # GRD_ACCESS_009: Artifact marking missing
+            # LPDF_ACCESS_009: Artifact marking missing
             has_artifact = "/Artifact" in struct_types
             if not has_artifact and document.page_count > 0:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ACCESS_009",
+                        inspection_id="LPDF_ACCESS_009",
                         severity=Severity.ADVISORY,
                         message=(
                             "No Artifact markings found in structure tree; "
@@ -208,7 +208,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_ACCESS_011: Color-only information conveyed (heuristic)
+        # LPDF_ACCESS_011: Color-only information conveyed (heuristic)
         # Flag if colored text exists without structural emphasis (/Em, /Strong)
         if isinstance(struct_tree, dict):
             struct_types_for_emphasis = self._collect_struct_types(struct_tree)
@@ -217,7 +217,7 @@ class AccessibilityAnalyzer(BaseAnalyzer):
             if not has_emphasis and document.page_count > 0:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ACCESS_011",
+                        inspection_id="LPDF_ACCESS_011",
                         severity=Severity.ADVISORY,
                         message=(
                             "No structural emphasis tags (/Em, /Strong) found; "
@@ -228,12 +228,12 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_ACCESS_012: Insufficient text-background contrast (heuristic)
+        # LPDF_ACCESS_012: Insufficient text-background contrast (heuristic)
         # Without rendering, we flag if page count > 0 and no color management
         if document.page_count > 0 and not document.output_intents:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ACCESS_012",
+                    inspection_id="LPDF_ACCESS_012",
                     severity=Severity.ADVISORY,
                     message=(
                         "No output intents defined; text-background contrast "
@@ -243,13 +243,13 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_ACCESS_013: Tab order not specified (/Tabs in page dict)
+        # LPDF_ACCESS_013: Tab order not specified (/Tabs in page dict)
         for page in document.pages:
             tabs = page.resources.get("/Tabs")
             if tabs is None and has_struct_tree:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ACCESS_013",
+                        inspection_id="LPDF_ACCESS_013",
                         severity=Severity.ADVISORY,
                         message=f"Tab order not specified on page {page.page_num} (/Tabs missing)",
                         page_num=page.page_num,

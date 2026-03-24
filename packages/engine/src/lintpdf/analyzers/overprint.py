@@ -8,14 +8,14 @@ Overprint Mode (OPM) interactions per ISO 32000-2:2020 section 8.6.7:
 - OPM=1: Only non-zero source components replace destination
 
 Check IDs:
-    GRD_OVER_001 — Overprint active on non-CMYK color space
-    GRD_OVER_002 — OPM=0 with DeviceCMYK (potential knockout issues)
-    GRD_OVER_003 — Overprint active with transparency
-    GRD_OVER_004 — White overprint (fill is white + OP active)
-    GRD_OVER_005 — Overprint inventory (informational)
-    GRD_OVER_006 — RGB overprint
-    GRD_OVER_007 — Small text knockout detection
-    GRD_OVER_008 — Registration color outside marks
+    LPDF_OVER_001 — Overprint active on non-CMYK color space
+    LPDF_OVER_002 — OPM=0 with DeviceCMYK (potential knockout issues)
+    LPDF_OVER_003 — Overprint active with transparency
+    LPDF_OVER_004 — White overprint (fill is white + OP active)
+    LPDF_OVER_005 — Overprint inventory (informational)
+    LPDF_OVER_006 — RGB overprint
+    LPDF_OVER_007 — Small text knockout detection
+    LPDF_OVER_008 — Registration color outside marks
 """
 
 from __future__ import annotations
@@ -59,10 +59,10 @@ class OverprintAnalyzer(BaseAnalyzer):
         has_transparency = False
         overprint_active = False
 
-        # GRD_OVER_005: Overprint inventory tracking
+        # LPDF_OVER_005: Overprint inventory tracking
         overprint_inventory: dict[str, int] = {}
 
-        # GRD_OVER_007: Track current non-stroking color for text knockout check
+        # LPDF_OVER_007: Track current non-stroking color for text knockout check
         non_stroking_color_values: tuple[float, ...] = ()
 
         for event in events:
@@ -76,7 +76,7 @@ class OverprintAnalyzer(BaseAnalyzer):
 
                 overprint_active = op_stroking or op_non_stroking
 
-                # GRD_OVER_002: OPM=0 with DeviceCMYK
+                # LPDF_OVER_002: OPM=0 with DeviceCMYK
                 if (
                     overprint_active
                     and opm == 0
@@ -84,7 +84,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                 ):
                     findings.append(
                         Finding(
-                            inspection_id="GRD_OVER_002",
+                            inspection_id="LPDF_OVER_002",
                             severity=Severity.WARNING,
                             message=(
                                 f"OPM=0 with DeviceCMYK and overprint active "
@@ -103,11 +103,11 @@ class OverprintAnalyzer(BaseAnalyzer):
                         )
                     )
 
-                # GRD_OVER_003: Overprint with transparency
+                # LPDF_OVER_003: Overprint with transparency
                 if overprint_active and has_transparency:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_OVER_003",
+                            inspection_id="LPDF_OVER_003",
                             severity=Severity.WARNING,
                             message=(
                                 f"Overprint active with transparency "
@@ -130,7 +130,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                 else:
                     non_stroking_cs = event.color_space
 
-                # GRD_OVER_004: White overprint
+                # LPDF_OVER_004: White overprint
                 if (
                     overprint_active
                     and not event.stroking
@@ -139,7 +139,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                 ):
                     findings.append(
                         Finding(
-                            inspection_id="GRD_OVER_004",
+                            inspection_id="LPDF_OVER_004",
                             severity=Severity.WARNING,
                             message=(
                                 f"White overprint on page {event.page_num} "
@@ -155,19 +155,19 @@ class OverprintAnalyzer(BaseAnalyzer):
                         )
                     )
 
-                # GRD_OVER_005: Track overprint inventory
+                # LPDF_OVER_005: Track overprint inventory
                 if overprint_active:
                     cs = event.color_space
                     overprint_inventory[cs] = overprint_inventory.get(cs, 0) + 1
 
-                # GRD_OVER_006: RGB overprint
+                # LPDF_OVER_006: RGB overprint
                 if overprint_active and event.color_space == "DeviceRGB":
                     is_stroking_overprint = event.stroking and op_stroking
                     is_non_stroking_overprint = not event.stroking and op_non_stroking
                     if is_stroking_overprint or is_non_stroking_overprint:
                         findings.append(
                             Finding(
-                                inspection_id="GRD_OVER_006",
+                                inspection_id="LPDF_OVER_006",
                                 severity=Severity.ERROR,
                                 message=(
                                     f"Overprint active with DeviceRGB "
@@ -184,7 +184,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                             )
                         )
 
-                # GRD_OVER_008: Registration color with overprint
+                # LPDF_OVER_008: Registration color with overprint
                 if (
                     overprint_active
                     and event.color_space == "DeviceCMYK"
@@ -193,7 +193,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                 ):
                     findings.append(
                         Finding(
-                            inspection_id="GRD_OVER_008",
+                            inspection_id="LPDF_OVER_008",
                             severity=Severity.ERROR,
                             message=(
                                 f"Registration color with overprint active "
@@ -209,11 +209,11 @@ class OverprintAnalyzer(BaseAnalyzer):
                         )
                     )
 
-                # Track non-stroking color values for GRD_OVER_007
+                # Track non-stroking color values for LPDF_OVER_007
                 if not event.stroking:
                     non_stroking_color_values = event.color_values
 
-                # GRD_OVER_001: Overprint on non-CMYK
+                # LPDF_OVER_001: Overprint on non-CMYK
                 if overprint_active:
                     cs = event.color_space
                     if cs not in _CMYK_SPACES and cs != "DeviceGray":
@@ -222,7 +222,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                         if is_stroking_overprint or is_non_stroking_overprint:
                             findings.append(
                                 Finding(
-                                    inspection_id="GRD_OVER_001",
+                                    inspection_id="LPDF_OVER_001",
                                     severity=Severity.WARNING,
                                     message=(
                                         f"Overprint active on non-CMYK "
@@ -240,7 +240,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                             )
 
             elif isinstance(event, TextRenderedEvent):
-                # GRD_OVER_007: Small text knockout detection
+                # LPDF_OVER_007: Small text knockout detection
                 if (
                     not overprint_active
                     and non_stroking_cs == "DeviceCMYK"
@@ -251,7 +251,7 @@ class OverprintAnalyzer(BaseAnalyzer):
                 ):
                     findings.append(
                         Finding(
-                            inspection_id="GRD_OVER_007",
+                            inspection_id="LPDF_OVER_007",
                             severity=Severity.WARNING,
                             message=(
                                 f"Small black text ({event.font_size:.1f}pt) "
@@ -277,12 +277,12 @@ class OverprintAnalyzer(BaseAnalyzer):
                 if event.blend_mode and event.blend_mode != "Normal":
                     has_transparency = True
 
-        # GRD_OVER_005: Overprint inventory (post-loop summary)
+        # LPDF_OVER_005: Overprint inventory (post-loop summary)
         if overprint_inventory:
             total_count = sum(overprint_inventory.values())
             findings.append(
                 Finding(
-                    inspection_id="GRD_OVER_005",
+                    inspection_id="LPDF_OVER_005",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Overprint inventory: {total_count} object(s) with "

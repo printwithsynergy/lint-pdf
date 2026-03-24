@@ -4,15 +4,15 @@ Processes SemanticDocument color space and output intent data to detect
 ICC profile and output intent issues.
 
 Check IDs:
-    GRD_ICC_001 — ICC profile structural validation
-    GRD_ICC_002 — ICC profile version compatibility
-    GRD_ICC_003 — ICC profile corruption detection
-    GRD_ICC_004 — Output intent deep validation
-    GRD_ICC_005 — Output intent condition cross-reference
-    GRD_ICC_006 — Multiple output intent consistency
-    GRD_ICC_007 — Required ICC tag validation
-    GRD_ICC_008 — Rendering intent consistency
-    GRD_ICC_009 — PCS illuminant validation (D50 check)
+    LPDF_ICC_001 — ICC profile structural validation
+    LPDF_ICC_002 — ICC profile version compatibility
+    LPDF_ICC_003 — ICC profile corruption detection
+    LPDF_ICC_004 — Output intent deep validation
+    LPDF_ICC_005 — Output intent condition cross-reference
+    LPDF_ICC_006 — Multiple output intent consistency
+    LPDF_ICC_007 — Required ICC tag validation
+    LPDF_ICC_008 — Rendering intent consistency
+    LPDF_ICC_009 — PCS illuminant validation (D50 check)
 """
 
 from __future__ import annotations
@@ -94,7 +94,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_icc_structure(document: SemanticDocument) -> list[Finding]:
-        """Validate ICCBased color space component counts (GRD_ICC_001).
+        """Validate ICCBased color space component counts (LPDF_ICC_001).
 
         ICCBased color spaces must have 1, 3, or 4 components corresponding
         to Gray, RGB/Lab, or CMYK profiles respectively.
@@ -109,7 +109,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                 if cs.components not in _VALID_ICC_COMPONENTS:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ICC_001",
+                            inspection_id="LPDF_ICC_001",
                             severity=Severity.ERROR,
                             message=(
                                 f"ICCBased color space '{cs_name}' on page "
@@ -132,7 +132,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
     def _check_icc_version_compatibility(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Check ICC profile version compatibility (GRD_ICC_002).
+        """Check ICC profile version compatibility (LPDF_ICC_002).
 
         Reports detected ICC profiles and flags when both v2 and v4 naming
         conventions appear (heuristic based on profile reference names).
@@ -161,7 +161,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         if v2_refs and v4_refs:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ICC_002",
+                    inspection_id="LPDF_ICC_002",
                     severity=Severity.ADVISORY,
                     message=(
                         "Document contains both ICC v2 and v4 profile naming "
@@ -178,7 +178,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         else:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ICC_002",
+                    inspection_id="LPDF_ICC_002",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Document references {len(profile_refs)} ICC "
@@ -196,7 +196,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_icc_corruption(document: SemanticDocument) -> list[Finding]:
-        """Check for missing ICC profile references (GRD_ICC_003).
+        """Check for missing ICC profile references (LPDF_ICC_003).
 
         An ICCBased color space without a profile reference is potentially
         corrupt or malformed.
@@ -211,7 +211,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                 if not cs.icc_profile_ref:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ICC_003",
+                            inspection_id="LPDF_ICC_003",
                             severity=Severity.ERROR,
                             message=(
                                 f"ICCBased color space '{cs_name}' on page "
@@ -233,7 +233,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
     def _check_output_intent_validity(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Validate output intent structure (GRD_ICC_004).
+        """Validate output intent structure (LPDF_ICC_004).
 
         Each OutputIntent dictionary must have required keys "S" (subtype)
         and "OutputConditionIdentifier", and "S" must be a known subtype.
@@ -247,7 +247,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
             if not subtype:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ICC_004",
+                        inspection_id="LPDF_ICC_004",
                         severity=Severity.WARNING,
                         message=(
                             f"Output intent #{idx + 1} is missing required 'S' (subtype) entry"
@@ -262,7 +262,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
             elif subtype not in _KNOWN_SUBTYPES:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ICC_004",
+                        inspection_id="LPDF_ICC_004",
                         severity=Severity.WARNING,
                         message=(
                             f"Output intent #{idx + 1} has unknown subtype "
@@ -281,7 +281,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
             if not condition_id:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ICC_004",
+                        inspection_id="LPDF_ICC_004",
                         severity=Severity.WARNING,
                         message=(
                             f"Output intent #{idx + 1} is missing required "
@@ -301,7 +301,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
     def _check_output_intent_conditions(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Cross-reference output condition identifiers (GRD_ICC_005).
+        """Cross-reference output condition identifiers (LPDF_ICC_005).
 
         Check OutputConditionIdentifier values against the set of known
         standard conditions (FOGRA, GRACoL, SWOP, etc.).
@@ -316,7 +316,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
             if condition_id in KNOWN_CONDITIONS:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ICC_005",
+                        inspection_id="LPDF_ICC_005",
                         severity=Severity.ADVISORY,
                         message=(f"Output intent #{idx + 1} condition validated: {condition_id}"),
                         details={
@@ -329,7 +329,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
             else:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ICC_005",
+                        inspection_id="LPDF_ICC_005",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Output intent #{idx + 1} has unrecognized condition '{condition_id}'"
@@ -349,7 +349,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
     def _check_output_intent_consistency(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Check consistency across multiple output intents (GRD_ICC_006).
+        """Check consistency across multiple output intents (LPDF_ICC_006).
 
         When multiple OutputIntents exist, verify they share consistent
         color space information (e.g., all CMYK or all RGB).
@@ -370,7 +370,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         if len(set(known_hints)) > 1:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ICC_006",
+                    inspection_id="LPDF_ICC_006",
                     severity=Severity.WARNING,
                     message=(
                         f"Multiple output intents have inconsistent color "
@@ -387,7 +387,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         return findings
 
     def _check_required_tags(self, document: SemanticDocument) -> list[Finding]:
-        """Validate required ICC tags are present (GRD_ICC_007).
+        """Validate required ICC tags are present (LPDF_ICC_007).
 
         When ICC profile binary data is available, parses the tag directory
         and verifies mandatory tags per ICC.1:2022 §9.
@@ -412,7 +412,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                 if missing:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ICC_007",
+                            inspection_id="LPDF_ICC_007",
                             severity=Severity.WARNING,
                             message=(
                                 f"ICC profile '{cs.icc_profile_ref}' on page "
@@ -437,7 +437,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                 if tag_errors:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ICC_007",
+                            inspection_id="LPDF_ICC_007",
                             severity=Severity.WARNING,
                             message=(
                                 f"ICC profile '{cs.icc_profile_ref}' on page "
@@ -460,7 +460,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         self,
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Check rendering intent consistency (GRD_ICC_008).
+        """Check rendering intent consistency (LPDF_ICC_008).
 
         Compares the rendering intent embedded in ICC profiles against
         what the document specifies for those objects.
@@ -490,7 +490,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         if len(unique_intents) > 1:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ICC_008",
+                    inspection_id="LPDF_ICC_008",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Document uses ICC profiles with different rendering "
@@ -511,7 +511,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         self,
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Validate PCS illuminant is D50 (GRD_ICC_009).
+        """Validate PCS illuminant is D50 (LPDF_ICC_009).
 
         ICC profiles must use D50 (X=0.9642, Y=1.0, Z=0.8249) as PCS
         illuminant per ICC.1:2022 §7.2.16.
@@ -540,7 +540,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
                 if illuminant and not illuminant_valid:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ICC_009",
+                            inspection_id="LPDF_ICC_009",
                             severity=Severity.WARNING,
                             message=(
                                 f"ICC profile '{cs.icc_profile_ref}' has "

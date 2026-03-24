@@ -240,6 +240,7 @@ def check_rate_limit(tenant: Any) -> UsageInfo | None:
 # Rate limit response headers
 # ---------------------------------------------------------------------------
 
+
 def attach_rate_limit_headers(response: Response, usage: UsageInfo) -> None:
     """Attach standard rate limit headers to an HTTP response.
 
@@ -311,9 +312,7 @@ class IdempotencyMiddleware(BaseHTTPMiddleware):
     through without caching.
     """
 
-    async def dispatch(
-        self, request: Request, call_next: RequestResponseEndpoint
-    ) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Only apply to POST requests
         if request.method != "POST":
             return await call_next(request)

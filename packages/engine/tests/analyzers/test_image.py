@@ -148,7 +148,7 @@ class TestImageAnalyzerFindings:
 
     @staticmethod
     def test_low_dpi_finding() -> None:
-        """Image below min DPI threshold triggers GRD_IMG_001."""
+        """Image below min DPI threshold triggers LPDF_IMG_001."""
         # 72pt display, 100px = 100 DPI (below 150 default)
         event = _make_image_event(
             pixel_width=100,
@@ -157,13 +157,13 @@ class TestImageAnalyzerFindings:
         )
         analyzer = ImageAnalyzer(min_dpi=150)
         findings = analyzer.analyze(_make_document(), [event])
-        img_findings = [f for f in findings if f.inspection_id == "GRD_IMG_001"]
+        img_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_001"]
         assert len(img_findings) == 1
         assert img_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_excessive_dpi_finding() -> None:
-        """Image above max DPI threshold triggers GRD_IMG_002."""
+        """Image above max DPI threshold triggers LPDF_IMG_002."""
         # 72pt display, 1000px = 1000 DPI (above 600 default)
         event = _make_image_event(
             pixel_width=1000,
@@ -172,7 +172,7 @@ class TestImageAnalyzerFindings:
         )
         analyzer = ImageAnalyzer(max_dpi=600)
         findings = analyzer.analyze(_make_document(), [event])
-        img_findings = [f for f in findings if f.inspection_id == "GRD_IMG_002"]
+        img_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_002"]
         assert len(img_findings) == 1
         assert img_findings[0].severity == Severity.ADVISORY
 
@@ -187,34 +187,34 @@ class TestImageAnalyzerFindings:
         )
         analyzer = ImageAnalyzer(min_dpi=150, max_dpi=600)
         findings = analyzer.analyze(_make_document(), [event])
-        dpi_findings = [f for f in findings if f.inspection_id in ("GRD_IMG_001", "GRD_IMG_002")]
+        dpi_findings = [f for f in findings if f.inspection_id in ("LPDF_IMG_001", "LPDF_IMG_002")]
         assert len(dpi_findings) == 0
 
     @staticmethod
     def test_no_compression_finding() -> None:
-        """ASCII-only filter triggers GRD_IMG_004."""
+        """ASCII-only filter triggers LPDF_IMG_004."""
         event = _make_image_event(filters=("ASCIIHexDecode",))
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        comp_findings = [f for f in findings if f.inspection_id == "GRD_IMG_004"]
+        comp_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_004"]
         assert len(comp_findings) == 1
 
     @staticmethod
     def test_real_compression_no_finding() -> None:
-        """FlateDecode does not trigger GRD_IMG_004."""
+        """FlateDecode does not trigger LPDF_IMG_004."""
         event = _make_image_event(filters=("FlateDecode",))
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        comp_findings = [f for f in findings if f.inspection_id == "GRD_IMG_004"]
+        comp_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_004"]
         assert len(comp_findings) == 0
 
     @staticmethod
     def test_inline_image_finding() -> None:
-        """Inline image triggers GRD_IMG_005."""
+        """Inline image triggers LPDF_IMG_005."""
         event = _make_image_event(is_inline=True)
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        inline_findings = [f for f in findings if f.inspection_id == "GRD_IMG_005"]
+        inline_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_005"]
         assert len(inline_findings) == 1
 
     @staticmethod
@@ -225,12 +225,12 @@ class TestImageAnalyzerFindings:
         )
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        dpi_findings = [f for f in findings if f.inspection_id in ("GRD_IMG_001", "GRD_IMG_002")]
+        dpi_findings = [f for f in findings if f.inspection_id in ("LPDF_IMG_001", "LPDF_IMG_002")]
         assert len(dpi_findings) == 0
 
 
 class TestColorSpaceMismatch:
-    """Test GRD_IMG_003 color space mismatch check."""
+    """Test LPDF_IMG_003 color space mismatch check."""
 
     @staticmethod
     def test_rgb_in_cmyk_workflow() -> None:
@@ -238,7 +238,7 @@ class TestColorSpaceMismatch:
         analyzer = ImageAnalyzer()
         finding = analyzer.check_color_space_mismatch(event, "CMYK")
         assert finding is not None
-        assert finding.inspection_id == "GRD_IMG_003"
+        assert finding.inspection_id == "LPDF_IMG_003"
 
     @staticmethod
     def test_cmyk_in_cmyk_workflow_ok() -> None:
@@ -253,19 +253,19 @@ class TestColorSpaceMismatch:
         analyzer = ImageAnalyzer()
         finding = analyzer.check_color_space_mismatch(event, "RGB")
         assert finding is not None
-        assert finding.inspection_id == "GRD_IMG_003"
+        assert finding.inspection_id == "LPDF_IMG_003"
 
 
 class TestLZWCompression:
-    """Test GRD_IMG_007: LZW compression detection."""
+    """Test LPDF_IMG_007: LZW compression detection."""
 
     @staticmethod
     def test_lzw_triggers_delay() -> None:
-        """LZWDecode filter triggers GRD_IMG_007."""
+        """LZWDecode filter triggers LPDF_IMG_007."""
         event = _make_image_event(filters=("LZWDecode",))
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        lzw_findings = [f for f in findings if f.inspection_id == "GRD_IMG_007"]
+        lzw_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_007"]
         assert len(lzw_findings) == 1
         assert lzw_findings[0].severity == Severity.WARNING
 
@@ -275,16 +275,16 @@ class TestLZWCompression:
         event = _make_image_event(filters=("LZWDecode", "ASCIIHexDecode"))
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        lzw_findings = [f for f in findings if f.inspection_id == "GRD_IMG_007"]
+        lzw_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_007"]
         assert len(lzw_findings) == 1
 
     @staticmethod
     def test_flate_no_lzw_finding() -> None:
-        """FlateDecode does not trigger GRD_IMG_007."""
+        """FlateDecode does not trigger LPDF_IMG_007."""
         event = _make_image_event(filters=("FlateDecode",))
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        lzw_findings = [f for f in findings if f.inspection_id == "GRD_IMG_007"]
+        lzw_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_007"]
         assert len(lzw_findings) == 0
 
     @staticmethod
@@ -292,32 +292,32 @@ class TestLZWCompression:
         event = _make_image_event(filters=("LZWDecode",), image_name="Im5")
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        lzw = next((f for f in findings if f.inspection_id == "GRD_IMG_007"), None)
+        lzw = next((f for f in findings if f.inspection_id == "LPDF_IMG_007"), None)
         assert lzw is not None
         assert lzw.details["image_name"] == "Im5"
         assert "LZWDecode" in lzw.details["filters"]
 
 
 class TestJPEG2000:
-    """Test GRD_IMG_008: JPEG2000 image detection."""
+    """Test LPDF_IMG_008: JPEG2000 image detection."""
 
     @staticmethod
     def test_jpx_triggers_advisory() -> None:
-        """JPXDecode filter triggers GRD_IMG_008."""
+        """JPXDecode filter triggers LPDF_IMG_008."""
         event = _make_image_event(filters=("JPXDecode",))
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        jpx_findings = [f for f in findings if f.inspection_id == "GRD_IMG_008"]
+        jpx_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_008"]
         assert len(jpx_findings) == 1
         assert jpx_findings[0].severity == Severity.ADVISORY
 
     @staticmethod
     def test_dcte_no_jpx_finding() -> None:
-        """DCTDecode (JPEG) does not trigger GRD_IMG_008."""
+        """DCTDecode (JPEG) does not trigger LPDF_IMG_008."""
         event = _make_image_event(filters=("DCTDecode",))
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        jpx_findings = [f for f in findings if f.inspection_id == "GRD_IMG_008"]
+        jpx_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_008"]
         assert len(jpx_findings) == 0
 
     @staticmethod
@@ -325,17 +325,17 @@ class TestJPEG2000:
         event = _make_image_event(filters=("JPXDecode",), page_num=3)
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        jpx = next((f for f in findings if f.inspection_id == "GRD_IMG_008"), None)
+        jpx = next((f for f in findings if f.inspection_id == "LPDF_IMG_008"), None)
         assert jpx is not None
         assert jpx.page_num == 3
 
 
 class TestSixteenBitImage:
-    """Test GRD_IMG_009: 16-bit image detection."""
+    """Test LPDF_IMG_009: 16-bit image detection."""
 
     @staticmethod
     def test_16bit_triggers_advisory() -> None:
-        """bits_per_component=16 triggers GRD_IMG_009."""
+        """bits_per_component=16 triggers LPDF_IMG_009."""
         event16 = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -349,14 +349,14 @@ class TestSixteenBitImage:
         )
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event16])
-        bit_findings = [f for f in findings if f.inspection_id == "GRD_IMG_009"]
+        bit_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_009"]
         assert len(bit_findings) == 1
         assert bit_findings[0].severity == Severity.ADVISORY
         assert bit_findings[0].details["bits_per_component"] == 16
 
     @staticmethod
     def test_8bit_no_finding() -> None:
-        """bits_per_component=8 does not trigger GRD_IMG_009."""
+        """bits_per_component=8 does not trigger LPDF_IMG_009."""
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -370,12 +370,12 @@ class TestSixteenBitImage:
         )
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        bit_findings = [f for f in findings if f.inspection_id == "GRD_IMG_009"]
+        bit_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_009"]
         assert len(bit_findings) == 0
 
     @staticmethod
     def test_1bit_no_finding() -> None:
-        """bits_per_component=1 (bitmap) does not trigger GRD_IMG_009."""
+        """bits_per_component=1 (bitmap) does not trigger LPDF_IMG_009."""
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -389,16 +389,16 @@ class TestSixteenBitImage:
         )
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        bit_findings = [f for f in findings if f.inspection_id == "GRD_IMG_009"]
+        bit_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_009"]
         assert len(bit_findings) == 0
 
 
 class TestOPIReference:
-    """Test GRD_IMG_010: OPI reference detection."""
+    """Test LPDF_IMG_010: OPI reference detection."""
 
     @staticmethod
     def test_opi_triggers_aground() -> None:
-        """has_opi=True triggers GRD_IMG_010."""
+        """has_opi=True triggers LPDF_IMG_010."""
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -411,17 +411,17 @@ class TestOPIReference:
         )
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        opi_findings = [f for f in findings if f.inspection_id == "GRD_IMG_010"]
+        opi_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_010"]
         assert len(opi_findings) == 1
         assert opi_findings[0].severity == Severity.ERROR
 
     @staticmethod
     def test_no_opi_no_finding() -> None:
-        """has_opi=False does not trigger GRD_IMG_010."""
+        """has_opi=False does not trigger LPDF_IMG_010."""
         event = _make_image_event()
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        opi_findings = [f for f in findings if f.inspection_id == "GRD_IMG_010"]
+        opi_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_010"]
         assert len(opi_findings) == 0
 
     @staticmethod
@@ -438,18 +438,18 @@ class TestOPIReference:
         )
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        opi = next((f for f in findings if f.inspection_id == "GRD_IMG_010"), None)
+        opi = next((f for f in findings if f.inspection_id == "LPDF_IMG_010"), None)
         assert opi is not None
         assert opi.object_id == "Im7"
         assert opi.object_type == "image"
 
 
 class TestAlternateImages:
-    """Test GRD_IMG_011: Alternate images detection."""
+    """Test LPDF_IMG_011: Alternate images detection."""
 
     @staticmethod
     def test_alternate_triggers_delay() -> None:
-        """has_alternate=True triggers GRD_IMG_011."""
+        """has_alternate=True triggers LPDF_IMG_011."""
         event = ImagePlacedEvent(
             operator="Do",
             page_num=1,
@@ -462,17 +462,17 @@ class TestAlternateImages:
         )
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        alt_findings = [f for f in findings if f.inspection_id == "GRD_IMG_011"]
+        alt_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_011"]
         assert len(alt_findings) == 1
         assert alt_findings[0].severity == Severity.WARNING
 
     @staticmethod
     def test_no_alternate_no_finding() -> None:
-        """has_alternate=False does not trigger GRD_IMG_011."""
+        """has_alternate=False does not trigger LPDF_IMG_011."""
         event = _make_image_event()
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        alt_findings = [f for f in findings if f.inspection_id == "GRD_IMG_011"]
+        alt_findings = [f for f in findings if f.inspection_id == "LPDF_IMG_011"]
         assert len(alt_findings) == 0
 
     @staticmethod
@@ -489,6 +489,6 @@ class TestAlternateImages:
         )
         analyzer = ImageAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        alt = next((f for f in findings if f.inspection_id == "GRD_IMG_011"), None)
+        alt = next((f for f in findings if f.inspection_id == "LPDF_IMG_011"), None)
         assert alt is not None
         assert alt.details["image_name"] == "Im3"

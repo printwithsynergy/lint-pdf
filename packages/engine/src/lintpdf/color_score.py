@@ -33,83 +33,83 @@ class ColorQualityScore:
 # Deduction points per check ID pattern
 _CRITICAL_FLOORS: dict[str, float] = {
     # Wrong color space entirely (RGB in CMYK workflow)
-    "GRD_COLOR_013": 20.0,
+    "LPDF_COLOR_013": 20.0,
     # Missing output intent
-    "GRD_COLOR_006": 25.0,
+    "LPDF_COLOR_006": 25.0,
     # Corrupt ICC profiles
-    "GRD_ICC_003": 30.0,
+    "LPDF_ICC_003": 30.0,
     # Invalid ICC profile structure
-    "GRD_ICC_001": 30.0,
+    "LPDF_ICC_001": 30.0,
 }
 
 _MAJOR_DEDUCTIONS: dict[str, float] = {
     # TAC exceeding threshold
-    "GRD_COLOR_004": 10.0,
+    "LPDF_COLOR_004": 10.0,
     # Out-of-gamut objects
-    "GRD_GAMUT_001": 8.0,
+    "LPDF_GAMUT_001": 8.0,
     # Spot color inconsistencies
-    "GRD_SPOT_001": 7.0,  # only for WARNING severity
+    "LPDF_SPOT_001": 7.0,  # only for WARNING severity
     # Spot color naming issues
-    "GRD_SPOT_003": 5.0,
+    "LPDF_SPOT_003": 5.0,
     # Pantone fallback Delta-E failure
-    "GRD_SPOT_002": 5.0,
+    "LPDF_SPOT_002": 5.0,
     # DeviceN structural errors
-    "GRD_SPOT_004": 10.0,
+    "LPDF_SPOT_004": 10.0,
     # Missing ICC on ICCBased objects
-    "GRD_ICC_003": 8.0,
+    "LPDF_ICC_003": 8.0,
     # PCS illuminant not D50
-    "GRD_ICC_009": 5.0,
+    "LPDF_ICC_009": 5.0,
 }
 
 _MODERATE_DEDUCTIONS: dict[str, float] = {
     # Overprint issues
-    "GRD_OVER_001": 3.0,
-    "GRD_OVER_002": 3.0,
-    "GRD_OVER_003": 2.0,
-    "GRD_OVER_004": 5.0,
-    "GRD_OVER_006": 5.0,
-    "GRD_OVER_008": 5.0,
+    "LPDF_OVER_001": 3.0,
+    "LPDF_OVER_002": 3.0,
+    "LPDF_OVER_003": 2.0,
+    "LPDF_OVER_004": 5.0,
+    "LPDF_OVER_006": 5.0,
+    "LPDF_OVER_008": 5.0,
     # Rich black issues
-    "GRD_ADV_005": 3.0,
-    "GRD_COLOR_008": 3.0,
+    "LPDF_ADV_005": 3.0,
+    "LPDF_COLOR_008": 3.0,
     # Black generation inconsistency
-    "GRD_ADV_001": 2.0,
+    "LPDF_ADV_001": 2.0,
     # Device-dependent color spaces
-    "GRD_COLOR_015": 2.0,
-    "GRD_COLOR_002": 3.0,
+    "LPDF_COLOR_015": 2.0,
+    "LPDF_COLOR_002": 3.0,
     # Required ICC tag missing
-    "GRD_ICC_007": 3.0,
+    "LPDF_ICC_007": 3.0,
     # CxF spectral vs declared color Delta-E
-    "GRD_ADV_006": 3.0,
+    "LPDF_ADV_006": 3.0,
 }
 
 _MINOR_DEDUCTIONS: dict[str, float] = {
-    # TAC approaching limit (handled via GRD_INK_001 advisory)
-    "GRD_INK_001": 1.0,
+    # TAC approaching limit (handled via LPDF_INK_001 advisory)
+    "LPDF_INK_001": 1.0,
     # Pantone not in reference database
-    "GRD_SPOT_006": 0.5,
+    "LPDF_SPOT_006": 0.5,
     # Trapping risk
-    "GRD_ADV_003": 1.5,
+    "LPDF_ADV_003": 1.5,
     # Ink channel count advisory
-    "GRD_INK_003": 0.5,
+    "LPDF_INK_003": 0.5,
     # Color space inventory (informational, minor)
-    "GRD_COLOR_014": 0.0,
+    "LPDF_COLOR_014": 0.0,
     # Rendering intent inconsistency
-    "GRD_ICC_008": 1.5,
+    "LPDF_ICC_008": 1.5,
 }
 
 # Category mapping for breakdown
 _CHECK_CATEGORIES: dict[str, str] = {
-    "GRD_COLOR_": "color_spaces",
-    "GRD_ICC_": "profiles",
-    "GRD_SPOT_": "spot_colors",
-    "GRD_OVER_": "overprint",
-    "GRD_INK_": "ink_coverage",
-    "GRD_ADV_": "ink_coverage",
-    "GRD_GAMUT_": "profiles",
-    "GRD_STD_": "color_spaces",
-    "GRD_ECG_": "color_spaces",
-    "GRD_EPM_": "ink_coverage",
+    "LPDF_COLOR_": "color_spaces",
+    "LPDF_ICC_": "profiles",
+    "LPDF_SPOT_": "spot_colors",
+    "LPDF_OVER_": "overprint",
+    "LPDF_INK_": "ink_coverage",
+    "LPDF_ADV_": "ink_coverage",
+    "LPDF_GAMUT_": "profiles",
+    "LPDF_STD_": "color_spaces",
+    "LPDF_ECG_": "color_spaces",
+    "LPDF_EPM_": "ink_coverage",
 }
 
 

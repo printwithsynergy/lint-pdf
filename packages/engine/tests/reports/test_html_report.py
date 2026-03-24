@@ -32,8 +32,8 @@ class TestHtmlReport:
     def test_includes_finding_counts(sample_result: PreflightResult) -> None:
         html = generate_html_report(sample_result).decode("utf-8")
         # Summary cards should contain the counts
-        assert "GRD_FONT_001" in html
-        assert "GRD_IMG_001" in html
+        assert "LPDF_FONT_001" in html
+        assert "LPDF_IMG_001" in html
 
     @staticmethod
     def test_includes_document_info(sample_result: PreflightResult) -> None:

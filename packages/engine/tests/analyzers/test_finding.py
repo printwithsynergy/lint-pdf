@@ -26,11 +26,11 @@ class TestFinding:
     @staticmethod
     def test_create_minimal() -> None:
         f = Finding(
-            inspection_id="GRD_TEST_001",
+            inspection_id="LPDF_TEST_001",
             severity=Severity.WARNING,
             message="Test finding",
         )
-        assert f.inspection_id == "GRD_TEST_001"
+        assert f.inspection_id == "LPDF_TEST_001"
         assert f.severity == Severity.WARNING
         assert f.message == "Test finding"
         assert f.page_num == 0
@@ -40,7 +40,7 @@ class TestFinding:
     @staticmethod
     def test_create_full() -> None:
         f = Finding(
-            inspection_id="GRD_IMG_001",
+            inspection_id="LPDF_IMG_001",
             severity=Severity.ERROR,
             message="Low resolution image",
             page_num=3,
@@ -54,7 +54,7 @@ class TestFinding:
     @staticmethod
     def test_frozen() -> None:
         f = Finding(
-            inspection_id="GRD_TEST_001",
+            inspection_id="LPDF_TEST_001",
             severity=Severity.WARNING,
             message="Test",
         )

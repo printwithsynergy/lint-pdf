@@ -1,4 +1,4 @@
-"""Tests for MetadataAnalyzer — GRD_META_001-004."""
+"""Tests for MetadataAnalyzer — LPDF_META_001-004."""
 
 from __future__ import annotations
 
@@ -54,13 +54,13 @@ def _xmp_packet(
 
 
 class TestXMPMissing:
-    """Test GRD_META_001: XMP metadata stream missing."""
+    """Test LPDF_META_001: XMP metadata stream missing."""
 
     @staticmethod
     def test_no_metadata_delay() -> None:
         doc = _make_document(metadata_stream=None)
         findings = MetadataAnalyzer().analyze(doc, [])
-        meta = [f for f in findings if f.inspection_id == "GRD_META_001"]
+        meta = [f for f in findings if f.inspection_id == "LPDF_META_001"]
         assert len(meta) == 1
         assert meta[0].severity == Severity.WARNING
 
@@ -68,7 +68,7 @@ class TestXMPMissing:
     def test_with_metadata_no_finding() -> None:
         doc = _make_document(metadata_stream=_xmp_packet())
         findings = MetadataAnalyzer().analyze(doc, [])
-        meta = [f for f in findings if f.inspection_id == "GRD_META_001"]
+        meta = [f for f in findings if f.inspection_id == "LPDF_META_001"]
         assert len(meta) == 0
 
     @staticmethod
@@ -76,13 +76,13 @@ class TestXMPMissing:
         """When XMP is missing, no other META findings are generated."""
         doc = _make_document(metadata_stream=None)
         findings = MetadataAnalyzer().analyze(doc, [])
-        meta_findings = [f for f in findings if f.inspection_id.startswith("GRD_META_")]
+        meta_findings = [f for f in findings if f.inspection_id.startswith("LPDF_META_")]
         assert len(meta_findings) == 1
-        assert meta_findings[0].inspection_id == "GRD_META_001"
+        assert meta_findings[0].inspection_id == "LPDF_META_001"
 
 
 class TestTitleInconsistency:
-    """Test GRD_META_002: Info dict / XMP title mismatch."""
+    """Test LPDF_META_002: Info dict / XMP title mismatch."""
 
     @staticmethod
     def test_title_mismatch_advisory() -> None:
@@ -91,7 +91,7 @@ class TestTitleInconsistency:
             info_dict={"/Title": "Info Title"},
         )
         findings = MetadataAnalyzer().analyze(doc, [])
-        title = [f for f in findings if f.inspection_id == "GRD_META_002"]
+        title = [f for f in findings if f.inspection_id == "LPDF_META_002"]
         assert len(title) == 1
         assert title[0].severity == Severity.ADVISORY
         assert "Info Title" in title[0].message
@@ -104,7 +104,7 @@ class TestTitleInconsistency:
             info_dict={"/Title": "My Document"},
         )
         findings = MetadataAnalyzer().analyze(doc, [])
-        title = [f for f in findings if f.inspection_id == "GRD_META_002"]
+        title = [f for f in findings if f.inspection_id == "LPDF_META_002"]
         assert len(title) == 0
 
     @staticmethod
@@ -115,7 +115,7 @@ class TestTitleInconsistency:
             info_dict={"/Title": ""},
         )
         findings = MetadataAnalyzer().analyze(doc, [])
-        title = [f for f in findings if f.inspection_id == "GRD_META_002"]
+        title = [f for f in findings if f.inspection_id == "LPDF_META_002"]
         assert len(title) == 0
 
     @staticmethod
@@ -126,18 +126,18 @@ class TestTitleInconsistency:
             info_dict={"/Title": "Info Title"},
         )
         findings = MetadataAnalyzer().analyze(doc, [])
-        title = [f for f in findings if f.inspection_id == "GRD_META_002"]
+        title = [f for f in findings if f.inspection_id == "LPDF_META_002"]
         assert len(title) == 0
 
 
 class TestTrappedKey:
-    """Test GRD_META_003: Trapped key missing or Unknown."""
+    """Test LPDF_META_003: Trapped key missing or Unknown."""
 
     @staticmethod
     def test_trapped_missing_advisory() -> None:
         doc = _make_document(metadata_stream=_xmp_packet(trapped=""))
         findings = MetadataAnalyzer().analyze(doc, [])
-        trapped = [f for f in findings if f.inspection_id == "GRD_META_003"]
+        trapped = [f for f in findings if f.inspection_id == "LPDF_META_003"]
         assert len(trapped) == 1
         assert trapped[0].severity == Severity.ADVISORY
         assert "missing" in trapped[0].message
@@ -146,7 +146,7 @@ class TestTrappedKey:
     def test_trapped_unknown_advisory() -> None:
         doc = _make_document(metadata_stream=_xmp_packet(trapped="Unknown"))
         findings = MetadataAnalyzer().analyze(doc, [])
-        trapped = [f for f in findings if f.inspection_id == "GRD_META_003"]
+        trapped = [f for f in findings if f.inspection_id == "LPDF_META_003"]
         assert len(trapped) == 1
         assert "Unknown" in trapped[0].message
 
@@ -154,19 +154,19 @@ class TestTrappedKey:
     def test_trapped_true_no_finding() -> None:
         doc = _make_document(metadata_stream=_xmp_packet(trapped="True"))
         findings = MetadataAnalyzer().analyze(doc, [])
-        trapped = [f for f in findings if f.inspection_id == "GRD_META_003"]
+        trapped = [f for f in findings if f.inspection_id == "LPDF_META_003"]
         assert len(trapped) == 0
 
     @staticmethod
     def test_trapped_false_no_finding() -> None:
         doc = _make_document(metadata_stream=_xmp_packet(trapped="False"))
         findings = MetadataAnalyzer().analyze(doc, [])
-        trapped = [f for f in findings if f.inspection_id == "GRD_META_003"]
+        trapped = [f for f in findings if f.inspection_id == "LPDF_META_003"]
         assert len(trapped) == 0
 
 
 class TestPDFVersionMismatch:
-    """Test GRD_META_004: PDF version mismatch."""
+    """Test LPDF_META_004: PDF version mismatch."""
 
     @staticmethod
     def test_version_mismatch_advisory() -> None:
@@ -175,7 +175,7 @@ class TestPDFVersionMismatch:
             metadata_stream=_xmp_packet(pdf_version="2.0"),
         )
         findings = MetadataAnalyzer().analyze(doc, [])
-        ver = [f for f in findings if f.inspection_id == "GRD_META_004"]
+        ver = [f for f in findings if f.inspection_id == "LPDF_META_004"]
         assert len(ver) == 1
         assert ver[0].severity == Severity.ADVISORY
         assert "1.7" in ver[0].message
@@ -188,18 +188,18 @@ class TestPDFVersionMismatch:
             metadata_stream=_xmp_packet(pdf_version="1.7"),
         )
         findings = MetadataAnalyzer().analyze(doc, [])
-        ver = [f for f in findings if f.inspection_id == "GRD_META_004"]
+        ver = [f for f in findings if f.inspection_id == "LPDF_META_004"]
         assert len(ver) == 0
 
     @staticmethod
     def test_no_xmp_version_no_finding() -> None:
-        """XMP without PDFVersion does not trigger GRD_META_004."""
+        """XMP without PDFVersion does not trigger LPDF_META_004."""
         doc = _make_document(
             version="1.7",
             metadata_stream=_xmp_packet(pdf_version=""),
         )
         findings = MetadataAnalyzer().analyze(doc, [])
-        ver = [f for f in findings if f.inspection_id == "GRD_META_004"]
+        ver = [f for f in findings if f.inspection_id == "LPDF_META_004"]
         assert len(ver) == 0
 
     @staticmethod
@@ -209,7 +209,7 @@ class TestPDFVersionMismatch:
             metadata_stream=_xmp_packet(pdf_version="1.7"),
         )
         findings = MetadataAnalyzer().analyze(doc, [])
-        ver = next((f for f in findings if f.inspection_id == "GRD_META_004"), None)
+        ver = next((f for f in findings if f.inspection_id == "LPDF_META_004"), None)
         assert ver is not None
         assert ver.details["header_version"] == "1.5"
         assert ver.details["xmp_version"] == "1.7"

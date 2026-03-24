@@ -23,34 +23,34 @@ class TestJavaScript:
         doc = _make_document({"/Names": {"/JavaScript": {"some": "js"}}})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_001" in ids
+        assert "LPDF_STRUCT_001" in ids
 
     @staticmethod
     def test_js_in_open_action() -> None:
         doc = _make_document({"/OpenAction": {"/S": "/JavaScript", "/JS": "alert()"}})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_001" in ids
+        assert "LPDF_STRUCT_001" in ids
 
     @staticmethod
     def test_js_in_aa() -> None:
         doc = _make_document({"/AA": {"/WC": {"/S": "/JavaScript"}}})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_001" in ids
+        assert "LPDF_STRUCT_001" in ids
 
     @staticmethod
     def test_no_js_clean() -> None:
         doc = _make_document({})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_001" not in ids
+        assert "LPDF_STRUCT_001" not in ids
 
     @staticmethod
     def test_js_severity_aground() -> None:
         doc = _make_document({"/Names": {"/JavaScript": {}}})
         findings = [
-            f for f in StructureAnalyzer().analyze(doc, []) if f.inspection_id == "GRD_STRUCT_001"
+            f for f in StructureAnalyzer().analyze(doc, []) if f.inspection_id == "LPDF_STRUCT_001"
         ]
         assert findings[0].severity == Severity.ERROR
 
@@ -61,14 +61,14 @@ class TestFormFields:
         doc = _make_document({"/AcroForm": {"/Fields": [{}, {}]}})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_002" in ids
+        assert "LPDF_STRUCT_002" in ids
 
     @staticmethod
     def test_empty_fields_no_finding() -> None:
         doc = _make_document({"/AcroForm": {"/Fields": []}})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_002" not in ids
+        assert "LPDF_STRUCT_002" not in ids
 
 
 class TestLayers:
@@ -77,14 +77,14 @@ class TestLayers:
         doc = _make_document({"/OCProperties": {"/OCGs": [{}, {}, {}]}})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_003" in ids
+        assert "LPDF_STRUCT_003" in ids
 
     @staticmethod
     def test_no_ocg_clean() -> None:
         doc = _make_document({})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_003" not in ids
+        assert "LPDF_STRUCT_003" not in ids
 
 
 class TestEmbeddedFiles:
@@ -93,7 +93,7 @@ class TestEmbeddedFiles:
         doc = _make_document({"/Names": {"/EmbeddedFiles": {"some": "tree"}}})
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_004" in ids
+        assert "LPDF_STRUCT_004" in ids
 
 
 class TestThreeDContent:
@@ -113,11 +113,11 @@ class TestThreeDContent:
         )
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_005" in ids
+        assert "LPDF_STRUCT_005" in ids
 
     @staticmethod
     def test_no_3d_clean() -> None:
         doc = _make_document()
         findings = StructureAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_STRUCT_005" not in ids
+        assert "LPDF_STRUCT_005" not in ids
