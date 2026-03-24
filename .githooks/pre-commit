@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
-# Pre-commit hook — runs the same lint/type/test checks as CI.
+# Pre-commit hook — runs the same lint/type/build/test checks as CI.
 # Install: git config core.hooksPath .githooks
 #
 # Environment variables:
 #   SKIP_TESTS=1   — skip pytest / vitest suites (lint & type checks still run)
+#   SKIP_BUILD=1   — skip build steps (lint & type checks still run)
+#   SKIP_HOOKS=1   — skip all pre-commit checks entirely
 set -euo pipefail
+
+if [ "${SKIP_HOOKS:-0}" = "1" ]; then
+  exit 0
+fi
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -19,6 +25,9 @@ fail()    { printf "${RED}  ✗ %s${NC}\n" "$1"; failed=1; }
 
 if [ "${SKIP_TESTS:-0}" = "1" ]; then
   printf "${YELLOW}SKIP_TESTS=1 — skipping test suites${NC}\n"
+fi
+if [ "${SKIP_BUILD:-0}" = "1" ]; then
+  printf "${YELLOW}SKIP_BUILD=1 — skipping build steps${NC}\n"
 fi
 
 # Detect which packages have staged changes
@@ -46,7 +55,7 @@ for f in $staged_files; do
   esac
 done
 
-# ── Engine checks ────────────────────────────────────────────
+# ── Engine checks (mirrors CI: engine job) ────────────────────
 if $engine_changed; then
   heading "Engine — ruff check"
   (cd packages/engine && ruff check src/ tests/) && pass "ruff check" || fail "ruff check"
@@ -64,7 +73,7 @@ if $engine_changed; then
   fi
 fi
 
-# ── Inference checks ─────────────────────────────────────────
+# ── Inference checks (mirrors CI: inference job) ──────────────
 if $inference_changed; then
   heading "Inference — ruff check"
   (cd packages/inference && ruff check src/ tests/) && pass "ruff check" || fail "ruff check"
@@ -79,25 +88,42 @@ if $inference_changed; then
   fi
 fi
 
-# ── App checks ───────────────────────────────────────────────
+# ── App checks (mirrors CI: app job) ─────────────────────────
 if $app_changed; then
   heading "App — eslint"
   pnpm --filter @thinkneverland/grounded-app lint && pass "eslint" || fail "eslint"
 
   heading "App — typecheck"
   pnpm --filter @thinkneverland/grounded-app typecheck && pass "typecheck" || fail "typecheck"
+
+  heading "App — prisma generate"
+  pnpm --filter @thinkneverland/grounded-app db:generate && pass "db:generate" || fail "db:generate"
+
+  if [ "${SKIP_BUILD:-0}" != "1" ]; then
+    heading "App — build workspace deps"
+    pnpm --filter @thinkneverland/grounded-plugin --filter @lintpdf/stripe build \
+      && pass "build deps" || fail "build deps"
+
+    heading "App — build"
+    pnpm --filter @thinkneverland/grounded-app build && pass "build" || fail "build"
+  fi
 fi
 
-# ── Web checks ───────────────────────────────────────────────
+# ── Web checks (mirrors CI: web job) ─────────────────────────
 if $web_changed; then
   heading "Web — eslint"
   pnpm --filter @thinkneverland/grounded-web lint && pass "eslint" || fail "eslint"
 
   heading "Web — typecheck"
   pnpm --filter @thinkneverland/grounded-web typecheck && pass "typecheck" || fail "typecheck"
+
+  if [ "${SKIP_BUILD:-0}" != "1" ]; then
+    heading "Web — build"
+    pnpm --filter @thinkneverland/grounded-web build && pass "build" || fail "build"
+  fi
 fi
 
-# ── Plugin checks ────────────────────────────────────────────
+# ── Plugin checks (mirrors CI: plugin job) ────────────────────
 if $plugin_changed; then
   heading "Plugin — typecheck"
   pnpm --filter @thinkneverland/grounded-plugin typecheck && pass "typecheck" || fail "typecheck"
@@ -106,16 +132,26 @@ if $plugin_changed; then
     heading "Plugin — vitest"
     pnpm --filter @thinkneverland/grounded-plugin test && pass "vitest" || fail "vitest"
   fi
+
+  if [ "${SKIP_BUILD:-0}" != "1" ]; then
+    heading "Plugin — build"
+    pnpm --filter @thinkneverland/grounded-plugin build && pass "build" || fail "build"
+  fi
 fi
 
-# ── Stripe checks ────────────────────────────────────────────
+# ── Stripe checks (mirrors CI: stripe job) ────────────────────
 if $stripe_changed; then
   heading "Stripe — typecheck"
-  pnpm --filter @grounded/stripe typecheck && pass "typecheck" || fail "typecheck"
+  pnpm --filter @lintpdf/stripe typecheck && pass "typecheck" || fail "typecheck"
 
   if [ "${SKIP_TESTS:-0}" != "1" ]; then
     heading "Stripe — vitest"
-    pnpm --filter @grounded/stripe test && pass "vitest" || fail "vitest"
+    pnpm --filter @lintpdf/stripe test && pass "vitest" || fail "vitest"
+  fi
+
+  if [ "${SKIP_BUILD:-0}" != "1" ]; then
+    heading "Stripe — build"
+    pnpm --filter @lintpdf/stripe build && pass "build" || fail "build"
   fi
 fi
 
