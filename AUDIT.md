@@ -450,8 +450,8 @@ waitlist, client, webhook, config, routes, plugin
 
 **Routes:**
 
-| Method | Path                                 | Description                     |
-| ------ | ------------------------------------ | ------------------------------- |
+| Method | Path                                | Description                     |
+| ------ | ----------------------------------- | ------------------------------- |
 | `POST` | `/api/lintpdf/billing/checkout`     | Create Stripe Checkout session  |
 | `POST` | `/api/lintpdf/billing/portal`       | Create Customer Portal session  |
 | `GET`  | `/api/lintpdf/billing/subscription` | Get current subscription status |

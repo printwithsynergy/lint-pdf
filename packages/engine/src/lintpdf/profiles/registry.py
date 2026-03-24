@@ -12,8 +12,7 @@ if TYPE_CHECKING:
 _BUILTIN_DIR = Path(__file__).parent / "builtin"
 
 # Aliases for backwards compatibility with old profile IDs
-_PROFILE_ALIASES: dict[str, str] = {
-}
+_PROFILE_ALIASES: dict[str, str] = {}
 
 
 class ProfileNotFoundError(Exception):

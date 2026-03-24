@@ -20,8 +20,7 @@ function CheckoutContent() {
 
   useEffect(() => {
     const plan =
-      searchParams.get("plan") ??
-      sessionStorage.getItem("lintpdf_signup_plan");
+      searchParams.get("plan") ?? sessionStorage.getItem("lintpdf_signup_plan");
     sessionStorage.removeItem("lintpdf_signup_plan");
 
     const validPlans = ["starter", "growth", "scale", "enterprise"];

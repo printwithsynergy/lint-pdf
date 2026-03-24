@@ -10,4 +10,7 @@
  * This file is kept for backwards compatibility of any imports.
  */
 
-export { verifyWebhookSignature, processWebhookEvent } from "@thinkneverland/pixie-dust-stripe-kit";
+export {
+  verifyWebhookSignature,
+  processWebhookEvent,
+} from "@thinkneverland/pixie-dust-stripe-kit";
