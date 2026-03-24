@@ -14,9 +14,6 @@ jobs:
   # ─── Detect which packages changed ───────────────────────────
   changes:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: read
     outputs:
       engine: ${{ steps.filter.outputs.engine }}
       web: ${{ steps.filter.outputs.web }}
