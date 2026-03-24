@@ -32,7 +32,7 @@ class OCREngine:
             self._engine = PaddleOCR(
                 use_angle_cls=True,
                 lang="en",
-                use_gpu=(settings.device == "cuda"),
+                use_gpu=False,  # CPU PaddlePaddle; GPU work via PyTorch models
                 show_log=False,
             )
             self._loaded = True

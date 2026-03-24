@@ -34,15 +34,18 @@ inference_image = (
         "python-multipart>=0.0.9",
         "Pillow>=10.0.0",
         "numpy>=1.24.0",
-        # ML / AI frameworks
+        # ML / AI frameworks — install torch with CUDA 12.1 index to match
+        # Modal's A10G driver, avoiding CUDA version mismatch segfaults.
         "torch>=2.0.0",
         "torchvision>=0.15.0",
         "transformers>=4.40.0",
         "pyiqa>=0.1.10",
         "ultralytics>=8.0.0",
         "open-clip-torch>=2.24.0",
-        "nudenet>=3.4.0",
-        "paddlepaddle-gpu>=2.5.0",
+        "nudenet==3.4.1",
+        # CPU-only PaddlePaddle — avoids CUDA conflicts on Modal; OCR is
+        # fast enough on CPU while heavy GPU work uses PyTorch models.
+        "paddlepaddle>=2.5.0",
         "paddleocr>=2.7.0",
     )
 )
@@ -66,6 +69,8 @@ model_cache = modal.Volume.from_name("lintpdf-model-cache", create_if_missing=Tr
     scaledown_window=300,
     min_containers=0,
     max_containers=5,
+    timeout=300,
+    memory=8192,
 )
 @modal.asgi_app()
 def serve_app():
