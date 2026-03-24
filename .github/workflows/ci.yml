@@ -28,28 +28,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: dorny/paths-filter@v3
+      - name: Detect changed packages
         id: filter
-        with:
-          filters: |
-            engine:
-              - 'packages/engine/**'
-              - '.github/workflows/ci.yml'
-            web:
-              - 'packages/web/**'
-              - '.github/workflows/ci.yml'
-            plugin:
-              - 'packages/plugin/**'
-              - '.github/workflows/ci.yml'
-            stripe:
-              - 'packages/stripe/**'
-              - '.github/workflows/ci.yml'
-            app:
-              - 'packages/app/**'
-              - '.github/workflows/ci.yml'
-            inference:
-              - 'packages/inference/**'
-              - '.github/workflows/ci.yml'
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          CHANGED=$(git diff --name-only "$BASE" HEAD || echo ".github/workflows/ci.yml")
+          echo "engine=$( echo "$CHANGED" | grep -qE '^packages/engine/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "web=$( echo "$CHANGED" | grep -qE '^packages/web/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "app=$( echo "$CHANGED" | grep -qE '^packages/app/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "plugin=$( echo "$CHANGED" | grep -qE '^packages/plugin/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "stripe=$( echo "$CHANGED" | grep -qE '^packages/stripe/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "inference=$( echo "$CHANGED" | grep -qE '^packages/inference/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
   # ─── Python: Engine ──────────────────────────────────────────
   engine:
