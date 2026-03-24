@@ -4,6 +4,6 @@ dockerfilePath = "packages/engine/Dockerfile"
 
 [deploy]
 numReplicas = 1
-startCommand = "celery -A grounded.queue.worker worker --loglevel=info --queues=priority --concurrency=${CELERY_PRIORITY_CONCURRENCY:-2}"
+startCommand = "sh -c 'celery -A grounded.queue.worker worker --loglevel=info --queues=priority --concurrency=${CELERY_PRIORITY_CONCURRENCY:-2}'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
