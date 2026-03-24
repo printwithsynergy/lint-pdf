@@ -11,7 +11,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # ─── Detect which packages changed ───────────────────────────
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -22,24 +21,15 @@ jobs:
       stripe: ${{ steps.filter.outputs.stripe }}
       inference: ${{ steps.filter.outputs.inference }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Detect changed packages
         id: filter
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE="${{ github.event.pull_request.base.sha }}"
-          else
-            BASE="${{ github.event.before }}"
-          fi
-          CHANGED=$(git diff --name-only "$BASE" HEAD || echo ".github/workflows/ci.yml")
-          echo "engine=$( echo "$CHANGED" | grep -qE '^packages/engine/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "web=$( echo "$CHANGED" | grep -qE '^packages/web/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "app=$( echo "$CHANGED" | grep -qE '^packages/app/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "plugin=$( echo "$CHANGED" | grep -qE '^packages/plugin/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "stripe=$( echo "$CHANGED" | grep -qE '^packages/stripe/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "inference=$( echo "$CHANGED" | grep -qE '^packages/inference/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "engine=true" >> "$GITHUB_OUTPUT"
+          echo "web=true" >> "$GITHUB_OUTPUT"
+          echo "app=true" >> "$GITHUB_OUTPUT"
+          echo "plugin=true" >> "$GITHUB_OUTPUT"
+          echo "stripe=true" >> "$GITHUB_OUTPUT"
+          echo "inference=true" >> "$GITHUB_OUTPUT"
 
   # ─── Python: Engine ──────────────────────────────────────────
   engine:
