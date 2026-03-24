@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-describe("groundedPlugin", () => {
+describe("lintpdfPlugin", () => {
   function mockCtx() {
     return {
       addRoutes: vi.fn(),
@@ -39,7 +39,7 @@ describe("groundedPlugin", () => {
   it("skips registration if config is invalid", async () => {
     const mod = await import("../index");
     const ctx = mockCtx();
-    mod.groundedPlugin.register(ctx);
+    mod.lintpdfPlugin.register(ctx);
     expect(ctx.services.logger.warn).toHaveBeenCalled();
     expect(ctx.addRoutes).not.toHaveBeenCalled();
   });
@@ -51,7 +51,7 @@ describe("groundedPlugin", () => {
 
     const mod = await import("../index");
     const ctx = mockCtx();
-    mod.groundedPlugin.register(ctx);
+    mod.lintpdfPlugin.register(ctx);
 
     // Custom OPERATOR role
     expect(ctx.addRole).toHaveBeenCalledWith("OPERATOR");
@@ -97,7 +97,7 @@ describe("groundedPlugin", () => {
 
     const mod = await import("../index");
     const ctx = mockCtx();
-    mod.groundedPlugin.register(ctx);
+    mod.lintpdfPlugin.register(ctx);
 
     const [prefix, routes] = ctx.addRoutes.mock.calls[0];
     expect(prefix).toBe("/api/lintpdf");
@@ -111,8 +111,8 @@ describe("groundedPlugin", () => {
 
     const mod = await import("../index");
     const ctx = mockCtx();
-    mod.groundedPlugin.register(ctx);
-    await mod.groundedPlugin.boot?.(ctx);
+    mod.lintpdfPlugin.register(ctx);
+    await mod.lintpdfPlugin.boot?.(ctx);
 
     expect(ctx.services.logger.info).toHaveBeenCalledWith(
       "LintPDF plugin ready",
@@ -125,10 +125,10 @@ describe("groundedPlugin", () => {
 
     const mod = await import("../index");
     const ctx = mockCtx();
-    mod.groundedPlugin.register(ctx);
+    mod.lintpdfPlugin.register(ctx);
     expect(mod.getClient()).not.toBeNull();
 
-    await mod.groundedPlugin.shutdown?.(ctx);
+    await mod.lintpdfPlugin.shutdown?.(ctx);
     expect(mod.getClient()).toBeNull();
   });
 });

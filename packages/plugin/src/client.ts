@@ -10,7 +10,7 @@ import type {
   PluginConfig,
 } from "./types";
 
-export class GroundedClient {
+export class LintPDFClient {
   private baseUrl: string;
   private apiKey: string | undefined;
 
@@ -44,7 +44,7 @@ export class GroundedClient {
   }
 
   async getJob(jobId: string): Promise<PreflightJob> {
-    const resp = await GroundedClient.request(
+    const resp = await LintPDFClient.request(
       `${this.baseUrl}/api/v1/jobs/${jobId}`,
       {
         headers: this.headers(),
@@ -54,7 +54,7 @@ export class GroundedClient {
   }
 
   async listJobs(page = 1, pageSize = 20): Promise<PreflightJobList> {
-    const resp = await GroundedClient.request(
+    const resp = await LintPDFClient.request(
       `${this.baseUrl}/api/v1/jobs?page=${page}&page_size=${pageSize}`,
       { headers: this.headers() },
     );
@@ -62,14 +62,14 @@ export class GroundedClient {
   }
 
   async deleteJob(jobId: string): Promise<void> {
-    await GroundedClient.request(`${this.baseUrl}/api/v1/jobs/${jobId}`, {
+    await LintPDFClient.request(`${this.baseUrl}/api/v1/jobs/${jobId}`, {
       method: "DELETE",
       headers: this.headers(),
     });
   }
 
   async listProfiles(): Promise<PreflightProfileList> {
-    const resp = await GroundedClient.request(
+    const resp = await LintPDFClient.request(
       `${this.baseUrl}/api/v1/profiles`,
       {
         headers: this.headers(),
@@ -79,7 +79,7 @@ export class GroundedClient {
   }
 
   async getUsage(): Promise<UsageInfo> {
-    const resp = await GroundedClient.request(`${this.baseUrl}/api/v1/usage`, {
+    const resp = await LintPDFClient.request(`${this.baseUrl}/api/v1/usage`, {
       headers: this.headers(),
     });
     return resp.json() as Promise<UsageInfo>;

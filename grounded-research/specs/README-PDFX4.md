@@ -1,5 +1,5 @@
 # ISO 15930-7:2010 (PDF/X-4) Specification Analysis
-## Complete Extraction for Grounded PDF Validation Engine
+## Complete Extraction for LintPDF Validation Engine
 
 **Status**: COMPLETE | **Date**: 2026-03-11 | **Coverage**: 100% (36/36 pages)
 
@@ -7,7 +7,7 @@
 
 ## Overview
 
-This directory contains the complete extraction and analysis of the ISO 15930-7:2010 (PDF/X-4) specification, representing Grounded's authoritative reference for PDF/X-4 conformance validation.
+This directory contains the complete extraction and analysis of the ISO 15930-7:2010 (PDF/X-4) specification, representing LintPDF's authoritative reference for PDF/X-4 conformance validation.
 
 **Key Statistics**:
 - 92 unique conformance requirements
@@ -271,4 +271,4 @@ GroundedPDFX4Validator
 ---
 
 *Specification extraction complete: 2026-03-11*
-*Ready for Grounded PDF/X-4 validator implementation*
+*Ready for LintPDF/X-4 validator implementation*

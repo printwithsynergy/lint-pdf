@@ -23,7 +23,7 @@ jobs:
       - name: Deploy API service
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service grounded-api --dir packages/engine
+        run: railway up --service lintpdf-api --dir packages/engine
 
   # ─── Deploy Celery Workers to Railway ───────────────────────
   deploy-worker-default:
@@ -39,7 +39,7 @@ jobs:
       - name: Deploy default queue worker
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service grounded-worker-default --dir packages/engine
+        run: railway up --service lintpdf-worker-default --dir packages/engine
 
   deploy-worker-priority:
     if: github.event.workflow_run.conclusion == 'success'
@@ -54,7 +54,7 @@ jobs:
       - name: Deploy priority queue worker
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service grounded-worker-priority --dir packages/engine
+        run: railway up --service lintpdf-worker-priority --dir packages/engine
 
   deploy-worker-webhooks:
     if: github.event.workflow_run.conclusion == 'success'
@@ -69,7 +69,7 @@ jobs:
       - name: Deploy webhooks queue worker
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service grounded-worker-webhooks --dir packages/engine
+        run: railway up --service lintpdf-worker-webhooks --dir packages/engine
 
   deploy-beat:
     if: github.event.workflow_run.conclusion == 'success'
@@ -84,7 +84,7 @@ jobs:
       - name: Deploy beat scheduler
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service grounded-beat --dir packages/engine
+        run: railway up --service lintpdf-beat --dir packages/engine
 
   # ─── Deploy Marketing Site ──────────────────────────────────
   deploy-web:
@@ -102,11 +102,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Build web
-        run: pnpm --filter @thinkneverland/grounded-web build
+        run: pnpm --filter @thinkneverland/lintpdf-web build
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up --service grounded-web --dir packages/web
+        run: railway up --service lintpdf-web --dir packages/web
 
   # ─── Deploy App Dashboard ──────────────────────────────────
   deploy-app:
@@ -146,7 +146,7 @@ jobs:
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-        run: modal secret create grounded-inference-secrets MODEL_CACHE_DIR=/models DEVICE=cuda MAX_IMAGE_SIZE=4096 --force
+        run: modal secret create lintpdf-inference-secrets MODEL_CACHE_DIR=/models DEVICE=cuda MAX_IMAGE_SIZE=4096 --force
       - name: Deploy to Modal
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}

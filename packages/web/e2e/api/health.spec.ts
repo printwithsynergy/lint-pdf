@@ -6,7 +6,7 @@ test.describe("Health & Status Endpoints", () => {
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.status).toBe("ok");
-    expect(body.service).toBe("grounded");
+    expect(body.service).toBe("lintpdf");
   });
 
   test("GET /api/v1/status returns service details", async ({ request }) => {

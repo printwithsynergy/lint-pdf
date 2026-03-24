@@ -39,5 +39,5 @@ queued -> taxiing -> arrived
 
 ### Report Verdict
 - clear-to-fly: Zero no-fly findings
-- grounded: One or more no-fly findings
+- lintpdf: One or more no-fly findings
 - delay: Zero no-fly, one or more delay findings

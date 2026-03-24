@@ -60,7 +60,7 @@ def _mock_poll_response(passed: bool = True) -> httpx.Response:
             if passed
             else [
                 {
-                    "inspection_id": "GRD_FONT_001",
+                    "inspection_id": "LPDF_FONT_001",
                     "severity": "error",
                     "message": "Font not embedded",
                     "page_num": 1,

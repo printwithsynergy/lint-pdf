@@ -1,5 +1,5 @@
 {
-  "name": "@grounded/stripe",
+  "name": "@lintpdf/stripe",
   "version": "0.1.0",
   "private": true,
   "type": "module",

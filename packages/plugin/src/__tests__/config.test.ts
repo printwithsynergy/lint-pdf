@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { groundedConfigSchema } from "../config";
+import { lintpdfConfigSchema } from "../config";
 
-describe("groundedConfigSchema", () => {
+describe("lintpdfConfigSchema", () => {
   it("parses valid config", () => {
-    const result = groundedConfigSchema.parse({
+    const result = lintpdfConfigSchema.parse({
       apiUrl: "https://api.lintpdf.com",
       webhookSecret: "a-long-enough-secret",
       apiKey: "lpdf_abc123",
@@ -14,7 +14,7 @@ describe("groundedConfigSchema", () => {
   });
 
   it("allows missing apiKey", () => {
-    const result = groundedConfigSchema.parse({
+    const result = lintpdfConfigSchema.parse({
       apiUrl: "https://api.lintpdf.com",
       webhookSecret: "a-long-enough-secret",
     });
@@ -23,7 +23,7 @@ describe("groundedConfigSchema", () => {
 
   it("rejects invalid URL", () => {
     expect(() =>
-      groundedConfigSchema.parse({
+      lintpdfConfigSchema.parse({
         apiUrl: "not-a-url",
         webhookSecret: "a-long-enough-secret",
       }),
@@ -32,7 +32,7 @@ describe("groundedConfigSchema", () => {
 
   it("rejects short webhook secret", () => {
     expect(() =>
-      groundedConfigSchema.parse({
+      lintpdfConfigSchema.parse({
         apiUrl: "https://api.lintpdf.com",
         webhookSecret: "short",
       }),

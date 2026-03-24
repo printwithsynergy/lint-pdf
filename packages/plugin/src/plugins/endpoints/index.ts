@@ -28,11 +28,11 @@ function engineFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
-export const groundedEndpointsPlugin: PixieDustPlugin = {
-  name: "grounded-endpoints",
+export const lintpdfEndpointsPlugin: PixieDustPlugin = {
+  name: "lintpdf-endpoints",
   version: "0.1.0",
   description: "Custom API endpoint management for LintPDF",
-  dependencies: ["grounded"],
+  dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
     // Permissions

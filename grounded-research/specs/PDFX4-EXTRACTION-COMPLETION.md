@@ -486,7 +486,7 @@ Report as info:
 
 ## Final Notes
 
-This document represents the authoritative specification analysis for ISO 15930-7:2010 (PDF/X-4) and PDF/X-4p. The 92 unique inspection checks and recommended validation architecture provide a complete foundation for building Grounded's PDF/X-4 conformance validator.
+This document represents the authoritative specification analysis for ISO 15930-7:2010 (PDF/X-4) and PDF/X-4p. The 92 unique inspection checks and recommended validation architecture provide a complete foundation for building LintPDF's PDF/X-4 conformance validator.
 
 **Key Success Factors**:
 1. Emphasis on CRITICAL checks (31) for file validity

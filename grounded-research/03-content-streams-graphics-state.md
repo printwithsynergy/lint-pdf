@@ -359,7 +359,7 @@ Referenced via `gs` operator. Contains parameters not directly settable by opera
 
 ## Feed to AI
 
-Use this research to design Grounded's **Content Stream & Graphics State Validator Module**:
+Use this research to design LintPDF's **Content Stream & Graphics State Validator Module**:
 
 1. **Operator Parser**: Tokenize content stream, recognize all operator names from Table 50
 2. **Stack Validator**: Track operand stack, verify operator has correct operand count

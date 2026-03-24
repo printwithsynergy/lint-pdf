@@ -10,8 +10,8 @@ import type {
   PluginContext,
 } from "@thinkneverland/pixie-dust-fairy-ring";
 
-import { GroundedClient } from "./client";
-import { groundedConfigSchema } from "./config";
+import { LintPDFClient } from "./client";
+import { lintpdfConfigSchema } from "./config";
 import { webhookRoutes } from "./routes/index";
 import { jobRoutes } from "./routes/jobs";
 import { profileRoutes } from "./routes/profiles";
@@ -20,10 +20,10 @@ import { colorConfigRoutes } from "./routes/color-config";
 
 // ── Public exports ──────────────────────────────────────────
 
-export const PLUGIN_NAME = "grounded" as const;
+export const PLUGIN_NAME = "lintpdf" as const;
 
-export { GroundedClient } from "./client";
-export { groundedConfigSchema, type GroundedPluginConfig } from "./config";
+export { LintPDFClient } from "./client";
+export { lintpdfConfigSchema, type LintPDFPluginConfig } from "./config";
 export { validateWebhookSignature, parseWebhookEvent } from "./webhook";
 export type {
   PreflightJob,
@@ -42,21 +42,21 @@ export type {
 
 // ── Sub-plugin exports ──────────────────────────────────────
 
-export { groundedUsagePlugin } from "./plugins/usage/index";
-export { groundedApiKeysPlugin } from "./plugins/api-keys/index";
-export { groundedReportsPlugin } from "./plugins/reports/index";
-export { groundedTeamPlugin } from "./plugins/team/index";
-export { groundedAccountPlugin } from "./plugins/account/index";
-export { groundedSiteAdminPlugin } from "./plugins/site-admin/index";
-export { groundedWebhooksPlugin } from "./plugins/webhooks/index";
-export { groundedEndpointsPlugin } from "./plugins/endpoints/index";
-export { groundedSuperAdminPlugin } from "./plugins/super-admin/index";
+export { lintpdfUsagePlugin } from "./plugins/usage/index";
+export { lintpdfApiKeysPlugin } from "./plugins/api-keys/index";
+export { lintpdfReportsPlugin } from "./plugins/reports/index";
+export { lintpdfTeamPlugin } from "./plugins/team/index";
+export { lintpdfAccountPlugin } from "./plugins/account/index";
+export { lintpdfSiteAdminPlugin } from "./plugins/site-admin/index";
+export { lintpdfWebhooksPlugin } from "./plugins/webhooks/index";
+export { lintpdfEndpointsPlugin } from "./plugins/endpoints/index";
+export { lintpdfSuperAdminPlugin } from "./plugins/super-admin/index";
 
 // ── Client singleton ────────────────────────────────────────
 
-let _client: GroundedClient | null = null;
+let _client: LintPDFClient | null = null;
 
-export function getClient(): GroundedClient | null {
+export function getClient(): LintPDFClient | null {
   return _client;
 }
 
@@ -88,8 +88,8 @@ export async function resolveEngineTenantId(tenantId: string): Promise<string> {
 
 // ── Core plugin ─────────────────────────────────────────────
 
-export const groundedPlugin: PixieDustPlugin = {
-  name: "grounded",
+export const lintpdfPlugin: PixieDustPlugin = {
+  name: "lintpdf",
   version: "0.1.0",
   description: "PDF preflight engine — inspect, report, never modify",
   dependencies: [],
@@ -103,7 +103,7 @@ export const groundedPlugin: PixieDustPlugin = {
     }
 
     const env = process.env as Record<string, string>;
-    const parsed = groundedConfigSchema.safeParse({
+    const parsed = lintpdfConfigSchema.safeParse({
       apiUrl: env.LINTPDF_API_URL ?? "https://api.lintpdf.com",
       webhookSecret: env.LINTPDF_WEBHOOK_SECRET ?? "",
       apiKey: env.LINTPDF_API_KEY,
@@ -115,7 +115,7 @@ export const groundedPlugin: PixieDustPlugin = {
     }
 
     const config = parsed.data;
-    _client = new GroundedClient(config);
+    _client = new LintPDFClient(config);
 
     // Store DB reference for engine tenant ID resolution
     setPluginDb(ctx.services.db);
@@ -187,10 +187,10 @@ export const groundedPlugin: PixieDustPlugin = {
     ]);
 
     // ── Hooks ──
-    ctx.on("grounded:job.completed", (data) => {
+    ctx.on("lintpdf:job.completed", (data) => {
       ctx.services.logger.info("Preflight completed", { data });
     });
-    ctx.on("grounded:job.failed", (data) => {
+    ctx.on("lintpdf:job.failed", (data) => {
       ctx.services.logger.info("Preflight failed", { data });
     });
   },

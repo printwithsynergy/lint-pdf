@@ -446,16 +446,16 @@ waitlist, client, webhook, config, routes, plugin
 **Location:** `packages/stripe/`
 **Stack:** TypeScript
 
-### 4.1 Plugin: `groundedBillingPlugin`
+### 4.1 Plugin: `lintpdfBillingPlugin`
 
 **Routes:**
 
 | Method | Path                                 | Description                     |
 | ------ | ------------------------------------ | ------------------------------- |
-| `POST` | `/api/grounded/billing/checkout`     | Create Stripe Checkout session  |
-| `POST` | `/api/grounded/billing/portal`       | Create Customer Portal session  |
-| `GET`  | `/api/grounded/billing/subscription` | Get current subscription status |
-| `GET`  | `/api/grounded/billing/invoices`     | List invoices for tenant        |
+| `POST` | `/api/lintpdf/billing/checkout`     | Create Stripe Checkout session  |
+| `POST` | `/api/lintpdf/billing/portal`       | Create Customer Portal session  |
+| `GET`  | `/api/lintpdf/billing/subscription` | Get current subscription status |
+| `GET`  | `/api/lintpdf/billing/invoices`     | List invoices for tenant        |
 
 **Webhook Listeners:**
 

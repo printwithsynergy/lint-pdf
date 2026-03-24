@@ -1,5 +1,5 @@
 {
-  "name": "grounded",
+  "name": "lintpdf",
   "private": true,
   "packageManager": "pnpm@9.15.0",
   "scripts": {

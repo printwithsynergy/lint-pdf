@@ -19,18 +19,18 @@ import type {
 } from "@thinkneverland/pixie-dust-fairy-ring";
 import { stripeKitPlugin } from "@thinkneverland/pixie-dust-stripe-kit";
 import {
-  groundedPlugin,
-  groundedUsagePlugin,
-  groundedApiKeysPlugin,
-  groundedReportsPlugin,
-  groundedTeamPlugin,
-  groundedAccountPlugin,
-  groundedSiteAdminPlugin,
-  groundedWebhooksPlugin,
-  groundedEndpointsPlugin,
-  groundedSuperAdminPlugin,
+  lintpdfPlugin,
+  lintpdfUsagePlugin,
+  lintpdfApiKeysPlugin,
+  lintpdfReportsPlugin,
+  lintpdfTeamPlugin,
+  lintpdfAccountPlugin,
+  lintpdfSiteAdminPlugin,
+  lintpdfWebhooksPlugin,
+  lintpdfEndpointsPlugin,
+  lintpdfSuperAdminPlugin,
 } from "@thinkneverland/grounded-plugin";
-import { groundedBillingPlugin } from "@grounded/stripe";
+import { lintpdfBillingPlugin } from "@lintpdf/stripe";
 
 // ============================================
 // LOGGER
@@ -74,17 +74,17 @@ declare global {
  */
 const plugins: PixieDustPlugin[] = [
   stripeKitPlugin,
-  groundedPlugin,
-  groundedUsagePlugin,
-  groundedApiKeysPlugin,
-  groundedReportsPlugin,
-  groundedTeamPlugin,
-  groundedAccountPlugin,
-  groundedWebhooksPlugin,
-  groundedEndpointsPlugin,
-  groundedSuperAdminPlugin,
-  groundedSiteAdminPlugin,
-  groundedBillingPlugin,
+  lintpdfPlugin,
+  lintpdfUsagePlugin,
+  lintpdfApiKeysPlugin,
+  lintpdfReportsPlugin,
+  lintpdfTeamPlugin,
+  lintpdfAccountPlugin,
+  lintpdfWebhooksPlugin,
+  lintpdfEndpointsPlugin,
+  lintpdfSuperAdminPlugin,
+  lintpdfSiteAdminPlugin,
+  lintpdfBillingPlugin,
 ];
 
 /**

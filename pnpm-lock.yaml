@@ -14,7 +14,7 @@ importers:
 
   packages/app:
     dependencies:
-      '@grounded/stripe':
+      '@lintpdf/stripe':
         specifier: workspace:*
         version: link:../stripe
       '@tanstack/react-query':

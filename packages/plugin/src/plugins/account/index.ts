@@ -44,11 +44,11 @@ function adminFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
-export const groundedAccountPlugin: PixieDustPlugin = {
-  name: "grounded-account",
+export const lintpdfAccountPlugin: PixieDustPlugin = {
+  name: "lintpdf-account",
   version: "0.1.0",
   description: "Tenant account settings, branding, and self-service management",
-  dependencies: ["grounded"],
+  dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
     // Permissions

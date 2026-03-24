@@ -34,11 +34,11 @@ interface AuthServiceWithInvite {
   }) => Promise<void>;
 }
 
-export const groundedTeamPlugin: PixieDustPlugin = {
-  name: "grounded-team",
+export const lintpdfTeamPlugin: PixieDustPlugin = {
+  name: "lintpdf-team",
   version: "0.1.0",
   description: "Team member and invite management for LintPDF tenants",
-  dependencies: ["grounded"],
+  dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
     // Permissions

@@ -8,12 +8,12 @@ import type {
   RouteRequest,
   RouteResponse,
 } from "@thinkneverland/pixie-dust-fairy-ring";
-import type { GroundedPluginConfig } from "../config";
+import type { LintPDFPluginConfig } from "../config";
 import type { PixieDustPayload } from "../types";
 import { validateWebhookSignature } from "../webhook";
 
 export function webhookRoutes(
-  config: GroundedPluginConfig,
+  config: LintPDFPluginConfig,
   ctx: PluginContext,
 ): RouteDefinition[] {
   return [
@@ -23,7 +23,7 @@ export function webhookRoutes(
       auth: false, // Uses HMAC signature verification, not session auth
       description: "Receive LintPDF webhook events (HMAC-signed)",
       handler: async (req: RouteRequest): Promise<RouteResponse> => {
-        const signature = req.headers["x-grounded-signature"] ?? "";
+        const signature = req.headers["x-lintpdf-signature"] ?? "";
         const body =
           typeof req.body === "string" ? req.body : JSON.stringify(req.body);
 
@@ -40,8 +40,8 @@ export function webhookRoutes(
 
         // Map backend event names to plugin hook names
         const eventMap: Record<string, string> = {
-          "preflight.complete": "grounded:job.completed",
-          "preflight.failed": "grounded:job.failed",
+          "preflight.complete": "lintpdf:job.completed",
+          "preflight.failed": "lintpdf:job.failed",
         };
 
         const hookName = eventMap[payload.event];

@@ -21,8 +21,8 @@ function CheckoutContent() {
   useEffect(() => {
     const plan =
       searchParams.get("plan") ??
-      sessionStorage.getItem("grounded_signup_plan");
-    sessionStorage.removeItem("grounded_signup_plan");
+      sessionStorage.getItem("lintpdf_signup_plan");
+    sessionStorage.removeItem("lintpdf_signup_plan");
 
     const validPlans = ["starter", "growth", "scale", "enterprise"];
     if (!plan || !validPlans.includes(plan)) {

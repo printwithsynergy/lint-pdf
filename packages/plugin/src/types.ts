@@ -2,7 +2,7 @@
  * TypeScript types matching the LintPDF API schemas.
  *
  * These mirror the Python Pydantic models in:
- * packages/engine/src/grounded/api/schemas.py
+ * packages/engine/src/lintpdf/api/schemas.py
  */
 
 export type Severity = "error" | "warning" | "advisory";

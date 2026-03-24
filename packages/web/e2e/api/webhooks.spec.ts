@@ -18,14 +18,14 @@ test.describe("Webhook Management", () => {
         "Content-Type": "application/json",
       },
       data: {
-        url: "https://webhook.test/grounded",
+        url: "https://webhook.test/lintpdf",
         events: ["job.completed", "job.failed"],
       },
     });
     expect([200, 201]).toContain(res.status());
     const body = await res.json();
     expect(body).toHaveProperty("id");
-    expect(body.url).toBe("https://webhook.test/grounded");
+    expect(body.url).toBe("https://webhook.test/lintpdf");
     webhookId = body.id;
   });
 
@@ -49,11 +49,11 @@ test.describe("Webhook Management", () => {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      data: { url: "https://webhook.test/grounded-updated" },
+      data: { url: "https://webhook.test/lintpdf-updated" },
     });
     expect(res.status()).toBe(200);
     const body = await res.json();
-    expect(body.url).toBe("https://webhook.test/grounded-updated");
+    expect(body.url).toBe("https://webhook.test/lintpdf-updated");
   });
 
   test("DELETE /api/v1/webhooks/:id removes endpoint", async ({ request }) => {

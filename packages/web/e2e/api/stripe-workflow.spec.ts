@@ -72,7 +72,7 @@ test.describe.serial("Stripe Billing Workflow", () => {
     test.skip(!STRIPE_KEY, "No Stripe key");
 
     const customer = await stripeRequest(request, "POST", "/customers", {
-      email: `e2e-${Date.now()}@grounded.test`,
+      email: `e2e-${Date.now()}@lintpdf.test`,
       name: "E2E Workflow Test Customer",
       "metadata[tenant_id]": tenant?.id ?? "",
     });

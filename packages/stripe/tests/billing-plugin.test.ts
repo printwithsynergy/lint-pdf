@@ -69,7 +69,7 @@ function createNullStripeInstance(): ReturnType<typeof getStripe> {
   return null as ReturnType<typeof getStripe>;
 }
 
-describe("groundedBillingPlugin", () => {
+describe("lintpdfBillingPlugin", () => {
   let ctx: ReturnType<typeof createMockContext>;
 
   beforeEach(() => {
@@ -83,7 +83,7 @@ describe("groundedBillingPlugin", () => {
   describe("register", () => {
     it("registers billing:manage permission for ADMIN and OWNER", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.addPermission).toHaveBeenCalledWith("billing:manage", [
         "ADMIN",
@@ -93,7 +93,7 @@ describe("groundedBillingPlugin", () => {
 
     it("registers Billing nav item in admin section", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.addNavItem).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -109,7 +109,7 @@ describe("groundedBillingPlugin", () => {
 
     it("registers billing pages", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.addPage).toHaveBeenCalledTimes(2);
       expect(ctx.addPage).toHaveBeenCalledWith(
@@ -120,19 +120,19 @@ describe("groundedBillingPlugin", () => {
       );
     });
 
-    it("registers routes under /api/grounded/billing", async () => {
+    it("registers routes under /api/lintpdf/billing", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.addRoutes).toHaveBeenCalledTimes(1);
       const [prefix, routes] = ctx.addRoutes.mock.calls[0];
-      expect(prefix).toBe("/api/grounded/billing");
+      expect(prefix).toBe("/api/lintpdf/billing");
       expect(routes.length).toBe(4);
     });
 
     it("registers 4 webhook event listeners", async () => {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       expect(ctx.on).toHaveBeenCalledTimes(4);
       expect(ctx.on).toHaveBeenCalledWith(
@@ -155,9 +155,9 @@ describe("groundedBillingPlugin", () => {
 
     it("has correct plugin metadata", async () => {
       const mod = await import("../src/index.js");
-      expect(mod.groundedBillingPlugin.name).toBe("grounded-billing");
-      expect(mod.groundedBillingPlugin.version).toBe("0.1.0");
-      expect(mod.groundedBillingPlugin.dependencies).toContain("stripe-kit");
+      expect(mod.lintpdfBillingPlugin.name).toBe("lintpdf-billing");
+      expect(mod.lintpdfBillingPlugin.version).toBe("0.1.0");
+      expect(mod.lintpdfBillingPlugin.dependencies).toContain("stripe-kit");
     });
   });
 
@@ -166,7 +166,7 @@ describe("groundedBillingPlugin", () => {
   describe("route handlers", () => {
     async function getRouteHandler(method: string, path: string) {
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
       const [, routes] = ctx.addRoutes.mock.calls[0];
       const route = routes.find(
         (r: { method: string; path: string }) =>
@@ -373,7 +373,7 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:customer.subscription.updated", () => {
       it("does nothing when subscription data is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+        mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
@@ -384,7 +384,7 @@ describe("groundedBillingPlugin", () => {
 
       it("does nothing when customer ID is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+        mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
@@ -395,7 +395,7 @@ describe("groundedBillingPlugin", () => {
 
       it("logs warning when no tenant found for customer", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+        mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
@@ -407,7 +407,7 @@ describe("groundedBillingPlugin", () => {
               customer: "cus_123",
               items: {
                 data: [
-                  { price: { lookup_key: "grounded_pro_monthly" }, id: "si_1" },
+                  { price: { lookup_key: "lintpdf_pro_monthly" }, id: "si_1" },
                 ],
               },
             },
@@ -422,7 +422,7 @@ describe("groundedBillingPlugin", () => {
 
       it("handles customer as object with id property", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+        mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.updated",
         );
@@ -446,7 +446,7 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:customer.subscription.deleted", () => {
       it("does nothing when subscription data is missing", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+        mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.deleted",
         );
@@ -457,7 +457,7 @@ describe("groundedBillingPlugin", () => {
 
       it("does nothing when no tenant found", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+        mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler(
           "stripe:customer.subscription.deleted",
         );
@@ -475,7 +475,7 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:invoice.payment_failed", () => {
       it("logs warning with event ID", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+        mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler("stripe:invoice.payment_failed");
 
         await handler({ id: "evt_123" });
@@ -490,7 +490,7 @@ describe("groundedBillingPlugin", () => {
     describe("stripe:invoice.payment_succeeded", () => {
       it("logs info with event ID", async () => {
         const mod = await import("../src/index.js");
-        mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+        mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
         const handler = getWebhookHandler("stripe:invoice.payment_succeeded");
 
         await handler({ id: "evt_456" });
@@ -509,7 +509,7 @@ describe("groundedBillingPlugin", () => {
     it("logs ready message when Stripe is configured", async () => {
       vi.mocked(getStripe).mockReturnValue(createMockStripeInstance());
       const mod = await import("../src/index.js");
-      await mod.groundedBillingPlugin.boot?.(asPluginContext(ctx));
+      await mod.lintpdfBillingPlugin.boot?.(asPluginContext(ctx));
 
       expect(ctx.services.logger.info).toHaveBeenCalledWith(
         "LintPDF billing plugin ready",
@@ -519,7 +519,7 @@ describe("groundedBillingPlugin", () => {
     it("does not log when Stripe is not configured", async () => {
       vi.mocked(getStripe).mockReturnValue(createNullStripeInstance());
       const mod = await import("../src/index.js");
-      await mod.groundedBillingPlugin.boot?.(asPluginContext(ctx));
+      await mod.lintpdfBillingPlugin.boot?.(asPluginContext(ctx));
 
       expect(ctx.services.logger.info).not.toHaveBeenCalled();
     });
@@ -528,7 +528,7 @@ describe("groundedBillingPlugin", () => {
   describe("shutdown", () => {
     it("completes without error", async () => {
       const mod = await import("../src/index.js");
-      const result = mod.groundedBillingPlugin.shutdown?.();
+      const result = mod.lintpdfBillingPlugin.shutdown?.();
       if (result !== undefined) {
         await expect(result).resolves.toBeUndefined();
       }

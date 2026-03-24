@@ -14,11 +14,11 @@ import { getClient } from "../../index";
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 
-export const groundedUsagePlugin: PixieDustPlugin = {
-  name: "grounded-usage",
+export const lintpdfUsagePlugin: PixieDustPlugin = {
+  name: "lintpdf-usage",
   version: "0.1.0",
   description: "Usage metering and rate-limit visibility for LintPDF preflight",
-  dependencies: ["grounded"],
+  dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
     // Permissions
@@ -72,7 +72,7 @@ export const groundedUsagePlugin: PixieDustPlugin = {
     ctx.addRoutes("/api/lintpdf", routes);
 
     // Hooks
-    ctx.on("grounded:job.completed", (data) => {
+    ctx.on("lintpdf:job.completed", (data) => {
       ctx.services.logger.info("Usage plugin: job completed", {
         data: data as Record<string, unknown>,
       });

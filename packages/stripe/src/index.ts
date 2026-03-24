@@ -107,8 +107,8 @@ interface StripeWebhookEvent {
   };
 }
 
-export const groundedBillingPlugin: PixieDustPlugin = {
-  name: "grounded-billing",
+export const lintpdfBillingPlugin: PixieDustPlugin = {
+  name: "lintpdf-billing",
   version: "0.1.0",
   description:
     "LintPDF billing — extends stripe-kit with plans, checkout, portal, and metered overage",
@@ -139,7 +139,7 @@ export const groundedBillingPlugin: PixieDustPlugin = {
     });
 
     // ── Routes ──
-    ctx.addRoutes("/api/grounded/billing", [
+    ctx.addRoutes("/api/lintpdf/billing", [
       {
         method: "POST",
         path: "/checkout",
@@ -311,10 +311,10 @@ export const groundedBillingPlugin: PixieDustPlugin = {
       // Map Stripe price to LintPDF plan name
       const priceId = subscription.items?.data?.[0]?.price?.lookup_key;
       const planMap: Record<string, string> = {
-        grounded_starter_monthly: "starter",
-        grounded_growth_monthly: "growth",
-        grounded_scale_monthly: "scale",
-        grounded_enterprise_monthly: "enterprise",
+        lintpdf_starter_monthly: "starter",
+        lintpdf_growth_monthly: "growth",
+        lintpdf_scale_monthly: "scale",
+        lintpdf_enterprise_monthly: "enterprise",
       };
       const plan = (priceId != null ? planMap[priceId] : undefined) ?? "free";
 
@@ -404,4 +404,4 @@ export const groundedBillingPlugin: PixieDustPlugin = {
   },
 };
 
-export default groundedBillingPlugin;
+export default lintpdfBillingPlugin;

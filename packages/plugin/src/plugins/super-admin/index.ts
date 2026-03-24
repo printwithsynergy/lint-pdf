@@ -53,12 +53,12 @@ const UNLIMITED_ENTITLEMENTS = {
   ai_enabled: true,
 };
 
-export const groundedSuperAdminPlugin: PixieDustPlugin = {
-  name: "grounded-super-admin",
+export const lintpdfSuperAdminPlugin: PixieDustPlugin = {
+  name: "lintpdf-super-admin",
   version: "0.1.0",
   description:
     "Super admin house tenant provisioning and impersonation support",
-  dependencies: ["grounded"],
+  dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
     // Navigation — only visible to super admins

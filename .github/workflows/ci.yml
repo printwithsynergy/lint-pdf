@@ -175,11 +175,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Typecheck
-        run: pnpm --filter @grounded/stripe typecheck
+        run: pnpm --filter @lintpdf/stripe typecheck
       - name: Test
-        run: pnpm --filter @grounded/stripe test
+        run: pnpm --filter @lintpdf/stripe test
       - name: Build
-        run: pnpm --filter @grounded/stripe build
+        run: pnpm --filter @lintpdf/stripe build
 
   # ─── Node: App ─────────────────────────────────────────────
   app:
@@ -203,6 +203,6 @@ jobs:
       - name: Generate Prisma client
         run: pnpm --filter @thinkneverland/grounded-app db:generate
       - name: Build workspace deps
-        run: pnpm --filter @thinkneverland/grounded-plugin --filter @grounded/stripe build
+        run: pnpm --filter @thinkneverland/grounded-plugin --filter @lintpdf/stripe build
       - name: Build
         run: pnpm --filter @thinkneverland/grounded-app build

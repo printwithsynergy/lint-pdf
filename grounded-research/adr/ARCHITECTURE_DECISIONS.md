@@ -10,7 +10,7 @@
 
 ### Context
 
-Grounded must parse PDF documents at the byte level to identify structural and content violations. PDF is a notoriously complex format with multiple internal representations (text streams, graphics states, form XObjects, image XObjects, annotation arrays, etc.). We need to choose a parsing library that:
+LintPDF must parse PDF documents at the byte level to identify structural and content violations. PDF is a notoriously complex format with multiple internal representations (text streams, graphics states, form XObjects, image XObjects, annotation arrays, etc.). We need to choose a parsing library that:
 
 - Handles all PDF variants (1.4 through 2.0) and edge cases
 - Provides low-level access to content streams and objects
@@ -191,7 +191,7 @@ A naive approach (parse operators string-by-string without state) is fragile. We
 
 ### Context
 
-Grounded must support diverse inspection scenarios:
+LintPDF must support diverse inspection scenarios:
 
 - **Packaged profiles**: GWG guidelines (14 variants), PDF/A validation, CMYK color space enforcement
 - **Tenant-specific rules**: An airline might require specific color validation (e.g., brand colors only)
@@ -581,7 +581,7 @@ A traditional request-response model is inappropriate; we need job queue semanti
 
 ### Context
 
-Grounded must generate three outputs for each inspection:
+LintPDF must generate three outputs for each inspection:
 
 1. **PDF Report** (Flight Log): White-labeled, printable, professional appearance
 2. **JSON Output**: Machine-readable findings for programmatic clients
@@ -956,7 +956,7 @@ The PDF must reflect each tenant's branding (Livery) without maintaining separat
 
 ### Context
 
-Grounded must be deployed as a multi-service application on Railway. Service dependencies:
+LintPDF must be deployed as a multi-service application on Railway. Service dependencies:
 
 - **API service** (FastAPI): Stateless, horizontally scalable
 - **Worker service** (Celery): Long-running, scales with queue depth

@@ -266,7 +266,7 @@ After Tf sets font, text showing operators (Tj, TJ) use current font to render g
 
 ## Feed to AI
 
-Use this research to design Grounded's **Font Technology Validator Module**:
+Use this research to design LintPDF's **Font Technology Validator Module**:
 
 1. **Font Type Router**: Identify Type0, Type1, TrueType, Type3 fonts
 2. **Simple Font Parser**: Validate Type1/TrueType dictionaries per §9.5

@@ -33,11 +33,11 @@ function engineFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
-export const groundedReportsPlugin: PixieDustPlugin = {
-  name: "grounded-reports",
+export const lintpdfReportsPlugin: PixieDustPlugin = {
+  name: "lintpdf-reports",
   version: "0.1.0",
   description: "View and download preflight reports",
-  dependencies: ["grounded"],
+  dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
     // Permissions
