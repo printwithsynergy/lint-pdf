@@ -13,7 +13,7 @@ import modal
 # Modal app definition
 # ---------------------------------------------------------------------------
 
-app = modal.App("grounded-inference")
+app = modal.App("lintpdf-inference")
 
 # ---------------------------------------------------------------------------
 # GPU image with all inference dependencies
@@ -51,7 +51,7 @@ inference_image = (
 # Persistent volume for cached model weights
 # ---------------------------------------------------------------------------
 
-model_cache = modal.Volume.from_name("grounded-model-cache", create_if_missing=True)
+model_cache = modal.Volume.from_name("lintpdf-model-cache", create_if_missing=True)
 
 # ---------------------------------------------------------------------------
 # Web endpoint (ASGI)
@@ -62,7 +62,7 @@ model_cache = modal.Volume.from_name("grounded-model-cache", create_if_missing=T
     image=inference_image,
     gpu="A10G",
     volumes={"/models": model_cache},
-    secrets=[modal.Secret.from_name("grounded-inference-secrets")],
+    secrets=[modal.Secret.from_name("lintpdf-inference-secrets")],
     scaledown_window=300,
     min_containers=0,
     max_containers=5,

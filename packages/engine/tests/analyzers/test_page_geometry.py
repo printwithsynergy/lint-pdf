@@ -169,13 +169,15 @@ class TestBleedDistance:
         # 8.5pt is fine for 3mm requirement
         analyzer_3mm = PageGeometryAnalyzer(min_bleed_pts=8.5)
         assert (
-            len([f for f in analyzer_3mm.analyze(doc, []) if f.inspection_id == "LPDF_BOX_003"]) == 0
+            len([f for f in analyzer_3mm.analyze(doc, []) if f.inspection_id == "LPDF_BOX_003"])
+            == 0
         )
 
         # 8.5pt is NOT fine for 5mm requirement (14.17pt)
         analyzer_5mm = PageGeometryAnalyzer(min_bleed_pts=14.17)
         assert (
-            len([f for f in analyzer_5mm.analyze(doc, []) if f.inspection_id == "LPDF_BOX_003"]) == 1
+            len([f for f in analyzer_5mm.analyze(doc, []) if f.inspection_id == "LPDF_BOX_003"])
+            == 1
         )
 
 

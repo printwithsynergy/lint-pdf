@@ -164,7 +164,7 @@ async def health():
     """Health check endpoint."""
     return {
         "status": "ok",
-        "service": "grounded-inference",
+        "service": "lintpdf-inference",
         "device": settings.device,
     }
 

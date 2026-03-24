@@ -1,5 +1,5 @@
 [project]
-name = "grounded-inference"
+name = "lintpdf-inference"
 version = "0.1.0"
 description = "Vision inference service for LintPDF AI features"
 requires-python = ">=3.11"
