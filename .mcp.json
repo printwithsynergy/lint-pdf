@@ -8,6 +8,10 @@
         "--extra", "mcp",
         "python", "packages/inference/src/inference_service/mcp_server.py"
       ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
     }
   }
 }
