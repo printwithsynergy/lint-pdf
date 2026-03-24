@@ -42,7 +42,9 @@ inference_image = (
         "ultralytics>=8.0.0",
         "open-clip-torch>=2.24.0",
         "nudenet>=3.4.0",
-        "paddlepaddle-gpu>=2.5.0",
+        # Use CPU-only PaddlePaddle to avoid CUDA version conflicts on Modal.
+        # OCR is fast enough on CPU; heavy GPU work is done by PyTorch models.
+        "paddlepaddle>=2.5.0",
         "paddleocr>=2.7.0",
     )
 )

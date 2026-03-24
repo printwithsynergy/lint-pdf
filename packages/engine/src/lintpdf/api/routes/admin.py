@@ -669,7 +669,7 @@ async def grant_tenant_ai_credits(
     return {
         "tenant_id": str(tenant.id),
         "package_id": str(package.id),
-        "credits_granted": credits,
+        "credits_granted": credit_amount,
         "message": "AI credits granted",
     }
 

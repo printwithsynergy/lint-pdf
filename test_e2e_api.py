@@ -19,7 +19,7 @@ ADMIN_KEY = "gx0B011GFHNLxx4q8KOfafMcCgLifHgec-u1TKpPOpA"
 TIMEOUT = httpx.Timeout(120.0, connect=30.0)
 MODAL_TIMEOUT = httpx.Timeout(300.0, connect=60.0)  # Longer for cold start
 client = httpx.Client(timeout=TIMEOUT, follow_redirects=True)
-SKIP_MODAL_DIRECT = True  # Modal cold-starting; test via API jobs instead
+SKIP_MODAL_DIRECT = False  # Re-enabled after fixing paddlepaddle-gpu crash
 
 results = []
 job_ids = []
