@@ -5,8 +5,7 @@ export default defineTheme({
   displayName: "LintPDF",
   metadata: {
     title: "LintPDF — Preflights you won't hate.",
-    description:
-      "LintPDF — PDF preflight SaaS by Think Neverland.",
+    description: "LintPDF — PDF preflight SaaS by Think Neverland.",
     themeColor: "#1e40af",
   },
   brand: {

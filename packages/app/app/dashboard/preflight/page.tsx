@@ -109,9 +109,7 @@ export default function PreflightPage() {
       if (!resp.ok) {
         throw new Error(data.error ?? data.detail ?? "Upload failed");
       }
-      setUploadSuccess(
-        `Job submitted: ${data.job_id ?? "processing"}`,
-      );
+      setUploadSuccess(`Job submitted: ${data.job_id ?? "processing"}`);
       if (fileInputRef.current) fileInputRef.current.value = "";
       // Refresh job list after a short delay
       setTimeout(() => fetchJobs(), 1500);
