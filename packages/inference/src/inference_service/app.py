@@ -26,6 +26,7 @@ def _maybe_clear_cache() -> None:
     except Exception:
         pass
 
+
 app = FastAPI(
     title="LintPDF Inference Service",
     description="Vision inference service for LintPDF AI features",

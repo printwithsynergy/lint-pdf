@@ -31,12 +31,20 @@ def log(msg: str):
     print(f"[{ts}] {msg}")
 
 
-def record(test_name: str, method: str, url: str, status: int, passed: bool, detail: str = ""):
+def record(
+    test_name: str, method: str, url: str, status: int, passed: bool, detail: str = ""
+):
     emoji = "PASS" if passed else "FAIL"
-    results.append({
-        "test": test_name, "method": method, "url": url,
-        "status": status, "passed": passed, "detail": detail[:200]
-    })
+    results.append(
+        {
+            "test": test_name,
+            "method": method,
+            "url": url,
+            "status": status,
+            "passed": passed,
+            "detail": detail[:200],
+        }
+    )
     log(f"  [{emoji}] {test_name} -> {status} {detail[:80]}")
 
 
@@ -44,6 +52,7 @@ def record(test_name: str, method: str, url: str, status: int, passed: bool, det
 def make_minimal_pdf() -> bytes:
     """Create a minimal valid PDF with text, image, and intentional issues."""
     from fpdf import FPDF
+
     pdf = FPDF()
     pdf.set_auto_page_break(auto=False)
 
@@ -54,8 +63,12 @@ def make_minimal_pdf() -> bytes:
     pdf.set_font("Helvetica", size=3)  # Very small text - triggers LPDF_TEXT_003
     pdf.cell(0, 5, "This text is intentionally very small for testing", ln=True)
     pdf.set_font("Helvetica", size=12)
-    pdf.cell(0, 10, "Normal text with some content for OCR and spell checking.", ln=True)
-    pdf.cell(0, 10, "Barcde Dimentions Regulatry - misspelled words for spell check", ln=True)
+    pdf.cell(
+        0, 10, "Normal text with some content for OCR and spell checking.", ln=True
+    )
+    pdf.cell(
+        0, 10, "Barcde Dimentions Regulatry - misspelled words for spell check", ln=True
+    )
 
     # Add a low-res image (72 DPI equivalent) - triggers LPDF_IMG_001
     # Create a small 20x20 RGB PNG in memory
@@ -69,10 +82,20 @@ def make_minimal_pdf() -> bytes:
     def make_png(w, h, data):
         def chunk(ctype, cdata):
             c = ctype + cdata
-            return struct.pack(">I", len(cdata)) + c + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+            return (
+                struct.pack(">I", len(cdata))
+                + c
+                + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+            )
+
         sig = b"\x89PNG\r\n\x1a\n"
         ihdr = struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)
-        return sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(data)) + chunk(b"IEND", b"")
+        return (
+            sig
+            + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(data))
+            + chunk(b"IEND", b"")
+        )
 
     png_bytes = make_png(width, height, raw_data)
     img_path = "/tmp/test_low_res.png"
@@ -96,6 +119,7 @@ def make_minimal_pdf() -> bytes:
 def make_barcode_pdf() -> bytes:
     """PDF with barcode-like content for barcode checks."""
     from fpdf import FPDF
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=12)
@@ -113,6 +137,7 @@ def make_barcode_pdf() -> bytes:
 def make_packaging_pdf() -> bytes:
     """PDF simulating packaging artwork for packaging/regulatory checks."""
     from fpdf import FPDF
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
@@ -139,15 +164,30 @@ def make_packaging_pdf() -> bytes:
 
 # ──── Test Functions ────────────────────────────────────────────────────────
 
+
 def test_health():
     log("\n=== HEALTH & STATUS ===")
     # Health
     r = client.get(f"{API_BASE}/health")
-    record("Health Check", "GET", "/health", r.status_code, r.status_code == 200, r.text[:100])
+    record(
+        "Health Check",
+        "GET",
+        "/health",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:100],
+    )
 
     # Status
     r = client.get(f"{API_BASE}/api/v1/status")
-    record("Status Check", "GET", "/api/v1/status", r.status_code, r.status_code == 200, r.text[:200])
+    record(
+        "Status Check",
+        "GET",
+        "/api/v1/status",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
 
 def test_modal_inference():
@@ -155,7 +195,14 @@ def test_modal_inference():
     # Health
     try:
         r = client.get(f"{MODAL_BASE}/health")
-        record("Modal Health", "GET", "/health", r.status_code, r.status_code == 200, r.text[:100])
+        record(
+            "Modal Health",
+            "GET",
+            "/health",
+            r.status_code,
+            r.status_code == 200,
+            r.text[:100],
+        )
     except Exception as e:
         record("Modal Health", "GET", "/health", 0, False, str(e)[:200])
         log("  Modal may be cold-starting, continuing...")
@@ -171,43 +218,106 @@ def test_modal_inference():
     def make_png(w, h, data):
         def chunk(ctype, cdata):
             c = ctype + cdata
-            return struct.pack(">I", len(cdata)) + c + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+            return (
+                struct.pack(">I", len(cdata))
+                + c
+                + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
+            )
+
         sig = b"\x89PNG\r\n\x1a\n"
         ihdr = struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)
-        return sig + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(data)) + chunk(b"IEND", b"")
+        return (
+            sig
+            + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(data))
+            + chunk(b"IEND", b"")
+        )
 
     test_image = make_png(width, height, raw_data)
 
     endpoints = [
-        ("Image Quality", "/inference/image-quality", {"image": ("test.png", test_image, "image/png")}),
-        ("Classify", "/inference/classify", {"image": ("test.png", test_image, "image/png")}),
-        ("Detect Logo", "/inference/detect-logo", {"image": ("test.png", test_image, "image/png")}),
-        ("Detect NSFW", "/inference/detect-nsfw", {"image": ("test.png", test_image, "image/png")}),
-        ("Detect Objects", "/inference/detect-objects", {"image": ("test.png", test_image, "image/png")}),
-        ("Embed Image", "/inference/embed-image", {"image": ("test.png", test_image, "image/png")}),
-        ("Detect Outlines (OCR)", "/inference/detect-outlines", {"image": ("test.png", test_image, "image/png")}),
-        ("Detect Symbols", "/inference/detect-symbols", {"image": ("test.png", test_image, "image/png")}),
+        (
+            "Image Quality",
+            "/inference/image-quality",
+            {"image": ("test.png", test_image, "image/png")},
+        ),
+        (
+            "Classify",
+            "/inference/classify",
+            {"image": ("test.png", test_image, "image/png")},
+        ),
+        (
+            "Detect Logo",
+            "/inference/detect-logo",
+            {"image": ("test.png", test_image, "image/png")},
+        ),
+        (
+            "Detect NSFW",
+            "/inference/detect-nsfw",
+            {"image": ("test.png", test_image, "image/png")},
+        ),
+        (
+            "Detect Objects",
+            "/inference/detect-objects",
+            {"image": ("test.png", test_image, "image/png")},
+        ),
+        (
+            "Embed Image",
+            "/inference/embed-image",
+            {"image": ("test.png", test_image, "image/png")},
+        ),
+        (
+            "Detect Outlines (OCR)",
+            "/inference/detect-outlines",
+            {"image": ("test.png", test_image, "image/png")},
+        ),
+        (
+            "Detect Symbols",
+            "/inference/detect-symbols",
+            {"image": ("test.png", test_image, "image/png")},
+        ),
     ]
 
     for name, path, files in endpoints:
         try:
             r = client.post(f"{MODAL_BASE}{path}", files=files, timeout=180.0)
-            detail = r.text[:150] if r.status_code != 200 else json.dumps(
-                {k: v for k, v in r.json().items() if k != "result"}, default=str
-            )[:150]
-            record(f"Modal {name}", "POST", path, r.status_code, r.status_code == 200, detail)
+            detail = (
+                r.text[:150]
+                if r.status_code != 200
+                else json.dumps(
+                    {k: v for k, v in r.json().items() if k != "result"}, default=str
+                )[:150]
+            )
+            record(
+                f"Modal {name}",
+                "POST",
+                path,
+                r.status_code,
+                r.status_code == 200,
+                detail,
+            )
         except Exception as e:
             record(f"Modal {name}", "POST", path, 0, False, str(e)[:200])
 
     # Translate
     try:
-        r = client.post(f"{MODAL_BASE}/inference/translate",
-                        data={"text": "Hello world", "source_lang": "en", "target_lang": "fr"},
-                        timeout=180.0)
-        record("Modal Translate", "POST", "/inference/translate", r.status_code,
-               r.status_code == 200, r.text[:150])
+        r = client.post(
+            f"{MODAL_BASE}/inference/translate",
+            data={"text": "Hello world", "source_lang": "en", "target_lang": "fr"},
+            timeout=180.0,
+        )
+        record(
+            "Modal Translate",
+            "POST",
+            "/inference/translate",
+            r.status_code,
+            r.status_code == 200,
+            r.text[:150],
+        )
     except Exception as e:
-        record("Modal Translate", "POST", "/inference/translate", 0, False, str(e)[:200])
+        record(
+            "Modal Translate", "POST", "/inference/translate", 0, False, str(e)[:200]
+        )
 
 
 def test_setup_tenant():
@@ -217,8 +327,14 @@ def test_setup_tenant():
 
     # Seed test tenants
     r = client.post(f"{API_BASE}/api/v1/dev/seed", headers=admin_headers)
-    record("Seed Tenants", "POST", "/api/v1/dev/seed", r.status_code,
-           r.status_code in (200, 201), r.text[:200])
+    record(
+        "Seed Tenants",
+        "POST",
+        "/api/v1/dev/seed",
+        r.status_code,
+        r.status_code in (200, 201),
+        r.text[:200],
+    )
 
     if r.status_code in (200, 201):
         data = r.json()
@@ -238,27 +354,52 @@ def test_setup_tenant():
                 "ai_enabled": True,
                 "billing_mode": "pay_per_use",
                 "enabled_categories": "all",
-            }
+            },
         )
-        record("Enable AI", "PUT", f"/api/v1/admin/tenants/{tenant_id}/ai",
-               r2.status_code, r2.status_code in (200, 201), r2.text[:200])
+        record(
+            "Enable AI",
+            "PUT",
+            f"/api/v1/admin/tenants/{tenant_id}/ai",
+            r2.status_code,
+            r2.status_code in (200, 201),
+            r2.text[:200],
+        )
 
         # Grant credits
         r3 = client.post(
             f"{API_BASE}/api/v1/admin/tenants/{tenant_id}/ai/credits",
             headers=admin_headers,
-            params={"credit_amount": 10000, "price_paid": 0}
+            params={"credit_amount": 10000, "price_paid": 0},
         )
-        record("Grant AI Credits", "POST", f"/api/v1/admin/tenants/{tenant_id}/ai/credits",
-               r3.status_code, r3.status_code in (200, 201), r3.text[:200])
+        record(
+            "Grant AI Credits",
+            "POST",
+            f"/api/v1/admin/tenants/{tenant_id}/ai/credits",
+            r3.status_code,
+            r3.status_code in (200, 201),
+            r3.text[:200],
+        )
 
         return api_key, tenant_id
     else:
         # Fallback: create enterprise tenant manually
-        r = client.post(f"{API_BASE}/api/v1/admin/tenants", headers=admin_headers,
-                        json={"name": "E2E Test Enterprise", "contact_email": "test@lintpdf.com", "plan": "enterprise"})
-        record("Create Tenant", "POST", "/api/v1/admin/tenants", r.status_code,
-               r.status_code in (200, 201), r.text[:200])
+        r = client.post(
+            f"{API_BASE}/api/v1/admin/tenants",
+            headers=admin_headers,
+            json={
+                "name": "E2E Test Enterprise",
+                "contact_email": "test@lintpdf.com",
+                "plan": "enterprise",
+            },
+        )
+        record(
+            "Create Tenant",
+            "POST",
+            "/api/v1/admin/tenants",
+            r.status_code,
+            r.status_code in (200, 201),
+            r.text[:200],
+        )
         if r.status_code in (200, 201):
             data = r.json()
             return data.get("api_key", ""), data.get("id", "")
@@ -270,34 +411,68 @@ def test_profiles(api_key: str):
     headers = {"Authorization": f"Bearer {api_key}"}
 
     r = client.get(f"{API_BASE}/api/v1/profiles", headers=headers)
-    record("List Profiles", "GET", "/api/v1/profiles", r.status_code,
-           r.status_code == 200, f"{len(r.json().get('profiles', []))} profiles" if r.status_code == 200 else r.text[:100])
+    record(
+        "List Profiles",
+        "GET",
+        "/api/v1/profiles",
+        r.status_code,
+        r.status_code == 200,
+        f"{len(r.json().get('profiles', []))} profiles"
+        if r.status_code == 200
+        else r.text[:100],
+    )
 
     for pid in ["lintpdf-default", "lintpdf-strict"]:
         r = client.get(f"{API_BASE}/api/v1/profiles/{pid}", headers=headers)
-        record(f"Get Profile {pid}", "GET", f"/api/v1/profiles/{pid}", r.status_code,
-               r.status_code == 200, r.text[:100])
+        record(
+            f"Get Profile {pid}",
+            "GET",
+            f"/api/v1/profiles/{pid}",
+            r.status_code,
+            r.status_code == 200,
+            r.text[:100],
+        )
 
     # Create custom profile
-    r = client.post(f"{API_BASE}/api/v1/profiles", headers=headers, json={
-        "profile_id": "e2e-test-profile",
-        "preflight_profile": {
-            "name": "E2E Test Profile",
-            "description": "Test profile for E2E testing",
-            "version": "1.0",
-            "conformance": None,
-            "workflow": "CMYK",
-            "checks": {"enabled": ["LPDF_*"], "disabled": [], "severity_overrides": {}},
-            "thresholds": {"min_dpi": 300.0}
-        }
-    })
-    record("Create Profile", "POST", "/api/v1/profiles", r.status_code,
-           r.status_code in (200, 201), r.text[:100])
+    r = client.post(
+        f"{API_BASE}/api/v1/profiles",
+        headers=headers,
+        json={
+            "profile_id": "e2e-test-profile",
+            "preflight_profile": {
+                "name": "E2E Test Profile",
+                "description": "Test profile for E2E testing",
+                "version": "1.0",
+                "conformance": None,
+                "workflow": "CMYK",
+                "checks": {
+                    "enabled": ["LPDF_*"],
+                    "disabled": [],
+                    "severity_overrides": {},
+                },
+                "thresholds": {"min_dpi": 300.0},
+            },
+        },
+    )
+    record(
+        "Create Profile",
+        "POST",
+        "/api/v1/profiles",
+        r.status_code,
+        r.status_code in (200, 201),
+        r.text[:100],
+    )
 
     # Delete custom profile
     r = client.delete(f"{API_BASE}/api/v1/profiles/e2e-test-profile", headers=headers)
-    record("Delete Profile", "DELETE", "/api/v1/profiles/e2e-test-profile", r.status_code,
-           r.status_code in (200, 204), r.text[:100] if r.text else "deleted")
+    record(
+        "Delete Profile",
+        "DELETE",
+        "/api/v1/profiles/e2e-test-profile",
+        r.status_code,
+        r.status_code in (200, 204),
+        r.text[:100] if r.text else "deleted",
+    )
 
 
 def test_ai_config(api_key: str):
@@ -305,47 +480,104 @@ def test_ai_config(api_key: str):
     headers = {"Authorization": f"Bearer {api_key}"}
 
     r = client.get(f"{API_BASE}/api/v1/ai/config", headers=headers)
-    record("Get AI Config", "GET", "/api/v1/ai/config", r.status_code,
-           r.status_code == 200, r.text[:200])
+    record(
+        "Get AI Config",
+        "GET",
+        "/api/v1/ai/config",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
     r = client.get(f"{API_BASE}/api/v1/ai/credits", headers=headers)
-    record("Get AI Credits", "GET", "/api/v1/ai/credits", r.status_code,
-           r.status_code == 200, r.text[:200])
+    record(
+        "Get AI Credits",
+        "GET",
+        "/api/v1/ai/credits",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
     r = client.get(f"{API_BASE}/api/v1/ai/presets", headers=headers)
-    record("List AI Presets", "GET", "/api/v1/ai/presets", r.status_code,
-           r.status_code == 200, r.text[:200])
+    record(
+        "List AI Presets",
+        "GET",
+        "/api/v1/ai/presets",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
     # Update AI config - enable all categories
-    r = client.put(f"{API_BASE}/api/v1/ai/config", headers=headers, json={
-        "enabled_categories": [
-            "barcode_detection", "color_compliance", "content_quality",
-            "document_classification", "image_analysis", "logo_verification",
-            "regulatory_compliance", "spatial_analysis", "symbol_detection",
-            "text_analysis", "dieline_detection", "color_analysis",
-            "nlp_interfaces", "file_comparison", "trend_analysis"
-        ],
-        "industry_type": "food_beverage",
-        "regulatory_market": "us_fda"
-    })
-    record("Update AI Config", "PUT", "/api/v1/ai/config", r.status_code,
-           r.status_code in (200, 201), r.text[:200])
+    r = client.put(
+        f"{API_BASE}/api/v1/ai/config",
+        headers=headers,
+        json={
+            "enabled_categories": [
+                "barcode_detection",
+                "color_compliance",
+                "content_quality",
+                "document_classification",
+                "image_analysis",
+                "logo_verification",
+                "regulatory_compliance",
+                "spatial_analysis",
+                "symbol_detection",
+                "text_analysis",
+                "dieline_detection",
+                "color_analysis",
+                "nlp_interfaces",
+                "file_comparison",
+                "trend_analysis",
+            ],
+            "industry_type": "food_beverage",
+            "regulatory_market": "us_fda",
+        },
+    )
+    record(
+        "Update AI Config",
+        "PUT",
+        "/api/v1/ai/config",
+        r.status_code,
+        r.status_code in (200, 201),
+        r.text[:200],
+    )
 
     # Set dictionary
-    r = client.put(f"{API_BASE}/api/v1/ai/config/dictionary", headers=headers,
-                   json={"words": ["LintPDF", "preflight", "CMYK"]})
-    record("Set Dictionary", "PUT", "/api/v1/ai/config/dictionary", r.status_code,
-           r.status_code in (200, 201, 204), r.text[:100])
+    r = client.put(
+        f"{API_BASE}/api/v1/ai/config/dictionary",
+        headers=headers,
+        json={"words": ["LintPDF", "preflight", "CMYK"]},
+    )
+    record(
+        "Set Dictionary",
+        "PUT",
+        "/api/v1/ai/config/dictionary",
+        r.status_code,
+        r.status_code in (200, 201, 204),
+        r.text[:100],
+    )
 
     # Set palette
-    r = client.put(f"{API_BASE}/api/v1/ai/config/palette", headers=headers, json={
-        "colors": [
-            {"name": "Primary Blue", "value": "#1a3a7a", "color_space": "srgb"},
-            {"name": "Accent Red", "value": "#dc2626", "color_space": "srgb"}
-        ]
-    })
-    record("Set Palette", "PUT", "/api/v1/ai/config/palette", r.status_code,
-           r.status_code in (200, 201, 204), r.text[:100])
+    r = client.put(
+        f"{API_BASE}/api/v1/ai/config/palette",
+        headers=headers,
+        json={
+            "colors": [
+                {"name": "Primary Blue", "value": "#1a3a7a", "color_space": "srgb"},
+                {"name": "Accent Red", "value": "#dc2626", "color_space": "srgb"},
+            ]
+        },
+    )
+    record(
+        "Set Palette",
+        "PUT",
+        "/api/v1/ai/config/palette",
+        r.status_code,
+        r.status_code in (200, 201, 204),
+        r.text[:100],
+    )
 
 
 def submit_job(api_key: str, pdf_bytes: bytes, profile: str, label: str) -> str:
@@ -355,8 +587,14 @@ def submit_job(api_key: str, pdf_bytes: bytes, profile: str, label: str) -> str:
     data = {"profile_id": profile}
 
     r = client.post(f"{API_BASE}/api/v1/jobs", headers=headers, files=files, data=data)
-    record(f"Submit Job ({label})", "POST", "/api/v1/jobs", r.status_code,
-           r.status_code in (200, 201, 202), r.text[:200])
+    record(
+        f"Submit Job ({label})",
+        "POST",
+        "/api/v1/jobs",
+        r.status_code,
+        r.status_code in (200, 201, 202),
+        r.text[:200],
+    )
 
     if r.status_code in (200, 201, 202):
         job_id = r.json().get("job_id", "")
@@ -374,7 +612,14 @@ def poll_job(api_key: str, job_id: str, label: str, max_wait: int = 300) -> dict
     while time.time() - start < max_wait:
         r = client.get(f"{API_BASE}/api/v1/jobs/{job_id}", headers=headers)
         if r.status_code != 200:
-            record(f"Poll Job ({label})", "GET", f"/api/v1/jobs/{job_id}", r.status_code, False, r.text[:200])
+            record(
+                f"Poll Job ({label})",
+                "GET",
+                f"/api/v1/jobs/{job_id}",
+                r.status_code,
+                False,
+                r.text[:200],
+            )
             return {}
 
         data = r.json()
@@ -386,19 +631,37 @@ def poll_job(api_key: str, job_id: str, label: str, max_wait: int = 300) -> dict
         if status == "complete":
             findings = data.get("findings", [])
             summary = data.get("summary", {})
-            record(f"Job Complete ({label})", "GET", f"/api/v1/jobs/{job_id}", 200, True,
-                   f"findings={len(findings)} errors={summary.get('error_count',0)} "
-                   f"warnings={summary.get('warning_count',0)} advisories={summary.get('advisory_count',0)}")
+            record(
+                f"Job Complete ({label})",
+                "GET",
+                f"/api/v1/jobs/{job_id}",
+                200,
+                True,
+                f"findings={len(findings)} errors={summary.get('error_count', 0)} "
+                f"warnings={summary.get('warning_count', 0)} advisories={summary.get('advisory_count', 0)}",
+            )
             return data
         elif status == "failed":
-            record(f"Job Failed ({label})", "GET", f"/api/v1/jobs/{job_id}", 200, False,
-                   data.get("error_message", "unknown error")[:200])
+            record(
+                f"Job Failed ({label})",
+                "GET",
+                f"/api/v1/jobs/{job_id}",
+                200,
+                False,
+                data.get("error_message", "unknown error")[:200],
+            )
             return data
 
         time.sleep(5)
 
-    record(f"Job Timeout ({label})", "GET", f"/api/v1/jobs/{job_id}", 0, False,
-           f"Timed out after {max_wait}s, last status: {last_status}")
+    record(
+        f"Job Timeout ({label})",
+        "GET",
+        f"/api/v1/jobs/{job_id}",
+        0,
+        False,
+        f"Timed out after {max_wait}s, last status: {last_status}",
+    )
     return {}
 
 
@@ -437,10 +700,19 @@ def test_reports(api_key: str, job_id: str):
     headers = {"Authorization": f"Bearer {api_key}"}
 
     # Generate reports
-    r = client.post(f"{API_BASE}/api/v1/jobs/{job_id}/reports", headers=headers,
-                    json={"formats": ["html", "pdf"], "expiry_days": 1})
-    record("Generate Reports", "POST", f"/api/v1/jobs/{job_id}/reports", r.status_code,
-           r.status_code in (200, 201), r.text[:200])
+    r = client.post(
+        f"{API_BASE}/api/v1/jobs/{job_id}/reports",
+        headers=headers,
+        json={"formats": ["html", "pdf"], "expiry_days": 1},
+    )
+    record(
+        "Generate Reports",
+        "POST",
+        f"/api/v1/jobs/{job_id}/reports",
+        r.status_code,
+        r.status_code in (200, 201),
+        r.text[:200],
+    )
 
     if r.status_code in (200, 201):
         reports = r.json().get("reports", [])
@@ -452,14 +724,26 @@ def test_reports(api_key: str, job_id: str):
 
     # List reports
     r = client.get(f"{API_BASE}/api/v1/jobs/{job_id}/reports", headers=headers)
-    record("List Reports", "GET", f"/api/v1/jobs/{job_id}/reports", r.status_code,
-           r.status_code == 200, r.text[:200])
+    record(
+        "List Reports",
+        "GET",
+        f"/api/v1/jobs/{job_id}/reports",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
     # Serve HTML report
     if report_tokens:
         r = client.get(f"{API_BASE}/r/{report_tokens[0]}")
-        record("Serve HTML Report", "GET", f"/r/{report_tokens[0][:10]}...", r.status_code,
-               r.status_code == 200, f"length={len(r.text)}")
+        record(
+            "Serve HTML Report",
+            "GET",
+            f"/r/{report_tokens[0][:10]}...",
+            r.status_code,
+            r.status_code == 200,
+            f"length={len(r.text)}",
+        )
 
 
 def test_webhooks(api_key: str):
@@ -467,28 +751,58 @@ def test_webhooks(api_key: str):
     headers = {"Authorization": f"Bearer {api_key}"}
 
     r = client.get(f"{API_BASE}/api/v1/webhooks", headers=headers)
-    record("List Webhooks", "GET", "/api/v1/webhooks", r.status_code,
-           r.status_code == 200, r.text[:200])
+    record(
+        "List Webhooks",
+        "GET",
+        "/api/v1/webhooks",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
     # Create webhook (will fail if URL not HTTPS to external - expected)
-    r = client.post(f"{API_BASE}/api/v1/webhooks", headers=headers, json={
-        "url": "https://webhook.site/test-e2e-lintpdf",
-        "events": ["job.complete", "job.failed"]
-    })
-    record("Create Webhook", "POST", "/api/v1/webhooks", r.status_code,
-           r.status_code in (200, 201), r.text[:200])
+    r = client.post(
+        f"{API_BASE}/api/v1/webhooks",
+        headers=headers,
+        json={
+            "url": "https://webhook.site/test-e2e-lintpdf",
+            "events": ["job.complete", "job.failed"],
+        },
+    )
+    record(
+        "Create Webhook",
+        "POST",
+        "/api/v1/webhooks",
+        r.status_code,
+        r.status_code in (200, 201),
+        r.text[:200],
+    )
 
     webhook_id = ""
     if r.status_code in (200, 201):
         webhook_id = r.json().get("id", "")
         # Test webhook
-        r2 = client.post(f"{API_BASE}/api/v1/webhooks/{webhook_id}/test", headers=headers)
-        record("Test Webhook", "POST", f"/api/v1/webhooks/{webhook_id}/test",
-               r2.status_code, r2.status_code in (200, 201), r2.text[:200])
+        r2 = client.post(
+            f"{API_BASE}/api/v1/webhooks/{webhook_id}/test", headers=headers
+        )
+        record(
+            "Test Webhook",
+            "POST",
+            f"/api/v1/webhooks/{webhook_id}/test",
+            r2.status_code,
+            r2.status_code in (200, 201),
+            r2.text[:200],
+        )
         # Delete webhook
         r3 = client.delete(f"{API_BASE}/api/v1/webhooks/{webhook_id}", headers=headers)
-        record("Delete Webhook", "DELETE", f"/api/v1/webhooks/{webhook_id}",
-               r3.status_code, r3.status_code in (200, 204), "deleted")
+        record(
+            "Delete Webhook",
+            "DELETE",
+            f"/api/v1/webhooks/{webhook_id}",
+            r3.status_code,
+            r3.status_code in (200, 204),
+            "deleted",
+        )
 
 
 def test_endpoints_mgmt(api_key: str):
@@ -496,22 +810,44 @@ def test_endpoints_mgmt(api_key: str):
     headers = {"Authorization": f"Bearer {api_key}"}
 
     r = client.get(f"{API_BASE}/api/v1/endpoints", headers=headers)
-    record("List Endpoints", "GET", "/api/v1/endpoints", r.status_code,
-           r.status_code == 200, r.text[:200])
+    record(
+        "List Endpoints",
+        "GET",
+        "/api/v1/endpoints",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
-    r = client.post(f"{API_BASE}/api/v1/endpoints", headers=headers, json={
-        "slug": "e2e-test-endpoint",
-        "profile_id": "lintpdf-default",
-        "description": "E2E test endpoint"
-    })
-    record("Create Endpoint", "POST", "/api/v1/endpoints", r.status_code,
-           r.status_code in (200, 201), r.text[:200])
+    r = client.post(
+        f"{API_BASE}/api/v1/endpoints",
+        headers=headers,
+        json={
+            "slug": "e2e-test-endpoint",
+            "profile_id": "lintpdf-default",
+            "description": "E2E test endpoint",
+        },
+    )
+    record(
+        "Create Endpoint",
+        "POST",
+        "/api/v1/endpoints",
+        r.status_code,
+        r.status_code in (200, 201),
+        r.text[:200],
+    )
 
     if r.status_code in (200, 201):
         eid = r.json().get("id", "")
         r2 = client.delete(f"{API_BASE}/api/v1/endpoints/{eid}", headers=headers)
-        record("Delete Endpoint", "DELETE", f"/api/v1/endpoints/{eid}",
-               r2.status_code, r2.status_code in (200, 204), "deleted")
+        record(
+            "Delete Endpoint",
+            "DELETE",
+            f"/api/v1/endpoints/{eid}",
+            r2.status_code,
+            r2.status_code in (200, 204),
+            "deleted",
+        )
 
 
 def test_usage(api_key: str, job_id: str):
@@ -519,41 +855,87 @@ def test_usage(api_key: str, job_id: str):
     headers = {"Authorization": f"Bearer {api_key}"}
 
     r = client.get(f"{API_BASE}/api/v1/usage", headers=headers)
-    record("Get Usage", "GET", "/api/v1/usage", r.status_code,
-           r.status_code == 200, r.text[:200])
+    record(
+        "Get Usage",
+        "GET",
+        "/api/v1/usage",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
     r = client.get(f"{API_BASE}/api/v1/ai/usage", headers=headers)
-    record("Get AI Usage", "GET", "/api/v1/ai/usage", r.status_code,
-           r.status_code == 200, r.text[:200])
+    record(
+        "Get AI Usage",
+        "GET",
+        "/api/v1/ai/usage",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
-    r = client.get(f"{API_BASE}/api/v1/ai/usage/trends", headers=headers,
-                   params={"period": "30d"})
-    record("Get AI Trends", "GET", "/api/v1/ai/usage/trends", r.status_code,
-           r.status_code == 200, r.text[:200])
+    r = client.get(
+        f"{API_BASE}/api/v1/ai/usage/trends", headers=headers, params={"period": "30d"}
+    )
+    record(
+        "Get AI Trends",
+        "GET",
+        "/api/v1/ai/usage/trends",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
     if job_id:
-        r = client.get(f"{API_BASE}/api/v1/captains-log/{job_id}/interpret", headers=headers)
-        record("Captain's Log", "GET", f"/api/v1/captains-log/{job_id}/interpret",
-               r.status_code, r.status_code == 200, r.text[:200])
+        r = client.get(
+            f"{API_BASE}/api/v1/captains-log/{job_id}/interpret", headers=headers
+        )
+        record(
+            "Captain's Log",
+            "GET",
+            f"/api/v1/captains-log/{job_id}/interpret",
+            r.status_code,
+            r.status_code == 200,
+            r.text[:200],
+        )
 
 
 def test_job_list_delete(api_key: str):
     log("\n=== JOB MANAGEMENT ===")
     headers = {"Authorization": f"Bearer {api_key}"}
 
-    r = client.get(f"{API_BASE}/api/v1/jobs", headers=headers, params={"page": 1, "page_size": 5})
-    record("List Jobs", "GET", "/api/v1/jobs", r.status_code,
-           r.status_code == 200, r.text[:200])
+    r = client.get(
+        f"{API_BASE}/api/v1/jobs", headers=headers, params={"page": 1, "page_size": 5}
+    )
+    record(
+        "List Jobs",
+        "GET",
+        "/api/v1/jobs",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
 
 def test_profile_generate(api_key: str):
     log("\n=== AI PROFILE GENERATION ===")
     headers = {"Authorization": f"Bearer {api_key}"}
 
-    r = client.post(f"{API_BASE}/api/v1/preflight-profiles/generate", headers=headers,
-                    json={"description": "Check for FDA nutrition facts, barcode validation, and spot colors on CMYK packaging"})
-    record("Generate Profile", "POST", "/api/v1/preflight-profiles/generate",
-           r.status_code, r.status_code == 200, r.text[:200])
+    r = client.post(
+        f"{API_BASE}/api/v1/preflight-profiles/generate",
+        headers=headers,
+        json={
+            "description": "Check for FDA nutrition facts, barcode validation, and spot colors on CMYK packaging"
+        },
+    )
+    record(
+        "Generate Profile",
+        "POST",
+        "/api/v1/preflight-profiles/generate",
+        r.status_code,
+        r.status_code == 200,
+        r.text[:200],
+    )
 
 
 # ──── Main ──────────────────────────────────────────────────────────────────
@@ -569,7 +951,9 @@ def main():
     if not SKIP_MODAL_DIRECT:
         test_modal_inference()
     else:
-        log("\n=== MODAL INFERENCE: SKIPPED (cold-starting, will test via API jobs) ===")
+        log(
+            "\n=== MODAL INFERENCE: SKIPPED (cold-starting, will test via API jobs) ==="
+        )
 
     # Step 3: Setup tenant
     api_key, tenant_id = test_setup_tenant()
@@ -634,16 +1018,20 @@ def main():
 
     # Save results
     with open("/tmp/e2e_test_results.json", "w") as f:
-        json.dump({
-            "results": results,
-            "findings_summary": {
-                "total": len(all_findings),
-                "unique_checks": len(by_id),
-                "severity": dict(by_severity),
-                "check_ids": sorted(by_id.keys()),
+        json.dump(
+            {
+                "results": results,
+                "findings_summary": {
+                    "total": len(all_findings),
+                    "unique_checks": len(by_id),
+                    "severity": dict(by_severity),
+                    "check_ids": sorted(by_id.keys()),
+                },
+                "timestamp": datetime.now().isoformat(),
             },
-            "timestamp": datetime.now().isoformat()
-        }, f, indent=2)
+            f,
+            indent=2,
+        )
     log(f"\nFull results saved to /tmp/e2e_test_results.json")
 
 
@@ -655,7 +1043,7 @@ def print_summary():
     failed = sum(1 for r in results if not r["passed"])
     total = len(results)
     log(f"  Total: {total}  Passed: {passed}  Failed: {failed}")
-    log(f"  Pass rate: {passed/total*100:.1f}%" if total else "  No tests ran")
+    log(f"  Pass rate: {passed / total * 100:.1f}%" if total else "  No tests ran")
 
     if failed:
         log("\n  FAILURES:")
