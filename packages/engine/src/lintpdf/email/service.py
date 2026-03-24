@@ -220,6 +220,68 @@ def send_report(
     return _send(to=to, subject=subject, html=html)
 
 
+def send_trial_report_email(
+    *,
+    to: str,
+    name: str,
+    report_urls: list[str],
+    finding_count: int,
+    passed: bool,
+) -> EmailResult:
+    """Send a free trial preflight report to a prospect.
+
+    Args:
+        to: Recipient email address.
+        name: Prospect's name.
+        report_urls: URLs to the hosted interactive reports.
+        finding_count: Total findings across all files.
+        passed: Whether all documents passed preflight.
+    """
+    status_text = "passed" if passed else f"found {finding_count} issue(s)"
+    subject = "Your Free LintPDF Preflight Report"
+
+    report_links = "\n".join(
+        f'    <a href="{url}" style="display: inline-block; margin: 4px 0; padding: 10px 20px; '
+        f"background: #1e3a8a; color: white; text-decoration: none; border-radius: 6px; "
+        f'font-weight: bold; font-size: 14px;">View Report {i + 1}</a><br>'
+        for i, url in enumerate(report_urls)
+    )
+
+    html = f"""\
+<div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto;">
+  <h2 style="color: #1e3a8a;">Your Free Preflight Report</h2>
+  <p>Hi {name},</p>
+  <p>Thanks for submitting your files to LintPDF. We've run our preflight analysis and your files {status_text}.</p>
+  <table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+    <tr>
+      <td style="padding: 8px; color: #64748b;">Status</td>
+      <td style="padding: 8px;"><strong>{"PASS" if passed else "NEEDS ATTENTION"}</strong></td>
+    </tr>
+    <tr>
+      <td style="padding: 8px; color: #64748b;">Total Findings</td>
+      <td style="padding: 8px;"><strong>{finding_count}</strong></td>
+    </tr>
+  </table>
+  <div style="margin: 24px 0;">
+{report_links}
+  </div>
+  <p style="font-size: 14px; color: #334155;">
+    Want to run preflights like this on every file, automatically? LintPDF integrates with your
+    existing workflow via API, hot folders, or our dashboard.
+  </p>
+  <div style="margin: 20px 0;">
+    <a href="https://lintpdf.com/try-it" style="display: inline-block; padding: 10px 20px; background: #2563eb; color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+      Learn More
+    </a>
+  </div>
+  <p style="font-size: 12px; color: #9ca3af;">
+    Questions? Just reply to this email &mdash; we'd love to help.<br>
+    Reports are hosted and may expire after 30 days.
+  </p>
+</div>"""
+    return _send(to=to, subject=subject, html=html)
+
+
 _EMAIL_RE = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
 
 

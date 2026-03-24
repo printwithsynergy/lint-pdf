@@ -444,3 +444,74 @@ class UserAIAccess(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+# --- Trial Submission Models ---
+
+
+class TrialSubmissionStatus(enum.StrEnum):
+    """Trial submission processing status."""
+
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETE = "complete"
+    CONTACTED = "contacted"
+
+
+class TrialSubmission(Base):
+    """Public trial upload submission from a prospect."""
+
+    __tablename__ = "trial_submissions"
+    __table_args__ = (
+        Index("ix_trial_submissions_email", "email"),
+        Index("ix_trial_submissions_status", "status"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False)
+    company: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    file_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[TrialSubmissionStatus] = mapped_column(
+        Enum(TrialSubmissionStatus, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+        default=TrialSubmissionStatus.PENDING,
+    )
+    admin_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    # Relationships
+    files: Mapped[list[TrialFile]] = relationship(
+        back_populates="submission", cascade="all, delete-orphan"
+    )
+
+
+class TrialFile(Base):
+    """Individual file within a trial submission."""
+
+    __tablename__ = "trial_files"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    submission_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("trial_submissions.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    file_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    file_size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    file_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    job_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("jobs.id", ondelete="SET NULL"), nullable=True
+    )
+    scan_clean: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relationships
+    submission: Mapped[TrialSubmission] = relationship(back_populates="files")
+    job: Mapped[Job | None] = relationship()

@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     # ClamAV malware scanning (optional — set to enable virus scanning on uploads)
     clamav_url: str | None = None
 
+    # Trial upload secret (shared with marketing site)
+    trial_secret: str = ""
+
     @property
     def max_upload_size_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024

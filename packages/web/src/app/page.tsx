@@ -5,6 +5,7 @@ import { AIFeaturesSection } from "@/components/AIFeaturesSection";
 import { HowItWorksSection } from "@/components/HowItWorksSection";
 import { CompetitorComparisonSection } from "@/components/CompetitorComparisonSection";
 import { PricingSection } from "@/components/PricingSection";
+import { TryItCTA } from "@/components/TryItCTA";
 import { CTASection } from "@/components/CTASection";
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
       <HowItWorksSection />
       <CompetitorComparisonSection />
       <PricingSection />
+      <TryItCTA />
       <CTASection />
     </main>
   );
