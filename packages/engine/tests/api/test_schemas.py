@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from grounded.api.schemas import (
+from lintpdf.api.schemas import (
     FindingResponse,
     HealthResponse,
     JobCreateResponse,

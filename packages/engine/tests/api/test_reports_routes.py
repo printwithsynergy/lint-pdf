@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-from grounded.api.models import Job, JobStatus, ReportToken
+from lintpdf.api.models import Job, JobStatus, ReportToken
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -146,10 +146,10 @@ class TestGenerateReportsRoute:
 
         with (
             patch(
-                "grounded.reports.service.ReportService",
+                "lintpdf.reports.service.ReportService",
                 return_value=mock_service,
             ),
-            patch("grounded.api.config.get_settings") as mock_settings,
+            patch("lintpdf.api.config.get_settings") as mock_settings,
         ):
             mock_settings.return_value.report_base_url = "https://reports.example.com"
             resp = client.post(f"/api/v1/jobs/{job.id}/reports")
@@ -272,7 +272,7 @@ class TestServeHtmlReportRoute:
         # Use no_expiry=True to avoid timezone comparison issues on SQLite
         _seed_report_token(db_session, job.id, fmt="html", token="tok_html_ok", no_expiry=True)
 
-        from grounded.api.storage import get_storage
+        from lintpdf.api.storage import get_storage
 
         get_storage().upload_report(
             str(PLACEHOLDER_TENANT_ID), str(job.id), "html", b"<html>Report</html>"
@@ -286,7 +286,7 @@ class TestServeHtmlReportRoute:
     def test_increments_access_count(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         _seed_report_token(db_session, job.id, fmt="html", token="tok_count", no_expiry=True)
-        from grounded.api.storage import get_storage
+        from lintpdf.api.storage import get_storage
 
         get_storage().upload_report(str(PLACEHOLDER_TENANT_ID), str(job.id), "html", b"<html/>")
 

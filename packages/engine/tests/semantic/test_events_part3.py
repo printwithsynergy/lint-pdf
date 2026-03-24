@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from grounded.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
-from grounded.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
 
 
 class TestPrepressStateChangedEvent:

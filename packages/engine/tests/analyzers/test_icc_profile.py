@@ -2,13 +2,13 @@
 
 import struct
 
-from grounded.analyzers.icc_profile_analyzer import IccProfileAnalyzer
-from grounded.analyzers.finding import Severity
-from grounded.profiles.icc.profile_manager import (
+from lintpdf.analyzers.icc_profile_analyzer import IccProfileAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.profiles.icc.profile_manager import (
     extract_icc_tags,
     validate_icc_profile_bytes,
 )
-from grounded.semantic.model import (
+from lintpdf.semantic.model import (
     SemanticDocument,
     SemanticPage,
     PdfBox,

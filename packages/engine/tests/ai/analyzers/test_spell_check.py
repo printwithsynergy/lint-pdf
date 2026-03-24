@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from grounded.analyzers.finding import Severity
+from lintpdf.analyzers.finding import Severity
 
 
 def _doc_with_text(page_text: str) -> MagicMock:
@@ -24,7 +24,7 @@ class TestSpellCheckAnalyzer:
     @staticmethod
     def test_no_text_returns_empty(minimal_semantic_doc: MagicMock) -> None:
         """Document with no text content should produce no findings."""
-        from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+        from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
         analyzer = SpellCheckAnalyzer()
         findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
@@ -36,10 +36,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("The proooof is in the pudding")
 
         with patch(
-            "grounded.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze(doc, [], b"fake_pdf")
@@ -53,10 +53,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("This is a weirdWord example")
 
         with patch(
-            "grounded.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze(doc, [], b"fake_pdf")
@@ -73,10 +73,10 @@ class TestSpellCheckAnalyzer:
         ai_config.custom_dictionary = ["proooof"]
 
         with patch(
-            "grounded.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
@@ -93,10 +93,10 @@ class TestSpellCheckAnalyzer:
         ai_config.custom_dictionary = ["PROOOOF"]
 
         with patch(
-            "grounded.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
@@ -109,10 +109,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("The proooof is here")
 
         with patch(
-            "grounded.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze(doc, [], b"fake_pdf")
@@ -125,7 +125,7 @@ class TestSpellCheckAnalyzer:
 
     @staticmethod
     def test_analyzer_metadata() -> None:
-        from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+        from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
         analyzer = SpellCheckAnalyzer()
         assert analyzer.category == "content_quality"
@@ -139,10 +139,10 @@ class TestSpellCheckAnalyzer:
         doc = _doc_with_text("Normal text here")
 
         with patch(
-            "grounded.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=None)
@@ -165,10 +165,10 @@ class TestSpellCheckAnalyzer:
         doc.pages = [page1, page2]
 
         with patch(
-            "grounded.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
+            "lintpdf.ai.analyzers.content_quality.spell_check._HAS_LANGUAGE_TOOL",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
+            from lintpdf.ai.analyzers.content_quality.spell_check import SpellCheckAnalyzer
 
             analyzer = SpellCheckAnalyzer()
             findings = analyzer.analyze(doc, [], b"fake_pdf")

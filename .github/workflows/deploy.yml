@@ -172,5 +172,5 @@ jobs:
       - name: Run migrations
         working-directory: packages/engine
         env:
-          GROUNDED_DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          LINTPDF_DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: alembic upgrade head

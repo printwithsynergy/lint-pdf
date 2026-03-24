@@ -43,6 +43,6 @@ export const groundedWebhooksPlugin: PixieDustPlugin = {
     });
 
     // Routes
-    ctx.addRoutes("/api/grounded", webhookMgmtRoutes());
+    ctx.addRoutes("/api/lintpdf", webhookMgmtRoutes());
   },
 };

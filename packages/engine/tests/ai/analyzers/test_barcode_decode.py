@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from grounded.analyzers.finding import Severity
+from lintpdf.analyzers.finding import Severity
 
 
 class TestBarcodeDecode:
@@ -12,8 +12,8 @@ class TestBarcodeDecode:
 
     @staticmethod
     def test_returns_empty_when_pyzbar_unavailable(minimal_semantic_doc: MagicMock) -> None:
-        with patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", False):
-            from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
+        with patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", False):
+            from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
             findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
@@ -22,8 +22,8 @@ class TestBarcodeDecode:
 
     @staticmethod
     def test_returns_empty_when_pil_unavailable(minimal_semantic_doc: MagicMock) -> None:
-        with patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PIL", False):
-            from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
+        with patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PIL", False):
+            from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
             findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
@@ -48,20 +48,20 @@ class TestBarcodeDecode:
         )
 
         with (
-            patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
-            patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
-            patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_DMTX", False),
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_DMTX", False),
             patch(
-                "grounded.ai.rendering.render_all_pages",
+                "lintpdf.ai.rendering.render_all_pages",
                 return_value=[fake_png],
             ),
-            patch("grounded.ai.analyzers.barcode.barcode_decode._pyzbar") as mock_pyzbar,
-            patch("grounded.ai.analyzers.barcode.barcode_decode.PILImage") as mock_pil,
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._pyzbar") as mock_pyzbar,
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode.PILImage") as mock_pil,
         ):
             mock_pyzbar.decode.return_value = [mock_item]
             mock_pil.open.return_value = MagicMock()
 
-            from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
+            from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
             findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
@@ -82,20 +82,20 @@ class TestBarcodeDecode:
         fake_png = b"\x89PNG_fake"
 
         with (
-            patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
-            patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
-            patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_DMTX", False),
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_DMTX", False),
             patch(
-                "grounded.ai.rendering.render_all_pages",
+                "lintpdf.ai.rendering.render_all_pages",
                 return_value=[fake_png],
             ),
-            patch("grounded.ai.analyzers.barcode.barcode_decode._pyzbar") as mock_pyzbar,
-            patch("grounded.ai.analyzers.barcode.barcode_decode.PILImage") as mock_pil,
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._pyzbar") as mock_pyzbar,
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode.PILImage") as mock_pil,
         ):
             mock_pyzbar.decode.return_value = []
             mock_pil.open.return_value = MagicMock()
 
-            from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
+            from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
             findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
@@ -106,14 +106,14 @@ class TestBarcodeDecode:
     @staticmethod
     def test_rendering_failure_returns_empty(minimal_semantic_doc: MagicMock) -> None:
         with (
-            patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
-            patch("grounded.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PYZBAR", True),
+            patch("lintpdf.ai.analyzers.barcode.barcode_decode._HAS_PIL", True),
             patch(
-                "grounded.ai.rendering.render_all_pages",
+                "lintpdf.ai.rendering.render_all_pages",
                 side_effect=RuntimeError("No rendering backend"),
             ),
         ):
-            from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
+            from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
             analyzer = BarcodeDecode()
             findings = analyzer.analyze(minimal_semantic_doc, [], b"fake_pdf")
@@ -122,7 +122,7 @@ class TestBarcodeDecode:
 
     @staticmethod
     def test_analyzer_metadata() -> None:
-        from grounded.ai.analyzers.barcode.barcode_decode import BarcodeDecode
+        from lintpdf.ai.analyzers.barcode.barcode_decode import BarcodeDecode
 
         analyzer = BarcodeDecode()
         assert analyzer.category == "barcode"

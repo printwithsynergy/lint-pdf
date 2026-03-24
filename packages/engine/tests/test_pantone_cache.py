@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from grounded.profiles.icc.pantone_cache import (
+from lintpdf.profiles.icc.pantone_cache import (
     get_overrides,
     invalidate,
     set_overrides,

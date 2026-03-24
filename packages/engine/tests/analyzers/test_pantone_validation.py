@@ -1,13 +1,13 @@
 """Tests for Pantone validation — reference DB, Delta-E, and analyzer integration."""
 
-from grounded.analyzers.finding import Severity
-from grounded.analyzers.spot_color_analyzer import SpotColorAnalyzer
-from grounded.profiles.icc.pantone_manager import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.spot_color_analyzer import SpotColorAnalyzer
+from lintpdf.profiles.icc.pantone_manager import (
     DeltaEResult,
     PantoneManager,
     PantoneReference,
 )
-from grounded.semantic.model import (
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,
@@ -188,8 +188,8 @@ class TestOrchestratorPantoneOverrides:
         """Overrides passed to orchestrator reach SpotColorAnalyzer."""
         from unittest.mock import patch
 
-        from grounded.profiles.orchestrator import PreflightOrchestrator
-        from grounded.profiles.schema import PreflightProfile
+        from lintpdf.profiles.orchestrator import PreflightOrchestrator
+        from lintpdf.profiles.schema import PreflightProfile
 
         # Minimal profile that enables spot color checking
         profile = PreflightProfile.model_validate(
@@ -215,8 +215,8 @@ class TestOrchestratorPantoneOverrides:
 
     def test_orchestrator_none_overrides_gives_none_to_analyzer(self):
         """When no overrides, SpotColorAnalyzer receives None."""
-        from grounded.profiles.orchestrator import PreflightOrchestrator
-        from grounded.profiles.schema import PreflightProfile
+        from lintpdf.profiles.orchestrator import PreflightOrchestrator
+        from lintpdf.profiles.schema import PreflightProfile
 
         profile = PreflightProfile.model_validate(
             {
@@ -241,7 +241,7 @@ class TestEnrichedPantoneReference:
         import json
         from pathlib import Path
 
-        ref_path = Path(__file__).parent / "../../src/grounded/profiles/icc/pantone_reference.json"
+        ref_path = Path(__file__).parent / "../../src/lintpdf/profiles/icc/pantone_reference.json"
         data = json.loads(ref_path.read_text(encoding="utf-8"))
         assert data["_meta"]["count"] >= 2162
 
@@ -292,7 +292,7 @@ class TestEnrichedPantoneReference:
         import json
         from pathlib import Path
 
-        ref_path = Path(__file__).parent / "../../src/grounded/profiles/icc/pantone_reference.json"
+        ref_path = Path(__file__).parent / "../../src/lintpdf/profiles/icc/pantone_reference.json"
         data = json.loads(ref_path.read_text(encoding="utf-8"))
         fg_colors = {
             k: v

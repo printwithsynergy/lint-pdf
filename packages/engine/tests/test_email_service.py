@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from grounded.email.service import (
+from lintpdf.email.service import (
     EmailResult,
     configure_email,
     get_email_client,
@@ -45,7 +45,7 @@ class TestConfigureEmail:
     @staticmethod
     def test_configure_sets_client() -> None:
         """configure_email should initialize the Resend client."""
-        import grounded.email.service as svc
+        import lintpdf.email.service as svc
 
         svc._resend_client = None
         mock_resend = MagicMock()
@@ -65,10 +65,10 @@ class TestConfigureEmail:
     @staticmethod
     def test_configure_custom_from_address() -> None:
         """configure_email should accept a custom from address."""
-        import grounded.email.service as svc
+        import lintpdf.email.service as svc
 
         svc._email_state["client"] = None
-        with patch("grounded.email.service.resend", create=True) as mock_resend:
+        with patch("lintpdf.email.service.resend", create=True) as mock_resend:
             mock_resend.Emails = MagicMock()
             configure_email("re_key", from_address="Custom <custom@example.com>")
             assert svc._email_state["from_address"] == "Custom <custom@example.com>"

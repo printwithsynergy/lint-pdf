@@ -1,4 +1,4 @@
-"""Tests for AI access control (grounded.ai.access)."""
+"""Tests for AI access control (lintpdf.ai.access)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pytest
 from fastapi import HTTPException
 
-from grounded.ai.access import (
+from lintpdf.ai.access import (
     check_ai_access,
     check_ai_category_access,
     get_ai_config,

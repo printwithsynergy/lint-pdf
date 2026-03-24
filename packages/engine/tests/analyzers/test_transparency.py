@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.finding import Severity
-from grounded.analyzers.transparency import TransparencyAnalyzer
-from grounded.semantic.events import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.transparency import TransparencyAnalyzer
+from lintpdf.semantic.events import (
     ImagePlacedEvent,
     OpacityChangedEvent,
     OverprintChangedEvent,
 )
-from grounded.semantic.graphics_state import TransformationMatrix
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document() -> SemanticDocument:

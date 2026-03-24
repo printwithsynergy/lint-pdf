@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.finding import Severity
-from grounded.conformance.pdfx4 import PdfX4Validator
-from grounded.semantic.model import PdfAnnotation, PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4 import PdfX4Validator
+from lintpdf.semantic.model import PdfAnnotation, PdfBox, SemanticDocument, SemanticPage
 
 _VALID_XMP = b"""<?xml version="1.0" encoding="UTF-8"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">

@@ -8,14 +8,14 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from grounded.analyzers.finding import Finding, Severity
-from grounded.profiles.orchestrator import PreflightOrchestrator, PreflightResult
-from grounded.profiles.schema import AIFeatureConfig, CheckConfig, PreflightProfile
+from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.profiles.orchestrator import PreflightOrchestrator, PreflightResult
+from lintpdf.profiles.schema import AIFeatureConfig, CheckConfig, PreflightProfile
 
 
 def _minimal_doc() -> MagicMock:
     """Create a minimal SemanticDocument mock."""
-    from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+    from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
     page = SemanticPage(
         page_num=1,
@@ -77,7 +77,7 @@ class TestOrchestratorWithAI:
         doc = _minimal_doc()
 
         with patch(
-            "grounded.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             return_value=[mock_analyzer],
         ):
             orch = PreflightOrchestrator(fp, profile_id="test", pdf_bytes=b"fake")
@@ -106,7 +106,7 @@ class TestOrchestratorWithAI:
         doc = _minimal_doc()
 
         with patch(
-            "grounded.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             return_value=[mock_analyzer],
         ):
             orch = PreflightOrchestrator(fp, profile_id="test", pdf_bytes=b"fake")
@@ -141,7 +141,7 @@ class TestOrchestratorWithAI:
         doc = _minimal_doc()
 
         with patch(
-            "grounded.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             return_value=[mock_analyzer],
         ):
             orch = PreflightOrchestrator(fp, profile_id="test", pdf_bytes=b"fake")
@@ -176,7 +176,7 @@ class TestOrchestratorWithAI:
         doc = _minimal_doc()
 
         with patch(
-            "grounded.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             return_value=[mock_analyzer],
         ):
             orch = PreflightOrchestrator(fp, profile_id="test", pdf_bytes=b"fake")
@@ -200,7 +200,7 @@ class TestOrchestratorWithAI:
         doc = _minimal_doc()
 
         with patch(
-            "grounded.ai.registry.get_ai_analyzers",
+            "lintpdf.ai.registry.get_ai_analyzers",
             side_effect=ImportError("no AI"),
         ):
             orch = PreflightOrchestrator(fp, profile_id="test", pdf_bytes=b"fake")

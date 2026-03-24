@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import HTTPException, UploadFile
 
-from grounded.api.upload_security import (
+from lintpdf.api.upload_security import (
     DANGEROUS_EXTENSIONS,
     PDF_TYPES,
     PRINT_READY_TYPES,
@@ -524,7 +524,7 @@ class TestClamAVScanning:
         mock_scanner = MagicMock()
         mock_scanner.instream.return_value = {"stream": ("FOUND", "Eicar-Test-Signature")}
 
-        with patch("grounded.api.upload_security._clamd_mod") as mock_clamd:
+        with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
             mock_clamd.ClamdNetworkSocket.return_value = mock_scanner
             upload = _make_upload(MINIMAL_PDF, "infected.pdf")
             with pytest.raises(HTTPException) as exc_info:
@@ -541,7 +541,7 @@ class TestClamAVScanning:
         mock_scanner = MagicMock()
         mock_scanner.instream.return_value = {"stream": ("OK", None)}
 
-        with patch("grounded.api.upload_security._clamd_mod") as mock_clamd:
+        with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
             mock_clamd.ClamdNetworkSocket.return_value = mock_scanner
             upload = _make_upload(MINIMAL_PDF, "clean.pdf")
             content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
@@ -553,7 +553,7 @@ class TestClamAVScanning:
         settings = MagicMock()
         settings.clamav_url = "unreachable:3310"
 
-        with patch("grounded.api.upload_security._clamd_mod") as mock_clamd:
+        with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
             mock_clamd.ClamdNetworkSocket.side_effect = ConnectionError("unreachable")
             upload = _make_upload(MINIMAL_PDF, "file.pdf")
             content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)

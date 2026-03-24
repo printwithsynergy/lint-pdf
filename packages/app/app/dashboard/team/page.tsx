@@ -40,8 +40,8 @@ export default function TeamPage() {
   const fetchData = useCallback(async () => {
     try {
       const [membersResp, invitesResp] = await Promise.all([
-        fetch("/api/grounded/team"),
-        fetch("/api/grounded/team/invites"),
+        fetch("/api/lintpdf/team"),
+        fetch("/api/lintpdf/team/invites"),
       ]);
       if (membersResp.ok) {
         const data = await membersResp.json();
@@ -72,7 +72,7 @@ export default function TeamPage() {
       return;
     }
     try {
-      const resp = await fetch("/api/grounded/team/invite", {
+      const resp = await fetch("/api/lintpdf/team/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: inviteEmail, role: inviteRole }),
@@ -93,7 +93,7 @@ export default function TeamPage() {
 
   async function handleRoleChange(userId: string, newRole: string) {
     try {
-      await fetch(`/api/grounded/team/${userId}/role`, {
+      await fetch(`/api/lintpdf/team/${userId}/role`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
@@ -107,7 +107,7 @@ export default function TeamPage() {
   async function handleRemove(userId: string) {
     if (!confirm("Remove this team member?")) return;
     try {
-      await fetch(`/api/grounded/team/${userId}`, { method: "DELETE" });
+      await fetch(`/api/lintpdf/team/${userId}`, { method: "DELETE" });
       await fetchData();
     } catch {
       setError("Failed to remove member");
@@ -116,7 +116,7 @@ export default function TeamPage() {
 
   async function handleCancelInvite(inviteId: string) {
     try {
-      await fetch(`/api/grounded/team/invites/${inviteId}`, {
+      await fetch(`/api/lintpdf/team/invites/${inviteId}`, {
         method: "DELETE",
       });
       await fetchData();

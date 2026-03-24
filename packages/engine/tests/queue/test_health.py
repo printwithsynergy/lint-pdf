@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from grounded.queue.health import get_health_status
+from lintpdf.queue.health import get_health_status
 
 
 class TestHealthStatus:

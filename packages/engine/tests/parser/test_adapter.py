@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from grounded.parser.adapter import (
+from lintpdf.parser.adapter import (
     ParserAdapter,
     PdfDocument,
     PdfObject,

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from grounded.analyzers.finding import Severity
-from grounded.conformance.pdfx4._color import validate_color
-from grounded.semantic.events import ColorChangedEvent, TextRenderedEvent
-from grounded.semantic.graphics_state import TransformationMatrix
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4._color import validate_color
+from lintpdf.semantic.events import ColorChangedEvent, TextRenderedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(

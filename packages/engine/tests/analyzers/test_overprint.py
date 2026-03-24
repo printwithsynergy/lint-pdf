@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.finding import Severity
-from grounded.analyzers.overprint import OverprintAnalyzer
-from grounded.semantic.events import (
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.overprint import OverprintAnalyzer
+from lintpdf.semantic.events import (
     ColorChangedEvent,
     OpacityChangedEvent,
     OverprintChangedEvent,
 )
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document() -> SemanticDocument:

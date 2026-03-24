@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from grounded.analyzers.finding import Severity
+from lintpdf.analyzers.finding import Severity
 
 
 class TestDuplicateDetectionAnalyzer:
@@ -14,10 +14,10 @@ class TestDuplicateDetectionAnalyzer:
         self, minimal_semantic_doc: MagicMock
     ) -> None:
         with patch(
-            "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
+            "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.duplicate_detection import (
+            from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
                 DuplicateDetectionAnalyzer,
             )
 
@@ -29,10 +29,10 @@ class TestDuplicateDetectionAnalyzer:
     @staticmethod
     def test_returns_empty_when_pil_unavailable(minimal_semantic_doc: MagicMock) -> None:
         with patch(
-            "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
+            "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
             False,
         ):
-            from grounded.ai.analyzers.content_quality.duplicate_detection import (
+            from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
                 DuplicateDetectionAnalyzer,
             )
 
@@ -48,19 +48,19 @@ class TestDuplicateDetectionAnalyzer:
 
         with (
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
                 True,
             ),
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
                 True,
             ),
             patch(
-                "grounded.ai.rendering.render_all_pages",
+                "lintpdf.ai.rendering.render_all_pages",
                 return_value=[fake_png],  # Only 1 page
             ),
         ):
-            from grounded.ai.analyzers.content_quality.duplicate_detection import (
+            from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
                 DuplicateDetectionAnalyzer,
             )
 
@@ -80,26 +80,26 @@ class TestDuplicateDetectionAnalyzer:
 
         with (
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
                 True,
             ),
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
                 True,
             ),
             patch(
-                "grounded.ai.rendering.render_all_pages",
+                "lintpdf.ai.rendering.render_all_pages",
                 return_value=[fake_png, fake_png],
             ),
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection.imagehash"
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection.imagehash"
             ) as mock_imagehash,
-            patch("grounded.ai.analyzers.content_quality.duplicate_detection.PILImage") as mock_pil,
+            patch("lintpdf.ai.analyzers.content_quality.duplicate_detection.PILImage") as mock_pil,
         ):
             mock_imagehash.phash.return_value = mock_hash
             mock_pil.open.return_value = MagicMock()
 
-            from grounded.ai.analyzers.content_quality.duplicate_detection import (
+            from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
                 DuplicateDetectionAnalyzer,
             )
 
@@ -125,26 +125,26 @@ class TestDuplicateDetectionAnalyzer:
 
         with (
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
                 True,
             ),
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
                 True,
             ),
             patch(
-                "grounded.ai.rendering.render_all_pages",
+                "lintpdf.ai.rendering.render_all_pages",
                 return_value=[fake_png, fake_png],
             ),
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection.imagehash"
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection.imagehash"
             ) as mock_imagehash,
-            patch("grounded.ai.analyzers.content_quality.duplicate_detection.PILImage") as mock_pil,
+            patch("lintpdf.ai.analyzers.content_quality.duplicate_detection.PILImage") as mock_pil,
         ):
             mock_imagehash.phash.side_effect = [mock_hash1, mock_hash2]
             mock_pil.open.return_value = MagicMock()
 
-            from grounded.ai.analyzers.content_quality.duplicate_detection import (
+            from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
                 DuplicateDetectionAnalyzer,
             )
 
@@ -157,19 +157,19 @@ class TestDuplicateDetectionAnalyzer:
     def test_rendering_failure_returns_empty(minimal_semantic_doc: MagicMock) -> None:
         with (
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_IMAGEHASH",
                 True,
             ),
             patch(
-                "grounded.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
+                "lintpdf.ai.analyzers.content_quality.duplicate_detection._HAS_PIL",
                 True,
             ),
             patch(
-                "grounded.ai.rendering.render_all_pages",
+                "lintpdf.ai.rendering.render_all_pages",
                 side_effect=RuntimeError("No backend"),
             ),
         ):
-            from grounded.ai.analyzers.content_quality.duplicate_detection import (
+            from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
                 DuplicateDetectionAnalyzer,
             )
 
@@ -180,7 +180,7 @@ class TestDuplicateDetectionAnalyzer:
 
     @staticmethod
     def test_analyzer_metadata() -> None:
-        from grounded.ai.analyzers.content_quality.duplicate_detection import (
+        from lintpdf.ai.analyzers.content_quality.duplicate_detection import (
             DuplicateDetectionAnalyzer,
         )
 

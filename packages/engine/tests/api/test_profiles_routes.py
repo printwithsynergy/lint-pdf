@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from grounded.api.models import CustomProfile
+from lintpdf.api.models import CustomProfile
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

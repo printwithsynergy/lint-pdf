@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from grounded.analyzers.finding import Severity
-from grounded.conformance.pdfx4._font import validate_fonts
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4._font import validate_fonts
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(font_resources: dict[str, Any] | None = None) -> SemanticDocument:

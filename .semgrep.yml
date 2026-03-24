@@ -1,6 +1,6 @@
 rules:
   # ─── 1. SQL Injection via string interpolation ──────────────────
-  - id: grounded.python.sql-injection-raw-string
+  - id: lintpdf.python.sql-injection-raw-string
     patterns:
       - pattern: |
           $DB.execute(f"..." % ...)
@@ -22,7 +22,7 @@ rules:
       confidence: HIGH
 
   # ─── 2. Hardcoded secrets ───────────────────────────────────────
-  - id: grounded.python.hardcoded-secret-key
+  - id: lintpdf.python.hardcoded-secret-key
     patterns:
       - pattern: $VAR = "..."
       - metavariable-regex:
@@ -39,11 +39,11 @@ rules:
       confidence: MEDIUM
 
   # ─── 3. Unsafe PDF parsing outside adapter ─────────────────────
-  - id: grounded.python.unsafe-pdf-parsing
+  - id: lintpdf.python.unsafe-pdf-parsing
     pattern: pikepdf.open(...)
     message: >
       Direct pikepdf.open() usage detected. Use the PDF parser adapter
-      in grounded.parser to ensure consistent handling and security controls.
+      in lintpdf.parser to ensure consistent handling and security controls.
     languages: [python]
     severity: WARNING
     metadata:
@@ -52,11 +52,11 @@ rules:
       confidence: LOW
     paths:
       exclude:
-        - "packages/engine/src/grounded/parser/*"
+        - "packages/engine/src/lintpdf/parser/*"
         - "packages/engine/tests/*"
 
   # ─── 4. SSRF via unvalidated URL in httpx calls ────────────────
-  - id: grounded.python.ssrf-unvalidated-url
+  - id: lintpdf.python.ssrf-unvalidated-url
     patterns:
       - pattern: httpx.post($URL, ...)
       - pattern: httpx.get($URL, ...)
@@ -65,7 +65,7 @@ rules:
       - pattern: httpx.AsyncClient().get($URL, ...)
     message: >
       Ensure the URL passed to httpx is validated against SSRF.
-      Use the SSRF protection in grounded.webhooks.dispatcher
+      Use the SSRF protection in lintpdf.webhooks.dispatcher
       to block private IPs and restricted hostnames.
     languages: [python]
     severity: ERROR
@@ -76,7 +76,7 @@ rules:
       confidence: LOW
 
   # ─── 5. Timing-unsafe secret comparison ────────────────────────
-  - id: grounded.python.admin-key-timing-unsafe
+  - id: lintpdf.python.admin-key-timing-unsafe
     patterns:
       - pattern: $X == $SETTINGS.admin_api_key
       - pattern: $X != $SETTINGS.admin_api_key
@@ -93,7 +93,7 @@ rules:
       confidence: HIGH
 
   # ─── 6. Jinja2 without autoescape ──────────────────────────────
-  - id: grounded.python.jinja2-unescaped
+  - id: lintpdf.python.jinja2-unescaped
     pattern-either:
       - pattern: jinja2.Environment(autoescape=False, ...)
       - pattern: jinja2.Environment(...)
@@ -113,7 +113,7 @@ rules:
         - "packages/engine/tests/*"
 
   # ─── 7. HTML injection in email f-strings ───────────────────────
-  - id: grounded.python.email-html-injection
+  - id: lintpdf.python.email-html-injection
     patterns:
       - pattern: |
           f"...<html>...{$VAR}...</html>..."
@@ -133,7 +133,7 @@ rules:
       confidence: LOW
 
   # ─── 8. Redis Lua injection ────────────────────────────────────
-  - id: grounded.python.redis-eval-injection
+  - id: lintpdf.python.redis-eval-injection
     patterns:
       - pattern: $REDIS.eval(f"...", ...)
       - pattern: $REDIS.eval("..." + ..., ...)
@@ -149,9 +149,9 @@ rules:
       confidence: HIGH
 
   # ─── 9. Unchecked admin key in TypeScript ──────────────────────
-  - id: grounded.typescript.admin-key-unchecked
+  - id: lintpdf.typescript.admin-key-unchecked
     pattern: |
-      process.env.GROUNDED_ADMIN_API_KEY
+      process.env.LINTPDF_ADMIN_API_KEY
     message: >
       Admin API key read from environment without null/undefined check.
       Ensure the key is validated before use to prevent auth bypass.
@@ -163,7 +163,7 @@ rules:
       confidence: LOW
 
   # ─── 10. Dev endpoint without guard ────────────────────────────
-  - id: grounded.python.dev-endpoint-guard
+  - id: lintpdf.python.dev-endpoint-guard
     patterns:
       - pattern: |
           @$ROUTER.$METHOD("/dev/...")
@@ -174,7 +174,7 @@ rules:
           def $FUNC(...):
               ...
     message: >
-      Dev endpoint must be gated behind the GROUNDED_DEV_AUTH_ENABLED
+      Dev endpoint must be gated behind the LINTPDF_DEV_AUTH_ENABLED
       feature flag. Ensure the route is conditionally registered.
     languages: [python]
     severity: ERROR
@@ -187,7 +187,7 @@ rules:
         - "packages/engine/tests/*"
 
   # ─── 11. File upload without size check ────────────────────────
-  - id: grounded.python.file-upload-size-check
+  - id: lintpdf.python.file-upload-size-check
     pattern: |
       await $FILE.read()
     message: >
@@ -202,7 +202,7 @@ rules:
       confidence: LOW
 
   # ─── 12. Insecure deserialization ──────────────────────────────
-  - id: grounded.python.insecure-deserialization
+  - id: lintpdf.python.insecure-deserialization
     pattern-either:
       - pattern: pickle.loads(...)
       - pattern: pickle.load(...)

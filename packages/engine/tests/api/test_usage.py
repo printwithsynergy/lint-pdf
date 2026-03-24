@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from grounded.api.middleware import set_rate_limiter
+from lintpdf.api.middleware import set_rate_limiter
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

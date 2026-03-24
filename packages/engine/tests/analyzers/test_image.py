@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import math
 
-from grounded.analyzers.finding import Severity
-from grounded.analyzers.image import ImageAnalyzer
-from grounded.semantic.events import ImagePlacedEvent
-from grounded.semantic.graphics_state import TransformationMatrix
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.image import ImageAnalyzer
+from lintpdf.semantic.events import ImagePlacedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_image_event(

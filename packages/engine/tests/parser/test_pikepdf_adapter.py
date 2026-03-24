@@ -18,13 +18,13 @@ import io
 import pikepdf
 import pytest
 
-from grounded.exceptions import (
+from lintpdf.exceptions import (
     PDFObjectNotFoundError,
     PDFParseError,
     PDFStructureError,
 )
-from grounded.parser.adapter import PdfDocument
-from grounded.parser.pikepdf_adapter import PikePDFAdapter
+from lintpdf.parser.adapter import PdfDocument
+from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
 
 # --- Fixtures ---
 

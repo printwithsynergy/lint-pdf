@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from grounded.analyzers.finding import Severity
-from grounded.conformance.pdfx4._output_intent import validate_output_intent
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4._output_intent import validate_output_intent
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(output_intents: list[dict[str, Any]] | None = None) -> SemanticDocument:

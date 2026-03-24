@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from grounded.profiles.registry import ProfileNotFoundError, ProfileRegistry
-from grounded.profiles.schema import PreflightProfile
+from lintpdf.profiles.registry import ProfileNotFoundError, ProfileRegistry
+from lintpdf.profiles.schema import PreflightProfile
 
 
 class TestProfileRegistry:

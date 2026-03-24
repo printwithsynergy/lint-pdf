@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 test.describe("Webhook Endpoints", () => {
   test.describe("LintPDF Engine Webhooks", () => {
     test("rejects requests without valid signature", async ({ request }) => {
-      const res = await request.post("/api/grounded/webhooks", {
+      const res = await request.post("/api/lintpdf/webhooks", {
         data: { event: "job.completed", jobId: "test-123" },
         headers: { "Content-Type": "application/json" },
       });
@@ -14,7 +14,7 @@ test.describe("Webhook Endpoints", () => {
     });
 
     test("rejects empty body", async ({ request }) => {
-      const res = await request.post("/api/grounded/webhooks", {
+      const res = await request.post("/api/lintpdf/webhooks", {
         headers: { "Content-Type": "application/json" },
       });
 

@@ -3,7 +3,7 @@
 Usage:
     python scripts/seed_test_data.py
 
-Requires DATABASE_URL or GROUNDED_DATABASE_URL environment variable.
+Requires DATABASE_URL or LINTPDF_DATABASE_URL environment variable.
 Outputs test-credentials.json with tenant IDs and raw API keys.
 """
 
@@ -23,9 +23,9 @@ from sqlalchemy.orm import sessionmaker
 from grounded.api.auth import generate_api_key, hash_api_key
 from grounded.api.models import ApiKey, Tenant, TenantPlan
 
-DATABASE_URL = os.environ.get("DATABASE_URL", os.environ.get("GROUNDED_DATABASE_URL", ""))
+DATABASE_URL = os.environ.get("DATABASE_URL", os.environ.get("LINTPDF_DATABASE_URL", ""))
 if not DATABASE_URL:
-    print("ERROR: Set DATABASE_URL or GROUNDED_DATABASE_URL")
+    print("ERROR: Set DATABASE_URL or LINTPDF_DATABASE_URL")
     sys.exit(1)
 
 engine = create_engine(DATABASE_URL)
@@ -40,7 +40,7 @@ PLAN_CONFIG = {
     TenantPlan.ENTERPRISE: {"rate_limit_daily": 100000, "max_file_size_mb": 2048},
 }
 
-credentials = {"admin_api_key": os.environ.get("GROUNDED_ADMIN_API_KEY", ""), "tenants": {}}
+credentials = {"admin_api_key": os.environ.get("LINTPDF_ADMIN_API_KEY", ""), "tenants": {}}
 
 try:
     for plan, limits in PLAN_CONFIG.items():

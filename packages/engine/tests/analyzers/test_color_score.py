@@ -1,7 +1,7 @@
 """Tests for Color Quality Score."""
 
-from grounded.color_score import compute_color_quality_score, ColorQualityScore
-from grounded.analyzers.finding import Finding, Severity
+from lintpdf.color_score import compute_color_quality_score, ColorQualityScore
+from lintpdf.analyzers.finding import Finding, Severity
 
 
 class TestColorQualityScore:
@@ -46,7 +46,7 @@ class TestColorQualityScore:
         assert result.score <= 20.0
 
     def test_grade_thresholds(self):
-        from grounded.color_score import _get_grade
+        from lintpdf.color_score import _get_grade
 
         assert _get_grade(95) == "Excellent"
         assert _get_grade(80) == "Good"

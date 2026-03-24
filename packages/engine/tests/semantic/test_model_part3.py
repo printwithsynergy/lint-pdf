@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from grounded.semantic.model import PdfAnnotation, PdfBox, SemanticDocument, SemanticPage
+from lintpdf.semantic.model import PdfAnnotation, PdfBox, SemanticDocument, SemanticPage
 
 
 class TestPdfAnnotation:

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.finding import Severity
-from grounded.profiles.orchestrator import PreflightOrchestrator, PreflightResult
-from grounded.profiles.schema import CheckConfig, ThresholdConfig, PreflightProfile
-from grounded.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.profiles.orchestrator import PreflightOrchestrator, PreflightResult
+from lintpdf.profiles.schema import CheckConfig, ThresholdConfig, PreflightProfile
+from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
 def _minimal_doc(

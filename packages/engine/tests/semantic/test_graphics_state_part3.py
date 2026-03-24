@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from grounded.semantic.graphics_state import GraphicsState
+from lintpdf.semantic.graphics_state import GraphicsState
 
 
 class TestPrepressState:

@@ -1,8 +1,8 @@
 """Tests for SpotColorAnalyzer."""
 
-from grounded.analyzers.spot_color_analyzer import SpotColorAnalyzer
-from grounded.analyzers.finding import Severity
-from grounded.semantic.model import (
+from lintpdf.analyzers.spot_color_analyzer import SpotColorAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.semantic.model import (
     SemanticDocument,
     SemanticPage,
     PdfBox,

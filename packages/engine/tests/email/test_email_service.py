@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from grounded.email.service import (
+from lintpdf.email.service import (
     EmailResult,
     get_email_client,
     send_api_key_issued,

@@ -183,7 +183,7 @@
 | ------ | ----------------------------------------- | ------------------ | ----------------------------------------- |
 | `GET`  | `/api/v1/captains-log/{job_id}/interpret` | Tenant + AI access | Plain language interpretation of findings |
 
-#### Dev Auth (`routes/dev_auth.py`, conditional: `GROUNDED_DEV_AUTH_ENABLED=true`)
+#### Dev Auth (`routes/dev_auth.py`, conditional: `LINTPDF_DEV_AUTH_ENABLED=true`)
 
 | Method | Path                      | Auth      | Description                           |
 | ------ | ------------------------- | --------- | ------------------------------------- |
@@ -532,7 +532,7 @@ The following patterns were identified during this audit:
 
 3. **Inference service has no authentication**: All 9 ML inference endpoints accept unauthenticated requests with file uploads. Mitigated by Modal's internal network isolation, but no defense-in-depth.
 
-4. **Dev seed endpoint exposes tracebacks** (`api/routes/dev_auth.py`): The `/api/v1/dev/seed` endpoint returns full Python tracebacks in error responses. Gated by `GROUNDED_DEV_AUTH_ENABLED` flag.
+4. **Dev seed endpoint exposes tracebacks** (`api/routes/dev_auth.py`): The `/api/v1/dev/seed` endpoint returns full Python tracebacks in error responses. Gated by `LINTPDF_DEV_AUTH_ENABLED` flag.
 
 5. **Report HTML serving lacks CSP headers**: The `serve_html_report` endpoint returns `HTMLResponse` without `Content-Security-Policy` headers, allowing potential XSS if report content is compromised.
 

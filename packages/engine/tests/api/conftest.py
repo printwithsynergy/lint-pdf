@@ -11,11 +11,11 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from grounded.api.app import create_app
-from grounded.api.auth import get_current_tenant
-from grounded.api.database import get_db
-from grounded.api.models import Base, Tenant, TenantPlan
-from grounded.api.storage import InMemoryStorage, set_storage
+from lintpdf.api.app import create_app
+from lintpdf.api.auth import get_current_tenant
+from lintpdf.api.database import get_db
+from lintpdf.api.models import Base, Tenant, TenantPlan
+from lintpdf.api.storage import InMemoryStorage, set_storage
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -71,8 +71,8 @@ def db_session() -> Generator[Session, None, None]:
 def _disable_lifespan_services(monkeypatch):
     """Prevent the app lifespan from connecting to real Postgres/Redis."""
     monkeypatch.setenv("DATABASE_URL", "")
-    monkeypatch.setenv("GROUNDED_DATABASE_URL", "")
-    monkeypatch.setenv("GROUNDED_REDIS_URL", "")
+    monkeypatch.setenv("LINTPDF_DATABASE_URL", "")
+    monkeypatch.setenv("LINTPDF_REDIS_URL", "")
 
 
 @pytest.fixture(autouse=True)
@@ -88,7 +88,7 @@ def _mock_celery_delay(monkeypatch):
     """Prevent Celery tasks from actually dispatching during API tests."""
     from unittest.mock import MagicMock
 
-    from grounded.queue import tasks
+    from lintpdf.queue import tasks
 
     monkeypatch.setattr(tasks.run_preflight, "delay", MagicMock())
     monkeypatch.setattr(tasks.run_preflight, "apply_async", MagicMock())

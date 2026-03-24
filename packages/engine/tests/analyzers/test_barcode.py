@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.barcode import BarcodeAnalyzer
-from grounded.analyzers.finding import Severity
-from grounded.semantic.events import PathPaintingEvent
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.barcode import BarcodeAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.semantic.events import PathPaintingEvent
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document() -> SemanticDocument:

@@ -62,13 +62,13 @@ class TestDetailedStatusEndpoint:
     @staticmethod
     def test_database_connected(client: TestClient) -> None:
         mock_engine = MagicMock()
-        with patch("grounded.api.database.get_engine", return_value=mock_engine):
+        with patch("lintpdf.api.database.get_engine", return_value=mock_engine):
             data = client.get("/api/v1/status").json()
         assert data["database"] == "connected"
 
     @staticmethod
     def test_database_not_configured(client: TestClient) -> None:
-        with patch("grounded.api.database.get_engine", return_value=None):
+        with patch("lintpdf.api.database.get_engine", return_value=None):
             data = client.get("/api/v1/status").json()
         assert data["database"] == "not_configured"
 
@@ -76,7 +76,7 @@ class TestDetailedStatusEndpoint:
     def test_database_error_sets_degraded(client: TestClient) -> None:
         mock_engine = MagicMock()
         mock_engine.connect.side_effect = Exception("boom")
-        with patch("grounded.api.database.get_engine", return_value=mock_engine):
+        with patch("lintpdf.api.database.get_engine", return_value=mock_engine):
             data = client.get("/api/v1/status").json()
         assert data["database"] == "error"
         assert data["status"] == "degraded"
@@ -87,13 +87,13 @@ class TestDetailedStatusEndpoint:
     def test_redis_connected(client: TestClient) -> None:
         mock_redis = MagicMock()
         mock_redis.ping.return_value = True
-        with patch("grounded.api.middleware.get_redis_client", return_value=mock_redis):
+        with patch("lintpdf.api.middleware.get_redis_client", return_value=mock_redis):
             data = client.get("/api/v1/status").json()
         assert data["redis"] == "connected"
 
     @staticmethod
     def test_redis_not_configured(client: TestClient) -> None:
-        with patch("grounded.api.middleware.get_redis_client", return_value=None):
+        with patch("lintpdf.api.middleware.get_redis_client", return_value=None):
             data = client.get("/api/v1/status").json()
         assert data["redis"] == "not_configured"
 
@@ -101,7 +101,7 @@ class TestDetailedStatusEndpoint:
     def test_redis_error_sets_degraded(client: TestClient) -> None:
         mock_redis = MagicMock()
         mock_redis.ping.side_effect = Exception("redis down")
-        with patch("grounded.api.middleware.get_redis_client", return_value=mock_redis):
+        with patch("lintpdf.api.middleware.get_redis_client", return_value=mock_redis):
             data = client.get("/api/v1/status").json()
         assert data["redis"] == "error"
         assert data["status"] == "degraded"
@@ -112,10 +112,10 @@ class TestDetailedStatusEndpoint:
     def test_queue_returns_depth_and_workers(client: TestClient) -> None:
         with (
             patch(
-                "grounded.queue.health.get_all_queue_depths",
+                "lintpdf.queue.health.get_all_queue_depths",
                 return_value={"default": 2, "priority": 1, "webhooks": 0},
             ),
-            patch("grounded.queue.health.get_worker_count", return_value=2),
+            patch("lintpdf.queue.health.get_worker_count", return_value=2),
         ):
             data = client.get("/api/v1/status").json()
         assert data["queue_depth"] == 3
@@ -126,10 +126,10 @@ class TestDetailedStatusEndpoint:
     def test_queue_no_workers(client: TestClient) -> None:
         with (
             patch(
-                "grounded.queue.health.get_all_queue_depths",
+                "lintpdf.queue.health.get_all_queue_depths",
                 return_value={"default": 0, "priority": 0, "webhooks": 0},
             ),
-            patch("grounded.queue.health.get_worker_count", return_value=0),
+            patch("lintpdf.queue.health.get_worker_count", return_value=0),
         ):
             data = client.get("/api/v1/status").json()
         assert data["queue_depth"] == 0
@@ -139,11 +139,11 @@ class TestDetailedStatusEndpoint:
     def test_queue_error_returns_zero(client: TestClient) -> None:
         with (
             patch(
-                "grounded.queue.health.get_all_queue_depths",
+                "lintpdf.queue.health.get_all_queue_depths",
                 side_effect=Exception("broker down"),
             ),
             patch(
-                "grounded.queue.health.get_worker_count",
+                "lintpdf.queue.health.get_worker_count",
                 side_effect=Exception("broker down"),
             ),
         ):
@@ -160,8 +160,8 @@ class TestDetailedStatusEndpoint:
         mock_redis = MagicMock()
         mock_redis.ping.side_effect = Exception("redis")
         with (
-            patch("grounded.api.database.get_engine", return_value=mock_engine),
-            patch("grounded.api.middleware.get_redis_client", return_value=mock_redis),
+            patch("lintpdf.api.database.get_engine", return_value=mock_engine),
+            patch("lintpdf.api.middleware.get_redis_client", return_value=mock_redis),
         ):
             data = client.get("/api/v1/status").json()
         assert data["status"] == "degraded"
@@ -170,8 +170,8 @@ class TestDetailedStatusEndpoint:
     def test_ok_when_db_and_redis_not_configured(client: TestClient) -> None:
         """Not-configured services are not errors; overall status should be ok."""
         with (
-            patch("grounded.api.database.get_engine", return_value=None),
-            patch("grounded.api.middleware.get_redis_client", return_value=None),
+            patch("lintpdf.api.database.get_engine", return_value=None),
+            patch("lintpdf.api.middleware.get_redis_client", return_value=None),
         ):
             data = client.get("/api/v1/status").json()
         assert data["status"] == "ok"

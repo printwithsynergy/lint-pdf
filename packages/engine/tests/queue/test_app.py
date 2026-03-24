@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from grounded.queue.app import celery_app, create_celery_app
+from lintpdf.queue.app import celery_app, create_celery_app
 
 
 class TestCeleryApp:
     @staticmethod
     def test_create_app_returns_celery() -> None:
         app = create_celery_app(broker_url="memory://")
-        assert app.main == "grounded"
+        assert app.main == "lintpdf"
 
     @staticmethod
     def test_custom_broker() -> None:

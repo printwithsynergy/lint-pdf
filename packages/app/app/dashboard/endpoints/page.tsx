@@ -37,13 +37,13 @@ export default function EndpointsPage() {
   const [editProfileId, setEditProfileId] = useState("");
   const [editDescription, setEditDescription] = useState("");
 
-  const apiBaseUrl = process.env.NEXT_PUBLIC_GROUNDED_API_URL ?? "";
+  const apiBaseUrl = process.env.NEXT_PUBLIC_LINTPDF_API_URL ?? "";
 
   const fetchData = useCallback(async () => {
     try {
       const [epResp, profResp] = await Promise.all([
-        fetch("/api/grounded/endpoints"),
-        fetch("/api/grounded/profiles"),
+        fetch("/api/lintpdf/endpoints"),
+        fetch("/api/lintpdf/profiles"),
       ]);
       if (epResp.ok) {
         const data = await epResp.json();
@@ -68,7 +68,7 @@ export default function EndpointsPage() {
     setCreating(true);
     setError("");
     try {
-      const resp = await fetch("/api/grounded/endpoints", {
+      const resp = await fetch("/api/lintpdf/endpoints", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -96,7 +96,7 @@ export default function EndpointsPage() {
   async function handleUpdate(id: string) {
     setError("");
     try {
-      const resp = await fetch(`/api/grounded/endpoints/${id}`, {
+      const resp = await fetch(`/api/lintpdf/endpoints/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -118,7 +118,7 @@ export default function EndpointsPage() {
 
   async function handleToggle(id: string, isActive: boolean) {
     try {
-      await fetch(`/api/grounded/endpoints/${id}`, {
+      await fetch(`/api/lintpdf/endpoints/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: !isActive }),
@@ -132,7 +132,7 @@ export default function EndpointsPage() {
   async function handleDelete(id: string) {
     if (!confirm("Delete this custom endpoint?")) return;
     try {
-      await fetch(`/api/grounded/endpoints/${id}`, { method: "DELETE" });
+      await fetch(`/api/lintpdf/endpoints/${id}`, { method: "DELETE" });
       await fetchData();
     } catch {
       setError("Failed to delete endpoint");

@@ -69,7 +69,7 @@ export const groundedUsagePlugin: PixieDustPlugin = {
       },
     ];
 
-    ctx.addRoutes("/api/grounded", routes);
+    ctx.addRoutes("/api/lintpdf", routes);
 
     // Hooks
     ctx.on("grounded:job.completed", (data) => {

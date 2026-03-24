@@ -28,7 +28,7 @@ export default function AdminTenantsPage() {
     setLoading(true);
     try {
       const resp = await fetch(
-        `/api/grounded/admin/tenants?page=${page}&page_size=${pageSize}`,
+        `/api/lintpdf/admin/tenants?page=${page}&page_size=${pageSize}`,
       );
       if (!resp.ok) throw new Error("Failed to load tenants");
       const data = await resp.json();
@@ -47,7 +47,7 @@ export default function AdminTenantsPage() {
 
   async function handlePlanChange(tenantId: string, newPlan: string) {
     try {
-      await fetch(`/api/grounded/admin/tenants/${tenantId}/plan`, {
+      await fetch(`/api/lintpdf/admin/tenants/${tenantId}/plan`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan: newPlan }),
@@ -60,7 +60,7 @@ export default function AdminTenantsPage() {
 
   async function handleStatusChange(tenantId: string, newStatus: string) {
     try {
-      await fetch(`/api/grounded/admin/tenants/${tenantId}/status`, {
+      await fetch(`/api/lintpdf/admin/tenants/${tenantId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
