@@ -5,7 +5,7 @@ from __future__ import annotations
 import ipaddress
 import secrets
 import uuid as uuid_mod
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -253,7 +253,7 @@ async def test_webhook(
         "event": "test.ping",
         "job_id": "00000000-0000-0000-0000-000000000000",
         "tenant_id": str(tenant.id),
-        "timestamp": datetime.now(UTC).isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "test": True,
         "message": "This is a test webhook delivery from LintPDF.",
     }

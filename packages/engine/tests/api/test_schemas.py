@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 import pytest
 from pydantic import ValidationError
@@ -129,7 +129,7 @@ class TestJobSummaryResponse:
 class TestJobResponse:
     @staticmethod
     def test_pending_job() -> None:
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         r = JobResponse(
             job_id=uuid.uuid4(),
             status="pending",
@@ -144,7 +144,7 @@ class TestJobResponse:
 
     @staticmethod
     def test_complete_job() -> None:
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         r = JobResponse(
             job_id=uuid.uuid4(),
             status="complete",
@@ -176,7 +176,7 @@ class TestJobResponse:
             profile_id="lintpdf-default",
             file_name="test.pdf",
             file_size=1024,
-            created_at=datetime.now(UTC),
+            created_at=datetime.now(timezone.utc),
             error_message="Parser error",
         )
         assert r.error_message == "Parser error"
@@ -190,7 +190,7 @@ class TestJobListResponse:
 
     @staticmethod
     def test_with_jobs() -> None:
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         jobs = [
             JobResponse(
                 job_id=uuid.uuid4(),
@@ -340,7 +340,7 @@ class TestWebhookCreateRequest:
 class TestWebhookResponse:
     @staticmethod
     def test_all_fields() -> None:
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         r = WebhookResponse(
             id=uuid.uuid4(),
             url="https://example.com/hook",

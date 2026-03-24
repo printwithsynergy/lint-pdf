@@ -683,13 +683,13 @@ async def set_tenant_ai_trial(
     _admin: str = Depends(_verify_admin_key),
 ) -> dict[str, Any]:
     """Set AI trial period for a tenant (admin only)."""
-    from datetime import UTC, datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
     tenant = _get_tenant(db, tenant_id)
 
     from lintpdf.ai.config import admin_update_ai_config
 
-    expires_at = datetime.now(UTC) + timedelta(days=trial_days) if trial_enabled else None
+    expires_at = datetime.now(timezone.utc) + timedelta(days=trial_days) if trial_enabled else None
 
     admin_update_ai_config(
         tenant.id,

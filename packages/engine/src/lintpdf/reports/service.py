@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import secrets
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class ReportService:
 
         expires_at = None
         if expiry_days is not None:
-            expires_at = datetime.now(UTC) + timedelta(days=expiry_days)
+            expires_at = datetime.now(timezone.utc) + timedelta(days=expiry_days)
 
         report_result = ReportResult()
 
@@ -142,12 +142,12 @@ class ReportService:
             return None
 
         # Check expiry
-        if record.expires_at is not None and datetime.now(UTC) > record.expires_at:
+        if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
             return None
 
         # Increment access count
         record.accessed_count += 1
-        record.last_accessed_at = datetime.now(UTC)
+        record.last_accessed_at = datetime.now(timezone.utc)
         self._db.commit()
 
         # Download from storage
@@ -164,7 +164,7 @@ class ReportService:
         """
         from lintpdf.api.models import ReportToken
 
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         expired = (
             self._db.query(ReportToken)
             .filter(ReportToken.expires_at.isnot(None), ReportToken.expires_at < now)

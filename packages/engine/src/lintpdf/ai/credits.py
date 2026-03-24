@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
@@ -47,7 +47,7 @@ def get_credit_balance(tenant_id: uuid.UUID, db: Session) -> CreditBalance:
         )
 
     # Count active (non-expired) credit packages
-    now = datetime.now(UTC)
+    now = datetime.now(timezone.utc)
     packages = (
         db.query(TenantAICreditPackage)
         .filter(
@@ -168,7 +168,7 @@ def deduct_credits(
 
     if config.billing_mode == AIBillingMode.CREDIT_PACKAGE:
         # Deduct from oldest non-expired package first
-        now = datetime.now(UTC)
+        now = datetime.now(timezone.utc)
         packages = (
             db.query(TenantAICreditPackage)
             .filter(
