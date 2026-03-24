@@ -4,12 +4,12 @@ Inspects PdfAnnotation objects on each page to flag annotations that
 would render in print, contain multimedia, or are informational.
 
 Check IDs:
-    GRD_ANNOT_001 — Printable annotation inside trim area
-    GRD_ANNOT_002 — Multimedia annotation (Sound/Movie/RichMedia)
-    GRD_ANNOT_003 — Link annotation detected
-    GRD_ANNOT_004 — Stamp annotation detected
-    GRD_ANNOT_005 — Non-printing annotation in trim area
-    GRD_ANNOT_006 — TrapNet annotation detected
+    LPDF_ANNOT_001 — Printable annotation inside trim area
+    LPDF_ANNOT_002 — Multimedia annotation (Sound/Movie/RichMedia)
+    LPDF_ANNOT_003 — Link annotation detected
+    LPDF_ANNOT_004 — Stamp annotation detected
+    LPDF_ANNOT_005 — Non-printing annotation in trim area
+    LPDF_ANNOT_006 — TrapNet annotation detected
 """
 
 from __future__ import annotations
@@ -49,11 +49,11 @@ class AnnotationAnalyzer(BaseAnalyzer):
         """Check a single annotation."""
         findings: list[Finding] = []
 
-        # GRD_ANNOT_006: TrapNet annotation detected
+        # LPDF_ANNOT_006: TrapNet annotation detected
         if annot.subtype == "TrapNet":
             findings.append(
                 Finding(
-                    inspection_id="GRD_ANNOT_006",
+                    inspection_id="LPDF_ANNOT_006",
                     severity=Severity.ADVISORY,
                     message=(
                         f"TrapNet annotation on page {annot.page_num} "
@@ -66,11 +66,11 @@ class AnnotationAnalyzer(BaseAnalyzer):
             )
             return findings
 
-        # GRD_ANNOT_002: Multimedia annotations
+        # LPDF_ANNOT_002: Multimedia annotations
         if annot.subtype in _MULTIMEDIA_SUBTYPES:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ANNOT_002",
+                    inspection_id="LPDF_ANNOT_002",
                     severity=Severity.ERROR,
                     message=(f"Multimedia annotation ({annot.subtype}) on page {annot.page_num}"),
                     page_num=annot.page_num,
@@ -80,11 +80,11 @@ class AnnotationAnalyzer(BaseAnalyzer):
             )
             return findings
 
-        # GRD_ANNOT_003: Link annotations
+        # LPDF_ANNOT_003: Link annotations
         if annot.subtype == "Link":
             findings.append(
                 Finding(
-                    inspection_id="GRD_ANNOT_003",
+                    inspection_id="LPDF_ANNOT_003",
                     severity=Severity.ADVISORY,
                     message=f"Link annotation on page {annot.page_num}",
                     page_num=annot.page_num,
@@ -93,11 +93,11 @@ class AnnotationAnalyzer(BaseAnalyzer):
             )
             return findings
 
-        # GRD_ANNOT_004: Stamp annotations
+        # LPDF_ANNOT_004: Stamp annotations
         if annot.subtype == "Stamp":
             findings.append(
                 Finding(
-                    inspection_id="GRD_ANNOT_004",
+                    inspection_id="LPDF_ANNOT_004",
                     severity=Severity.ADVISORY,
                     message=f"Stamp annotation on page {annot.page_num}",
                     page_num=annot.page_num,
@@ -108,11 +108,11 @@ class AnnotationAnalyzer(BaseAnalyzer):
         trim = page.trim_box or page.crop_box or page.media_box
         in_trim = annot.rect is not None and self._rect_overlaps(annot.rect, trim)
 
-        # GRD_ANNOT_001: Printable annotation in trim area
+        # LPDF_ANNOT_001: Printable annotation in trim area
         if annot.is_printable and in_trim:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ANNOT_001",
+                    inspection_id="LPDF_ANNOT_001",
                     severity=Severity.WARNING,
                     message=(
                         f"Printable {annot.subtype} annotation "
@@ -127,7 +127,7 @@ class AnnotationAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_ANNOT_005: Non-printing annotation in trim area
+        # LPDF_ANNOT_005: Non-printing annotation in trim area
         if (
             not annot.is_printable
             and not annot.is_hidden
@@ -136,7 +136,7 @@ class AnnotationAnalyzer(BaseAnalyzer):
         ):
             findings.append(
                 Finding(
-                    inspection_id="GRD_ANNOT_005",
+                    inspection_id="LPDF_ANNOT_005",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Non-printing {annot.subtype} annotation "

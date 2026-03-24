@@ -7,13 +7,13 @@ Blend modes are classified as safe or risky per GWG 2022 guidelines:
 - Risky: HardLight, SoftLight, Difference, Exclusion, Hue, Saturation, Color, Luminosity
 
 Check IDs:
-    GRD_TRANS_001 — Risky blend mode used
-    GRD_TRANS_002 — Transparency with overprint conflict
-    GRD_TRANS_003 — Soft mask detected (rendering complexity)
-    GRD_TRANS_004 — Low opacity (<0.5) on visible content
-    GRD_TRANS_005 — Transparency group with non-CMYK color space
-    GRD_TRANS_006 — Knockout transparency group
-    GRD_TRANS_007 — Shading pattern with banding risk
+    LPDF_TRANS_001 — Risky blend mode used
+    LPDF_TRANS_002 — Transparency with overprint conflict
+    LPDF_TRANS_003 — Soft mask detected (rendering complexity)
+    LPDF_TRANS_004 — Low opacity (<0.5) on visible content
+    LPDF_TRANS_005 — Transparency group with non-CMYK color space
+    LPDF_TRANS_006 — Knockout transparency group
+    LPDF_TRANS_007 — Shading pattern with banding risk
 """
 
 from __future__ import annotations
@@ -93,11 +93,11 @@ class TransparencyAnalyzer(BaseAnalyzer):
                 if event.non_stroking_alpha is not None and event.non_stroking_alpha < 1.0:
                     has_transparency = True
 
-                # GRD_TRANS_004: Low opacity on visible content
+                # LPDF_TRANS_004: Low opacity on visible content
                 if event.non_stroking_alpha is not None and event.non_stroking_alpha < 0.5:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_TRANS_004",
+                            inspection_id="LPDF_TRANS_004",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Low non-stroking opacity ({event.non_stroking_alpha:.2f}) "
@@ -111,13 +111,13 @@ class TransparencyAnalyzer(BaseAnalyzer):
                         )
                     )
 
-                # GRD_TRANS_001: Risky blend mode
+                # LPDF_TRANS_001: Risky blend mode
                 if event.blend_mode and event.blend_mode not in _SAFE_BLEND_MODES:
                     if event.blend_mode not in seen_blend_modes:
                         seen_blend_modes.add(event.blend_mode)
                         findings.append(
                             Finding(
-                                inspection_id="GRD_TRANS_001",
+                                inspection_id="LPDF_TRANS_001",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"Risky blend mode '{event.blend_mode}' "
@@ -137,12 +137,12 @@ class TransparencyAnalyzer(BaseAnalyzer):
                 if event.overprint_stroking or event.overprint_non_stroking:
                     has_overprint = True
 
-            # GRD_TRANS_003: Soft mask on images
+            # LPDF_TRANS_003: Soft mask on images
             elif isinstance(event, ImagePlacedEvent):
                 if event.has_soft_mask:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_TRANS_003",
+                            inspection_id="LPDF_TRANS_003",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Image '{event.image_name}' uses soft mask "
@@ -159,17 +159,17 @@ class TransparencyAnalyzer(BaseAnalyzer):
         if has_transparency and has_overprint:
             findings.append(self._transparency_overprint_conflict(current_page))
 
-        # GRD_TRANS_005 & GRD_TRANS_006: Page-level transparency group checks
+        # LPDF_TRANS_005 & LPDF_TRANS_006: Page-level transparency group checks
         for page in document.pages:
             if page.transparency_group is not None:
                 group = page.transparency_group
-                # GRD_TRANS_005: Non-CMYK color space in transparency group
+                # LPDF_TRANS_005: Non-CMYK color space in transparency group
                 cs = group.get("/CS", "")
                 cs_str = str(cs).lstrip("/") if cs else ""
                 if cs_str and cs_str not in ("DeviceCMYK", ""):
                     findings.append(
                         Finding(
-                            inspection_id="GRD_TRANS_005",
+                            inspection_id="LPDF_TRANS_005",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Transparency group on page {page.page_num} uses "
@@ -184,12 +184,12 @@ class TransparencyAnalyzer(BaseAnalyzer):
                         )
                     )
 
-                # GRD_TRANS_006: Knockout transparency group
+                # LPDF_TRANS_006: Knockout transparency group
                 knockout = group.get("/K", False)
                 if knockout:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_TRANS_006",
+                            inspection_id="LPDF_TRANS_006",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Knockout transparency group on page {page.page_num} "
@@ -204,13 +204,13 @@ class TransparencyAnalyzer(BaseAnalyzer):
                         )
                     )
 
-        # GRD_TRANS_007: Shading patterns with potential banding risk
+        # LPDF_TRANS_007: Shading patterns with potential banding risk
         for page in document.pages:
             shading = page.resources.get("/Shading") or page.resources.get("Shading")
             if shading and isinstance(shading, dict) and len(shading) > 0:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_TRANS_007",
+                        inspection_id="LPDF_TRANS_007",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Shading pattern detected on page {page.page_num} "
@@ -232,7 +232,7 @@ class TransparencyAnalyzer(BaseAnalyzer):
     def _transparency_overprint_conflict(page_num: int) -> Finding:
         """Create a transparency + overprint conflict finding."""
         return Finding(
-            inspection_id="GRD_TRANS_002",
+            inspection_id="LPDF_TRANS_002",
             severity=Severity.WARNING,
             message=(
                 f"Transparency and overprint both active on page {page_num} "

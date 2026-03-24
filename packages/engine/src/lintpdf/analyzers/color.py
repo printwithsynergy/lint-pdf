@@ -7,26 +7,26 @@ TAC (Total Area Coverage) = sum of CMYK component values as percentages.
 For example, C=100% M=80% Y=70% K=30% = TAC 280%.
 
 Check IDs:
-    GRD_COLOR_001 — Prohibited color space used
-    GRD_COLOR_002 — DeviceRGB used without ICC profile
-    GRD_COLOR_003 — Spot color with no backing color space
-    GRD_COLOR_004 — TAC exceeds limit
-    GRD_COLOR_005 — Registration color (all CMYK at 100%)
-    GRD_COLOR_006 — Output intent missing from document
-    GRD_COLOR_007 — Spot color detected (informational catalog)
-    GRD_COLOR_008 — Rich black on small text (<12pt, >1 ink)
-    GRD_COLOR_009 — 100% K not overprinting (knockout black)
-    GRD_COLOR_010 — Pure K-only on large fill area
-    GRD_COLOR_011 — Spot color name conflict (same name, different alternate)
-    GRD_COLOR_012 — Minimum printing dot below threshold (scum dot risk)
-    GRD_COLOR_013 — Gamut warning / out-of-gamut color (RGB in CMYK workflow)
-    GRD_COLOR_014 — Full color space inventory
-    GRD_COLOR_015 — Device-dependent color space warning
-    GRD_COLOR_016 — Impure gray (CMY used for gray)
-    GRD_COLOR_017 — Impure black (CMY contamination on K)
-    GRD_COLOR_018 — Lab color space detected
-    GRD_COLOR_019 — Indexed color space detected
-    GRD_COLOR_020 — Default color space used
+    LPDF_COLOR_001 — Prohibited color space used
+    LPDF_COLOR_002 — DeviceRGB used without ICC profile
+    LPDF_COLOR_003 — Spot color with no backing color space
+    LPDF_COLOR_004 — TAC exceeds limit
+    LPDF_COLOR_005 — Registration color (all CMYK at 100%)
+    LPDF_COLOR_006 — Output intent missing from document
+    LPDF_COLOR_007 — Spot color detected (informational catalog)
+    LPDF_COLOR_008 — Rich black on small text (<12pt, >1 ink)
+    LPDF_COLOR_009 — 100% K not overprinting (knockout black)
+    LPDF_COLOR_010 — Pure K-only on large fill area
+    LPDF_COLOR_011 — Spot color name conflict (same name, different alternate)
+    LPDF_COLOR_012 — Minimum printing dot below threshold (scum dot risk)
+    LPDF_COLOR_013 — Gamut warning / out-of-gamut color (RGB in CMYK workflow)
+    LPDF_COLOR_014 — Full color space inventory
+    LPDF_COLOR_015 — Device-dependent color space warning
+    LPDF_COLOR_016 — Impure gray (CMY used for gray)
+    LPDF_COLOR_017 — Impure black (CMY contamination on K)
+    LPDF_COLOR_018 — Lab color space detected
+    LPDF_COLOR_019 — Indexed color space detected
+    LPDF_COLOR_020 — Default color space used
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ class ColorAnalyzer(BaseAnalyzer):
         seen_spaces: set[tuple[int, str]] = set()
         overprint_non_stroking = False
 
-        # GRD_COLOR_014: Color space inventory tracking
+        # LPDF_COLOR_014: Color space inventory tracking
         cs_inventory: dict[str, dict[str, int | list[int]]] = {}
 
         for event in events:
@@ -90,7 +90,7 @@ class ColorAnalyzer(BaseAnalyzer):
                     overprint_non_stroking = event.overprint_non_stroking
             elif isinstance(event, ColorChangedEvent):
                 findings.extend(self._check_color_event(event, seen_spaces))
-                # GRD_COLOR_014: Track color space inventory
+                # LPDF_COLOR_014: Track color space inventory
                 cs_type = event.color_space
                 if cs_type not in cs_inventory:
                     cs_inventory[cs_type] = {"count": 0, "pages": []}
@@ -108,24 +108,24 @@ class ColorAnalyzer(BaseAnalyzer):
             elif isinstance(event, TextRenderedEvent):
                 findings.extend(self._check_rich_black_text(event))
 
-        # GRD_COLOR_006: Output intent missing
+        # LPDF_COLOR_006: Output intent missing
         if not document.output_intents:
             findings.append(
                 Finding(
-                    inspection_id="GRD_COLOR_006",
+                    inspection_id="LPDF_COLOR_006",
                     severity=Severity.WARNING,
                     message="No Output Intent defined in document",
                     iso_clause="ISO 15930-7:2010 6.2.3",
                 )
             )
 
-        # GRD_COLOR_011: Spot color name conflicts
+        # LPDF_COLOR_011: Spot color name conflicts
         findings.extend(self._check_spot_color_conflicts(document))
 
-        # GRD_COLOR_012: Minimum printing dot below threshold
+        # LPDF_COLOR_012: Minimum printing dot below threshold
         findings.extend(self._check_minimum_dot(document))
 
-        # GRD_COLOR_013: Gamut warning — RGB values in CMYK workflow
+        # LPDF_COLOR_013: Gamut warning — RGB values in CMYK workflow
         findings.extend(self._check_gamut_warning(document))
 
         # Check page-level color spaces from SemanticDocument
@@ -137,7 +137,7 @@ class ColorAnalyzer(BaseAnalyzer):
                     if cs.cs_type in _PROHIBITED_SPACES:
                         findings.append(
                             Finding(
-                                inspection_id="GRD_COLOR_001",
+                                inspection_id="LPDF_COLOR_001",
                                 severity=Severity.ERROR,
                                 message=(
                                     f"Prohibited color space '{cs.cs_type}' "
@@ -152,11 +152,11 @@ class ColorAnalyzer(BaseAnalyzer):
                             )
                         )
 
-                    # GRD_COLOR_002: DeviceRGB without ICC
+                    # LPDF_COLOR_002: DeviceRGB without ICC
                     if cs.cs_type == "DeviceRGB" and cs.icc_profile_ref is None:
                         findings.append(
                             Finding(
-                                inspection_id="GRD_COLOR_002",
+                                inspection_id="LPDF_COLOR_002",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"DeviceRGB color space '{cs_name}' "
@@ -170,11 +170,11 @@ class ColorAnalyzer(BaseAnalyzer):
                             )
                         )
 
-                    # GRD_COLOR_003: Separation without alternate
+                    # LPDF_COLOR_003: Separation without alternate
                     if cs.cs_type in ("Separation", "DeviceN") and cs.alternate is None:
                         findings.append(
                             Finding(
-                                inspection_id="GRD_COLOR_003",
+                                inspection_id="LPDF_COLOR_003",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"Spot color '{cs_name}' ({cs.cs_type}) "
@@ -189,13 +189,13 @@ class ColorAnalyzer(BaseAnalyzer):
                             )
                         )
 
-                    # GRD_COLOR_007: Spot color catalog
+                    # LPDF_COLOR_007: Spot color catalog
                     if cs.cs_type in ("Separation", "DeviceN") and cs.colorant_names:
                         for colorant in cs.colorant_names:
                             if colorant and colorant not in ("All", "None"):
                                 findings.append(
                                     Finding(
-                                        inspection_id="GRD_COLOR_007",
+                                        inspection_id="LPDF_COLOR_007",
                                         severity=Severity.ADVISORY,
                                         message=(
                                             f"Spot color '{colorant}' used on page {page.page_num}"
@@ -209,11 +209,11 @@ class ColorAnalyzer(BaseAnalyzer):
                                     )
                                 )
 
-                    # GRD_COLOR_018: Lab color space detected
+                    # LPDF_COLOR_018: Lab color space detected
                     if cs.cs_type == "Lab":
                         findings.append(
                             Finding(
-                                inspection_id="GRD_COLOR_018",
+                                inspection_id="LPDF_COLOR_018",
                                 severity=Severity.ADVISORY,
                                 message=(
                                     f"Lab color space '{cs_name}' used on page "
@@ -228,11 +228,11 @@ class ColorAnalyzer(BaseAnalyzer):
                             )
                         )
 
-                    # GRD_COLOR_019: Indexed color space detected
+                    # LPDF_COLOR_019: Indexed color space detected
                     if cs.cs_type == "Indexed":
                         findings.append(
                             Finding(
-                                inspection_id="GRD_COLOR_019",
+                                inspection_id="LPDF_COLOR_019",
                                 severity=Severity.ADVISORY,
                                 message=(
                                     f"Indexed color space '{cs_name}' on page "
@@ -247,11 +247,11 @@ class ColorAnalyzer(BaseAnalyzer):
                             )
                         )
 
-        # GRD_COLOR_014: Full color space inventory
+        # LPDF_COLOR_014: Full color space inventory
         if cs_inventory:
             findings.append(
                 Finding(
-                    inspection_id="GRD_COLOR_014",
+                    inspection_id="LPDF_COLOR_014",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Color space inventory: {len(cs_inventory)} unique "
@@ -263,7 +263,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_COLOR_015: Device-dependent color space warning
+        # LPDF_COLOR_015: Device-dependent color space warning
         _DEVICE_DEPENDENT = {"DeviceRGB", "DeviceCMYK", "DeviceGray"}
         if document.output_intents:
             for page in document.pages:
@@ -274,7 +274,7 @@ class ColorAnalyzer(BaseAnalyzer):
                         if cs.cs_type == "DeviceRGB":
                             findings.append(
                                 Finding(
-                                    inspection_id="GRD_COLOR_015",
+                                    inspection_id="LPDF_COLOR_015",
                                     severity=Severity.ADVISORY,
                                     message=(
                                         f"Device-dependent color space '{cs.cs_type}' "
@@ -294,7 +294,7 @@ class ColorAnalyzer(BaseAnalyzer):
                         elif cs.cs_type in ("DeviceCMYK", "DeviceGray"):
                             findings.append(
                                 Finding(
-                                    inspection_id="GRD_COLOR_015",
+                                    inspection_id="LPDF_COLOR_015",
                                     severity=Severity.ADVISORY,
                                     message=(
                                         f"Device-dependent color space '{cs.cs_type}' "
@@ -310,7 +310,7 @@ class ColorAnalyzer(BaseAnalyzer):
                                 )
                             )
 
-        # GRD_COLOR_020: Default color space overrides
+        # LPDF_COLOR_020: Default color space overrides
         findings.extend(self._check_default_color_spaces(document))
 
         return findings
@@ -329,7 +329,7 @@ class ColorAnalyzer(BaseAnalyzer):
             if event.color_space in _PROHIBITED_SPACES:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_COLOR_001",
+                        inspection_id="LPDF_COLOR_001",
                         severity=Severity.ERROR,
                         message=(
                             f"Prohibited color space '{event.color_space}' "
@@ -355,7 +355,7 @@ class ColorAnalyzer(BaseAnalyzer):
             if tac > self.tac_limit:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_COLOR_004",
+                        inspection_id="LPDF_COLOR_004",
                         severity=Severity.WARNING,
                         message=(
                             f"TAC {tac:.0f}% exceeds limit {self.tac_limit:.0f}% "
@@ -377,7 +377,7 @@ class ColorAnalyzer(BaseAnalyzer):
             if tac > self.tac_limit:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_COLOR_004",
+                        inspection_id="LPDF_COLOR_004",
                         severity=Severity.WARNING,
                         message=(
                             f"TAC {tac:.0f}% exceeds limit {self.tac_limit:.0f}% "
@@ -400,7 +400,7 @@ class ColorAnalyzer(BaseAnalyzer):
     def _check_registration_color(event: PathPaintingEvent) -> list[Finding]:
         """Check for registration color (all CMYK components at 100%).
 
-        GRD_COLOR_005: Registration color is usually an error unless
+        LPDF_COLOR_005: Registration color is usually an error unless
         intentionally used for registration marks.
         """
         findings: list[Finding] = []
@@ -413,7 +413,7 @@ class ColorAnalyzer(BaseAnalyzer):
         if event.fill and _is_registration(event.fill_color_space, event.fill_color_values):
             findings.append(
                 Finding(
-                    inspection_id="GRD_COLOR_005",
+                    inspection_id="LPDF_COLOR_005",
                     severity=Severity.WARNING,
                     message=(
                         f"Registration color (100% all CMYK) used as fill on page {event.page_num}"
@@ -427,7 +427,7 @@ class ColorAnalyzer(BaseAnalyzer):
         if event.stroke and _is_registration(event.stroke_color_space, event.stroke_color_values):
             findings.append(
                 Finding(
-                    inspection_id="GRD_COLOR_005",
+                    inspection_id="LPDF_COLOR_005",
                     severity=Severity.WARNING,
                     message=(
                         f"Registration color (100% all CMYK) used as stroke "
@@ -443,7 +443,7 @@ class ColorAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_rich_black_text(event: TextRenderedEvent) -> list[Finding]:
-        """Check for rich black on small text (GRD_COLOR_008).
+        """Check for rich black on small text (LPDF_COLOR_008).
 
         Rich black = CMYK fill with >1 non-zero ink on text <12pt.
         """
@@ -466,7 +466,7 @@ class ColorAnalyzer(BaseAnalyzer):
         if non_zero > 1:
             findings.append(
                 Finding(
-                    inspection_id="GRD_COLOR_008",
+                    inspection_id="LPDF_COLOR_008",
                     severity=Severity.WARNING,
                     message=(
                         f"Rich black on small text ({effective_size:.1f}pt) "
@@ -489,7 +489,7 @@ class ColorAnalyzer(BaseAnalyzer):
     def _check_knockout_black(
         event: PathPaintingEvent, overprint_non_stroking: bool
     ) -> list[Finding]:
-        """Check for 100% K fill without overprint (GRD_COLOR_009).
+        """Check for 100% K fill without overprint (LPDF_COLOR_009).
 
         Knockout black = 0/0/0/100% CMYK fill with overprint OFF.
         """
@@ -504,7 +504,7 @@ class ColorAnalyzer(BaseAnalyzer):
         if is_pure_k and not overprint_non_stroking:
             findings.append(
                 Finding(
-                    inspection_id="GRD_COLOR_009",
+                    inspection_id="LPDF_COLOR_009",
                     severity=Severity.ADVISORY,
                     message=(
                         f"100% K fill without overprint on page {event.page_num} "
@@ -522,7 +522,7 @@ class ColorAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_pure_k_fill(event: PathPaintingEvent) -> list[Finding]:
-        """Check for pure K-only on fill (GRD_COLOR_010).
+        """Check for pure K-only on fill (LPDF_COLOR_010).
 
         Advisory: large fills in K-only may appear washed out compared to rich black.
         Only flags fills (not strokes) as these are the visible ones.
@@ -537,7 +537,7 @@ class ColorAnalyzer(BaseAnalyzer):
         if vals[3] > 0.50 and all(abs(v) < 0.01 for v in vals[:3]):
             findings.append(
                 Finding(
-                    inspection_id="GRD_COLOR_010",
+                    inspection_id="LPDF_COLOR_010",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Pure K-only fill ({vals[3] * 100:.0f}% K) on page {event.page_num} "
@@ -555,7 +555,7 @@ class ColorAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_impure_gray(event: PathPaintingEvent) -> list[Finding]:
-        """Check for impure gray built from CMY instead of K-only (GRD_COLOR_016).
+        """Check for impure gray built from CMY instead of K-only (LPDF_COLOR_016).
 
         When C, M, Y values are approximately equal (within 5%) and all > 5%,
         but K is low (< 10%), this is likely a gray built from CMY rather than
@@ -576,7 +576,7 @@ class ColorAnalyzer(BaseAnalyzer):
             if (max_cmy - min_cmy) < 0.05:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_COLOR_016",
+                        inspection_id="LPDF_COLOR_016",
                         severity=Severity.WARNING,
                         message=(
                             f"Impure gray detected (CMY-built gray "
@@ -599,7 +599,7 @@ class ColorAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_impure_black(event: PathPaintingEvent) -> list[Finding]:
-        """Check for impure black with unnecessary CMY contamination (GRD_COLOR_017).
+        """Check for impure black with unnecessary CMY contamination (LPDF_COLOR_017).
 
         When K > 90% but any of C, M, Y > 5%, the color has unnecessary CMY
         contamination that wastes ink.
@@ -614,7 +614,7 @@ class ColorAnalyzer(BaseAnalyzer):
         if k > 0.90 and (c > 0.05 or m > 0.05 or y > 0.05):
             findings.append(
                 Finding(
-                    inspection_id="GRD_COLOR_017",
+                    inspection_id="LPDF_COLOR_017",
                     severity=Severity.WARNING,
                     message=(
                         f"Impure black detected "
@@ -638,7 +638,7 @@ class ColorAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_default_color_spaces(document: SemanticDocument) -> list[Finding]:
-        """Check for default color space overrides (GRD_COLOR_020).
+        """Check for default color space overrides (LPDF_COLOR_020).
 
         DefaultRGB, DefaultCMYK, or DefaultGray entries in page resources
         override device color spaces and may cause unexpected color behavior.
@@ -655,7 +655,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 if cs_key in _DEFAULT_CS_NAMES:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_COLOR_020",
+                            inspection_id="LPDF_COLOR_020",
                             severity=Severity.WARNING,
                             message=(
                                 f"Default color space override '{cs_key}' defined "
@@ -676,7 +676,7 @@ class ColorAnalyzer(BaseAnalyzer):
     def _check_spot_color_conflicts(
         document: SemanticDocument,
     ) -> list[Finding]:  # skipcq: PY-R1000
-        """Check for spot color name conflicts (GRD_COLOR_011).
+        """Check for spot color name conflicts (LPDF_COLOR_011).
 
         Same colorant name defined with different alternates on different pages.
         """
@@ -703,7 +703,7 @@ class ColorAnalyzer(BaseAnalyzer):
             if len(alternates) > 1:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_COLOR_011",
+                        inspection_id="LPDF_COLOR_011",
                         severity=Severity.WARNING,
                         message=(
                             f"Spot color '{colorant}' has conflicting alternate "
@@ -721,7 +721,7 @@ class ColorAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_minimum_dot(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R1000
-        """Check for separation tint values below 2% (GRD_COLOR_012).
+        """Check for separation tint values below 2% (LPDF_COLOR_012).
 
         When a Separation or DeviceN color space has tint values below 2%,
         there is a risk of scum dots in flexographic printing. Looks at
@@ -758,7 +758,7 @@ class ColorAnalyzer(BaseAnalyzer):
                                 colorant = cs.colorant_names[0] if cs.colorant_names else cs_name
                                 findings.append(
                                     Finding(
-                                        inspection_id="GRD_COLOR_012",
+                                        inspection_id="LPDF_COLOR_012",
                                         severity=Severity.WARNING,
                                         message=(
                                             f"Separation '{colorant}' has tint value "
@@ -778,7 +778,7 @@ class ColorAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_gamut_warning(document: SemanticDocument) -> list[Finding]:  # skipcq: PY-R1000
-        """Check for RGB color spaces used in a CMYK workflow (GRD_COLOR_013).
+        """Check for RGB color spaces used in a CMYK workflow (LPDF_COLOR_013).
 
         Flags when DeviceRGB or CalRGB color spaces are found on pages
         but the document has a CMYK output intent, indicating potential
@@ -811,7 +811,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 if cs.cs_type in ("DeviceRGB", "CalRGB"):
                     findings.append(
                         Finding(
-                            inspection_id="GRD_COLOR_013",
+                            inspection_id="LPDF_COLOR_013",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"RGB color space '{cs_name}' ({cs.cs_type}) used "

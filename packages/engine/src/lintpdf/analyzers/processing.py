@@ -4,9 +4,9 @@ Detects Optional Content Groups (OCG layers) with ISO 19593 naming
 or common print-related names (dieline, varnish, foil, white ink, etc.).
 
 Check IDs:
-    GRD_PROC_001 — Processing step layers detected
-    GRD_PROC_002 — White ink layer detected
-    GRD_PROC_003 — Dieline layer uses spot color (reserved)
+    LPDF_PROC_001 — Processing step layers detected
+    LPDF_PROC_002 — White ink layer detected
+    LPDF_PROC_003 — Dieline layer uses spot color (reserved)
 """
 
 from __future__ import annotations
@@ -81,11 +81,11 @@ class ProcessingStepAnalyzer(BaseAnalyzer):
             if _WHITE_INK_PATTERN.search(name):
                 white_layers.append(name)
 
-        # GRD_PROC_001: Processing step layers detected
+        # LPDF_PROC_001: Processing step layers detected
         if processing_layers:
             findings.append(
                 Finding(
-                    inspection_id="GRD_PROC_001",
+                    inspection_id="LPDF_PROC_001",
                     severity=Severity.ADVISORY,
                     message=(f"Processing step layers detected: {', '.join(processing_layers)}"),
                     details={
@@ -96,11 +96,11 @@ class ProcessingStepAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_PROC_002: White ink layer detected
+        # LPDF_PROC_002: White ink layer detected
         if white_layers:
             findings.append(
                 Finding(
-                    inspection_id="GRD_PROC_002",
+                    inspection_id="LPDF_PROC_002",
                     severity=Severity.ADVISORY,
                     message=(f"White ink layer detected: {', '.join(white_layers)}"),
                     details={

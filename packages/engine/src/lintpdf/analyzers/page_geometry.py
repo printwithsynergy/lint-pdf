@@ -8,15 +8,15 @@ Box hierarchy (ISO 32000-2:2020 section 14.11.2):
     BleedBox/TrimBox/ArtBox default to CropBox
 
 Check IDs:
-    GRD_BOX_001 — TrimBox or BleedBox missing (required for print)
-    GRD_BOX_002 — Box hierarchy violated
-    GRD_BOX_003 — Bleed distance inadequate
-    GRD_BOX_004 — Empty page (no content stream)
-    GRD_BOX_005 — Content within safety margin of trim edge
-    GRD_BOX_006 — Content extends beyond bleed box
-    GRD_BOX_007 — UserUnit scaling detected
-    GRD_BOX_008 — Non-standard page orientation
-    GRD_BOX_009 — Inconsistent page sizes
+    LPDF_BOX_001 — TrimBox or BleedBox missing (required for print)
+    LPDF_BOX_002 — Box hierarchy violated
+    LPDF_BOX_003 — Bleed distance inadequate
+    LPDF_BOX_004 — Empty page (no content stream)
+    LPDF_BOX_005 — Content within safety margin of trim edge
+    LPDF_BOX_006 — Content extends beyond bleed box
+    LPDF_BOX_007 — UserUnit scaling detected
+    LPDF_BOX_008 — Non-standard page orientation
+    LPDF_BOX_009 — Inconsistent page sizes
 """
 
 from __future__ import annotations
@@ -63,7 +63,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
         for page in document.pages:
             findings.extend(self._check_page(page))
 
-        # GRD_BOX_008 (document-level): Mixed page orientations
+        # LPDF_BOX_008 (document-level): Mixed page orientations
         if len(document.pages) > 1:
             orientations: set[str] = set()
             for page in document.pages:
@@ -74,7 +74,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             if len(orientations) > 1:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_BOX_008",
+                        inspection_id="LPDF_BOX_008",
                         severity=Severity.ADVISORY,
                         message=(
                             "Document has mixed page orientations "
@@ -85,7 +85,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_BOX_009: Inconsistent page sizes
+        # LPDF_BOX_009: Inconsistent page sizes
         if len(document.pages) > 1:
             page_sizes: dict[tuple[float, float], list[int]] = {}
             for page in document.pages:
@@ -101,7 +101,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                 ]
                 findings.append(
                     Finding(
-                        inspection_id="GRD_BOX_009",
+                        inspection_id="LPDF_BOX_009",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Document has inconsistent page sizes "
@@ -112,7 +112,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_BOX_005 / GRD_BOX_006: Content proximity to trim/bleed edges
+        # LPDF_BOX_005 / LPDF_BOX_006: Content proximity to trim/bleed edges
         # Build page lookup for trim/bleed boxes
         page_boxes: dict[int, tuple[PdfBox | None, PdfBox | None]] = {}
         for page in document.pages:
@@ -142,7 +142,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
         findings: list[Finding] = []
         bx0, by0, bx1, by1 = bbox
 
-        # GRD_BOX_005: Content within safety margin of trim edge
+        # LPDF_BOX_005: Content within safety margin of trim edge
         if trim_box is not None:
             margin = self.safety_margin_pts
             in_safety = (
@@ -158,7 +158,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             if in_safety and in_trim:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_BOX_005",
+                        inspection_id="LPDF_BOX_005",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Content within {self.safety_margin_pts:.1f}pt safety margin "
@@ -175,7 +175,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_BOX_006: Content extends beyond bleed box
+        # LPDF_BOX_006: Content extends beyond bleed box
         if bleed_box is not None:
             beyond_bleed = (
                 bx0 < bleed_box.x0 or by0 < bleed_box.y0 or bx1 > bleed_box.x1 or by1 > bleed_box.y1
@@ -183,7 +183,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             if beyond_bleed:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_BOX_006",
+                        inspection_id="LPDF_BOX_006",
                         severity=Severity.WARNING,
                         message=(f"Content extends beyond bleed box on page {page_num}"),
                         page_num=page_num,
@@ -203,11 +203,11 @@ class PageGeometryAnalyzer(BaseAnalyzer):
 
         findings: list[Finding] = []
 
-        # GRD_BOX_001: Required boxes present
+        # LPDF_BOX_001: Required boxes present
         if page.trim_box is None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_001",
+                    inspection_id="LPDF_BOX_001",
                     severity=Severity.WARNING,
                     message=f"TrimBox missing on page {page.page_num}",
                     page_num=page.page_num,
@@ -219,7 +219,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
         if page.bleed_box is None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_001",
+                    inspection_id="LPDF_BOX_001",
                     severity=Severity.WARNING,
                     message=f"BleedBox missing on page {page.page_num}",
                     page_num=page.page_num,
@@ -228,20 +228,20 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_BOX_002: Box hierarchy validation
+        # LPDF_BOX_002: Box hierarchy validation
         findings.extend(self._check_hierarchy(page))
 
-        # GRD_BOX_003: Bleed distance
+        # LPDF_BOX_003: Bleed distance
         if page.trim_box is not None and page.bleed_box is not None:
             findings.extend(
                 self._check_bleed_distance(page.page_num, page.trim_box, page.bleed_box)
             )
 
-        # GRD_BOX_004: Empty page (no content stream)
+        # LPDF_BOX_004: Empty page (no content stream)
         if not page.content_stream:
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_004",
+                    inspection_id="LPDF_BOX_004",
                     severity=Severity.ADVISORY,
                     message=f"Page {page.page_num} has no content stream (empty page)",
                     page_num=page.page_num,
@@ -249,12 +249,12 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_BOX_007: UserUnit scaling detected
+        # LPDF_BOX_007: UserUnit scaling detected
         user_unit = getattr(page, "user_unit", 1.0)
         if user_unit != 1.0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_007",
+                    inspection_id="LPDF_BOX_007",
                     severity=Severity.WARNING,
                     message=(
                         f"Page {page.page_num} uses UserUnit={user_unit} "
@@ -266,12 +266,12 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_BOX_008: Non-standard page orientation
+        # LPDF_BOX_008: Non-standard page orientation
         rotate = getattr(page, "rotate", 0) or 0
         if rotate not in (0, 90, 180, 270):
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_008",
+                    inspection_id="LPDF_BOX_008",
                     severity=Severity.ADVISORY,
                     message=(f"Page {page.page_num} has non-standard rotation ({rotate}\u00b0)"),
                     page_num=page.page_num,
@@ -294,7 +294,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
         if page.crop_box and not media.contains_box(page.crop_box):
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_002",
+                    inspection_id="LPDF_BOX_002",
                     severity=Severity.WARNING,
                     message=(f"CropBox extends outside MediaBox on page {page.page_num}"),
                     page_num=page.page_num,
@@ -310,7 +310,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
         if page.bleed_box and not crop.contains_box(page.bleed_box):
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_002",
+                    inspection_id="LPDF_BOX_002",
                     severity=Severity.WARNING,
                     message=(f"BleedBox extends outside CropBox on page {page.page_num}"),
                     page_num=page.page_num,
@@ -326,7 +326,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
         if page.trim_box and page.bleed_box and not page.bleed_box.contains_box(page.trim_box):
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_002",
+                    inspection_id="LPDF_BOX_002",
                     severity=Severity.WARNING,
                     message=(f"TrimBox extends outside BleedBox on page {page.page_num}"),
                     page_num=page.page_num,
@@ -367,7 +367,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
             min_bleed_mm = self.min_bleed_pts * 0.352778
             findings.append(
                 Finding(
-                    inspection_id="GRD_BOX_003",
+                    inspection_id="LPDF_BOX_003",
                     severity=Severity.WARNING,
                     message=(
                         f"Inadequate bleed on page {page_num}: "

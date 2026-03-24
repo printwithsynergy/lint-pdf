@@ -91,7 +91,7 @@ class ColorCastDetectionAnalyzer(BaseAIAnalyzer):
             if deviation >= _SIGNIFICANT_CAST_THRESHOLD:
                 findings.append(
                     self._make_finding(
-                        inspection_id="GRD_AI_CAST_001",
+                        inspection_id="LPDF_AI_CAST_001",
                         severity=Severity.WARNING,
                         message=(
                             f"Significant color cast detected on page {page_num}: "
@@ -113,7 +113,7 @@ class ColorCastDetectionAnalyzer(BaseAIAnalyzer):
             elif deviation >= _MILD_CAST_THRESHOLD:
                 findings.append(
                     self._make_finding(
-                        inspection_id="GRD_AI_CAST_001",
+                        inspection_id="LPDF_AI_CAST_001",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Mild color cast detected on page {page_num}: "

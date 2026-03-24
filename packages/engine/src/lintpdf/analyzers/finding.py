@@ -29,7 +29,7 @@ class Finding:
     """A single preflight check result.
 
     Attributes:
-        inspection_id: Unique check identifier (e.g., GRD_IMG_001).
+        inspection_id: Unique check identifier (e.g., LPDF_IMG_001).
         severity: error, warning, or advisory.
         message: Human-readable description of the finding.
         page_num: 1-indexed page number, or 0 for document-level.

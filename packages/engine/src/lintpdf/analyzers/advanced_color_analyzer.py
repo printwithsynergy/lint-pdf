@@ -4,21 +4,21 @@ Performs advanced color analysis beyond basic TAC and prohibited space checks,
 focusing on production-level ink optimization and print quality concerns.
 
 Check IDs:
-    GRD_ADV_001 — Black generation profiling (GCR/UCR strategy detection)
-    GRD_ADV_002 — Ink savings estimation (GCR headroom in CMYK fills)
-    GRD_ADV_003 — Trapping risk analysis (small multicolor text)
-    GRD_ADV_004 — CxF/X-4 spectral validation (CxF data parsing)
-    GRD_ADV_005 — Rich black composition analysis (black usage classification)
-    GRD_ADV_006 — CxF spectral vs declared color Delta-E
-    GRD_ADV_007 — CxF data present (informational)
-    GRD_ADV_008 — CxF spectral range incomplete (380-730nm coverage)
-    GRD_ADV_009 — CxF measurement geometry missing
-    GRD_ADV_010 — CxF illuminant mismatch with output intent
-    GRD_ADV_011 — CxF non-standard observer angle
-    GRD_ADV_012 — Spectral vs colorimetric Delta-E exceeds threshold
-    GRD_ADV_013 — CxF color library reference detected
-    GRD_ADV_014 — CxF substrate measurement present
-    GRD_ADV_015 — CxF version compatibility check
+    LPDF_ADV_001 — Black generation profiling (GCR/UCR strategy detection)
+    LPDF_ADV_002 — Ink savings estimation (GCR headroom in CMYK fills)
+    LPDF_ADV_003 — Trapping risk analysis (small multicolor text)
+    LPDF_ADV_004 — CxF/X-4 spectral validation (CxF data parsing)
+    LPDF_ADV_005 — Rich black composition analysis (black usage classification)
+    LPDF_ADV_006 — CxF spectral vs declared color Delta-E
+    LPDF_ADV_007 — CxF data present (informational)
+    LPDF_ADV_008 — CxF spectral range incomplete (380-730nm coverage)
+    LPDF_ADV_009 — CxF measurement geometry missing
+    LPDF_ADV_010 — CxF illuminant mismatch with output intent
+    LPDF_ADV_011 — CxF non-standard observer angle
+    LPDF_ADV_012 — Spectral vs colorimetric Delta-E exceeds threshold
+    LPDF_ADV_013 — CxF color library reference detected
+    LPDF_ADV_014 — CxF substrate measurement present
+    LPDF_ADV_015 — CxF version compatibility check
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_001 — Black generation profiling
+    # LPDF_ADV_001 — Black generation profiling
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -106,7 +106,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 if image.color_space is not None and image.color_space.is_cmyk():
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ADV_001",
+                            inspection_id="LPDF_ADV_001",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"CMYK image '{image.name}' on page {page.page_num} "
@@ -128,7 +128,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_002 — Ink savings estimation
+    # LPDF_ADV_002 — Ink savings estimation
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -171,7 +171,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
             savings_high = headroom_pct * 0.15
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_002",
+                    inspection_id="LPDF_ADV_002",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Ink savings estimation: {total_cmyk_fills} CMYK fill event(s) "
@@ -191,7 +191,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_003 — Trapping risk analysis
+    # LPDF_ADV_003 — Trapping risk analysis
     # ------------------------------------------------------------------
 
     @staticmethod
@@ -232,7 +232,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 risk_count += 1
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ADV_003",
+                        inspection_id="LPDF_ADV_003",
                         severity=Severity.WARNING,
                         message=(
                             f"Trapping risk: small text ({effective_size:.1f}pt) "
@@ -254,7 +254,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if risk_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_003",
+                    inspection_id="LPDF_ADV_003",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Trapping risk summary: {risk_count} instance(s) of small "
@@ -269,18 +269,18 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_004 — CxF/X-4 spectral validation
+    # LPDF_ADV_004 — CxF/X-4 spectral validation
     # ------------------------------------------------------------------
 
     def _check_cxf_spectral(
         self,
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Parse and validate CxF/X-4 spectral data (GRD_ADV_004).
+        """Parse and validate CxF/X-4 spectral data (LPDF_ADV_004).
 
         Detects CxF data in output intents, parses the XML when found,
         and validates the spectral data structure. Also cross-references
-        CxF spot colors against document color spaces (GRD_ADV_006).
+        CxF spot colors against document color spaces (LPDF_ADV_006).
         """
         from lintpdf.analyzers.cxf_parser import parse_cxf_xml
 
@@ -312,7 +312,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if not cxf_hint_found:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_004",
+                    inspection_id="LPDF_ADV_004",
                     severity=Severity.ADVISORY,
                     message="No CxF spectral data detected in output intents",
                     details={"cxf_detected": False},
@@ -324,7 +324,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if cxf_xml_bytes is None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_004",
+                    inspection_id="LPDF_ADV_004",
                     severity=Severity.ADVISORY,
                     message=(
                         "CxF spectral data reference found but raw XML "
@@ -341,7 +341,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if not cxf_data.valid:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_004",
+                    inspection_id="LPDF_ADV_004",
                     severity=Severity.WARNING,
                     message=(f"CxF spectral data is malformed: {'; '.join(cxf_data.errors)}"),
                     details={
@@ -354,7 +354,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         else:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_004",
+                    inspection_id="LPDF_ADV_004",
                     severity=Severity.ADVISORY,
                     message=(
                         f"CxF spectral data parsed: {len(cxf_data.spot_colors)} "
@@ -370,7 +370,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_ADV_006 — Cross-reference CxF spots vs document spots
+        # LPDF_ADV_006 — Cross-reference CxF spots vs document spots
         findings.extend(self._check_cxf_spot_cross_reference(document, cxf_data))
 
         return findings
@@ -380,7 +380,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         document: SemanticDocument,
         cxf_data: object,
     ) -> list[Finding]:
-        """Cross-reference CxF spot colors against document color spaces (GRD_ADV_006).
+        """Cross-reference CxF spot colors against document color spaces (LPDF_ADV_006).
 
         For each CxF spot color, check if a matching Separation color space
         exists in the document and compare Lab values.
@@ -404,7 +404,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 if cxf_spot.lab:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ADV_006",
+                            inspection_id="LPDF_ADV_006",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"CxF spot '{cxf_spot.name}' matches document "
@@ -422,7 +422,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
             else:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ADV_006",
+                        inspection_id="LPDF_ADV_006",
                         severity=Severity.WARNING,
                         message=(
                             f"CxF defines spot color '{cxf_spot.name}' but no "
@@ -438,7 +438,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_005 — Rich black composition analysis
+    # LPDF_ADV_005 — Rich black composition analysis
     # ------------------------------------------------------------------
 
     def _check_rich_black_composition(  # skipcq: PY-R1000
@@ -499,7 +499,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                     registration_count += 1
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ADV_005",
+                            inspection_id="LPDF_ADV_005",
                             severity=Severity.ERROR,
                             message=(
                                 f"Registration color on non-mark {obj_type} object "
@@ -521,7 +521,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                     if obj_type == "text" and font_size is not None and 0 < font_size < 12.0:
                         findings.append(
                             Finding(
-                                inspection_id="GRD_ADV_005",
+                                inspection_id="LPDF_ADV_005",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"Rich black on small text ({font_size:.1f}pt) "
@@ -544,7 +544,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                     if obj_type == "path" and k_pct > 80.0:
                         findings.append(
                             Finding(
-                                inspection_id="GRD_ADV_005",
+                                inspection_id="LPDF_ADV_005",
                                 severity=Severity.ADVISORY,
                                 message=(
                                     f"Large area pure K fill ({k_pct:.0f}% K) "
@@ -568,7 +568,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if total > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_005",
+                    inspection_id="LPDF_ADV_005",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Black composition breakdown: {pure_k_count} pure K, "
@@ -631,14 +631,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return None
 
     # ------------------------------------------------------------------
-    # GRD_ADV_007 — CxF data present (informational)
+    # LPDF_ADV_007 — CxF data present (informational)
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_cxf_data_present(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Report when CxF spectral data is embedded in the document (GRD_ADV_007).
+        """Report when CxF spectral data is embedded in the document (LPDF_ADV_007).
 
         Scans output intents for any CxF reference and emits an
         informational finding when detected.
@@ -650,7 +650,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 if "CxF" in str(key) or "cxf" in str(key).lower():
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ADV_007",
+                            inspection_id="LPDF_ADV_007",
                             severity=Severity.ADVISORY,
                             message="CxF spectral data is embedded in the document",
                             details={"cxf_key": str(key)},
@@ -661,7 +661,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 if "CxF" in str(value):
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ADV_007",
+                            inspection_id="LPDF_ADV_007",
                             severity=Severity.ADVISORY,
                             message="CxF spectral data is embedded in the document",
                             details={"cxf_detected_in_value": True},
@@ -672,14 +672,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_008 — CxF spectral range incomplete
+    # LPDF_ADV_008 — CxF spectral range incomplete
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_cxf_spectral_range(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag CxF spectral data that doesn't cover 380-730nm (GRD_ADV_008).
+        """Flag CxF spectral data that doesn't cover 380-730nm (LPDF_ADV_008).
 
         Parses CxF XML from output intents and checks that the wavelength
         range spans at least 380nm to 730nm.
@@ -705,7 +705,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
             if min_wl > 380 or max_wl < 730:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ADV_008",
+                        inspection_id="LPDF_ADV_008",
                         severity=Severity.WARNING,
                         message=(
                             f"CxF spectral range for '{spot.name}' is "
@@ -725,14 +725,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_009 — CxF measurement geometry missing
+    # LPDF_ADV_009 — CxF measurement geometry missing
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_cxf_measurement_geometry(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag CxF data without measurement geometry specification (GRD_ADV_009).
+        """Flag CxF data without measurement geometry specification (LPDF_ADV_009).
 
         Checks for the presence of /MeasurementGeometry or equivalent
         attribute in the CxF spectral data.
@@ -745,7 +745,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if not cxf_data.measurement_geometry:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_009",
+                    inspection_id="LPDF_ADV_009",
                     severity=Severity.ADVISORY,
                     message=(
                         "CxF spectral data does not specify measurement geometry (e.g., 45/0, d/8)"
@@ -757,14 +757,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_010 — CxF illuminant mismatch
+    # LPDF_ADV_010 — CxF illuminant mismatch
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_cxf_illuminant_mismatch(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag CxF illuminant that doesn't match output intent (GRD_ADV_010).
+        """Flag CxF illuminant that doesn't match output intent (LPDF_ADV_010).
 
         Compares the illuminant specified in CxF data against the
         output intent's rendering condition illuminant.
@@ -792,7 +792,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if oi_illuminant and cxf_illuminant.upper() != oi_illuminant.upper():
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_010",
+                    inspection_id="LPDF_ADV_010",
                     severity=Severity.ADVISORY,
                     message=(
                         f"CxF illuminant '{cxf_illuminant}' does not match "
@@ -808,14 +808,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_011 — CxF non-standard observer angle
+    # LPDF_ADV_011 — CxF non-standard observer angle
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_cxf_observer_angle(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag non-standard observer angle in CxF data (GRD_ADV_011).
+        """Flag non-standard observer angle in CxF data (LPDF_ADV_011).
 
         Standard observer angles are 2 degrees and 10 degrees.
         """
@@ -832,7 +832,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if observer not in standard_angles:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_011",
+                    inspection_id="LPDF_ADV_011",
                     severity=Severity.ADVISORY,
                     message=(
                         f"CxF observer angle {observer}\u00b0 is non-standard "
@@ -848,14 +848,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_012 — Spectral vs colorimetric Delta-E exceeds threshold
+    # LPDF_ADV_012 — Spectral vs colorimetric Delta-E exceeds threshold
     # ------------------------------------------------------------------
 
     def _check_spectral_colorimetric_delta_e(
         self,
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Flag when spectral and colorimetric values diverge (GRD_ADV_012).
+        """Flag when spectral and colorimetric values diverge (LPDF_ADV_012).
 
         For CxF spot colors that have both spectral data and Lab values,
         computes the Delta-E between spectral-derived Lab and declared Lab.
@@ -880,7 +880,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
             if delta_e > self._spectral_delta_e_threshold:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_ADV_012",
+                        inspection_id="LPDF_ADV_012",
                         severity=Severity.WARNING,
                         message=(
                             f"CxF spot '{spot.name}' spectral vs colorimetric "
@@ -900,14 +900,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_013 — CxF color library reference
+    # LPDF_ADV_013 — CxF color library reference
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_cxf_library_reference(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Report CxF data that references a known color library (GRD_ADV_013).
+        """Report CxF data that references a known color library (LPDF_ADV_013).
 
         Checks CxF spot color names against known library prefixes
         (PANTONE, HKS, TOYO, DIC, RAL).
@@ -925,7 +925,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 if upper_name.startswith(prefix):
                     findings.append(
                         Finding(
-                            inspection_id="GRD_ADV_013",
+                            inspection_id="LPDF_ADV_013",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"CxF spectral data references {prefix} library color '{spot.name}'"
@@ -941,14 +941,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_014 — CxF substrate measurement present
+    # LPDF_ADV_014 — CxF substrate measurement present
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_cxf_substrate_measurement(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Report when CxF data includes substrate white measurement (GRD_ADV_014).
+        """Report when CxF data includes substrate white measurement (LPDF_ADV_014).
 
         Substrate measurements are used for paper-relative color
         calculations and are a quality indicator for spectral data.
@@ -961,7 +961,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if cxf_data.substrate_measurement:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_014",
+                    inspection_id="LPDF_ADV_014",
                     severity=Severity.ADVISORY,
                     message=("CxF spectral data includes substrate (paper white) measurement"),
                     details={
@@ -973,14 +973,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         return findings
 
     # ------------------------------------------------------------------
-    # GRD_ADV_015 — CxF version compatibility
+    # LPDF_ADV_015 — CxF version compatibility
     # ------------------------------------------------------------------
 
     @staticmethod
     def _check_cxf_version_compatibility(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """Check CxF version for compatibility (GRD_ADV_015).
+        """Check CxF version for compatibility (LPDF_ADV_015).
 
         Validates that the CxF version is compatible with processing
         software (supports CxF/X-4 a.k.a. CxF3).
@@ -994,7 +994,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if not version:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_015",
+                    inspection_id="LPDF_ADV_015",
                     severity=Severity.ADVISORY,
                     message="CxF data does not specify a version number",
                     details={"version": None},
@@ -1006,7 +1006,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         if version not in supported_versions:
             findings.append(
                 Finding(
-                    inspection_id="GRD_ADV_015",
+                    inspection_id="LPDF_ADV_015",
                     severity=Severity.ADVISORY,
                     message=(
                         f"CxF version '{version}' may not be fully "

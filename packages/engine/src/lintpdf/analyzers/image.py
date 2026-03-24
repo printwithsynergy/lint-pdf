@@ -10,23 +10,23 @@ DPI formula (ISO 32000-2:2020 section 8.9):
     dpi_y = pixel_height / (display_height_pts / 72)
 
 Check IDs:
-    GRD_IMG_001 — Low resolution (below minimum DPI threshold)
-    GRD_IMG_002 — Excessive resolution (above maximum DPI threshold)
-    GRD_IMG_003 — Color space mismatch (e.g., RGB image in CMYK workflow)
-    GRD_IMG_004 — No effective compression
-    GRD_IMG_005 — Inline image detected
-    GRD_IMG_006 — Image upscaled >150%
-    GRD_IMG_007 — LZW compression (prohibited in PDF/X)
-    GRD_IMG_008 — JPEG2000 image detected
-    GRD_IMG_009 — 16-bit image (bits_per_component > 8)
-    GRD_IMG_010 — OPI reference detected (prohibited in PDF/X)
-    GRD_IMG_011 — Alternate images detected (prohibited in PDF/X)
-    GRD_IMG_012 — OPI reference detected in page resources (advisory)
-    GRD_IMG_013 — Alternate image detected in page resources (advisory)
-    GRD_IMG_014 — Image is sheared (non-orthogonal CTM transform)
-    GRD_IMG_015 — Image is significantly rotated (non-90-degree rotation)
-    GRD_IMG_016 — Image is flipped (mirrored)
-    GRD_IMG_017 — Image precise scaling percentage (extreme scaling detected)
+    LPDF_IMG_001 — Low resolution (below minimum DPI threshold)
+    LPDF_IMG_002 — Excessive resolution (above maximum DPI threshold)
+    LPDF_IMG_003 — Color space mismatch (e.g., RGB image in CMYK workflow)
+    LPDF_IMG_004 — No effective compression
+    LPDF_IMG_005 — Inline image detected
+    LPDF_IMG_006 — Image upscaled >150%
+    LPDF_IMG_007 — LZW compression (prohibited in PDF/X)
+    LPDF_IMG_008 — JPEG2000 image detected
+    LPDF_IMG_009 — 16-bit image (bits_per_component > 8)
+    LPDF_IMG_010 — OPI reference detected (prohibited in PDF/X)
+    LPDF_IMG_011 — Alternate images detected (prohibited in PDF/X)
+    LPDF_IMG_012 — OPI reference detected in page resources (advisory)
+    LPDF_IMG_013 — Alternate image detected in page resources (advisory)
+    LPDF_IMG_014 — Image is sheared (non-orthogonal CTM transform)
+    LPDF_IMG_015 — Image is significantly rotated (non-90-degree rotation)
+    LPDF_IMG_016 — Image is flipped (mirrored)
+    LPDF_IMG_017 — Image precise scaling percentage (extreme scaling detected)
 """
 
 from __future__ import annotations
@@ -108,10 +108,10 @@ class ImageAnalyzer(BaseAnalyzer):
             if isinstance(event, ImagePlacedEvent):
                 findings.extend(self._analyze_image(event))
 
-        # GRD_IMG_012: OPI references in page XObject resources
+        # LPDF_IMG_012: OPI references in page XObject resources
         findings.extend(self._check_opi_in_resources(document))
 
-        # GRD_IMG_013: Alternate images in page XObject resources
+        # LPDF_IMG_013: Alternate images in page XObject resources
         findings.extend(self._check_alternates_in_resources(document))
 
         return findings
@@ -124,11 +124,11 @@ class ImageAnalyzer(BaseAnalyzer):
         result = self.calculate_dpi(event)
 
         if result.is_valid:
-            # GRD_IMG_001: Low resolution
+            # LPDF_IMG_001: Low resolution
             if result.dpi_effective < self.min_dpi:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_IMG_001",
+                        inspection_id="LPDF_IMG_001",
                         severity=Severity.WARNING,
                         message=(
                             f"Image '{result.image_name}' has low resolution: "
@@ -151,11 +151,11 @@ class ImageAnalyzer(BaseAnalyzer):
                     )
                 )
 
-            # GRD_IMG_002: Excessive resolution
+            # LPDF_IMG_002: Excessive resolution
             if result.dpi_effective > self.max_dpi:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_IMG_002",
+                        inspection_id="LPDF_IMG_002",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Image '{result.image_name}' has excessive resolution: "
@@ -174,7 +174,7 @@ class ImageAnalyzer(BaseAnalyzer):
                     )
                 )
 
-            # GRD_IMG_006: Image upscaled >150%
+            # LPDF_IMG_006: Image upscaled >150%
             # Upscale ratio = display size / pixel size
             ctm = event.ctm
             sx, sy = _extract_ctm_scale(ctm)
@@ -188,7 +188,7 @@ class ImageAnalyzer(BaseAnalyzer):
                     if upscale_pct > 150.0:
                         findings.append(
                             Finding(
-                                inspection_id="GRD_IMG_006",
+                                inspection_id="LPDF_IMG_006",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"Image '{event.image_name}' is upscaled "
@@ -207,13 +207,13 @@ class ImageAnalyzer(BaseAnalyzer):
                             )
                         )
 
-        # GRD_IMG_004: No effective compression
+        # LPDF_IMG_004: No effective compression
         if event.filters:
             filter_set = set(event.filters)
             if filter_set and filter_set.issubset(_NO_COMPRESSION_FILTERS):
                 findings.append(
                     Finding(
-                        inspection_id="GRD_IMG_004",
+                        inspection_id="LPDF_IMG_004",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Image '{event.image_name}' uses no effective compression "
@@ -228,11 +228,11 @@ class ImageAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_IMG_005: Inline image
+        # LPDF_IMG_005: Inline image
         if event.is_inline:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_005",
+                    inspection_id="LPDF_IMG_005",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Inline image detected on page {event.page_num} "
@@ -244,11 +244,11 @@ class ImageAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_IMG_007: LZW compression (prohibited in PDF/X)
+        # LPDF_IMG_007: LZW compression (prohibited in PDF/X)
         if event.filters and "LZWDecode" in event.filters:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_007",
+                    inspection_id="LPDF_IMG_007",
                     severity=Severity.WARNING,
                     message=(
                         f"Image '{event.image_name}' uses LZW compression "
@@ -265,11 +265,11 @@ class ImageAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_IMG_008: JPEG2000 image detected
+        # LPDF_IMG_008: JPEG2000 image detected
         if event.filters and "JPXDecode" in event.filters:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_008",
+                    inspection_id="LPDF_IMG_008",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Image '{event.image_name}' uses JPEG2000 compression "
@@ -286,11 +286,11 @@ class ImageAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_IMG_009: 16-bit image (bits_per_component > 8)
+        # LPDF_IMG_009: 16-bit image (bits_per_component > 8)
         if event.bits_per_component > 8:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_009",
+                    inspection_id="LPDF_IMG_009",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Image '{event.image_name}' is {event.bits_per_component}-bit "
@@ -307,11 +307,11 @@ class ImageAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_IMG_010: OPI reference detected (prohibited in PDF/X)
+        # LPDF_IMG_010: OPI reference detected (prohibited in PDF/X)
         if event.has_opi:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_010",
+                    inspection_id="LPDF_IMG_010",
                     severity=Severity.ERROR,
                     message=(
                         f"Image '{event.image_name}' contains OPI reference "
@@ -325,11 +325,11 @@ class ImageAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_IMG_011: Alternate images detected (prohibited in PDF/X)
+        # LPDF_IMG_011: Alternate images detected (prohibited in PDF/X)
         if event.has_alternate:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_011",
+                    inspection_id="LPDF_IMG_011",
                     severity=Severity.WARNING,
                     message=(
                         f"Image '{event.image_name}' has alternate images "
@@ -343,23 +343,23 @@ class ImageAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_IMG_014: Image is sheared (non-orthogonal CTM)
+        # LPDF_IMG_014: Image is sheared (non-orthogonal CTM)
         findings.extend(self._check_image_shear(event))
 
-        # GRD_IMG_015: Image is significantly rotated (non-90-degree)
+        # LPDF_IMG_015: Image is significantly rotated (non-90-degree)
         findings.extend(self._check_image_rotation(event))
 
-        # GRD_IMG_016: Image is flipped (mirrored)
+        # LPDF_IMG_016: Image is flipped (mirrored)
         findings.extend(self._check_image_flip(event))
 
-        # GRD_IMG_017: Image extreme scaling
+        # LPDF_IMG_017: Image extreme scaling
         findings.extend(self._check_image_scaling(event))
 
         return findings
 
     @staticmethod
     def _check_image_shear(event: ImagePlacedEvent) -> list[Finding]:
-        """Check for non-orthogonal CTM transform on an image (GRD_IMG_014).
+        """Check for non-orthogonal CTM transform on an image (LPDF_IMG_014).
 
         A sheared image has a CTM where the off-diagonal elements (b, c)
         do not correspond to a pure rotation. This indicates a skew/shear
@@ -385,7 +385,7 @@ class ImageAnalyzer(BaseAnalyzer):
         if shear_metric > 0.01:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_014",
+                    inspection_id="LPDF_IMG_014",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Image '{event.image_name}' is sheared on page {event.page_num} "
@@ -407,7 +407,7 @@ class ImageAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_image_rotation(event: ImagePlacedEvent) -> list[Finding]:
-        """Check for non-90-degree rotation on an image (GRD_IMG_015).
+        """Check for non-90-degree rotation on an image (LPDF_IMG_015).
 
         Detects images that are rotated by angles other than 0, 90, 180, 270
         degrees, which may indicate unintended transforms or quality issues.
@@ -434,7 +434,7 @@ class ImageAnalyzer(BaseAnalyzer):
 
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_015",
+                    inspection_id="LPDF_IMG_015",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Image '{event.image_name}' is rotated {angle_deg:.1f} degrees "
@@ -456,7 +456,7 @@ class ImageAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_image_flip(event: ImagePlacedEvent) -> list[Finding]:
-        """Check for reflection (mirror/flip) in the CTM (GRD_IMG_016).
+        """Check for reflection (mirror/flip) in the CTM (LPDF_IMG_016).
 
         A negative determinant (a*d - b*c < 0) indicates that one axis
         has been reflected, meaning the image is flipped/mirrored.
@@ -470,7 +470,7 @@ class ImageAnalyzer(BaseAnalyzer):
         if determinant < -1e-10:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_016",
+                    inspection_id="LPDF_IMG_016",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Image '{event.image_name}' is flipped (mirrored) "
@@ -492,7 +492,7 @@ class ImageAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_image_scaling(event: ImagePlacedEvent) -> list[Finding]:
-        """Check for extreme scaling of an image (GRD_IMG_017).
+        """Check for extreme scaling of an image (LPDF_IMG_017).
 
         Flags images scaled to less than 10% or more than 1000% of their
         original size, as these are likely errors.
@@ -517,7 +517,7 @@ class ImageAnalyzer(BaseAnalyzer):
         if scale_pct < 10.0 or scale_pct > 1000.0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_IMG_017",
+                    inspection_id="LPDF_IMG_017",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Image '{event.image_name}' is scaled to {scale_pct:.0f}% "
@@ -542,7 +542,7 @@ class ImageAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_opi_in_resources(document: SemanticDocument) -> list[Finding]:
-        """Check for /OPI in image XObject dictionaries (GRD_IMG_012).
+        """Check for /OPI in image XObject dictionaries (LPDF_IMG_012).
 
         Scans page resources for image XObjects containing OPI references,
         which indicate low-resolution placeholders meant for OPI server
@@ -561,7 +561,7 @@ class ImageAnalyzer(BaseAnalyzer):
                 if "/OPI" in xobj_dict:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_IMG_012",
+                            inspection_id="LPDF_IMG_012",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"OPI reference found in image '{xobj_name}' "
@@ -580,7 +580,7 @@ class ImageAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_alternates_in_resources(document: SemanticDocument) -> list[Finding]:
-        """Check for /Alternates in image XObject dictionaries (GRD_IMG_013).
+        """Check for /Alternates in image XObject dictionaries (LPDF_IMG_013).
 
         Scans page resources for image XObjects containing alternate image
         entries, which may cause unexpected output if the wrong alternate
@@ -599,7 +599,7 @@ class ImageAnalyzer(BaseAnalyzer):
                 if "/Alternates" in xobj_dict:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_IMG_013",
+                            inspection_id="LPDF_IMG_013",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Alternate image found for '{xobj_name}' "
@@ -634,7 +634,7 @@ class ImageAnalyzer(BaseAnalyzer):
 
         if workflow == "CMYK" and cs in ("DeviceRGB", "CalRGB"):
             return Finding(
-                inspection_id="GRD_IMG_003",
+                inspection_id="LPDF_IMG_003",
                 severity=Severity.WARNING,
                 message=(f"Image '{event.image_name}' uses {cs} in a CMYK workflow"),
                 page_num=event.page_num,
@@ -648,7 +648,7 @@ class ImageAnalyzer(BaseAnalyzer):
 
         if workflow == "RGB" and cs in ("DeviceCMYK",):
             return Finding(
-                inspection_id="GRD_IMG_003",
+                inspection_id="LPDF_IMG_003",
                 severity=Severity.WARNING,
                 message=(f"Image '{event.image_name}' uses {cs} in an RGB workflow"),
                 page_num=event.page_num,

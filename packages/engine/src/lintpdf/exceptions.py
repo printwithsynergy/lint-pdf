@@ -10,10 +10,6 @@ class LintPDFError(Exception):
     """Base exception for all LintPDF errors."""
 
 
-# Backwards compatibility alias
-GroundedError = LintPDFError
-
-
 # --- Parser Layer Exceptions ---
 
 

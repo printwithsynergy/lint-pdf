@@ -1,4 +1,4 @@
-"""Tests for HairlineAnalyzer Part 5 checks — GRD_STROKE_004, GRD_PATH_001."""
+"""Tests for HairlineAnalyzer Part 5 checks — LPDF_STROKE_004, LPDF_PATH_001."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ def _make_document() -> SemanticDocument:
 
 
 class TestMultiInkThinStroke:
-    """Test GRD_STROKE_004: Multi-ink thin stroke."""
+    """Test LPDF_STROKE_004: Multi-ink thin stroke."""
 
     @staticmethod
     def test_multi_ink_thin_stroke_flags() -> None:
@@ -38,7 +38,7 @@ class TestMultiInkThinStroke:
         ]
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        f = [f for f in findings if f.inspection_id == "GRD_STROKE_004"]
+        f = [f for f in findings if f.inspection_id == "LPDF_STROKE_004"]
         assert len(f) == 1
         assert f[0].severity == Severity.WARNING
 
@@ -60,7 +60,7 @@ class TestMultiInkThinStroke:
         ]
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        f = [f for f in findings if f.inspection_id == "GRD_STROKE_004"]
+        f = [f for f in findings if f.inspection_id == "LPDF_STROKE_004"]
         assert len(f) == 0
 
     @staticmethod
@@ -81,7 +81,7 @@ class TestMultiInkThinStroke:
         ]
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        f = [f for f in findings if f.inspection_id == "GRD_STROKE_004"]
+        f = [f for f in findings if f.inspection_id == "LPDF_STROKE_004"]
         assert len(f) == 0
 
     @staticmethod
@@ -102,12 +102,12 @@ class TestMultiInkThinStroke:
         ]
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        f = [f for f in findings if f.inspection_id == "GRD_STROKE_004"]
+        f = [f for f in findings if f.inspection_id == "LPDF_STROKE_004"]
         assert len(f) == 0
 
 
 class TestExcessivePathPoints:
-    """Test GRD_PATH_001: Excessive path points."""
+    """Test LPDF_PATH_001: Excessive path points."""
 
     @staticmethod
     def test_many_points_flags() -> None:
@@ -126,7 +126,7 @@ class TestExcessivePathPoints:
         ]
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        f = [f for f in findings if f.inspection_id == "GRD_PATH_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PATH_001"]
         assert len(f) == 1
         assert f[0].severity == Severity.WARNING
         assert f[0].details["point_count"] == 15000
@@ -148,7 +148,7 @@ class TestExcessivePathPoints:
         ]
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        f = [f for f in findings if f.inspection_id == "GRD_PATH_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PATH_001"]
         assert len(f) == 0
 
     @staticmethod
@@ -168,7 +168,7 @@ class TestExcessivePathPoints:
         ]
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        f = [f for f in findings if f.inspection_id == "GRD_PATH_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PATH_001"]
         assert len(f) == 0
 
     @staticmethod
@@ -188,5 +188,5 @@ class TestExcessivePathPoints:
         ]
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        f = [f for f in findings if f.inspection_id == "GRD_PATH_001"]
+        f = [f for f in findings if f.inspection_id == "LPDF_PATH_001"]
         assert len(f) == 1

@@ -1,4 +1,4 @@
-"""Tests for HairlineAnalyzer — GRD_TEXT_003-006 (Part 4 deepening).
+"""Tests for HairlineAnalyzer — LPDF_TEXT_003-006 (Part 4 deepening).
 
 Tests invisible text, white text, registration text, and small multi-ink text.
 """
@@ -45,35 +45,35 @@ def _text_event(
 
 
 class TestInvisibleText:
-    """Test GRD_TEXT_003: invisible text (rendering mode 3)."""
+    """Test LPDF_TEXT_003: invisible text (rendering mode 3)."""
 
     @staticmethod
     def test_invisible_text_advisory() -> None:
-        """Rendering mode 3 triggers GRD_TEXT_003."""
+        """Rendering mode 3 triggers LPDF_TEXT_003."""
         event = _text_event(rendering_mode=3)
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        inv = [f for f in findings if f.inspection_id == "GRD_TEXT_003"]
+        inv = [f for f in findings if f.inspection_id == "LPDF_TEXT_003"]
         assert len(inv) == 1
         assert inv[0].severity == Severity.ADVISORY
         assert inv[0].object_type == "text"
 
     @staticmethod
     def test_visible_text_no_finding() -> None:
-        """Rendering mode 0 (normal fill) does not trigger GRD_TEXT_003."""
+        """Rendering mode 0 (normal fill) does not trigger LPDF_TEXT_003."""
         event = _text_event(rendering_mode=0)
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        inv = [f for f in findings if f.inspection_id == "GRD_TEXT_003"]
+        inv = [f for f in findings if f.inspection_id == "LPDF_TEXT_003"]
         assert len(inv) == 0
 
     @staticmethod
     def test_stroke_text_no_finding() -> None:
-        """Rendering mode 1 (stroke) does not trigger GRD_TEXT_003."""
+        """Rendering mode 1 (stroke) does not trigger LPDF_TEXT_003."""
         event = _text_event(rendering_mode=1)
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        inv = [f for f in findings if f.inspection_id == "GRD_TEXT_003"]
+        inv = [f for f in findings if f.inspection_id == "LPDF_TEXT_003"]
         assert len(inv) == 0
 
     @staticmethod
@@ -81,59 +81,59 @@ class TestInvisibleText:
         event = _text_event(rendering_mode=3)
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        inv = next((f for f in findings if f.inspection_id == "GRD_TEXT_003"), None)
+        inv = next((f for f in findings if f.inspection_id == "LPDF_TEXT_003"), None)
         assert inv is not None
         assert inv.details["rendering_mode"] == 3
         assert inv.details["font_name"] == "F1"
 
 
 class TestWhiteText:
-    """Test GRD_TEXT_004: white text detection."""
+    """Test LPDF_TEXT_004: white text detection."""
 
     @staticmethod
     def test_white_gray_text() -> None:
-        """DeviceGray 1.0 triggers GRD_TEXT_004."""
+        """DeviceGray 1.0 triggers LPDF_TEXT_004."""
         event = _text_event(color_space="DeviceGray", color_values=(1.0,))
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
+        wt = [f for f in findings if f.inspection_id == "LPDF_TEXT_004"]
         assert len(wt) == 1
         assert wt[0].severity == Severity.ADVISORY
 
     @staticmethod
     def test_white_rgb_text() -> None:
-        """DeviceRGB 1,1,1 triggers GRD_TEXT_004."""
+        """DeviceRGB 1,1,1 triggers LPDF_TEXT_004."""
         event = _text_event(color_space="DeviceRGB", color_values=(1.0, 1.0, 1.0))
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
+        wt = [f for f in findings if f.inspection_id == "LPDF_TEXT_004"]
         assert len(wt) == 1
 
     @staticmethod
     def test_white_cmyk_text() -> None:
-        """DeviceCMYK 0,0,0,0 triggers GRD_TEXT_004."""
+        """DeviceCMYK 0,0,0,0 triggers LPDF_TEXT_004."""
         event = _text_event(color_space="DeviceCMYK", color_values=(0.0, 0.0, 0.0, 0.0))
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
+        wt = [f for f in findings if f.inspection_id == "LPDF_TEXT_004"]
         assert len(wt) == 1
 
     @staticmethod
     def test_black_text_no_finding() -> None:
-        """Black text does not trigger GRD_TEXT_004."""
+        """Black text does not trigger LPDF_TEXT_004."""
         event = _text_event(color_space="DeviceGray", color_values=(0.0,))
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
+        wt = [f for f in findings if f.inspection_id == "LPDF_TEXT_004"]
         assert len(wt) == 0
 
     @staticmethod
     def test_dark_gray_no_finding() -> None:
-        """Dark gray text (0.5) does not trigger GRD_TEXT_004."""
+        """Dark gray text (0.5) does not trigger LPDF_TEXT_004."""
         event = _text_event(color_space="DeviceGray", color_values=(0.5,))
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
+        wt = [f for f in findings if f.inspection_id == "LPDF_TEXT_004"]
         assert len(wt) == 0
 
     @staticmethod
@@ -141,60 +141,60 @@ class TestWhiteText:
         event = _text_event(color_space="DeviceGray", color_values=(1.0,), page_num=5)
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        wt = [f for f in findings if f.inspection_id == "GRD_TEXT_004"]
+        wt = [f for f in findings if f.inspection_id == "LPDF_TEXT_004"]
         assert wt[0].page_num == 5
 
 
 class TestRegistrationText:
-    """Test GRD_TEXT_005: text on registration color."""
+    """Test LPDF_TEXT_005: text on registration color."""
 
     @staticmethod
     def test_registration_text_delay() -> None:
-        """All CMYK at 100% triggers GRD_TEXT_005."""
+        """All CMYK at 100% triggers LPDF_TEXT_005."""
         event = _text_event(
             color_space="DeviceCMYK",
             color_values=(1.0, 1.0, 1.0, 1.0),
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        reg = [f for f in findings if f.inspection_id == "GRD_TEXT_005"]
+        reg = [f for f in findings if f.inspection_id == "LPDF_TEXT_005"]
         assert len(reg) == 1
         assert reg[0].severity == Severity.WARNING
 
     @staticmethod
     def test_near_registration_triggers() -> None:
-        """Near-100% values (within tolerance) trigger GRD_TEXT_005."""
+        """Near-100% values (within tolerance) trigger LPDF_TEXT_005."""
         event = _text_event(
             color_space="DeviceCMYK",
             color_values=(0.995, 1.0, 0.998, 1.0),
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        reg = [f for f in findings if f.inspection_id == "GRD_TEXT_005"]
+        reg = [f for f in findings if f.inspection_id == "LPDF_TEXT_005"]
         assert len(reg) == 1
 
     @staticmethod
     def test_black_only_no_registration() -> None:
-        """100% K only does not trigger GRD_TEXT_005."""
+        """100% K only does not trigger LPDF_TEXT_005."""
         event = _text_event(
             color_space="DeviceCMYK",
             color_values=(0.0, 0.0, 0.0, 1.0),
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        reg = [f for f in findings if f.inspection_id == "GRD_TEXT_005"]
+        reg = [f for f in findings if f.inspection_id == "LPDF_TEXT_005"]
         assert len(reg) == 0
 
     @staticmethod
     def test_rgb_text_no_registration() -> None:
-        """Non-CMYK text does not trigger GRD_TEXT_005."""
+        """Non-CMYK text does not trigger LPDF_TEXT_005."""
         event = _text_event(
             color_space="DeviceRGB",
             color_values=(0.0, 0.0, 0.0),
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        reg = [f for f in findings if f.inspection_id == "GRD_TEXT_005"]
+        reg = [f for f in findings if f.inspection_id == "LPDF_TEXT_005"]
         assert len(reg) == 0
 
     @staticmethod
@@ -205,18 +205,18 @@ class TestRegistrationText:
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        reg = next((f for f in findings if f.inspection_id == "GRD_TEXT_005"), None)
+        reg = next((f for f in findings if f.inspection_id == "LPDF_TEXT_005"), None)
         assert reg is not None
         assert reg.details["font_name"] == "F1"
         assert reg.object_type == "text"
 
 
 class TestSmallMultiInkText:
-    """Test GRD_TEXT_006: small multi-ink text."""
+    """Test LPDF_TEXT_006: small multi-ink text."""
 
     @staticmethod
     def test_small_multi_ink_delay() -> None:
-        """7pt CMYK text with >1 ink triggers GRD_TEXT_006."""
+        """7pt CMYK text with >1 ink triggers LPDF_TEXT_006."""
         event = _text_event(
             font_size=7.0,
             color_space="DeviceCMYK",
@@ -224,13 +224,13 @@ class TestSmallMultiInkText:
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
+        mi = [f for f in findings if f.inspection_id == "LPDF_TEXT_006"]
         assert len(mi) == 1
         assert mi[0].severity == Severity.WARNING
 
     @staticmethod
     def test_large_multi_ink_no_finding() -> None:
-        """10pt CMYK text with >1 ink does not trigger GRD_TEXT_006 (above 8pt)."""
+        """10pt CMYK text with >1 ink does not trigger LPDF_TEXT_006 (above 8pt)."""
         event = _text_event(
             font_size=10.0,
             color_space="DeviceCMYK",
@@ -238,12 +238,12 @@ class TestSmallMultiInkText:
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
+        mi = [f for f in findings if f.inspection_id == "LPDF_TEXT_006"]
         assert len(mi) == 0
 
     @staticmethod
     def test_small_single_ink_no_finding() -> None:
-        """7pt K-only text does not trigger GRD_TEXT_006."""
+        """7pt K-only text does not trigger LPDF_TEXT_006."""
         event = _text_event(
             font_size=7.0,
             color_space="DeviceCMYK",
@@ -251,12 +251,12 @@ class TestSmallMultiInkText:
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
+        mi = [f for f in findings if f.inspection_id == "LPDF_TEXT_006"]
         assert len(mi) == 0
 
     @staticmethod
     def test_small_rgb_no_finding() -> None:
-        """Small RGB text does not trigger GRD_TEXT_006 (not CMYK)."""
+        """Small RGB text does not trigger LPDF_TEXT_006 (not CMYK)."""
         event = _text_event(
             font_size=6.0,
             color_space="DeviceRGB",
@@ -264,12 +264,12 @@ class TestSmallMultiInkText:
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
+        mi = [f for f in findings if f.inspection_id == "LPDF_TEXT_006"]
         assert len(mi) == 0
 
     @staticmethod
     def test_effective_size_with_scaling() -> None:
-        """12pt text scaled down to 6pt effective triggers GRD_TEXT_006."""
+        """12pt text scaled down to 6pt effective triggers LPDF_TEXT_006."""
         event = _text_event(
             font_size=12.0,
             ctm_scale=0.5,
@@ -278,7 +278,7 @@ class TestSmallMultiInkText:
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        mi = [f for f in findings if f.inspection_id == "GRD_TEXT_006"]
+        mi = [f for f in findings if f.inspection_id == "LPDF_TEXT_006"]
         assert len(mi) == 1
 
     @staticmethod
@@ -290,7 +290,7 @@ class TestSmallMultiInkText:
         )
         analyzer = HairlineAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        mi = next((f for f in findings if f.inspection_id == "GRD_TEXT_006"), None)
+        mi = next((f for f in findings if f.inspection_id == "LPDF_TEXT_006"), None)
         assert mi is not None
         assert mi.details["non_zero_inks"] == 4
         assert mi.details["effective_size"] < 8.0

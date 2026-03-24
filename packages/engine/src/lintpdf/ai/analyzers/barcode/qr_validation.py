@@ -166,7 +166,7 @@ class QRValidation(BaseAIAnalyzer):
                         quiet_modules = quiet_left / module_size
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_QR_001",
+                                inspection_id="LPDF_QR_001",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"QR code on page {page_num} has insufficient "
@@ -189,7 +189,7 @@ class QRValidation(BaseAIAnalyzer):
                         quiet_modules = quiet_top / module_size
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_QR_001",
+                                inspection_id="LPDF_QR_001",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"QR code on page {page_num} has insufficient "
@@ -213,7 +213,7 @@ class QRValidation(BaseAIAnalyzer):
                     module_size_mm = module_size / dpi * 25.4
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_QR_002",
+                            inspection_id="LPDF_QR_002",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"QR code on page {page_num}: module size "
@@ -237,7 +237,7 @@ class QRValidation(BaseAIAnalyzer):
                     gtin = gs1_match.group(1)
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_QR_003",
+                            inspection_id="LPDF_QR_003",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"QR code on page {page_num} contains GS1 Digital "
@@ -258,7 +258,7 @@ class QRValidation(BaseAIAnalyzer):
             if len(pages) > 1:
                 findings.append(
                     self._make_finding(
-                        inspection_id="GRD_QR_004",
+                        inspection_id="LPDF_QR_004",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Duplicate QR code found on pages "

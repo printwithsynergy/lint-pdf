@@ -38,7 +38,7 @@ def _make_document(
 
 
 class TestTACCalculation:
-    """Test GRD_COLOR_004: TAC calculation."""
+    """Test LPDF_COLOR_004: TAC calculation."""
 
     @staticmethod
     def test_tac_within_limit() -> None:
@@ -54,7 +54,7 @@ class TestTACCalculation:
         )
         analyzer = ColorAnalyzer(tac_limit=300)
         findings = analyzer.analyze(_make_document(), [event])
-        tac_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_004"]
+        tac_findings = [f for f in findings if f.inspection_id == "LPDF_COLOR_004"]
         assert len(tac_findings) == 0
 
     @staticmethod
@@ -71,7 +71,7 @@ class TestTACCalculation:
         )
         analyzer = ColorAnalyzer(tac_limit=300)
         findings = analyzer.analyze(_make_document(), [event])
-        tac_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_004"]
+        tac_findings = [f for f in findings if f.inspection_id == "LPDF_COLOR_004"]
         assert len(tac_findings) == 1
         assert tac_findings[0].severity == Severity.WARNING
         assert tac_findings[0].details["tac"] == 350.0
@@ -90,7 +90,7 @@ class TestTACCalculation:
         )
         analyzer = ColorAnalyzer(tac_limit=300)
         findings = analyzer.analyze(_make_document(), [event])
-        tac_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_004"]
+        tac_findings = [f for f in findings if f.inspection_id == "LPDF_COLOR_004"]
         assert len(tac_findings) == 1
         assert tac_findings[0].details["tac"] == 400.0
 
@@ -108,7 +108,7 @@ class TestTACCalculation:
         )
         analyzer = ColorAnalyzer(tac_limit=300)
         findings = analyzer.analyze(_make_document(), [event])
-        tac_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_004"]
+        tac_findings = [f for f in findings if f.inspection_id == "LPDF_COLOR_004"]
         assert len(tac_findings) == 0
 
     @staticmethod
@@ -130,7 +130,7 @@ class TestTACCalculation:
                 [
                     f
                     for f in analyzer_300.analyze(_make_document(), [event])
-                    if f.inspection_id == "GRD_COLOR_004"
+                    if f.inspection_id == "LPDF_COLOR_004"
                 ]
             )
             == 0
@@ -143,7 +143,7 @@ class TestTACCalculation:
                 [
                     f
                     for f in analyzer_250.analyze(_make_document(), [event])
-                    if f.inspection_id == "GRD_COLOR_004"
+                    if f.inspection_id == "LPDF_COLOR_004"
                 ]
             )
             == 1
@@ -151,7 +151,7 @@ class TestTACCalculation:
 
 
 class TestProhibitedSpaces:
-    """Test GRD_COLOR_001: prohibited color spaces."""
+    """Test LPDF_COLOR_001: prohibited color spaces."""
 
     @staticmethod
     def test_calgray_prohibited() -> None:
@@ -165,7 +165,7 @@ class TestProhibitedSpaces:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        prohibited = [f for f in findings if f.inspection_id == "GRD_COLOR_001"]
+        prohibited = [f for f in findings if f.inspection_id == "LPDF_COLOR_001"]
         assert len(prohibited) == 1
         assert prohibited[0].severity == Severity.ERROR
 
@@ -181,7 +181,7 @@ class TestProhibitedSpaces:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        prohibited = [f for f in findings if f.inspection_id == "GRD_COLOR_001"]
+        prohibited = [f for f in findings if f.inspection_id == "LPDF_COLOR_001"]
         assert len(prohibited) == 1
 
     @staticmethod
@@ -196,7 +196,7 @@ class TestProhibitedSpaces:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        prohibited = [f for f in findings if f.inspection_id == "GRD_COLOR_001"]
+        prohibited = [f for f in findings if f.inspection_id == "LPDF_COLOR_001"]
         assert len(prohibited) == 0
 
     @staticmethod
@@ -209,12 +209,12 @@ class TestProhibitedSpaces:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        prohibited = [f for f in findings if f.inspection_id == "GRD_COLOR_001"]
+        prohibited = [f for f in findings if f.inspection_id == "LPDF_COLOR_001"]
         assert len(prohibited) == 1
 
 
 class TestDeviceRGBWithoutICC:
-    """Test GRD_COLOR_002: DeviceRGB without ICC profile."""
+    """Test LPDF_COLOR_002: DeviceRGB without ICC profile."""
 
     @staticmethod
     def test_device_rgb_no_icc() -> None:
@@ -230,13 +230,13 @@ class TestDeviceRGBWithoutICC:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        rgb_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_002"]
+        rgb_findings = [f for f in findings if f.inspection_id == "LPDF_COLOR_002"]
         assert len(rgb_findings) == 1
         assert rgb_findings[0].severity == Severity.WARNING
 
 
 class TestSpotColorBacking:
-    """Test GRD_COLOR_003: spot color without alternate."""
+    """Test LPDF_COLOR_003: spot color without alternate."""
 
     @staticmethod
     def test_separation_no_alternate() -> None:
@@ -252,7 +252,7 @@ class TestSpotColorBacking:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        spot_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_003"]
+        spot_findings = [f for f in findings if f.inspection_id == "LPDF_COLOR_003"]
         assert len(spot_findings) == 1
 
     @staticmethod
@@ -269,12 +269,12 @@ class TestSpotColorBacking:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        spot_findings = [f for f in findings if f.inspection_id == "GRD_COLOR_003"]
+        spot_findings = [f for f in findings if f.inspection_id == "LPDF_COLOR_003"]
         assert len(spot_findings) == 0
 
 
 class TestRichBlackText:
-    """Test GRD_COLOR_008: rich black on small text."""
+    """Test LPDF_COLOR_008: rich black on small text."""
 
     def _text_event(
         self,
@@ -295,52 +295,52 @@ class TestRichBlackText:
         )
 
     def test_rich_black_small_text(self) -> None:
-        """10pt CMYK text with >1 ink triggers GRD_COLOR_008."""
+        """10pt CMYK text with >1 ink triggers LPDF_COLOR_008."""
         event = self._text_event(font_size=10.0, color_values=(0.4, 0.3, 0.2, 1.0))
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        rb = [f for f in findings if f.inspection_id == "GRD_COLOR_008"]
+        rb = [f for f in findings if f.inspection_id == "LPDF_COLOR_008"]
         assert len(rb) == 1
         assert rb[0].severity == Severity.WARNING
 
     def test_large_text_no_rich_black_finding(self) -> None:
-        """14pt text is above 12pt threshold — no GRD_COLOR_008."""
+        """14pt text is above 12pt threshold — no LPDF_COLOR_008."""
         event = self._text_event(font_size=14.0, color_values=(0.4, 0.3, 0.2, 1.0))
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        rb = [f for f in findings if f.inspection_id == "GRD_COLOR_008"]
+        rb = [f for f in findings if f.inspection_id == "LPDF_COLOR_008"]
         assert len(rb) == 0
 
     def test_single_ink_no_finding(self) -> None:
-        """K-only text does not trigger GRD_COLOR_008."""
+        """K-only text does not trigger LPDF_COLOR_008."""
         event = self._text_event(font_size=10.0, color_values=(0.0, 0.0, 0.0, 1.0))
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        rb = [f for f in findings if f.inspection_id == "GRD_COLOR_008"]
+        rb = [f for f in findings if f.inspection_id == "LPDF_COLOR_008"]
         assert len(rb) == 0
 
     def test_rgb_text_no_finding(self) -> None:
-        """Non-CMYK text does not trigger GRD_COLOR_008."""
+        """Non-CMYK text does not trigger LPDF_COLOR_008."""
         event = self._text_event(
             font_size=10.0, color_space="DeviceRGB", color_values=(0.0, 0.0, 0.0)
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        rb = [f for f in findings if f.inspection_id == "GRD_COLOR_008"]
+        rb = [f for f in findings if f.inspection_id == "LPDF_COLOR_008"]
         assert len(rb) == 0
 
     def test_rich_black_details(self) -> None:
         event = self._text_event(font_size=8.0, color_values=(0.3, 0.2, 0.1, 1.0))
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        rb = next((f for f in findings if f.inspection_id == "GRD_COLOR_008"), None)
+        rb = next((f for f in findings if f.inspection_id == "LPDF_COLOR_008"), None)
         assert rb is not None
         assert rb.details["non_zero_inks"] == 4
         assert rb.object_type == "text"
 
 
 class TestKnockoutBlack:
-    """Test GRD_COLOR_009: 100% K fill without overprint."""
+    """Test LPDF_COLOR_009: 100% K fill without overprint."""
 
     def _fill_event(
         self,
@@ -358,16 +358,16 @@ class TestKnockoutBlack:
         )
 
     def test_knockout_black_advisory(self) -> None:
-        """Pure 100% K fill without overprint triggers GRD_COLOR_009."""
+        """Pure 100% K fill without overprint triggers LPDF_COLOR_009."""
         event = self._fill_event()
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        ko = [f for f in findings if f.inspection_id == "GRD_COLOR_009"]
+        ko = [f for f in findings if f.inspection_id == "LPDF_COLOR_009"]
         assert len(ko) == 1
         assert ko[0].severity == Severity.ADVISORY
 
     def test_with_overprint_no_finding(self) -> None:
-        """100% K fill with overprint ON does not trigger GRD_COLOR_009."""
+        """100% K fill with overprint ON does not trigger LPDF_COLOR_009."""
         events = [
             OverprintChangedEvent(
                 operator="gs",
@@ -379,32 +379,32 @@ class TestKnockoutBlack:
         ]
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        ko = [f for f in findings if f.inspection_id == "GRD_COLOR_009"]
+        ko = [f for f in findings if f.inspection_id == "LPDF_COLOR_009"]
         assert len(ko) == 0
 
     def test_rich_black_no_knockout_finding(self) -> None:
-        """Rich black fill (C>0) does not trigger GRD_COLOR_009."""
+        """Rich black fill (C>0) does not trigger LPDF_COLOR_009."""
         event = self._fill_event(fill_values=(0.4, 0.3, 0.2, 1.0))
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        ko = [f for f in findings if f.inspection_id == "GRD_COLOR_009"]
+        ko = [f for f in findings if f.inspection_id == "LPDF_COLOR_009"]
         assert len(ko) == 0
 
     def test_non_cmyk_no_finding(self) -> None:
-        """Non-CMYK fill does not trigger GRD_COLOR_009."""
+        """Non-CMYK fill does not trigger LPDF_COLOR_009."""
         event = self._fill_event(fill_cs="DeviceRGB", fill_values=(0.0, 0.0, 0.0))
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        ko = [f for f in findings if f.inspection_id == "GRD_COLOR_009"]
+        ko = [f for f in findings if f.inspection_id == "LPDF_COLOR_009"]
         assert len(ko) == 0
 
 
 class TestPureKFill:
-    """Test GRD_COLOR_010: pure K-only on large fill."""
+    """Test LPDF_COLOR_010: pure K-only on large fill."""
 
     @staticmethod
     def test_pure_k_fill_advisory() -> None:
-        """80% K-only fill triggers GRD_COLOR_010."""
+        """80% K-only fill triggers LPDF_COLOR_010."""
         event = PathPaintingEvent(
             operator="f",
             page_num=1,
@@ -416,7 +416,7 @@ class TestPureKFill:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        pk = [f for f in findings if f.inspection_id == "GRD_COLOR_010"]
+        pk = [f for f in findings if f.inspection_id == "LPDF_COLOR_010"]
         assert len(pk) == 1
         assert pk[0].severity == Severity.ADVISORY
         assert pk[0].details["k_percent"] == 80.0
@@ -435,12 +435,12 @@ class TestPureKFill:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        pk = [f for f in findings if f.inspection_id == "GRD_COLOR_010"]
+        pk = [f for f in findings if f.inspection_id == "LPDF_COLOR_010"]
         assert len(pk) == 0
 
     @staticmethod
     def test_rich_black_no_pure_k_finding() -> None:
-        """Rich black fill does not trigger GRD_COLOR_010."""
+        """Rich black fill does not trigger LPDF_COLOR_010."""
         event = PathPaintingEvent(
             operator="f",
             page_num=1,
@@ -452,12 +452,12 @@ class TestPureKFill:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        pk = [f for f in findings if f.inspection_id == "GRD_COLOR_010"]
+        pk = [f for f in findings if f.inspection_id == "LPDF_COLOR_010"]
         assert len(pk) == 0
 
     @staticmethod
     def test_stroke_only_no_finding() -> None:
-        """K-only stroke (not fill) does not trigger GRD_COLOR_010."""
+        """K-only stroke (not fill) does not trigger LPDF_COLOR_010."""
         event = PathPaintingEvent(
             operator="S",
             page_num=1,
@@ -469,16 +469,16 @@ class TestPureKFill:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(_make_document(), [event])
-        pk = [f for f in findings if f.inspection_id == "GRD_COLOR_010"]
+        pk = [f for f in findings if f.inspection_id == "LPDF_COLOR_010"]
         assert len(pk) == 0
 
 
 class TestSpotColorConflicts:
-    """Test GRD_COLOR_011: spot color name conflict detection."""
+    """Test LPDF_COLOR_011: spot color name conflict detection."""
 
     @staticmethod
     def test_conflicting_alternates() -> None:
-        """Same colorant with different alternates triggers GRD_COLOR_011."""
+        """Same colorant with different alternates triggers LPDF_COLOR_011."""
         doc = SemanticDocument(
             version="2.0",
             page_count=2,
@@ -514,14 +514,14 @@ class TestSpotColorConflicts:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        sc = [f for f in findings if f.inspection_id == "GRD_COLOR_011"]
+        sc = [f for f in findings if f.inspection_id == "LPDF_COLOR_011"]
         assert len(sc) == 1
         assert sc[0].severity == Severity.WARNING
         assert "PANTONE 485 C" in sc[0].message
 
     @staticmethod
     def test_same_alternates_no_conflict() -> None:
-        """Same colorant with same alternate does not trigger GRD_COLOR_011."""
+        """Same colorant with same alternate does not trigger LPDF_COLOR_011."""
         alt = PdfColorSpace(name=None, cs_type="DeviceCMYK", components=4)
         doc = SemanticDocument(
             version="2.0",
@@ -558,14 +558,14 @@ class TestSpotColorConflicts:
         )
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        sc = [f for f in findings if f.inspection_id == "GRD_COLOR_011"]
+        sc = [f for f in findings if f.inspection_id == "LPDF_COLOR_011"]
         assert len(sc) == 0
 
     @staticmethod
     def test_no_spots_no_conflict() -> None:
-        """Document with no spot colors does not trigger GRD_COLOR_011."""
+        """Document with no spot colors does not trigger LPDF_COLOR_011."""
         doc = _make_document()
         analyzer = ColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        sc = [f for f in findings if f.inspection_id == "GRD_COLOR_011"]
+        sc = [f for f in findings if f.inspection_id == "LPDF_COLOR_011"]
         assert len(sc) == 0

@@ -14,7 +14,7 @@ def test_exceptions_importable() -> None:
     """Verify all exception classes are importable."""
     from lintpdf.exceptions import (
         ContentStreamError,
-        GroundedError,
+        LintPDFError,
         InvalidBoxError,
         InvalidPageError,
         JobNotFoundError,
@@ -29,32 +29,32 @@ def test_exceptions_importable() -> None:
         PreflightProfileValidationError,
     )
 
-    # All exceptions inherit from GroundedError
-    assert issubclass(PDFStructureError, GroundedError)
-    assert issubclass(PDFParseError, GroundedError)
-    assert issubclass(PDFStreamEncodingError, GroundedError)
-    assert issubclass(PDFObjectNotFoundError, GroundedError)
-    assert issubclass(InvalidBoxError, GroundedError)
-    assert issubclass(InvalidPageError, GroundedError)
-    assert issubclass(ContentStreamError, GroundedError)
-    assert issubclass(PreflightProfileValidationError, GroundedError)
-    assert issubclass(RuleRegistrationError, GroundedError)
-    assert issubclass(ProfileNotFoundError, GroundedError)
-    assert issubclass(TenantNotFoundError, GroundedError)
-    assert issubclass(RateLimitExceededError, GroundedError)
-    assert issubclass(JobNotFoundError, GroundedError)
+    # All exceptions inherit from LintPDFError
+    assert issubclass(PDFStructureError, LintPDFError)
+    assert issubclass(PDFParseError, LintPDFError)
+    assert issubclass(PDFStreamEncodingError, LintPDFError)
+    assert issubclass(PDFObjectNotFoundError, LintPDFError)
+    assert issubclass(InvalidBoxError, LintPDFError)
+    assert issubclass(InvalidPageError, LintPDFError)
+    assert issubclass(ContentStreamError, LintPDFError)
+    assert issubclass(PreflightProfileValidationError, LintPDFError)
+    assert issubclass(RuleRegistrationError, LintPDFError)
+    assert issubclass(ProfileNotFoundError, LintPDFError)
+    assert issubclass(TenantNotFoundError, LintPDFError)
+    assert issubclass(RateLimitExceededError, LintPDFError)
+    assert issubclass(JobNotFoundError, LintPDFError)
 
-    # GroundedError inherits from Exception
-    assert issubclass(GroundedError, Exception)
+    # LintPDFError inherits from Exception
+    assert issubclass(LintPDFError, Exception)
 
 
 def test_exception_instantiation() -> None:
     """Verify exceptions can be raised and caught."""
-    from lintpdf.exceptions import GroundedError, PDFStructureError
+    from lintpdf.exceptions import LintPDFError, PDFStructureError
 
     try:
         raise PDFStructureError("Test error message")
-    except GroundedError as e:
+    except LintPDFError as e:
         assert str(e) == "Test error message"
         assert isinstance(e, PDFStructureError)
 

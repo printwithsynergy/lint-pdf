@@ -53,7 +53,7 @@ class CheckConfig(BaseModel):
     """Controls which checks are enabled and severity overrides."""
 
     enabled: list[str] = Field(
-        default_factory=lambda: ["GRD_*", "PDFX4-*"],
+        default_factory=lambda: ["LPDF_*", "PDFX4-*"],
         description="Check ID patterns to enable (glob-style). Default: all.",
     )
     disabled: list[str] = Field(
@@ -62,7 +62,7 @@ class CheckConfig(BaseModel):
     )
     severity_overrides: dict[str, str] = Field(
         default_factory=dict,
-        description='Map of check ID to severity override (e.g. {"GRD_IMG_002": "ignore"}).',
+        description='Map of check ID to severity override (e.g. {"LPDF_IMG_002": "ignore"}).',
     )
     per_check: dict[str, PerCheckConfig] = Field(
         default_factory=dict,

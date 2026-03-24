@@ -5,7 +5,7 @@
   "conformance": null,
   "workflow": "CMYK",
   "checks": {
-    "enabled": ["GRD_*"],
+    "enabled": ["LPDF_*"],
     "disabled": [],
     "severity_overrides": {}
   },

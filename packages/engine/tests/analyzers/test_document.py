@@ -28,8 +28,8 @@ class TestEncryption:
         doc = _make_document(is_encrypted=True)
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_004" in ids
-        f = next((f for f in findings if f.inspection_id == "GRD_DOC_004"), None)
+        assert "LPDF_DOC_004" in ids
+        f = next((f for f in findings if f.inspection_id == "LPDF_DOC_004"), None)
         assert f is not None
         assert f.severity == Severity.ERROR
 
@@ -38,7 +38,7 @@ class TestEncryption:
         doc = _make_document(is_encrypted=False)
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_004" not in ids
+        assert "LPDF_DOC_004" not in ids
 
 
 class TestMissingTitle:
@@ -47,14 +47,14 @@ class TestMissingTitle:
         doc = _make_document(info_dict={})
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_003" in ids
+        assert "LPDF_DOC_003" in ids
 
     @staticmethod
     def test_with_title_clean() -> None:
         doc = _make_document(info_dict={"/Title": "My Document"})
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_003" not in ids
+        assert "LPDF_DOC_003" not in ids
 
 
 class TestMixedPageSizes:
@@ -67,7 +67,7 @@ class TestMixedPageSizes:
         doc = _make_document(pages=pages)
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_001" in ids
+        assert "LPDF_DOC_001" in ids
 
     @staticmethod
     def test_same_sizes_clean() -> None:
@@ -78,14 +78,14 @@ class TestMixedPageSizes:
         doc = _make_document(pages=pages)
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_001" not in ids
+        assert "LPDF_DOC_001" not in ids
 
     @staticmethod
     def test_single_page_no_check() -> None:
         doc = _make_document()
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_001" not in ids
+        assert "LPDF_DOC_001" not in ids
 
 
 class TestInconsistentRotation:
@@ -98,7 +98,7 @@ class TestInconsistentRotation:
         doc = _make_document(pages=pages)
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_002" in ids
+        assert "LPDF_DOC_002" in ids
 
     @staticmethod
     def test_consistent_rotation_clean() -> None:
@@ -109,4 +109,4 @@ class TestInconsistentRotation:
         doc = _make_document(pages=pages)
         findings = DocumentAnalyzer().analyze(doc, [])
         ids = [f.inspection_id for f in findings]
-        assert "GRD_DOC_002" not in ids
+        assert "LPDF_DOC_002" not in ids

@@ -75,7 +75,7 @@ class BandingDetectionAnalyzer(BaseAIAnalyzer):
             if cambi_score >= _BANDING_THRESHOLD:
                 findings.append(
                     self._make_finding(
-                        inspection_id="GRD_AI_BAND_001",
+                        inspection_id="LPDF_AI_BAND_001",
                         severity=Severity.WARNING,
                         message=(
                             f"Visible banding detected on page {page_num}: "
@@ -94,7 +94,7 @@ class BandingDetectionAnalyzer(BaseAIAnalyzer):
             elif cambi_score >= _MILD_BANDING_THRESHOLD:
                 findings.append(
                     self._make_finding(
-                        inspection_id="GRD_AI_BAND_001",
+                        inspection_id="LPDF_AI_BAND_001",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Mild banding detected on page {page_num}: CAMBI score {cambi_score}"

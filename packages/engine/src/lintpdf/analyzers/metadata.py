@@ -4,10 +4,10 @@ Validates document metadata for completeness and consistency,
 especially fields required by PDF/X-4.
 
 Check IDs:
-    GRD_META_001 — XMP metadata stream missing
-    GRD_META_002 — Info dict / XMP title inconsistency
-    GRD_META_003 — Trapped key missing or Unknown
-    GRD_META_004 — PDF version mismatch (header vs XMP)
+    LPDF_META_001 — XMP metadata stream missing
+    LPDF_META_002 — Info dict / XMP title inconsistency
+    LPDF_META_003 — Trapped key missing or Unknown
+    LPDF_META_004 — PDF version mismatch (header vs XMP)
 """
 
 from __future__ import annotations
@@ -34,11 +34,11 @@ class MetadataAnalyzer(BaseAnalyzer):
         """Analyze document metadata."""
         findings: list[Finding] = []
 
-        # GRD_META_001: XMP metadata missing
+        # LPDF_META_001: XMP metadata missing
         if document.metadata_stream is None:
             findings.append(
                 Finding(
-                    inspection_id="GRD_META_001",
+                    inspection_id="LPDF_META_001",
                     severity=Severity.WARNING,
                     message="XMP metadata stream is missing",
                     iso_clause="ISO 15930-7:2010 6.2.2",
@@ -48,13 +48,13 @@ class MetadataAnalyzer(BaseAnalyzer):
 
         xmp = XmpMetadata.from_bytes(document.metadata_stream)
 
-        # GRD_META_002: Title inconsistency
+        # LPDF_META_002: Title inconsistency
         info_title = str(document.info_dict.get("/Title", "")).strip()
         xmp_title = xmp.title.strip()
         if info_title and xmp_title and info_title != xmp_title:
             findings.append(
                 Finding(
-                    inspection_id="GRD_META_002",
+                    inspection_id="LPDF_META_002",
                     severity=Severity.ADVISORY,
                     message=(f"Title mismatch: Info dict '{info_title}' vs XMP '{xmp_title}'"),
                     details={
@@ -65,12 +65,12 @@ class MetadataAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_META_003: Trapped key
+        # LPDF_META_003: Trapped key
         trapped = xmp.trapped
         if not trapped or trapped == "Unknown":
             findings.append(
                 Finding(
-                    inspection_id="GRD_META_003",
+                    inspection_id="LPDF_META_003",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Trapped key is {'Unknown' if trapped == 'Unknown' else 'missing'} "
@@ -81,12 +81,12 @@ class MetadataAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_META_004: PDF version mismatch
+        # LPDF_META_004: PDF version mismatch
         xmp_version = xmp.pdf_version
         if xmp_version and xmp_version != document.version:
             findings.append(
                 Finding(
-                    inspection_id="GRD_META_004",
+                    inspection_id="LPDF_META_004",
                     severity=Severity.ADVISORY,
                     message=(
                         f"PDF version mismatch: header '{document.version}' vs XMP '{xmp_version}'"

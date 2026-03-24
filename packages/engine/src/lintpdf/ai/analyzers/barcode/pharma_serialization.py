@@ -205,7 +205,7 @@ class PharmaSerialization(BaseAIAnalyzer):
                 if missing_ais:
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_PS_001",
+                            inspection_id="LPDF_PS_001",
                             severity=Severity.ERROR,
                             message=(
                                 f"Pharma DataMatrix on page {page_num} is missing "
@@ -231,7 +231,7 @@ class PharmaSerialization(BaseAIAnalyzer):
                         if check != int(gtin[13]):
                             findings.append(
                                 self._make_finding(
-                                    inspection_id="GRD_PS_002",
+                                    inspection_id="LPDF_PS_002",
                                     severity=Severity.ERROR,
                                     message=(
                                         f"Pharma DataMatrix on page {page_num}: "
@@ -254,7 +254,7 @@ class PharmaSerialization(BaseAIAnalyzer):
                 if ais["expiry"] is not None and not _validate_expiry_date(ais["expiry"]):
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_PS_003",
+                            inspection_id="LPDF_PS_003",
                             severity=Severity.ERROR,
                             message=(
                                 f"Pharma DataMatrix on page {page_num}: "
@@ -275,7 +275,7 @@ class PharmaSerialization(BaseAIAnalyzer):
                 if not missing_ais:
                     findings.append(
                         self._make_finding(
-                            inspection_id="GRD_PS_004",
+                            inspection_id="LPDF_PS_004",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Pharma DataMatrix on page {page_num}: "
@@ -296,7 +296,7 @@ class PharmaSerialization(BaseAIAnalyzer):
         if not dm_found:
             findings.append(
                 self._make_finding(
-                    inspection_id="GRD_PS_005",
+                    inspection_id="LPDF_PS_005",
                     severity=Severity.ERROR,
                     message=(
                         "No DataMatrix barcode found — EU FMD requires a "
@@ -311,7 +311,7 @@ class PharmaSerialization(BaseAIAnalyzer):
         if other_2d_count > 0:
             findings.append(
                 self._make_finding(
-                    inspection_id="GRD_PS_006",
+                    inspection_id="LPDF_PS_006",
                     severity=Severity.WARNING,
                     message=(
                         f"Found {other_2d_count} non-DataMatrix 2D barcode(s) "

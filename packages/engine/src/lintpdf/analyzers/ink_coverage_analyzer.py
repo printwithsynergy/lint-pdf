@@ -4,9 +4,9 @@ Processes PathPaintingEvent and ColorChangedEvent events plus
 SemanticDocument color space data to collect ink coverage statistics.
 
 Check IDs:
-    GRD_INK_001 — TAC heatmap data (per-page CMYK TAC statistics)
-    GRD_INK_002 — Per-separation ink coverage
-    GRD_INK_003 — Ink channel count validation
+    LPDF_INK_001 — TAC heatmap data (per-page CMYK TAC statistics)
+    LPDF_INK_002 — Per-separation ink coverage
+    LPDF_INK_003 — Ink channel count validation
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
 
         for event in events:
             if isinstance(event, PathPaintingEvent):
-                # Collect CMYK fill data for TAC heatmap (GRD_INK_001)
+                # Collect CMYK fill data for TAC heatmap (LPDF_INK_001)
                 if event.fill and event.fill_color_space == "DeviceCMYK":
                     vals = event.fill_color_values
                     if len(vals) == 4:
@@ -76,7 +76,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                             }
                         )
 
-                        # Track process color channels (GRD_INK_002 / GRD_INK_003)
+                        # Track process color channels (LPDF_INK_002 / LPDF_INK_003)
                         channel_names = ("C", "M", "Y", "K")
                         for i, ch_name in enumerate(channel_names):
                             if vals[i] > 0.0:
@@ -175,7 +175,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                         if colorant and colorant not in ("All", "None"):
                             spot_colors_used.add(colorant)
 
-        # GRD_INK_001: TAC heatmap data per page
+        # LPDF_INK_001: TAC heatmap data per page
         for page_num in sorted(page_tac_data):
             entries = page_tac_data[page_num]
             tac_values = [e["tac"] for e in entries]
@@ -184,7 +184,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
 
             findings.append(
                 Finding(
-                    inspection_id="GRD_INK_001",
+                    inspection_id="LPDF_INK_001",
                     severity=Severity.ADVISORY,
                     message=(
                         f"TAC heatmap data for page {page_num}: "
@@ -203,12 +203,12 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_INK_002: Per-separation ink coverage
+        # LPDF_INK_002: Per-separation ink coverage
         for sep_name in sorted(separation_stats):
             stats = separation_stats[sep_name]
             findings.append(
                 Finding(
-                    inspection_id="GRD_INK_002",
+                    inspection_id="LPDF_INK_002",
                     severity=Severity.ADVISORY,
                     message=(
                         f"Separation '{sep_name}': used on "
@@ -225,7 +225,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_INK_003: Ink channel count validation
+        # LPDF_INK_003: Ink channel count validation
         total_channels = len(process_channels_used) + len(spot_colors_used)
 
         channel_inventory = {
@@ -237,7 +237,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
         # Always report channel inventory
         findings.append(
             Finding(
-                inspection_id="GRD_INK_003",
+                inspection_id="LPDF_INK_003",
                 severity=Severity.ADVISORY,
                 message=(
                     f"Ink channel inventory: {total_channels} channel(s) "
@@ -252,7 +252,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
         if total_channels > 7:
             findings.append(
                 Finding(
-                    inspection_id="GRD_INK_003",
+                    inspection_id="LPDF_INK_003",
                     severity=Severity.WARNING,
                     message=(
                         f"Unusually high ink channel count: {total_channels} channels "
@@ -270,7 +270,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
             if is_cmyk_workflow:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_INK_003",
+                        inspection_id="LPDF_INK_003",
                         severity=Severity.ADVISORY,
                         message=(
                             f"Document uses {total_channels} ink channels "

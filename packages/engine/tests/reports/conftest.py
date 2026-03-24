@@ -13,7 +13,7 @@ def sample_result() -> PreflightResult:
     """Create a sample PreflightResult for testing."""
     findings = [
         Finding(
-            inspection_id="GRD_FONT_001",
+            inspection_id="LPDF_FONT_001",
             severity=Severity.ERROR,
             message="Font 'Arial' is not embedded",
             page_num=1,
@@ -21,7 +21,7 @@ def sample_result() -> PreflightResult:
             object_type="font",
         ),
         Finding(
-            inspection_id="GRD_IMG_001",
+            inspection_id="LPDF_IMG_001",
             severity=Severity.WARNING,
             message="Image resolution below minimum (72 DPI < 150 DPI)",
             page_num=1,
@@ -29,7 +29,7 @@ def sample_result() -> PreflightResult:
             object_type="image",
         ),
         Finding(
-            inspection_id="GRD_COLOR_003",
+            inspection_id="LPDF_COLOR_003",
             severity=Severity.ADVISORY,
             message="RGB color space detected",
             page_num=2,

@@ -1,4 +1,4 @@
-"""Authentication and authorization for Grounded API."""
+"""Authentication and authorization for LintPDF API."""
 
 from __future__ import annotations
 

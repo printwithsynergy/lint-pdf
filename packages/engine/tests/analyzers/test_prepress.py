@@ -1,4 +1,4 @@
-"""Tests for PrepressAnalyzer — GRD_PRESS_001-003."""
+"""Tests for PrepressAnalyzer — LPDF_PRESS_001-003."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ def _make_document() -> SemanticDocument:
 
 
 class TestHalftoneDetection:
-    """Test GRD_PRESS_001: custom halftone dictionary."""
+    """Test LPDF_PRESS_001: custom halftone dictionary."""
 
     @staticmethod
     def test_halftone_advisory() -> None:
@@ -29,7 +29,7 @@ class TestHalftoneDetection:
             has_halftone=True,
         )
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
-        ht = [f for f in findings if f.inspection_id == "GRD_PRESS_001"]
+        ht = [f for f in findings if f.inspection_id == "LPDF_PRESS_001"]
         assert len(ht) == 1
         assert ht[0].severity == Severity.ADVISORY
         assert ht[0].page_num == 1
@@ -43,7 +43,7 @@ class TestHalftoneDetection:
             has_halftone=False,
         )
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
-        ht = [f for f in findings if f.inspection_id == "GRD_PRESS_001"]
+        ht = [f for f in findings if f.inspection_id == "LPDF_PRESS_001"]
         assert len(ht) == 0
 
     @staticmethod
@@ -58,12 +58,12 @@ class TestHalftoneDetection:
             ),
         ]
         findings = PrepressAnalyzer().analyze(_make_document(), events)
-        ht = [f for f in findings if f.inspection_id == "GRD_PRESS_001"]
+        ht = [f for f in findings if f.inspection_id == "LPDF_PRESS_001"]
         assert len(ht) == 1
 
 
 class TestTransferFunction:
-    """Test GRD_PRESS_002: transfer function detection."""
+    """Test LPDF_PRESS_002: transfer function detection."""
 
     @staticmethod
     def test_transfer_function_delay() -> None:
@@ -74,7 +74,7 @@ class TestTransferFunction:
             has_transfer_function=True,
         )
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
-        tf = [f for f in findings if f.inspection_id == "GRD_PRESS_002"]
+        tf = [f for f in findings if f.inspection_id == "LPDF_PRESS_002"]
         assert len(tf) == 1
         assert tf[0].severity == Severity.WARNING
 
@@ -87,7 +87,7 @@ class TestTransferFunction:
             has_transfer_function=False,
         )
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
-        tf = [f for f in findings if f.inspection_id == "GRD_PRESS_002"]
+        tf = [f for f in findings if f.inspection_id == "LPDF_PRESS_002"]
         assert len(tf) == 0
 
     @staticmethod
@@ -102,12 +102,12 @@ class TestTransferFunction:
             ),
         ]
         findings = PrepressAnalyzer().analyze(_make_document(), events)
-        tf = [f for f in findings if f.inspection_id == "GRD_PRESS_002"]
+        tf = [f for f in findings if f.inspection_id == "LPDF_PRESS_002"]
         assert len(tf) == 1
 
 
 class TestBGUCR:
-    """Test GRD_PRESS_003: custom BG/UCR function."""
+    """Test LPDF_PRESS_003: custom BG/UCR function."""
 
     @staticmethod
     def test_bg_ucr_advisory() -> None:
@@ -118,7 +118,7 @@ class TestBGUCR:
             has_bg_ucr=True,
         )
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
-        bg = [f for f in findings if f.inspection_id == "GRD_PRESS_003"]
+        bg = [f for f in findings if f.inspection_id == "LPDF_PRESS_003"]
         assert len(bg) == 1
         assert bg[0].severity == Severity.ADVISORY
 
@@ -131,7 +131,7 @@ class TestBGUCR:
             has_bg_ucr=False,
         )
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
-        bg = [f for f in findings if f.inspection_id == "GRD_PRESS_003"]
+        bg = [f for f in findings if f.inspection_id == "LPDF_PRESS_003"]
         assert len(bg) == 0
 
     @staticmethod
@@ -142,7 +142,7 @@ class TestBGUCR:
             PrepressStateChangedEvent(operator="gs", page_num=1, operator_index=5, has_bg_ucr=True),
         ]
         findings = PrepressAnalyzer().analyze(_make_document(), events)
-        bg = [f for f in findings if f.inspection_id == "GRD_PRESS_003"]
+        bg = [f for f in findings if f.inspection_id == "LPDF_PRESS_003"]
         assert len(bg) == 1
 
 
@@ -162,15 +162,15 @@ class TestCombinedPrepressEvents:
         )
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
         ids = {f.inspection_id for f in findings}
-        assert "GRD_PRESS_001" in ids
-        assert "GRD_PRESS_002" in ids
-        assert "GRD_PRESS_003" in ids
+        assert "LPDF_PRESS_001" in ids
+        assert "LPDF_PRESS_002" in ids
+        assert "LPDF_PRESS_003" in ids
 
     @staticmethod
     def test_no_prepress_events() -> None:
         """Empty events produce no findings."""
         findings = PrepressAnalyzer().analyze(_make_document(), [])
-        press_findings = [f for f in findings if f.inspection_id.startswith("GRD_PRESS_")]
+        press_findings = [f for f in findings if f.inspection_id.startswith("LPDF_PRESS_")]
         assert len(press_findings) == 0
 
     @staticmethod
@@ -182,5 +182,5 @@ class TestCombinedPrepressEvents:
             operator="gs", page_num=1, operator_index=0, non_stroking_alpha=0.5
         )
         findings = PrepressAnalyzer().analyze(_make_document(), [event])
-        press_findings = [f for f in findings if f.inspection_id.startswith("GRD_PRESS_")]
+        press_findings = [f for f in findings if f.inspection_id.startswith("LPDF_PRESS_")]
         assert len(press_findings) == 0

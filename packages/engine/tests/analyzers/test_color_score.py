@@ -13,7 +13,7 @@ class TestColorQualityScore:
     def test_deduction_for_missing_output_intent(self):
         findings = [
             Finding(
-                inspection_id="GRD_COLOR_006",
+                inspection_id="LPDF_COLOR_006",
                 severity=Severity.ERROR,
                 message="No Output Intent defined",
             )
@@ -25,7 +25,7 @@ class TestColorQualityScore:
     def test_critical_floor_for_corrupt_icc(self):
         findings = [
             Finding(
-                inspection_id="GRD_ICC_003",
+                inspection_id="LPDF_ICC_003",
                 severity=Severity.ERROR,
                 message="Corrupt ICC profile",
             )
@@ -37,7 +37,7 @@ class TestColorQualityScore:
     def test_critical_floor_rgb_in_cmyk(self):
         findings = [
             Finding(
-                inspection_id="GRD_COLOR_013",
+                inspection_id="LPDF_COLOR_013",
                 severity=Severity.ERROR,
                 message="RGB in CMYK workflow",
             )
@@ -57,7 +57,7 @@ class TestColorQualityScore:
     def test_non_color_findings_ignored(self):
         findings = [
             Finding(
-                inspection_id="GRD_IMG_001",
+                inspection_id="LPDF_IMG_001",
                 severity=Severity.ERROR,
                 message="Image DPI too low",
             )

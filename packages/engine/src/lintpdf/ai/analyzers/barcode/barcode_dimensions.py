@@ -189,7 +189,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                     if x_dim_mm < _ABSOLUTE_MIN_X_MM:
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BD_001",
+                                inspection_id="LPDF_BD_001",
                                 severity=Severity.ERROR,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
@@ -214,7 +214,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                     elif x_dim_mm < _RECOMMENDED_MIN_X_MM:
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BD_001",
+                                inspection_id="LPDF_BD_001",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
@@ -242,7 +242,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                     if magnification < _MAG_ABSOLUTE_MIN:
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BD_002",
+                                inspection_id="LPDF_BD_002",
                                 severity=Severity.ERROR,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
@@ -263,7 +263,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                     elif magnification > _MAG_ABSOLUTE_MAX:
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BD_002",
+                                inspection_id="LPDF_BD_002",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
@@ -293,7 +293,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                     if height_mm < effective_min_h * 0.8:
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BD_003",
+                                inspection_id="LPDF_BD_003",
                                 severity=Severity.ERROR,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
@@ -314,7 +314,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                     elif height_mm < effective_min_h:
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BD_003",
+                                inspection_id="LPDF_BD_003",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
@@ -348,7 +348,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         actual_left_modules = actual_left_px / x_dim_px if x_dim_px > 0 else 0
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BD_004",
+                                inspection_id="LPDF_BD_004",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "
@@ -372,7 +372,7 @@ class BarcodeDimensionValidation(BaseAIAnalyzer):
                         actual_right_modules = actual_right_px / x_dim_px if x_dim_px > 0 else 0
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BD_004",
+                                inspection_id="LPDF_BD_004",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"{sym_type} barcode on page {page_num}: "

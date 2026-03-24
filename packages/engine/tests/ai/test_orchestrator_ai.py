@@ -66,13 +66,13 @@ class TestOrchestratorWithAI:
         fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["all"]),
-            checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
+            checks=CheckConfig(enabled=["LPDF_*", "AI_*"]),
         )
 
         mock_analyzer = MagicMock()
         mock_analyzer.category = "barcode"
         mock_analyzer.feature_slug = "barcode_decode"
-        mock_analyzer.analyze.return_value = [_ai_finding("GRD_BC_001", category="barcode")]
+        mock_analyzer.analyze.return_value = [_ai_finding("LPDF_BC_001", category="barcode")]
 
         doc = _minimal_doc()
 
@@ -93,7 +93,7 @@ class TestOrchestratorWithAI:
         fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["barcode"]),
-            checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
+            checks=CheckConfig(enabled=["LPDF_*", "AI_*"]),
         )
 
         ai_finding = _ai_finding("AI_BC_001", category="barcode")
@@ -130,7 +130,7 @@ class TestOrchestratorWithAI:
         fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["all"]),
-            checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
+            checks=CheckConfig(enabled=["LPDF_*", "AI_*"]),
         )
 
         mock_analyzer = MagicMock()
@@ -157,7 +157,7 @@ class TestOrchestratorWithAI:
         fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, features=["spell_check"]),
-            checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
+            checks=CheckConfig(enabled=["LPDF_*", "AI_*"]),
         )
 
         spell_finding = Finding(
@@ -194,7 +194,7 @@ class TestOrchestratorWithAI:
         fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True),
-            checks=CheckConfig(enabled=["GRD_*"]),
+            checks=CheckConfig(enabled=["LPDF_*"]),
         )
 
         doc = _minimal_doc()

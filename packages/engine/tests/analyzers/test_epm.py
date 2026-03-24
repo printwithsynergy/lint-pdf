@@ -32,7 +32,7 @@ class TestEpmAnalyzer:
         ]
         analyzer = EpmAnalyzer()
         findings = analyzer.analyze(_make_doc(), events)
-        epm_002 = [f for f in findings if f.inspection_id == "GRD_EPM_002"]
+        epm_002 = [f for f in findings if f.inspection_id == "LPDF_EPM_002"]
         assert len(epm_002) == 0
 
     def test_pure_black_text_detected(self):
@@ -51,7 +51,7 @@ class TestEpmAnalyzer:
         ]
         analyzer = EpmAnalyzer()
         findings = analyzer.analyze(_make_doc(), events)
-        epm_002 = [f for f in findings if f.inspection_id == "GRD_EPM_002"]
+        epm_002 = [f for f in findings if f.inspection_id == "LPDF_EPM_002"]
         assert len(epm_002) >= 1
         assert epm_002[0].severity == Severity.ERROR
 
@@ -69,5 +69,5 @@ class TestEpmAnalyzer:
         ]
         analyzer = EpmAnalyzer()
         findings = analyzer.analyze(_make_doc(), events)
-        epm_001 = [f for f in findings if f.inspection_id == "GRD_EPM_001"]
+        epm_001 = [f for f in findings if f.inspection_id == "LPDF_EPM_001"]
         assert len(epm_001) >= 1

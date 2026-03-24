@@ -22,7 +22,7 @@ def _make_document() -> SemanticDocument:
 
 
 class TestOverprintOnNonCMYK:
-    """Test GRD_OVER_001: overprint on non-CMYK color space."""
+    """Test LPDF_OVER_001: overprint on non-CMYK color space."""
 
     @staticmethod
     def test_overprint_on_rgb() -> None:
@@ -44,7 +44,7 @@ class TestOverprintOnNonCMYK:
         ]
         analyzer = OverprintAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        op_findings = [f for f in findings if f.inspection_id == "GRD_OVER_001"]
+        op_findings = [f for f in findings if f.inspection_id == "LPDF_OVER_001"]
         assert len(op_findings) == 1
         assert op_findings[0].severity == Severity.WARNING
 
@@ -68,7 +68,7 @@ class TestOverprintOnNonCMYK:
         ]
         analyzer = OverprintAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        op_findings = [f for f in findings if f.inspection_id == "GRD_OVER_001"]
+        op_findings = [f for f in findings if f.inspection_id == "LPDF_OVER_001"]
         assert len(op_findings) == 0
 
     @staticmethod
@@ -92,12 +92,12 @@ class TestOverprintOnNonCMYK:
         ]
         analyzer = OverprintAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        op_findings = [f for f in findings if f.inspection_id == "GRD_OVER_001"]
+        op_findings = [f for f in findings if f.inspection_id == "LPDF_OVER_001"]
         assert len(op_findings) == 0
 
     @staticmethod
     def test_no_overprint_rgb_ok() -> None:
-        """RGB without overprint does not trigger GRD_OVER_001."""
+        """RGB without overprint does not trigger LPDF_OVER_001."""
         events = [
             ColorChangedEvent(
                 operator="RG",
@@ -110,12 +110,12 @@ class TestOverprintOnNonCMYK:
         ]
         analyzer = OverprintAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        op_findings = [f for f in findings if f.inspection_id == "GRD_OVER_001"]
+        op_findings = [f for f in findings if f.inspection_id == "LPDF_OVER_001"]
         assert len(op_findings) == 0
 
 
 class TestOPMZero:
-    """Test GRD_OVER_002: OPM=0 with DeviceCMYK."""
+    """Test LPDF_OVER_002: OPM=0 with DeviceCMYK."""
 
     @staticmethod
     def test_opm0_cmyk_delay() -> None:
@@ -138,7 +138,7 @@ class TestOPMZero:
         ]
         analyzer = OverprintAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        opm_findings = [f for f in findings if f.inspection_id == "GRD_OVER_002"]
+        opm_findings = [f for f in findings if f.inspection_id == "LPDF_OVER_002"]
         assert len(opm_findings) == 1
         assert opm_findings[0].severity == Severity.WARNING
 
@@ -163,12 +163,12 @@ class TestOPMZero:
         ]
         analyzer = OverprintAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        opm_findings = [f for f in findings if f.inspection_id == "GRD_OVER_002"]
+        opm_findings = [f for f in findings if f.inspection_id == "LPDF_OVER_002"]
         assert len(opm_findings) == 0
 
 
 class TestOverprintWithTransparency:
-    """Test GRD_OVER_003: overprint with transparency."""
+    """Test LPDF_OVER_003: overprint with transparency."""
 
     @staticmethod
     def test_overprint_transparency_conflict() -> None:
@@ -188,7 +188,7 @@ class TestOverprintWithTransparency:
         ]
         analyzer = OverprintAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        conflict_findings = [f for f in findings if f.inspection_id == "GRD_OVER_003"]
+        conflict_findings = [f for f in findings if f.inspection_id == "LPDF_OVER_003"]
         assert len(conflict_findings) == 1
 
     @staticmethod
@@ -203,5 +203,5 @@ class TestOverprintWithTransparency:
         ]
         analyzer = OverprintAnalyzer()
         findings = analyzer.analyze(_make_document(), events)
-        conflict_findings = [f for f in findings if f.inspection_id == "GRD_OVER_003"]
+        conflict_findings = [f for f in findings if f.inspection_id == "LPDF_OVER_003"]
         assert len(conflict_findings) == 0

@@ -5,24 +5,24 @@ dependencies, pure black text, CMY composite quality, and related issues
 that arise when printing without the Black (K) channel.
 
 Check IDs:
-    GRD_EPM_001 — K channel usage detection
-    GRD_EPM_002 — Pure black text detection
-    GRD_EPM_003 — CMY composite black quality
-    GRD_EPM_004 — CMY-only TAC recalculation
-    GRD_EPM_005 — Spot color K-dependency in fallbacks
-    GRD_EPM_006 — Image K channel dependency
-    GRD_EPM_007 — Registration color in EPM mode
-    GRD_EPM_008 — Gray balance risk
-    GRD_EPM_009 — EPM toner limit exceeded
-    GRD_EPM_010 — Substrate-specific ink limit
-    GRD_EPM_011 — EPM spot color fidelity warning
-    GRD_EPM_012 — EPM variable data compatibility
-    GRD_EPM_013 — EPM halftone incompatibility
-    GRD_EPM_014 — EPM ICC profile class mismatch
-    GRD_EPM_015 — EPM white ink underlayer detection
-    GRD_EPM_016 — EPM overprint simulation mode
-    GRD_EPM_017 — EPM maximum object count
-    GRD_EPM_018 — EPM minimum line weight for digital
+    LPDF_EPM_001 — K channel usage detection
+    LPDF_EPM_002 — Pure black text detection
+    LPDF_EPM_003 — CMY composite black quality
+    LPDF_EPM_004 — CMY-only TAC recalculation
+    LPDF_EPM_005 — Spot color K-dependency in fallbacks
+    LPDF_EPM_006 — Image K channel dependency
+    LPDF_EPM_007 — Registration color in EPM mode
+    LPDF_EPM_008 — Gray balance risk
+    LPDF_EPM_009 — EPM toner limit exceeded
+    LPDF_EPM_010 — Substrate-specific ink limit
+    LPDF_EPM_011 — EPM spot color fidelity warning
+    LPDF_EPM_012 — EPM variable data compatibility
+    LPDF_EPM_013 — EPM halftone incompatibility
+    LPDF_EPM_014 — EPM ICC profile class mismatch
+    LPDF_EPM_015 — EPM white ink underlayer detection
+    LPDF_EPM_016 — EPM overprint simulation mode
+    LPDF_EPM_017 — EPM maximum object count
+    LPDF_EPM_018 — EPM minimum line weight for digital
 """
 
 from __future__ import annotations
@@ -108,17 +108,17 @@ class EpmAnalyzer(BaseAnalyzer):
 
         for event in events:
             if isinstance(event, PathPaintingEvent):
-                # Track object count per page (GRD_EPM_017)
+                # Track object count per page (LPDF_EPM_017)
                 object_counts_per_page[event.page_num] = (
                     object_counts_per_page.get(event.page_num, 0) + 1
                 )
 
-                # GRD_EPM_016: Overprint detection
+                # LPDF_EPM_016: Overprint detection
                 if hasattr(event, "overprint") and event.overprint:
                     overprint_count += 1
                     overprint_pages.add(event.page_num)
 
-                # GRD_EPM_018: Minimum line weight for digital
+                # LPDF_EPM_018: Minimum line weight for digital
                 if event.stroke and hasattr(event, "line_width"):
                     if (
                         event.line_width is not None
@@ -134,31 +134,31 @@ class EpmAnalyzer(BaseAnalyzer):
                     if len(vals) == 4:
                         c, m, y, k = vals
 
-                        # GRD_EPM_001: K channel usage
+                        # LPDF_EPM_001: K channel usage
                         if k > 0:
                             k_usage_count += 1
                             k_usage_pages.add(event.page_num)
 
-                        # GRD_EPM_004: CMY-only TAC
+                        # LPDF_EPM_004: CMY-only TAC
                         cmy_tac = (c + m + y) * 100.0
                         if cmy_tac > max_cmy_tac:
                             max_cmy_tac = cmy_tac
                             max_cmy_tac_page = event.page_num
                             max_cmy_tac_values = vals
 
-                        # GRD_EPM_009: Total toner TAC
+                        # LPDF_EPM_009: Total toner TAC
                         total_tac = (c + m + y + k) * 100.0
                         if total_tac > max_total_tac:
                             max_total_tac = total_tac
                             max_total_tac_page = event.page_num
                             max_total_tac_values = vals
 
-                        # GRD_EPM_010: Substrate-specific ink limit
+                        # LPDF_EPM_010: Substrate-specific ink limit
                         if c > 0.95 or m > 0.95 or y > 0.95 or k > 0.95:
                             ink_limit_count += 1
                             ink_limit_pages.add(event.page_num)
 
-                        # GRD_EPM_007: Registration color
+                        # LPDF_EPM_007: Registration color
                         if (
                             c >= _REGISTRATION_THRESHOLD
                             and m >= _REGISTRATION_THRESHOLD
@@ -168,7 +168,7 @@ class EpmAnalyzer(BaseAnalyzer):
                             registration_count += 1
                             registration_pages.add(event.page_num)
 
-                        # GRD_EPM_008: Gray balance risk
+                        # LPDF_EPM_008: Gray balance risk
                         if (
                             c >= _GRAY_BALANCE_MIN
                             and m >= _GRAY_BALANCE_MIN
@@ -181,7 +181,7 @@ class EpmAnalyzer(BaseAnalyzer):
                             gray_balance_count += 1
                             gray_balance_pages.add(event.page_num)
 
-                        # GRD_EPM_003: CMY composite black quality
+                        # LPDF_EPM_003: CMY composite black quality
                         if k == 0 and (c + m + y) > 0.5:
                             total_cmy_pct = (c + m + y) * 100.0
                             if total_cmy_pct < 200.0:
@@ -210,7 +210,7 @@ class EpmAnalyzer(BaseAnalyzer):
                             max_total_tac_page = event.page_num
                             max_total_tac_values = vals
 
-                        # GRD_EPM_010: Substrate-specific ink limit
+                        # LPDF_EPM_010: Substrate-specific ink limit
                         if c > 0.95 or m > 0.95 or y > 0.95 or k > 0.95:
                             ink_limit_count += 1
                             ink_limit_pages.add(event.page_num)
@@ -243,7 +243,7 @@ class EpmAnalyzer(BaseAnalyzer):
                                 weak_black_pages.add(event.page_num)
 
             elif isinstance(event, TextRenderedEvent):
-                # Track object count per page (GRD_EPM_017)
+                # Track object count per page (LPDF_EPM_017)
                 object_counts_per_page[event.page_num] = (
                     object_counts_per_page.get(event.page_num, 0) + 1
                 )
@@ -251,27 +251,27 @@ class EpmAnalyzer(BaseAnalyzer):
                 if len(event.color_values) == 4 and event.color_space == "DeviceCMYK":
                     c, m, y, k = event.color_values
 
-                    # GRD_EPM_001: K channel usage in text
+                    # LPDF_EPM_001: K channel usage in text
                     if k > 0:
                         k_usage_count += 1
                         k_usage_pages.add(event.page_num)
 
-                    # GRD_EPM_002: Pure black text
+                    # LPDF_EPM_002: Pure black text
                     if abs(k - 1.0) < 0.01 and abs(c) < 0.01 and abs(m) < 0.01 and abs(y) < 0.01:
                         pure_black_text_count += 1
                         pure_black_text_pages.add(event.page_num)
 
                 elif event.color_space == "DeviceGray" and len(event.color_values) == 1:
-                    # GRD_EPM_002: DeviceGray black text (gray=0 means black)
+                    # LPDF_EPM_002: DeviceGray black text (gray=0 means black)
                     if abs(event.color_values[0]) < 0.01:
                         pure_black_text_count += 1
                         pure_black_text_pages.add(event.page_num)
 
-        # GRD_EPM_001: K channel usage detection
+        # LPDF_EPM_001: K channel usage detection
         if k_usage_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_001",
+                    inspection_id="LPDF_EPM_001",
                     severity=Severity.WARNING,
                     message=(
                         f"EPM K-channel dependency: {k_usage_count} object(s) use K "
@@ -284,11 +284,11 @@ class EpmAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_EPM_002: Pure black text detection
+        # LPDF_EPM_002: Pure black text detection
         if pure_black_text_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_002",
+                    inspection_id="LPDF_EPM_002",
                     severity=Severity.ERROR,
                     message=(
                         f"EPM pure black text: {pure_black_text_count} text object(s) use "
@@ -303,11 +303,11 @@ class EpmAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_EPM_003: CMY composite black quality
+        # LPDF_EPM_003: CMY composite black quality
         if weak_black_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_003",
+                    inspection_id="LPDF_EPM_003",
                     severity=Severity.WARNING,
                     message=(
                         f"EPM weak CMY black: {weak_black_count} object(s) with K=0 and "
@@ -324,11 +324,11 @@ class EpmAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_EPM_004: CMY-only TAC recalculation
+        # LPDF_EPM_004: CMY-only TAC recalculation
         if max_cmy_tac > self.cmy_tac_threshold:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_004",
+                    inspection_id="LPDF_EPM_004",
                     severity=Severity.WARNING,
                     message=(
                         f"EPM CMY TAC {max_cmy_tac:.0f}% exceeds {self.cmy_tac_threshold:.0f}% "
@@ -343,17 +343,17 @@ class EpmAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_EPM_005: Spot color K-dependency in fallbacks
+        # LPDF_EPM_005: Spot color K-dependency in fallbacks
         findings.extend(self._check_spot_k_dependency(document))
 
-        # GRD_EPM_006: Image K channel dependency
+        # LPDF_EPM_006: Image K channel dependency
         findings.extend(self._check_image_k_dependency(document))
 
-        # GRD_EPM_007: Registration color in EPM mode
+        # LPDF_EPM_007: Registration color in EPM mode
         if registration_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_007",
+                    inspection_id="LPDF_EPM_007",
                     severity=Severity.ADVISORY,
                     message=(
                         f"EPM registration color: {registration_count} object(s) use "
@@ -368,11 +368,11 @@ class EpmAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_EPM_008: Gray balance risk
+        # LPDF_EPM_008: Gray balance risk
         if gray_balance_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_008",
+                    inspection_id="LPDF_EPM_008",
                     severity=Severity.WARNING,
                     message=(
                         f"EPM gray balance risk: {gray_balance_count} object(s) with "
@@ -391,11 +391,11 @@ class EpmAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_EPM_009: EPM toner limit exceeded
+        # LPDF_EPM_009: EPM toner limit exceeded
         if max_total_tac > self.epm_toner_limit:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_009",
+                    inspection_id="LPDF_EPM_009",
                     severity=Severity.ERROR,
                     message=(
                         f"EPM toner limit exceeded: total toner area coverage "
@@ -411,11 +411,11 @@ class EpmAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_EPM_010: Substrate-specific ink limit
+        # LPDF_EPM_010: Substrate-specific ink limit
         if ink_limit_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_010",
+                    inspection_id="LPDF_EPM_010",
                     severity=Severity.WARNING,
                     message=(
                         f"EPM substrate ink limit: {ink_limit_count} object(s) with "
@@ -431,30 +431,30 @@ class EpmAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # GRD_EPM_011: EPM spot color fidelity
+        # LPDF_EPM_011: EPM spot color fidelity
         findings.extend(self._check_spot_color_fidelity(document))
 
-        # GRD_EPM_012: EPM variable data
+        # LPDF_EPM_012: EPM variable data
         findings.extend(self._check_variable_data(document))
 
-        # GRD_EPM_013: EPM halftone incompatibility
+        # LPDF_EPM_013: EPM halftone incompatibility
         findings.extend(self._check_halftone_incompatibility(document))
 
-        # GRD_EPM_014: EPM ICC profile class
+        # LPDF_EPM_014: EPM ICC profile class
         findings.extend(self._check_icc_profile_class(document))
 
-        # GRD_EPM_015: EPM white ink underlayer
+        # LPDF_EPM_015: EPM white ink underlayer
         findings.extend(self._check_white_ink_underlayer(document))
 
-        # GRD_EPM_016: EPM overprint simulation
+        # LPDF_EPM_016: EPM overprint simulation
         findings.extend(self._check_overprint_simulation(document))
 
-        # GRD_EPM_017: EPM maximum object count
+        # LPDF_EPM_017: EPM maximum object count
         for page_num, count in sorted(object_counts_per_page.items()):
             if count > _EPM_MAX_OBJECTS_PER_PAGE:
                 findings.append(
                     Finding(
-                        inspection_id="GRD_EPM_017",
+                        inspection_id="LPDF_EPM_017",
                         severity=Severity.ADVISORY,
                         message=(
                             f"EPM high object count: page {page_num} has {count} "
@@ -469,11 +469,11 @@ class EpmAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_EPM_018: EPM minimum line weight
+        # LPDF_EPM_018: EPM minimum line weight
         if thin_line_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_018",
+                    inspection_id="LPDF_EPM_018",
                     severity=Severity.WARNING,
                     message=(
                         f"EPM thin line weight: {thin_line_count} stroked path(s) "
@@ -495,7 +495,7 @@ class EpmAnalyzer(BaseAnalyzer):
     def _check_spot_color_fidelity(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_EPM_011: Check for spot colors that may not reproduce on digital."""
+        """LPDF_EPM_011: Check for spot colors that may not reproduce on digital."""
         findings: list[Finding] = []
         _SPOT_PREFIXES = ("PANTONE", "HKS", "TOYO")
         checked_colorants: set[str] = set()
@@ -517,7 +517,7 @@ class EpmAnalyzer(BaseAnalyzer):
                         checked_colorants.add(colorant)
                         findings.append(
                             Finding(
-                                inspection_id="GRD_EPM_011",
+                                inspection_id="LPDF_EPM_011",
                                 severity=Severity.ADVISORY,
                                 message=(
                                     f"EPM spot color fidelity: spot color '{colorant}' "
@@ -537,7 +537,7 @@ class EpmAnalyzer(BaseAnalyzer):
     def _check_variable_data(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_EPM_012: Check for variable data indicators."""
+        """LPDF_EPM_012: Check for variable data indicators."""
         findings: list[Finding] = []
         catalog = document.catalog
 
@@ -555,7 +555,7 @@ class EpmAnalyzer(BaseAnalyzer):
                 indicators.append("MarkInfo")
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_012",
+                    inspection_id="LPDF_EPM_012",
                     severity=Severity.ADVISORY,
                     message=(
                         f"EPM variable data: document contains variable data "
@@ -574,7 +574,7 @@ class EpmAnalyzer(BaseAnalyzer):
     def _check_halftone_incompatibility(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_EPM_013: Check for custom halftone dictionaries in ExtGState."""
+        """LPDF_EPM_013: Check for custom halftone dictionaries in ExtGState."""
         findings: list[Finding] = []
 
         for page in document.pages:
@@ -589,7 +589,7 @@ class EpmAnalyzer(BaseAnalyzer):
                 if "/HT" in gs_dict or "HT" in gs_dict:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_EPM_013",
+                            inspection_id="LPDF_EPM_013",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"EPM halftone incompatibility: custom halftone in "
@@ -609,7 +609,7 @@ class EpmAnalyzer(BaseAnalyzer):
     def _check_icc_profile_class(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_EPM_014: Check output intent ICC profile classes."""
+        """LPDF_EPM_014: Check output intent ICC profile classes."""
         findings: list[Finding] = []
         _VALID_CLASSES = ("prtr", "mntr")
 
@@ -622,7 +622,7 @@ class EpmAnalyzer(BaseAnalyzer):
             ):
                 findings.append(
                     Finding(
-                        inspection_id="GRD_EPM_014",
+                        inspection_id="LPDF_EPM_014",
                         severity=Severity.ADVISORY,
                         message=(
                             f"EPM ICC profile class mismatch: output intent has "
@@ -642,7 +642,7 @@ class EpmAnalyzer(BaseAnalyzer):
     def _check_white_ink_underlayer(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_EPM_015: Check for white ink separation color spaces."""
+        """LPDF_EPM_015: Check for white ink separation color spaces."""
         findings: list[Finding] = []
         detected = False
 
@@ -659,7 +659,7 @@ class EpmAnalyzer(BaseAnalyzer):
                     detected = True
                     findings.append(
                         Finding(
-                            inspection_id="GRD_EPM_015",
+                            inspection_id="LPDF_EPM_015",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"EPM white ink underlayer: Separation color space "
@@ -681,7 +681,7 @@ class EpmAnalyzer(BaseAnalyzer):
     def _check_overprint_simulation(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_EPM_016: Check ExtGState for overprint settings."""
+        """LPDF_EPM_016: Check ExtGState for overprint settings."""
         findings: list[Finding] = []
 
         for page in document.pages:
@@ -698,7 +698,7 @@ class EpmAnalyzer(BaseAnalyzer):
                     opm_val = gs_dict.get("/OPM", gs_dict.get("OPM", 0))
                     findings.append(
                         Finding(
-                            inspection_id="GRD_EPM_016",
+                            inspection_id="LPDF_EPM_016",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"EPM overprint simulation: ExtGState '{gs_name}' on "
@@ -721,7 +721,7 @@ class EpmAnalyzer(BaseAnalyzer):
     def _check_spot_k_dependency(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_EPM_005: Check Separation color spaces for K-dependent alternates."""
+        """LPDF_EPM_005: Check Separation color spaces for K-dependent alternates."""
         findings: list[Finding] = []
         checked_colorants: set[str] = set()
 
@@ -743,7 +743,7 @@ class EpmAnalyzer(BaseAnalyzer):
                 if cs.alternate is not None and cs.alternate.is_cmyk():
                     findings.append(
                         Finding(
-                            inspection_id="GRD_EPM_005",
+                            inspection_id="LPDF_EPM_005",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"EPM spot color K-dependency: Spot color '{colorant}' "
@@ -764,7 +764,7 @@ class EpmAnalyzer(BaseAnalyzer):
     def _check_image_k_dependency(
         document: SemanticDocument,
     ) -> list[Finding]:
-        """GRD_EPM_006: Check images for CMYK K channel dependency."""
+        """LPDF_EPM_006: Check images for CMYK K channel dependency."""
         findings: list[Finding] = []
         cmyk_image_count = 0
         cmyk_image_pages: set[int] = set()
@@ -778,7 +778,7 @@ class EpmAnalyzer(BaseAnalyzer):
         if cmyk_image_count > 0:
             findings.append(
                 Finding(
-                    inspection_id="GRD_EPM_006",
+                    inspection_id="LPDF_EPM_006",
                     severity=Severity.WARNING,
                     message=(
                         f"EPM image K-dependency: {cmyk_image_count} CMYK image(s) "

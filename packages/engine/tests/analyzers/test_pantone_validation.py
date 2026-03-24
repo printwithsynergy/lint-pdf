@@ -122,7 +122,7 @@ class TestDeltaEValidation:
 
 class TestSpotColorAnalyzerPantone:
     def test_spot_002_delta_e_validation(self):
-        """GRD_SPOT_002 produces Delta-E findings for Pantone colors."""
+        """LPDF_SPOT_002 produces Delta-E findings for Pantone colors."""
         cs = PdfColorSpace(
             name="CS1",
             cs_type="Separation",
@@ -137,7 +137,7 @@ class TestSpotColorAnalyzerPantone:
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
         analyzer = SpotColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        spot_002 = [f for f in findings if f.inspection_id == "GRD_SPOT_002"]
+        spot_002 = [f for f in findings if f.inspection_id == "LPDF_SPOT_002"]
         assert len(spot_002) >= 1
         # Should have delta_e in details (since reference exists)
         for f in spot_002:
@@ -145,7 +145,7 @@ class TestSpotColorAnalyzerPantone:
                 assert isinstance(f.details["delta_e"], float)
 
     def test_spot_006_unknown_pantone(self):
-        """GRD_SPOT_006 fires for Pantone colors not in reference DB."""
+        """LPDF_SPOT_006 fires for Pantone colors not in reference DB."""
         cs = PdfColorSpace(
             name="CS1",
             cs_type="Separation",
@@ -160,12 +160,12 @@ class TestSpotColorAnalyzerPantone:
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
         analyzer = SpotColorAnalyzer()
         findings = analyzer.analyze(doc, [])
-        spot_006 = [f for f in findings if f.inspection_id == "GRD_SPOT_006"]
+        spot_006 = [f for f in findings if f.inspection_id == "LPDF_SPOT_006"]
         assert len(spot_006) >= 1
         assert spot_006[0].severity == Severity.ADVISORY
 
     def test_non_pantone_skipped(self):
-        """Non-Pantone spot colors don't trigger GRD_SPOT_002 or 006."""
+        """Non-Pantone spot colors don't trigger LPDF_SPOT_002 or 006."""
         cs = PdfColorSpace(
             name="CS1",
             cs_type="Separation",
@@ -176,7 +176,7 @@ class TestSpotColorAnalyzerPantone:
         analyzer = SpotColorAnalyzer()
         findings = analyzer.analyze(doc, [])
         pantone_findings = [
-            f for f in findings if f.inspection_id in ("GRD_SPOT_002", "GRD_SPOT_006")
+            f for f in findings if f.inspection_id in ("LPDF_SPOT_002", "LPDF_SPOT_006")
         ]
         assert len(pantone_findings) == 0
 

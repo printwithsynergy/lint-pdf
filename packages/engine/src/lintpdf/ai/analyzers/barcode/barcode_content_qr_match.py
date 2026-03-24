@@ -232,7 +232,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                     if not is_valid:
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BCQM_002",
+                                inspection_id="LPDF_BCQM_002",
                                 severity=Severity.WARNING,
                                 message=(
                                     f"QR code on page {page_num} contains invalid URL: {reason}"
@@ -263,7 +263,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                     if not nearby_text.strip():
                         findings.append(
                             self._make_finding(
-                                inspection_id="GRD_BCQM_003",
+                                inspection_id="LPDF_BCQM_003",
                                 severity=Severity.ADVISORY,
                                 message=(
                                     f"No human-readable text detected near QR code "
@@ -286,7 +286,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                         if not (url_found or sim >= _MATCH_THRESHOLD):
                             findings.append(
                                 self._make_finding(
-                                    inspection_id="GRD_BCQM_004",
+                                    inspection_id="LPDF_BCQM_004",
                                     severity=Severity.WARNING,
                                     message=(
                                         f"QR code on page {page_num}: human-readable "
@@ -327,7 +327,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
                             if expected != int(gtin[13]):
                                 findings.append(
                                     self._make_finding(
-                                        inspection_id="GRD_BCQM_001",
+                                        inspection_id="LPDF_BCQM_001",
                                         severity=Severity.ERROR,
                                         message=(
                                             f"DataMatrix on page {page_num}: "
@@ -363,7 +363,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
             if expected != int(data[12]):
                 findings.append(
                     self._make_finding(
-                        inspection_id="GRD_BCQM_001",
+                        inspection_id="LPDF_BCQM_001",
                         severity=Severity.ERROR,
                         message=(
                             f"EAN-13 on page {page_num}: invalid check digit "
@@ -386,7 +386,7 @@ class BarcodeContentAndQRMatching(BaseAIAnalyzer):
             if expected != int(data[11]):
                 findings.append(
                     self._make_finding(
-                        inspection_id="GRD_BCQM_001",
+                        inspection_id="LPDF_BCQM_001",
                         severity=Severity.ERROR,
                         message=(
                             f"UPC-A on page {page_num}: invalid check digit "

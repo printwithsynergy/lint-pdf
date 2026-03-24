@@ -41,7 +41,7 @@ class TestOrchestratorOnDocument:
 
     @staticmethod
     def test_findings_populated() -> None:
-        # A doc with an unembedded font should trigger GRD_FONT_001
+        # A doc with an unembedded font should trigger LPDF_FONT_001
         font = PdfFont(
             name="F1",
             base_font="Arial",
@@ -53,7 +53,7 @@ class TestOrchestratorOnDocument:
         orch = PreflightOrchestrator(fp)
         result = orch.run_on_document(_minimal_doc(fonts={"F1": font}), [])
 
-        font_findings = [f for f in result.findings if f.inspection_id == "GRD_FONT_001"]
+        font_findings = [f for f in result.findings if f.inspection_id == "LPDF_FONT_001"]
         assert len(font_findings) >= 1
         assert result.summary.total_findings > 0
 
@@ -68,12 +68,12 @@ class TestOrchestratorOnDocument:
         )
         fp = PreflightProfile(
             name="Test",
-            checks=CheckConfig(disabled=["GRD_FONT_*"]),
+            checks=CheckConfig(disabled=["LPDF_FONT_*"]),
         )
         orch = PreflightOrchestrator(fp)
         result = orch.run_on_document(_minimal_doc(fonts={"F1": font}), [])
 
-        font_findings = [f for f in result.findings if f.inspection_id.startswith("GRD_FONT")]
+        font_findings = [f for f in result.findings if f.inspection_id.startswith("LPDF_FONT")]
         assert len(font_findings) == 0
 
     @staticmethod
@@ -88,13 +88,13 @@ class TestOrchestratorOnDocument:
         fp = PreflightProfile(
             name="Test",
             checks=CheckConfig(
-                severity_overrides={"GRD_FONT_001": "advisory"},
+                severity_overrides={"LPDF_FONT_001": "advisory"},
             ),
         )
         orch = PreflightOrchestrator(fp)
         result = orch.run_on_document(_minimal_doc(fonts={"F1": font}), [])
 
-        font_findings = [f for f in result.findings if f.inspection_id == "GRD_FONT_001"]
+        font_findings = [f for f in result.findings if f.inspection_id == "LPDF_FONT_001"]
         assert len(font_findings) >= 1
         assert all(f.severity == Severity.ADVISORY for f in font_findings)
 

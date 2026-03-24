@@ -118,7 +118,7 @@ class CrossDocumentConsistencyAnalyzer(BaseAIAnalyzer):
 
         findings.append(
             self._make_finding(
-                inspection_id="GRD_AI_CDCC_001",
+                inspection_id="LPDF_AI_CDCC_001",
                 severity=Severity.ADVISORY,
                 message=(
                     f"Spot color inventory for cross-document tracking: {summary} "

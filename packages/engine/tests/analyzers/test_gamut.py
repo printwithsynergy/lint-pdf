@@ -111,7 +111,7 @@ class TestGamutAnalyzerRgb:
         advisory = [
             f
             for f in findings
-            if f.inspection_id == "GRD_GAMUT_001" and f.severity == Severity.ADVISORY
+            if f.inspection_id == "LPDF_GAMUT_001" and f.severity == Severity.ADVISORY
         ]
         assert len(advisory) >= 1
 
@@ -124,7 +124,7 @@ class TestGamutAnalyzerRgb:
         warnings = [
             f
             for f in findings
-            if f.inspection_id == "GRD_GAMUT_001" and f.severity == Severity.WARNING
+            if f.inspection_id == "LPDF_GAMUT_001" and f.severity == Severity.WARNING
         ]
         assert len(warnings) == 0
 
@@ -139,7 +139,7 @@ class TestGamutAnalyzerCmyk:
         squall_001 = [
             f
             for f in findings
-            if f.inspection_id == "GRD_GAMUT_001" and f.severity == Severity.WARNING
+            if f.inspection_id == "LPDF_GAMUT_001" and f.severity == Severity.WARNING
         ]
         # A 50% gray should be in gamut
         assert len(squall_001) == 0
@@ -152,11 +152,11 @@ class TestGamutAnalyzerCmyk:
         events = [_make_color_event("DeviceCMYK", [1.0, 1.0, 0.0, 0.0])]
         findings = analyzer.analyze(doc, events)
         for f in findings:
-            if f.inspection_id == "GRD_GAMUT_001" and f.details.get("conversion_method"):
+            if f.inspection_id == "LPDF_GAMUT_001" and f.details.get("conversion_method"):
                 assert f.details["conversion_method"] == "naive"
 
     def test_summary_includes_cmyk(self):
-        """GRD_GAMUT_003 summary should include CMYK counts."""
+        """LPDF_GAMUT_003 summary should include CMYK counts."""
         analyzer = GamutAnalyzer(target_condition="fogra39_coated")
         doc = _make_doc()
         events = [
@@ -164,7 +164,7 @@ class TestGamutAnalyzerCmyk:
             _make_color_event("DeviceRGB", [0.5, 0.5, 0.5]),
         ]
         findings = analyzer.analyze(doc, events)
-        summary = [f for f in findings if f.inspection_id == "GRD_GAMUT_003"]
+        summary = [f for f in findings if f.inspection_id == "LPDF_GAMUT_003"]
         assert len(summary) == 1
         assert summary[0].details["total_cmyk_colors"] == 1
         assert summary[0].details["total_rgb_colors"] == 1

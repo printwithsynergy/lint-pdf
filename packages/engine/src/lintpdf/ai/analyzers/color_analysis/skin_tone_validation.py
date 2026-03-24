@@ -91,7 +91,7 @@ class SkinToneValidationAnalyzer(BaseAIAnalyzer):
 
             findings.append(
                 self._make_finding(
-                    inspection_id="GRD_AI_SKIN_001",
+                    inspection_id="LPDF_AI_SKIN_001",
                     severity=Severity.ADVISORY,
                     message=(f"Skin tone analysis for page {page_num}: {summary}"),
                     page_num=page_num,

@@ -44,7 +44,7 @@ class TestGPUUnavailableProducesAdvisory:
         fp = PreflightProfile(
             name="Test",
             ai=AIFeatureConfig(enabled=True, categories=["all"]),
-            checks=CheckConfig(enabled=["GRD_*", "AI_*"]),
+            checks=CheckConfig(enabled=["LPDF_*", "AI_*"]),
         )
 
         # Simulate an analyzer that raises when GPU is down
@@ -108,7 +108,7 @@ class TestRuleBasedFindingsUnaffected:
         # Engine findings (unembedded font) should still be present
         engine_findings = [f for f in result.findings if f.source == "engine"]
         assert len(engine_findings) > 0
-        font_findings = [f for f in engine_findings if f.inspection_id == "GRD_FONT_001"]
+        font_findings = [f for f in engine_findings if f.inspection_id == "LPDF_FONT_001"]
         assert len(font_findings) >= 1
 
 

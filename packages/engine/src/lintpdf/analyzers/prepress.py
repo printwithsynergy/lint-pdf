@@ -4,11 +4,11 @@ Processes PrepressStateChangedEvent events to detect prepress features
 that may be prohibited or problematic in print workflows.
 
 Check IDs:
-    GRD_PRESS_001 — Custom halftone dictionary detected
-    GRD_PRESS_002 — Transfer function detected (prohibited in PDF/X)
-    GRD_PRESS_003 — Custom BG/UCR function detected
-    GRD_PRESS_004 — Custom halftone detected in page resources
-    GRD_PRESS_005 — Custom transfer curve detected in page resources
+    LPDF_PRESS_001 — Custom halftone dictionary detected
+    LPDF_PRESS_002 — Transfer function detected (prohibited in PDF/X)
+    LPDF_PRESS_003 — Custom BG/UCR function detected
+    LPDF_PRESS_004 — Custom halftone detected in page resources
+    LPDF_PRESS_005 — Custom transfer curve detected in page resources
 """
 
 from __future__ import annotations
@@ -43,12 +43,12 @@ class PrepressAnalyzer(BaseAnalyzer):
             if not isinstance(event, PrepressStateChangedEvent):
                 continue
 
-            # GRD_PRESS_001: Custom halftone
+            # LPDF_PRESS_001: Custom halftone
             if event.has_halftone and not seen_halftone:
                 seen_halftone = True
                 findings.append(
                     Finding(
-                        inspection_id="GRD_PRESS_001",
+                        inspection_id="LPDF_PRESS_001",
                         severity=Severity.ADVISORY,
                         message=(f"Custom halftone dictionary detected on page {event.page_num}"),
                         page_num=event.page_num,
@@ -56,12 +56,12 @@ class PrepressAnalyzer(BaseAnalyzer):
                     )
                 )
 
-            # GRD_PRESS_002: Transfer function (prohibited in PDF/X)
+            # LPDF_PRESS_002: Transfer function (prohibited in PDF/X)
             if event.has_transfer_function and not seen_transfer:
                 seen_transfer = True
                 findings.append(
                     Finding(
-                        inspection_id="GRD_PRESS_002",
+                        inspection_id="LPDF_PRESS_002",
                         severity=Severity.WARNING,
                         message=(
                             f"Transfer function detected on page {event.page_num} "
@@ -72,12 +72,12 @@ class PrepressAnalyzer(BaseAnalyzer):
                     )
                 )
 
-            # GRD_PRESS_003: Custom BG/UCR
+            # LPDF_PRESS_003: Custom BG/UCR
             if event.has_bg_ucr and not seen_bg_ucr:
                 seen_bg_ucr = True
                 findings.append(
                     Finding(
-                        inspection_id="GRD_PRESS_003",
+                        inspection_id="LPDF_PRESS_003",
                         severity=Severity.ADVISORY,
                         message=(f"Custom BG/UCR function detected on page {event.page_num}"),
                         page_num=event.page_num,
@@ -85,17 +85,17 @@ class PrepressAnalyzer(BaseAnalyzer):
                     )
                 )
 
-        # GRD_PRESS_004: Custom halftone in page resources or graphics state dicts
+        # LPDF_PRESS_004: Custom halftone in page resources or graphics state dicts
         findings.extend(self._check_halftone_in_resources(document))
 
-        # GRD_PRESS_005: Custom transfer curve in page resources or graphics state dicts
+        # LPDF_PRESS_005: Custom transfer curve in page resources or graphics state dicts
         findings.extend(self._check_transfer_curve_in_resources(document))
 
         return findings
 
     @staticmethod
     def _check_halftone_in_resources(document: SemanticDocument) -> list[Finding]:
-        """Check for /HalftoneType in page resources (GRD_PRESS_004).
+        """Check for /HalftoneType in page resources (LPDF_PRESS_004).
 
         Looks for halftone dictionaries in ExtGState or page-level resources
         that contain /HalftoneType, indicating a custom halftone screen.
@@ -113,7 +113,7 @@ class PrepressAnalyzer(BaseAnalyzer):
                 if isinstance(ht, dict) and "/HalftoneType" in ht:
                     findings.append(
                         Finding(
-                            inspection_id="GRD_PRESS_004",
+                            inspection_id="LPDF_PRESS_004",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Custom halftone (HalftoneType {ht['/HalftoneType']}) "
@@ -132,7 +132,7 @@ class PrepressAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_transfer_curve_in_resources(document: SemanticDocument) -> list[Finding]:
-        """Check for /TR or /TR2 in page resources (GRD_PRESS_005).
+        """Check for /TR or /TR2 in page resources (LPDF_PRESS_005).
 
         Looks for transfer function entries in ExtGState dictionaries.
         """
@@ -151,7 +151,7 @@ class PrepressAnalyzer(BaseAnalyzer):
                     tr_key = "/TR2" if has_tr2 else "/TR"
                     findings.append(
                         Finding(
-                            inspection_id="GRD_PRESS_005",
+                            inspection_id="LPDF_PRESS_005",
                             severity=Severity.ADVISORY,
                             message=(
                                 f"Custom transfer curve ({tr_key}) detected "
