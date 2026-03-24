@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from grounded.profiles.orchestrator import PreflightResult
+    from lintpdf.profiles.orchestrator import PreflightResult
 
-from grounded.reports.engine import ReportEngine
+from lintpdf.reports.engine import ReportEngine
 
 
 class TestReportEngine:

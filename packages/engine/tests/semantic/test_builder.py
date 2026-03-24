@@ -7,9 +7,9 @@ import io
 import pikepdf
 import pytest
 
-from grounded.parser.pikepdf_adapter import PikePDFAdapter
-from grounded.semantic.builder import SemanticModelBuilder
-from grounded.semantic.model import PdfBox
+from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
+from lintpdf.semantic.builder import SemanticModelBuilder
+from lintpdf.semantic.model import PdfBox
 
 
 @pytest.fixture

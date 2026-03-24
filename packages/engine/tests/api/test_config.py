@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from grounded.api.config import Settings
+from lintpdf.api.config import Settings
 
 
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
     """Remove environment variables that would override Settings defaults.
 
-    Settings uses the ``GROUNDED_`` prefix (via pydantic-settings), so both
-    ``GROUNDED_*`` and any unprefixed variants must be cleared.
+    Settings uses the ``LINTPDF_`` prefix (via pydantic-settings), so both
+    ``LINTPDF_*`` and any unprefixed variants must be cleared.
     """
     for suffix in [
         "DATABASE_URL",
@@ -34,7 +34,7 @@ def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "RESEND_API_KEY",
         "EMAIL_FROM_ADDRESS",
     ]:
-        monkeypatch.delenv(f"GROUNDED_{suffix}", raising=False)
+        monkeypatch.delenv(f"LINTPDF_{suffix}", raising=False)
         monkeypatch.delenv(suffix, raising=False)
 
 
@@ -45,7 +45,7 @@ class TestSettings:
         assert settings.api_host == "0.0.0.0"
         assert settings.api_port == 8000
         assert settings.max_upload_size_mb == 1024
-        assert settings.s3_bucket_name == "grounded-uploads"
+        assert settings.s3_bucket_name == "lintpdf-uploads"
         assert settings.redis_url == "redis://localhost:6379/0"
 
     @staticmethod

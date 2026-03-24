@@ -64,7 +64,7 @@ export default function UsagePage() {
 
   const fetchUsage = useCallback(async () => {
     try {
-      const resp = await fetch("/api/grounded/usage");
+      const resp = await fetch("/api/lintpdf/usage");
       if (!resp.ok) throw new Error("Failed to load usage");
       const data = await resp.json();
       setUsage(data);

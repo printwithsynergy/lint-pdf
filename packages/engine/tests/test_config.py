@@ -5,7 +5,7 @@ from __future__ import annotations
 import warnings
 from unittest.mock import patch
 
-from grounded.api.config import Settings, get_settings
+from lintpdf.api.config import Settings, get_settings
 
 
 class TestSettingsDefaults:
@@ -15,7 +15,7 @@ class TestSettingsDefaults:
     def test_default_database_url() -> None:
         with patch.dict("os.environ", {}, clear=True):
             s = Settings()
-            assert s.database_url == "postgresql://localhost:5432/grounded"
+            assert s.database_url == "postgresql://localhost:5432/lintpdf"
 
     @staticmethod
     def test_default_redis_url() -> None:
@@ -60,7 +60,7 @@ class TestSettingsDefaults:
         with patch.dict("os.environ", {}, clear=True):
             s = Settings()
             assert s.s3_endpoint_url is None
-            assert s.s3_bucket_name == "grounded-uploads"
+            assert s.s3_bucket_name == "lintpdf-uploads"
             assert s.s3_access_key_id is None
             assert s.s3_secret_access_key is None
             assert s.s3_region == "auto"
@@ -85,52 +85,52 @@ class TestSettingsDefaults:
 
 
 class TestSettingsFromEnvironment:
-    """Tests for Settings loaded from env vars with GROUNDED_ prefix."""
+    """Tests for Settings loaded from env vars with LINTPDF_ prefix."""
 
     @staticmethod
     def test_database_url_from_env() -> None:
-        with patch.dict("os.environ", {"GROUNDED_DATABASE_URL": "postgresql://prod:5432/live"}):
+        with patch.dict("os.environ", {"LINTPDF_DATABASE_URL": "postgresql://prod:5432/live"}):
             s = Settings()
             assert s.database_url == "postgresql://prod:5432/live"
 
     @staticmethod
     def test_redis_url_from_env() -> None:
-        with patch.dict("os.environ", {"GROUNDED_REDIS_URL": "redis://redis:6380/2"}):
+        with patch.dict("os.environ", {"LINTPDF_REDIS_URL": "redis://redis:6380/2"}):
             s = Settings()
             assert s.redis_url == "redis://redis:6380/2"
 
     @staticmethod
     def test_api_port_from_env() -> None:
-        with patch.dict("os.environ", {"GROUNDED_API_PORT": "9000"}):
+        with patch.dict("os.environ", {"LINTPDF_API_PORT": "9000"}):
             s = Settings()
             assert s.api_port == 9000
 
     @staticmethod
     def test_secret_key_from_env() -> None:
-        with patch.dict("os.environ", {"GROUNDED_SECRET_KEY": "super-secret-prod-key"}):
+        with patch.dict("os.environ", {"LINTPDF_SECRET_KEY": "super-secret-prod-key"}):
             s = Settings()
             assert s.secret_key == "super-secret-prod-key"
 
     @staticmethod
     def test_max_upload_size_from_env() -> None:
-        with patch.dict("os.environ", {"GROUNDED_MAX_UPLOAD_SIZE_MB": "512"}):
+        with patch.dict("os.environ", {"LINTPDF_MAX_UPLOAD_SIZE_MB": "512"}):
             s = Settings()
             assert s.max_upload_size_mb == 512
 
     @staticmethod
     def test_resend_api_key_from_env() -> None:
-        with patch.dict("os.environ", {"GROUNDED_RESEND_API_KEY": "re_test_abc"}):
+        with patch.dict("os.environ", {"LINTPDF_RESEND_API_KEY": "re_test_abc"}):
             s = Settings()
             assert s.resend_api_key == "re_test_abc"
 
     @staticmethod
     def test_s3_settings_from_env() -> None:
         env = {
-            "GROUNDED_S3_ENDPOINT_URL": "https://r2.example.com",
-            "GROUNDED_S3_BUCKET_NAME": "my-bucket",
-            "GROUNDED_S3_ACCESS_KEY_ID": "AKID123",
-            "GROUNDED_S3_SECRET_ACCESS_KEY": "secret456",
-            "GROUNDED_S3_REGION": "us-east-1",
+            "LINTPDF_S3_ENDPOINT_URL": "https://r2.example.com",
+            "LINTPDF_S3_BUCKET_NAME": "my-bucket",
+            "LINTPDF_S3_ACCESS_KEY_ID": "AKID123",
+            "LINTPDF_S3_SECRET_ACCESS_KEY": "secret456",
+            "LINTPDF_S3_REGION": "us-east-1",
         }
         with patch.dict("os.environ", env):
             s = Settings()
@@ -142,13 +142,13 @@ class TestSettingsFromEnvironment:
 
     @staticmethod
     def test_dev_auth_from_env() -> None:
-        with patch.dict("os.environ", {"GROUNDED_DEV_AUTH_ENABLED": "true"}):
+        with patch.dict("os.environ", {"LINTPDF_DEV_AUTH_ENABLED": "true"}):
             s = Settings()
             assert s.dev_auth_enabled is True
 
     @staticmethod
     def test_report_base_url_from_env() -> None:
-        with patch.dict("os.environ", {"GROUNDED_REPORT_BASE_URL": "https://custom.reports.com"}):
+        with patch.dict("os.environ", {"LINTPDF_REPORT_BASE_URL": "https://custom.reports.com"}):
             s = Settings()
             assert s.report_base_url == "https://custom.reports.com"
 
@@ -164,13 +164,13 @@ class TestMaxUploadSizeBytes:
 
     @staticmethod
     def test_custom_size() -> None:
-        with patch.dict("os.environ", {"GROUNDED_MAX_UPLOAD_SIZE_MB": "100"}):
+        with patch.dict("os.environ", {"LINTPDF_MAX_UPLOAD_SIZE_MB": "100"}):
             s = Settings()
             assert s.max_upload_size_bytes == 100 * 1024 * 1024
 
     @staticmethod
     def test_small_size() -> None:
-        with patch.dict("os.environ", {"GROUNDED_MAX_UPLOAD_SIZE_MB": "1"}):
+        with patch.dict("os.environ", {"LINTPDF_MAX_UPLOAD_SIZE_MB": "1"}):
             s = Settings()
             assert s.max_upload_size_bytes == 1048576
 
@@ -189,18 +189,18 @@ class TestGetSettings:
         with patch.dict("os.environ", {}, clear=True), warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             get_settings()
-            secret_warnings = [x for x in w if "GROUNDED_SECRET_KEY" in str(x.message)]
+            secret_warnings = [x for x in w if "LINTPDF_SECRET_KEY" in str(x.message)]
             assert len(secret_warnings) >= 1
 
     @staticmethod
     def test_no_warning_with_custom_secret() -> None:
         with (
-            patch.dict("os.environ", {"GROUNDED_SECRET_KEY": "my-strong-secret"}),
+            patch.dict("os.environ", {"LINTPDF_SECRET_KEY": "my-strong-secret"}),
             warnings.catch_warnings(record=True) as w,
         ):
             warnings.simplefilter("always")
             get_settings()
-            secret_warnings = [x for x in w if "GROUNDED_SECRET_KEY" in str(x.message)]
+            secret_warnings = [x for x in w if "LINTPDF_SECRET_KEY" in str(x.message)]
             assert len(secret_warnings) == 0
 
 
@@ -209,7 +209,7 @@ class TestSettingsModelConfig:
 
     @staticmethod
     def test_env_prefix() -> None:
-        assert Settings.model_config.get("env_prefix") == "GROUNDED_"
+        assert Settings.model_config.get("env_prefix") == "LINTPDF_"
 
     @staticmethod
     def test_env_file() -> None:

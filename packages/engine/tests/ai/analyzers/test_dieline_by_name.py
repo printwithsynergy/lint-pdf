@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from grounded.analyzers.finding import Severity
+from lintpdf.analyzers.finding import Severity
 
 
 def _doc_with_layers(
@@ -59,7 +59,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_dieline_layer() -> None:
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -77,7 +77,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_cut_contour_spot_color() -> None:
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -91,7 +91,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_die_layer_case_insensitive() -> None:
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -104,7 +104,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_cut_layer() -> None:
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -116,7 +116,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_crease_layer() -> None:
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -129,7 +129,7 @@ class TestDielineByNameAnalyzer:
     @staticmethod
     def test_no_dieline_packaging_file_returns_delay() -> None:
         """Packaging file without dieline should get a DELAY severity warning."""
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -145,7 +145,7 @@ class TestDielineByNameAnalyzer:
     @staticmethod
     def test_no_dieline_non_packaging_returns_advisory() -> None:
         """Non-packaging file without dieline should just get an advisory."""
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -159,7 +159,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_both_layer_and_spot_color() -> None:
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -177,7 +177,7 @@ class TestDielineByNameAnalyzer:
     @staticmethod
     def test_deduplicates_by_name() -> None:
         """Same name in layers and spot colors should appear only once."""
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -192,7 +192,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_analyzer_metadata() -> None:
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -204,7 +204,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_findings_source_and_category() -> None:
-        from grounded.ai.analyzers.dieline_detection.dieline_by_name import (
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 

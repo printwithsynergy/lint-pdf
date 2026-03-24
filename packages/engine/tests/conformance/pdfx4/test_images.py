@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from grounded.analyzers.finding import Severity
-from grounded.conformance.pdfx4._images import validate_images
-from grounded.semantic.events import ImagePlacedEvent
-from grounded.semantic.graphics_state import TransformationMatrix
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4._images import validate_images
+from lintpdf.semantic.events import ImagePlacedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(output_intents: list[dict[str, Any]] | None = None) -> SemanticDocument:

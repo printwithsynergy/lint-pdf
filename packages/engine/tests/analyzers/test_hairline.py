@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.finding import Severity
-from grounded.analyzers.hairline import HairlineAnalyzer
-from grounded.semantic.events import PathPaintingEvent, TextRenderedEvent
-from grounded.semantic.graphics_state import TransformationMatrix
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.hairline import HairlineAnalyzer
+from lintpdf.semantic.events import PathPaintingEvent, TextRenderedEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document() -> SemanticDocument:

@@ -8,7 +8,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from grounded.api.models import Base
+from lintpdf.api.models import Base
 
 config = context.config
 
@@ -18,7 +18,7 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Override sqlalchemy.url from environment if available
-db_url = os.environ.get("DATABASE_URL") or os.environ.get("GROUNDED_DATABASE_URL")
+db_url = os.environ.get("DATABASE_URL") or os.environ.get("LINTPDF_DATABASE_URL")
 if db_url:
     config.set_main_option("sqlalchemy.url", db_url)
 

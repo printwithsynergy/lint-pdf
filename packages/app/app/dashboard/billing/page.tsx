@@ -67,8 +67,8 @@ export default function BillingPage() {
   const fetchData = useCallback(async () => {
     try {
       const [subResp, invResp] = await Promise.all([
-        fetch("/api/grounded/billing/subscription"),
-        fetch("/api/grounded/billing/invoices"),
+        fetch("/api/lintpdf/billing/subscription"),
+        fetch("/api/lintpdf/billing/invoices"),
       ]);
       if (subResp.ok) {
         setSubscription(await subResp.json());
@@ -90,7 +90,7 @@ export default function BillingPage() {
 
   async function handleUpgrade() {
     try {
-      const resp = await fetch("/api/grounded/billing/checkout", {
+      const resp = await fetch("/api/lintpdf/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
@@ -104,7 +104,7 @@ export default function BillingPage() {
 
   async function handleManage() {
     try {
-      const resp = await fetch("/api/grounded/billing/portal", {
+      const resp = await fetch("/api/lintpdf/billing/portal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.finding import Severity
-from grounded.conformance.pdfx4._boxes import validate_boxes
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4._boxes import validate_boxes
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(pages: list[SemanticPage] | None = None) -> SemanticDocument:

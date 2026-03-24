@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from grounded.analyzers.finding import Severity
-from grounded.conformance.pdfx4._transparency import validate_transparency
-from grounded.semantic.events import OpacityChangedEvent
-from grounded.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.conformance.pdfx4._transparency import validate_transparency
+from lintpdf.semantic.events import OpacityChangedEvent
+from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(

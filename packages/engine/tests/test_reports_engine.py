@@ -6,9 +6,9 @@ from unittest.mock import patch
 
 import pytest
 
-from grounded.analyzers.finding import Finding, Severity
-from grounded.profiles.orchestrator import PreflightResult, PreflightSummary
-from grounded.reports.engine import ReportEngine
+from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
+from lintpdf.reports.engine import ReportEngine
 
 
 @pytest.fixture
@@ -186,7 +186,7 @@ class TestToHtml:
     @staticmethod
     def test_delegates_to_html_report(engine: ReportEngine, sample_result) -> None:
         with patch(
-            "grounded.reports.html_report.generate_html_report", return_value=b"<html>test</html>"
+            "lintpdf.reports.html_report.generate_html_report", return_value=b"<html>test</html>"
         ) as mock:
             result = engine.to_html(sample_result)
             mock.assert_called_once_with(sample_result)
@@ -199,7 +199,7 @@ class TestToPdf:
     @staticmethod
     def test_delegates_to_pdf_report(engine: ReportEngine, sample_result) -> None:
         with patch(
-            "grounded.reports.pdf_report.generate_pdf_report", return_value=b"%PDF-mock"
+            "lintpdf.reports.pdf_report.generate_pdf_report", return_value=b"%PDF-mock"
         ) as mock:
             result = engine.to_pdf(sample_result)
             mock.assert_called_once_with(sample_result)

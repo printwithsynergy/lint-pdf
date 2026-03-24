@@ -41,7 +41,7 @@ export default function AccountPage() {
 
   const fetchAccount = useCallback(async () => {
     try {
-      const resp = await fetch("/api/grounded/account");
+      const resp = await fetch("/api/lintpdf/account");
       if (!resp.ok) throw new Error("Failed to load account");
       const data = await resp.json();
       setAccount(data);
@@ -67,7 +67,7 @@ export default function AccountPage() {
     setError("");
     setSuccess("");
     try {
-      const resp = await fetch("/api/grounded/account", {
+      const resp = await fetch("/api/lintpdf/account", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, contact_email: contactEmail }),
@@ -87,7 +87,7 @@ export default function AccountPage() {
     setError("");
     setSuccess("");
     try {
-      const resp = await fetch("/api/grounded/account/branding", {
+      const resp = await fetch("/api/lintpdf/account/branding", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

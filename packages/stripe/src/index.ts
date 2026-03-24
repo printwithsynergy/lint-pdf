@@ -27,9 +27,9 @@ export type { OverageEvent, SetupResult } from "./types.js";
 // ── Engine admin API helper ─────────────────────────────────
 
 function engineAdminUrl(): string {
-  const url = process.env.GROUNDED_API_URL;
+  const url = process.env.LINTPDF_API_URL;
   if (!url) {
-    throw new Error("GROUNDED_API_URL environment variable is required");
+    throw new Error("LINTPDF_API_URL environment variable is required");
   }
   return url.replace(/\/$/, "");
 }
@@ -38,7 +38,7 @@ function adminHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  const key = process.env.GROUNDED_ADMIN_API_KEY;
+  const key = process.env.LINTPDF_ADMIN_API_KEY;
   if (key) headers["X-Admin-Key"] = key;
   return headers;
 }

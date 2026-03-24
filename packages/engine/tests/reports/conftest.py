@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from grounded.analyzers.finding import Finding, Severity
-from grounded.profiles.orchestrator import PreflightResult, PreflightSummary
+from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
 
 
 @pytest.fixture

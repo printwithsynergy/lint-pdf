@@ -43,7 +43,7 @@ export default function WebhooksPage() {
 
   const fetchWebhooks = useCallback(async () => {
     try {
-      const resp = await fetch("/api/grounded/webhook-endpoints");
+      const resp = await fetch("/api/lintpdf/webhook-endpoints");
       if (!resp.ok) throw new Error("Failed to load webhooks");
       const data = await resp.json();
       setWebhooks(data.webhooks ?? []);
@@ -62,7 +62,7 @@ export default function WebhooksPage() {
     setCreating(true);
     setError("");
     try {
-      const resp = await fetch("/api/grounded/webhook-endpoints", {
+      const resp = await fetch("/api/lintpdf/webhook-endpoints", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: newUrl, events: newEvents }),
@@ -85,7 +85,7 @@ export default function WebhooksPage() {
   async function handleUpdate(id: string) {
     setError("");
     try {
-      const resp = await fetch(`/api/grounded/webhook-endpoints/${id}`, {
+      const resp = await fetch(`/api/lintpdf/webhook-endpoints/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: editUrl, events: editEvents }),
@@ -103,7 +103,7 @@ export default function WebhooksPage() {
 
   async function handleToggle(id: string, is_active: boolean) {
     try {
-      await fetch(`/api/grounded/webhook-endpoints/${id}`, {
+      await fetch(`/api/lintpdf/webhook-endpoints/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_active: !is_active }),
@@ -117,7 +117,7 @@ export default function WebhooksPage() {
   async function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this webhook?")) return;
     try {
-      await fetch(`/api/grounded/webhook-endpoints/${id}`, {
+      await fetch(`/api/lintpdf/webhook-endpoints/${id}`, {
         method: "DELETE",
       });
       await fetchWebhooks();
@@ -130,7 +130,7 @@ export default function WebhooksPage() {
     setTestingId(id);
     setTestResult(null);
     try {
-      const resp = await fetch(`/api/grounded/webhook-endpoints/${id}/test`, {
+      const resp = await fetch(`/api/lintpdf/webhook-endpoints/${id}/test`, {
         method: "POST",
       });
       const data = await resp.json();

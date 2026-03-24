@@ -1,4 +1,4 @@
-"""Tests for GPUInferenceClient and CircuitBreaker (grounded.ai.gpu_client)."""
+"""Tests for GPUInferenceClient and CircuitBreaker (lintpdf.ai.gpu_client)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from grounded.ai.gpu_client import CircuitBreaker, GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.gpu_client import CircuitBreaker, GPUInferenceClient, GPUServiceUnavailableError
 
 
 class TestCircuitBreaker:

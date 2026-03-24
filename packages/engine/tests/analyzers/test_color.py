@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.color import ColorAnalyzer
-from grounded.analyzers.finding import Severity
-from grounded.semantic.events import (
+from lintpdf.analyzers.color import ColorAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.semantic.events import (
     ColorChangedEvent,
     OverprintChangedEvent,
     PathPaintingEvent,
     TextRenderedEvent,
 )
-from grounded.semantic.graphics_state import TransformationMatrix
-from grounded.semantic.model import (
+from lintpdf.semantic.graphics_state import TransformationMatrix
+from lintpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

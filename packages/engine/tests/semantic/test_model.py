@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from grounded.exceptions import InvalidBoxError
-from grounded.semantic.model import (
+from lintpdf.exceptions import InvalidBoxError
+from lintpdf.semantic.model import (
     STANDARD_14_FONTS,
     PdfBox,
     PdfColorSpace,

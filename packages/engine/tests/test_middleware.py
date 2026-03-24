@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import HTTPException
 
-from grounded.api.middleware import (
+from lintpdf.api.middleware import (
     UsageInfo,
     build_usage_info,
     check_rate_limit,
@@ -20,7 +20,7 @@ from grounded.api.middleware import (
     get_redis_client,
     set_rate_limiter,
 )
-from grounded.tenants.models import TenantPlan
+from lintpdf.tenants.models import TenantPlan
 
 
 class FakeRedis:

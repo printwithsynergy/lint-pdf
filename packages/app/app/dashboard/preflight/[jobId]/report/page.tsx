@@ -94,7 +94,7 @@ export default function ReportPage() {
 
   const fetchReport = useCallback(async () => {
     try {
-      const resp = await fetch(`/api/grounded/reports/${jobId}`);
+      const resp = await fetch(`/api/lintpdf/reports/${jobId}`);
       if (!resp.ok) throw new Error("Failed to load report");
       const data = await resp.json();
       setReport(data);
@@ -217,7 +217,7 @@ export default function ReportPage() {
 
       <div className="mt-4 flex gap-2">
         <a
-          href={`/api/grounded/reports/${report.job_id}/html`}
+          href={`/api/lintpdf/reports/${report.job_id}/html`}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
@@ -225,7 +225,7 @@ export default function ReportPage() {
           View HTML Report
         </a>
         <a
-          href={`/api/grounded/reports/${report.job_id}/download`}
+          href={`/api/lintpdf/reports/${report.job_id}/download`}
           className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
         >
           Download PDF Report

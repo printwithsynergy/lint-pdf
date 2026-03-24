@@ -24,10 +24,10 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from grounded.api.routes.ai_config import get_ai_config
+        from lintpdf.api.routes.ai_config import get_ai_config
 
         with patch(
-            "grounded.ai.config.get_or_create_ai_config",
+            "lintpdf.ai.config.get_or_create_ai_config",
             return_value=mock_ai_config,
         ):
             response = await get_ai_config(db=mock_db_session, tenant=mock_tenant)
@@ -42,15 +42,15 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from grounded.api.ai_schemas import AIConfigUpdateRequest
-        from grounded.api.routes.ai_config import update_ai_config
+        from lintpdf.api.ai_schemas import AIConfigUpdateRequest
+        from lintpdf.api.routes.ai_config import update_ai_config
 
         request = AIConfigUpdateRequest(industry_type="pharma")
 
         with (
-            patch("grounded.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
             patch(
-                "grounded.ai.config.update_ai_config",
+                "lintpdf.ai.config.update_ai_config",
                 return_value=mock_ai_config,
             ),
         ):
@@ -66,13 +66,13 @@ class TestAIConfigRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from grounded.api.ai_schemas import AIConfigUpdateRequest
-        from grounded.api.routes.ai_config import update_ai_config
+        from lintpdf.api.ai_schemas import AIConfigUpdateRequest
+        from lintpdf.api.routes.ai_config import update_ai_config
 
         request = AIConfigUpdateRequest(industry_type="food")
 
         with patch(
-            "grounded.ai.access.check_ai_access",
+            "lintpdf.ai.access.check_ai_access",
             side_effect=HTTPException(status_code=403, detail="AI not enabled"),
         ):
             with pytest.raises(HTTPException) as exc_info:
@@ -86,11 +86,11 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from grounded.api.routes.ai_config import delete_reference_logo
+        from lintpdf.api.routes.ai_config import delete_reference_logo
 
         with (
-            patch("grounded.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("grounded.ai.config.remove_reference_logo", return_value=False),
+            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("lintpdf.ai.config.remove_reference_logo", return_value=False),
         ):
             with pytest.raises(HTTPException) as exc_info:
                 await delete_reference_logo(
@@ -105,11 +105,11 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from grounded.api.routes.ai_config import delete_reference_logo
+        from lintpdf.api.routes.ai_config import delete_reference_logo
 
         with (
-            patch("grounded.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("grounded.ai.config.remove_reference_logo", return_value=True),
+            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("lintpdf.ai.config.remove_reference_logo", return_value=True),
         ):
             result = await delete_reference_logo(
                 logo_id="test-logo-id", db=mock_db_session, tenant=mock_tenant
@@ -123,8 +123,8 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from grounded.api.ai_schemas import PaletteUpdateRequest
-        from grounded.api.routes.ai_config import set_brand_palette
+        from lintpdf.api.ai_schemas import PaletteUpdateRequest
+        from lintpdf.api.routes.ai_config import set_brand_palette
 
         request = PaletteUpdateRequest(
             colors=[
@@ -134,8 +134,8 @@ class TestAIConfigRoutes:
         )
 
         with (
-            patch("grounded.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("grounded.ai.config.update_ai_config", return_value=mock_ai_config),
+            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("lintpdf.ai.config.update_ai_config", return_value=mock_ai_config),
         ):
             result = await set_brand_palette(
                 request=request, db=mock_db_session, tenant=mock_tenant
@@ -149,14 +149,14 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from grounded.api.ai_schemas import DictionaryUpdateRequest
-        from grounded.api.routes.ai_config import set_custom_dictionary
+        from lintpdf.api.ai_schemas import DictionaryUpdateRequest
+        from lintpdf.api.routes.ai_config import set_custom_dictionary
 
         request = DictionaryUpdateRequest(words=["LintPDF", "CMYK", "preflight"])
 
         with (
-            patch("grounded.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("grounded.ai.config.update_ai_config", return_value=mock_ai_config),
+            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("lintpdf.ai.config.update_ai_config", return_value=mock_ai_config),
         ):
             result = await set_custom_dictionary(
                 request=request, db=mock_db_session, tenant=mock_tenant
@@ -174,8 +174,8 @@ class TestAICreditRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from grounded.ai.credits import CreditBalance
-        from grounded.api.routes.ai_credits import get_credits
+        from lintpdf.ai.credits import CreditBalance
+        from lintpdf.api.routes.ai_credits import get_credits
 
         balance = CreditBalance(
             credit_balance=Decimal("100.00"),
@@ -187,8 +187,8 @@ class TestAICreditRoutes:
         )
 
         with (
-            patch("grounded.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("grounded.ai.credits.get_credit_balance", return_value=balance),
+            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("lintpdf.ai.credits.get_credit_balance", return_value=balance),
         ):
             response = await get_credits(db=mock_db_session, tenant=mock_tenant)
 
@@ -205,8 +205,8 @@ class TestAICreditRoutes:
     ) -> None:
         import uuid
 
-        from grounded.api.ai_schemas import CreditTopupRequest
-        from grounded.api.routes.ai_credits import topup_credits
+        from lintpdf.api.ai_schemas import CreditTopupRequest
+        from lintpdf.api.routes.ai_credits import topup_credits
 
         request = CreditTopupRequest(credits=500)
 
@@ -214,8 +214,8 @@ class TestAICreditRoutes:
         # TenantAICreditPackage is imported inside the function, so patch the model.
         package_id = uuid.uuid4()
         with (
-            patch("grounded.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("grounded.api.models.TenantAICreditPackage") as MockPackage,  # noqa: N806
+            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("lintpdf.api.models.TenantAICreditPackage") as MockPackage,  # noqa: N806
         ):
             mock_package_instance = MockPackage.return_value
             mock_package_instance.id = package_id
@@ -230,10 +230,10 @@ class TestAICreditRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from grounded.api.routes.ai_credits import get_credits
+        from lintpdf.api.routes.ai_credits import get_credits
 
         with patch(
-            "grounded.ai.access.check_ai_access",
+            "lintpdf.ai.access.check_ai_access",
             side_effect=HTTPException(status_code=403, detail="No access"),
         ):
             with pytest.raises(HTTPException) as exc_info:
@@ -250,7 +250,7 @@ class TestAIPresetRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from grounded.api.routes.ai_presets import list_presets
+        from lintpdf.api.routes.ai_presets import list_presets
 
         response = await list_presets(db=mock_db_session, tenant=mock_tenant)
 
@@ -265,7 +265,7 @@ class TestAIPresetRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from grounded.api.routes.ai_presets import get_preset
+        from lintpdf.api.routes.ai_presets import get_preset
 
         response = await get_preset(slug="fda-food-label", db=mock_db_session, tenant=mock_tenant)
         assert response.slug == "fda-food-label"
@@ -278,7 +278,7 @@ class TestAIPresetRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from grounded.api.routes.ai_presets import get_preset
+        from lintpdf.api.routes.ai_presets import get_preset
 
         with pytest.raises(HTTPException) as exc_info:
             await get_preset(slug="nonexistent-preset", db=mock_db_session, tenant=mock_tenant)

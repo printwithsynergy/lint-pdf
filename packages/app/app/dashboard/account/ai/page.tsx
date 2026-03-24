@@ -34,7 +34,7 @@ export default function AiConfigPage() {
 
   const fetchConfig = useCallback(async () => {
     try {
-      const resp = await fetch("/api/grounded/ai-config");
+      const resp = await fetch("/api/lintpdf/ai-config");
       if (!resp.ok) throw new Error("Failed to load AI config");
       const data = await resp.json();
       setConfig(data);
@@ -56,7 +56,7 @@ export default function AiConfigPage() {
     setError("");
     setSuccess("");
     try {
-      const resp = await fetch("/api/grounded/ai-config", {
+      const resp = await fetch("/api/lintpdf/ai-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

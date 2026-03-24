@@ -1,6 +1,6 @@
 """Tests for CxF/X-4 spectral data parser."""
 
-from grounded.analyzers.cxf_parser import CxfData, CxfSpotColor, parse_cxf_xml
+from lintpdf.analyzers.cxf_parser import CxfData, CxfSpotColor, parse_cxf_xml
 
 
 _VALID_CXF_XML = b"""\

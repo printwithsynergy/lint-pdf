@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from grounded.api.models import (
+from lintpdf.api.models import (
     Base,
     CustomProfile,
     Job,

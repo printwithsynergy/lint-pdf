@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "grounded"
+name = "lintpdf"
 version = "0.1.0"
 description = "Detection-only PDF preflight engine"
 requires-python = ">=3.11"
@@ -58,7 +58,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/grounded"]
+packages = ["src/lintpdf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -157,16 +157,16 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 # PDF operators use uppercase names (Q, Do, BT, ET, Tf, etc.) per ISO 32000-2
-"src/grounded/semantic/interpreter.py" = ["N802"]
+"src/lintpdf/semantic/interpreter.py" = ["N802"]
 "tests/semantic/test_interpreter.py" = ["N802"]
 # Test methods don't use self — grouped in classes for organization only
 "tests/**" = ["PLR6301"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["grounded"]
+known-first-party = ["lintpdf"]
 
 [tool.coverage.run]
-source = ["src/grounded"]
+source = ["src/lintpdf"]
 omit = ["tests/*"]
 
 [tool.coverage.report]

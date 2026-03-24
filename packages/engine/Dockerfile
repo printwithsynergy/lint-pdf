@@ -44,8 +44,8 @@ COPY packages/engine/alembic.ini .
 
 # Install the package itself and create non-root user
 RUN pip install --no-cache-dir --no-deps . && \
-    useradd --create-home grounded
-USER grounded
+    useradd --create-home lintpdf
+USER lintpdf
 
 EXPOSE 8000
 ENV PORT=8000
@@ -54,4 +54,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')" || exit 1
 
 # Default: run API server (Railway sets $PORT dynamically)
-CMD ["sh", "-c", "uvicorn grounded.api.app:create_app --host 0.0.0.0 --port ${PORT} --factory"]
+CMD ["sh", "-c", "uvicorn lintpdf.api.app:create_app --host 0.0.0.0 --port ${PORT} --factory"]

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.annotation import AnnotationAnalyzer
-from grounded.analyzers.finding import Severity
-from grounded.semantic.model import (
+from lintpdf.analyzers.annotation import AnnotationAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.semantic.model import (
     PdfAnnotation,
     PdfBox,
     SemanticDocument,

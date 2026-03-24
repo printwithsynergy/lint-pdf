@@ -1,7 +1,7 @@
 """Tests for EcgAnalyzer."""
 
-from grounded.analyzers.ecg_analyzer import EcgAnalyzer
-from grounded.semantic.model import SemanticDocument, SemanticPage, PdfBox, PdfColorSpace
+from lintpdf.analyzers.ecg_analyzer import EcgAnalyzer
+from lintpdf.semantic.model import SemanticDocument, SemanticPage, PdfBox, PdfColorSpace
 
 
 def _make_doc(color_spaces=None):

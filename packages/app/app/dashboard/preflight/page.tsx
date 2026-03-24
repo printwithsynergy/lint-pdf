@@ -63,7 +63,7 @@ export default function PreflightPage() {
     setLoading(true);
     try {
       const resp = await fetch(
-        `/api/grounded/jobs?page=${page}&page_size=${pageSize}`,
+        `/api/lintpdf/jobs?page=${page}&page_size=${pageSize}`,
       );
       if (!resp.ok) throw new Error("Failed to load jobs");
       const data = await resp.json();
@@ -81,7 +81,7 @@ export default function PreflightPage() {
   }, [fetchJobs]);
 
   useEffect(() => {
-    fetch("/api/grounded/profiles")
+    fetch("/api/lintpdf/profiles")
       .then((r) => (r.ok ? r.json() : { profiles: [] }))
       .then((data) => setProfiles(data.profiles ?? []))
       .catch(() => {});
@@ -101,7 +101,7 @@ export default function PreflightPage() {
     formData.append("profile_id", selectedProfile);
 
     try {
-      const resp = await fetch("/api/grounded/submit", {
+      const resp = await fetch("/api/lintpdf/submit", {
         method: "POST",
         body: formData,
       });
@@ -123,7 +123,7 @@ export default function PreflightPage() {
   async function handleDelete(jobId: string) {
     if (!confirm("Delete this job?")) return;
     try {
-      await fetch(`/api/grounded/jobs/${jobId}`, { method: "DELETE" });
+      await fetch(`/api/lintpdf/jobs/${jobId}`, { method: "DELETE" });
       await fetchJobs();
     } catch {
       setError("Failed to delete job");

@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from grounded.webhooks.dispatcher import WebhookDeliveryResult, WebhookDispatcher
+from lintpdf.webhooks.dispatcher import WebhookDeliveryResult, WebhookDispatcher
 
 TEST_WEBHOOK_SECRET = "test-webhook-secret"
 TEST_WEBHOOK_SECRET_ALT = "test-webhook-secret-alt"
@@ -99,8 +99,8 @@ class TestWebhookDispatcherSign:
 class TestWebhookDispatcherDeliver:
     """Tests for deliver method."""
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_successful_delivery(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -120,8 +120,8 @@ class TestWebhookDispatcherDeliver:
         assert result.event == "job.completed"
         mock_post.assert_called_once()
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_delivery_sends_correct_headers(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -142,8 +142,8 @@ class TestWebhookDispatcherDeliver:
         assert headers["X-LintPDF-Signature"].startswith("sha256=")
         assert headers["User-Agent"] == "LintPDF-Webhook/0.1.0"
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_delivery_sends_sorted_json(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -164,8 +164,8 @@ class TestWebhookDispatcherDeliver:
         keys = list(parsed.keys())
         assert keys == sorted(keys)
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_delivery_failure_http_error(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 500
@@ -182,8 +182,8 @@ class TestWebhookDispatcherDeliver:
         assert result.success is False
         assert "HTTP 500" in result.error
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_delivery_failure_exception(mock_post: MagicMock) -> None:
         mock_post.side_effect = ConnectionError("Connection refused")
 
@@ -198,9 +198,9 @@ class TestWebhookDispatcherDeliver:
         assert result.success is False
         assert "Connection refused" in result.error
 
-    @patch("time.sleep")
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("time.sleep")
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_retry_with_backoff(mock_post: MagicMock, mock_sleep: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 500
@@ -224,7 +224,7 @@ class TestWebhookDispatcherDeliver:
         mock_sleep.assert_any_call(2.0)
 
     @patch("time.sleep")
-    @patch("grounded.webhooks.dispatcher.httpx.post")
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_retry_succeeds_on_second_attempt(
         self, mock_post: MagicMock, mock_sleep: MagicMock
     ) -> None:
@@ -246,8 +246,8 @@ class TestWebhookDispatcherDeliver:
         assert result.status_code == 200
         assert mock_post.call_count == 2
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_accepts_2xx_and_3xx(mock_post: MagicMock) -> None:
         for status in [200, 201, 204, 301, 302]:
             mock_response = MagicMock()
@@ -267,8 +267,8 @@ class TestWebhookDispatcherDeliver:
 class TestWebhookDispatcherDispatchToAll:
     """Tests for dispatch_to_all method."""
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_dispatch_to_multiple_endpoints(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -285,8 +285,8 @@ class TestWebhookDispatcherDispatchToAll:
         assert len(results) == 2
         assert all(r.success for r in results)
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_filters_by_subscribed_events(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -311,8 +311,8 @@ class TestWebhookDispatcherDispatchToAll:
         assert len(results) == 1
         assert results[0].url == "https://a.com/hook"
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_empty_events_subscribes_to_all(mock_post: MagicMock) -> None:
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -333,8 +333,8 @@ class TestWebhookDispatcherDispatchToAll:
         results = dispatcher.dispatch_to_all([], "test", {})
         assert results == []
 
-    @patch("grounded.webhooks.dispatcher.httpx.post")
     @staticmethod
+    @patch("lintpdf.webhooks.dispatcher.httpx.post")
     def test_partial_failure(mock_post: MagicMock) -> None:
         ok_response = MagicMock()
         ok_response.status_code = 200

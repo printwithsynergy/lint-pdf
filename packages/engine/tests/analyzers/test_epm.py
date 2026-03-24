@@ -1,10 +1,10 @@
 """Tests for EpmAnalyzer."""
 
-from grounded.analyzers.epm_analyzer import EpmAnalyzer
-from grounded.analyzers.finding import Severity
-from grounded.semantic.model import SemanticDocument, SemanticPage, PdfBox
-from grounded.semantic.events import TextRenderedEvent, PathPaintingEvent
-from grounded.semantic.graphics_state import TransformationMatrix
+from lintpdf.analyzers.epm_analyzer import EpmAnalyzer
+from lintpdf.analyzers.finding import Severity
+from lintpdf.semantic.model import SemanticDocument, SemanticPage, PdfBox
+from lintpdf.semantic.events import TextRenderedEvent, PathPaintingEvent
+from lintpdf.semantic.graphics_state import TransformationMatrix
 
 
 def _make_doc():

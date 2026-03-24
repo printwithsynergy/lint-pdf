@@ -1,10 +1,10 @@
-"""Tests for AI configuration service (grounded.ai.config)."""
+"""Tests for AI configuration service (lintpdf.ai.config)."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from grounded.ai.config import (
+from lintpdf.ai.config import (
     add_reference_logo,
     admin_update_ai_config,
     get_or_create_ai_config,

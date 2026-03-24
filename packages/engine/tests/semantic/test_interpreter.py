@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from grounded.semantic.events import (
+from lintpdf.semantic.events import (
     ClippingPathSetEvent,
     ColorChangedEvent,
     FormXObjectEnteredEvent,
@@ -13,7 +13,7 @@ from grounded.semantic.events import (
     PathPaintingEvent,
     TextRenderedEvent,
 )
-from grounded.semantic.interpreter import ContentStreamInterpreter
+from lintpdf.semantic.interpreter import ContentStreamInterpreter
 
 
 def _make_interpreter(resources: dict | None = None, page_num: int = 1) -> ContentStreamInterpreter:

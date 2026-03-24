@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from grounded.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
-from grounded.semantic.interpreter import ContentStreamInterpreter
+from lintpdf.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
+from lintpdf.semantic.interpreter import ContentStreamInterpreter
 
 
 def _make_resources(**kwargs: object) -> dict[str, object]:

@@ -12,9 +12,9 @@ from sqlalchemy.pool import StaticPool
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-from grounded.api.models import Base
-from grounded.tenants.models import TenantPlan
-from grounded.tenants.service import TenantService
+from lintpdf.api.models import Base
+from lintpdf.tenants.models import TenantPlan
+from lintpdf.tenants.service import TenantService
 
 
 @pytest.fixture

@@ -26,7 +26,7 @@ export default function ApiKeysPage() {
 
   const fetchKeys = useCallback(async () => {
     try {
-      const resp = await fetch("/api/grounded/keys");
+      const resp = await fetch("/api/lintpdf/keys");
       if (!resp.ok) throw new Error("Failed to load API keys");
       const data = await resp.json();
       setKeys(Array.isArray(data) ? data : (data.keys ?? []));
@@ -45,7 +45,7 @@ export default function ApiKeysPage() {
     setCreating(true);
     setError("");
     try {
-      const resp = await fetch("/api/grounded/keys", {
+      const resp = await fetch("/api/lintpdf/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ label: newLabel || "Default" }),
@@ -68,7 +68,7 @@ export default function ApiKeysPage() {
   async function handleRevoke(id: string) {
     if (!confirm("Revoke this API key? This action cannot be undone.")) return;
     try {
-      await fetch(`/api/grounded/keys/${id}`, { method: "DELETE" });
+      await fetch(`/api/lintpdf/keys/${id}`, { method: "DELETE" });
       await fetchKeys();
     } catch {
       setError("Failed to revoke key");

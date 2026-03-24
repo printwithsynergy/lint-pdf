@@ -3,16 +3,16 @@
 from pathlib import Path
 
 
-def test_grounded_importable() -> None:
-    """Verify the grounded package can be imported."""
-    import grounded
+def test_lintpdf_importable() -> None:
+    """Verify the lintpdf package can be imported."""
+    import lintpdf
 
-    assert grounded.__version__ == "0.1.0"
+    assert lintpdf.__version__ == "0.1.0"
 
 
 def test_exceptions_importable() -> None:
     """Verify all exception classes are importable."""
-    from grounded.exceptions import (
+    from lintpdf.exceptions import (
         ContentStreamError,
         GroundedError,
         InvalidBoxError,
@@ -50,7 +50,7 @@ def test_exceptions_importable() -> None:
 
 def test_exception_instantiation() -> None:
     """Verify exceptions can be raised and caught."""
-    from grounded.exceptions import GroundedError, PDFStructureError
+    from lintpdf.exceptions import GroundedError, PDFStructureError
 
     try:
         raise PDFStructureError("Test error message")
@@ -61,35 +61,35 @@ def test_exception_instantiation() -> None:
 
 def test_subpackages_importable() -> None:
     """Verify all subpackage __init__.py files exist and import."""
-    import grounded.analyzers
-    import grounded.api
-    import grounded.conformance
-    import grounded.parser
-    import grounded.profiles
-    import grounded.queue
-    import grounded.reports
-    import grounded.rules
-    import grounded.semantic
-    import grounded.tenants
-    import grounded.webhooks
+    import lintpdf.analyzers
+    import lintpdf.api
+    import lintpdf.conformance
+    import lintpdf.parser
+    import lintpdf.profiles
+    import lintpdf.queue
+    import lintpdf.reports
+    import lintpdf.rules
+    import lintpdf.semantic
+    import lintpdf.tenants
+    import lintpdf.webhooks
 
     # Verify these are actual packages (have __path__)
-    assert hasattr(grounded.parser, "__path__")
-    assert hasattr(grounded.semantic, "__path__")
-    assert hasattr(grounded.analyzers, "__path__")
-    assert hasattr(grounded.api, "__path__")
-    assert hasattr(grounded.conformance, "__path__")
-    assert hasattr(grounded.profiles, "__path__")
-    assert hasattr(grounded.queue, "__path__")
-    assert hasattr(grounded.reports, "__path__")
-    assert hasattr(grounded.rules, "__path__")
-    assert hasattr(grounded.tenants, "__path__")
-    assert hasattr(grounded.webhooks, "__path__")
+    assert hasattr(lintpdf.parser, "__path__")
+    assert hasattr(lintpdf.semantic, "__path__")
+    assert hasattr(lintpdf.analyzers, "__path__")
+    assert hasattr(lintpdf.api, "__path__")
+    assert hasattr(lintpdf.conformance, "__path__")
+    assert hasattr(lintpdf.profiles, "__path__")
+    assert hasattr(lintpdf.queue, "__path__")
+    assert hasattr(lintpdf.reports, "__path__")
+    assert hasattr(lintpdf.rules, "__path__")
+    assert hasattr(lintpdf.tenants, "__path__")
+    assert hasattr(lintpdf.webhooks, "__path__")
 
 
 def test_project_structure() -> None:
     """Verify expected directory structure exists."""
-    src_root = Path(__file__).parent.parent / "src" / "grounded"
+    src_root = Path(__file__).parent.parent / "src" / "lintpdf"
     expected_dirs = [
         "parser",
         "semantic",
@@ -123,7 +123,7 @@ def test_minimal_pdf_fixture(minimal_pdf_bytes: bytes) -> None:
 
 def test_api_app_creates() -> None:
     """Verify FastAPI app can be created."""
-    from grounded.api.app import create_app
+    from lintpdf.api.app import create_app
 
     app = create_app()
     assert app.title == "LintPDF"

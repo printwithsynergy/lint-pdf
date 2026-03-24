@@ -37,7 +37,7 @@ function CheckoutContent() {
 
     void (async () => {
       try {
-        const res = await fetch("/api/grounded/billing/checkout", {
+        const res = await fetch("/api/lintpdf/billing/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ plan }),

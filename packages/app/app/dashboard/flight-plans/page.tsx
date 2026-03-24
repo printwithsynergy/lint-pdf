@@ -46,7 +46,7 @@ export default function FlightPlansPage() {
 
   const fetchProfiles = useCallback(async () => {
     try {
-      const resp = await fetch("/api/grounded/profiles");
+      const resp = await fetch("/api/lintpdf/profiles");
       if (!resp.ok) throw new Error("Failed to load profiles");
       const data = await resp.json();
       setProfiles(data.profiles ?? []);
@@ -63,7 +63,7 @@ export default function FlightPlansPage() {
 
   async function viewProfile(profileId: string) {
     try {
-      const resp = await fetch(`/api/grounded/profiles/${profileId}`);
+      const resp = await fetch(`/api/lintpdf/profiles/${profileId}`);
       if (!resp.ok) throw new Error("Failed to load profile");
       const data = await resp.json();
       setSelectedProfile(data);
@@ -73,7 +73,7 @@ export default function FlightPlansPage() {
   }
 
   async function cloneProfile(profile: ProfileSummary) {
-    const detail = await fetch(`/api/grounded/profiles/${profile.profile_id}`);
+    const detail = await fetch(`/api/lintpdf/profiles/${profile.profile_id}`);
     if (!detail.ok) {
       setError("Failed to load profile for cloning");
       return;
@@ -97,7 +97,7 @@ export default function FlightPlansPage() {
     setCreating(true);
     setError("");
     try {
-      const resp = await fetch("/api/grounded/profiles", {
+      const resp = await fetch("/api/lintpdf/profiles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -132,7 +132,7 @@ export default function FlightPlansPage() {
   async function handleDelete(profileId: string) {
     if (!confirm("Are you sure you want to delete this profile?")) return;
     try {
-      const resp = await fetch(`/api/grounded/profiles/${profileId}`, {
+      const resp = await fetch(`/api/lintpdf/profiles/${profileId}`, {
         method: "DELETE",
       });
       if (!resp.ok) {

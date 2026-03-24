@@ -6,11 +6,11 @@ services:
       - "8000:8000"
     env_file: .env
     environment:
-      - GROUNDED_DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - GROUNDED_REDIS_URL=redis://redis:6379/0
+      - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - LINTPDF_REDIS_URL=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
-      - GROUNDED_VERAPDF_URL=http://verapdf:8080
+      - LINTPDF_VERAPDF_URL=http://verapdf:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -24,14 +24,14 @@ services:
   # --- Celery Workers ---
   worker-default:
     build: .
-    command: celery -A grounded.queue.worker worker --loglevel=info --queues=default --concurrency=${CELERY_DEFAULT_CONCURRENCY:-2}
+    command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=default --concurrency=${CELERY_DEFAULT_CONCURRENCY:-2}
     env_file: .env
     environment:
-      - GROUNDED_DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - GROUNDED_REDIS_URL=redis://redis:6379/0
+      - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - LINTPDF_REDIS_URL=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
-      - GROUNDED_VERAPDF_URL=http://verapdf:8080
+      - LINTPDF_VERAPDF_URL=http://verapdf:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -42,14 +42,14 @@ services:
 
   worker-priority:
     build: .
-    command: celery -A grounded.queue.worker worker --loglevel=info --queues=priority --concurrency=${CELERY_PRIORITY_CONCURRENCY:-2}
+    command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=priority --concurrency=${CELERY_PRIORITY_CONCURRENCY:-2}
     env_file: .env
     environment:
-      - GROUNDED_DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - GROUNDED_REDIS_URL=redis://redis:6379/0
+      - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - LINTPDF_REDIS_URL=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
-      - GROUNDED_VERAPDF_URL=http://verapdf:8080
+      - LINTPDF_VERAPDF_URL=http://verapdf:8080
     depends_on:
       postgres:
         condition: service_healthy
@@ -60,12 +60,12 @@ services:
 
   worker-webhooks:
     build: .
-    command: celery -A grounded.queue.worker worker --loglevel=info --queues=webhooks --concurrency=${CELERY_WEBHOOK_CONCURRENCY:-4}
+    command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=webhooks --concurrency=${CELERY_WEBHOOK_CONCURRENCY:-4}
     env_file: .env
     environment:
-      - GROUNDED_DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - GROUNDED_REDIS_URL=redis://redis:6379/0
+      - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - LINTPDF_REDIS_URL=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       redis:
@@ -73,12 +73,12 @@ services:
 
   beat:
     build: .
-    command: celery -A grounded.queue.worker beat --loglevel=info
+    command: celery -A lintpdf.queue.worker beat --loglevel=info
     env_file: .env
     environment:
-      - GROUNDED_DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - DATABASE_URL=postgresql://grounded:grounded@postgres:5432/grounded
-      - GROUNDED_REDIS_URL=redis://redis:6379/0
+      - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - LINTPDF_REDIS_URL=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
     depends_on:
       redis:
@@ -90,13 +90,13 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: grounded
-      POSTGRES_PASSWORD: grounded
-      POSTGRES_DB: grounded
+      POSTGRES_USER: lintpdf
+      POSTGRES_PASSWORD: lintpdf
+      POSTGRES_DB: lintpdf
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U grounded"]
+      test: ["CMD-SHELL", "pg_isready -U lintpdf"]
       interval: 5s
       timeout: 5s
       retries: 5

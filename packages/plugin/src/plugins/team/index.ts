@@ -239,6 +239,6 @@ export const groundedTeamPlugin: PixieDustPlugin = {
       },
     ];
 
-    ctx.addRoutes("/api/grounded/team", routes);
+    ctx.addRoutes("/api/lintpdf/team", routes);
   },
 };

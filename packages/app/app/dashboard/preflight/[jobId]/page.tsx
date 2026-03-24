@@ -97,7 +97,7 @@ export default function JobDetailPage() {
 
   const fetchJob = useCallback(async () => {
     try {
-      const resp = await fetch(`/api/grounded/jobs/${jobId}`);
+      const resp = await fetch(`/api/lintpdf/jobs/${jobId}`);
       if (!resp.ok) throw new Error("Failed to load job");
       const data = await resp.json();
       setJob(data);
@@ -220,7 +220,7 @@ export default function JobDetailPage() {
       {job.status === "complete" && (
         <div className="mt-4 flex gap-2">
           <a
-            href={`/api/grounded/reports/${job.job_id}/html`}
+            href={`/api/lintpdf/reports/${job.job_id}/html`}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
@@ -228,7 +228,7 @@ export default function JobDetailPage() {
             View HTML Report
           </a>
           <a
-            href={`/api/grounded/reports/${job.job_id}/download`}
+            href={`/api/lintpdf/reports/${job.job_id}/download`}
             className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
           >
             Download PDF Report

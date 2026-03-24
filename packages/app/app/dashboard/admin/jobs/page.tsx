@@ -30,7 +30,7 @@ export default function AdminJobsPage() {
     setLoading(true);
     try {
       const resp = await fetch(
-        `/api/grounded/admin/jobs?page=${page}&page_size=${pageSize}`,
+        `/api/lintpdf/admin/jobs?page=${page}&page_size=${pageSize}`,
       );
       if (!resp.ok) throw new Error("Failed to load jobs");
       const data = await resp.json();

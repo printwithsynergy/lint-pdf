@@ -10,9 +10,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from grounded.api.app import create_app
-from grounded.api.database import get_db
-from grounded.api.models import Base, Tenant, TenantPlan
+from lintpdf.api.app import create_app
+from lintpdf.api.database import get_db
+from lintpdf.api.models import Base, Tenant, TenantPlan
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _set_admin_key(monkeypatch):
-    monkeypatch.setenv("GROUNDED_ADMIN_API_KEY", "test-admin-key")
+    monkeypatch.setenv("LINTPDF_ADMIN_API_KEY", "test-admin-key")
 
 
 @pytest.fixture

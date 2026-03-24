@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from grounded.analyzers.finding import Severity
-from grounded.analyzers.font import FontAnalyzer
-from grounded.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
+from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.font import FontAnalyzer
+from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
 def _make_font(

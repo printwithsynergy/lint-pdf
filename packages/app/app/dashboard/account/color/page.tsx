@@ -59,8 +59,8 @@ export default function ColorConfigPage() {
   const fetchData = useCallback(async () => {
     try {
       const [configResp, conditionsResp] = await Promise.all([
-        fetch("/api/grounded/color-config"),
-        fetch("/api/grounded/color-config/gamut-conditions"),
+        fetch("/api/lintpdf/color-config"),
+        fetch("/api/lintpdf/color-config/gamut-conditions"),
       ]);
       if (configResp.ok) {
         const data = await configResp.json();
@@ -85,7 +85,7 @@ export default function ColorConfigPage() {
   const fetchOverrides = useCallback(async () => {
     setOverridesLoading(true);
     try {
-      const resp = await fetch("/api/grounded/color-config/pantone-overrides");
+      const resp = await fetch("/api/lintpdf/color-config/pantone-overrides");
       if (resp.ok) {
         const data = await resp.json();
         setOverrides(data);
@@ -107,7 +107,7 @@ export default function ColorConfigPage() {
     setError("");
     setSuccess("");
     try {
-      const resp = await fetch("/api/grounded/color-config", {
+      const resp = await fetch("/api/lintpdf/color-config", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -170,7 +170,7 @@ export default function ColorConfigPage() {
     setSavingOverrides(true);
     setError("");
     try {
-      const resp = await fetch("/api/grounded/color-config/pantone-overrides", {
+      const resp = await fetch("/api/lintpdf/color-config/pantone-overrides", {
         method: "DELETE",
       });
       if (!resp.ok && resp.status !== 204)
@@ -195,7 +195,7 @@ export default function ColorConfigPage() {
         lab: values.lab,
         cmyk_bridge: values.cmyk_bridge ?? null,
       }));
-      const resp = await fetch("/api/grounded/color-config/pantone-overrides", {
+      const resp = await fetch("/api/lintpdf/color-config/pantone-overrides", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ overrides: entries }),

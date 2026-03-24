@@ -6,9 +6,9 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from grounded.analyzers.finding import Finding, Severity
-from grounded.profiles.orchestrator import PreflightResult, PreflightSummary
-from grounded.reports.xml_report import generate_xml_report
+from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
+from lintpdf.reports.xml_report import generate_xml_report
 
 
 @pytest.fixture
@@ -95,7 +95,7 @@ def _parse_xml(xml_bytes: bytes) -> ET.Element:
     """Parse XML bytes into an Element, stripping namespace."""
     root = ET.fromstring(xml_bytes)
     # Strip namespace for easier querying
-    ns = "urn:grounded:preflight:1.0"
+    ns = "urn:lintpdf:preflight:1.0"
     for elem in root.iter():
         if elem.tag.startswith(f"{{{ns}}}"):
             elem.tag = elem.tag[len(f"{{{ns}}}") :]
@@ -127,7 +127,7 @@ class TestXmlReportStructure:
     def test_namespace_set(sample_result) -> None:
         result = generate_xml_report(sample_result)
         text = result.decode("utf-8")
-        assert 'xmlns="urn:grounded:preflight:1.0"' in text
+        assert 'xmlns="urn:lintpdf:preflight:1.0"' in text
 
     @staticmethod
     def test_utf8_encoding(sample_result) -> None:

@@ -29,7 +29,7 @@ export default function AdminHealthPage() {
 
   const fetchHealth = useCallback(async () => {
     try {
-      const resp = await fetch("/api/grounded/admin/health");
+      const resp = await fetch("/api/lintpdf/admin/health");
       if (!resp.ok) throw new Error("Health check failed");
       setHealth(await resp.json());
     } catch (e) {

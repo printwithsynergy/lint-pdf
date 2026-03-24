@@ -11,9 +11,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from grounded.api.app import create_app
-from grounded.api.database import get_db
-from grounded.api.models import Base, Job, JobStatus, Tenant, TenantPlan
+from lintpdf.api.app import create_app
+from lintpdf.api.database import get_db
+from lintpdf.api.models import Base, Job, JobStatus, Tenant, TenantPlan
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -28,7 +28,7 @@ TENANT_ID_2 = uuid.UUID("22222222-2222-2222-2222-222222222222")
 
 @pytest.fixture(autouse=True)
 def _set_admin_env(monkeypatch):
-    monkeypatch.setenv("GROUNDED_ADMIN_API_KEY", ADMIN_KEY)
+    monkeypatch.setenv("LINTPDF_ADMIN_API_KEY", ADMIN_KEY)
 
 
 @pytest.fixture
@@ -109,7 +109,7 @@ class TestAdminAuth:
 
     @staticmethod
     def test_admin_not_configured_503(admin_client: TestClient, monkeypatch) -> None:
-        monkeypatch.setenv("GROUNDED_ADMIN_API_KEY", "")
+        monkeypatch.setenv("LINTPDF_ADMIN_API_KEY", "")
         resp = admin_client.get("/api/v1/admin/tenants", headers={"X-Admin-Key": "something"})
         assert resp.status_code == 503
 

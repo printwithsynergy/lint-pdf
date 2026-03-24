@@ -56,7 +56,7 @@ export function SuperAdminToolbar() {
   const fetchTenants = useCallback(async () => {
     try {
       const resp = await fetch(
-        "/api/grounded/admin/tenants?page=1&page_size=200",
+        "/api/lintpdf/admin/tenants?page=1&page_size=200",
       );
       if (resp.ok) {
         const data = await resp.json();
