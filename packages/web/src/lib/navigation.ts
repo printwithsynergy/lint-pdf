@@ -28,6 +28,7 @@ export const footerGroups: FooterGroup[] = [
       { href: "/#features", label: "Features" },
       { href: "/integrations", label: "Integrations" },
       { href: "/pricing", label: "Pricing" },
+      { href: "/try-it", label: "Free PDF Test" },
       { href: "/docs", label: "Docs" },
     ],
   },

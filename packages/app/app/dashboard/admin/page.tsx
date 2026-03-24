@@ -30,6 +30,15 @@ export default function AdminPage() {
           </p>
         </Link>
         <Link
+          href="/dashboard/admin/trials"
+          className="rounded-lg border border-brand-200 bg-brand-50/30 p-4 hover:bg-brand-50/60 transition-colors"
+        >
+          <h2 className="text-lg font-semibold">Trial Submissions</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Review prospect uploads, run preflights, and send reports.
+          </p>
+        </Link>
+        <Link
           href="/dashboard/admin/health"
           className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
         >
