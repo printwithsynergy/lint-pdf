@@ -18,7 +18,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP(
-    "modal-grounded",
+    "modal-lintpdf",
     description="Manage the LintPDF Modal inference service",
 )
 
@@ -114,7 +114,7 @@ def app_list() -> str:
 
 @mcp.tool()
 def app_status() -> str:
-    """Get the status of the grounded-inference Modal app.
+    """Get the status of the lintpdf-inference Modal app.
 
     Shows whether the app is deployed, container count, and endpoint URL.
     """
@@ -124,21 +124,21 @@ def app_status() -> str:
         return f"Failed to check status.\n\n{result['stderr']}"
 
     lines = result["stdout"].split("\n")
-    matching = [line for line in lines if "grounded-inference" in line]
+    matching = [line for line in lines if "lintpdf-inference" in line]
     if matching:
         header = lines[0] if lines else ""
         return f"{header}\n{''.join(matching)}"
-    return "App 'grounded-inference' not found. It may not be deployed yet."
+    return "App 'lintpdf-inference' not found. It may not be deployed yet."
 
 
 @mcp.tool()
 def app_logs(n: int = 50) -> str:
-    """View recent logs from the grounded-inference app.
+    """View recent logs from the lintpdf-inference app.
 
     Args:
         n: Number of log lines to retrieve (default 50).
     """
-    result = _run_modal("app", "logs", "grounded-inference", "--n", str(n))
+    result = _run_modal("app", "logs", "lintpdf-inference", "--n", str(n))
     if result["success"]:
         return result["stdout"] or "No logs available."
     return f"Failed to get logs.\n\n{result['stderr']}"
@@ -146,12 +146,12 @@ def app_logs(n: int = 50) -> str:
 
 @mcp.tool()
 def app_stop() -> str:
-    """Stop the grounded-inference Modal app.
+    """Stop the lintpdf-inference Modal app.
 
     This stops all running containers. The app can be restarted by
     deploying again or by sending a request (auto-scales from 0).
     """
-    result = _run_modal("app", "stop", "grounded-inference")
+    result = _run_modal("app", "stop", "lintpdf-inference")
     if result["success"]:
         return "App stopped successfully."
     return f"Failed to stop app.\n\n{result['stderr']}"
@@ -173,7 +173,7 @@ def volume_contents(path: str = "/") -> str:
     Args:
         path: Path within the volume to list (default: root "/").
     """
-    result = _run_modal("volume", "ls", "grounded-model-cache", path)
+    result = _run_modal("volume", "ls", "lintpdf-model-cache", path)
     if result["success"]:
         return result["stdout"] or f"No files at {path}"
     return f"Failed to list volume contents.\n\n{result['stderr']}"
@@ -193,7 +193,7 @@ def secret_create(name: str, env_vars: dict[str, str] | None = None) -> str:
     """Create a Modal secret.
 
     Args:
-        name: Name for the secret (e.g., 'grounded-inference-secrets').
+        name: Name for the secret (e.g., 'lintpdf-inference-secrets').
         env_vars: Optional dict of environment variable key-value pairs.
     """
     args = ["secret", "create", name]
