@@ -131,16 +131,17 @@ def validate_restrictions(  # skipcq: PY-R1000
             )
         )
     # Also check document-level encryption attribute if available
-    if hasattr(document, "is_encrypted") and document.is_encrypted:
-        if encrypt is None:  # Avoid duplicate finding
-            findings.append(
-                Finding(
-                    inspection_id=f"{_PREFIX}-039",
-                    severity=Severity.ERROR,
-                    message="Document is encrypted (prohibited in PDF/X-1a)",
-                    iso_clause="ISO 15930-4:2003 6.1",
-                )
+    if (
+        hasattr(document, "is_encrypted") and document.is_encrypted and encrypt is None
+    ):  # Avoid duplicate finding
+        findings.append(
+            Finding(
+                inspection_id=f"{_PREFIX}-039",
+                severity=Severity.ERROR,
+                message="Document is encrypted (prohibited in PDF/X-1a)",
+                iso_clause="ISO 15930-4:2003 6.1",
             )
+        )
 
     # PDFX1A-040: Transfer functions present
     has_transfer = False

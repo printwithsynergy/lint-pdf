@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 _ROOT = Path(__file__).resolve().parents[5]  # up to packages/engine
 sys.path.insert(0, str(_ROOT / "src"))
 
-from lintpdf.profiles.icc.gamut_boundary import (
+from lintpdf.profiles.icc.gamut_boundary import (  # noqa: E402
     build_gamut_boundary_from_lab_points,
     save_gamut_boundary,
 )
@@ -65,10 +65,10 @@ def _sample_cmyk_grid(
         for m in values:
             for y in values:
                 for k in values:
-                    c_b = int(round(c * 255))
-                    m_b = int(round(m * 255))
-                    y_b = int(round(y * 255))
-                    k_b = int(round(k * 255))
+                    c_b = round(c * 255)
+                    m_b = round(m * 255)
+                    y_b = round(y * 255)
+                    k_b = round(k * 255)
 
                     src = Image.new("CMYK", (1, 1), (c_b, m_b, y_b, k_b))
                     lab_img = ImageCms.applyTransform(src, transform)

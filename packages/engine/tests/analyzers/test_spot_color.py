@@ -1,12 +1,12 @@
 """Tests for SpotColorAnalyzer."""
 
-from lintpdf.analyzers.spot_color_analyzer import SpotColorAnalyzer
 from lintpdf.analyzers.finding import Severity
+from lintpdf.analyzers.spot_color_analyzer import SpotColorAnalyzer
 from lintpdf.semantic.model import (
-    SemanticDocument,
-    SemanticPage,
     PdfBox,
     PdfColorSpace,
+    SemanticDocument,
+    SemanticPage,
 )
 
 

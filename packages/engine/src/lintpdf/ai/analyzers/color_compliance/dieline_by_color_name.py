@@ -8,7 +8,7 @@ in packaging artwork (CutContour, Dieline, Die, Crease, Score, etc.).
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer

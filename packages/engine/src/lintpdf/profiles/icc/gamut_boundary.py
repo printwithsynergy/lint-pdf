@@ -9,8 +9,10 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +88,7 @@ def build_gamut_boundary_from_lab_points(
         import numpy as np
         from scipy.spatial import ConvexHull
     except ImportError:
-        raise ImportError("scipy and numpy required for gamut boundary computation")
+        raise ImportError("scipy and numpy required for gamut boundary computation") from None
 
     points = np.array(lab_points)
     hull = ConvexHull(points)

@@ -164,22 +164,26 @@ def validate_color(
         cs_resources = page.resources.get("/ColorSpace") or page.resources.get("ColorSpace")
         if isinstance(cs_resources, dict):
             for cs_name, cs_def in cs_resources.items():
-                if isinstance(cs_def, list) and cs_def and str(cs_def[0]) == "Pattern":
-                    if len(cs_def) >= 2:
-                        base_cs = str(cs_def[1])
-                        if base_cs in ("DeviceRGB", "CalRGB", "Lab"):
-                            findings.append(
-                                Finding(
-                                    inspection_id=f"{_PREFIX}-007",
-                                    severity=Severity.ERROR,
-                                    message=(
-                                        f"Pattern color space '{cs_name}' has incompatible base "
-                                        f"'{base_cs}' (prohibited in PDF/X-1a)"
-                                    ),
-                                    page_num=page.page_num,
-                                    iso_clause="ISO 15930-4:2003 6.2.4",
-                                )
+                if (
+                    isinstance(cs_def, list)
+                    and cs_def
+                    and str(cs_def[0]) == "Pattern"
+                    and len(cs_def) >= 2
+                ):
+                    base_cs = str(cs_def[1])
+                    if base_cs in ("DeviceRGB", "CalRGB", "Lab"):
+                        findings.append(
+                            Finding(
+                                inspection_id=f"{_PREFIX}-007",
+                                severity=Severity.ERROR,
+                                message=(
+                                    f"Pattern color space '{cs_name}' has incompatible base "
+                                    f"'{base_cs}' (prohibited in PDF/X-1a)"
+                                ),
+                                page_num=page.page_num,
+                                iso_clause="ISO 15930-4:2003 6.2.4",
                             )
+                        )
 
     # PDFX1A-008: DeviceN with incompatible alternate
     for page in document.pages:

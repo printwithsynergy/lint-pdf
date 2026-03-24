@@ -36,7 +36,7 @@ RUN pnpm install --filter=@thinkneverland/grounded-app... --prefer-offline
 
 # Build workspace dependencies first (they export from dist/)
 RUN pnpm --filter=@thinkneverland/grounded-plugin build && \
-    pnpm --filter=@grounded/stripe build
+    pnpm --filter=@lintpdf/stripe build
 
 # Generate Prisma client
 WORKDIR /app/packages/app

@@ -111,10 +111,9 @@ def validate_restrictions(  # skipcq: PY-R1000
     # PDFA-029: Audio/video/3D annotations
     for page in document.pages:
         annots = page.resources.get("/Annots") or page.resources.get("Annots")
-        if not isinstance(annots, list):
+        if not isinstance(annots, list) and hasattr(page, "annotations"):
             # Also check page-level annotations attribute
-            if hasattr(page, "annotations"):
-                annots = page.annotations
+            annots = page.annotations
         if isinstance(annots, list):
             for annot in annots:
                 if not isinstance(annot, dict):
@@ -241,15 +240,12 @@ def validate_restrictions(  # skipcq: PY-R1000
 
     # PDFA-033: Transparency used (prohibited in A-1b, allowed in A-2b+)
     if level.startswith("1"):
-        transparency_detected = False
-
         for event in events:
             if not isinstance(event, OpacityChangedEvent):
                 continue
             sa = event.stroking_alpha
             nsa = event.non_stroking_alpha
             if (sa is not None and sa < 1.0) or (nsa is not None and nsa < 1.0):
-                transparency_detected = True
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-033",
@@ -265,7 +261,6 @@ def validate_restrictions(  # skipcq: PY-R1000
                 break  # One finding is enough
 
             if event.blend_mode and event.blend_mode not in ("Normal", "Compatible"):
-                transparency_detected = True
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-033",
@@ -284,7 +279,6 @@ def validate_restrictions(  # skipcq: PY-R1000
         for page in document.pages:
             group = page.transparency_group
             if group is not None:
-                transparency_detected = True
                 findings.append(
                     Finding(
                         inspection_id=f"{_PREFIX}-033",
@@ -305,7 +299,6 @@ def validate_restrictions(  # skipcq: PY-R1000
                     if isinstance(gs_dict, dict):
                         smask = gs_dict.get("/SMask") or gs_dict.get("SMask")
                         if smask is not None and smask != "None":
-                            transparency_detected = True
                             findings.append(
                                 Finding(
                                     inspection_id=f"{_PREFIX}-033",
@@ -460,9 +453,8 @@ def validate_restrictions(  # skipcq: PY-R1000
     if level.startswith("1"):
         for page in document.pages:
             annots = page.resources.get("/Annots") or page.resources.get("Annots")
-            if not isinstance(annots, list):
-                if hasattr(page, "annotations"):
-                    annots = page.annotations
+            if not isinstance(annots, list) and hasattr(page, "annotations"):
+                annots = page.annotations
             if isinstance(annots, list):
                 for annot in annots:
                     if not isinstance(annot, dict):

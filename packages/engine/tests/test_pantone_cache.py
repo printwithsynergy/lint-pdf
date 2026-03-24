@@ -78,7 +78,6 @@ class TestInvalidate:
 class TestCacheRoundTrip:
     def test_set_then_get_returns_same_data(self):
         """Simulates full round-trip: set → get returns the same overrides."""
-        import json
 
         store: dict[str, str] = {}
 

@@ -2,5 +2,7 @@
 
 from lintpdf.ai.analyzers.document_classification import (
     auto_voyage_plan as auto_preflight_profile,  # noqa: F401
+)
+from lintpdf.ai.analyzers.document_classification import (
     file_classification,  # noqa: F401
 )

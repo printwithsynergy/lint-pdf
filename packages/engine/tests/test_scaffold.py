@@ -14,19 +14,19 @@ def test_exceptions_importable() -> None:
     """Verify all exception classes are importable."""
     from lintpdf.exceptions import (
         ContentStreamError,
-        LintPDFError,
         InvalidBoxError,
         InvalidPageError,
         JobNotFoundError,
+        LintPDFError,
         PDFObjectNotFoundError,
         PDFParseError,
         PDFStreamEncodingError,
         PDFStructureError,
+        PreflightProfileValidationError,
         ProfileNotFoundError,
         RateLimitExceededError,
         RuleRegistrationError,
         TenantNotFoundError,
-        PreflightProfileValidationError,
     )
 
     # All exceptions inherit from LintPDFError

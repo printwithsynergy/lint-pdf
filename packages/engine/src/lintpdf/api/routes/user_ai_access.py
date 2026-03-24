@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
-import uuid as uuid_mod
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import Tenant, UserAIAccess  # noqa: TC001
+from lintpdf.api.models import Tenant, UserAIAccess
 from lintpdf.api.schemas import (
     UserAIAccessResponse,
     UserAIAccessUpdateRequest,
 )
+
+if TYPE_CHECKING:
+    import uuid as uuid_mod
 
 router = APIRouter(prefix="/users", tags=["user-ai-access"])
 
@@ -77,7 +80,7 @@ async def start_user_trial(
         )
 
     access.trial_enabled = True
-    access.trial_expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+    access.trial_expires_at = datetime.now(UTC) + timedelta(days=30)
     access.ai_enabled = True
 
     db.commit()

@@ -1,7 +1,7 @@
 """Tests for Color Quality Score."""
 
-from lintpdf.color_score import compute_color_quality_score, ColorQualityScore
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.color_score import compute_color_quality_score
 
 
 class TestColorQualityScore:

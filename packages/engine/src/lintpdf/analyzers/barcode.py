@@ -394,8 +394,9 @@ class BarcodeAnalyzer(BaseAnalyzer):
             return {"decoded": False}
 
         try:
-            from PIL import Image as _PILImage
             import io
+
+            from PIL import Image as _PILImage
 
             page_img = _PILImage.open(io.BytesIO(png_bytes))
 

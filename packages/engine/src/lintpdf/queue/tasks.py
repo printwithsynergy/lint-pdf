@@ -117,7 +117,7 @@ def run_preflight(
                 for key, value in jdf_overrides.items():
                     if key in threshold_data:
                         threshold_data[key] = value
-                from lintpdf.profiles.schema import PreflightProfile, ThresholdConfig
+                from lintpdf.profiles.schema import ThresholdConfig
 
                 profile = profile.model_copy(
                     update={"thresholds": ThresholdConfig(**threshold_data)}

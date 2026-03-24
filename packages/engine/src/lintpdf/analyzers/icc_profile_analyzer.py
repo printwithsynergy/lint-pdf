@@ -471,7 +471,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         seen_intents: dict[str, str] = {}
 
         for page in document.pages:
-            for cs_name, cs in page.color_spaces.items():
+            for _cs_name, cs in page.color_spaces.items():
                 if cs.cs_type != "ICCBased" or not cs.icc_profile_ref:
                     continue
 
@@ -522,7 +522,7 @@ class IccProfileAnalyzer(BaseAnalyzer):
         checked_refs: set[str] = set()
 
         for page in document.pages:
-            for cs_name, cs in page.color_spaces.items():
+            for _cs_name, cs in page.color_spaces.items():
                 if cs.cs_type != "ICCBased" or not cs.icc_profile_ref:
                     continue
                 if cs.icc_profile_ref in checked_refs:

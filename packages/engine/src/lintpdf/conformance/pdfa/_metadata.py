@@ -198,20 +198,19 @@ def validate_metadata(  # skipcq: PY-R1000
                         details={"version": version, "max_version": "1.4"},
                     )
                 )
-        elif level.startswith("2") or level.startswith("3"):
+        elif (level.startswith("2") or level.startswith("3")) and ver_num > 1.7:
             # PDF/A-2b and PDF/A-3b require PDF 1.7 or lower
-            if ver_num > 1.7:
-                findings.append(
-                    Finding(
-                        inspection_id=f"{_PREFIX}-009",
-                        severity=Severity.ERROR,
-                        message=(
-                            f"PDF version {version} exceeds maximum allowed for PDF/A-{level[0]} "
-                            f"(must be 1.7 or lower)"
-                        ),
-                        iso_clause=f"ISO 19005-{level[0]} 6.1",
-                        details={"version": version, "max_version": "1.7"},
-                    )
+            findings.append(
+                Finding(
+                    inspection_id=f"{_PREFIX}-009",
+                    severity=Severity.ERROR,
+                    message=(
+                        f"PDF version {version} exceeds maximum allowed for PDF/A-{level[0]} "
+                        f"(must be 1.7 or lower)"
+                    ),
+                    iso_clause=f"ISO 19005-{level[0]} 6.1",
+                    details={"version": version, "max_version": "1.7"},
                 )
+            )
 
     return findings

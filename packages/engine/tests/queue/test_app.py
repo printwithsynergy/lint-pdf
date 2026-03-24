@@ -17,7 +17,7 @@ class TestCeleryApp:
         assert "redis://localhost:6379/0" in str(app.conf.broker_url)
 
     @staticmethod
-    def test_custom_broker() -> None:
+    def test_custom_broker_alt() -> None:
         app = create_celery_app(broker_url="redis://custom:6380/1")
         assert "redis://custom:6380/1" in str(app.conf.broker_url)
 

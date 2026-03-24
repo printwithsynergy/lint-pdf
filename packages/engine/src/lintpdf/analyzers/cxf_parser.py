@@ -52,7 +52,7 @@ def parse_cxf_xml(xml_bytes: bytes) -> CxfData:
     result = CxfData()
 
     try:
-        import defusedxml.ElementTree as ET
+        import defusedxml.ElementTree as ET  # noqa: N817
     except ImportError:
         result.errors.append("defusedxml not available for CxF parsing")
         return result
@@ -258,15 +258,15 @@ def _spectral_to_lab(
     Returns None if colour-science is not available.
     """
     try:
-        import numpy as np
         import colour as colour_science
+        import numpy as np
 
         wavelengths = np.arange(start_nm, end_nm + 1, interval_nm, dtype=float)
         if len(wavelengths) != len(spectral_data):
             return None
 
         sd = colour_science.SpectralDistribution(
-            dict(zip(wavelengths, spectral_data)),
+            dict(zip(wavelengths, spectral_data, strict=False)),
         )
         xyz = colour_science.sd_to_XYZ(sd)
         lab = colour_science.XYZ_to_Lab(xyz / 100.0)

@@ -3,5 +3,7 @@
 from lintpdf.ai.analyzers.nlp_interfaces import (
     multi_language,  # noqa: F401
     nl_report_interpret,  # noqa: F401
+)
+from lintpdf.ai.analyzers.nlp_interfaces import (
     nl_voyage_plan as nl_preflight_profile,  # noqa: F401
 )

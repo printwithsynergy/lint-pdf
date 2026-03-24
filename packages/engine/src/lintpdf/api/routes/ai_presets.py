@@ -7,12 +7,16 @@ from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session  # noqa: TC002
+from fastapi import APIRouter, Depends, HTTPException, status  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: TC002, E402
 
-from lintpdf.api.ai_schemas import AIPresetFeature, AIPresetListResponse, AIPresetResponse
-from lintpdf.api.auth import get_current_tenant
-from lintpdf.api.database import get_db
+from lintpdf.api.ai_schemas import (  # noqa: E402
+    AIPresetFeature,
+    AIPresetListResponse,
+    AIPresetResponse,
+)
+from lintpdf.api.auth import get_current_tenant  # noqa: E402
+from lintpdf.api.database import get_db  # noqa: E402
 
 if TYPE_CHECKING:
     from lintpdf.api.models import Tenant

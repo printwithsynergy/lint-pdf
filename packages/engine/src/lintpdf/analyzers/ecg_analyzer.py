@@ -1077,15 +1077,18 @@ class EcgAnalyzer(BaseAnalyzer):
             c, m, y, k = color_values
 
             # Detect rich black (K=100% with CMY)
-            if abs(k - 1.0) < 0.01 and (c > 0.01 or m > 0.01 or y > 0.01):
+            if (
+                abs(k - 1.0) < 0.01
+                and (c > 0.01 or m > 0.01 or y > 0.01)
                 # Check if recipe deviates from ECG recommendation
-                if (
+                and (
                     abs(c - _ECG_RICH_BLACK_C) > 0.15
                     or abs(m - _ECG_RICH_BLACK_M) > 0.15
                     or abs(y - _ECG_RICH_BLACK_Y) > 0.15
-                ):
-                    bad_recipe_count += 1
-                    bad_recipe_pages.add(page_num)
+                )
+            ):
+                bad_recipe_count += 1
+                bad_recipe_pages.add(page_num)
 
         if bad_recipe_count > 0:
             findings.append(

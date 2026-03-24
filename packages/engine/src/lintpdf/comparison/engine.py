@@ -165,24 +165,27 @@ class ComparisonEngine:
                             details={"box": box_name, "candidate": cand_b.as_tuple()},
                         )
                     )
-                elif ref_b is not None and cand_b is not None:
-                    if ref_b.as_tuple() != cand_b.as_tuple():
-                        diffs.append(
-                            ComparisonDiff(
-                                diff_type="structure",
-                                category="changed",
-                                page_num=page_num,
-                                description=(
-                                    f"Page {page_num}: {box_name} changed from "
-                                    f"{ref_b.as_tuple()} to {cand_b.as_tuple()}"
-                                ),
-                                details={
-                                    "box": box_name,
-                                    "reference": ref_b.as_tuple(),
-                                    "candidate": cand_b.as_tuple(),
-                                },
-                            )
+                elif (
+                    ref_b is not None
+                    and cand_b is not None
+                    and ref_b.as_tuple() != cand_b.as_tuple()
+                ):
+                    diffs.append(
+                        ComparisonDiff(
+                            diff_type="structure",
+                            category="changed",
+                            page_num=page_num,
+                            description=(
+                                f"Page {page_num}: {box_name} changed from "
+                                f"{ref_b.as_tuple()} to {cand_b.as_tuple()}"
+                            ),
+                            details={
+                                "box": box_name,
+                                "reference": ref_b.as_tuple(),
+                                "candidate": cand_b.as_tuple(),
+                            },
                         )
+                    )
 
             # Font sets
             ref_fonts = set(ref_page.fonts.keys())
@@ -447,7 +450,7 @@ class ComparisonEngine:
                 )
             )
         else:
-            for idx, (ref_oi, cand_oi) in enumerate(zip(ref_intents, cand_intents)):
+            for idx, (ref_oi, cand_oi) in enumerate(zip(ref_intents, cand_intents, strict=False)):
                 ref_cond = ref_oi.get("OutputCondition", "")
                 cand_cond = cand_oi.get("OutputCondition", "")
                 ref_id = ref_oi.get("OutputConditionIdentifier", "")

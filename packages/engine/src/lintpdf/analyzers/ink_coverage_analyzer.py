@@ -104,38 +104,44 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                                 )
 
                 # Track Separation color space usage on fill
-                if event.fill and event.fill_color_space == "Separation":
-                    if event.fill_color_values:
-                        spot_name = self._resolve_spot_name(
-                            document,
+                if (
+                    event.fill
+                    and event.fill_color_space == "Separation"
+                    and event.fill_color_values
+                ):
+                    spot_name = self._resolve_spot_name(
+                        document,
+                        event.page_num,
+                        event.fill_color_space,
+                    )
+                    if spot_name:
+                        spot_colors_used.add(spot_name)
+                        self._update_separation_stats(
+                            separation_stats,
+                            spot_name,
                             event.page_num,
-                            event.fill_color_space,
+                            event.fill_color_values[0] if event.fill_color_values else 0.0,
                         )
-                        if spot_name:
-                            spot_colors_used.add(spot_name)
-                            self._update_separation_stats(
-                                separation_stats,
-                                spot_name,
-                                event.page_num,
-                                event.fill_color_values[0] if event.fill_color_values else 0.0,
-                            )
 
                 # Track Separation color space usage on stroke
-                if event.stroke and event.stroke_color_space == "Separation":
-                    if event.stroke_color_values:
-                        spot_name = self._resolve_spot_name(
-                            document,
+                if (
+                    event.stroke
+                    and event.stroke_color_space == "Separation"
+                    and event.stroke_color_values
+                ):
+                    spot_name = self._resolve_spot_name(
+                        document,
+                        event.page_num,
+                        event.stroke_color_space,
+                    )
+                    if spot_name:
+                        spot_colors_used.add(spot_name)
+                        self._update_separation_stats(
+                            separation_stats,
+                            spot_name,
                             event.page_num,
-                            event.stroke_color_space,
+                            event.stroke_color_values[0] if event.stroke_color_values else 0.0,
                         )
-                        if spot_name:
-                            spot_colors_used.add(spot_name)
-                            self._update_separation_stats(
-                                separation_stats,
-                                spot_name,
-                                event.page_num,
-                                event.stroke_color_values[0] if event.stroke_color_values else 0.0,
-                            )
 
             elif isinstance(event, ColorChangedEvent):
                 # Track CMYK channel usage from color change events

@@ -5,7 +5,6 @@ Also provides idempotency key middleware and rate limit response headers.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
 import threading
