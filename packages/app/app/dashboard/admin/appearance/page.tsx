@@ -45,9 +45,7 @@ export default function AppearancePage() {
       });
       if (!resp.ok) {
         const data = await resp.json().catch(() => ({}));
-        throw new Error(
-          (data as { error?: string }).error ?? "Failed to save",
-        );
+        throw new Error((data as { error?: string }).error ?? "Failed to save");
       }
       setSaved(true);
     } catch (e) {
