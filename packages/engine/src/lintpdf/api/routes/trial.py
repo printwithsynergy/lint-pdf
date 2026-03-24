@@ -173,7 +173,7 @@ async def submit_trial(
     email: str = Form(..., min_length=1, max_length=255),
     company: str = Form(default=""),
     phone: str = Form(default=""),
-    files: list[UploadFile] = File(..., description="PDF files to test"),
+    files: list[UploadFile] = File(..., description="PDF files to test"),  # noqa: B008
     db: Session = Depends(get_db),  # noqa: B008
     _secret: str = Depends(_verify_trial_secret),
 ) -> JSONResponse:
@@ -568,13 +568,13 @@ async def send_trial_report(
         loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(
             None,
-            lambda: service.generate_and_store(
-                job_id=str(job.id),
+            lambda _job=job, _result=result_json, _br=branding: service.generate_and_store(
+                job_id=str(_job.id),
                 tenant_id=str(trial_tenant.id),
-                result_json=result_json,
+                result_json=_result,
                 formats=["html"],
                 expiry_days=30,
-                branding=branding,
+                branding=_br,
                 report_base_url=settings.report_base_url,
             ),
         )
