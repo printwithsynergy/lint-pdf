@@ -11,7 +11,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      engine: ${{ steps.filter.outputs.engine }}
+      web: ${{ steps.filter.outputs.web }}
+      app: ${{ steps.filter.outputs.app }}
+      plugin: ${{ steps.filter.outputs.plugin }}
+      stripe: ${{ steps.filter.outputs.stripe }}
+      inference: ${{ steps.filter.outputs.inference }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Detect changed packages
+        id: filter
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+          CHANGED=$(git diff --name-only "$BASE" HEAD || echo ".github/workflows/ci.yml")
+          echo "engine=$( echo "$CHANGED" | grep -qE '^packages/engine/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "web=$( echo "$CHANGED" | grep -qE '^packages/web/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "app=$( echo "$CHANGED" | grep -qE '^packages/app/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "plugin=$( echo "$CHANGED" | grep -qE '^packages/plugin/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "stripe=$( echo "$CHANGED" | grep -qE '^packages/stripe/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "inference=$( echo "$CHANGED" | grep -qE '^packages/inference/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+
   engine:
+    needs: changes
+    if: needs.changes.outputs.engine == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -43,6 +74,8 @@ jobs:
           DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
 
   inference:
+    needs: changes
+    if: needs.changes.outputs.inference == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -72,6 +105,8 @@ jobs:
           DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
 
   web:
+    needs: changes
+    if: needs.changes.outputs.web == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -91,6 +126,8 @@ jobs:
         run: pnpm --filter @thinkneverland/grounded-web build
 
   plugin:
+    needs: changes
+    if: needs.changes.outputs.plugin == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -110,6 +147,8 @@ jobs:
         run: pnpm --filter @thinkneverland/grounded-plugin build
 
   stripe:
+    needs: changes
+    if: needs.changes.outputs.stripe == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -129,6 +168,8 @@ jobs:
         run: pnpm --filter @lintpdf/stripe build
 
   app:
+    needs: changes
+    if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
