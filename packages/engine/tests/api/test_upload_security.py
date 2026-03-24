@@ -585,6 +585,8 @@ class TestTypeRegistries:
             "application/x-indesign",
             "image/svg+xml",
             "application/x-quark-xpress",
+            "application/vnd.cip4-jdf+xml",
+            "application/vnd.cip4-xjdf+xml",
         }
         assert mimes == expected
 

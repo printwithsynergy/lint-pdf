@@ -8,12 +8,12 @@ from grounded.queue.app import celery_app, create_celery_app
 class TestCeleryApp:
     @staticmethod
     def test_create_app_returns_celery() -> None:
-        app = create_celery_app()
+        app = create_celery_app(broker_url="memory://")
         assert app.main == "grounded"
 
     @staticmethod
-    def test_default_broker() -> None:
-        app = create_celery_app()
+    def test_custom_broker() -> None:
+        app = create_celery_app(broker_url="redis://localhost:6379/0")
         assert "redis://localhost:6379/0" in str(app.conf.broker_url)
 
     @staticmethod

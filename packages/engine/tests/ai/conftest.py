@@ -86,6 +86,8 @@ def _make_ai_config(
     config.delta_e_no_fly_threshold = delta_e_no_fly_threshold
     config.delta_e_squall_threshold = delta_e_delay_threshold
     config.delta_e_aground_threshold = delta_e_no_fly_threshold
+    config.delta_e_warning_threshold = delta_e_delay_threshold
+    config.delta_e_error_threshold = delta_e_no_fly_threshold
     config.min_image_quality_score = min_image_quality_score
     config.default_safe_zone_mm = default_safe_zone_mm
     config.default_package_capacity_ml = None

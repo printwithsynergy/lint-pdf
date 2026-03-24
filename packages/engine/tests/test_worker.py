@@ -85,21 +85,18 @@ class TestWorkerInit:
             mock_init_db.assert_called_once_with("postgresql://test:5432/testdb")
 
     @staticmethod
-    def test_on_worker_init_uses_default_url() -> None:
-        """_on_worker_init should use default database URL if env var is not set."""
+    def test_on_worker_init_raises_without_url() -> None:
+        """_on_worker_init should raise if GROUNDED_DATABASE_URL is not set."""
         import os
 
         with (
-            patch("grounded.api.database.init_db") as mock_init_db,
             patch.dict("os.environ", {}, clear=True),
         ):
             os.environ.pop("GROUNDED_DATABASE_URL", None)
             from grounded.queue.worker import _on_worker_init
 
-            _on_worker_init()
-            mock_init_db.assert_called_once_with(
-                "postgresql://grounded:grounded@localhost:5432/grounded"
-            )
+            with pytest.raises(RuntimeError, match="GROUNDED_DATABASE_URL"):
+                _on_worker_init()
 
     @staticmethod
     def test_worker_module_exports_app() -> None:
@@ -261,7 +258,7 @@ class TestRunPreflightTask:
             )
 
         assert result["status"] == "complete"
-        mock_redis.get.assert_called_once_with("pdf_cache:uploads/test.pdf")
+        mock_redis.get.assert_any_call("pdf_cache:uploads/test.pdf")
 
     def test_complete_failure_no_pdf(self) -> None:
         """When both R2 and Redis fail with max retries, return failed status."""

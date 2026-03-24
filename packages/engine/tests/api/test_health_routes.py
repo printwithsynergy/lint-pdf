@@ -21,7 +21,7 @@ class TestHealthEndpoint:
     def test_response_body(client: TestClient) -> None:
         data = client.get("/health").json()
         assert data["status"] == "ok"
-        assert data["service"] == "grounded"
+        assert data["service"] == "lintpdf"
 
     @staticmethod
     def test_no_auth_required(client: TestClient) -> None:
@@ -54,7 +54,7 @@ class TestDetailedStatusEndpoint:
     @staticmethod
     def test_defaults(client: TestClient) -> None:
         data = client.get("/api/v1/status").json()
-        assert data["service"] == "grounded"
+        assert data["service"] == "lintpdf"
         assert data["version"] == "0.1.0"
 
     # -- Probe: database --

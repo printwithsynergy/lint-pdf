@@ -13,21 +13,21 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_prefix="GROUNDED_")
 
-    # Database (required — set GROUNDED_DATABASE_URL)
-    database_url: str
+    # Database
+    database_url: str = "postgresql://localhost:5432/grounded"
 
-    # Redis (required — set GROUNDED_REDIS_URL)
-    redis_url: str
+    # Redis
+    redis_url: str = "redis://localhost:6379/0"
 
-    # veraPDF sidecar (required — set GROUNDED_VERAPDF_URL)
-    verapdf_url: str
+    # veraPDF sidecar
+    verapdf_url: str = "http://localhost:8080"
 
     # API server
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
-    # Auth (required — set GROUNDED_SECRET_KEY to a strong random value)
-    secret_key: str
+    # Auth
+    secret_key: str = "change-me-in-production"
 
     # Upload limits
     max_upload_size_mb: int = 1024
@@ -64,8 +64,13 @@ class Settings(BaseSettings):
 
 
 def get_settings() -> Settings:
-    """Get cached settings instance.
+    """Get cached settings instance."""
+    import warnings
 
-    Raises ``ValidationError`` if required environment variables are missing.
-    """
-    return Settings()
+    settings = Settings()
+    if settings.secret_key == "change-me-in-production":
+        warnings.warn(
+            "Using default GROUNDED_SECRET_KEY — set a strong random value in production",
+            stacklevel=2,
+        )
+    return settings

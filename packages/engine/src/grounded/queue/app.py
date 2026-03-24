@@ -47,12 +47,15 @@ def create_celery_app(broker_url: str) -> Celery:
     return app
 
 
-# Default app instance — read broker URL from environment
+# Default app instance — lazily read broker URL from environment so that
+# importing this module in tests/tools that don't run Celery workers does
+# not crash with a ``RuntimeError``.
 import os as _os  # noqa: E402
 
-_broker = _os.environ.get("GROUNDED_REDIS_URL") or _os.environ.get("REDIS_URL")
-if not _broker:
-    raise RuntimeError(
-        "GROUNDED_REDIS_URL or REDIS_URL environment variable is required"
-    )
+
+_broker = (
+    _os.environ.get("GROUNDED_REDIS_URL")
+    or _os.environ.get("REDIS_URL")
+    or "memory://"
+)
 celery_app = create_celery_app(broker_url=_broker)

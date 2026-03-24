@@ -16,14 +16,14 @@ class TestHealth:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "ok"
-        assert data["service"] == "grounded"
+        assert data["service"] == "lintpdf"
 
     @staticmethod
     def test_detailed_status(client: TestClient) -> None:
         response = client.get("/api/v1/status")
         assert response.status_code == 200
         data = response.json()
-        assert data["service"] == "grounded"
+        assert data["service"] == "lintpdf"
         assert data["version"] == "0.1.0"
         assert "database" in data
         assert "redis" in data
