@@ -1,8 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { SkeletonDashboard } from "@/components/skeleton";
+
+interface Profile {
+  profile_id: string;
+  display_name: string;
+}
 
 interface Job {
   job_id: string;
@@ -47,6 +52,13 @@ export default function PreflightPage() {
   const [error, setError] = useState("");
   const pageSize = 20;
 
+  // Upload state
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [selectedProfile, setSelectedProfile] = useState("lintpdf-default");
+  const [uploading, setUploading] = useState(false);
+  const [uploadSuccess, setUploadSuccess] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const fetchJobs = useCallback(async () => {
     setLoading(true);
     try {
@@ -68,6 +80,48 @@ export default function PreflightPage() {
     fetchJobs();
   }, [fetchJobs]);
 
+  useEffect(() => {
+    fetch("/api/grounded/profiles")
+      .then((r) => (r.ok ? r.json() : { profiles: [] }))
+      .then((data) => setProfiles(data.profiles ?? []))
+      .catch(() => {});
+  }, []);
+
+  async function handleUpload(e: React.FormEvent) {
+    e.preventDefault();
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError("");
+    setUploadSuccess("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("profile_id", selectedProfile);
+
+    try {
+      const resp = await fetch("/api/grounded/submit", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await resp.json();
+      if (!resp.ok) {
+        throw new Error(data.error ?? data.detail ?? "Upload failed");
+      }
+      setUploadSuccess(
+        `Job submitted: ${data.job_id ?? "processing"}`,
+      );
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      // Refresh job list after a short delay
+      setTimeout(() => fetchJobs(), 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function handleDelete(jobId: string) {
     if (!confirm("Delete this job?")) return;
     try {
@@ -85,6 +139,63 @@ export default function PreflightPage() {
       <h1 className="font-display text-2xl font-bold">Preflight Jobs</h1>
       <p className="mt-1 text-sm text-muted-foreground">{total} total jobs</p>
 
+      {/* Upload Form */}
+      <form
+        onSubmit={handleUpload}
+        className="mt-6 rounded-lg border bg-card p-4"
+      >
+        <h2 className="text-sm font-semibold">Submit PDF for Preflight</h2>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="flex-1 min-w-[200px]">
+            <label
+              htmlFor="pdf-file"
+              className="block text-xs font-medium text-muted-foreground mb-1"
+            >
+              PDF File
+            </label>
+            <input
+              id="pdf-file"
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              required
+              className="block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary hover:file:bg-primary/20"
+            />
+          </div>
+          <div className="min-w-[180px]">
+            <label
+              htmlFor="profile"
+              className="block text-xs font-medium text-muted-foreground mb-1"
+            >
+              Profile
+            </label>
+            <select
+              id="profile"
+              value={selectedProfile}
+              onChange={(e) => setSelectedProfile(e.target.value)}
+              className="block w-full rounded border bg-background px-2 py-1.5 text-sm"
+            >
+              <option value="lintpdf-default">Default</option>
+              {profiles.map((p) => (
+                <option key={p.profile_id} value={p.profile_id}>
+                  {p.display_name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="submit"
+            disabled={uploading}
+            className="rounded bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {uploading ? "Uploading..." : "Run Preflight"}
+          </button>
+        </div>
+        {uploadSuccess && (
+          <p className="mt-2 text-sm text-green-600">{uploadSuccess}</p>
+        )}
+      </form>
+
       {error && (
         <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
@@ -95,7 +206,7 @@ export default function PreflightPage() {
         <SkeletonDashboard type="table" />
       ) : jobs.length === 0 ? (
         <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          No preflight jobs yet. Submit a PDF via the API to get started.
+          No preflight jobs yet. Upload a PDF above to run your first preflight.
         </div>
       ) : (
         <>

@@ -67,7 +67,9 @@
       "WebFetch(domain:callassoftware.com)",
       "WebFetch(domain:helpx.adobe.com)",
       "WebFetch(domain:docplayer.net)",
-      "WebFetch(domain:docs.railway.com)"
+      "WebFetch(domain:docs.railway.com)",
+      "mcp__9df6685a-8864-4501-a521-132cf322c69d__list_issues",
+      "mcp__9df6685a-8864-4501-a521-132cf322c69d__list_projects"
     ]
   },
   "hooks": {
