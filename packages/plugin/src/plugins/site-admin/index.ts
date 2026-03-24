@@ -36,11 +36,11 @@ function adminFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
-export const groundedSiteAdminPlugin: PixieDustPlugin = {
-  name: "grounded-site-admin",
+export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
+  name: "lintpdf-site-admin",
   version: "0.1.0",
   description: "Site-wide administration for LintPDF — super admin only",
-  dependencies: ["grounded"],
+  dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
     // Permissions

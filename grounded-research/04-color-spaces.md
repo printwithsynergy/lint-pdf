@@ -358,7 +358,7 @@ Boolean flag in ExtGState. Adjusts rendering of near-black colors.
 
 ## Feed to AI
 
-Use this research to design Grounded's **Color Space Validator Module**:
+Use this research to design LintPDF's **Color Space Validator Module**:
 
 1. **Color Space Parser**: Identify all 11 families (DeviceGray/RGB/CMYK, CalGray/RGB, Lab, ICC, Indexed, Separation, DeviceN, Pattern)
 2. **Dictionary Validator**: For each family, validate required/optional entries per spec

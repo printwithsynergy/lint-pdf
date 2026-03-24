@@ -8,17 +8,17 @@
 declare module "@thinkneverland/grounded-plugin" {
   import type { PixieDustPlugin } from "@thinkneverland/pixie-dust-fairy-ring";
 
-  export const groundedPlugin: PixieDustPlugin;
-  export const groundedUsagePlugin: PixieDustPlugin;
-  export const groundedApiKeysPlugin: PixieDustPlugin;
-  export const groundedReportsPlugin: PixieDustPlugin;
-  export const groundedTeamPlugin: PixieDustPlugin;
-  export const groundedAccountPlugin: PixieDustPlugin;
-  export const groundedSiteAdminPlugin: PixieDustPlugin;
+  export const lintpdfPlugin: PixieDustPlugin;
+  export const lintpdfUsagePlugin: PixieDustPlugin;
+  export const lintpdfApiKeysPlugin: PixieDustPlugin;
+  export const lintpdfReportsPlugin: PixieDustPlugin;
+  export const lintpdfTeamPlugin: PixieDustPlugin;
+  export const lintpdfAccountPlugin: PixieDustPlugin;
+  export const lintpdfSiteAdminPlugin: PixieDustPlugin;
 }
 
-declare module "@grounded/stripe" {
+declare module "@lintpdf/stripe" {
   import type { PixieDustPlugin } from "@thinkneverland/pixie-dust-fairy-ring";
 
-  export const groundedBillingPlugin: PixieDustPlugin;
+  export const lintpdfBillingPlugin: PixieDustPlugin;
 }

@@ -811,7 +811,7 @@ def tokenize_with_pikepdf(page: pikepdf.Page) -> List[Tuple[List, str]]:
 
 #### Algorithm 2: Operator Priority Matrix
 
-Operators categorized by implementation priority for Grounded's detection use case:
+Operators categorized by implementation priority for LintPDF's detection use case:
 
 **CRITICAL (Must implement for MVP — 18 operators):**
 

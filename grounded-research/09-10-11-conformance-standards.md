@@ -189,7 +189,7 @@ PDF/X is a constrained subset of PDF designed for the graphic arts and print ind
 ## SECTION 2.1.3: PDF/X-4 Standards (2010) - COMPLETE SPECIFICATION
 
 ### Strategic Importance for Grounded
-PDF/X-4 is the **current industry standard** for print workflows requiring transparency and modern graphics. It represents the most widely used PDF/X conformance level in contemporary printing and is Grounded's primary competitive differentiator.
+PDF/X-4 is the **current industry standard** for print workflows requiring transparency and modern graphics. It represents the most widely used PDF/X conformance level in contemporary printing and is LintPDF's primary competitive differentiator.
 
 **Key Facts**:
 - Adopted across all major print segments (offset, digital, packaging, flexo)
@@ -938,7 +938,7 @@ PDF/A is the ISO standard for long-term digital document preservation. Four vers
 | Tagged structure | Level A only | Not required | PDF/A-only (Level A) requirement |
 | Embedded files | Version-dependent | Prohibited (PDFX4-062) | Opposite rules — PDF/A-3/4f allows, PDF/X prohibits |
 
-**Deduplication strategy:** Implement base checks (font embedding, encryption, JS prohibition, LZW) as shared Grounded Inspections. PDF/A-specific and PDF/X-specific checks are separate. veraPDF handles PDF/A validation; Grounded's native engine handles PDF/X.
+**Deduplication strategy:** Implement base checks (font embedding, encryption, JS prohibition, LZW) as shared Grounded Inspections. PDF/A-specific and PDF/X-specific checks are separate. veraPDF handles PDF/A validation; LintPDF's native engine handles PDF/X.
 
 ---
 
@@ -1045,7 +1045,7 @@ Pattern: `GRD_PDFA_{CATEGORY}_{SEQUENCE}` with veraPDF clause reference stored i
 | Combining with proprietary | Permitted. New files can be proprietary. File-level copyleft only. |
 | Commercial use | Fully permitted. No restrictions. |
 
-**Practical implication:** Using veraPDF REST Docker image as a backend validation sidecar triggers **no copyleft obligations** under MPL 2.0. Grounded's proprietary code remains proprietary.
+**Practical implication:** Using veraPDF REST Docker image as a backend validation sidecar triggers **no copyleft obligations** under MPL 2.0. LintPDF's proprietary code remains proprietary.
 
 ---
 

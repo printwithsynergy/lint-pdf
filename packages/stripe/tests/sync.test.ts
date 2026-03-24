@@ -87,7 +87,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "tenant_abc",
@@ -105,7 +105,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
               data: [
                 {
                   id: "si_item_1",
-                  price: { lookup_key: "grounded_growth_monthly" },
+                  price: { lookup_key: "lintpdf_growth_monthly" },
                 },
               ],
             },
@@ -132,7 +132,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "tenant_xyz",
@@ -150,7 +150,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
               data: [
                 {
                   id: "si_1",
-                  price: { lookup_key: "grounded_starter_monthly" },
+                  price: { lookup_key: "lintpdf_starter_monthly" },
                 },
               ],
             },
@@ -169,7 +169,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t1",
@@ -189,7 +189,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
               data: [
                 {
                   id: "si_1",
-                  price: { lookup_key: "grounded_starter_monthly" },
+                  price: { lookup_key: "lintpdf_starter_monthly" },
                 },
               ],
             },
@@ -214,7 +214,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
               data: [
                 {
                   id: "si_1",
-                  price: { lookup_key: "grounded_enterprise_monthly" },
+                  price: { lookup_key: "lintpdf_enterprise_monthly" },
                 },
               ],
             },
@@ -234,7 +234,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t1",
@@ -272,7 +272,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t1",
@@ -290,7 +290,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
               data: [
                 {
                   id: "si_1",
-                  price: { lookup_key: "grounded_growth_monthly" },
+                  price: { lookup_key: "lintpdf_growth_monthly" },
                 },
               ],
             },
@@ -316,7 +316,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_sync",
@@ -334,7 +334,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
               data: [
                 {
                   id: "si_sync_item",
-                  price: { lookup_key: "grounded_growth_monthly" },
+                  price: { lookup_key: "lintpdf_growth_monthly" },
                 },
               ],
             },
@@ -367,7 +367,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_fail",
@@ -385,7 +385,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
               data: [
                 {
                   id: "si_fail",
-                  price: { lookup_key: "grounded_growth_monthly" },
+                  price: { lookup_key: "lintpdf_growth_monthly" },
                 },
               ],
             },
@@ -410,7 +410,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_nokey",
@@ -428,7 +428,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
               data: [
                 {
                   id: "si_nokey",
-                  price: { lookup_key: "grounded_growth_monthly" },
+                  price: { lookup_key: "lintpdf_growth_monthly" },
                 },
               ],
             },
@@ -451,7 +451,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_deleted",
@@ -489,7 +489,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_fail_down",
@@ -522,7 +522,7 @@ describe("syncPlanToEngine and syncStripeIds (via webhook handlers)", () => {
 
       const ctx = createMockContext();
       const mod = await import("../src/index.js");
-      mod.groundedBillingPlugin.register?.(asPluginContext(ctx));
+      mod.lintpdfBillingPlugin.register?.(asPluginContext(ctx));
 
       ctx.services.db.stripeCustomer.findFirst.mockResolvedValue({
         tenantId: "t_slash",

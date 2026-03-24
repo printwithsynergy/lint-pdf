@@ -8,11 +8,11 @@ import type {
 } from "@thinkneverland/pixie-dust-fairy-ring";
 import { webhookMgmtRoutes } from "../../routes/webhooks-mgmt";
 
-export const groundedWebhooksPlugin: PixieDustPlugin = {
-  name: "grounded-webhooks",
+export const lintpdfWebhooksPlugin: PixieDustPlugin = {
+  name: "lintpdf-webhooks",
   version: "0.1.0",
   description: "Manage outbound webhook endpoints for LintPDF event delivery",
-  dependencies: ["grounded"],
+  dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
     // Permissions

@@ -180,7 +180,7 @@ Maximum compression via object streams + xref stream indexing.
 
 ## Feed to AI
 
-Use this research to design Grounded's **File Structure Detection Module**:
+Use this research to design LintPDF's **File Structure Detection Module**:
 
 1. **Header Parser**: Validate %PDF-n.n format, detect version, validate EOL
 2. **Xref Router**: Identify traditional xref vs xref stream vs object streams vs linearized

@@ -1,9 +1,9 @@
 # Phase 3: Open-Source Foundation Assessment
-## Grounded PDF Preflight Engine - Technology Stack Analysis
+## LintPDF Preflight Engine - Technology Stack Analysis
 
 **Date:** March 2026
 **Scope:** Tasks 3.1–3.5 Comprehensive Research
-**Objective:** Assess open-source PDF tools for Grounded's detection-only preflight architecture
+**Objective:** Assess open-source PDF tools for LintPDF's detection-only preflight architecture
 
 ---
 
@@ -49,7 +49,7 @@
   - No semantic understanding of graphics state, color spaces, text layout
   - Cannot infer relationships between operators (e.g., clip path vs. fill path intent)
 
-**Preflight Gap:** Grounded must build semantic understanding of content streams (graphics state management, color intent detection, overprint flags, transparency interactions).
+**Preflight Gap:** LintPDF must build semantic understanding of content streams (graphics state management, color intent detection, overprint flags, transparency interactions).
 
 ### 3.1.4 Page Box Access
 
@@ -79,7 +79,7 @@
 - Cannot validate font encoding tables without external font libraries
 - Limited glyph coverage analysis
 
-**Preflight Gap:** Grounded needs external font parsing library (e.g., fontTools) for deep font validation (missing glyphs, encoding issues, license flags).
+**Preflight Gap:** LintPDF needs external font parsing library (e.g., fontTools) for deep font validation (missing glyphs, encoding issues, license flags).
 
 ### 3.1.6 Image Extraction Capabilities
 
@@ -134,7 +134,7 @@
 - Parsing all content streams of a large PDF is I/O bound initially, then CPU bound for operator analysis
 - Multiple document passes (e.g., font analysis + content analysis) require efficient caching
 
-### 3.1.10 Gap Analysis: pikepdf/QPDF vs. Grounded Requirements
+### 3.1.10 Gap Analysis: pikepdf/QPDF vs. LintPDF Requirements
 
 | Requirement | pikepdf | QPDF | Grounded Must Build |
 |---|---|---|---|
@@ -384,7 +384,7 @@ docker run -d \
 | License | SaaS Usage | Considerations |
 |---|---|---|
 | **GPLv3+** | Restricted | "Conveying" a work via SaaS may trigger source disclosure obligations. Distributing Grounded as a service using GPLv3 components requires careful legal review. **Not recommended for commercial SaaS.** |
-| **MPLv2+** | Permitted | MPLv2 allows mixing with proprietary code. veraPDF code must remain under MPLv2 and be source-available, but Grounded's code can be proprietary. **Recommended for SaaS.** |
+| **MPLv2+** | Permitted | MPLv2 allows mixing with proprietary code. veraPDF code must remain under MPLv2 and be source-available, but LintPDF's code can be proprietary. **Recommended for SaaS.** |
 
 **Recommendation:** Explicitly license veraPDF usage under MPLv2 to enable commercial SaaS deployment. Verify with legal counsel for specific use case.
 
@@ -423,7 +423,7 @@ Embedding veraPDF-library directly in Grounded (as Java bytecode via Jython or s
 
 **Recommendation:** Use sidecar architecture.
 
-### 3.2.9 Gap Analysis: veraPDF vs. Grounded
+### 3.2.9 Gap Analysis: veraPDF vs. LintPDF
 
 | Requirement | veraPDF | Grounded Must Build |
 |---|---|---|
@@ -946,7 +946,7 @@ for i in range(tag_count):
 | **Fallback Color Space** | Must be defined if profile is external | Check alternate ColorSpace in Image XObjects |
 | **Profile Version Compatibility** | V2 for PDF/A-1; V4 for PDF/A-2+ | Validate lcms2 version field |
 
-### 3.5.7 Gap Analysis: Little CMS vs. Grounded
+### 3.5.7 Gap Analysis: Little CMS vs. LintPDF
 
 | Requirement | lcms2 | Grounded Must Build |
 |---|---|---|
@@ -1133,7 +1133,7 @@ services:
 | **Validation** | veraPDF (sidecar) | Industry standard, REST API, independent deployment |
 | **Ink Coverage** | Ghostscript (licensed) | Accuracy justifies cost; custom alternative available |
 | **ICC Profiles** | Pillow + lcms2 | Python-friendly, two-tier approach (basic + advanced) |
-| **Content Semantics** | Custom Implementation | No library provides this; Grounded's core innovation |
+| **Content Semantics** | Custom Implementation | No library provides this; LintPDF's core innovation |
 | **Architecture** | Sidecar Services + Library Stack | Separation of concerns, independent scaling, clear APIs |
 
 ---

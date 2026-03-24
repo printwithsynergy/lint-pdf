@@ -1,7 +1,7 @@
 /**
  * Stripe webhook handling is now managed by stripe-kit via Fairy Ring hooks.
  *
- * The groundedBillingPlugin listens to these hooks in its register() method:
+ * The lintpdfBillingPlugin listens to these hooks in its register() method:
  * - stripe:customer.subscription.updated → sync plan to engine
  * - stripe:customer.subscription.deleted → downgrade to free
  * - stripe:invoice.payment_failed → log warning

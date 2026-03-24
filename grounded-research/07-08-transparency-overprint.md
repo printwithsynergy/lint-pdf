@@ -279,7 +279,7 @@ Not all devices support transparency. Fallback behavior:
 
 ## Feed to AI
 
-Use this research to design Grounded's **Transparency & Overprint Validator Module**:
+Use this research to design LintPDF's **Transparency & Overprint Validator Module**:
 
 1. **ExtGState Parser**: Extract all /ExtGState dictionaries from Resources
 2. **Transparency Detector**: Identify CA/ca values < 1.0 (transparent objects)

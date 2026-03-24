@@ -334,7 +334,7 @@ Referenced via `gs` operator in content streams. Contains graphics state paramet
 
 ## Feed to AI
 
-Use this research to design Grounded's **Object Model Validator Module**:
+Use this research to design LintPDF's **Object Model Validator Module**:
 
 1. **Object Type Checker**: Validate all nine object types per §7.3.1–7.3.10
 2. **Indirect Reference Resolver**: Resolve all n m R references, validate xref entries

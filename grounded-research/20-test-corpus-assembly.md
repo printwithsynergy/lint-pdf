@@ -20,7 +20,7 @@
 
 ### Purpose
 
-This index catalogs all available industry-standard PDF test file collections that Grounded should integrate into its regression testing infrastructure. These collections provide comprehensive, validated test cases covering PDF/A, PDF/UA, PDF/X, and general PDF specifications. Each collection serves a distinct validation purpose and should be incorporated into Grounded's CI pipeline.
+This index catalogs all available industry-standard PDF test file collections that Grounded should integrate into its regression testing infrastructure. These collections provide comprehensive, validated test cases covering PDF/A, PDF/UA, PDF/X, and general PDF specifications. Each collection serves a distinct validation purpose and should be incorporated into LintPDF's CI pipeline.
 
 ---
 
@@ -75,11 +75,11 @@ Each directory follows a systematic naming convention tied to specific ISO 19005
   - `veraPDF-corpus-PDFA-1b` (focused PDF/A-1b subset)
   - `veraPDF-corpus-PDFA-Tagged` (Tagged PDF and logical structure)
 
-**How to Use in Grounded's CI:**
+**How to Use in LintPDF's CI:**
 
 ```
 Integration Strategy:
-1. Clone or mirror veraPDF-corpus into Grounded's test-fixtures directory
+1. Clone or mirror veraPDF-corpus into LintPDF's test-fixtures directory
 2. Organize by PDF standard version (PDFA1B, PDFA2B, PDFA3B, PDFUA1, etc.)
 3. For each standard version, separate into "pass" and "fail" subdirectories
 4. Create a registry mapping each file to its expected validation result
@@ -135,7 +135,7 @@ The suite is organized by PDF/A-1 specification clauses:
 - **Atomic Design:** Generally one violation per file
 - **Well-Documented:** Each file includes metadata indicating what it violates
 
-**How to Use in Grounded's CI:**
+**How to Use in LintPDF's CI:**
 
 ```
 Integration Strategy:
@@ -207,7 +207,7 @@ Each directory contains atomic test files violating specific clauses.
 | Color spaces | DeviceGray, CalGray, Indexed, Lab, DeviceRGB, DeviceCMYK, DeviceN | Extended |
 | Digital signatures | Not part of spec | Part of PDF/A-3 |
 
-**How to Use in Grounded's CI:**
+**How to Use in LintPDF's CI:**
 
 ```
 Integration Strategy:
@@ -215,7 +215,7 @@ Integration Strategy:
 2. Organize by standard: test-fixtures/bavaria-pdfa2b/, etc.
 3. Like Isartor, all files are intentionally non-conformant
 4. Run Grounded against each file and verify violation detection
-5. Compare results to Grounded's declared PDF/A-2 and PDF/A-3 support
+5. Compare results to LintPDF's declared PDF/A-2 and PDF/A-3 support
 6. Pay special attention to:
    - Transparency violation detection (new in PDF/A-2)
    - Embedded file validation (new in PDF/A-3)
@@ -303,7 +303,7 @@ gwg-test-files/
    - Various blend modes (Multiply, Screen, Overlay, etc.)
    - Transparency with spot colors
 
-**How to Use in Grounded's CI:**
+**How to Use in LintPDF's CI:**
 
 ```
 Integration Strategy:
@@ -403,7 +403,7 @@ The repository provides:
 | PDF/M Test Files | PDF/M | 50+ | Medical imaging |
 | Real-world PDFs | General | 1000s | Production documents |
 
-**How to Use in Grounded's CI:**
+**How to Use in LintPDF's CI:**
 
 ```
 Integration Strategy:
@@ -443,7 +443,7 @@ Integration Strategy:
 
 The PDF Association actively maintains this index, so Grounded should:
 - Subscribe to the repository for updates
-- Review quarterly for new collections relevant to Grounded's mission
+- Review quarterly for new collections relevant to LintPDF's mission
 - File issues/PRs if collections are missing or out of date
 
 **Strategic Value:**
@@ -466,7 +466,7 @@ By using the PDF Association's official index, Grounded:
 
 **Phase 2 (Production Ready):**
 5. ✅ GWG test files — required for print industry credibility
-6. ✅ Additional corpora — based on Grounded's declared support (PDF/E, PDF/M, PDF/VT, etc.)
+6. ✅ Additional corpora — based on LintPDF's declared support (PDF/E, PDF/M, PDF/VT, etc.)
 
 **Test Infrastructure:**
 - Mirror all collections into `test-fixtures/` with organized subdirectories
@@ -481,10 +481,10 @@ By using the PDF Association's official index, Grounded:
 
 ### Purpose
 
-This plan specifies all major PDF generators that Grounded must handle and documents their known quirks, malformations, and output characteristics. By building a test corpus from each generator, Grounded gains confidence in handling real-world PDFs from production environments.
+This plan specifies all major PDF generators that LintPDF must handle and documents their known quirks, malformations, and output characteristics. By building a test corpus from each generator, Grounded gains confidence in handling real-world PDFs from production environments.
 
 **Strategic Importance:**
-Real PDFs from generators are often messier and more malformed than official test suites. Grounded must identify and report issues in PDFs from all major sources. This plan ensures comprehensive coverage and early detection of generator-specific bugs.
+Real PDFs from generators are often messier and more malformed than official test suites. LintPDF must identify and report issues in PDFs from all major sources. This plan ensures comprehensive coverage and early detection of generator-specific bugs.
 
 ---
 
@@ -1162,7 +1162,7 @@ test-generator-corpus:
 
 ### Purpose
 
-This specification defines a comprehensive library of PDF preflight failures that Grounded must detect and report. For each failure mode, we document:
+This specification defines a comprehensive library of PDF preflight failures that LintPDF must detect and report. For each failure mode, we document:
 - What the failure looks like in a PDF
 - How to programmatically create test files that exhibit the failure
 - The expected findings JSON schema for ground truth comparison
@@ -1252,9 +1252,9 @@ with pikepdf.open("/tmp/test_missing_fonts.pdf") as pdf:
 ```
 
 **Ground Truth Comparison:**
-- Grounded must detect the exact font name
-- Grounded must report character count affected
-- Grounded must list pages with missing font references
+- LintPDF must detect the exact font name
+- LintPDF must report character count affected
+- LintPDF must list pages with missing font references
 
 ---
 

@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { GroundedClient } from "../client";
+import { LintPDFClient } from "../client";
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-describe("GroundedClient", () => {
-  let client: GroundedClient;
+describe("LintPDFClient", () => {
+  let client: LintPDFClient;
 
   beforeEach(() => {
-    client = new GroundedClient({
+    client = new LintPDFClient({
       apiUrl: "https://api.lintpdf.com",
       webhookSecret: "test-secret-long-enough",
       apiKey: "lpdf_test",

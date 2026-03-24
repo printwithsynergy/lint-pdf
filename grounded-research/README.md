@@ -14,7 +14,7 @@
 **File:** `/synthesis.md`
 - **Purpose:** Executive summary, research consolidation, critical outputs for engineering
 - **Contents:**
-  - Executive summary of Grounded's competitive positioning
+  - Executive summary of LintPDF's competitive positioning
   - Complete inventory of all 11 research deliverables (Phases 1-7)
   - Critical research outputs: PDF/X-4 check catalog, technology stack decisions, GWG profiles, content stream interpreter spec, rule engine design, MVP definition
   - Knowledge gaps and constraints

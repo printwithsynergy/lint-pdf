@@ -31,25 +31,25 @@ interface PlanConfig {
 const PLANS: PlanConfig[] = [
   {
     name: "LintPDF Free",
-    lookup_key: "grounded_free",
+    lookup_key: "lintpdf_free",
     monthly_cents: 0,
     overage_cents: 0,
   },
   {
     name: "LintPDF Starter",
-    lookup_key: "grounded_starter",
+    lookup_key: "lintpdf_starter",
     monthly_cents: 4900,
     overage_cents: 10,
   },
   {
     name: "LintPDF Pro",
-    lookup_key: "grounded_pro",
+    lookup_key: "lintpdf_pro",
     monthly_cents: 14900,
     overage_cents: 10,
   },
   {
     name: "LintPDF Enterprise",
-    lookup_key: "grounded_enterprise",
+    lookup_key: "lintpdf_enterprise",
     monthly_cents: 99900,
     overage_cents: 10,
   },

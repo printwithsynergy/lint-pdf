@@ -13,9 +13,6 @@ _BUILTIN_DIR = Path(__file__).parent / "builtin"
 
 # Aliases for backwards compatibility with old profile IDs
 _PROFILE_ALIASES: dict[str, str] = {
-    "grounded-default": "lintpdf-default",
-    "grounded-strict": "lintpdf-strict",
-    "grounded-advisory-only": "lintpdf-advisory-only",
 }
 
 

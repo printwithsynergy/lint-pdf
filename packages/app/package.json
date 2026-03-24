@@ -19,7 +19,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.32.0",
     "@thinkneverland/grounded-plugin": "workspace:*",
-    "@grounded/stripe": "workspace:*",
+    "@lintpdf/stripe": "workspace:*",
     "@thinkneverland/pixie-dust-auth": "^1.0.0",
     "@thinkneverland/pixie-dust-boilerplate": "^1.0.0",
     "@thinkneverland/pixie-dust-config": "^1.0.0",

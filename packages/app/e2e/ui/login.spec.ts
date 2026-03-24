@@ -6,7 +6,7 @@ test.describe("Login Page", () => {
 
     // Check page title/heading
     await expect(
-      page.getByRole("heading", { name: /welcome to never grounded/i }),
+      page.getByRole("heading", { name: /welcome to lintpdf/i }),
     ).toBeVisible();
   });
 

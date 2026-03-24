@@ -265,7 +265,7 @@ EI
 
 ## Feed to AI
 
-Use this research to design Grounded's **Image Analyzer Module**:
+Use this research to design LintPDF's **Image Analyzer Module**:
 
 1. **Image Extractor**: Find all /XObject Type=/Image entries in Resources
 2. **Image Dictionary Parser**: Validate all entries per Table 87

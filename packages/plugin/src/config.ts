@@ -4,7 +4,7 @@ import { z } from "zod";
  * Configuration schema for the LintPDF plugin.
  * Validated at plugin registration time.
  */
-export const groundedConfigSchema = z.object({
+export const lintpdfConfigSchema = z.object({
   /** Base URL of the LintPDF API (e.g. https://api.lintpdf.com) */
   apiUrl: z.string().url(),
 
@@ -15,4 +15,4 @@ export const groundedConfigSchema = z.object({
   apiKey: z.string().optional(),
 });
 
-export type GroundedPluginConfig = z.infer<typeof groundedConfigSchema>;
+export type LintPDFPluginConfig = z.infer<typeof lintpdfConfigSchema>;

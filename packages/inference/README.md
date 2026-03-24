@@ -1,4 +1,4 @@
-# Grounded Inference Service
+# LintPDF Inference Service
 
 GPU inference service for LintPDF AI features. Deployed as a FastAPI application on [Modal](https://modal.com) for GPU model serving.
 
