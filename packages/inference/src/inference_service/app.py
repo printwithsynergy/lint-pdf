@@ -15,6 +15,17 @@ from inference_service.config import settings
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+
+def _maybe_clear_cache() -> None:
+    """Release unused GPU memory after inference."""
+    try:
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except Exception:
+        pass
+
 app = FastAPI(
     title="LintPDF Inference Service",
     description="Vision inference service for LintPDF AI features",
@@ -162,10 +173,18 @@ def _error_response(error: str, detail: str, status_code: int = 400) -> JSONResp
 @app.get("/health")
 async def health():
     """Health check endpoint."""
+    cuda_available = False
+    try:
+        import torch
+
+        cuda_available = torch.cuda.is_available()
+    except Exception:
+        pass
     return {
         "status": "ok",
         "service": "lintpdf-inference",
         "device": settings.device,
+        "cuda_available": cuda_available,
     }
 
 
@@ -189,6 +208,7 @@ async def image_quality(image: UploadFile = File(...)):
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
@@ -216,6 +236,7 @@ async def classify(image: UploadFile = File(...)):
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
@@ -243,6 +264,7 @@ async def detect_logo(image: UploadFile = File(...)):
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
@@ -270,6 +292,7 @@ async def detect_nsfw(image: UploadFile = File(...)):
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
@@ -300,6 +323,7 @@ async def detect_objects(
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
@@ -327,6 +351,7 @@ async def embed_image(image: UploadFile = File(...)):
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
@@ -354,6 +379,7 @@ async def detect_outlines(image: UploadFile = File(...)):
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
@@ -381,6 +407,7 @@ async def detect_symbols(image: UploadFile = File(...)):
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
@@ -409,6 +436,7 @@ async def translate(
         return _error_response("inference_error", str(exc), status_code=500)
     elapsed_ms = round((time.perf_counter() - start) * 1000, 1)
 
+    _maybe_clear_cache()
     return {
         "result": result,
         "processing_time_ms": elapsed_ms,
