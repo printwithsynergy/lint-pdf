@@ -103,7 +103,8 @@ describe("jobRoutes", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJobs);
       expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).listJobs,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
+          .listJobs,
       ).toHaveBeenCalledWith(1, 20);
     });
 
@@ -121,7 +122,8 @@ describe("jobRoutes", () => {
       );
 
       expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).listJobs,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
+          .listJobs,
       ).toHaveBeenCalledWith(3, 10);
     });
   });
@@ -156,7 +158,8 @@ describe("jobRoutes", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJob);
       expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).getJob,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
+          .getJob,
       ).toHaveBeenCalledWith("abc");
     });
   });
@@ -189,7 +192,8 @@ describe("jobRoutes", () => {
 
       expect(res.status).toBe(204);
       expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).deleteJob,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
+          .deleteJob,
       ).toHaveBeenCalledWith("del_123");
     });
   });
@@ -238,7 +242,8 @@ describe("profileRoutes", () => {
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockProfiles);
       expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>).listProfiles,
+        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
+          .listProfiles,
       ).toHaveBeenCalled();
     });
   });

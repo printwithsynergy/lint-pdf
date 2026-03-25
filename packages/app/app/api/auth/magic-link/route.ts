@@ -71,8 +71,14 @@ export async function POST(req: Request) {
       message: "Check your email for a sign-in link and code.",
     });
   } catch (err) {
-    console.error("[magic-link] Error:", err instanceof Error ? err.message : err);
-    console.error("[magic-link] Stack:", err instanceof Error ? err.stack : "no stack");
+    console.error(
+      "[magic-link] Error:",
+      err instanceof Error ? err.message : err,
+    );
+    console.error(
+      "[magic-link] Stack:",
+      err instanceof Error ? err.stack : "no stack",
+    );
     return NextResponse.json(
       { error: "Failed to send magic link. Please try again." },
       { status: 500 },

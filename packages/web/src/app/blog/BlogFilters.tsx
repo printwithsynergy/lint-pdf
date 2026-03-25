@@ -12,9 +12,10 @@ interface Props {
 export function BlogFilters({ posts, categories }: Props) {
   const [activeCategory, setActiveCategory] = useState<string>("All");
 
-  const filtered = activeCategory === "All"
-    ? posts
-    : posts.filter((p) => p.category === activeCategory);
+  const filtered =
+    activeCategory === "All"
+      ? posts
+      : posts.filter((p) => p.category === activeCategory);
 
   return (
     <>
@@ -49,7 +50,9 @@ export function BlogFilters({ posts, categories }: Props) {
 
       {/* Post cards */}
       {filtered.length === 0 ? (
-        <p className="text-slate-500 text-center py-12">No posts in this category yet.</p>
+        <p className="text-slate-500 text-center py-12">
+          No posts in this category yet.
+        </p>
       ) : (
         <div className="space-y-6">
           {filtered.map((post) => (
@@ -70,11 +73,17 @@ export function BlogFilters({ posts, categories }: Props) {
                   })}
                 </time>
               </div>
-              <h2 className="text-xl font-semibold text-slate-900 mb-2">{post.title}</h2>
-              <p className="text-sm text-slate-500 leading-relaxed">{post.excerpt}</p>
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">
+                {post.title}
+              </h2>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                {post.excerpt}
+              </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {post.tags.map((tag) => (
-                  <span key={tag} className="text-xs text-slate-400">#{tag}</span>
+                  <span key={tag} className="text-xs text-slate-400">
+                    #{tag}
+                  </span>
                 ))}
               </div>
             </Link>

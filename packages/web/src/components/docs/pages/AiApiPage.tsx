@@ -8,8 +8,8 @@ export default function AiApiPage() {
         AI API Reference
       </h2>
       <p className="text-slate-500 text-sm mb-8">
-        All AI endpoints require a valid API Key and AI features enabled on
-        your account.
+        All AI endpoints require a valid API Key and AI features enabled on your
+        account.
       </p>
 
       <Endpoint

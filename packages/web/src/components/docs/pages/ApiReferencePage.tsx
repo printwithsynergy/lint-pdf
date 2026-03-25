@@ -4,9 +4,7 @@ import { Endpoint } from "@/components/docs/Endpoint";
 export default function ApiReferencePage() {
   return (
     <>
-      <h2 className="text-2xl font-bold text-slate-900 mb-4">
-        API Reference
-      </h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-4">API Reference</h2>
       <p className="text-slate-600 mb-2">
         Base URL:{" "}
         <code className="bg-slate-100 px-1.5 py-0.5 rounded text-sm font-mono">
@@ -14,8 +12,8 @@ export default function ApiReferencePage() {
         </code>
       </p>
       <p className="text-slate-500 text-sm mb-8">
-        All endpoints return JSON. Authenticated endpoints require a valid
-        API Key.
+        All endpoints return JSON. Authenticated endpoints require a valid API
+        Key.
       </p>
 
       <Endpoint
