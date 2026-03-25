@@ -4,6 +4,8 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
+    "update:deps": "pnpm update --recursive '@thinkneverland/pixie-dust' '@thinkneverland/pixie-dust-*'",
+    "predev": "pnpm update --recursive '@thinkneverland/pixie-dust' '@thinkneverland/pixie-dust-*'",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",

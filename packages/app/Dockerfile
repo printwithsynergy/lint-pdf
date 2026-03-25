@@ -17,21 +17,8 @@ RUN pnpm install --filter=@thinkneverland/lintpdf-app...
 # Bust Docker cache so pnpm update always runs on every deploy/redeploy.
 # noCache=true in railway.toml ensures this ARG gets a fresh value each time.
 ARG CACHEBUST
-# Always pull latest Pixie Dust packages
-RUN pnpm update --filter=@thinkneverland/lintpdf-app... \
-    "@thinkneverland/pixie-dust-auth" \
-    "@thinkneverland/pixie-dust-boilerplate" \
-    "@thinkneverland/pixie-dust-config" \
-    "@thinkneverland/pixie-dust-core" \
-    "@thinkneverland/pixie-dust-dashboard" \
-    "@thinkneverland/pixie-dust-database" \
-    "@thinkneverland/pixie-dust-email" \
-    "@thinkneverland/pixie-dust-fairy-ring" \
-    "@thinkneverland/pixie-dust-stripe-kit" \
-    "@thinkneverland/pixie-dust-theme-kit" \
-    "@thinkneverland/pixie-dust-tsconfig" \
-    "@thinkneverland/pixie-dust-ui" \
-    "@thinkneverland/pixie-dust-waitlist"
+# Always pull latest Pixie Dust packages (glob covers base + all suffixed packages)
+RUN pnpm update --recursive '@thinkneverland/pixie-dust' '@thinkneverland/pixie-dust-*'
 
 # Stage 2: Build
 FROM node:22-alpine AS builder
