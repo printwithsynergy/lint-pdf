@@ -12,10 +12,13 @@ COPY packages/stripe/package.json packages/stripe/package.json
 # Private @thinkneverland packages need auth
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
-# Install all deps, then immediately update Pixie Dust to latest in one layer.
-# The update rewrites pnpm-lock.yaml so the builder stage gets current versions.
-RUN pnpm install --filter=@thinkneverland/lintpdf-app... && \
-    pnpm update --filter=@thinkneverland/lintpdf-app... \
+# Install deps (cached when lockfile unchanged)
+RUN pnpm install --filter=@thinkneverland/lintpdf-app...
+# Bust Docker cache so pnpm update always runs on every deploy/redeploy.
+# noCache=true in railway.toml ensures this ARG gets a fresh value each time.
+ARG CACHEBUST
+# Always pull latest Pixie Dust packages
+RUN pnpm update --filter=@thinkneverland/lintpdf-app... \
     "@thinkneverland/pixie-dust-auth" \
     "@thinkneverland/pixie-dust-boilerplate" \
     "@thinkneverland/pixie-dust-config" \

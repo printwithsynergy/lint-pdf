@@ -2,6 +2,7 @@
 builder = "DOCKERFILE"
 dockerfilePath = "packages/app/Dockerfile"
 watchPatterns = ["packages/app/**"]
+noCache = true
 
 [deploy]
 numReplicas = 1
