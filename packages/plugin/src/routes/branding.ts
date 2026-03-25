@@ -27,6 +27,12 @@ function engineFetch(path: string, init?: RequestInit): Promise<Response> {
   return fetch(`${baseUrl}${path}`, { ...init, headers });
 }
 
+async function getTenantId(req: RouteRequest): Promise<string | null> {
+  const id = req.auth?.tenantId;
+  if (!id) return null;
+  return resolveEngineTenantId(id);
+}
+
 export function brandingRoutes(): RouteDefinition[] {
   return [
     {
@@ -36,7 +42,8 @@ export function brandingRoutes(): RouteDefinition[] {
       permission: "branding:manage",
       description: "List brand profiles for the tenant",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const tenantId = await resolveEngineTenantId(req.tenantId!);
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
         const resp = await engineFetch(
           `/api/v1/tenants/${tenantId}/brand-profiles`,
         );
@@ -53,7 +60,8 @@ export function brandingRoutes(): RouteDefinition[] {
       permission: "branding:manage",
       description: "Create a brand profile",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const tenantId = await resolveEngineTenantId(req.tenantId!);
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
         const resp = await engineFetch(
           `/api/v1/tenants/${tenantId}/brand-profiles`,
           { method: "POST", body: JSON.stringify(req.body) },
@@ -71,7 +79,8 @@ export function brandingRoutes(): RouteDefinition[] {
       permission: "branding:manage",
       description: "Get a brand profile",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const tenantId = await resolveEngineTenantId(req.tenantId!);
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
         const resp = await engineFetch(
           `/api/v1/tenants/${tenantId}/brand-profiles/${req.params.profileId}`,
         );
@@ -88,7 +97,8 @@ export function brandingRoutes(): RouteDefinition[] {
       permission: "branding:manage",
       description: "Update a brand profile",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const tenantId = await resolveEngineTenantId(req.tenantId!);
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
         const resp = await engineFetch(
           `/api/v1/tenants/${tenantId}/brand-profiles/${req.params.profileId}`,
           { method: "PUT", body: JSON.stringify(req.body) },
@@ -106,7 +116,8 @@ export function brandingRoutes(): RouteDefinition[] {
       permission: "branding:manage",
       description: "Delete a brand profile",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const tenantId = await resolveEngineTenantId(req.tenantId!);
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
         const resp = await engineFetch(
           `/api/v1/tenants/${tenantId}/brand-profiles/${req.params.profileId}`,
           { method: "DELETE" },
@@ -124,7 +135,8 @@ export function brandingRoutes(): RouteDefinition[] {
       permission: "branding:manage",
       description: "Set the default brand profile for the tenant",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const tenantId = await resolveEngineTenantId(req.tenantId!);
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
         const resp = await engineFetch(
           `/api/v1/tenants/${tenantId}/default-brand-profile`,
           { method: "PATCH", body: JSON.stringify(req.body) },

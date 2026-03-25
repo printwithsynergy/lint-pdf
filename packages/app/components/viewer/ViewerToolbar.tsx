@@ -96,7 +96,7 @@ export function ViewerToolbar({
           </button>
         )}
         <span className="mx-1 h-4 border-r" />
-        <
+        <a
           href={`/api/lintpdf/reports/${jobId}/html`}
           target="_blank"
           rel="noopener noreferrer"
