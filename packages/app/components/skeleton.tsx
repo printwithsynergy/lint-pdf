@@ -7,10 +7,7 @@
 
 function SkeletonLine({ width = "100%" }: { width?: string }) {
   return (
-    <div
-      className="h-4 animate-pulse rounded bg-muted"
-      style={{ width }}
-    />
+    <div className="h-4 animate-pulse rounded bg-muted" style={{ width }} />
   );
 }
 
@@ -47,10 +44,7 @@ export function SkeletonTable({
       </div>
       {/* Rows */}
       {Array.from({ length: rows }).map((_, r) => (
-        <div
-          key={r}
-          className="border-b last:border-0 px-4 py-3 flex gap-4"
-        >
+        <div key={r} className="border-b last:border-0 px-4 py-3 flex gap-4">
           {Array.from({ length: cols }).map((_, c) => (
             <div key={c} className="flex-1">
               <SkeletonLine width={c === 0 ? "80%" : "50%"} />

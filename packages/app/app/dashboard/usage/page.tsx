@@ -138,7 +138,8 @@ export default function UsagePage() {
             <div className="mt-3 space-y-4">
               {usage.in_overage && (
                 <p className="text-sm text-muted-foreground">
-                  You are currently in overage ({usage.overage_count.toLocaleString()} extra jobs).
+                  You are currently in overage (
+                  {usage.overage_count.toLocaleString()} extra jobs).
                 </p>
               )}
               <div className="flex items-center justify-between text-sm">

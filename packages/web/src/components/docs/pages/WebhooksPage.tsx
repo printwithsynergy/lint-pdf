@@ -6,9 +6,8 @@ export default function WebhooksPage() {
     <>
       <h2 className="text-2xl font-bold text-slate-900 mb-6">Webhooks</h2>
       <p className="text-slate-600 mb-6">
-        Webhooks are webhook callbacks. Register an endpoint and LintPDF
-        will POST event payloads when files finish processing. No polling
-        required.
+        Webhooks are webhook callbacks. Register an endpoint and LintPDF will
+        POST event payloads when files finish processing. No polling required.
       </p>
 
       <h3 className="font-semibold text-slate-900 mb-3">
@@ -22,9 +21,7 @@ export default function WebhooksPage() {
     "events": ["job.complete", "job.error"]
   }'`}</CodeBlock>
 
-      <h3 className="font-semibold text-slate-900 mt-8 mb-3">
-        Event Types
-      </h3>
+      <h3 className="font-semibold text-slate-900 mt-8 mb-3">Event Types</h3>
       <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
@@ -52,14 +49,8 @@ export default function WebhooksPage() {
                 "job.failed",
                 "Processing failed (corrupt file, timeout). Includes error message.",
               ],
-              [
-                "usage.warning",
-                "Account reached 80% of monthly file limit.",
-              ],
-              [
-                "usage.cap_reached",
-                "Overage spending cap has been reached.",
-              ],
+              ["usage.warning", "Account reached 80% of monthly file limit."],
+              ["usage.cap_reached", "Overage spending cap has been reached."],
             ].map(([event, desc]) => (
               <tr key={event} className="border-b border-slate-100">
                 <td className="py-2 px-3">

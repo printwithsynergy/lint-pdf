@@ -45,7 +45,7 @@ test.describe("Error Handling", () => {
 
     const res = await request.get(
       "/api/v1/jobs/00000000-0000-0000-0000-000000000000",
-      { headers: { Authorization: `Bearer ${apiKey}` } }
+      { headers: { Authorization: `Bearer ${apiKey}` } },
     );
     expect(res.status()).toBe(404);
   });
@@ -74,7 +74,7 @@ test.describe("Error Handling", () => {
           "Content-Type": "application/json",
         },
         data: { plan: "invalid_plan" },
-      }
+      },
     );
     // Either 404 (tenant not found) or 422 (invalid plan) - both are valid
     expect([404, 422]).toContain(res.status());

@@ -88,7 +88,9 @@ def _get_fasttext_model() -> Any:
         model_dir = os.path.expanduser("~/.fasttext")
         os.makedirs(model_dir, exist_ok=True)
         model_path = os.path.join(model_dir, "lid.176.ftz")
-        urllib.request.urlretrieve(url, model_path)  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
+        urllib.request.urlretrieve(
+            url, model_path
+        )  # nosemgrep: python.lang.security.audit.dynamic-urllib-use-detected.dynamic-urllib-use-detected
         _ft_state["model"] = fasttext.load_model(model_path)
         return _ft_state["model"]
     except Exception:

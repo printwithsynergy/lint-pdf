@@ -6,8 +6,8 @@ export default function ChecksPage() {
       </h2>
       <p className="text-slate-600 mb-6">
         LintPDF runs 500+ individual Checks across these categories. Each
-        finding in a Report references a Check ID, severity level, and
-        affected page.
+        finding in a Report references a Check ID, severity level, and affected
+        page.
       </p>
 
       {[
@@ -203,11 +203,9 @@ export default function ChecksPage() {
       ))}
 
       <p className="text-sm text-slate-500 mt-4">
-        This is a representative sample. The full suite includes 500+
-        checks. Use the{" "}
-        <code className="bg-slate-100 px-1 rounded">
-          GET /api/v1/rulesets
-        </code>{" "}
+        This is a representative sample. The full suite includes 500+ checks.
+        Use the{" "}
+        <code className="bg-slate-100 px-1 rounded">GET /api/v1/rulesets</code>{" "}
         endpoint to see which Checks are included in each Ruleset.
       </p>
     </>

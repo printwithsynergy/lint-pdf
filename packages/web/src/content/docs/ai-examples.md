@@ -58,8 +58,9 @@ const API_BASE = "https://api.lintpdf.com";
 const headers = { Authorization: "Bearer lpdf_your_api_key" };
 
 // Check credit balance first
-const credits = await fetch(`${API_BASE}/api/v1/ai/credits`, { headers })
-  .then((r) => r.json());
+const credits = await fetch(`${API_BASE}/api/v1/ai/credits`, { headers }).then(
+  (r) => r.json(),
+);
 
 console.log("Credit balance:", credits.balance);
 
@@ -88,7 +89,7 @@ const report = await fetch(`${API_BASE}/api/v1/reports/${job.id}`, {
 
 // Filter by regulatory findings
 const ghsFindings = report.findings.filter(
-  (f) => f.category === "regulatory.ghs"
+  (f) => f.category === "regulatory.ghs",
 );
 
 console.log("GHS findings:", ghsFindings.length);

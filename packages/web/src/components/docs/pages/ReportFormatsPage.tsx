@@ -4,9 +4,7 @@ import { Endpoint } from "@/components/docs/Endpoint";
 export default function ReportFormatsPage() {
   return (
     <>
-      <h2 className="text-2xl font-bold text-slate-900 mb-6">
-        Report Formats
-      </h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-6">Report Formats</h2>
       <p className="text-slate-600 mb-6">
         Reports can be retrieved in three formats. Use the{" "}
         <code className="bg-slate-100 px-1 rounded text-sm font-mono">
@@ -48,15 +46,14 @@ export default function ReportFormatsPage() {
       <p className="text-slate-600 mb-4">
         PDF reports are white-labeled using your White Label configuration.
         Scale and Enterprise plans can upload a logo, set brand colors, and
-        customize footer text. Reports include a summary page, detailed
-        findings grouped by severity, and page-level annotations.
+        customize footer text. Reports include a summary page, detailed findings
+        grouped by severity, and page-level annotations.
       </p>
 
       <h3 className="font-semibold text-slate-900 mt-8 mb-3">XML Format</h3>
       <p className="text-slate-600 mb-4">
         XML reports follow the same structure as JSON but use XML elements.
-        Useful for legacy integrations and enterprise systems that consume
-        XML.
+        Useful for legacy integrations and enterprise systems that consume XML.
       </p>
       <CodeBlock>{`<?xml version="1.0" encoding="UTF-8"?>
 <report id="f47ac10b-..." status="complete" verdict="error">
