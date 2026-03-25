@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import Job, JobFinding, ReportToken, Tenant
+from lintpdf.api.models import BrandProfile, BrandProfileType, Job, JobFinding, ReportToken, Tenant
 
 router = APIRouter(tags=["reports"])
 
@@ -56,6 +56,84 @@ class ReportListItem(BaseModel):
 
 class ReportListResponse(BaseModel):
     reports: list[ReportListItem]
+
+
+# --- Branding resolution ---
+
+
+def _resolve_branding(
+    tenant: Tenant,
+    override: object | None,
+    whitelabel_enabled: bool,
+    db: Session,
+) -> "BrandingContext":
+    """Resolve branding using the hierarchy: per-call > brand profile > tenant defaults > LintPDF.
+
+    Profile types:
+    - CUSTOM: use the profile's brand fields
+    - LINTPDF: use LintPDF default branding
+    - NONE: blank everything (blind/neutral mode)
+    """
+    from lintpdf.reports.service import BrandingContext
+
+    # Start with LintPDF defaults
+    branding = BrandingContext()
+
+    # If whitelabel enabled, check for a default brand profile
+    if whitelabel_enabled and tenant.default_brand_profile_id:
+        profile = (
+            db.query(BrandProfile)
+            .filter(
+                BrandProfile.id == tenant.default_brand_profile_id,
+                BrandProfile.tenant_id == tenant.id,
+            )
+            .first()
+        )
+        if profile:
+            if profile.profile_type == BrandProfileType.NONE:
+                # Blind mode: generic "Preflight Report" with no branding
+                branding = BrandingContext(
+                    name="",
+                    logo_url=None,
+                    primary_color="#6b7280",
+                    accent_color="#9ca3af",
+                    footer_text=None,
+                )
+            elif profile.profile_type == BrandProfileType.CUSTOM:
+                branding = BrandingContext(
+                    name=profile.brand_name or "LintPDF",
+                    logo_url=profile.logo_url,
+                    primary_color=profile.primary_color or "#1a3a7a",
+                    accent_color=profile.accent_color or "#2563eb",
+                    footer_text=None if profile.hide_footer else (profile.footer_text or "Powered by LintPDF"),
+                )
+            # LINTPDF type: keep defaults (already set)
+
+    elif whitelabel_enabled:
+        # No brand profile but whitelabel enabled — use legacy tenant brand fields
+        branding = BrandingContext(
+            name=tenant.brand_name or "LintPDF",
+            logo_url=tenant.brand_logo_url,
+            primary_color=tenant.brand_primary_color or "#1a3a7a",
+            accent_color=tenant.brand_accent_color or "#2563eb",
+            footer_text=None if tenant.brand_hide_footer else "Powered by LintPDF",
+        )
+
+    # Per-call overrides (highest priority)
+    if override:
+        obj = override if isinstance(override, dict) else (override.__dict__ if hasattr(override, "__dict__") else {})
+        if hasattr(override, "name") and override.name:  # type: ignore[union-attr]
+            branding.name = override.name  # type: ignore[union-attr]
+        if hasattr(override, "logo_url") and override.logo_url:  # type: ignore[union-attr]
+            branding.logo_url = override.logo_url  # type: ignore[union-attr]
+        if hasattr(override, "primary_color") and override.primary_color:  # type: ignore[union-attr]
+            branding.primary_color = override.primary_color  # type: ignore[union-attr]
+        if hasattr(override, "accent_color") and override.accent_color:  # type: ignore[union-attr]
+            branding.accent_color = override.accent_color  # type: ignore[union-attr]
+        if hasattr(override, "hide_footer") and override.hide_footer is not None:  # type: ignore[union-attr]
+            branding.footer_text = None if override.hide_footer else "Powered by LintPDF"  # type: ignore[union-attr]
+
+    return branding
 
 
 # --- Authenticated endpoints ---
@@ -126,28 +204,8 @@ async def generate_reports(  # skipcq: PY-R1000
     storage = get_storage()
     service = ReportService(storage, db)
 
-    # Build branding context — only apply tenant brand fields if whitelabel is enabled
-    if entitlements.whitelabel_enabled:
-        branding = BrandingContext(
-            name=tenant.brand_name or "LintPDF",
-            logo_url=tenant.brand_logo_url,
-            primary_color=tenant.brand_primary_color or "#1a3a7a",
-            accent_color=tenant.brand_accent_color or "#2563eb",
-            footer_text=None if tenant.brand_hide_footer else "Powered by LintPDF",
-        )
-    else:
-        branding = BrandingContext()
-    if body.branding:
-        if body.branding.name:
-            branding.name = body.branding.name
-        if body.branding.logo_url:
-            branding.logo_url = body.branding.logo_url
-        if body.branding.primary_color:
-            branding.primary_color = body.branding.primary_color
-        if body.branding.accent_color:
-            branding.accent_color = body.branding.accent_color
-        if body.branding.hide_footer is not None:
-            branding.footer_text = None if body.branding.hide_footer else "Powered by LintPDF"
+    # Build branding context — resolve from brand profile hierarchy
+    branding = _resolve_branding(tenant, body.branding, entitlements.whitelabel_enabled, db)
 
     # Determine expiry
     expiry_days = body.expiry_days

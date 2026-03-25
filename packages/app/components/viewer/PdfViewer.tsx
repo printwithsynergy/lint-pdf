@@ -9,6 +9,10 @@ import { ViewerToolbar } from "./ViewerToolbar";
 import { SeparationPanel } from "./SeparationPanel";
 import { SeparationCanvas } from "./SeparationCanvas";
 import { TACHeatmapOverlay } from "./TACHeatmapOverlay";
+import { AnnotationCanvas } from "./AnnotationCanvas";
+import { AnnotationToolbar } from "./AnnotationToolbar";
+import type { AnnotationTool } from "./AnnotationToolbar";
+import { AnnotationThread } from "./AnnotationThread";
 
 interface PdfViewerProps {
   jobId: string;
@@ -30,6 +34,13 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
   );
   const [allChannelNames, setAllChannelNames] = useState<string[]>([]);
   const [showTacHeatmap, setShowTacHeatmap] = useState(false);
+  const [annotationMode, setAnnotationMode] = useState(false);
+  const [annotationTool, setAnnotationTool] = useState<AnnotationTool>("pointer");
+  const [strokeColor, setStrokeColor] = useState("#ef4444");
+  const [annotationSaving, setAnnotationSaving] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const annotationCanvasRef = useRef<HTMLCanvasElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Load pages + findings on mount
@@ -98,6 +109,23 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
     [allChannelNames],
   );
 
+  const handleAnnotationUndo = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const el = annotationCanvasRef.current as any;
+    el?.__annotationUndo?.();
+  }, []);
+
+  const handleAnnotationRedo = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const el = annotationCanvasRef.current as any;
+    el?.__annotationRedo?.();
+  }, []);
+
+  const handleHistoryChange = useCallback((undo: boolean, redo: boolean) => {
+    setCanUndo(undo);
+    setCanRedo(redo);
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -162,7 +190,26 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         onToggleSeparationMode={() => setSeparationMode((v) => !v)}
         showTacHeatmap={showTacHeatmap}
         onToggleTacHeatmap={() => setShowTacHeatmap((v) => !v)}
+        annotationMode={annotationMode}
+        onToggleAnnotationMode={() => setAnnotationMode((v) => !v)}
       />
+
+      {/* Annotation toolbar */}
+      {annotationMode && (
+        <div className="flex justify-center border-b bg-muted/30 px-4 py-1">
+          <AnnotationToolbar
+            activeTool={annotationTool}
+            onToolChange={setAnnotationTool}
+            strokeColor={strokeColor}
+            onStrokeColorChange={setStrokeColor}
+            onUndo={handleAnnotationUndo}
+            onRedo={handleAnnotationRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            saving={annotationSaving}
+          />
+        </div>
+      )}
 
       {/* Main content: thumbnails | canvas | findings */}
       <div className="flex flex-1 overflow-hidden">
@@ -208,6 +255,22 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
                     onFindingClick={handleSelectFinding}
                   />
                 )}
+                {annotationMode && currentPageInfo && (
+                  <AnnotationCanvas
+                    jobId={jobId}
+                    pageNum={currentPage}
+                    width={Math.round(
+                      currentPageInfo.width_pts * (zoom / 100),
+                    )}
+                    height={Math.round(
+                      currentPageInfo.height_pts * (zoom / 100),
+                    )}
+                    activeTool={annotationTool}
+                    strokeColor={strokeColor}
+                    onSavingChange={setAnnotationSaving}
+                    onHistoryChange={handleHistoryChange}
+                  />
+                )}
                 {showTacHeatmap && currentPageInfo && (
                   <TACHeatmapOverlay
                     jobId={jobId}
@@ -225,9 +288,14 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
           </div>
         </div>
 
-        {/* Right: Findings panel or Separation panel */}
-        <div className="w-80 shrink-0 border-l bg-background overflow-hidden">
-          {separationMode ? (
+        {/* Right: Findings panel, Separation panel, or Annotation thread */}
+        <div className="w-80 shrink-0 border-l bg-background overflow-hidden overflow-y-auto">
+          {annotationMode ? (
+            <AnnotationThread
+              jobId={jobId}
+              onJumpToPage={setCurrentPage}
+            />
+          ) : separationMode ? (
             <SeparationPanel
               jobId={jobId}
               enabledChannels={enabledChannels}

@@ -13,6 +13,8 @@ interface ViewerToolbarProps {
   onToggleSeparationMode?: () => void;
   showTacHeatmap?: boolean;
   onToggleTacHeatmap?: () => void;
+  annotationMode?: boolean;
+  onToggleAnnotationMode?: () => void;
 }
 
 export function ViewerToolbar({
@@ -26,6 +28,8 @@ export function ViewerToolbar({
   onToggleSeparationMode,
   showTacHeatmap = false,
   onToggleTacHeatmap,
+  annotationMode = false,
+  onToggleAnnotationMode,
 }: ViewerToolbarProps) {
   return (
     <div className="flex items-center justify-between border-b bg-background px-4 py-2">
@@ -93,6 +97,19 @@ export function ViewerToolbar({
             title="Toggle TAC heatmap overlay"
           >
             TAC
+          </button>
+        )}
+        {onToggleAnnotationMode && (
+          <button
+            onClick={onToggleAnnotationMode}
+            className={`rounded border px-3 py-1 text-sm ${
+              annotationMode
+                ? "border-violet-500 bg-violet-500/10 text-violet-600"
+                : "hover:bg-muted"
+            }`}
+            title="Toggle annotation mode"
+          >
+            Annotate
           </button>
         )}
         <span className="mx-1 h-4 border-r" />

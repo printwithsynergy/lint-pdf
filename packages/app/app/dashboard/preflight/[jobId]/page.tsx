@@ -5,6 +5,29 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { SkeletonDashboard } from "@/components/skeleton";
 
+interface ReportView {
+  id: string;
+  viewerEmail: string | null;
+  viewerName: string | null;
+  ipAddress: string | null;
+  viewedAt: string;
+}
+
+function maskIp(ip: string | null): string {
+  if (!ip) return "-";
+  // Mask last octet for IPv4
+  const parts = ip.split(".");
+  if (parts.length === 4) {
+    return `${parts[0]}.${parts[1]}.${parts[2]}.***`;
+  }
+  // For IPv6 or other formats, mask last segment
+  const segments = ip.split(":");
+  if (segments.length > 1) {
+    return segments.slice(0, -1).join(":") + ":****";
+  }
+  return ip;
+}
+
 interface Finding {
   inspection_id: string;
   severity: string;
@@ -94,6 +117,7 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [views, setViews] = useState<ReportView[]>([]);
 
   const fetchJob = useCallback(async () => {
     try {
@@ -108,9 +132,22 @@ export default function JobDetailPage() {
     }
   }, [jobId]);
 
+  const fetchViews = useCallback(async () => {
+    try {
+      const resp = await fetch(`/api/lintpdf/viewer/${jobId}/views`);
+      if (resp.ok) {
+        const data = await resp.json();
+        setViews(data);
+      }
+    } catch {
+      // Non-critical — silently ignore
+    }
+  }, [jobId]);
+
   useEffect(() => {
     fetchJob();
-  }, [fetchJob]);
+    fetchViews();
+  }, [fetchJob, fetchViews]);
 
   if (loading) {
     return <SkeletonDashboard type="detail" />;
@@ -286,6 +323,43 @@ export default function JobDetailPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Views section */}
+      {views.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-lg font-semibold">Views ({views.length})</h2>
+          <div className="mt-3 overflow-hidden rounded-lg border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="px-3 py-2 text-left font-medium">Email</th>
+                  <th className="px-3 py-2 text-left font-medium">Name</th>
+                  <th className="px-3 py-2 text-left font-medium">Viewed At</th>
+                  <th className="px-3 py-2 text-left font-medium">IP Address</th>
+                </tr>
+              </thead>
+              <tbody>
+                {views.map((view) => (
+                  <tr key={view.id} className="border-b last:border-0">
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {view.viewerEmail ?? "-"}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {view.viewerName ?? "-"}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">
+                      {new Date(view.viewedAt).toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground font-mono text-xs">
+                      {maskIp(view.ipAddress)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </main>

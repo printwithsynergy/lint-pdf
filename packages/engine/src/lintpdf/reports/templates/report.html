@@ -4,8 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>
-      {% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %}
-      Preflight Report
+      {% if brand and brand.name %}{{ brand.name }} Preflight Report{% else %}Preflight Report{% endif %}
     </title>
     <style>
       :root {
@@ -53,14 +52,14 @@
   </head>
   <body>
     <div class="brand-header">
-      {% if brand and brand.logo_url %}<img
+      {% if brand and brand.name and brand.logo_url %}<img
         src="{{ brand.logo_url }}"
         alt="{{ brand.name }}"
         class="brand-logo"
       />{% endif %}
       <h1>
-        {% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif
-        %} Preflight Report <span class="badge">{{ pass_fail }}</span>
+        {% if brand and brand.name %}{{ brand.name }} Preflight Report{% else %}Preflight Report{% endif %}
+        <span class="badge">{{ pass_fail }}</span>
       </h1>
     </div>
     <p>

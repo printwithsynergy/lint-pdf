@@ -218,3 +218,43 @@ enum WaitlistStatus {
   PROMOTED
   DECLINED
 }
+
+// ============================================
+// ANNOTATIONS
+// ============================================
+
+model Annotation {
+  id          String   @id @default(cuid())
+  jobId       String
+  tenantId    String
+  pageNum     Int
+  authorId    String?
+  authorEmail String
+  authorName  String?
+  fabricJson  Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([jobId, pageNum])
+  @@index([tenantId])
+}
+
+// ============================================
+// REPORT VIEWS
+// ============================================
+
+model ReportView {
+  id          String   @id @default(cuid())
+  jobId       String
+  tenantId    String
+  reportToken String
+  viewerEmail String?
+  viewerName  String?
+  ipAddress   String?
+  userAgent   String?
+  viewedAt    DateTime @default(now())
+
+  @@index([jobId])
+  @@index([tenantId, viewedAt])
+  @@index([reportToken])
+}

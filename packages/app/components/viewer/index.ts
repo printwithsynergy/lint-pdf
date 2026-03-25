@@ -7,3 +7,6 @@ export { ZoomControls } from "./ZoomControls";
 export { SeparationPanel } from "./SeparationPanel";
 export { SeparationCanvas } from "./SeparationCanvas";
 export { TACHeatmapOverlay } from "./TACHeatmapOverlay";
+export { AnnotationToolbar } from "./AnnotationToolbar";
+export { AnnotationCanvas } from "./AnnotationCanvas";
+export { AnnotationThread } from "./AnnotationThread";

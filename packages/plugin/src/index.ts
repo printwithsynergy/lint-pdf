@@ -19,6 +19,7 @@ import { aiConfigRoutes } from "./routes/ai-config";
 import { colorConfigRoutes } from "./routes/color-config";
 import { viewerRoutes } from "./routes/viewer";
 import { brandingRoutes } from "./routes/branding";
+import { annotationRoutes } from "./routes/annotations";
 
 // ── Public exports ──────────────────────────────────────────
 
@@ -141,6 +142,12 @@ export const lintpdfPlugin: PixieDustPlugin = {
     ]);
     ctx.addPermission("ruleset:manage", ["ADMIN", "OWNER"]);
     ctx.addPermission("branding:manage", ["ADMIN", "OWNER"]);
+    ctx.addPermission("annotation:create", [
+      "ADMIN",
+      "OWNER",
+      "MEMBER",
+      "OPERATOR",
+    ]);
 
     // ── Navigation ──
     ctx.addNavItem({
@@ -184,6 +191,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
 
     // ── Public paths (HMAC-authenticated, not session-authenticated) ──
     ctx.addPublicPath("/api/lintpdf/webhooks");
+    ctx.addPublicPath("/api/lintpdf/viewer/public");
 
     // ── Routes ──
     ctx.addRoutes("/api/lintpdf", [
@@ -192,8 +200,9 @@ export const lintpdfPlugin: PixieDustPlugin = {
       ...profileRoutes(),
       ...aiConfigRoutes(),
       ...colorConfigRoutes(),
-      ...viewerRoutes(),
+      ...viewerRoutes(ctx.services.db as Parameters<typeof viewerRoutes>[0]),
       ...brandingRoutes(),
+      ...annotationRoutes(ctx.services.db as Parameters<typeof annotationRoutes>[0]),
     ]);
 
     // ── Hooks ──

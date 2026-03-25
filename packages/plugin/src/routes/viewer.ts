@@ -1,5 +1,6 @@
 /**
  * Viewer proxy routes — forward page tile and info requests to the LintPDF engine.
+ * Also includes public viewer routes (no auth) and view tracking.
  */
 
 import type {
@@ -11,6 +12,13 @@ import { resolveEngineTenantId } from "../index";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
+
+interface ViewerDb {
+  reportView: {
+    create: (args: Record<string, unknown>) => Promise<unknown>;
+    findMany: (args: Record<string, unknown>) => Promise<unknown[]>;
+  };
+}
 
 function engineUrl(path: string): string {
   const baseUrl = (
@@ -28,8 +36,34 @@ function authHeaders(): Record<string, string> {
   return headers;
 }
 
-export function viewerRoutes(): RouteDefinition[] {
+/**
+ * Validate a report token by proxying to the engine's report token endpoint.
+ * Returns job data on success, or null on failure.
+ */
+async function validateToken(
+  token: string,
+): Promise<{ jobId: string; tenantId: string; fileName: string; emailRequired: boolean } | null> {
+  try {
+    const resp = await fetch(
+      engineUrl(`/api/v1/reports/tokens/${token}`),
+      { headers: authHeaders() },
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return {
+      jobId: data.job_id ?? data.jobId,
+      tenantId: data.tenant_id ?? data.tenantId ?? "",
+      fileName: data.file_name ?? data.fileName ?? "Untitled",
+      emailRequired: data.email_required ?? data.emailRequired ?? true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
   return [
+    // ── Authenticated viewer proxy routes ──────────────────
     {
       method: "GET" as HttpMethod,
       path: "/viewer/:jobId/pages",
@@ -168,6 +202,137 @@ export function viewerRoutes(): RouteDefinition[] {
             "Cache-Control": "public, max-age=86400",
           },
         } as RouteResponse;
+      }) as RouteHandler,
+    },
+
+    // ── Public viewer routes (no auth) ─────────────────────
+
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/public/:token/job",
+      auth: false,
+      description: "Get job data for public viewing via report token",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const tokenData = await validateToken(req.params.token);
+        if (!tokenData) {
+          return { status: 404, body: { error: "Invalid or expired token" } };
+        }
+        return {
+          status: 200,
+          body: {
+            jobId: tokenData.jobId,
+            tenantId: tokenData.tenantId,
+            fileName: tokenData.fileName,
+            emailRequired: tokenData.emailRequired,
+          },
+        };
+      }) as RouteHandler,
+    },
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/public/:token/identify",
+      auth: false,
+      description: "Identify viewer for public report access and record view",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const tokenData = await validateToken(req.params.token);
+        if (!tokenData) {
+          return { status: 404, body: { error: "Invalid or expired token" } };
+        }
+
+        const { email, name } = req.body as { email?: string; name?: string };
+        if (tokenData.emailRequired && !email) {
+          return { status: 400, body: { error: "Email is required" } };
+        }
+
+        // Record the view in Prisma
+        if (db) {
+          try {
+            await db.reportView.create({
+              data: {
+                jobId: tokenData.jobId,
+                tenantId: tokenData.tenantId,
+                reportToken: req.params.token,
+                viewerEmail: email ?? null,
+                viewerName: name ?? null,
+                ipAddress: req.headers?.["x-forwarded-for"] ?? req.headers?.["x-real-ip"] ?? null,
+                userAgent: req.headers?.["user-agent"] ?? null,
+              },
+            });
+          } catch {
+            // Non-fatal — don't block viewer access if tracking fails
+          }
+        }
+
+        return {
+          status: 200,
+          body: {
+            success: true,
+            jobId: tokenData.jobId,
+          },
+        };
+      }) as RouteHandler,
+    },
+
+    // ── View tracking routes (auth required) ───────────────
+
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/:jobId/track-view",
+      auth: true,
+      permission: "preflight:view",
+      description: "Record an authenticated view of a job report",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const tenantId = req.auth?.tenantId;
+        if (!tenantId) {
+          return { status: 400, body: { error: "Missing tenant context" } };
+        }
+
+        if (db) {
+          try {
+            await db.reportView.create({
+              data: {
+                jobId: req.params.jobId,
+                tenantId,
+                reportToken: "",
+                viewerEmail: req.auth?.email ?? null,
+                viewerName: req.auth?.name ?? null,
+                ipAddress: req.headers?.["x-forwarded-for"] ?? req.headers?.["x-real-ip"] ?? null,
+                userAgent: req.headers?.["user-agent"] ?? null,
+              },
+            });
+          } catch {
+            return { status: 500, body: { error: "Failed to record view" } };
+          }
+        }
+
+        return { status: 200, body: { success: true } };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/views",
+      auth: true,
+      permission: "preflight:view",
+      description: "List all views for a job",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const tenantId = req.auth?.tenantId;
+        if (!tenantId) {
+          return { status: 400, body: { error: "Missing tenant context" } };
+        }
+
+        if (!db) {
+          return { status: 200, body: [] };
+        }
+
+        try {
+          const views = await db.reportView.findMany({
+            where: { jobId: req.params.jobId, tenantId },
+            orderBy: { viewedAt: "desc" },
+          });
+          return { status: 200, body: views };
+        } catch {
+          return { status: 500, body: { error: "Failed to fetch views" } };
+        }
       }) as RouteHandler,
     },
   ];

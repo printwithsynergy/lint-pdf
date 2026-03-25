@@ -1,0 +1,116 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+
+interface AnnotationEntry {
+  id: string;
+  jobId: string;
+  pageNum: number;
+  authorEmail: string;
+  authorName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface AnnotationThreadProps {
+  jobId: string;
+  currentUserEmail?: string;
+  onJumpToPage?: (pageNum: number) => void;
+}
+
+export function AnnotationThread({
+  jobId,
+  currentUserEmail,
+  onJumpToPage,
+}: AnnotationThreadProps) {
+  const [annotations, setAnnotations] = useState<AnnotationEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    try {
+      const resp = await fetch(`/api/lintpdf/annotations/${jobId}`);
+      if (resp.ok) {
+        const data = await resp.json();
+        setAnnotations(data);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false);
+    }
+  }, [jobId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleDelete = useCallback(
+    async (annotationId: string) => {
+      try {
+        const resp = await fetch(
+          `/api/lintpdf/annotations/${jobId}/${annotationId}`,
+          { method: "DELETE" },
+        );
+        if (resp.ok || resp.status === 204) {
+          setAnnotations((prev) => prev.filter((a) => a.id !== annotationId));
+        }
+      } catch {
+        // ignore
+      }
+    },
+    [jobId],
+  );
+
+  if (loading) {
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        Loading annotations...
+      </div>
+    );
+  }
+
+  if (annotations.length === 0) {
+    return (
+      <div className="p-4 text-sm text-muted-foreground">
+        No annotations yet. Toggle annotation mode to start marking up the PDF.
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2 p-3">
+      <h3 className="text-sm font-semibold">Annotations</h3>
+      {annotations.map((a) => (
+        <div
+          key={a.id}
+          className="flex items-start justify-between rounded border p-2 text-xs"
+        >
+          <div className="flex-1">
+            <div className="font-medium">
+              {a.authorName ?? a.authorEmail}
+            </div>
+            <div className="text-muted-foreground">
+              Page {a.pageNum} &middot;{" "}
+              {new Date(a.updatedAt).toLocaleString()}
+            </div>
+            <button
+              onClick={() => onJumpToPage?.(a.pageNum)}
+              className="mt-1 text-primary underline hover:no-underline"
+            >
+              Jump to page
+            </button>
+          </div>
+          {currentUserEmail && a.authorEmail === currentUserEmail && (
+            <button
+              onClick={() => handleDelete(a.id)}
+              className="ml-2 shrink-0 rounded px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/10"
+              title="Delete annotation"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
