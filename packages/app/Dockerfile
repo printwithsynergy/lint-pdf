@@ -14,6 +14,8 @@ ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
 RUN pnpm install --filter=@thinkneverland/lintpdf-app...
 # Always pull the latest Pixie Dust packages (lockfile pins old versions)
+# DEPLOY_TIMESTAMP busts the Docker layer cache so this runs every deploy
+ARG DEPLOY_TIMESTAMP=0
 RUN pnpm update --filter=@thinkneverland/lintpdf-app... \
     "@thinkneverland/pixie-dust-auth" \
     "@thinkneverland/pixie-dust-boilerplate" \
