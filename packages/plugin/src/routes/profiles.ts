@@ -34,7 +34,7 @@ export function profileRoutes(): RouteDefinition[] {
       path: "/profiles",
       auth: true,
       permission: "preflight:view",
-      description: "List available preflight profiles (flight plans)",
+      description: "List available preflight profiles (rulesets)",
       handler: (async (): Promise<RouteResponse> => {
         const client = getClient();
         if (!client) {
@@ -66,7 +66,7 @@ export function profileRoutes(): RouteDefinition[] {
       method: "POST" as HttpMethod,
       path: "/profiles",
       auth: true,
-      permission: "flight-plan:manage",
+      permission: "ruleset:manage",
       description: "Create a custom preflight profile",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
         const resp = await engineFetch("/api/v1/profiles", {
@@ -85,7 +85,7 @@ export function profileRoutes(): RouteDefinition[] {
       method: "DELETE" as HttpMethod,
       path: "/profiles/:profileId",
       auth: true,
-      permission: "flight-plan:manage",
+      permission: "ruleset:manage",
       description: "Delete a custom preflight profile",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
         const resp = await engineFetch(

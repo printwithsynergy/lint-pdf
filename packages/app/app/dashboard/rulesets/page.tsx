@@ -18,7 +18,7 @@ interface ProfileDetail extends ProfileSummary {
   thresholds: Record<string, unknown>;
 }
 
-export default function FlightPlansPage() {
+export default function RulesetsPage() {
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -159,7 +159,7 @@ export default function FlightPlansPage() {
     <main className="p-8 max-w-5xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Flight Plans</h1>
+          <h1 className="font-display text-2xl font-bold">Rulesets</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Preflight profiles that define which checks run and with what
             thresholds.
@@ -176,7 +176,7 @@ export default function FlightPlansPage() {
           }}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          {showCreate ? "Cancel" : "New Flight Plan"}
+          {showCreate ? "Cancel" : "New Ruleset"}
         </button>
       </div>
 
@@ -195,7 +195,7 @@ export default function FlightPlansPage() {
           <h2 className="text-lg font-semibold">
             {newProfileId.endsWith("-custom")
               ? "Clone Profile"
-              : "New Flight Plan"}
+              : "New Ruleset"}
           </h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
@@ -360,7 +360,7 @@ export default function FlightPlansPage() {
             disabled={creating || !newProfileId || !newName}
             className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
-            {creating ? "Creating..." : "Create Flight Plan"}
+            {creating ? "Creating..." : "Create Ruleset"}
           </button>
         </div>
       )}
@@ -418,7 +418,7 @@ export default function FlightPlansPage() {
       {/* Custom profiles */}
       {custom.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-lg font-semibold">Custom Flight Plans</h2>
+          <h2 className="text-lg font-semibold">Custom Rulesets</h2>
           <div className="mt-2 space-y-2">
             {custom.map((p) => (
               <div
@@ -465,7 +465,7 @@ export default function FlightPlansPage() {
 
       {/* Built-in profiles */}
       <div className="mt-6">
-        <h2 className="text-lg font-semibold">Built-in Flight Plans</h2>
+        <h2 className="text-lg font-semibold">Built-in Rulesets</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Pre-configured profiles provided by LintPDF. Clone to customize.
         </p>

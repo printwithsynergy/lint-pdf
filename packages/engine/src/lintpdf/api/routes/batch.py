@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/v1/batch", tags=["batch"])
 class BatchSubmitRequest(BaseModel):
     """Request to submit a batch of PDFs for preflight."""
 
-    profile_id: str = Field(description="Voyage Plan profile ID to use for all jobs.")
+    profile_id: str = Field(description="Ruleset profile ID to use for all jobs.")
     file_keys: list[str] = Field(description="List of S3 file keys to process.")
     webhook_url: str | None = Field(default=None, description="Webhook URL for batch completion.")
     priority: bool = Field(default=False, description="Use priority processing queue.")

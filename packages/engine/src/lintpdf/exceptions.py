@@ -84,9 +84,6 @@ class PreflightProfileValidationError(LintPDFError):
     """
 
 
-# Backwards compatibility alias
-VoyagePlanValidationError = PreflightProfileValidationError
-
 
 class RuleRegistrationError(LintPDFError):
     """Rule registration failed.

@@ -13,6 +13,7 @@ import { prisma } from "@thinkneverland/pixie-dust-database";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getClientInfo } from "@/lib/auth-helpers";
 
 const verifySchema = z.object({
   email: z.string().email(),
@@ -35,16 +36,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: result.error }, { status: 400 });
     }
 
-    const ipAddress =
-      req.headers.get("x-forwarded-for") ??
-      req.headers.get("x-real-ip") ??
-      undefined;
-    const userAgent = req.headers.get("user-agent") ?? undefined;
-
-    const session = await createSession(prisma, result.userId, {
-      ipAddress,
-      userAgent,
-    });
+    const session = await createSession(prisma, result.userId, getClientInfo(req));
 
     const cookieStore = await cookies();
     cookieStore.set(getCookieName(), session.token, {

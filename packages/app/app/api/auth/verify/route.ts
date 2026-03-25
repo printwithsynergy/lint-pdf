@@ -13,6 +13,7 @@ import {
 import { prisma } from "@thinkneverland/pixie-dust-database";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { getClientInfo } from "@/lib/auth-helpers";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -32,16 +33,7 @@ export async function GET(req: Request) {
     );
   }
 
-  const ipAddress =
-    req.headers.get("x-forwarded-for") ??
-    req.headers.get("x-real-ip") ??
-    undefined;
-  const userAgent = req.headers.get("user-agent") ?? undefined;
-
-  const session = await createSession(prisma, result.userId, {
-    ipAddress,
-    userAgent,
-  });
+  const session = await createSession(prisma, result.userId, getClientInfo(req));
 
   const cookieStore = await cookies();
   cookieStore.set(getCookieName(), session.token, {

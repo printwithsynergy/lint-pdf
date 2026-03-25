@@ -1,4 +1,4 @@
-"""AI preset Voyage Plans — pre-built bundles of AI features."""
+"""AI preset rulesets — pre-built bundles of AI features."""
 
 from __future__ import annotations
 

@@ -12,6 +12,7 @@ import { prisma } from "@thinkneverland/pixie-dust-database";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getClientInfo } from "@/lib/auth-helpers";
 
 const requestSchema = z.object({
   email: z.string().email(),
@@ -62,12 +63,11 @@ export async function POST(req: Request) {
       });
     }
 
-    const ipAddress = req.headers.get("x-forwarded-for") ?? undefined;
-    const userAgent = "MCP-Backdoor-Test";
+    const { ipAddress } = getClientInfo(req);
 
     const session = await createSession(prisma, user.id, {
       ipAddress,
-      userAgent,
+      userAgent: "MCP-Backdoor-Test",
     });
 
     const cookieStore = await cookies();

@@ -88,7 +88,7 @@ test.describe.serial("Workflow: Onboarding & Profiles", () => {
     tenantApiKey = starterTenant.api_key;
   });
 
-  test("5. Tenant lists available flight plan profiles", async ({
+  test("5. Tenant lists available ruleset profiles", async ({
     request,
   }) => {
     test.skip(!tenantApiKey, "No tenant API key");

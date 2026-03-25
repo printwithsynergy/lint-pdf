@@ -70,15 +70,15 @@ describe("lintpdfPlugin", () => {
       "OPERATOR",
       "VIEWER",
     ]);
-    expect(ctx.addPermission).toHaveBeenCalledWith("flight-plan:manage", [
+    expect(ctx.addPermission).toHaveBeenCalledWith("ruleset:manage", [
       "ADMIN",
       "OWNER",
     ]);
 
-    // 2 nav items (Preflight + Flight Plans — usage/waitlist moved to sub-plugins)
+    // 2 nav items (Preflight + Rulesets — usage/waitlist moved to sub-plugins)
     expect(ctx.addNavItem).toHaveBeenCalledTimes(2);
 
-    // 3 pages (Preflight list, Job detail, Flight Plans)
+    // 3 pages (Preflight list, Job detail, Rulesets)
     expect(ctx.addPage).toHaveBeenCalledTimes(3);
 
     // 1 addRoutes call

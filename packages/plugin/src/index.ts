@@ -1,7 +1,7 @@
 /**
  * LintPDF PDF Preflight — Fairy Ring plugin for Pixie Dust.
  *
- * Core plugin: preflight job management, flight plans, and webhook ingestion.
+ * Core plugin: preflight job management, rulesets, and webhook ingestion.
  * Sub-plugins handle usage, waitlist, billing, reports, team, account, and site admin.
  */
 
@@ -137,7 +137,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       "OPERATOR",
       "VIEWER",
     ]);
-    ctx.addPermission("flight-plan:manage", ["ADMIN", "OWNER"]);
+    ctx.addPermission("ruleset:manage", ["ADMIN", "OWNER"]);
 
     // ── Navigation ──
     ctx.addNavItem({
@@ -149,12 +149,12 @@ export const lintpdfPlugin: PixieDustPlugin = {
       requiredPermission: "preflight:view",
     });
     ctx.addNavItem({
-      label: "Flight Plans",
-      href: "/dashboard/flight-plans",
+      label: "Rulesets",
+      href: "/dashboard/rulesets",
       icon: "clipboard-list",
       section: "main",
       order: 41,
-      requiredPermission: "flight-plan:manage",
+      requiredPermission: "ruleset:manage",
     });
 
     // ── Pages ──
@@ -169,8 +169,8 @@ export const lintpdfPlugin: PixieDustPlugin = {
       layout: "dashboard",
     });
     ctx.addPage({
-      path: "/dashboard/flight-plans",
-      title: "Flight Plans",
+      path: "/dashboard/rulesets",
+      title: "Rulesets",
       layout: "dashboard",
     });
 

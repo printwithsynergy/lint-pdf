@@ -1,9 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { authenticateRequest } from "@thinkneverland/pixie-dust-auth";
-import { getCookieName } from "@thinkneverland/pixie-dust-config";
 import { prisma } from "@thinkneverland/pixie-dust-database";
 import { NextResponse } from "next/server";
+import { parseSessionCookie } from "@/lib/auth-helpers";
 
 /**
  * POST /api/auth/impersonate
@@ -59,11 +59,7 @@ export async function POST(req: Request) {
     }
 
     // Update the session to set the impersonation target
-    const cookieName = getCookieName();
-    const cookies = cookieHeader?.split(";").map((c) => c.trim()) ?? [];
-    const sessionCookie = cookies
-      .find((c) => c.startsWith(`${cookieName}=`))
-      ?.split("=")[1];
+    const sessionCookie = parseSessionCookie(cookieHeader);
 
     if (sessionCookie) {
       // Store the Prisma tenant ID (not the engine UUID) for session impersonation
@@ -93,11 +89,7 @@ export async function POST(req: Request) {
   }
 
   // Stop impersonation
-  const cookieName = getCookieName();
-  const cookies = cookieHeader?.split(";").map((c) => c.trim()) ?? [];
-  const sessionCookie = cookies
-    .find((c) => c.startsWith(`${cookieName}=`))
-    ?.split("=")[1];
+  const sessionCookie = parseSessionCookie(cookieHeader);
 
   if (sessionCookie) {
     // Get current impersonation target for audit log
@@ -150,11 +142,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ impersonating: false, tenant: null });
   }
 
-  const cookieName = getCookieName();
-  const cookies = cookieHeader?.split(";").map((c) => c.trim()) ?? [];
-  const sessionCookie = cookies
-    .find((c) => c.startsWith(`${cookieName}=`))
-    ?.split("=")[1];
+  const sessionCookie = parseSessionCookie(cookieHeader);
 
   if (!sessionCookie) {
     return NextResponse.json({ impersonating: false, tenant: null });

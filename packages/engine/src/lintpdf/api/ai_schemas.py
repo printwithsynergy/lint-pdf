@@ -227,10 +227,6 @@ class NLPreflightProfileResponse(BaseModel):
     confidence: float
 
 
-# Backwards compatibility aliases
-NLVoyagePlanRequest = NLPreflightProfileRequest
-NLVoyagePlanResponse = NLPreflightProfileResponse
-
 
 # --- NL Report interpretation schemas ---
 

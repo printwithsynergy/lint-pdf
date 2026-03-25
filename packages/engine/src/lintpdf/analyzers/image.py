@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     from lintpdf.semantic.graphics_state import TransformationMatrix
     from lintpdf.semantic.model import SemanticDocument
 
-# Default DPI thresholds (configurable via Voyage Plan)
+# Default DPI thresholds (configurable via ruleset)
 DEFAULT_MIN_DPI = 150.0
 DEFAULT_MAX_DPI = 600.0
 

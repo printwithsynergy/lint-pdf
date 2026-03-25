@@ -250,7 +250,3 @@ class PreflightProfile(BaseModel):
     def get_severity_override(self, check_id: str) -> str | None:
         """Get severity override for a check, or None if no override."""
         return self.checks.severity_overrides.get(check_id)
-
-
-# Backwards compatibility alias
-VoyagePlan = PreflightProfile

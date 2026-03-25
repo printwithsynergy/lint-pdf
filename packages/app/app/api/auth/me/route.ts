@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { authenticateRequest } from "@thinkneverland/pixie-dust-auth";
 import { prisma } from "@thinkneverland/pixie-dust-database";
 import { NextResponse } from "next/server";
+import { parseSessionCookie } from "@/lib/auth-helpers";
 
 export async function GET(req: Request) {
   const cookieHeader = req.headers.get("cookie");
@@ -43,12 +44,7 @@ export async function GET(req: Request) {
     tenantSlug: string;
   } | null = null;
   if (user.isSuperAdmin) {
-    const { getCookieName } = await import("@thinkneverland/pixie-dust-config");
-    const cookieName = getCookieName();
-    const cookies = cookieHeader?.split(";").map((c: string) => c.trim()) ?? [];
-    const sessionToken = cookies
-      .find((c: string) => c.startsWith(`${cookieName}=`))
-      ?.split("=")[1];
+    const sessionToken = parseSessionCookie(cookieHeader);
 
     if (sessionToken) {
       const session = await prisma.session.findUnique({

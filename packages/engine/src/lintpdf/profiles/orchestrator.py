@@ -64,13 +64,13 @@ class PreflightOrchestrator:
 
     def __init__(
         self,
-        voyage_plan: PreflightProfile,
+        profile: PreflightProfile,
         profile_id: str = "custom",
         ai_config: Any | None = None,
         pdf_bytes: bytes | None = None,
         custom_pantone_overrides: dict[str, Any] | None = None,
     ) -> None:
-        self._plan = voyage_plan
+        self._plan = profile
         self._profile_id = profile_id
         self._ai_config = ai_config
         self._pdf_bytes = pdf_bytes
@@ -116,7 +116,7 @@ class PreflightOrchestrator:
             validator = PdfAValidator(level=_level_map[self._plan.conformance])
             raw_findings.extend(validator.validate(document, events, raw_findings))
 
-        # Step 6: Run AI analyzers (if AI enabled in voyage plan)
+        # Step 6: Run AI analyzers (if AI enabled in profile)
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
         raw_findings.extend(ai_findings)
 

@@ -7,7 +7,7 @@ const DASHBOARD_PAGES = [
   { path: "/dashboard/account", name: "Account" },
   { path: "/dashboard/api-keys", name: "API Keys" },
   { path: "/dashboard/billing", name: "Billing" },
-  { path: "/dashboard/flight-plans", name: "Preflight Profiles" },
+  { path: "/dashboard/rulesets", name: "Rulesets" },
   { path: "/dashboard/preflight", name: "Preflight" },
   { path: "/dashboard/reports", name: "Reports" },
   { path: "/dashboard/team", name: "Team" },

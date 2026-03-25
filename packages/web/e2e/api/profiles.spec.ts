@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { getAnyTenantKey } from "../helpers";
 
-test.describe("Flight Plan Profiles", () => {
+test.describe("Ruleset Profiles", () => {
   test("GET /api/v1/profiles lists built-in profiles", async ({ request }) => {
     const key = getAnyTenantKey();
     test.skip(!key, "No test tenant key available");
