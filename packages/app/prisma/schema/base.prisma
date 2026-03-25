@@ -80,6 +80,7 @@ model TenantUser {
 enum TenantRole {
   OWNER
   ADMIN
+  OPERATOR
   MEMBER
   VIEWER
 }
@@ -89,14 +90,16 @@ enum TenantRole {
 // ============================================
 
 model TenantInvite {
-  id        String     @id @default(cuid())
-  tenantId  String
-  email     String
-  role      TenantRole @default(MEMBER)
-  token     String     @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime   @default(now())
+  id         String     @id @default(cuid())
+  tenantId   String
+  email      String
+  role       TenantRole @default(MEMBER)
+  token      String     @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime   @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
