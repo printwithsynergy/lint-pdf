@@ -69,7 +69,8 @@
       "WebFetch(domain:docplayer.net)",
       "WebFetch(domain:docs.railway.com)",
       "mcp__9df6685a-8864-4501-a521-132cf322c69d__list_issues",
-      "mcp__9df6685a-8864-4501-a521-132cf322c69d__list_projects"
+      "mcp__9df6685a-8864-4501-a521-132cf322c69d__list_projects",
+      "mcp__playwright__browser_navigate"
     ]
   },
   "hooks": {

@@ -4,17 +4,20 @@ import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 
 interface UsageData {
-  rate_limit_daily: number;
-  jobs_today: number;
-  max_file_size_mb: number;
-  max_custom_profiles: number;
-  custom_profiles_count: number;
-  max_webhooks: number;
-  webhooks_count: number;
   plan: string;
+  used: number;
+  limit: number;
+  remaining_included: number;
+  percentage: number;
+  in_overage: boolean;
+  overage_count: number;
+  overage_rate_cents: number;
+  overage_cost_cents: number;
   overage_enabled: boolean;
-  overage_today_cents: number;
-  overage_cap_cents: number;
+  overage_cap_cents: number | null;
+  cap_remaining_cents: number | null;
+  blocked: boolean;
+  warning: boolean;
 }
 
 function ProgressBar({
@@ -102,36 +105,30 @@ export default function UsagePage() {
 
       <div className="mt-6 space-y-6">
         <div className="rounded-lg border p-4">
-          <h2 className="text-lg font-semibold">Daily Usage</h2>
+          <h2 className="text-lg font-semibold">Job Usage</h2>
           <div className="mt-3 space-y-4">
             <ProgressBar
               label="Preflight Jobs"
-              current={usage.jobs_today}
-              max={usage.rate_limit_daily}
+              current={usage.used}
+              max={usage.limit}
               unit="jobs"
             />
-          </div>
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <h2 className="text-lg font-semibold">Resource Limits</h2>
-          <div className="mt-3 space-y-4">
-            <ProgressBar
-              label="Custom Profiles"
-              current={usage.custom_profiles_count}
-              max={usage.max_custom_profiles}
-            />
-            <ProgressBar
-              label="Webhook Endpoints"
-              current={usage.webhooks_count}
-              max={usage.max_webhooks}
-            />
             <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Max File Size</span>
+              <span className="font-medium">Remaining (included)</span>
               <span className="text-muted-foreground">
-                {usage.max_file_size_mb} MB
+                {usage.remaining_included.toLocaleString()} jobs
               </span>
             </div>
+            {usage.blocked && (
+              <p className="text-sm font-medium text-destructive">
+                Usage limit reached — jobs are blocked.
+              </p>
+            )}
+            {usage.warning && !usage.blocked && (
+              <p className="text-sm font-medium text-yellow-600">
+                Approaching usage limit.
+              </p>
+            )}
           </div>
         </div>
 
@@ -139,12 +136,34 @@ export default function UsagePage() {
           <div className="rounded-lg border p-4">
             <h2 className="text-lg font-semibold">Overage</h2>
             <div className="mt-3 space-y-4">
-              <ProgressBar
-                label="Daily Overage Spend"
-                current={usage.overage_today_cents}
-                max={usage.overage_cap_cents}
-                unit="cents"
-              />
+              {usage.in_overage && (
+                <p className="text-sm text-muted-foreground">
+                  You are currently in overage ({usage.overage_count.toLocaleString()} extra jobs).
+                </p>
+              )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Overage Cost</span>
+                <span className="text-muted-foreground">
+                  ${(usage.overage_cost_cents / 100).toFixed(2)}
+                  {usage.overage_cap_cents != null && (
+                    <> / ${(usage.overage_cap_cents / 100).toFixed(2)} cap</>
+                  )}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Overage Rate</span>
+                <span className="text-muted-foreground">
+                  ${(usage.overage_rate_cents / 100).toFixed(2)} per job
+                </span>
+              </div>
+              {usage.cap_remaining_cents != null && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Cap Remaining</span>
+                  <span className="text-muted-foreground">
+                    ${(usage.cap_remaining_cents / 100).toFixed(2)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}

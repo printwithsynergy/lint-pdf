@@ -98,11 +98,11 @@ async function handleRequest(
   // Authenticate if route requires it
   let auth:
     | {
-      userId: string;
-      tenantId: string;
-      role: string;
-      isSuperAdmin: boolean;
-    }
+        userId: string;
+        tenantId: string;
+        role: string;
+        isSuperAdmin: boolean;
+      }
     | undefined;
 
   if (matchedRoute.auth) {
