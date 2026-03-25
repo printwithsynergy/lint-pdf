@@ -4,10 +4,10 @@
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable pnpm
-# Copy root workspace config + lockfile, then the web package.json
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Copy root workspace config + the web package.json (no lockfile — fresh resolve)
+COPY package.json pnpm-workspace.yaml ./
 COPY packages/web/package.json packages/web/package.json
-RUN pnpm install --frozen-lockfile --filter=@thinkneverland/grounded-web
+RUN pnpm install --filter=@thinkneverland/grounded-web --no-frozen-lockfile
 
 # Stage 2: Build
 FROM node:22-alpine AS builder
