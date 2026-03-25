@@ -142,7 +142,7 @@ export default function AdminHealthPage() {
                       className="flex items-center justify-between text-sm"
                     >
                       <span className="text-muted-foreground">{q}</span>
-                      <span className="font-medium">{depth}</span>
+                      <span className="font-medium">{Math.max(0, depth)}</span>
                     </div>
                   ))}
                 </div>
