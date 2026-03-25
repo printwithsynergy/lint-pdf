@@ -16,10 +16,10 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@thinkneverland/pixie-dust-fairy-ring": "^1.1.0",
-    "@thinkneverland/pixie-dust-email": "^1.0.0",
-    "@thinkneverland/pixie-dust-theme-kit": "^1.0.0",
-    "@thinkneverland/pixie-dust-dashboard": "^1.0.0",
+    "@thinkneverland/pixie-dust-fairy-ring": "*",
+    "@thinkneverland/pixie-dust-email": "*",
+    "@thinkneverland/pixie-dust-theme-kit": "*",
+    "@thinkneverland/pixie-dust-dashboard": "*",
     "zod": "^3.23.0"
   },
   "devDependencies": {
