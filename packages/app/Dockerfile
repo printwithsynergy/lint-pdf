@@ -13,6 +13,21 @@ COPY packages/stripe/package.json packages/stripe/package.json
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
 RUN pnpm install --filter=@thinkneverland/lintpdf-app...
+# Always pull the latest Pixie Dust packages (lockfile pins old versions)
+RUN pnpm update --filter=@thinkneverland/lintpdf-app... \
+    "@thinkneverland/pixie-dust-auth" \
+    "@thinkneverland/pixie-dust-boilerplate" \
+    "@thinkneverland/pixie-dust-config" \
+    "@thinkneverland/pixie-dust-core" \
+    "@thinkneverland/pixie-dust-dashboard" \
+    "@thinkneverland/pixie-dust-database" \
+    "@thinkneverland/pixie-dust-email" \
+    "@thinkneverland/pixie-dust-fairy-ring" \
+    "@thinkneverland/pixie-dust-stripe-kit" \
+    "@thinkneverland/pixie-dust-theme-kit" \
+    "@thinkneverland/pixie-dust-tsconfig" \
+    "@thinkneverland/pixie-dust-ui" \
+    "@thinkneverland/pixie-dust-waitlist"
 
 # Stage 2: Build
 FROM node:22-alpine AS builder
