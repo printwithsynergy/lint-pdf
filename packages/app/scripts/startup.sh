@@ -9,44 +9,54 @@ echo "=== LintPDF App Startup ==="
 # Step 1: Add missing columns via raw SQL (safe — IF NOT EXISTS, no drops)
 # This handles columns added to the Prisma schema that prisma db push
 # can't apply without --accept-data-loss (because engine tables exist).
+# Uses prisma db execute instead of node -e because @prisma/client
+# is not available as a CJS require in the standalone Next.js output.
 echo "Step 1: Ensuring new columns exist..."
-node -e "
-const { PrismaClient } = require('@prisma/client');
-const p = new PrismaClient();
-(async () => {
-  const cols = [
-    ['AppSettings', 'primaryColor', 'TEXT'],
-    ['AppSettings', 'emailButtonColor', 'TEXT'],
-    ['AppSettings', 'loginBgColor', 'TEXT'],
-    ['AppSettings', 'loginHeading', 'TEXT'],
-    ['AppSettings', 'loginSubheading', 'TEXT'],
-  ];
-  for (const [table, col, type] of cols) {
-    try {
-      await p.\$executeRawUnsafe(
-        'ALTER TABLE \"' + table + '\" ADD COLUMN IF NOT EXISTS \"' + col + '\" ' + type
-      );
-    } catch (e) {
-      // Column may already exist or table doesn't exist yet — both fine
-    }
-  }
-  // Ensure new tables exist (Annotation, ReportView)
-  const tables = [
-    'CREATE TABLE IF NOT EXISTS \"Annotation\" (\"id\" TEXT NOT NULL, \"jobId\" TEXT NOT NULL, \"tenantId\" TEXT NOT NULL, \"pageNum\" INTEGER NOT NULL, \"authorId\" TEXT, \"authorEmail\" TEXT NOT NULL, \"authorName\" TEXT, \"fabricJson\" JSONB NOT NULL, \"createdAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, \"updatedAt\" TIMESTAMP(3) NOT NULL, CONSTRAINT \"Annotation_pkey\" PRIMARY KEY (\"id\"))',
-    'CREATE INDEX IF NOT EXISTS \"Annotation_jobId_pageNum_idx\" ON \"Annotation\"(\"jobId\", \"pageNum\")',
-    'CREATE INDEX IF NOT EXISTS \"Annotation_tenantId_idx\" ON \"Annotation\"(\"tenantId\")',
-    'CREATE TABLE IF NOT EXISTS \"ReportView\" (\"id\" TEXT NOT NULL, \"jobId\" TEXT NOT NULL, \"tenantId\" TEXT NOT NULL, \"reportToken\" TEXT NOT NULL, \"viewerEmail\" TEXT, \"viewerName\" TEXT, \"ipAddress\" TEXT, \"userAgent\" TEXT, \"viewedAt\" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP, CONSTRAINT \"ReportView_pkey\" PRIMARY KEY (\"id\"))',
-    'CREATE INDEX IF NOT EXISTS \"ReportView_jobId_idx\" ON \"ReportView\"(\"jobId\")',
-    'CREATE INDEX IF NOT EXISTS \"ReportView_tenantId_viewedAt_idx\" ON \"ReportView\"(\"tenantId\", \"viewedAt\")',
-    'CREATE INDEX IF NOT EXISTS \"ReportView_reportToken_idx\" ON \"ReportView\"(\"reportToken\")',
-  ];
-  for (const sql of tables) {
-    try { await p.\$executeRawUnsafe(sql); } catch (e) { /* already exists */ }
-  }
-  await p.\$disconnect();
-  console.log('Pre-migration: columns and tables ensured.');
-})();
-" 2>&1 || echo "Pre-migration had warnings — continuing"
+
+prisma db execute --schema packages/app/prisma/schema --stdin <<'SQL'
+-- AppSettings columns required by pixie-dust-dashboard
+ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "primaryColor" TEXT;
+ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "emailButtonColor" TEXT;
+ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "loginBgColor" TEXT;
+ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "loginHeading" TEXT;
+ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "loginSubheading" TEXT;
+
+-- Annotation table for PDF viewer markup
+CREATE TABLE IF NOT EXISTS "Annotation" (
+  "id" TEXT NOT NULL,
+  "jobId" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "pageNum" INTEGER NOT NULL,
+  "authorId" TEXT,
+  "authorEmail" TEXT NOT NULL,
+  "authorName" TEXT,
+  "fabricJson" JSONB NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Annotation_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "Annotation_jobId_pageNum_idx" ON "Annotation"("jobId", "pageNum");
+CREATE INDEX IF NOT EXISTS "Annotation_tenantId_idx" ON "Annotation"("tenantId");
+
+-- ReportView table for tracking who viewed shared reports
+CREATE TABLE IF NOT EXISTS "ReportView" (
+  "id" TEXT NOT NULL,
+  "jobId" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "reportToken" TEXT NOT NULL,
+  "viewerEmail" TEXT,
+  "viewerName" TEXT,
+  "ipAddress" TEXT,
+  "userAgent" TEXT,
+  "viewedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ReportView_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "ReportView_jobId_idx" ON "ReportView"("jobId");
+CREATE INDEX IF NOT EXISTS "ReportView_tenantId_viewedAt_idx" ON "ReportView"("tenantId", "viewedAt");
+CREATE INDEX IF NOT EXISTS "ReportView_reportToken_idx" ON "ReportView"("reportToken");
+SQL
+
+echo "Step 1 complete (exit code: $?)"
 
 # Step 2: Prisma db push (may warn about engine tables — we continue regardless)
 echo "Step 2: Running prisma db push..."
