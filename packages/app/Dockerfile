@@ -1,43 +1,41 @@
 # Build context is the repo root (Railway uses dockerfilePath from root)
 
-# Stage 1: Install dependencies & pull latest Pixie Dust packages
+# Stage 1: Fresh install — always resolve latest Pixie Dust packages
+# No lockfile copied — pnpm generates a fresh one each build so
+# @thinkneverland/pixie-dust-* packages with "*" specifiers always
+# resolve to the newest published version from GitHub Packages.
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable pnpm
-# Copy root workspace config + lockfile, then relevant package.json files
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+# Copy workspace config (NO lockfile) + package.json files
+COPY package.json pnpm-workspace.yaml .npmrc ./
 COPY packages/app/package.json packages/app/package.json
 COPY packages/plugin/package.json packages/plugin/package.json
 COPY packages/stripe/package.json packages/stripe/package.json
 # Private @thinkneverland packages need auth
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
-# Install deps (cached when lockfile unchanged)
-RUN pnpm install --filter=@thinkneverland/lintpdf-app...
-# Bust Docker cache so pnpm update always runs on every deploy/redeploy.
-# noCache=true in railway.toml ensures this ARG gets a fresh value each time.
-ARG CACHEBUST
-# Always pull latest Pixie Dust packages (glob covers base + all suffixed packages)
-RUN pnpm update --recursive '@thinkneverland/pixie-dust' '@thinkneverland/pixie-dust-*'
+# Fresh install — resolves all "*" specifiers to latest published versions
+# No --frozen-lockfile since there's no lockfile to freeze against
+RUN pnpm install --filter=@thinkneverland/lintpdf-app... --no-frozen-lockfile
 
 # Stage 2: Build
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable pnpm
-# Copy workspace config and .npmrc (NOT the repo lockfile — use the updated one from deps)
+# Copy workspace config + the fresh lockfile from deps stage
 COPY package.json pnpm-workspace.yaml .npmrc ./
-# Copy the updated lockfile from deps stage so builder resolves the latest Pixie Dust versions
 COPY --from=deps /app/pnpm-lock.yaml ./
 # Copy full workspace package sources
 COPY packages/plugin/ ./packages/plugin/
 COPY packages/stripe/ ./packages/stripe/
 COPY packages/app/ ./packages/app/
-# Copy cached node_modules from deps stage (already has latest Pixie Dust)
+# Copy node_modules from deps stage (already has latest Pixie Dust)
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/app/node_modules ./packages/app/node_modules
 COPY --from=deps /app/packages/plugin/node_modules ./packages/plugin/node_modules
 COPY --from=deps /app/packages/stripe/node_modules ./packages/stripe/node_modules
-# Re-run install to fix workspace symlinks — uses updated lockfile so versions stay current
+# Re-run install to fix workspace symlinks — uses fresh lockfile
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
 RUN pnpm install --filter=@thinkneverland/lintpdf-app... --prefer-offline

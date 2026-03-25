@@ -1,57 +1,50 @@
-# Environment
-.env
-.env.*
+
 !.env.example
 !.env.test
-
+# CLI tools
+# Dependencies
+# Environment
+# IDE
+# Node / Build
+# OS
 # Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.egg-info/
-*.egg
-build/
-.eggs/
-*.whl
-
-# Virtual environments
-.venv/
-venv/
-env/
-
+# Test corpus (downloaded by CI)
 # Testing
+# Virtual environments
+*$py.class
+*.egg
+*.egg-info/
+*.py[cod]
+*.swo
+*.swp
+*.tsbuildinfo
+*.whl
+.DS_Store
 .coverage
 .coverage.*
-htmlcov/
-.pytest_cache/
-.mypy_cache/
-playwright-report/
-test-results/
-test-credentials.json
-
-# Test corpus (downloaded by CI)
-tests/corpus/
-
-# Dependencies
-node_modules/
-
-# Node / Build
-package-lock.json
-*.tsbuildinfo
-.next/
-.turbo/
-dist/
-
-# CLI tools
-bin/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
+.eggs/
+.env
+.env.*
 .idea/
-.vscode/
-*.swp
-*.swo
+.mypy_cache/
+.next/
 .playwright-mcp/
+.pytest_cache/
+.turbo/
+.venv/
+.vscode/
+Thumbs.db
+__pycache__/
+bin/
+build/
+dist/
+env/
+htmlcov/
+node_modules/
+package-lock.json
+playwright-report/
+pnpm-lock.yaml
+test-credentials.json
+test-results/
+tests/corpus/
+venv/
