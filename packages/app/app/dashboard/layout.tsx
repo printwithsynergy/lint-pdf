@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 
 import { ensureRegistry } from "@/lib/plugins";
 import { SuperAdminToolbar } from "@/components/super-admin-toolbar";
+import { ClientProviders } from "@/components/client-providers";
 
 export default async function DashboardLayout({
   children,
@@ -42,17 +43,19 @@ export default async function DashboardLayout({
   const branding = await getBranding(prisma);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {user.isSuperAdmin && <SuperAdminToolbar />}
-      <DashboardShell
-        navItems={navItems}
-        user={user}
-        brandName={branding.brandName ?? "LintPDF"}
-        brandLogoUrl={branding.brandLogoUrl ?? "/logo.svg"}
-        customCss={branding.customCss}
-      >
-        {children}
-      </DashboardShell>
-    </div>
+    <ClientProviders>
+      <div className="flex min-h-screen flex-col">
+        {user.isSuperAdmin && <SuperAdminToolbar />}
+        <DashboardShell
+          navItems={navItems}
+          user={user}
+          brandName={branding.brandName ?? "LintPDF"}
+          brandLogoUrl={branding.brandLogoUrl ?? "/logo.svg"}
+          customCss={branding.customCss}
+        >
+          {children}
+        </DashboardShell>
+      </div>
+    </ClientProviders>
   );
 }
