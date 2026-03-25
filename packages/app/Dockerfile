@@ -1,6 +1,6 @@
 # Build context is the repo root (Railway uses dockerfilePath from root)
 
-# Stage 1: Install dependencies
+# Stage 1: Install dependencies & pull latest Pixie Dust packages
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable pnpm
@@ -12,11 +12,10 @@ COPY packages/stripe/package.json packages/stripe/package.json
 # Private @thinkneverland packages need auth
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
-RUN pnpm install --filter=@thinkneverland/lintpdf-app...
-# Always pull the latest Pixie Dust packages (lockfile pins old versions)
-# DEPLOY_TIMESTAMP busts the Docker layer cache so this runs every deploy
-ARG DEPLOY_TIMESTAMP=0
-RUN pnpm update --filter=@thinkneverland/lintpdf-app... \
+# Install all deps, then immediately update Pixie Dust to latest in one layer.
+# The update rewrites pnpm-lock.yaml so the builder stage gets current versions.
+RUN pnpm install --filter=@thinkneverland/lintpdf-app... && \
+    pnpm update --filter=@thinkneverland/lintpdf-app... \
     "@thinkneverland/pixie-dust-auth" \
     "@thinkneverland/pixie-dust-boilerplate" \
     "@thinkneverland/pixie-dust-config" \
@@ -35,18 +34,20 @@ RUN pnpm update --filter=@thinkneverland/lintpdf-app... \
 FROM node:22-alpine AS builder
 WORKDIR /app
 RUN corepack enable pnpm
-# Copy workspace config, lockfile, and .npmrc for pnpm install
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+# Copy workspace config and .npmrc (NOT the repo lockfile — use the updated one from deps)
+COPY package.json pnpm-workspace.yaml .npmrc ./
+# Copy the updated lockfile from deps stage so builder resolves the latest Pixie Dust versions
+COPY --from=deps /app/pnpm-lock.yaml ./
 # Copy full workspace package sources
 COPY packages/plugin/ ./packages/plugin/
 COPY packages/stripe/ ./packages/stripe/
 COPY packages/app/ ./packages/app/
-# Copy cached node_modules from deps stage
+# Copy cached node_modules from deps stage (already has latest Pixie Dust)
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/app/node_modules ./packages/app/node_modules
 COPY --from=deps /app/packages/plugin/node_modules ./packages/plugin/node_modules
 COPY --from=deps /app/packages/stripe/node_modules ./packages/stripe/node_modules
-# Re-run install to fix workspace symlinks (uses cached deps, just recreates links)
+# Re-run install to fix workspace symlinks — uses updated lockfile so versions stay current
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
 RUN pnpm install --filter=@thinkneverland/lintpdf-app... --prefer-offline
