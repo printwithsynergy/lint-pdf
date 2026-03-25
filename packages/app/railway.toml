@@ -6,7 +6,7 @@ noCache = true
 
 [deploy]
 numReplicas = 1
-startCommand = "prisma db push --schema packages/app/prisma/schema --skip-generate 2>&1 || true && node packages/app/server.js"
+startCommand = "sh packages/app/scripts/startup.sh"
 healthcheckPath = "/auth/login"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"

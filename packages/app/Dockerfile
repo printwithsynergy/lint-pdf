@@ -74,6 +74,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/app/prisma ./packages/ap
 # Install Prisma CLI globally for runtime migrations (avoids pnpm hoisting issues)
 RUN npm install -g prisma@6
 
+# Copy startup script
+COPY --from=builder --chown=nextjs:nodejs /app/packages/app/scripts/startup.sh ./packages/app/scripts/startup.sh
+
 USER nextjs
 
 EXPOSE 8080
@@ -83,7 +86,5 @@ ENV HOSTNAME="0.0.0.0"
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://localhost:8080/api/health || exit 1
 
-# Run Prisma db push on startup to ensure schema is in sync, then start the server
-# IMPORTANT: Do NOT use --accept-data-loss here — it drops tables not in the Prisma
-# schema, which would wipe the engine tables (tenants, jobs, api_keys, etc.)
-CMD ["sh", "-c", "prisma db push --schema packages/app/prisma/schema --skip-generate 2>&1 || echo 'prisma db push had warnings — continuing' && node packages/app/prisma/seed.mjs 2>&1 || true && node packages/app/server.js"]
+# Startup: safe SQL migration → prisma db push → seed → start server
+CMD ["sh", "packages/app/scripts/startup.sh"]
