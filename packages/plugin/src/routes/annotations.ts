@@ -112,7 +112,7 @@ export function annotationRoutes(db: AnnotationDb): RouteDefinition[] {
 
         const authorEmail = req.auth?.email ?? "unknown";
         const authorId = req.auth?.userId ?? null;
-        const authorName = req.auth?.name ?? null;
+        const authorName = (req.auth as Record<string, unknown>)?.name as string | null ?? null;
 
         // Upsert: check if this author already has an annotation on this page
         const existing = await db.annotation.findFirst({

@@ -160,12 +160,17 @@ model MagicLink {
 // ============================================
 
 model AppSettings {
-  id            String  @id @default("singleton")
-  brandName     String?
-  brandLogoUrl  String?
-  brandTagline  String?
-  customCss     String?
-  updatedAt     DateTime @updatedAt
+  id                String  @id @default("singleton")
+  brandName         String?
+  brandLogoUrl      String?
+  brandTagline      String?
+  customCss         String?
+  primaryColor      String?
+  emailButtonColor  String?
+  loginBgColor      String?
+  loginHeading      String?
+  loginSubheading   String?
+  updatedAt         DateTime @updatedAt
 }
 
 // ============================================

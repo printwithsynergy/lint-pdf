@@ -49,12 +49,12 @@ async function validateToken(
       { headers: authHeaders() },
     );
     if (!resp.ok) return null;
-    const data = await resp.json();
+    const data = await resp.json() as Record<string, unknown>;
     return {
-      jobId: data.job_id ?? data.jobId,
-      tenantId: data.tenant_id ?? data.tenantId ?? "",
-      fileName: data.file_name ?? data.fileName ?? "Untitled",
-      emailRequired: data.email_required ?? data.emailRequired ?? true,
+      jobId: (data.job_id ?? data.jobId) as string,
+      tenantId: (data.tenant_id ?? data.tenantId ?? "") as string,
+      fileName: (data.file_name ?? data.fileName ?? "Untitled") as string,
+      emailRequired: (data.email_required ?? data.emailRequired ?? true) as boolean,
     };
   } catch {
     return null;
@@ -295,7 +295,7 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
                 tenantId,
                 reportToken: "",
                 viewerEmail: req.auth?.email ?? null,
-                viewerName: req.auth?.name ?? null,
+                viewerName: (req.auth as Record<string, unknown>)?.name as string | null ?? null,
                 ipAddress: req.headers?.["x-forwarded-for"] ?? req.headers?.["x-real-ip"] ?? null,
                 userAgent: req.headers?.["user-agent"] ?? null,
               },
