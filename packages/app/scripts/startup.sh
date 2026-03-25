@@ -1,8 +1,8 @@
 #!/bin/sh
 # LintPDF app startup script for Railway.
 # Safely migrates the database, seeds, and starts the server.
-
-set -e
+# NOTE: No set -e — each step has its own error handling and we must
+# always reach the server start even if migration/seed has warnings.
 
 echo "=== LintPDF App Startup ==="
 
