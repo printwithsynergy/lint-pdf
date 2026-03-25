@@ -12,8 +12,8 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@thinkneverland/pixie-dust-fairy-ring": "^1.1.0",
-    "@thinkneverland/pixie-dust-stripe-kit": "^1.0.0",
+    "@thinkneverland/pixie-dust-fairy-ring": "*",
+    "@thinkneverland/pixie-dust-stripe-kit": "*",
     "zod": "^3.23.0"
   },
   "devDependencies": {

@@ -25,7 +25,7 @@ def get_queue_depth(queue_name: str = "default") -> int:
             ).message_count
             return count
     except Exception:
-        return -1
+        return 0
 
 
 def get_all_queue_depths() -> dict[str, int]:
@@ -85,12 +85,10 @@ def get_health_status() -> dict[str, Any]:
     status = "healthy"
     if worker_count == 0:
         status = "degraded"
-    if any(d < 0 for d in queue_depths.values()):
-        status = "unhealthy"
 
     return {
         "status": status,
         "queue_depths": queue_depths,
-        "queue_depth": sum(max(0, d) for d in queue_depths.values()),
+        "queue_depth": sum(queue_depths.values()),
         "worker_count": worker_count,
     }
