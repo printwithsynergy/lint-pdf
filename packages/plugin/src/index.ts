@@ -18,6 +18,7 @@ import { profileRoutes } from "./routes/profiles";
 import { aiConfigRoutes } from "./routes/ai-config";
 import { colorConfigRoutes } from "./routes/color-config";
 import { viewerRoutes } from "./routes/viewer";
+import { brandingRoutes } from "./routes/branding";
 
 // ── Public exports ──────────────────────────────────────────
 
@@ -139,6 +140,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       "VIEWER",
     ]);
     ctx.addPermission("ruleset:manage", ["ADMIN", "OWNER"]);
+    ctx.addPermission("branding:manage", ["ADMIN", "OWNER"]);
 
     // ── Navigation ──
     ctx.addNavItem({
@@ -191,6 +193,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       ...aiConfigRoutes(),
       ...colorConfigRoutes(),
       ...viewerRoutes(),
+      ...brandingRoutes(),
     ]);
 
     // ── Hooks ──

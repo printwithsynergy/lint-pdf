@@ -9,6 +9,10 @@ interface ViewerToolbarProps {
   onPageChange: (page: number) => void;
   onZoomChange: (zoom: number) => void;
   jobId: string;
+  separationMode?: boolean;
+  onToggleSeparationMode?: () => void;
+  showTacHeatmap?: boolean;
+  onToggleTacHeatmap?: () => void;
 }
 
 export function ViewerToolbar({
@@ -18,6 +22,10 @@ export function ViewerToolbar({
   onPageChange,
   onZoomChange,
   jobId,
+  separationMode = false,
+  onToggleSeparationMode,
+  showTacHeatmap = false,
+  onToggleTacHeatmap,
 }: ViewerToolbarProps) {
   return (
     <div className="flex items-center justify-between border-b bg-background px-4 py-2">
@@ -61,7 +69,34 @@ export function ViewerToolbar({
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
-        <a
+        {onToggleSeparationMode && (
+          <button
+            onClick={onToggleSeparationMode}
+            className={`rounded border px-3 py-1 text-sm ${
+              separationMode
+                ? "border-primary bg-primary/10 text-primary"
+                : "hover:bg-muted"
+            }`}
+            title="Toggle separation channel view"
+          >
+            Separations
+          </button>
+        )}
+        {onToggleTacHeatmap && (
+          <button
+            onClick={onToggleTacHeatmap}
+            className={`rounded border px-3 py-1 text-sm ${
+              showTacHeatmap
+                ? "border-amber-500 bg-amber-500/10 text-amber-600"
+                : "hover:bg-muted"
+            }`}
+            title="Toggle TAC heatmap overlay"
+          >
+            TAC
+          </button>
+        )}
+        <span className="mx-1 h-4 border-r" />
+        <
           href={`/api/lintpdf/reports/${jobId}/html`}
           target="_blank"
           rel="noopener noreferrer"

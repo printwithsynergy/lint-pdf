@@ -4,3 +4,6 @@ export { FindingsPanel } from "./FindingsPanel";
 export { PageNavigator } from "./PageNavigator";
 export { ViewerToolbar } from "./ViewerToolbar";
 export { ZoomControls } from "./ZoomControls";
+export { SeparationPanel } from "./SeparationPanel";
+export { SeparationCanvas } from "./SeparationCanvas";
+export { TACHeatmapOverlay } from "./TACHeatmapOverlay";

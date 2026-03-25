@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 import logging
+import re
 from typing import Any
 
 import pikepdf
@@ -26,6 +27,16 @@ router = APIRouter(prefix="/api/v1/viewer", tags=["viewer"])
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
+
+
+class SeparationChannel(BaseModel):
+    name: str
+    type: str  # "process" or "spot"
+
+
+class SeparationsResponse(BaseModel):
+    job_id: str
+    channels: list[SeparationChannel]
 
 
 class PageBox(BaseModel):
@@ -99,6 +110,19 @@ def _extract_box(page: Any, name: str) -> PageBox | None:
 def _tile_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
     """S3 key for a cached tile."""
     return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}.png"
+
+
+def _channel_cache_key(
+    tenant_id: str, job_id: str, page_num: int, dpi: int, channel_name: str
+) -> str:
+    """S3 key for a cached separation channel tile."""
+    safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", channel_name)
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_ch_{safe_name}.png"
+
+
+def _tac_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
+    """S3 key for a cached TAC heatmap."""
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_tac.png"
 
 
 # ---------------------------------------------------------------------------
@@ -222,3 +246,110 @@ async def get_page_info(
             bleed_box=_extract_box(page, "/BleedBox"),
             rotation=int(page.get("/Rotate", 0)),
         )
+
+
+@router.get("/jobs/{job_id}/separations", response_model=SeparationsResponse)
+async def get_separations(
+    job_id: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> SeparationsResponse:
+    """List all ink channels (CMYK + spot colors) in the job's PDF."""
+    from lintpdf.reports.separation_renderer import list_separations
+
+    _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    channels_raw = list_separations(pdf_bytes)
+    channels = [SeparationChannel(name=c["name"], type=c["type"]) for c in channels_raw]
+    return SeparationsResponse(job_id=job_id, channels=channels)
+
+
+@router.get("/jobs/{job_id}/pages/{page_num}/channel/{channel_name}")
+async def get_separation_channel(
+    job_id: str,
+    page_num: int,
+    channel_name: str,
+    dpi: int = Query(default=150, ge=36, le=600),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Render a single ink channel as a grayscale PNG."""
+    from lintpdf.reports.separation_renderer import render_separation_channel
+
+    job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    storage = get_storage()
+    cache_key = _channel_cache_key(str(tenant.id), str(job.id), page_num, dpi, channel_name)
+
+    # Try S3 cache
+    try:
+        cached = storage.download_raw(cache_key)
+        if cached:
+            return Response(
+                content=cached,
+                media_type="image/png",
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
+    except Exception:
+        pass
+
+    try:
+        img_bytes = render_separation_channel(pdf_bytes, page_num, channel_name, dpi=dpi)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    # Cache to S3
+    try:
+        storage.upload_raw(cache_key, img_bytes, content_type="image/png")
+    except Exception:
+        logger.warning("Failed to cache channel tile: %s", cache_key)
+
+    return Response(
+        content=img_bytes,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.get("/jobs/{job_id}/pages/{page_num}/tac-heatmap")
+async def get_tac_heatmap(
+    job_id: str,
+    page_num: int,
+    dpi: int = Query(default=150, ge=36, le=600),
+    tac_limit: int = Query(default=300, ge=100, le=500),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Render a TAC heatmap overlay as an RGBA PNG."""
+    from lintpdf.reports.separation_renderer import render_tac_heatmap
+
+    job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    storage = get_storage()
+    cache_key = _tac_cache_key(str(tenant.id), str(job.id), page_num, dpi)
+
+    # Try S3 cache
+    try:
+        cached = storage.download_raw(cache_key)
+        if cached:
+            return Response(
+                content=cached,
+                media_type="image/png",
+                headers={"Cache-Control": "public, max-age=86400"},
+            )
+    except Exception:
+        pass
+
+    try:
+        heatmap_bytes = render_tac_heatmap(pdf_bytes, page_num, dpi=dpi, tac_limit=tac_limit)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    # Cache to S3
+    try:
+        storage.upload_raw(cache_key, heatmap_bytes, content_type="image/png")
+    except Exception:
+        logger.warning("Failed to cache TAC heatmap: %s", cache_key)
+
+    return Response(
+        content=heatmap_bytes,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )

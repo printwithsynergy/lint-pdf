@@ -6,6 +6,9 @@ import { PageCanvas } from "./PageCanvas";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./PageNavigator";
 import { ViewerToolbar } from "./ViewerToolbar";
+import { SeparationPanel } from "./SeparationPanel";
+import { SeparationCanvas } from "./SeparationCanvas";
+import { TACHeatmapOverlay } from "./TACHeatmapOverlay";
 
 interface PdfViewerProps {
   jobId: string;
@@ -21,6 +24,12 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [separationMode, setSeparationMode] = useState(false);
+  const [enabledChannels, setEnabledChannels] = useState<Set<string>>(
+    new Set(["Cyan", "Magenta", "Yellow", "Black"]),
+  );
+  const [allChannelNames, setAllChannelNames] = useState<string[]>([]);
+  const [showTacHeatmap, setShowTacHeatmap] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Load pages + findings on mount
@@ -58,6 +67,35 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
       }
     },
     [currentPage],
+  );
+
+  // Load channel names when separation mode is first enabled
+  useEffect(() => {
+    if (!separationMode || allChannelNames.length > 0) return;
+    fetch(`/api/lintpdf/viewer/${jobId}/separations`)
+      .then((r) => r.json())
+      .then((data) => {
+        const names = (data.channels ?? []).map((c: { name: string }) => c.name);
+        setAllChannelNames(names);
+        setEnabledChannels(new Set(names));
+      })
+      .catch(() => {});
+  }, [separationMode, allChannelNames.length, jobId]);
+
+  const handleToggleChannel = useCallback((channel: string) => {
+    setEnabledChannels((prev) => {
+      const next = new Set(prev);
+      if (next.has(channel)) next.delete(channel);
+      else next.add(channel);
+      return next;
+    });
+  }, []);
+
+  const handleSetAllChannels = useCallback(
+    (enabled: boolean) => {
+      setEnabledChannels(enabled ? new Set(allChannelNames) : new Set());
+    },
+    [allChannelNames],
   );
 
   // Keyboard shortcuts
@@ -120,6 +158,10 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         onPageChange={setCurrentPage}
         onZoomChange={setZoom}
         jobId={jobId}
+        separationMode={separationMode}
+        onToggleSeparationMode={() => setSeparationMode((v) => !v)}
+        showTacHeatmap={showTacHeatmap}
+        onToggleTacHeatmap={() => setShowTacHeatmap((v) => !v)}
       />
 
       {/* Main content: thumbnails | canvas | findings */}
@@ -142,26 +184,64 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         >
           <div className="flex justify-center">
             {currentPageInfo && (
-              <PageCanvas
-                jobId={jobId}
-                page={currentPageInfo}
-                zoom={zoom}
-                findings={findings}
-                selectedFinding={selectedFinding}
-                onFindingClick={handleSelectFinding}
-              />
+              <div className="relative">
+                {separationMode ? (
+                  <SeparationCanvas
+                    jobId={jobId}
+                    pageNum={currentPage}
+                    enabledChannels={enabledChannels}
+                    allChannels={allChannelNames}
+                    width={Math.round(
+                      currentPageInfo.width_pts * (zoom / 100),
+                    )}
+                    height={Math.round(
+                      currentPageInfo.height_pts * (zoom / 100),
+                    )}
+                  />
+                ) : (
+                  <PageCanvas
+                    jobId={jobId}
+                    page={currentPageInfo}
+                    zoom={zoom}
+                    findings={findings}
+                    selectedFinding={selectedFinding}
+                    onFindingClick={handleSelectFinding}
+                  />
+                )}
+                {showTacHeatmap && currentPageInfo && (
+                  <TACHeatmapOverlay
+                    jobId={jobId}
+                    pageNum={currentPage}
+                    width={Math.round(
+                      currentPageInfo.width_pts * (zoom / 100),
+                    )}
+                    height={Math.round(
+                      currentPageInfo.height_pts * (zoom / 100),
+                    )}
+                  />
+                )}
+              </div>
             )}
           </div>
         </div>
 
-        {/* Right: Findings panel */}
+        {/* Right: Findings panel or Separation panel */}
         <div className="w-80 shrink-0 border-l bg-background overflow-hidden">
-          <FindingsPanel
-            findings={findings}
-            selectedFinding={selectedFinding}
-            onSelectFinding={handleSelectFinding}
-            currentPage={currentPage}
-          />
+          {separationMode ? (
+            <SeparationPanel
+              jobId={jobId}
+              enabledChannels={enabledChannels}
+              onToggleChannel={handleToggleChannel}
+              onSetAllChannels={handleSetAllChannels}
+            />
+          ) : (
+            <FindingsPanel
+              findings={findings}
+              selectedFinding={selectedFinding}
+              onSelectFinding={handleSelectFinding}
+              currentPage={currentPage}
+            />
+          )}
         </div>
       </div>
     </div>

@@ -345,3 +345,66 @@ class UserAIAccessUpdateRequest(BaseModel):
     personal_spending_limit: float | None = None
     trial_enabled: bool | None = None
     trial_expires_at: datetime | None = None
+
+
+# --- Brand profile schemas ---
+
+
+class BrandProfileResponse(BaseModel):
+    """Brand profile details."""
+
+    id: uuid.UUID
+    name: str
+    profile_type: str
+    brand_name: str | None = None
+    logo_url: str | None = None
+    primary_color: str | None = None
+    accent_color: str | None = None
+    footer_text: str | None = None
+    hide_footer: bool = False
+    is_default: bool = False
+    created_at: datetime
+    updated_at: datetime
+
+
+class BrandProfileListResponse(BaseModel):
+    """List of brand profiles."""
+
+    profiles: list[BrandProfileResponse]
+
+
+class BrandProfileCreateRequest(BaseModel):
+    """Request to create a brand profile."""
+
+    name: str = Field(min_length=1, max_length=255, description="Display name for this profile.")
+    profile_type: str = Field(
+        default="custom",
+        description="Profile type: custom, lintpdf, or none.",
+    )
+    brand_name: str | None = Field(default=None, max_length=255)
+    logo_url: str | None = Field(default=None, max_length=2048)
+    primary_color: str | None = Field(default=None, max_length=7)
+    accent_color: str | None = Field(default=None, max_length=7)
+    footer_text: str | None = Field(default=None, max_length=500)
+    hide_footer: bool = False
+
+
+class BrandProfileUpdateRequest(BaseModel):
+    """Request to update a brand profile. All fields optional."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    profile_type: str | None = None
+    brand_name: str | None = None
+    logo_url: str | None = None
+    primary_color: str | None = None
+    accent_color: str | None = None
+    footer_text: str | None = None
+    hide_footer: bool | None = None
+
+
+class SetDefaultBrandProfileRequest(BaseModel):
+    """Request to set the default brand profile."""
+
+    brand_profile_id: uuid.UUID | None = Field(
+        description="ID of the brand profile to set as default, or null to clear."
+    )

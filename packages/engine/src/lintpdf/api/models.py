@@ -31,6 +31,14 @@ class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
 
 
+class BrandProfileType(enum.StrEnum):
+    """Brand profile type."""
+
+    CUSTOM = "custom"
+    LINTPDF = "lintpdf"
+    NONE = "none"
+
+
 class JobStatus(enum.StrEnum):
     """Job processing status."""
 
@@ -77,6 +85,7 @@ class Tenant(Base):
     report_default_expiry_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     report_email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     report_storage_used_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    default_brand_profile_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
     entitlement_overrides: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, default=None
     )
@@ -101,6 +110,9 @@ class Tenant(Base):
     )
     color_config: Mapped[TenantColorConfig | None] = relationship(
         back_populates="tenant", uselist=False, cascade="all, delete-orphan"
+    )
+    brand_profiles: Mapped[list[BrandProfile]] = relationship(
+        back_populates="tenant", cascade="all, delete-orphan"
     )
 
 
@@ -522,3 +534,39 @@ class TrialFile(Base):
     # Relationships
     submission: Mapped[TrialSubmission] = relationship(back_populates="files")
     job: Mapped[Job | None] = relationship()
+
+
+# --- Brand Profile Models ---
+
+
+class BrandProfile(Base):
+    """Named brand profile for report branding."""
+
+    __tablename__ = "brand_profiles"
+    __table_args__ = (Index("ix_brand_profiles_tenant", "tenant_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    profile_type: Mapped[BrandProfileType] = mapped_column(
+        Enum(BrandProfileType, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+        default=BrandProfileType.CUSTOM,
+    )
+    brand_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    logo_url: Mapped[str | None] = mapped_column(String(2048), nullable=True)
+    primary_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    accent_color: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    footer_text: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    hide_footer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+    # Relationships
+    tenant: Mapped[Tenant] = relationship(back_populates="brand_profiles")
