@@ -219,6 +219,12 @@ export default function JobDetailPage() {
 
       {job.status === "complete" && (
         <div className="mt-4 flex gap-2">
+          <Link
+            href={`/dashboard/preflight/${job.job_id}/viewer`}
+            className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Open Viewer
+          </Link>
           <a
             href={`/api/lintpdf/reports/${job.job_id}/html`}
             target="_blank"

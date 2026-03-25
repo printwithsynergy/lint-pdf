@@ -26,6 +26,7 @@ from lintpdf.api.routes import (
     trial,
     usage,
     user_ai_access,
+    viewer,
     webhooks,
 )
 
@@ -126,6 +127,7 @@ def create_app() -> FastAPI:
     app.include_router(reports.router)
     app.include_router(admin.router)
     app.include_router(trial.router)
+    app.include_router(viewer.router)
 
     # AI feature routers
     app.include_router(ai_config.router)

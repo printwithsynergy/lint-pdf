@@ -14,6 +14,9 @@ export interface PreflightFinding {
   message: string;
   page_num: number | null;
   details: Record<string, unknown>;
+  bbox: [number, number, number, number] | null;
+  object_id: string | null;
+  object_type: string | null;
 }
 
 export interface PreflightSummary {

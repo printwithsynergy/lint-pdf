@@ -78,8 +78,8 @@ describe("lintpdfPlugin", () => {
     // 2 nav items (Preflight + Rulesets — usage/waitlist moved to sub-plugins)
     expect(ctx.addNavItem).toHaveBeenCalledTimes(2);
 
-    // 3 pages (Preflight list, Job detail, Rulesets)
-    expect(ctx.addPage).toHaveBeenCalledTimes(3);
+    // 4 pages (Preflight list, Job detail, Rulesets, PDF Viewer)
+    expect(ctx.addPage).toHaveBeenCalledTimes(4);
 
     // 1 addRoutes call
     expect(ctx.addRoutes).toHaveBeenCalledTimes(1);

@@ -17,6 +17,7 @@ import { jobRoutes } from "./routes/jobs";
 import { profileRoutes } from "./routes/profiles";
 import { aiConfigRoutes } from "./routes/ai-config";
 import { colorConfigRoutes } from "./routes/color-config";
+import { viewerRoutes } from "./routes/viewer";
 
 // ── Public exports ──────────────────────────────────────────
 
@@ -173,6 +174,11 @@ export const lintpdfPlugin: PixieDustPlugin = {
       title: "Rulesets",
       layout: "dashboard",
     });
+    ctx.addPage({
+      path: "/dashboard/preflight/[jobId]/viewer",
+      title: "PDF Viewer",
+      layout: "dashboard",
+    });
 
     // ── Public paths (HMAC-authenticated, not session-authenticated) ──
     ctx.addPublicPath("/api/lintpdf/webhooks");
@@ -184,6 +190,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       ...profileRoutes(),
       ...aiConfigRoutes(),
       ...colorConfigRoutes(),
+      ...viewerRoutes(),
     ]);
 
     // ── Hooks ──

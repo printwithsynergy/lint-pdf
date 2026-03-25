@@ -178,6 +178,34 @@ class StorageBackend:
         client = self._get_client()
         client.delete_object(Bucket=self._bucket_name, Key=file_key)
 
+    def upload_raw(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> str:
+        """Upload arbitrary bytes to storage at the given key.
+
+        Args:
+            key: Full storage key.
+            data: Raw bytes to store.
+            content_type: MIME type for the object.
+
+        Returns:
+            The storage key.
+        """
+        client = self._get_client()
+        client.put_object(Bucket=self._bucket_name, Key=key, Body=data, ContentType=content_type)
+        return key
+
+    def download_raw(self, key: str) -> bytes | None:
+        """Download arbitrary bytes from storage.
+
+        Returns None if the key does not exist.
+        """
+        try:
+            client = self._get_client()
+            response = client.get_object(Bucket=self._bucket_name, Key=key)
+            result: bytes = response["Body"].read()
+            return result
+        except Exception:
+            return None
+
 
 _storage_state: dict[str, StorageBackend | None] = {"instance": None}
 

@@ -1,0 +1,52 @@
+"use client";
+
+interface ZoomControlsProps {
+  zoom: number;
+  onZoomChange: (zoom: number) => void;
+}
+
+const ZOOM_STEPS = [25, 50, 75, 100, 125, 150, 200, 300, 400];
+
+export function ZoomControls({ zoom, onZoomChange }: ZoomControlsProps) {
+  const zoomIn = () => {
+    const next = ZOOM_STEPS.find((z) => z > zoom);
+    if (next) onZoomChange(next);
+  };
+
+  const zoomOut = () => {
+    const prev = [...ZOOM_STEPS].reverse().find((z) => z < zoom);
+    if (prev) onZoomChange(prev);
+  };
+
+  return (
+    <div className="flex items-center gap-1">
+      <button
+        onClick={zoomOut}
+        disabled={zoom <= ZOOM_STEPS[0]}
+        className="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-40"
+        title="Zoom out"
+      >
+        −
+      </button>
+      <select
+        value={zoom}
+        onChange={(e) => onZoomChange(Number(e.target.value))}
+        className="rounded border px-1 py-1 text-sm"
+      >
+        {ZOOM_STEPS.map((z) => (
+          <option key={z} value={z}>
+            {z}%
+          </option>
+        ))}
+      </select>
+      <button
+        onClick={zoomIn}
+        disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
+        className="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-40"
+        title="Zoom in"
+      >
+        +
+      </button>
+    </div>
+  );
+}

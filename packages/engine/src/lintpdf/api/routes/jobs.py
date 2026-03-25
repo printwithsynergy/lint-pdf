@@ -263,6 +263,11 @@ async def get_job(
                 details=f.details,
                 source=f.source,
                 category=f.category,
+                bbox=[f.bbox_x0, f.bbox_y0, f.bbox_x1, f.bbox_y1]
+                if f.bbox_x0 is not None
+                else None,
+                object_id=f.object_id,
+                object_type=f.object_type,
             )
             for f in findings
         ]

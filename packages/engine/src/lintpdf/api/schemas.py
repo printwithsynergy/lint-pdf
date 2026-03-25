@@ -28,6 +28,9 @@ class FindingResponse(BaseModel):
     details: dict[str, object] | None = None
     source: str = "engine"
     category: str | None = None
+    bbox: list[float] | None = None  # [x0, y0, x1, y1] in PDF points
+    object_id: str | None = None  # PDF resource name (e.g. "Im42", "F1")
+    object_type: str | None = None  # "image", "text", "path", "font"
 
 
 class JobSummaryResponse(BaseModel):

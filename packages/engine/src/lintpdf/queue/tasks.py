@@ -215,6 +215,7 @@ def run_preflight(
             # Store individual findings
             ai_features_used: set[tuple[str, str]] = set()
             for finding in result.findings:
+                bbox = finding.bbox
                 db.add(
                     JobFinding(
                         job_id=job.id,
@@ -225,6 +226,12 @@ def run_preflight(
                         details=finding.details if finding.details else None,
                         source=finding.source,
                         category=finding.category if finding.category else None,
+                        bbox_x0=bbox[0] if bbox else None,
+                        bbox_y0=bbox[1] if bbox else None,
+                        bbox_x1=bbox[2] if bbox else None,
+                        bbox_y1=bbox[3] if bbox else None,
+                        object_id=finding.object_id,
+                        object_type=finding.object_type,
                     )
                 )
                 if finding.source == "ai" and finding.category:
@@ -281,6 +288,12 @@ def run_preflight(
                     "summary": result_dict["summary"],
                 },
             )
+
+            # Kick off async tile pre-rendering for the viewer (non-blocking)
+            try:
+                prerender_viewer_tiles.delay(job_id, str(job.tenant_id), file_key)
+            except Exception:
+                logger.warning("Failed to queue tile pre-render for job %s", job_id)
 
             return {
                 "job_id": job_id,
@@ -355,6 +368,50 @@ def cleanup_expired_reports() -> dict[str, Any]:
         return {"cleaned": count}
     finally:
         db.close()
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    name="lintpdf.viewer.prerender_tiles",
+    time_limit=120,
+    soft_time_limit=110,
+    ignore_result=True,
+)
+def prerender_viewer_tiles(
+    job_id: str,
+    tenant_id: str,
+    file_key: str,
+) -> dict[str, Any]:
+    """Pre-render page tiles at default DPI for the interactive viewer.
+
+    Runs asynchronously after a preflight job completes. Renders composite
+    page images at 150 DPI (default viewer zoom) and 72 DPI (thumbnail strip),
+    then stores them in S3 for instant loading when the viewer opens.
+    """
+    from lintpdf.ai.rendering import render_page_to_image, get_page_count
+    from lintpdf.api.storage import get_storage
+
+    storage = get_storage()
+    try:
+        pdf_bytes = storage.download_pdf(file_key)
+    except Exception:
+        logger.warning("Pre-render: could not download PDF for job %s", job_id)
+        return {"job_id": job_id, "status": "skipped", "reason": "pdf_not_found"}
+
+    page_count = get_page_count(pdf_bytes)
+    rendered = 0
+
+    for page_num in range(1, min(page_count + 1, 201)):  # Cap at 200 pages
+        for dpi in (150, 72):
+            cache_key = f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}.png"
+            try:
+                tile_bytes = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
+                storage.upload_raw(cache_key, tile_bytes, content_type="image/png")
+                rendered += 1
+            except Exception:
+                logger.debug("Pre-render failed for page %d at %d DPI", page_num, dpi)
+
+    logger.info("Pre-rendered %d tiles for job %s (%d pages)", rendered, job_id, page_count)
+    return {"job_id": job_id, "status": "complete", "tiles_rendered": rendered}
 
 
 def _dispatch_tenant_webhooks(

@@ -30,6 +30,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpangocairo-1.0-0 \
     libgdk-pixbuf-2.0-0 \
     libcairo2 \
+    poppler-utils \
+    ghostscript \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder

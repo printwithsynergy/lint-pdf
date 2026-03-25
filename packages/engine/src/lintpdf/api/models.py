@@ -12,6 +12,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -157,6 +158,12 @@ class JobFinding(Base):
     details: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     source: Mapped[str] = mapped_column(String(20), nullable=False, default="engine")
     category: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    bbox_x0: Mapped[float | None] = mapped_column(Float, nullable=True)
+    bbox_y0: Mapped[float | None] = mapped_column(Float, nullable=True)
+    bbox_x1: Mapped[float | None] = mapped_column(Float, nullable=True)
+    bbox_y1: Mapped[float | None] = mapped_column(Float, nullable=True)
+    object_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    object_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
     # Relationships
     job: Mapped[Job] = relationship(back_populates="findings")
