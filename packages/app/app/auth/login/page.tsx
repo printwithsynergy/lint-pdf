@@ -13,6 +13,24 @@ export default function LoginPage() {
   );
 }
 
+interface Branding {
+  brandName: string;
+  brandLogoUrl: string;
+  primaryColor: string | null;
+  loginBgColor: string | null;
+  loginHeading: string | null;
+  loginSubheading: string | null;
+}
+
+const DEFAULT_BRANDING: Branding = {
+  brandName: "LintPDF",
+  brandLogoUrl: "/logo.png",
+  primaryColor: null,
+  loginBgColor: null,
+  loginHeading: null,
+  loginSubheading: null,
+};
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -27,6 +45,15 @@ function LoginContent() {
     null,
   );
   const pollingRef = useRef<string | null>(null);
+  const [branding, setBranding] = useState<Branding>(DEFAULT_BRANDING);
+
+  // Fetch platform branding from AppSettings (via Pixie Dust getBranding pattern)
+  useEffect(() => {
+    fetch("/api/auth/branding")
+      .then((r) => r.json())
+      .then((data) => setBranding({ ...DEFAULT_BRANDING, ...data }))
+      .catch(() => {}); // Keep defaults on error
+  }, []);
 
   // Store plan param in sessionStorage for post-auth redirect
   useEffect(() => {
@@ -202,17 +229,33 @@ function LoginContent() {
     }
   }
 
+  const bgStyle = branding.loginBgColor
+    ? { backgroundColor: branding.loginBgColor }
+    : undefined;
+  const btnStyle = branding.primaryColor
+    ? { backgroundColor: branding.primaryColor }
+    : undefined;
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-white p-4">
+    <main
+      className="flex min-h-screen items-center justify-center bg-white p-4"
+      style={bgStyle}
+    >
       {/* Subtle brand gradient background — matches marketing hero */}
-      <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-white via-brand-50/30 to-white" />
+      {!branding.loginBgColor && (
+        <div className="pointer-events-none fixed inset-0 bg-gradient-to-b from-white via-brand-50/30 to-white" />
+      )}
 
       <div className="relative z-10 w-full max-w-[420px]">
-        {/* Branding — logo + wordmark matching marketing header */}
+        {/* Branding — dynamic logo + name from AppSettings */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <img src="/logo.png" alt="LintPDF" className="h-12 w-12" />
+          <img
+            src={branding.brandLogoUrl}
+            alt={branding.brandName}
+            className="h-12 w-12"
+          />
           <span className="text-xl font-semibold tracking-tight text-brand-900">
-            LintPDF
+            {branding.brandName}
           </span>
         </div>
 
@@ -220,7 +263,9 @@ function LoginContent() {
         <div className="rounded-2xl border border-slate-200/60 bg-white p-8 shadow-lg shadow-brand-900/5">
           <div className="mb-6 text-center">
             <h1 className="text-[22px] font-bold tracking-tight text-slate-900">
-              {status === "code" ? "Check your email" : "Sign in"}
+              {status === "code"
+                ? "Check your email"
+                : branding.loginHeading ?? "Sign in"}
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-slate-500">
               {status === "code" ? (
@@ -229,7 +274,8 @@ function LoginContent() {
                   <strong className="text-slate-900">{email}</strong>
                 </>
               ) : (
-                "Enter your email to sign in or create an account."
+                branding.loginSubheading ??
+                  "Enter your email to sign in or create an account."
               )}
             </p>
           </div>
@@ -302,6 +348,7 @@ function LoginContent() {
                 type="submit"
                 disabled={status === "loading"}
                 className="w-full rounded-lg bg-brand-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50"
+                style={btnStyle}
               >
                 {status === "loading" ? "Sending..." : "Continue with Email"}
               </button>

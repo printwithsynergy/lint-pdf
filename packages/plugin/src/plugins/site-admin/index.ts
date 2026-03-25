@@ -46,6 +46,10 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     // Permissions
     ctx.addPermission("site-admin:access", ["SUPER_ADMIN"]);
 
+    // Store DB reference for AppSettings access
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = ctx.services.db as any;
+
     // Navigation — global section
     ctx.addNavItem({
       label: "All Tenants",
@@ -71,6 +75,22 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       order: 30,
       requiredRole: "SUPER_ADMIN",
     });
+    ctx.addNavItem({
+      label: "Appearance",
+      href: "/dashboard/admin/appearance",
+      icon: "palette",
+      section: "global",
+      order: 40,
+      requiredRole: "SUPER_ADMIN",
+    });
+    ctx.addNavItem({
+      label: "Branding",
+      href: "/dashboard/admin/branding",
+      icon: "image",
+      section: "global",
+      order: 41,
+      requiredRole: "SUPER_ADMIN",
+    });
 
     // Pages
     ctx.addPage({
@@ -91,6 +111,16 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addPage({
       path: "/dashboard/admin/health",
       title: "System Health",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/appearance",
+      title: "Appearance",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/branding",
+      title: "Branding",
       layout: "dashboard",
     });
 
@@ -211,6 +241,138 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
         }) as RouteHandler,
       },
     ];
+
+    // ── AppSettings routes (Prisma-based, NOT engine proxy) ──
+    // These read/write the AppSettings singleton for platform-wide appearance + branding.
+
+    routes.push(
+      {
+        method: "GET" as HttpMethod,
+        path: "/appearance",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Get platform appearance settings",
+        handler: (async (): Promise<RouteResponse> => {
+          try {
+            const settings = await db.appSettings.findUnique({
+              where: { id: "singleton" },
+              select: {
+                primaryColor: true,
+                emailButtonColor: true,
+                loginBgColor: true,
+                customCss: true,
+              },
+            });
+            return {
+              status: 200,
+              body: {
+                primaryColor: settings?.primaryColor ?? "",
+                accentColor: settings?.emailButtonColor ?? "",
+                loginBgColor: settings?.loginBgColor ?? "",
+                customCss: settings?.customCss ?? "",
+              },
+            };
+          } catch {
+            return { status: 500, body: { error: "Failed to load appearance settings" } };
+          }
+        }) as RouteHandler,
+      },
+      {
+        method: "PATCH" as HttpMethod,
+        path: "/appearance",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Update platform appearance settings",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const { primaryColor, accentColor, customCss, loginBgColor } =
+            req.body as Record<string, string>;
+          try {
+            await db.appSettings.upsert({
+              where: { id: "singleton" },
+              update: {
+                ...(primaryColor !== undefined && { primaryColor }),
+                ...(accentColor !== undefined && { emailButtonColor: accentColor }),
+                ...(loginBgColor !== undefined && { loginBgColor }),
+                ...(customCss !== undefined && { customCss }),
+              },
+              create: {
+                id: "singleton",
+                primaryColor: primaryColor ?? null,
+                emailButtonColor: accentColor ?? null,
+                loginBgColor: loginBgColor ?? null,
+                customCss: customCss ?? null,
+              },
+            });
+            return { status: 200, body: { success: true } };
+          } catch {
+            return { status: 500, body: { error: "Failed to save appearance settings" } };
+          }
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/branding",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Get platform branding settings",
+        handler: (async (): Promise<RouteResponse> => {
+          try {
+            const settings = await db.appSettings.findUnique({
+              where: { id: "singleton" },
+              select: {
+                brandName: true,
+                brandLogoUrl: true,
+                brandTagline: true,
+                customCss: true,
+              },
+            });
+            return {
+              status: 200,
+              body: {
+                brandName: settings?.brandName ?? "",
+                brandLogoUrl: settings?.brandLogoUrl ?? "",
+                brandTagline: settings?.brandTagline ?? "",
+                customCss: settings?.customCss ?? "",
+              },
+            };
+          } catch {
+            return { status: 500, body: { error: "Failed to load branding settings" } };
+          }
+        }) as RouteHandler,
+      },
+      {
+        method: "PATCH" as HttpMethod,
+        path: "/branding",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Update platform branding settings",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const { brandName, brandLogoUrl, brandTagline, customCss } =
+            req.body as Record<string, string>;
+          try {
+            await db.appSettings.upsert({
+              where: { id: "singleton" },
+              update: {
+                ...(brandName !== undefined && { brandName }),
+                ...(brandLogoUrl !== undefined && { brandLogoUrl }),
+                ...(brandTagline !== undefined && { brandTagline }),
+                ...(customCss !== undefined && { customCss }),
+              },
+              create: {
+                id: "singleton",
+                brandName: brandName ?? "LintPDF",
+                brandLogoUrl: brandLogoUrl ?? "/logo.svg",
+                brandTagline: brandTagline ?? "",
+                customCss: customCss ?? null,
+              },
+            });
+            return { status: 200, body: { success: true } };
+          } catch {
+            return { status: 500, body: { error: "Failed to save branding settings" } };
+          }
+        }) as RouteHandler,
+      },
+    );
 
     ctx.addRoutes("/api/lintpdf/admin", routes);
   },
