@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { Badge } from "@thinkneverland/pixie-dust-ui";
+import { EmptyState } from "@thinkneverland/pixie-dust-ui";
+import { useToast } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
 
 interface Profile {
   profile_id: string;
@@ -28,21 +32,12 @@ interface Job {
   } | null;
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-700",
-    processing: "bg-blue-100 text-blue-700",
-    complete: "bg-green-100 text-green-700",
-    failed: "bg-red-100 text-red-700",
-  };
-  return (
-    <span
-      className={`rounded px-1.5 py-0.5 text-xs font-medium ${colors[status] ?? "bg-gray-100 text-gray-700"}`}
-    >
-      {status}
-    </span>
-  );
-}
+const STATUS_VARIANT: Record<string, "warning" | "default" | "success" | "destructive"> = {
+  pending: "warning",
+  processing: "default",
+  complete: "success",
+  failed: "destructive",
+};
 
 export default function PreflightPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -56,8 +51,13 @@ export default function PreflightPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState("lintpdf-default");
   const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
+
+  const { toast } = useToast();
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -93,8 +93,6 @@ export default function PreflightPage() {
     if (!file) return;
 
     setUploading(true);
-    setError("");
-    setUploadSuccess("");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -109,24 +107,23 @@ export default function PreflightPage() {
       if (!resp.ok) {
         throw new Error(data.error ?? data.detail ?? "Upload failed");
       }
-      setUploadSuccess(`Job submitted: ${data.job_id ?? "processing"}`);
+      toast(`Job submitted: ${data.job_id ?? "processing"}`, "success");
       if (fileInputRef.current) fileInputRef.current.value = "";
       // Refresh job list after a short delay
       setTimeout(() => fetchJobs(), 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+      toast(err instanceof Error ? err.message : "Upload failed", "error");
     } finally {
       setUploading(false);
     }
   }
 
   async function handleDelete(jobId: string) {
-    if (!confirm("Delete this job?")) return;
     try {
       await fetch(`/api/lintpdf/jobs/${jobId}`, { method: "DELETE" });
       await fetchJobs();
     } catch {
-      setError("Failed to delete job");
+      toast("Failed to delete job", "error");
     }
   }
 
@@ -189,9 +186,6 @@ export default function PreflightPage() {
             {uploading ? "Uploading..." : "Run Preflight"}
           </button>
         </div>
-        {uploadSuccess && (
-          <p className="mt-2 text-sm text-green-600">{uploadSuccess}</p>
-        )}
       </form>
 
       {error && (
@@ -203,8 +197,12 @@ export default function PreflightPage() {
       {loading ? (
         <SkeletonDashboard type="table" />
       ) : jobs.length === 0 ? (
-        <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          No preflight jobs yet. Upload a PDF above to run your first preflight.
+        <div className="mt-6">
+          <EmptyState
+            icon="FileText"
+            title="No preflight jobs yet"
+            description="Upload a PDF above to run your first preflight."
+          />
         </div>
       ) : (
         <>
@@ -239,7 +237,9 @@ export default function PreflightPage() {
                       <code className="text-xs">{job.profile_id}</code>
                     </td>
                     <td className="py-2">
-                      <StatusBadge status={job.status} />
+                      <Badge variant={STATUS_VARIANT[job.status] ?? "outline"}>
+                        {job.status}
+                      </Badge>
                     </td>
                     <td className="py-2">
                       {job.summary ? (
@@ -281,7 +281,10 @@ export default function PreflightPage() {
                           View
                         </Link>
                         <button
-                          onClick={() => handleDelete(job.job_id)}
+                          onClick={() => {
+                            setConfirmTarget(job.job_id);
+                            setConfirmOpen(true);
+                          }}
                           className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                         >
                           Delete
@@ -317,6 +320,23 @@ export default function PreflightPage() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        onConfirm={async () => {
+          if (confirmTarget) await handleDelete(confirmTarget);
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        title="Delete job?"
+        description="This action cannot be undone. The job and its results will be permanently removed."
+        variant="destructive"
+        confirmLabel="Delete"
+      />
     </main>
   );
 }

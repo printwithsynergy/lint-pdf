@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
 
 interface TenantInfo {
   id: string;
@@ -36,6 +37,14 @@ export function SuperAdminToolbar() {
   const [showTenantPicker, setShowTenantPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [switching, setSwitching] = useState(false);
+
+  // Confirm dialog state for start impersonation
+  const [confirmStartOpen, setConfirmStartOpen] = useState(false);
+  const [confirmStartTarget, setConfirmStartTarget] = useState<string | null>(null);
+  const [confirmStartLabel, setConfirmStartLabel] = useState("");
+
+  // Confirm dialog state for stop impersonation
+  const [confirmStopOpen, setConfirmStopOpen] = useState(false);
 
   const fetchMe = useCallback(async () => {
     try {
@@ -78,15 +87,6 @@ export function SuperAdminToolbar() {
   }, [fetchMe]);
 
   async function startImpersonation(tenantId: string) {
-    const tenant = allTenants.find((t) => t.id === tenantId);
-    const label = tenant ? `${tenant.name} (${tenant.slug})` : tenantId;
-    if (
-      !confirm(
-        `Start assisting customer "${label}"? You will view their dashboard as them.`,
-      )
-    ) {
-      return;
-    }
     setSwitching(true);
     try {
       const resp = await fetch("/api/auth/impersonate", {
@@ -105,9 +105,6 @@ export function SuperAdminToolbar() {
   }
 
   async function stopImpersonation() {
-    if (!confirm("Stop assisting this customer and return to admin view?")) {
-      return;
-    }
     setSwitching(true);
     try {
       await fetch("/api/auth/impersonate", {
@@ -146,7 +143,7 @@ export function SuperAdminToolbar() {
             </span>
           </div>
           <button
-            onClick={stopImpersonation}
+            onClick={() => setConfirmStopOpen(true)}
             disabled={switching}
             className="rounded bg-amber-900 px-3 py-1 text-xs font-medium text-amber-50 hover:bg-amber-800 disabled:opacity-50"
           >
@@ -205,7 +202,9 @@ export function SuperAdminToolbar() {
                           key={t.id}
                           onClick={() => {
                             setShowTenantPicker(false);
-                            startImpersonation(t.id);
+                            setConfirmStartTarget(t.id);
+                            setConfirmStartLabel(`${t.name} (${t.slug})`);
+                            setConfirmStartOpen(true);
                           }}
                           disabled={switching}
                           className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50 disabled:opacity-50"
@@ -224,6 +223,40 @@ export function SuperAdminToolbar() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmStartOpen}
+        onClose={() => {
+          setConfirmStartOpen(false);
+          setConfirmStartTarget(null);
+          setConfirmStartLabel("");
+        }}
+        onConfirm={async () => {
+          if (confirmStartTarget) await startImpersonation(confirmStartTarget);
+          setConfirmStartOpen(false);
+          setConfirmStartTarget(null);
+          setConfirmStartLabel("");
+        }}
+        title="Start assisting customer?"
+        description={`You will view the dashboard for "${confirmStartLabel}" as them. All changes are logged under your admin account.`}
+        variant="default"
+        confirmLabel="Start Assisting"
+        loading={switching}
+      />
+
+      <ConfirmDialog
+        open={confirmStopOpen}
+        onClose={() => setConfirmStopOpen(false)}
+        onConfirm={async () => {
+          await stopImpersonation();
+          setConfirmStopOpen(false);
+        }}
+        title="Stop assisting?"
+        description="Stop assisting this customer and return to admin view?"
+        variant="default"
+        confirmLabel="Stop Assisting"
+        loading={switching}
+      />
     </>
   );
 }

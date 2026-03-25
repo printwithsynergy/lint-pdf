@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { Badge } from "@thinkneverland/pixie-dust-ui";
 
 interface UsageData {
   plan: string;
@@ -100,7 +101,7 @@ export default function UsagePage() {
       <h1 className="font-display text-2xl font-bold">Usage & Limits</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Current billing period usage for your{" "}
-        <span className="font-medium uppercase">{usage.plan}</span> plan.
+        <Badge variant="secondary">{usage.plan.toUpperCase()}</Badge> plan.
       </p>
 
       <div className="mt-6 space-y-6">

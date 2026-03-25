@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { useToast } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
 
 interface ProfileSummary {
   profile_id: string;
@@ -44,6 +46,12 @@ export default function RulesetsPage() {
   });
   const [creating, setCreating] = useState(false);
 
+  // Confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
+
+  const { toast } = useToast();
+
   const fetchProfiles = useCallback(async () => {
     try {
       const resp = await fetch("/api/lintpdf/profiles");
@@ -68,14 +76,14 @@ export default function RulesetsPage() {
       const data = await resp.json();
       setSelectedProfile(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load profile");
+      toast(e instanceof Error ? e.message : "Failed to load profile", "error");
     }
   }
 
   async function cloneProfile(profile: ProfileSummary) {
     const detail = await fetch(`/api/lintpdf/profiles/${profile.profile_id}`);
     if (!detail.ok) {
-      setError("Failed to load profile for cloning");
+      toast("Failed to load profile for cloning", "error");
       return;
     }
     const data: ProfileDetail = await detail.json();
@@ -95,7 +103,6 @@ export default function RulesetsPage() {
 
   async function handleCreate() {
     setCreating(true);
-    setError("");
     try {
       const resp = await fetch("/api/lintpdf/profiles", {
         method: "POST",
@@ -121,16 +128,16 @@ export default function RulesetsPage() {
       setNewProfileId("");
       setNewName("");
       setNewDescription("");
+      toast("Ruleset created successfully", "success");
       await fetchProfiles();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create profile");
+      toast(e instanceof Error ? e.message : "Failed to create profile", "error");
     } finally {
       setCreating(false);
     }
   }
 
   async function handleDelete(profileId: string) {
-    if (!confirm("Are you sure you want to delete this profile?")) return;
     try {
       const resp = await fetch(`/api/lintpdf/profiles/${profileId}`, {
         method: "DELETE",
@@ -142,9 +149,10 @@ export default function RulesetsPage() {
       if (selectedProfile?.profile_id === profileId) {
         setSelectedProfile(null);
       }
+      toast("Ruleset deleted", "success");
       await fetchProfiles();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete profile");
+      toast(e instanceof Error ? e.message : "Failed to delete profile", "error");
     }
   }
 
@@ -451,7 +459,10 @@ export default function RulesetsPage() {
                     View
                   </button>
                   <button
-                    onClick={() => handleDelete(p.profile_id)}
+                    onClick={() => {
+                      setConfirmTarget(p.profile_id);
+                      setConfirmOpen(true);
+                    }}
                     className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                   >
                     Delete
@@ -511,6 +522,23 @@ export default function RulesetsPage() {
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        onConfirm={async () => {
+          if (confirmTarget) await handleDelete(confirmTarget);
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        title="Delete ruleset?"
+        description="This action cannot be undone. Any jobs using this profile will need a different ruleset."
+        variant="destructive"
+        confirmLabel="Delete"
+      />
     </main>
   );
 }

@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { EmptyState } from "@thinkneverland/pixie-dust-ui";
+import { useToast } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
 
 interface WebhookEndpoint {
   id: string;
@@ -41,6 +44,12 @@ export default function WebhooksPage() {
     error: string;
   } | null>(null);
 
+  // Confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
+
+  const { toast } = useToast();
+
   const fetchWebhooks = useCallback(async () => {
     try {
       const resp = await fetch("/api/lintpdf/webhook-endpoints");
@@ -60,7 +69,6 @@ export default function WebhooksPage() {
 
   async function handleCreate() {
     setCreating(true);
-    setError("");
     try {
       const resp = await fetch("/api/lintpdf/webhook-endpoints", {
         method: "POST",
@@ -74,16 +82,16 @@ export default function WebhooksPage() {
       setNewUrl("");
       setNewEvents(["job.completed", "job.failed"]);
       setShowCreate(false);
+      toast("Webhook created successfully", "success");
       await fetchWebhooks();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create webhook");
+      toast(e instanceof Error ? e.message : "Failed to create webhook", "error");
     } finally {
       setCreating(false);
     }
   }
 
   async function handleUpdate(id: string) {
-    setError("");
     try {
       const resp = await fetch(`/api/lintpdf/webhook-endpoints/${id}`, {
         method: "PATCH",
@@ -95,9 +103,10 @@ export default function WebhooksPage() {
         throw new Error(data.error ?? "Failed to update webhook");
       }
       setEditingId(null);
+      toast("Webhook updated", "success");
       await fetchWebhooks();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update webhook");
+      toast(e instanceof Error ? e.message : "Failed to update webhook", "error");
     }
   }
 
@@ -110,19 +119,19 @@ export default function WebhooksPage() {
       });
       await fetchWebhooks();
     } catch {
-      setError("Failed to toggle webhook");
+      toast("Failed to toggle webhook", "error");
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this webhook?")) return;
     try {
       await fetch(`/api/lintpdf/webhook-endpoints/${id}`, {
         method: "DELETE",
       });
+      toast("Webhook deleted", "success");
       await fetchWebhooks();
     } catch {
-      setError("Failed to delete webhook");
+      toast("Failed to delete webhook", "error");
     }
   }
 
@@ -241,10 +250,19 @@ export default function WebhooksPage() {
       {/* Webhook list */}
       <div className="mt-6 space-y-4">
         {webhooks.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-            No webhooks configured. Add one to start receiving event
-            notifications.
-          </div>
+          <EmptyState
+            icon="Webhook"
+            title="No webhooks configured"
+            description="Add one to start receiving event notifications."
+            action={
+              <button
+                onClick={() => setShowCreate(true)}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Add Webhook
+              </button>
+            }
+          />
         ) : (
           webhooks.map((wh) => (
             <div key={wh.id} className="rounded-lg border p-4">
@@ -347,7 +365,10 @@ export default function WebhooksPage() {
                         {wh.is_active ? "Disable" : "Enable"}
                       </button>
                       <button
-                        onClick={() => handleDelete(wh.id)}
+                        onClick={() => {
+                          setConfirmTarget(wh.id);
+                          setConfirmOpen(true);
+                        }}
                         className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                       >
                         Delete
@@ -360,6 +381,23 @@ export default function WebhooksPage() {
           ))
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        onConfirm={async () => {
+          if (confirmTarget) await handleDelete(confirmTarget);
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        title="Delete webhook?"
+        description="This action cannot be undone. You will stop receiving event notifications at this endpoint."
+        variant="destructive"
+        confirmLabel="Delete"
+      />
     </main>
   );
 }

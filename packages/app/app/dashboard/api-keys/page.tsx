@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { EmptyState } from "@thinkneverland/pixie-dust-ui";
+import { useToast } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
 
 interface ApiKey {
   id: string;
@@ -24,6 +27,12 @@ export default function ApiKeysPage() {
   const [newlyCreatedKey, setNewlyCreatedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // Confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
+
+  const { toast } = useToast();
+
   const fetchKeys = useCallback(async () => {
     try {
       const resp = await fetch("/api/lintpdf/keys");
@@ -43,7 +52,6 @@ export default function ApiKeysPage() {
 
   async function handleCreate() {
     setCreating(true);
-    setError("");
     try {
       const resp = await fetch("/api/lintpdf/keys", {
         method: "POST",
@@ -57,27 +65,28 @@ export default function ApiKeysPage() {
       const data = await resp.json();
       setNewlyCreatedKey(data.api_key ?? data.key ?? null);
       setNewLabel("");
+      toast("API key created successfully", "success");
       await fetchKeys();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create key");
+      toast(e instanceof Error ? e.message : "Failed to create key", "error");
     } finally {
       setCreating(false);
     }
   }
 
   async function handleRevoke(id: string) {
-    if (!confirm("Revoke this API key? This action cannot be undone.")) return;
     try {
       await fetch(`/api/lintpdf/keys/${id}`, { method: "DELETE" });
+      toast("API key revoked", "success");
       await fetchKeys();
     } catch {
-      setError("Failed to revoke key");
+      toast("Failed to revoke key", "error");
     }
   }
 
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text).catch(() => {
-      setError("Failed to copy to clipboard. Please copy manually.");
+      toast("Failed to copy to clipboard. Please copy manually.", "error");
     });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -162,9 +171,19 @@ export default function ApiKeysPage() {
       {/* Key list */}
       <div className="mt-6 space-y-2">
         {keys.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-            No API keys. Create one to authenticate with the LintPDF API.
-          </div>
+          <EmptyState
+            icon="Key"
+            title="No API keys"
+            description="Create one to authenticate with the LintPDF API."
+            action={
+              <button
+                onClick={() => setShowCreate(true)}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                Create Key
+              </button>
+            }
+          />
         ) : (
           keys.map((key) => (
             <div
@@ -191,7 +210,10 @@ export default function ApiKeysPage() {
                 </div>
               </div>
               <button
-                onClick={() => handleRevoke(key.id)}
+                onClick={() => {
+                  setConfirmTarget(key.id);
+                  setConfirmOpen(true);
+                }}
                 className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
               >
                 Revoke
@@ -200,6 +222,23 @@ export default function ApiKeysPage() {
           ))
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        onConfirm={async () => {
+          if (confirmTarget) await handleRevoke(confirmTarget);
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        title="Revoke API key?"
+        description="This action cannot be undone. Any integrations using this key will stop working."
+        variant="destructive"
+        confirmLabel="Revoke"
+      />
     </main>
   );
 }

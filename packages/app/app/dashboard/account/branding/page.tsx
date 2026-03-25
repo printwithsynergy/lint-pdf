@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { EmptyState } from "@thinkneverland/pixie-dust-ui";
+import { useToast } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { Badge } from "@thinkneverland/pixie-dust-ui";
 
 interface BrandProfile {
   id: string;
@@ -22,6 +26,12 @@ const PROFILE_TYPE_LABELS: Record<string, string> = {
   none: "Blind (No Branding)",
 };
 
+const PROFILE_TYPE_VARIANT: Record<string, "default" | "secondary" | "outline"> = {
+  custom: "default",
+  lintpdf: "secondary",
+  none: "outline",
+};
+
 export default function BrandingPage() {
   const [profiles, setProfiles] = useState<BrandProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +51,12 @@ export default function BrandingPage() {
   const [formFooterText, setFormFooterText] = useState("Powered by LintPDF");
   const [formHideFooter, setFormHideFooter] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Confirm dialog state
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
+
+  const { toast } = useToast();
 
   const fetchProfiles = useCallback(async () => {
     try {
@@ -86,7 +102,6 @@ export default function BrandingPage() {
 
   async function handleSave() {
     setSaving(true);
-    setError("");
     try {
       const body = {
         name: formName,
@@ -110,24 +125,25 @@ export default function BrandingPage() {
       if (!resp.ok) throw new Error("Failed to save profile");
       setShowCreate(false);
       resetForm();
+      toast(editingId ? "Profile updated" : "Profile created", "success");
       await fetchProfiles();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to save");
+      toast(e instanceof Error ? e.message : "Failed to save", "error");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this brand profile?")) return;
     try {
       const resp = await fetch(`/api/lintpdf/branding/profiles/${id}`, {
         method: "DELETE",
       });
       if (!resp.ok) throw new Error("Failed to delete");
+      toast("Brand profile deleted", "success");
       await fetchProfiles();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to delete");
+      toast(e instanceof Error ? e.message : "Failed to delete", "error");
     }
   }
 
@@ -139,9 +155,10 @@ export default function BrandingPage() {
         body: JSON.stringify({ brand_profile_id: id }),
       });
       if (!resp.ok) throw new Error("Failed to set default");
+      toast("Default profile updated", "success");
       await fetchProfiles();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to set default");
+      toast(e instanceof Error ? e.message : "Failed to set default", "error");
     }
   }
 
@@ -322,10 +339,22 @@ export default function BrandingPage() {
       {/* Profiles list */}
       <div className="mt-6 space-y-3">
         {profiles.length === 0 && (
-          <p className="text-sm text-muted-foreground">
-            No brand profiles yet. Create one to customize your report
-            appearance.
-          </p>
+          <EmptyState
+            icon="Palette"
+            title="No brand profiles yet"
+            description="Create one to customize your report appearance."
+            action={
+              <button
+                onClick={() => {
+                  resetForm();
+                  setShowCreate(true);
+                }}
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              >
+                New Profile
+              </button>
+            }
+          />
         )}
         {profiles.map((p) => (
           <div
@@ -337,13 +366,11 @@ export default function BrandingPage() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{p.name}</span>
-                <span className="rounded bg-muted px-2 py-0.5 text-xs">
+                <Badge variant={PROFILE_TYPE_VARIANT[p.profile_type] ?? "outline"}>
                   {PROFILE_TYPE_LABELS[p.profile_type]}
-                </span>
+                </Badge>
                 {p.is_default && (
-                  <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                    Default
-                  </span>
+                  <Badge variant="success">Default</Badge>
                 )}
               </div>
               {p.profile_type === "custom" && p.brand_name && (
@@ -374,7 +401,10 @@ export default function BrandingPage() {
                 Edit
               </button>
               <button
-                onClick={() => handleDelete(p.id)}
+                onClick={() => {
+                  setConfirmTarget(p.id);
+                  setConfirmOpen(true);
+                }}
                 className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
               >
                 Delete
@@ -383,6 +413,23 @@ export default function BrandingPage() {
           </div>
         ))}
       </div>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        onClose={() => {
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        onConfirm={async () => {
+          if (confirmTarget) await handleDelete(confirmTarget);
+          setConfirmOpen(false);
+          setConfirmTarget(null);
+        }}
+        title="Delete brand profile?"
+        description="This action cannot be undone. Reports using this profile will fall back to the default."
+        variant="destructive"
+        confirmLabel="Delete"
+      />
     </main>
   );
 }
