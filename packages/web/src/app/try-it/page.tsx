@@ -139,7 +139,8 @@ export default function TryItPage() {
       <section className="bg-brand-50/50 pt-20 pb-16">
         <div className="mx-auto max-w-3xl px-6 text-center">
           <h1 className="text-4xl font-bold text-slate-900 md:text-5xl mb-4">
-            Got Messy PDFs?{" "}
+            Got Messy PDFs?
+            <br />
             <span className="bg-gradient-to-r from-brand-800 via-brand-600 to-brand-400 bg-clip-text text-transparent">
               We&rsquo;ll Sort Them Out.
             </span>
@@ -154,6 +155,7 @@ export default function TryItPage() {
 
       <section className="py-16">
         <div className="mx-auto max-w-xl px-6">
+          <div className="rounded-2xl bg-slate-100/70 border border-slate-200/60 p-8">
           {state === "success" ? (
             <div className="rounded-2xl border border-brand-200 bg-brand-50/50 p-8 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-brand-100">
@@ -399,6 +401,7 @@ export default function TryItPage() {
               </p>
             </form>
           )}
+          </div>
         </div>
       </section>
     </main>
