@@ -7,6 +7,7 @@ RUN corepack enable pnpm
 # Copy root workspace config + the web package.json (no lockfile — fresh resolve)
 COPY package.json pnpm-workspace.yaml ./
 COPY packages/web/package.json packages/web/package.json
+RUN pnpm store prune 2>/dev/null || true
 RUN pnpm install --filter=@thinkneverland/grounded-web --no-frozen-lockfile
 
 # Stage 2: Build

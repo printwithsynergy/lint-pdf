@@ -15,6 +15,8 @@ COPY packages/stripe/package.json packages/stripe/package.json
 # Private @thinkneverland packages need auth
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
+# Purge pnpm store cache so no stale Pixie Dust versions persist between builds
+RUN pnpm store prune 2>/dev/null || true
 # Fresh install — resolves all "*" specifiers to latest published versions
 # No --frozen-lockfile since there's no lockfile to freeze against
 RUN pnpm install --filter=@thinkneverland/lintpdf-app... --no-frozen-lockfile

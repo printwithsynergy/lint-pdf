@@ -37,7 +37,16 @@ npx prisma migrate deploy
 
 ### Deploy pipeline requirement
 
-Your deploy/start command should **ALWAYS** include a schema sync before the app starts.
+Your deploy/start command should **ALWAYS** include a schema sync before the app starts. The full pipeline is:
+
+```
+pnpm store prune          # Clear cached packages — no stale Pixie Dust
+pnpm install              # Fresh resolve from GitHub Packages (no lockfile)
+prisma db push            # Sync schema for any new PD columns
+next start                # Run the app
+```
+
+No lockfile committed, no local references, no cached packages. Every deploy pulls the latest published Pixie Dust versions from `npm.pkg.github.com`.
 
 **Railway / Docker:**
 ```sh
