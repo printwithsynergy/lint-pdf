@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { Button } from "@thinkneverland/pixie-dust-ui";
 
 interface HealthStatus {
   status: string;
@@ -57,15 +58,15 @@ export default function AdminHealthPage() {
     <main className="p-8 max-w-4xl">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold">System Health</h1>
-        <button
+        <Button
+          variant="secondary"
           onClick={() => {
             setLoading(true);
             fetchHealth();
           }}
-          className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted"
         >
           Refresh
-        </button>
+        </Button>
       </div>
 
       {error && (

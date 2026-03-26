@@ -5,6 +5,7 @@ import { SkeletonDashboard } from "@/components/skeleton";
 import { EmptyState } from "@thinkneverland/pixie-dust-ui";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { Button, Input, FormField } from "@thinkneverland/pixie-dust-ui";
 
 interface ApiKey {
   id: string;
@@ -105,15 +106,14 @@ export default function ApiKeysPage() {
             Manage API keys for authenticating with the LintPDF engine.
           </p>
         </div>
-        <button
+        <Button
           onClick={() => {
             setShowCreate(!showCreate);
             setNewlyCreatedKey(null);
           }}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           {showCreate ? "Cancel" : "Create Key"}
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -135,12 +135,12 @@ export default function ApiKeysPage() {
             <code className="flex-1 rounded bg-white px-3 py-2 text-sm font-mono">
               {newlyCreatedKey}
             </code>
-            <button
+            <Button
+              variant="secondary"
               onClick={() => copyToClipboard(newlyCreatedKey)}
-              className="rounded-md border px-3 py-2 text-sm hover:bg-gray-50"
             >
               {copied ? "Copied!" : "Copy"}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -150,20 +150,24 @@ export default function ApiKeysPage() {
         <div className="mt-6 rounded-lg border p-4">
           <h2 className="text-lg font-semibold">New API Key</h2>
           <div className="mt-3 flex gap-3">
-            <input
-              type="text"
-              value={newLabel}
-              onChange={(e) => setNewLabel(e.target.value)}
-              placeholder="Key label (e.g. Production)"
-              className="flex-1 rounded-md border px-3 py-2 text-sm"
-            />
-            <button
-              onClick={handleCreate}
-              disabled={creating}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {creating ? "Creating..." : "Create"}
-            </button>
+            <div className="flex-1">
+              <FormField label="Key Label" htmlFor="key-label">
+                <Input
+                  id="key-label"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder="Key label (e.g. Production)"
+                />
+              </FormField>
+            </div>
+            <div className="flex items-end">
+              <Button
+                onClick={handleCreate}
+                loading={creating}
+              >
+                Create
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -176,12 +180,11 @@ export default function ApiKeysPage() {
             title="No API keys"
             description="Create one to authenticate with the LintPDF API."
             action={
-              <button
+              <Button
                 onClick={() => setShowCreate(true)}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Create Key
-              </button>
+              </Button>
             }
           />
         ) : (
@@ -209,15 +212,16 @@ export default function ApiKeysPage() {
                   )}
                 </div>
               </div>
-              <button
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={() => {
                   setConfirmTarget(key.id);
                   setConfirmOpen(true);
                 }}
-                className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
               >
                 Revoke
-              </button>
+              </Button>
             </div>
           ))
         )}

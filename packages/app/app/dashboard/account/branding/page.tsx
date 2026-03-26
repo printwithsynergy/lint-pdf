@@ -5,6 +5,7 @@ import { EmptyState } from "@thinkneverland/pixie-dust-ui";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
 import { Badge } from "@thinkneverland/pixie-dust-ui";
+import { Button, Input, Select, FormField, ColorInput } from "@thinkneverland/pixie-dust-ui";
 
 interface BrandProfile {
   id: string;
@@ -180,7 +181,7 @@ export default function BrandingPage() {
             use LintPDF defaults, or go completely blind.
           </p>
         </div>
-        <button
+        <Button
           onClick={() => {
             if (showCreate) {
               setShowCreate(false);
@@ -190,10 +191,9 @@ export default function BrandingPage() {
               setShowCreate(true);
             }
           }}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           {showCreate ? "Cancel" : "New Profile"}
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -212,105 +212,71 @@ export default function BrandingPage() {
             {editingId ? "Edit Profile" : "New Brand Profile"}
           </h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium">Profile Name</label>
-              <input
-                type="text"
+            <FormField label="Profile Name" htmlFor="profile-name">
+              <Input
+                id="profile-name"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder="e.g. Client Reports"
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Profile Type</label>
-              <select
+            </FormField>
+            <FormField label="Profile Type" htmlFor="profile-type">
+              <Select
+                id="profile-type"
                 value={formType}
                 onChange={(e) =>
                   setFormType(
                     e.target.value as "custom" | "lintpdf" | "none",
                   )
                 }
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               >
                 <option value="custom">Custom Branding</option>
                 <option value="lintpdf">LintPDF Default</option>
                 <option value="none">Blind (No Branding)</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
           </div>
 
           {formType === "custom" && (
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div>
-                <label className="block text-sm font-medium">Brand Name</label>
-                <input
-                  type="text"
+              <FormField label="Brand Name" htmlFor="brand-name">
+                <Input
+                  id="brand-name"
                   value={formBrandName}
                   onChange={(e) => setFormBrandName(e.target.value)}
                   placeholder="Your Company Name"
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Logo URL</label>
-                <input
+              </FormField>
+              <FormField label="Logo URL" htmlFor="logo-url">
+                <Input
+                  id="logo-url"
                   type="url"
                   value={formLogoUrl}
                   onChange={(e) => setFormLogoUrl(e.target.value)}
                   placeholder="https://..."
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">
-                  Primary Color
-                </label>
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={formPrimaryColor}
-                    onChange={(e) => setFormPrimaryColor(e.target.value)}
-                    className="h-8 w-8 cursor-pointer rounded border"
-                  />
-                  <input
-                    type="text"
-                    value={formPrimaryColor}
-                    onChange={(e) => setFormPrimaryColor(e.target.value)}
-                    className="w-24 rounded-md border px-2 py-1 text-sm"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium">
-                  Accent Color
-                </label>
-                <div className="mt-1 flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={formAccentColor}
-                    onChange={(e) => setFormAccentColor(e.target.value)}
-                    className="h-8 w-8 cursor-pointer rounded border"
-                  />
-                  <input
-                    type="text"
-                    value={formAccentColor}
-                    onChange={(e) => setFormAccentColor(e.target.value)}
-                    className="w-24 rounded-md border px-2 py-1 text-sm"
-                  />
-                </div>
-              </div>
+              </FormField>
+              <FormField label="Primary Color" htmlFor="primary-color">
+                <ColorInput
+                  value={formPrimaryColor}
+                  onChange={setFormPrimaryColor}
+                />
+              </FormField>
+              <FormField label="Accent Color" htmlFor="accent-color">
+                <ColorInput
+                  value={formAccentColor}
+                  onChange={setFormAccentColor}
+                />
+              </FormField>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium">
-                  Footer Text
-                </label>
-                <input
-                  type="text"
-                  value={formFooterText}
-                  onChange={(e) => setFormFooterText(e.target.value)}
-                  placeholder="Powered by Your Company"
-                  className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-                />
+                <FormField label="Footer Text" htmlFor="footer-text">
+                  <Input
+                    id="footer-text"
+                    value={formFooterText}
+                    onChange={(e) => setFormFooterText(e.target.value)}
+                    placeholder="Powered by Your Company"
+                  />
+                </FormField>
               </div>
               <div className="sm:col-span-2">
                 <label className="flex items-center gap-2 text-sm">
@@ -326,13 +292,14 @@ export default function BrandingPage() {
             </div>
           )}
 
-          <button
+          <Button
             onClick={handleSave}
-            disabled={saving || !formName}
-            className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            disabled={!formName}
+            loading={saving}
+            className="mt-4"
           >
-            {saving ? "Saving..." : editingId ? "Update Profile" : "Create Profile"}
-          </button>
+            {editingId ? "Update Profile" : "Create Profile"}
+          </Button>
         </div>
       )}
 
@@ -344,15 +311,14 @@ export default function BrandingPage() {
             title="No brand profiles yet"
             description="Create one to customize your report appearance."
             action={
-              <button
+              <Button
                 onClick={() => {
                   resetForm();
                   setShowCreate(true);
                 }}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 New Profile
-              </button>
+              </Button>
             }
           />
         )}
@@ -387,28 +353,31 @@ export default function BrandingPage() {
             </div>
             <div className="ml-4 flex shrink-0 gap-1">
               {!p.is_default && (
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => handleSetDefault(p.id)}
-                  className="rounded border px-2 py-1 text-xs hover:bg-muted"
                 >
                   Set Default
-                </button>
+                </Button>
               )}
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => editProfile(p)}
-                className="rounded border px-2 py-1 text-xs hover:bg-muted"
               >
                 Edit
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
                 onClick={() => {
                   setConfirmTarget(p.id);
                   setConfirmOpen(true);
                 }}
-                className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         ))}

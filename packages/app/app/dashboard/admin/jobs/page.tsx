@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { Button } from "@thinkneverland/pixie-dust-ui";
 
 interface AdminJob {
   id: string;
@@ -112,23 +113,25 @@ export default function AdminJobsPage() {
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Previous
-              </button>
+              </Button>
               <span className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </span>
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
         </>

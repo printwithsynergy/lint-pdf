@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { Button } from "@thinkneverland/pixie-dust-ui";
 
 interface TenantSummary {
   id: string;
@@ -168,13 +169,13 @@ export default function AdminTenantsPage() {
                       {new Date(t.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-2">
-                      <button
+                      <Button
+                        size="sm"
                         onClick={() => handleAssist(t.id)}
-                        className="rounded bg-violet-600 px-2 py-1 text-xs font-medium text-white hover:bg-violet-500"
-                        title="View and configure this customer's dashboard"
+                        className="bg-violet-600 text-white hover:bg-violet-500"
                       >
                         Assist
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -184,23 +185,25 @@ export default function AdminTenantsPage() {
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Previous
-              </button>
+              </Button>
               <span className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </span>
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
         </>

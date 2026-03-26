@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { Button, Input, Select, FormField } from "@thinkneverland/pixie-dust-ui";
 
 interface ProfileSummary {
   profile_id: string;
@@ -173,7 +174,7 @@ export default function RulesetsPage() {
             thresholds.
           </p>
         </div>
-        <button
+        <Button
           onClick={() => {
             setShowCreate(!showCreate);
             if (!showCreate) {
@@ -182,10 +183,9 @@ export default function RulesetsPage() {
               setNewDescription("");
             }
           }}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           {showCreate ? "Cancel" : "New Ruleset"}
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -206,73 +206,63 @@ export default function RulesetsPage() {
               : "New Ruleset"}
           </h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-sm font-medium">Profile ID</label>
-              <input
-                type="text"
+            <FormField label="Profile ID" htmlFor="profile-id" helpText="Lowercase kebab-case (e.g. my-magazine-ads)">
+              <Input
+                id="profile-id"
                 value={newProfileId}
                 onChange={(e) => setNewProfileId(e.target.value)}
                 placeholder="my-custom-profile"
-                pattern="^[a-z0-9][a-z0-9-]*[a-z0-9]$"
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               />
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Lowercase kebab-case (e.g. my-magazine-ads)
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Name</label>
-              <input
-                type="text"
+            </FormField>
+            <FormField label="Name" htmlFor="profile-name">
+              <Input
+                id="profile-name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
                 placeholder="My Custom Profile"
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               />
-            </div>
+            </FormField>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium">Description</label>
-              <input
-                type="text"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                placeholder="Custom profile for..."
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-              />
+              <FormField label="Description" htmlFor="profile-desc">
+                <Input
+                  id="profile-desc"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Custom profile for..."
+                />
+              </FormField>
             </div>
-            <div>
-              <label className="block text-sm font-medium">Workflow</label>
-              <select
+            <FormField label="Workflow" htmlFor="workflow">
+              <Select
+                id="workflow"
                 value={newWorkflow}
                 onChange={(e) => setNewWorkflow(e.target.value)}
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               >
                 <option value="CMYK">CMYK</option>
                 <option value="RGB">RGB</option>
                 <option value="auto">Auto</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Conformance</label>
-              <select
+              </Select>
+            </FormField>
+            <FormField label="Conformance" htmlFor="conformance">
+              <Select
+                id="conformance"
                 value={newConformance}
                 onChange={(e) => setNewConformance(e.target.value)}
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               >
                 <option value="">None</option>
                 <option value="pdfx4">PDF/X-4</option>
                 <option value="pdfx1a">PDF/X-1a</option>
                 <option value="pdfa">PDF/A</option>
-              </select>
-            </div>
+              </Select>
+            </FormField>
           </div>
 
           {/* Thresholds */}
           <h3 className="mt-4 text-sm font-semibold">Thresholds</h3>
           <div className="mt-2 grid gap-3 sm:grid-cols-3">
-            <div>
-              <label className="block text-xs font-medium">Min DPI</label>
-              <input
+            <FormField label="Min DPI" htmlFor="min-dpi">
+              <Input
+                id="min-dpi"
                 type="number"
                 value={newThresholds.min_dpi}
                 onChange={(e) =>
@@ -281,12 +271,11 @@ export default function RulesetsPage() {
                     min_dpi: Number(e.target.value),
                   }))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-1.5 text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-medium">Max DPI</label>
-              <input
+            </FormField>
+            <FormField label="Max DPI" htmlFor="max-dpi">
+              <Input
+                id="max-dpi"
                 type="number"
                 value={newThresholds.max_dpi}
                 onChange={(e) =>
@@ -295,12 +284,11 @@ export default function RulesetsPage() {
                     max_dpi: Number(e.target.value),
                   }))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-1.5 text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-medium">TAC Limit (%)</label>
-              <input
+            </FormField>
+            <FormField label="TAC Limit (%)" htmlFor="tac-limit">
+              <Input
+                id="tac-limit"
                 type="number"
                 value={newThresholds.tac_limit}
                 onChange={(e) =>
@@ -309,14 +297,11 @@ export default function RulesetsPage() {
                     tac_limit: Number(e.target.value),
                   }))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-1.5 text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-medium">
-                Min Bleed (mm)
-              </label>
-              <input
+            </FormField>
+            <FormField label="Min Bleed (mm)" htmlFor="min-bleed">
+              <Input
+                id="min-bleed"
                 type="number"
                 step="0.5"
                 value={newThresholds.min_bleed_mm}
@@ -326,12 +311,11 @@ export default function RulesetsPage() {
                     min_bleed_mm: Number(e.target.value),
                   }))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-1.5 text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-medium">Hairline (pt)</label>
-              <input
+            </FormField>
+            <FormField label="Hairline (pt)" htmlFor="hairline">
+              <Input
+                id="hairline"
                 type="number"
                 step="0.05"
                 value={newThresholds.hairline_threshold}
@@ -341,14 +325,11 @@ export default function RulesetsPage() {
                     hairline_threshold: Number(e.target.value),
                   }))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-1.5 text-sm"
               />
-            </div>
-            <div>
-              <label className="block text-xs font-medium">
-                Small Text (pt)
-              </label>
-              <input
+            </FormField>
+            <FormField label="Small Text (pt)" htmlFor="small-text">
+              <Input
+                id="small-text"
                 type="number"
                 step="0.5"
                 value={newThresholds.small_text_threshold}
@@ -358,18 +339,18 @@ export default function RulesetsPage() {
                     small_text_threshold: Number(e.target.value),
                   }))
                 }
-                className="mt-1 w-full rounded-md border px-3 py-1.5 text-sm"
               />
-            </div>
+            </FormField>
           </div>
 
-          <button
+          <Button
             onClick={handleCreate}
-            disabled={creating || !newProfileId || !newName}
-            className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            disabled={!newProfileId || !newName}
+            loading={creating}
+            className="mt-4"
           >
-            {creating ? "Creating..." : "Create Ruleset"}
-          </button>
+            Create Ruleset
+          </Button>
         </div>
       )}
 
@@ -378,12 +359,13 @@ export default function RulesetsPage() {
         <div className="mt-6 rounded-lg border p-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">{selectedProfile.name}</h2>
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setSelectedProfile(null)}
-              className="text-sm text-muted-foreground hover:text-foreground"
             >
               Close
-            </button>
+            </Button>
           </div>
           <p className="text-sm text-muted-foreground">
             {selectedProfile.description}
@@ -452,21 +434,23 @@ export default function RulesetsPage() {
                   </div>
                 </div>
                 <div className="ml-4 flex shrink-0 gap-1">
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => viewProfile(p.profile_id)}
-                    className="rounded border px-2 py-1 text-xs hover:bg-muted"
                   >
                     View
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
                     onClick={() => {
                       setConfirmTarget(p.profile_id);
                       setConfirmOpen(true);
                     }}
-                    className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -505,18 +489,20 @@ export default function RulesetsPage() {
                 </div>
               </div>
               <div className="ml-4 flex shrink-0 gap-1">
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => viewProfile(p.profile_id)}
-                  className="rounded border px-2 py-1 text-xs hover:bg-muted"
                 >
                   View
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={() => cloneProfile(p)}
-                  className="rounded border px-2 py-1 text-xs hover:bg-muted"
                 >
                   Clone
-                </button>
+                </Button>
               </div>
             </div>
           ))}

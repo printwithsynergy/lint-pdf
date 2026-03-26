@@ -5,6 +5,7 @@ import { SkeletonDashboard } from "@/components/skeleton";
 import { EmptyState } from "@thinkneverland/pixie-dust-ui";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { Button, Input, FormField } from "@thinkneverland/pixie-dust-ui";
 
 interface WebhookEndpoint {
   id: string;
@@ -182,12 +183,11 @@ export default function WebhooksPage() {
             fail.
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowCreate(!showCreate)}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           {showCreate ? "Cancel" : "Add Webhook"}
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -204,18 +204,15 @@ export default function WebhooksPage() {
         <div className="mt-6 rounded-lg border p-4">
           <h2 className="text-lg font-semibold">New Webhook</h2>
           <div className="mt-3 space-y-3">
-            <div>
-              <label className="block text-sm font-medium">
-                Endpoint URL (HTTPS)
-              </label>
-              <input
+            <FormField label="Endpoint URL (HTTPS)" htmlFor="webhook-url">
+              <Input
+                id="webhook-url"
                 type="url"
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
                 placeholder="https://your-app.com/webhooks/lintpdf"
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               />
-            </div>
+            </FormField>
             <div>
               <label className="block text-sm font-medium">Events</label>
               <div className="mt-1 flex flex-wrap gap-2">
@@ -236,13 +233,13 @@ export default function WebhooksPage() {
                 ))}
               </div>
             </div>
-            <button
+            <Button
               onClick={handleCreate}
-              disabled={creating || !newUrl}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              disabled={!newUrl}
+              loading={creating}
             >
-              {creating ? "Creating..." : "Create Webhook"}
-            </button>
+              Create Webhook
+            </Button>
           </div>
         </div>
       )}
@@ -255,12 +252,11 @@ export default function WebhooksPage() {
             title="No webhooks configured"
             description="Add one to start receiving event notifications."
             action={
-              <button
+              <Button
                 onClick={() => setShowCreate(true)}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
               >
                 Add Webhook
-              </button>
+              </Button>
             }
           />
         ) : (
@@ -268,12 +264,14 @@ export default function WebhooksPage() {
             <div key={wh.id} className="rounded-lg border p-4">
               {editingId === wh.id ? (
                 <div className="space-y-3">
-                  <input
-                    type="url"
-                    value={editUrl}
-                    onChange={(e) => setEditUrl(e.target.value)}
-                    className="w-full rounded-md border px-3 py-2 text-sm"
-                  />
+                  <FormField label="Endpoint URL" htmlFor={`edit-url-${wh.id}`}>
+                    <Input
+                      id={`edit-url-${wh.id}`}
+                      type="url"
+                      value={editUrl}
+                      onChange={(e) => setEditUrl(e.target.value)}
+                    />
+                  </FormField>
                   <div className="flex flex-wrap gap-2">
                     {AVAILABLE_EVENTS.map((event) => (
                       <label
@@ -292,18 +290,17 @@ export default function WebhooksPage() {
                     ))}
                   </div>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       onClick={() => handleUpdate(wh.id)}
-                      className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground"
                     >
                       Save
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
                       onClick={() => setEditingId(null)}
-                      className="rounded-md border px-3 py-1.5 text-sm"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </div>
               ) : (
@@ -340,39 +337,42 @@ export default function WebhooksPage() {
                       )}
                     </div>
                     <div className="ml-4 flex shrink-0 gap-1">
-                      <button
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleTest(wh.id)}
-                        disabled={testingId === wh.id}
-                        className="rounded border px-2 py-1 text-xs hover:bg-muted disabled:opacity-50"
-                        title="Send test payload"
+                        loading={testingId === wh.id}
                       >
-                        {testingId === wh.id ? "Testing..." : "Test"}
-                      </button>
-                      <button
+                        Test
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => {
                           setEditingId(wh.id);
                           setEditUrl(wh.url);
                           setEditEvents(wh.events);
                         }}
-                        className="rounded border px-2 py-1 text-xs hover:bg-muted"
                       >
                         Edit
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
                         onClick={() => handleToggle(wh.id, wh.is_active)}
-                        className="rounded border px-2 py-1 text-xs hover:bg-muted"
                       >
                         {wh.is_active ? "Disable" : "Enable"}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
                         onClick={() => {
                           setConfirmTarget(wh.id);
                           setConfirmOpen(true);
                         }}
-                        className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                       >
                         Delete
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>

@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { SkeletonDashboard } from "@/components/skeleton";
 import { Badge } from "@thinkneverland/pixie-dust-ui";
 import { EmptyState } from "@thinkneverland/pixie-dust-ui";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { Button, FileUpload, Select, FormField } from "@thinkneverland/pixie-dust-ui";
 
 interface Profile {
   profile_id: string;
@@ -51,7 +52,7 @@ export default function PreflightPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState("lintpdf-default");
   const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
 
   // Confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -89,13 +90,12 @@ export default function PreflightPage() {
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    const file = fileInputRef.current?.files?.[0];
-    if (!file) return;
+    if (!uploadFile) return;
 
     setUploading(true);
 
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", uploadFile);
     formData.append("profile_id", selectedProfile);
 
     try {
@@ -108,7 +108,7 @@ export default function PreflightPage() {
         throw new Error(data.error ?? data.detail ?? "Upload failed");
       }
       toast(`Job submitted: ${data.job_id ?? "processing"}`, "success");
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setUploadFile(null);
       // Refresh job list after a short delay
       setTimeout(() => fetchJobs(), 1500);
     } catch (err) {
@@ -142,49 +142,40 @@ export default function PreflightPage() {
         <h2 className="text-sm font-semibold">Submit PDF for Preflight</h2>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
-            <label
-              htmlFor="pdf-file"
-              className="block text-xs font-medium text-muted-foreground mb-1"
-            >
-              PDF File
-            </label>
-            <input
-              id="pdf-file"
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,application/pdf"
-              required
-              className="block w-full text-sm file:mr-3 file:rounded file:border-0 file:bg-primary/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-primary hover:file:bg-primary/20"
-            />
+            <FormField label="PDF File" htmlFor="pdf-file">
+              <FileUpload
+                accept=".pdf"
+                acceptedTypes={["application/pdf"]}
+                maxSize={100 * 1024 * 1024}
+                value={uploadFile}
+                onChange={setUploadFile}
+                helpText="Drag and drop a PDF or click to browse"
+              />
+            </FormField>
           </div>
           <div className="min-w-[180px]">
-            <label
-              htmlFor="profile"
-              className="block text-xs font-medium text-muted-foreground mb-1"
-            >
-              Profile
-            </label>
-            <select
-              id="profile"
-              value={selectedProfile}
-              onChange={(e) => setSelectedProfile(e.target.value)}
-              className="block w-full rounded border bg-background px-2 py-1.5 text-sm"
-            >
-              <option value="lintpdf-default">Default</option>
-              {profiles.map((p) => (
-                <option key={p.profile_id} value={p.profile_id}>
-                  {p.display_name}
-                </option>
-              ))}
-            </select>
+            <FormField label="Profile" htmlFor="profile">
+              <Select
+                id="profile"
+                value={selectedProfile}
+                onChange={(e) => setSelectedProfile(e.target.value)}
+              >
+                <option value="lintpdf-default">Default</option>
+                {profiles.map((p) => (
+                  <option key={p.profile_id} value={p.profile_id}>
+                    {p.display_name}
+                  </option>
+                ))}
+              </Select>
+            </FormField>
           </div>
-          <button
+          <Button
             type="submit"
-            disabled={uploading}
-            className="rounded bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            loading={uploading}
+            disabled={!uploadFile}
           >
-            {uploading ? "Uploading..." : "Run Preflight"}
-          </button>
+            Run Preflight
+          </Button>
         </div>
       </form>
 
@@ -274,21 +265,23 @@ export default function PreflightPage() {
                     </td>
                     <td className="py-2">
                       <div className="flex gap-1">
-                        <Link
-                          href={`/dashboard/preflight/${job.job_id}`}
-                          className="rounded border px-2 py-1 text-xs hover:bg-muted"
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => window.location.href = `/dashboard/preflight/${job.job_id}`}
                         >
                           View
-                        </Link>
-                        <button
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
                           onClick={() => {
                             setConfirmTarget(job.job_id);
                             setConfirmOpen(true);
                           }}
-                          className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -299,23 +292,25 @@ export default function PreflightPage() {
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Previous
-              </button>
+              </Button>
               <span className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </span>
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="rounded border px-3 py-1 text-sm disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
         </>

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { Button, Input, Dropdown, DropdownItem, DropdownLabel } from "@thinkneverland/pixie-dust-ui";
 
 interface TenantInfo {
   id: string;
@@ -34,7 +35,6 @@ export function SuperAdminToolbar() {
   const [me, setMe] = useState<MeResponse | null>(null);
   const [allTenants, setAllTenants] = useState<TenantInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showTenantPicker, setShowTenantPicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [switching, setSwitching] = useState(false);
 
@@ -142,13 +142,14 @@ export function SuperAdminToolbar() {
               (All changes are logged under your admin account)
             </span>
           </div>
-          <button
+          <Button
+            size="sm"
             onClick={() => setConfirmStopOpen(true)}
-            disabled={switching}
-            className="rounded bg-amber-900 px-3 py-1 text-xs font-medium text-amber-50 hover:bg-amber-800 disabled:opacity-50"
+            loading={switching}
+            className="bg-amber-900 text-amber-50 hover:bg-amber-800"
           >
-            {switching ? "Switching..." : "Stop Assisting"}
-          </button>
+            Stop Assisting
+          </Button>
         </div>
       )}
 
@@ -164,62 +165,57 @@ export function SuperAdminToolbar() {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <button
-                onClick={() => {
-                  setShowTenantPicker(!showTenantPicker);
-                  if (!showTenantPicker && allTenants.length === 0) {
-                    fetchTenants();
-                  }
-                }}
-                className="rounded bg-violet-500 px-3 py-1 text-xs font-medium hover:bg-violet-400"
-              >
-                Assist Customer
-              </button>
-
-              {showTenantPicker && (
-                <div className="absolute right-0 top-full z-50 mt-1 w-80 rounded-lg border bg-white shadow-xl">
-                  <div className="p-2">
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search tenants..."
-                      className="w-full rounded border px-2 py-1.5 text-sm text-gray-900"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {filteredTenants.length === 0 ? (
-                      <p className="p-3 text-center text-xs text-gray-500">
-                        {allTenants.length === 0
-                          ? "Loading tenants..."
-                          : "No tenants match"}
-                      </p>
-                    ) : (
-                      filteredTenants.map((t) => (
-                        <button
-                          key={t.id}
-                          onClick={() => {
-                            setShowTenantPicker(false);
-                            setConfirmStartTarget(t.id);
-                            setConfirmStartLabel(`${t.name} (${t.slug})`);
-                            setConfirmStartOpen(true);
-                          }}
-                          disabled={switching}
-                          className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-gray-900 hover:bg-gray-50 disabled:opacity-50"
-                        >
-                          <span className="font-medium">{t.name}</span>
-                          <span className="text-xs text-gray-500">
-                            {t.id.slice(0, 8)}
-                          </span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
+            <Dropdown
+              trigger={
+                <Button
+                  size="sm"
+                  className="bg-violet-500 hover:bg-violet-400"
+                  onClick={() => {
+                    if (allTenants.length === 0) {
+                      fetchTenants();
+                    }
+                  }}
+                >
+                  Assist Customer
+                </Button>
+              }
+              align="right"
+            >
+              <div className="p-2">
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search tenants..."
+                  autoFocus
+                />
+              </div>
+              <DropdownLabel>Tenants</DropdownLabel>
+              <div className="max-h-64 overflow-y-auto">
+                {filteredTenants.length === 0 ? (
+                  <p className="p-3 text-center text-xs text-gray-500">
+                    {allTenants.length === 0
+                      ? "Loading tenants..."
+                      : "No tenants match"}
+                  </p>
+                ) : (
+                  filteredTenants.map((t) => (
+                    <DropdownItem
+                      key={t.id}
+                      onClick={() => {
+                        setConfirmStartTarget(t.id);
+                        setConfirmStartLabel(`${t.name} (${t.slug})`);
+                        setConfirmStartOpen(true);
+                      }}
+                    >
+                      <span className="font-medium">{t.name}</span>
+                      <span className="ml-auto text-xs text-gray-500">
+                        {t.id.slice(0, 8)}
+                      </span>
+                    </DropdownItem>
+                  ))
+                )}
+              </div>
+            </Dropdown>
           </div>
         </div>
       )}
