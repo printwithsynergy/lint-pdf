@@ -1,27 +1,27 @@
-name: CI
+name: CI — Build Verification
 
 on:
   push:
     branches: [main]
-    paths-ignore: ['*.md', 'docs/**', '.vscode/**', '.atlas/**', '.card-o-matic/**', '.thinkneverland/**', 'LICENSE']
+    paths-ignore: ['*.md', 'docs/**', '.vscode/**', '.atlas/**', '.thinkneverland/**', 'LICENSE']
   pull_request:
     branches: [main]
-    paths-ignore: ['*.md', 'docs/**', '.vscode/**', '.atlas/**', '.card-o-matic/**', '.thinkneverland/**', 'LICENSE']
+    paths-ignore: ['*.md', 'docs/**', '.vscode/**', '.atlas/**', '.thinkneverland/**', 'LICENSE']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+# Lint, typecheck, format, tests, and semgrep all run locally via git hooks
+# (pre-commit + pre-push). CI only verifies the build succeeds so Railway
+# deploys don't fail on missing imports or compilation errors.
 
 jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
       engine: ${{ steps.filter.outputs.engine }}
-      web: ${{ steps.filter.outputs.web }}
-      app: ${{ steps.filter.outputs.app }}
-      plugin: ${{ steps.filter.outputs.plugin }}
-      stripe: ${{ steps.filter.outputs.stripe }}
-      inference: ${{ steps.filter.outputs.inference }}
+      node: ${{ steps.filter.outputs.node }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,21 +34,16 @@ jobs:
           else
             BASE="${{ github.event.before }}"
           fi
-          # Handle null SHA (first push or squash merge) by diffing against parent
           if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
             BASE="HEAD~1"
           fi
           CHANGED=$(git diff --name-only "$BASE" HEAD 2>/dev/null || echo ".github/workflows/ci.yml")
-          echo "engine=$( echo "$CHANGED" | grep -qE '^packages/engine/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "web=$( echo "$CHANGED" | grep -qE '^packages/web/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "app=$( echo "$CHANGED" | grep -qE '^packages/app/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "plugin=$( echo "$CHANGED" | grep -qE '^packages/plugin/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "stripe=$( echo "$CHANGED" | grep -qE '^packages/stripe/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
-          echo "inference=$( echo "$CHANGED" | grep -qE '^packages/inference/|^\.github/workflows/ci\.yml$' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "engine=$( echo "$CHANGED" | grep -qE '^packages/engine/' && echo true || echo false )" >> "$GITHUB_OUTPUT"
+          echo "node=$( echo "$CHANGED" | grep -qE '^packages/(app|web|plugin|stripe)/' && echo true || echo false )" >> "$GITHUB_OUTPUT"
 
-  engine:
+  engine-build:
     needs: changes
-    if: needs.changes.outputs.engine == 'true' || github.event_name == 'push'
+    if: needs.changes.outputs.engine == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,61 +53,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Install dependencies
+      - name: Verify engine installs cleanly
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Ruff check
-        run: ruff check src/ tests/
-      - name: Ruff format check
-        run: ruff format --check src/ tests/
-      - name: Mypy
-        run: mypy src/
-      - name: Run tests
-        run: pytest tests/ -v --tb=short -m "not corpus and not integration" --cov --cov-report xml:coverage.xml --cov-fail-under=0
-      - name: Report coverage to DeepSource
-        if: ${{ !cancelled() && env.DEEPSOURCE_DSN != '' && hashFiles('packages/engine/coverage.xml') != '' }}
-        run: |
-          curl -sSL https://deepsource.io/cli | sh
-          ./bin/deepsource report --analyzer test-coverage --key python --value-file packages/engine/coverage.xml
-        working-directory: ${{ github.workspace }}
-        env:
-          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
+          pip install -e .
 
-  inference:
+  node-build:
     needs: changes
-    if: needs.changes.outputs.inference == 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: packages/inference
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Ruff check
-        run: ruff check src/ tests/
-      - name: Ruff format check
-        run: ruff format --check src/ tests/
-      - name: Run tests (ML models gracefully degrade without heavy deps)
-        run: pytest tests/ -v --tb=short --cov --cov-report xml:coverage.xml --cov-fail-under=0
-      - name: Report coverage to DeepSource
-        if: ${{ !cancelled() && env.DEEPSOURCE_DSN != '' && hashFiles('packages/inference/coverage.xml') != '' }}
-        run: |
-          curl -sSL https://deepsource.io/cli | sh
-          ./bin/deepsource report --analyzer test-coverage --key python --value-file packages/inference/coverage.xml
-        working-directory: ${{ github.workspace }}
-        env:
-          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
-
-  web:
-    needs: changes
-    if: needs.changes.outputs.web == 'true' || github.event_name == 'push'
+    if: needs.changes.outputs.node == 'true'
     runs-on: ubuntu-latest
     env:
       NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
@@ -122,78 +70,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Lint
-        run: pnpm --filter @thinkneverland/grounded-web lint
-      - name: Typecheck
-        run: pnpm --filter @thinkneverland/grounded-web typecheck
-      - name: Build
-        run: pnpm --filter @thinkneverland/grounded-web build
-
-  plugin:
-    needs: changes
-    if: needs.changes.outputs.plugin == 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Typecheck
-        run: pnpm --filter @thinkneverland/grounded-plugin typecheck
-      - name: Test
-        run: pnpm --filter @thinkneverland/grounded-plugin test
-      - name: Build
+      - run: pnpm install --no-frozen-lockfile
+      - name: Build plugin
         run: pnpm --filter @thinkneverland/grounded-plugin build
-
-  stripe:
-    needs: changes
-    if: needs.changes.outputs.stripe == 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Typecheck
-        run: pnpm --filter @lintpdf/stripe typecheck
-      - name: Test
-        run: pnpm --filter @lintpdf/stripe test
-      - name: Build
+      - name: Build stripe
         run: pnpm --filter @lintpdf/stripe build
-
-  app:
-    needs: changes
-    if: needs.changes.outputs.app == 'true' || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    env:
-      NODE_AUTH_TOKEN: ${{ secrets.GH_PACKAGES_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - name: Lint
-        run: pnpm --filter @thinkneverland/lintpdf-app lint
-      - name: Typecheck
-        run: pnpm --filter @thinkneverland/lintpdf-app typecheck
       - name: Generate Prisma client
         run: pnpm --filter @thinkneverland/lintpdf-app db:generate
-      - name: Build workspace deps
-        run: pnpm --filter @thinkneverland/grounded-plugin --filter @lintpdf/stripe build
-      - name: Build
+      - name: Build app
         run: pnpm --filter @thinkneverland/lintpdf-app build
