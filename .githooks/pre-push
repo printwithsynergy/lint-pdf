@@ -30,12 +30,18 @@ else
   echo "⚠️  Semgrep not installed — skipping. Install: brew install semgrep"
 fi
 
-# ── E2E tests (Docker) ───────────────────────────────────────────────────
-if command -v docker &>/dev/null && [ -f docker-compose.e2e.yml ]; then
-  echo "🎭 Running Playwright e2e tests in Docker..."
-  ./scripts/e2e.sh || FAIL=1
+# ── E2E Playwright tests (local, no Docker) ──────────────────────────────
+# Runs against APP_BASE_URL (defaults to production if not set).
+# Set APP_BASE_URL=http://localhost:3001 to test against local dev server.
+# External service tests (Stripe) auto-skip when keys aren't set.
+echo "🎭 Running Playwright e2e tests..."
+if command -v npx &>/dev/null; then
+  # App e2e tests
+  (cd packages/app && npx playwright test --reporter=list) || FAIL=1
+  # Web e2e tests (API + UI against engine/web)
+  (cd packages/web && npx playwright test --reporter=list) || FAIL=1
 else
-  echo "⚠️  Docker not available — skipping e2e tests"
+  echo "⚠️  npx not available — skipping e2e tests"
 fi
 
 if [ $FAIL -ne 0 ]; then
