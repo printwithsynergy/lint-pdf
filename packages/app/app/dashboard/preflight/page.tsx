@@ -147,7 +147,7 @@ export default function PreflightPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <main className="p-6">
+    <>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Preflight Jobs</h1>
         <p className="text-sm text-muted-foreground">{total} total jobs</p>
@@ -356,6 +356,6 @@ export default function PreflightPage() {
         variant="destructive"
         confirmLabel="Delete"
       />
-    </main>
+    </>
   );
 }

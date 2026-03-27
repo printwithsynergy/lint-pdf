@@ -98,7 +98,7 @@ export default function ApiKeysPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">API Keys</h1>
@@ -243,6 +243,6 @@ export default function ApiKeysPage() {
         variant="destructive"
         confirmLabel="Revoke"
       />
-    </main>
+    </>
   );
 }

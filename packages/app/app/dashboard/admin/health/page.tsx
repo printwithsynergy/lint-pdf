@@ -55,7 +55,7 @@ export default function AdminHealthPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold">System Health</h1>
         <Button
@@ -151,6 +151,6 @@ export default function AdminHealthPage() {
           </div>
         </div>
       )}
-    </main>
+    </>
   );
 }

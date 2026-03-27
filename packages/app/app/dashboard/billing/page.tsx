@@ -141,7 +141,7 @@ export default function BillingPage() {
   const currentPlan = subscription?.plan ?? "free";
 
   return (
-    <main className="p-6">
+    <>
       <h1 className="text-2xl font-bold">Billing & Plan</h1>
 
       {error && (
@@ -272,6 +272,6 @@ export default function BillingPage() {
           </CardContent>
         </Card>
       )}
-    </main>
+    </>
   );
 }

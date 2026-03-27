@@ -193,7 +193,7 @@ export default function AdminTrialsPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <main className="p-8 max-w-6xl">
+    <>
       <h1 className="font-display text-2xl font-bold">Trial Submissions</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {total} total submissions — review, preflight, and follow up with
@@ -404,6 +404,6 @@ export default function AdminTrialsPage() {
           )}
         </>
       )}
-    </main>
+    </>
   );
 }

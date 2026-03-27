@@ -174,7 +174,7 @@ export default function WebhooksPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">Webhooks</h1>
@@ -398,6 +398,6 @@ export default function WebhooksPage() {
         variant="destructive"
         confirmLabel="Delete"
       />
-    </main>
+    </>
   );
 }

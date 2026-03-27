@@ -52,7 +52,7 @@ export default function AdminJobsPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <main className="p-8 max-w-6xl">
+    <>
       <h1 className="font-display text-2xl font-bold">All Jobs</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {total} total jobs across all tenants
@@ -136,6 +136,6 @@ export default function AdminJobsPage() {
           )}
         </>
       )}
-    </main>
+    </>
   );
 }

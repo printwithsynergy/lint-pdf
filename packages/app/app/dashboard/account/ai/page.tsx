@@ -170,6 +170,6 @@ export default function AiConfigPage() {
       >
         {saving ? "Saving..." : "Save AI Configuration"}
       </button>
-    </main>
+    </>
   );
 }

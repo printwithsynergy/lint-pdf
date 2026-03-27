@@ -155,7 +155,7 @@ export default function JobDetailPage() {
 
   if (error || !job) {
     return (
-      <main className="p-8">
+      <>
         <h1 className="font-display text-2xl font-bold">Job Details</h1>
         <p className="mt-4 text-destructive">{error || "Job not found"}</p>
         <Link
@@ -164,7 +164,7 @@ export default function JobDetailPage() {
         >
           Back to jobs
         </Link>
-      </main>
+      </>
     );
   }
 
@@ -174,7 +174,7 @@ export default function JobDetailPage() {
     job.findings?.filter((f) => f.severity === "advisory") ?? [];
 
   return (
-    <main className="p-8 max-w-5xl">
+    <>
       <Link
         href="/dashboard/preflight"
         className="text-sm text-muted-foreground hover:text-foreground"
@@ -362,6 +362,6 @@ export default function JobDetailPage() {
           </div>
         </div>
       )}
-    </main>
+    </>
   );
 }

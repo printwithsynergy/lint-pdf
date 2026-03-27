@@ -97,7 +97,7 @@ export default function AdminTenantsPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <main className="p-8 max-w-6xl">
+    <>
       <h1 className="font-display text-2xl font-bold">All Tenants</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {total} total organizations
@@ -208,6 +208,6 @@ export default function AdminTenantsPage() {
           )}
         </>
       )}
-    </main>
+    </>
   );
 }

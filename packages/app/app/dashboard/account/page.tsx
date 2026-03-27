@@ -125,7 +125,7 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="p-6">
+    <>
       <h1 className="text-2xl font-bold">Account Settings</h1>
 
       {error && (
@@ -263,6 +263,6 @@ export default function AccountPage() {
           </Button>
         </CardContent>
       </Card>
-    </main>
+    </>
   );
 }

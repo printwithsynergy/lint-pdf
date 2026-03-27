@@ -165,7 +165,7 @@ export default function RulesetsPage() {
   const custom = profiles.filter((p) => !p.is_builtin);
 
   return (
-    <main className="p-8 max-w-5xl">
+    <>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">Rulesets</h1>
@@ -525,6 +525,6 @@ export default function RulesetsPage() {
         variant="destructive"
         confirmLabel="Delete"
       />
-    </main>
+    </>
   );
 }

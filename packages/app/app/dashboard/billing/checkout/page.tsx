@@ -60,7 +60,7 @@ function CheckoutContent() {
   }, [searchParams]);
 
   return (
-    <main className="flex min-h-[60vh] items-center justify-center p-8">
+    <div className="flex min-h-[60vh] items-center justify-center">
       <div className="text-center">
         {status === "loading" && (
           <>
@@ -86,6 +86,6 @@ function CheckoutContent() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   );
 }

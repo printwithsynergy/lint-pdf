@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function AdminPage() {
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <h1 className="font-display text-2xl font-bold">Site Administration</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Platform management for super administrators.
@@ -48,6 +48,6 @@ export default function AdminPage() {
           </p>
         </Link>
       </div>
-    </main>
+    </>
   );
 }

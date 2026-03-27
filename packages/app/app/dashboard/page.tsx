@@ -30,8 +30,7 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="p-6">
-      <div className="mx-auto max-w-4xl">
+    <>
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Dashboard</h1>
@@ -81,7 +80,6 @@ export default async function DashboardPage() {
             )}
           </section>
         </div>
-      </div>
-    </main>
+    </>
   );
 }

@@ -46,7 +46,7 @@ export default function ReportsPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <h1 className="font-display text-2xl font-bold">Reports</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         View and download preflight reports for completed jobs.
@@ -112,6 +112,6 @@ export default function ReportsPage() {
           ))
         )}
       </div>
-    </main>
+    </>
   );
 }

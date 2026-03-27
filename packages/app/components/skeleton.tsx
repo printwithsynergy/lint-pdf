@@ -72,7 +72,7 @@ export function SkeletonDashboard({
   type: "table" | "cards" | "form" | "detail";
 }) {
   return (
-    <main className="p-6">
+    <>
       <SkeletonPageHeader />
       <div className="mt-6">
         {type === "table" && <SkeletonTable />}
@@ -94,6 +94,6 @@ export function SkeletonDashboard({
           </>
         )}
       </div>
-    </main>
+    </>
   );
 }

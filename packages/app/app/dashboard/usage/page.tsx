@@ -89,15 +89,15 @@ export default function UsagePage() {
 
   if (error || !usage) {
     return (
-      <main className="p-8">
+      <>
         <h1 className="font-display text-2xl font-bold">Usage</h1>
         <p className="mt-4 text-destructive">{error || "No data available"}</p>
-      </main>
+      </>
     );
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <h1 className="font-display text-2xl font-bold">Usage & Limits</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Current billing period usage for your{" "}
@@ -170,6 +170,6 @@ export default function UsagePage() {
           </div>
         )}
       </div>
-    </main>
+    </>
   );
 }

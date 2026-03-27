@@ -144,7 +144,7 @@ export default function EndpointsPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-2xl font-bold">
@@ -332,6 +332,6 @@ export default function EndpointsPage() {
           ))
         )}
       </div>
-    </main>
+    </>
   );
 }

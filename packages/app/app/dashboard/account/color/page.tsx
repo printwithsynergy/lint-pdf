@@ -291,7 +291,7 @@ export default function ColorConfigPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <h1 className="font-display text-2xl font-bold">Color Management</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Configure default color management settings for preflight checks.
@@ -630,6 +630,6 @@ export default function ColorConfigPage() {
           </p>
         )}
       </div>
-    </main>
+    </>
   );
 }
