@@ -1,7 +1,7 @@
 "use client";
 
-import { ToastProvider } from "@thinkneverland/pixie-dust-ui";
+import { DashboardProviders } from "@thinkneverland/pixie-dust-dashboard";
 
 export function ClientProviders({ children }: { children: React.ReactNode }) {
-  return <ToastProvider>{children}</ToastProvider>;
+  return <DashboardProviders>{children}</DashboardProviders>;
 }

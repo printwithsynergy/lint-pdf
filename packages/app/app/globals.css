@@ -4,6 +4,7 @@
 
 @theme {
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-inter), system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "Fira Code", ui-monospace, monospace;
 
   --color-border: hsl(var(--border));
@@ -27,18 +28,45 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
-  /* LintPDF brand blue palette — matches lintpdf.com marketing site */
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-200: #bfdbfe;
-  --color-brand-300: #93c5fd;
-  --color-brand-400: #60a5fa;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
-  --color-brand-800: #1e40af;
-  --color-brand-900: #1e3a8a;
-  --color-brand-950: #172554;
+  /* Sidebar (new in PD 1.12.0) */
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+
+  /* Status colors (new in PD 4.0.0) */
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-info: hsl(var(--info));
+  --color-info-foreground: hsl(var(--info-foreground));
+  --color-admin: hsl(var(--admin));
+  --color-admin-foreground: hsl(var(--admin-foreground));
+  --color-impersonation: hsl(var(--impersonation));
+  --color-impersonation-foreground: hsl(var(--impersonation-foreground));
+
+  /* LintPDF brand blue palette */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+  --color-brand-950: var(--brand-950);
+
+  /* Login page colors (new in PD 1.12.0) */
+  --color-login-bg: hsl(var(--login-bg));
+  --color-login-card: hsl(var(--login-card));
+  --color-login-text: hsl(var(--login-text));
+  --color-login-text-muted: hsl(var(--login-text-muted));
+  --color-login-text-subtle: hsl(var(--login-text-subtle));
+  --color-login-input: hsl(var(--login-input));
+  --color-login-ring: hsl(var(--login-ring));
 
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -76,40 +104,98 @@
   --popover-foreground: 220 30% 10%;
   --primary: 224 69% 40%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 200 20% 96%;
-  --secondary-foreground: 224 76% 33%;
+  --secondary: 210 13% 95%;
+  --secondary-foreground: 220 30% 10%;
   --muted: 200 20% 96%;
   --muted-foreground: 210 9% 46%;
   --accent: 217 91% 60%;
-  --accent-foreground: 224 76% 33%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 98%;
+  --destructive-foreground: 0 0% 100%;
   --border: 210 13% 91%;
   --input: 210 13% 91%;
   --ring: 224 69% 40%;
   --radius: 0.5rem;
+
+  /* Sidebar */
+  --sidebar: 220 20% 97%;
+  --sidebar-foreground: 220 30% 10%;
+  --sidebar-accent: 210 13% 93%;
+  --sidebar-border: 210 13% 91%;
+
+  /* Status */
+  --success: 160 84% 39%;
+  --success-foreground: 0 0% 100%;
+  --warning: 45 93% 47%;
+  --warning-foreground: 0 0% 100%;
+  --info: 217 91% 60%;
+  --info-foreground: 0 0% 100%;
+  --admin: 217 91% 60%;
+  --admin-foreground: 0 0% 100%;
+  --impersonation: 38 92% 50%;
+  --impersonation-foreground: 40 96% 7%;
+
+  /* Login page (dark by default — matches Pixie Dust LoginPage) */
+  --login-bg: 240 20% 4%;
+  --login-card: 240 14% 12%;
+  --login-text: 240 10% 95%;
+  --login-text-muted: 240 8% 58%;
+  --login-text-subtle: 240 8% 37%;
+  --login-input: 240 18% 7%;
+  --login-ring: 224 69% 40%;
+
+  /* Brand palette */
+  --brand-50: #eff6ff;
+  --brand-100: #dbeafe;
+  --brand-200: #bfdbfe;
+  --brand-300: #93c5fd;
+  --brand-400: #60a5fa;
+  --brand-500: #3b82f6;
+  --brand-600: #2563eb;
+  --brand-700: #1d4ed8;
+  --brand-800: #1e40af;
+  --brand-900: #1e3a8a;
+  --brand-950: #172554;
 }
 
 .dark {
   --background: 220 20% 5%;
   --foreground: 0 0% 98%;
-  --card: 220 20% 5%;
+  --card: 220 14% 10%;
   --card-foreground: 0 0% 98%;
-  --popover: 220 20% 5%;
+  --popover: 220 14% 10%;
   --popover-foreground: 0 0% 98%;
-  --primary: 224 69% 40%;
+  --primary: 224 69% 50%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 220 14% 14%;
+  --secondary: 220 12% 15%;
   --secondary-foreground: 0 0% 98%;
   --muted: 220 14% 14%;
-  --muted-foreground: 210 9% 65%;
-  --accent: 217 91% 60%;
-  --accent-foreground: 0 0% 98%;
+  --muted-foreground: 220 8% 56%;
+  --accent: 217 91% 65%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 63% 31%;
   --destructive-foreground: 0 0% 98%;
   --border: 220 14% 14%;
-  --input: 220 14% 14%;
-  --ring: 224 69% 40%;
+  --input: 220 14% 12%;
+  --ring: 224 69% 50%;
+
+  /* Sidebar (dark) */
+  --sidebar: 220 18% 5.5%;
+  --sidebar-foreground: 220 8% 65%;
+  --sidebar-accent: 220 12% 13%;
+  --sidebar-border: 220 10% 15%;
+
+  /* Status (dark) */
+  --success: 160 84% 45%;
+  --success-foreground: 0 0% 100%;
+  --warning: 45 93% 55%;
+  --warning-foreground: 0 0% 10%;
+  --info: 217 91% 65%;
+  --info-foreground: 0 0% 100%;
+  --admin: 217 91% 65%;
+  --admin-foreground: 0 0% 100%;
+  --impersonation: 38 92% 55%;
+  --impersonation-foreground: 40 96% 7%;
 }
 
 * {
@@ -119,4 +205,16 @@
 body {
   background-color: var(--color-background);
   color: var(--color-foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus ring utility (PD 4.0.0) */
+.focus-ring {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.focus-ring:focus-visible {
+  outline-color: hsl(var(--ring));
 }
