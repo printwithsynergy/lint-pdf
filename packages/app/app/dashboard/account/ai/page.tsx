@@ -88,7 +88,7 @@ export default function AiConfigPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
+    <>
       <h1 className="font-display text-2xl font-bold">AI Configuration</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Configure AI-powered preflight checks for your organization.

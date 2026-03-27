@@ -1,29 +1,14 @@
 /**
  * Skeleton loading components for dashboard pages.
  *
- * Uses Tailwind `animate-pulse` for a shimmer effect that matches the
- * eventual layout, reducing perceived load time.
+ * Re-exports from Pixie Dust UI where possible, with app-specific
+ * composite skeletons for common page layouts.
  */
 
-function SkeletonLine({ width = "100%" }: { width?: string }) {
-  return (
-    <div className="h-4 animate-pulse rounded bg-muted" style={{ width }} />
-  );
-}
+export { Skeleton, SkeletonText, SkeletonCard } from "@thinkneverland/pixie-dust-ui";
 
-function SkeletonBlock({ height = "h-10" }: { height?: string }) {
-  return <div className={`w-full animate-pulse rounded bg-muted ${height}`} />;
-}
-
-export function SkeletonCard() {
-  return (
-    <div className="rounded-lg border p-6 space-y-3">
-      <SkeletonLine width="40%" />
-      <SkeletonLine width="70%" />
-      <SkeletonLine width="55%" />
-    </div>
-  );
-}
+import { Skeleton, SkeletonCard } from "@thinkneverland/pixie-dust-ui";
+import { Card, CardContent, CardHeader } from "@thinkneverland/pixie-dust-ui";
 
 export function SkeletonTable({
   rows = 5,
@@ -33,48 +18,50 @@ export function SkeletonTable({
   cols?: number;
 }) {
   return (
-    <div className="rounded-lg border overflow-hidden">
-      {/* Header */}
-      <div className="border-b bg-muted/30 px-4 py-3 flex gap-4">
-        {Array.from({ length: cols }).map((_, i) => (
-          <div key={i} className="flex-1">
-            <SkeletonLine width="60%" />
-          </div>
-        ))}
-      </div>
-      {/* Rows */}
-      {Array.from({ length: rows }).map((_, r) => (
-        <div key={r} className="border-b last:border-0 px-4 py-3 flex gap-4">
-          {Array.from({ length: cols }).map((_, c) => (
-            <div key={c} className="flex-1">
-              <SkeletonLine width={c === 0 ? "80%" : "50%"} />
+    <Card>
+      <CardContent>
+        <div className="flex gap-4 py-3">
+          {Array.from({ length: cols }).map((_, i) => (
+            <div key={i} className="flex-1">
+              <Skeleton className="h-4 w-3/5" />
             </div>
           ))}
         </div>
-      ))}
-    </div>
+        {Array.from({ length: rows }).map((_, r) => (
+          <div key={r} className="flex gap-4 border-t py-3">
+            {Array.from({ length: cols }).map((_, c) => (
+              <div key={c} className="flex-1">
+                <Skeleton className={c === 0 ? "h-4 w-4/5" : "h-4 w-1/2"} />
+              </div>
+            ))}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
 export function SkeletonForm({ fields = 4 }: { fields?: number }) {
   return (
-    <div className="space-y-6">
-      {Array.from({ length: fields }).map((_, i) => (
-        <div key={i} className="space-y-2">
-          <SkeletonLine width="20%" />
-          <SkeletonBlock />
-        </div>
-      ))}
-      <SkeletonBlock height="h-10" />
-    </div>
+    <Card>
+      <CardContent className="space-y-6">
+        {Array.from({ length: fields }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <Skeleton className="h-4 w-1/5" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        ))}
+        <Skeleton className="h-10 w-full" />
+      </CardContent>
+    </Card>
   );
 }
 
 export function SkeletonPageHeader() {
   return (
     <div className="space-y-2">
-      <SkeletonLine width="30%" />
-      <SkeletonLine width="50%" />
+      <Skeleton className="h-6 w-1/3" />
+      <Skeleton className="h-4 w-1/2" />
     </div>
   );
 }
@@ -85,7 +72,7 @@ export function SkeletonDashboard({
   type: "table" | "cards" | "form" | "detail";
 }) {
   return (
-    <main className="p-8 max-w-4xl">
+    <main className="p-6">
       <SkeletonPageHeader />
       <div className="mt-6">
         {type === "table" && <SkeletonTable />}

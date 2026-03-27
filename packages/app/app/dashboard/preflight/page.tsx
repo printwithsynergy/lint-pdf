@@ -3,11 +3,28 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { SkeletonDashboard } from "@/components/skeleton";
-import { Badge } from "@thinkneverland/pixie-dust-ui";
-import { EmptyState } from "@thinkneverland/pixie-dust-ui";
-import { useToast } from "@thinkneverland/pixie-dust-ui";
-import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
-import { Button, FileUpload, Select, FormField } from "@thinkneverland/pixie-dust-ui";
+import {
+  Badge,
+  EmptyState,
+  useToast,
+  ConfirmDialog,
+  Button,
+  FileUpload,
+  Select,
+  FormField,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Alert,
+  AlertDescription,
+} from "@thinkneverland/pixie-dust-ui";
 
 interface Profile {
   profile_id: string;
@@ -130,59 +147,64 @@ export default function PreflightPage() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <main className="p-8 max-w-5xl">
-      <h1 className="font-display text-2xl font-bold">Preflight Jobs</h1>
-      <p className="mt-1 text-sm text-muted-foreground">{total} total jobs</p>
+    <main className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Preflight Jobs</h1>
+        <p className="text-sm text-muted-foreground">{total} total jobs</p>
+      </div>
 
       {/* Upload Form */}
-      <form
-        onSubmit={handleUpload}
-        className="mt-6 rounded-lg border bg-card p-4"
-      >
-        <h2 className="text-sm font-semibold">Submit PDF for Preflight</h2>
-        <div className="mt-3 flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[200px]">
-            <FormField label="PDF File" htmlFor="pdf-file">
-              <FileUpload
-                accept=".pdf"
-                acceptedTypes={["application/pdf"]}
-                maxSize={100 * 1024 * 1024}
-                value={uploadFile}
-                onChange={setUploadFile}
-                helpText="Drag and drop a PDF or click to browse"
-              />
-            </FormField>
-          </div>
-          <div className="min-w-[180px]">
-            <FormField label="Profile" htmlFor="profile">
-              <Select
-                id="profile"
-                value={selectedProfile}
-                onChange={(e) => setSelectedProfile(e.target.value)}
+      <Card>
+        <CardHeader>
+          <CardTitle>Submit PDF for Preflight</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleUpload}>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <FormField label="PDF File" htmlFor="pdf-file">
+                  <FileUpload
+                    accept=".pdf"
+                    acceptedTypes={["application/pdf"]}
+                    maxSize={100 * 1024 * 1024}
+                    value={uploadFile}
+                    onChange={setUploadFile}
+                    helpText="Drag and drop a PDF or click to browse"
+                  />
+                </FormField>
+              </div>
+              <div className="min-w-[180px]">
+                <FormField label="Profile" htmlFor="profile">
+                  <Select
+                    id="profile"
+                    value={selectedProfile}
+                    onChange={(e) => setSelectedProfile(e.target.value)}
+                  >
+                    <option value="lintpdf-default">Default</option>
+                    {profiles.map((p) => (
+                      <option key={p.profile_id} value={p.profile_id}>
+                        {p.display_name}
+                      </option>
+                    ))}
+                  </Select>
+                </FormField>
+              </div>
+              <Button
+                type="submit"
+                loading={uploading}
+                disabled={!uploadFile}
               >
-                <option value="lintpdf-default">Default</option>
-                {profiles.map((p) => (
-                  <option key={p.profile_id} value={p.profile_id}>
-                    {p.display_name}
-                  </option>
-                ))}
-              </Select>
-            </FormField>
-          </div>
-          <Button
-            type="submit"
-            loading={uploading}
-            disabled={!uploadFile}
-          >
-            Run Preflight
-          </Button>
-        </div>
-      </form>
+                Run Preflight
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
 
       {error && (
-        <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {loading ? (
@@ -197,98 +219,100 @@ export default function PreflightPage() {
         </div>
       ) : (
         <>
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 font-medium">File</th>
-                  <th className="pb-2 font-medium">Profile</th>
-                  <th className="pb-2 font-medium">Status</th>
-                  <th className="pb-2 font-medium">Findings</th>
-                  <th className="pb-2 font-medium">Date</th>
-                  <th className="pb-2 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((job) => (
-                  <tr key={job.job_id} className="border-b">
-                    <td className="py-2">
-                      <Link
-                        href={`/dashboard/preflight/${job.job_id}`}
-                        className="font-medium hover:underline"
-                      >
-                        {job.file_name}
-                      </Link>
-                      <div className="text-xs text-muted-foreground">
-                        {(job.file_size / 1024 / 1024).toFixed(1)} MB
-                        {job.page_count ? ` / ${job.page_count} pages` : ""}
-                      </div>
-                    </td>
-                    <td className="py-2">
-                      <code className="text-xs">{job.profile_id}</code>
-                    </td>
-                    <td className="py-2">
-                      <Badge variant={STATUS_VARIANT[job.status] ?? "outline"}>
-                        {job.status}
-                      </Badge>
-                    </td>
-                    <td className="py-2">
-                      {job.summary ? (
-                        <div className="flex gap-2 text-xs">
-                          {job.summary.error_count > 0 && (
-                            <span className="text-red-600">
-                              {job.summary.error_count}E
-                            </span>
-                          )}
-                          {job.summary.warning_count > 0 && (
-                            <span className="text-yellow-600">
-                              {job.summary.warning_count}W
-                            </span>
-                          )}
-                          {job.summary.advisory_count > 0 && (
-                            <span className="text-blue-600">
-                              {job.summary.advisory_count}A
-                            </span>
-                          )}
-                          {job.summary.passed && (
-                            <span className="text-green-600">Passed</span>
-                          )}
+          <Card className="mt-6">
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File</TableHead>
+                    <TableHead>Profile</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Findings</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {jobs.map((job) => (
+                    <TableRow key={job.job_id}>
+                      <TableCell>
+                        <Link
+                          href={`/dashboard/preflight/${job.job_id}`}
+                          className="font-medium hover:underline"
+                        >
+                          {job.file_name}
+                        </Link>
+                        <div className="text-xs text-muted-foreground">
+                          {(job.file_size / 1024 / 1024).toFixed(1)} MB
+                          {job.page_count ? ` / ${job.page_count} pages` : ""}
                         </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">
-                          --
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 text-xs text-muted-foreground">
-                      {new Date(job.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="py-2">
-                      <div className="flex gap-1">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => window.location.href = `/dashboard/preflight/${job.job_id}`}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            setConfirmTarget(job.job_id);
-                            setConfirmOpen(true);
-                          }}
-                        >
-                          Delete
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                      </TableCell>
+                      <TableCell>
+                        <code className="text-xs">{job.profile_id}</code>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_VARIANT[job.status] ?? "outline"}>
+                          {job.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {job.summary ? (
+                          <div className="flex gap-2 text-xs">
+                            {job.summary.error_count > 0 && (
+                              <Badge variant="destructive">
+                                {job.summary.error_count}E
+                              </Badge>
+                            )}
+                            {job.summary.warning_count > 0 && (
+                              <Badge variant="warning">
+                                {job.summary.warning_count}W
+                              </Badge>
+                            )}
+                            {job.summary.advisory_count > 0 && (
+                              <Badge variant="secondary">
+                                {job.summary.advisory_count}A
+                              </Badge>
+                            )}
+                            {job.summary.passed && (
+                              <Badge variant="success">Passed</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            --
+                          </span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(job.created_at).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => window.location.href = `/dashboard/preflight/${job.job_id}`}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setConfirmTarget(job.job_id);
+                              setConfirmOpen(true);
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">

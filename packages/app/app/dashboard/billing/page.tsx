@@ -2,6 +2,22 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import {
+  Badge,
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  Alert,
+  AlertDescription,
+} from "@thinkneverland/pixie-dust-ui";
 
 interface Subscription {
   plan: string;
@@ -125,137 +141,136 @@ export default function BillingPage() {
   const currentPlan = subscription?.plan ?? "free";
 
   return (
-    <main className="p-8 max-w-4xl">
-      <h1 className="font-display text-2xl font-bold">Billing & Plan</h1>
+    <main className="p-6">
+      <h1 className="text-2xl font-bold">Billing & Plan</h1>
 
       {error && (
-        <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Current plan */}
-      <div className="mt-6 rounded-lg border p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Current Plan</h2>
-            <div className="mt-1 flex items-center gap-2">
-              <span className="text-2xl font-bold uppercase">
-                {currentPlan}
-              </span>
-              {subscription?.status && (
-                <span
-                  className={`rounded px-1.5 py-0.5 text-xs ${
-                    subscription.status === "active"
-                      ? "bg-green-100 text-green-700"
-                      : "bg-yellow-100 text-yellow-700"
-                  }`}
-                >
-                  {subscription.status}
-                </span>
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Current Plan</CardTitle>
+            <div className="flex gap-2">
+              <Button onClick={handleUpgrade}>Upgrade</Button>
+              {subscription?.status === "active" && (
+                <Button variant="secondary" onClick={handleManage}>
+                  Manage Subscription
+                </Button>
               )}
             </div>
-            {subscription?.current_period_end && (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {subscription.cancel_at_period_end ? "Cancels" : "Renews"} on{" "}
-                {new Date(subscription.current_period_end).toLocaleDateString()}
-              </p>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold uppercase">
+              {currentPlan}
+            </span>
+            {subscription?.status && (
+              <Badge variant={subscription.status === "active" ? "success" : "warning"}>
+                {subscription.status}
+              </Badge>
             )}
           </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleUpgrade}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            >
-              Upgrade
-            </button>
-            {subscription?.status === "active" && (
-              <button
-                onClick={handleManage}
-                className="rounded-md border px-4 py-2 text-sm hover:bg-muted"
-              >
-                Manage Subscription
-              </button>
-            )}
-          </div>
-        </div>
+          {subscription?.current_period_end && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              {subscription.cancel_at_period_end ? "Cancels" : "Renews"} on{" "}
+              {new Date(subscription.current_period_end).toLocaleDateString()}
+            </p>
+          )}
 
-        {/* Plan features */}
-        {PLAN_FEATURES[currentPlan] && (
-          <ul className="mt-3 grid gap-1 text-sm sm:grid-cols-2">
-            {PLAN_FEATURES[currentPlan].map((f) => (
-              <li key={f} className="flex items-center gap-1.5">
-                <span className="text-green-500">&#10003;</span> {f}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          {/* Plan features */}
+          {PLAN_FEATURES[currentPlan] && (
+            <ul className="mt-3 grid gap-1 text-sm sm:grid-cols-2">
+              {PLAN_FEATURES[currentPlan].map((f) => (
+                <li key={f} className="flex items-center gap-1.5">
+                  <span className="text-green-500">&#10003;</span> {f}
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Plan comparison */}
-      <div className="mt-6 rounded-lg border p-4">
-        <h2 className="text-lg font-semibold">Compare Plans</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-5">
-          {Object.entries(PLAN_FEATURES).map(([plan, features]) => (
-            <div
-              key={plan}
-              className={`rounded-lg border p-3 ${plan === currentPlan ? "border-primary bg-primary/5" : ""}`}
-            >
-              <h3 className="font-semibold uppercase">{plan}</h3>
-              <ul className="mt-2 space-y-1 text-xs">
-                {features.map((f) => (
-                  <li key={f}>{f}</li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-      </div>
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Compare Plans</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-5">
+            {Object.entries(PLAN_FEATURES).map(([plan, features]) => (
+              <Card
+                key={plan}
+                className={plan === currentPlan ? "border-primary bg-primary/5" : ""}
+              >
+                <CardContent className="p-3">
+                  <h3 className="font-semibold uppercase">{plan}</h3>
+                  <ul className="mt-2 space-y-1 text-xs">
+                    {features.map((f) => (
+                      <li key={f}>{f}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Invoices */}
       {invoices.length > 0 && (
-        <div className="mt-6 rounded-lg border p-4">
-          <h2 className="text-lg font-semibold">Invoice History</h2>
-          <div className="mt-3 space-y-2">
-            {invoices.map((inv) => (
-              <div
-                key={inv.id}
-                className="flex items-center justify-between rounded border p-2 text-sm"
-              >
-                <div>
-                  <span className="font-medium">
-                    ${(inv.amount_due / 100).toFixed(2)}{" "}
-                    {inv.currency.toUpperCase()}
-                  </span>
-                  <span className="ml-2 text-muted-foreground">
-                    {new Date(inv.created).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-xs ${
-                      inv.status === "paid"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {inv.status}
-                  </span>
-                  {inv.invoice_pdf && (
-                    <a
-                      href={inv.invoice_pdf}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      PDF
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Invoice History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((inv) => (
+                  <TableRow key={inv.id}>
+                    <TableCell>
+                      ${(inv.amount_due / 100).toFixed(2)}{" "}
+                      {inv.currency.toUpperCase()}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {new Date(inv.created).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={inv.status === "paid" ? "success" : "warning"}>
+                        {inv.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {inv.invoice_pdf && (
+                        <a
+                          href={inv.invoice_pdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline"
+                        >
+                          PDF
+                        </a>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
       )}
     </main>
   );

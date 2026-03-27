@@ -2,6 +2,19 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
+import {
+  Button,
+  Input,
+  FormField,
+  ColorInput,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Alert,
+  AlertDescription,
+} from "@thinkneverland/pixie-dust-ui";
 
 interface AccountInfo {
   id: string;
@@ -112,160 +125,144 @@ export default function AccountPage() {
   }
 
   return (
-    <main className="p-8 max-w-4xl">
-      <h1 className="font-display text-2xl font-bold">Account Settings</h1>
+    <main className="p-6">
+      <h1 className="text-2xl font-bold">Account Settings</h1>
 
       {error && (
-        <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
       {success && (
-        <div className="mt-4 rounded-md bg-green-50 p-3 text-sm text-green-700">
-          {success}
-        </div>
+        <Alert className="mt-4">
+          <AlertDescription>{success}</AlertDescription>
+        </Alert>
       )}
 
       {/* Plan overview */}
       {account && (
-        <div className="mt-6 rounded-lg border p-4">
-          <h2 className="text-lg font-semibold">Plan</h2>
-          <div className="mt-2 grid gap-2 text-sm sm:grid-cols-3">
-            <div>
-              <span className="text-muted-foreground">Current Plan:</span>{" "}
-              <span className="font-medium uppercase">{account.plan}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Status:</span>{" "}
-              <span className="font-medium">{account.status}</span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Daily Limit:</span>{" "}
-              <span className="font-medium">
-                {account.rate_limit_daily?.toLocaleString() ?? "N/A"} jobs
-              </span>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Max File Size:</span>{" "}
-              <span className="font-medium">
-                {account.max_file_size_mb ?? "N/A"} MB
-              </span>
-            </div>
-            {account.overage_enabled && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Plan</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2 text-sm sm:grid-cols-3">
               <div>
-                <span className="text-muted-foreground">Overage Cap:</span>{" "}
+                <span className="text-muted-foreground">Current Plan:</span>{" "}
+                <span className="font-medium uppercase">{account.plan}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Status:</span>{" "}
+                <span className="font-medium">{account.status}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Daily Limit:</span>{" "}
                 <span className="font-medium">
-                  ${((account.overage_cap_cents ?? 0) / 100).toFixed(2)}/day
+                  {account.rate_limit_daily?.toLocaleString() ?? "N/A"} jobs
                 </span>
               </div>
-            )}
-          </div>
-        </div>
+              <div>
+                <span className="text-muted-foreground">Max File Size:</span>{" "}
+                <span className="font-medium">
+                  {account.max_file_size_mb ?? "N/A"} MB
+                </span>
+              </div>
+              {account.overage_enabled && (
+                <div>
+                  <span className="text-muted-foreground">Overage Cap:</span>{" "}
+                  <span className="font-medium">
+                    ${((account.overage_cap_cents ?? 0) / 100).toFixed(2)}/day
+                  </span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Organization settings */}
-      <div className="mt-6 rounded-lg border p-4">
-        <h2 className="text-lg font-semibold">Organization</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium">
-              Organization Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-            />
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Organization</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField label="Organization Name" htmlFor="org-name">
+              <Input
+                id="org-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Contact Email" htmlFor="contact-email">
+              <Input
+                id="contact-email"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+              />
+            </FormField>
           </div>
-          <div>
-            <label className="block text-sm font-medium">Contact Email</label>
-            <input
-              type="email"
-              value={contactEmail}
-              onChange={(e) => setContactEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-            />
-          </div>
-        </div>
-        <button
-          onClick={handleSaveSettings}
-          disabled={saving}
-          className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : "Save Settings"}
-        </button>
-      </div>
+          <Button
+            onClick={handleSaveSettings}
+            disabled={saving}
+            loading={saving}
+            className="mt-4"
+          >
+            Save Settings
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Branding */}
-      <div className="mt-6 rounded-lg border p-4">
-        <h2 className="text-lg font-semibold">Branding</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Customize how your reports and portal appear to your customers.
-        </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium">Brand Name</label>
-            <input
-              type="text"
-              value={brandName}
-              onChange={(e) => setBrandName(e.target.value)}
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Logo URL</label>
-            <input
-              type="url"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://..."
-              className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Primary Color</label>
-            <div className="mt-1 flex gap-2">
-              <input
-                type="color"
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Branding</CardTitle>
+          <CardDescription>
+            Customize how your reports and portal appear to your customers.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FormField label="Brand Name" htmlFor="brand-name">
+              <Input
+                id="brand-name"
+                value={brandName}
+                onChange={(e) => setBrandName(e.target.value)}
+              />
+            </FormField>
+            <FormField label="Logo URL" htmlFor="logo-url">
+              <Input
+                id="logo-url"
+                type="url"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://..."
+              />
+            </FormField>
+            <FormField label="Primary Color" htmlFor="primary-color">
+              <ColorInput
                 value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                className="h-9 w-12 rounded border"
+                onChange={setPrimaryColor}
               />
-              <input
-                type="text"
-                value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium">Accent Color</label>
-            <div className="mt-1 flex gap-2">
-              <input
-                type="color"
+            </FormField>
+            <FormField label="Accent Color" htmlFor="accent-color">
+              <ColorInput
                 value={accentColor}
-                onChange={(e) => setAccentColor(e.target.value)}
-                className="h-9 w-12 rounded border"
+                onChange={setAccentColor}
               />
-              <input
-                type="text"
-                value={accentColor}
-                onChange={(e) => setAccentColor(e.target.value)}
-                className="flex-1 rounded-md border px-3 py-2 text-sm"
-              />
-            </div>
+            </FormField>
           </div>
-        </div>
-        <button
-          onClick={handleSaveBranding}
-          disabled={saving}
-          className="mt-3 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          {saving ? "Saving..." : "Save Branding"}
-        </button>
-      </div>
+          <Button
+            onClick={handleSaveBranding}
+            disabled={saving}
+            loading={saving}
+            className="mt-4"
+          >
+            Save Branding
+          </Button>
+        </CardContent>
+      </Card>
     </main>
   );
 }

@@ -30,14 +30,12 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="min-h-screen p-8">
+    <main className="p-6">
       <div className="mx-auto max-w-4xl">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="font-display text-3xl font-bold tracking-tight">
-              Dashboard
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
               Welcome back, {user?.name ?? user?.email}
             </p>
           </div>
