@@ -10,7 +10,8 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
-    "test": "turbo run test"
+    "test": "turbo run test",
+    "test:e2e": "docker compose -f docker-compose.e2e.yml up --build --abort-on-container-exit --exit-code-from playwright && docker compose -f docker-compose.e2e.yml down -v"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

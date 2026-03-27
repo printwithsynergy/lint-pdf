@@ -30,6 +30,14 @@ else
   echo "⚠️  Semgrep not installed — skipping. Install: brew install semgrep"
 fi
 
+# ── E2E tests (Docker) ───────────────────────────────────────────────────
+if command -v docker &>/dev/null && [ -f docker-compose.e2e.yml ]; then
+  echo "🎭 Running Playwright e2e tests in Docker..."
+  ./scripts/e2e.sh || FAIL=1
+else
+  echo "⚠️  Docker not available — skipping e2e tests"
+fi
+
 if [ $FAIL -ne 0 ]; then
   echo "❌ Pre-push checks failed. Fix errors before pushing."
   echo "   To skip: git push --no-verify"
