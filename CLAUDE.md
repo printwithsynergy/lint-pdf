@@ -42,11 +42,14 @@ Your deploy/start command should **ALWAYS** include a schema sync before the app
 ```
 pnpm store prune          # Clear cached packages — no stale Pixie Dust
 pnpm install              # Fresh resolve from GitHub Packages (no lockfile)
+pnpm update '@thinkneverland/*' -r  # Force re-resolve to newest published
 prisma db push            # Sync schema for any new PD columns
 next start                # Run the app
 ```
 
 No lockfile committed, no local references, no cached packages. Every deploy pulls the latest published Pixie Dust versions from `npm.pkg.github.com`.
+
+**Important:** `.npmrc` must contain `save-prefix=` to prevent pnpm from rewriting `"*"` specifiers to caret ranges like `"^4.0.2"` during `pnpm update`.
 
 **Railway / Docker:**
 ```sh

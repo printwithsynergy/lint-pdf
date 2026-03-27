@@ -20,6 +20,9 @@ RUN pnpm store prune 2>/dev/null || true
 # Fresh install — resolves all "*" specifiers to latest published versions
 # No --frozen-lockfile since there's no lockfile to freeze against
 RUN pnpm install --filter=@thinkneverland/lintpdf-app... --no-frozen-lockfile
+# Force re-resolve @thinkneverland/* to newest published versions
+# (pnpm install may satisfy "*" from cache; update forces registry check)
+RUN pnpm update '@thinkneverland/*' -r
 
 # Stage 2: Build
 FROM node:22-alpine AS builder
