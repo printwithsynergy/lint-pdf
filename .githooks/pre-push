@@ -35,8 +35,34 @@ fi
 # automatically spin up local dev servers via the webServer option.
 # External service tests (Stripe) auto-skip when keys aren't set.
 echo "🎭 Running Playwright e2e tests..."
-# Ensure browsers are installed
+# Ensure browsers are installed — try installing, then create version symlinks
+# so that if the installed revision differs from what the test runner expects,
+# it can still find a compatible chromium binary.
 (cd packages/web && npx playwright install chromium --with-deps 2>&1) || true
+BROWSER_DIR="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+if [ -d "$BROWSER_DIR" ]; then
+  for src in "$BROWSER_DIR"/chromium-*; do
+    [ -d "$src" ] || continue
+    src_rev="${src##*chromium-}"
+    # Symlink any missing chromium revision directories to this one
+    for target_rev in 1194 1208; do
+      [ "$src_rev" = "$target_rev" ] && continue
+      target="$BROWSER_DIR/chromium-$target_rev"
+      [ -e "$target" ] && continue
+      ln -sfn "$src" "$target" 2>/dev/null || true
+    done
+  done
+  for src in "$BROWSER_DIR"/chromium_headless_shell-*; do
+    [ -d "$src" ] || continue
+    src_rev="${src##*chromium_headless_shell-}"
+    for target_rev in 1194 1208; do
+      [ "$src_rev" = "$target_rev" ] && continue
+      target="$BROWSER_DIR/chromium_headless_shell-$target_rev"
+      [ -e "$target" ] && continue
+      ln -sfn "$src" "$target" 2>/dev/null || true
+    done
+  done
+fi
 
 # App e2e tests — require DATABASE_URL or APP_BASE_URL
 if [ -n "${DATABASE_URL:-}" ] || [ -n "${APP_BASE_URL:-}" ]; then
