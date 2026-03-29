@@ -37,12 +37,14 @@ fi
 echo "🎭 Running Playwright e2e tests..."
 if command -v npx &>/dev/null; then
   # Install browsers (may fail in sandboxed/offline environments)
-  INSTALL_OUTPUT=$(npx playwright install chromium --with-deps 2>&1) || true
-  # Check if browser is actually available by looking for the executable
+  npx playwright install chromium --with-deps 2>&1 || true
+  # Verify the correct browser version is actually installed.
+  # npx playwright install exits 0 even when download silently fails,
+  # so we check the executable path Playwright actually needs.
   BROWSER_OK=false
-  if echo "$INSTALL_OUTPUT" | grep -q "Failed to download"; then
-    BROWSER_OK=false
-  elif npx playwright --version >/dev/null 2>&1; then
+  PW_CACHE="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+  NEED_VER=$(npx playwright install --dry-run 2>&1 | grep -oP 'chromium_headless_shell-\d+' | head -1 || true)
+  if [ -n "$NEED_VER" ] && [ -d "$PW_CACHE/$NEED_VER" ]; then
     BROWSER_OK=true
   fi
 
