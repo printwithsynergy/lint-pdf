@@ -31,6 +31,7 @@ WORKDIR /app
 RUN corepack enable pnpm
 # Copy workspace config + the fresh lockfile from deps stage
 COPY package.json pnpm-workspace.yaml .npmrc ./
+COPY scripts/ scripts/
 COPY --from=deps /app/pnpm-lock.yaml ./
 # Copy full workspace package sources
 COPY packages/plugin/ ./packages/plugin/
