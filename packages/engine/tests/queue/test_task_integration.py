@@ -61,6 +61,9 @@ class FakeFinding:
     details: dict[str, Any] | None = None
     source: str = "engine"
     category: str | None = None
+    bbox: tuple[float, float, float, float] | None = None
+    object_id: str | None = None
+    object_type: str | None = None
 
     def __post_init__(self) -> None:
         if self.severity is None:

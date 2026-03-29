@@ -26,8 +26,8 @@ router = APIRouter(prefix="/users", tags=["user-ai-access"])
 async def update_user_ai_access(
     user_id: uuid_mod.UUID,
     request: UserAIAccessUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> UserAIAccessResponse:
     """Update user AI access configuration."""
     access = (
@@ -60,8 +60,8 @@ async def update_user_ai_access(
 @router.post("/{user_id}/ai-access/trial", response_model=UserAIAccessResponse)
 async def start_user_trial(
     user_id: uuid_mod.UUID,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> UserAIAccessResponse:
     """Start an AI trial for a user (30 days)."""
     access = (

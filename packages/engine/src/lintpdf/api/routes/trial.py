@@ -173,8 +173,8 @@ async def submit_trial(
     email: str = Form(..., min_length=1, max_length=255),
     company: str = Form(default=""),
     phone: str = Form(default=""),
-    files: list[UploadFile] = File(..., description="PDF files to test"),  # noqa: B008
-    db: Session = Depends(get_db),  # noqa: B008
+    files: list[UploadFile] = File(..., description="PDF files to test"),
+    db: Session = Depends(get_db),
     _secret: str = Depends(_verify_trial_secret),
 ) -> JSONResponse:
     """Accept trial PDF uploads from the marketing site."""
@@ -301,7 +301,7 @@ async def list_trials(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
     status_filter: str | None = Query(None, alias="status"),
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(verify_admin_key),
 ) -> TrialListResponse:
     """List trial submissions (admin only)."""
@@ -339,7 +339,7 @@ async def list_trials(
 @router.get("/api/v1/admin/trials/{submission_id}", response_model=TrialSubmissionDetail)
 async def get_trial(
     submission_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(verify_admin_key),
 ) -> TrialSubmissionDetail:
     """Get trial submission details with files (admin only)."""
@@ -391,7 +391,7 @@ async def get_trial(
 async def download_trial_file(
     submission_id: str,
     file_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(verify_admin_key),
 ) -> JSONResponse:
     """Get a presigned download URL for a trial file (admin only)."""
@@ -418,7 +418,7 @@ async def run_trial_preflight(
     submission_id: str,
     file_id: str,
     profile_id: str = "lintpdf-default",
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(verify_admin_key),
 ) -> JSONResponse:
     """Run preflight on a trial file (admin only)."""
@@ -489,7 +489,7 @@ async def run_trial_preflight(
 @router.post("/api/v1/admin/trials/{submission_id}/send-report")
 async def send_trial_report(
     submission_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(verify_admin_key),
 ) -> JSONResponse:
     """Generate and send a branded report to the trial submitter (admin only)."""
@@ -609,7 +609,7 @@ async def send_trial_report(
 async def update_trial(
     submission_id: str,
     body: UpdateTrialRequest,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(verify_admin_key),
 ) -> JSONResponse:
     """Update trial submission status or notes (admin only)."""

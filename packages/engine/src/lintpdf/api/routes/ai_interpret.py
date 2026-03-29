@@ -38,8 +38,8 @@ Wrap the array in {"interpretations": [...], "summary": "overall summary"}"""
 @router.get("/{job_id}/interpret", response_model=NLInterpretResponse)
 async def interpret_captains_log(
     job_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> NLInterpretResponse:
     """Generate plain language interpretation of Captain's Log findings."""
     import uuid as uuid_mod

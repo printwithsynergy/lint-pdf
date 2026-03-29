@@ -179,6 +179,7 @@ select = [
 ignore = [
     "E501",   # line too long (handled by formatter)
     "UP017",  # datetime.UTC alias requires Python 3.13+; project supports >=3.11
+    "RUF003", # ambiguous unicode chars in comments (en-dash in "0–400%")
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -187,6 +188,8 @@ ignore = [
 "tests/semantic/test_interpreter.py" = ["N802"]
 # Test methods don't use self — grouped in classes for organization only
 "tests/**" = ["PLR6301"]
+# FastAPI Depends() in function defaults is the standard pattern
+"src/lintpdf/api/routes/*.py" = ["B008"]
 # CIEDE2000 / ECG math uses uppercase variables per standard notation (L1, C1, Lbar, etc.)
 "src/lintpdf/analyzers/ecg_analyzer.py" = ["N806"]
 "src/lintpdf/analyzers/advanced_color_analyzer.py" = ["N806"]

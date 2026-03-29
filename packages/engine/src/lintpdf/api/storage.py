@@ -178,7 +178,9 @@ class StorageBackend:
         client = self._get_client()
         client.delete_object(Bucket=self._bucket_name, Key=file_key)
 
-    def upload_raw(self, key: str, data: bytes, content_type: str = "application/octet-stream") -> str:
+    def upload_raw(
+        self, key: str, data: bytes, content_type: str = "application/octet-stream"
+    ) -> str:
         """Upload arbitrary bytes to storage at the given key.
 
         Args:

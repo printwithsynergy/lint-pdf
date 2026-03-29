@@ -23,8 +23,8 @@ router = APIRouter(prefix="/api/v1/ai/credits", tags=["ai-credits"])
 
 @router.get("", response_model=CreditBalanceResponse)
 async def get_credits(
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> CreditBalanceResponse:
     """View current AI credit balance and package status."""
     from lintpdf.ai.access import check_ai_access
@@ -46,8 +46,8 @@ async def get_credits(
 @router.post("/topup", response_model=CreditTopupResponse, status_code=status.HTTP_201_CREATED)
 async def topup_credits(
     request: CreditTopupRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> CreditTopupResponse:
     """Purchase a credit top-up package.
 

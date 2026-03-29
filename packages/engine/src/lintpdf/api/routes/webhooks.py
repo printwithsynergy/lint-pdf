@@ -74,8 +74,8 @@ def _validate_webhook_url(url: str) -> None:
 @router.post("", response_model=WebhookResponse, status_code=status.HTTP_201_CREATED)
 async def create_webhook(
     request: WebhookCreateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> WebhookResponse:
     """Register a new webhook endpoint."""
     from lintpdf.tenants.entitlements import resolve_entitlements
@@ -123,8 +123,8 @@ async def create_webhook(
 
 @router.get("", response_model=WebhookListResponse)
 async def list_webhooks(
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> WebhookListResponse:
     """List all registered webhook endpoints for the current tenant."""
     endpoints: list[WebhookEndpoint] = (
@@ -148,8 +148,8 @@ async def list_webhooks(
 async def update_webhook(
     webhook_id: str,
     request: WebhookUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> WebhookResponse:
     """Update a webhook endpoint (URL, events, or active status)."""
     try:
@@ -196,8 +196,8 @@ async def update_webhook(
 @router.delete("/{webhook_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_webhook(
     webhook_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Remove a webhook endpoint."""
     try:
@@ -226,8 +226,8 @@ async def delete_webhook(
 @router.post("/{webhook_id}/test", response_model=WebhookTestResponse)
 async def test_webhook(
     webhook_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> WebhookTestResponse:
     """Send a test payload to a webhook endpoint to verify connectivity."""
     try:

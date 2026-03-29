@@ -227,7 +227,6 @@ class NLPreflightProfileResponse(BaseModel):
     confidence: float
 
 
-
 # --- NL Report interpretation schemas ---
 
 

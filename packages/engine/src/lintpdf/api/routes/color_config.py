@@ -27,8 +27,8 @@ router = APIRouter(prefix="/tenants", tags=["color-config"])
 @router.get("/{tenant_id}/color-config", response_model=ColorConfigResponse)
 async def get_color_config(
     tenant_id: uuid_mod.UUID,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> ColorConfigResponse:
     """Get tenant color management configuration."""
     config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
@@ -61,8 +61,8 @@ async def get_color_config(
 async def update_color_config(
     tenant_id: uuid_mod.UUID,
     request: ColorConfigUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> ColorConfigResponse:
     """Update color management configuration."""
     config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
@@ -103,10 +103,10 @@ async def update_color_config(
 )
 async def upload_icc_profile(
     tenant_id: uuid_mod.UUID,
-    file: UploadFile = File(..., description="ICC profile file"),  # noqa: B008
+    file: UploadFile = File(..., description="ICC profile file"),
     name: str = "",
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> IccProfileUploadResponse:
     """Upload a custom ICC profile for gamut checking."""
     from lintpdf.profiles.icc.profile_manager import validate_icc_profile_bytes
@@ -154,8 +154,8 @@ async def upload_icc_profile(
 async def delete_icc_profile(
     tenant_id: uuid_mod.UUID,
     profile_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Remove a custom ICC profile."""
     config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
@@ -183,8 +183,8 @@ async def delete_icc_profile(
 async def set_brand_palette(
     tenant_id: uuid_mod.UUID,
     request: PaletteUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> dict[str, object]:
     """Set brand color palette for color compliance checking."""
     config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
@@ -226,8 +226,8 @@ def _invalidate_pantone_cache(tenant_id: uuid_mod.UUID) -> None:
 )
 async def get_pantone_overrides(
     tenant_id: uuid_mod.UUID,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> PantoneOverridesResponse:
     """Get current Pantone color overrides for a tenant."""
     config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
@@ -242,8 +242,8 @@ async def get_pantone_overrides(
 async def set_pantone_overrides(
     tenant_id: uuid_mod.UUID,
     request: PantoneOverridesUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> PantoneOverridesResponse:
     """Bulk set / replace all Pantone color overrides for a tenant.
 
@@ -276,8 +276,8 @@ async def set_pantone_overrides(
 )
 async def delete_pantone_overrides(
     tenant_id: uuid_mod.UUID,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Clear all Pantone overrides for a tenant."""
     config = db.query(TenantColorConfig).filter(TenantColorConfig.tenant_id == tenant_id).first()
@@ -293,7 +293,7 @@ async def delete_pantone_overrides(
 )
 async def list_gamut_conditions(
     tenant_id: uuid_mod.UUID,
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> GamutConditionsListResponse:
     """List available gamut conditions."""
     from lintpdf.profiles.icc.profile_manager import get_available_conditions

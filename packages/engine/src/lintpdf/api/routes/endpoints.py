@@ -38,8 +38,8 @@ def _profile_exists(profile_id: str, db: Session, tenant_id: uuid_mod.UUID) -> b
 @router.post("", response_model=EndpointResponse, status_code=status.HTTP_201_CREATED)
 async def create_endpoint(
     request: EndpointCreateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> EndpointResponse:
     """Create a custom API endpoint bound to a profile."""
     from lintpdf.tenants.entitlements import resolve_entitlements
@@ -94,8 +94,8 @@ async def create_endpoint(
 
 @router.get("", response_model=EndpointListResponse)
 async def list_endpoints(
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> EndpointListResponse:
     """List all custom endpoints for the current tenant."""
     endpoints = db.query(CustomEndpoint).filter(CustomEndpoint.tenant_id == tenant.id).all()
@@ -118,8 +118,8 @@ async def list_endpoints(
 async def update_endpoint(
     endpoint_id: str,
     request: EndpointUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> EndpointResponse:
     """Update a custom endpoint."""
     try:
@@ -189,8 +189,8 @@ async def update_endpoint(
 @router.delete("/{endpoint_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_endpoint(
     endpoint_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Delete a custom endpoint."""
     try:

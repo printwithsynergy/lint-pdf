@@ -41,8 +41,8 @@ def _load_custom_profiles_from_db(db: Session, tenant_id: uuid_mod.UUID) -> list
 
 @router.get("", response_model=ProfileListResponse)
 async def list_profiles(
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> ProfileListResponse:
     """List all available preflight profiles (builtins + tenant's custom)."""
     registry = get_registry()
@@ -86,8 +86,8 @@ async def list_profiles(
 @router.get("/{profile_id}", response_model=ProfileDetailResponse)
 async def get_profile(
     profile_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> ProfileDetailResponse:
     """Get detailed profile configuration."""
     registry = get_registry()
@@ -136,8 +136,8 @@ async def get_profile(
 @router.post("", response_model=ProfileCreateResponse, status_code=status.HTTP_201_CREATED)
 async def create_profile(
     request: ProfileCreateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> ProfileCreateResponse:
     """Create a custom preflight profile."""
     registry = get_registry()
@@ -208,8 +208,8 @@ async def create_profile(
 @router.delete("/{profile_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_profile(
     profile_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Delete a custom profile. Built-in profiles cannot be deleted."""
     registry = get_registry()

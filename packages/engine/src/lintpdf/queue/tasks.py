@@ -387,7 +387,7 @@ def prerender_viewer_tiles(
     page images at 150 DPI (default viewer zoom) and 72 DPI (thumbnail strip),
     then stores them in S3 for instant loading when the viewer opens.
     """
-    from lintpdf.ai.rendering import render_page_to_image, get_page_count
+    from lintpdf.ai.rendering import get_page_count, render_page_to_image
     from lintpdf.api.storage import get_storage
 
     storage = get_storage()

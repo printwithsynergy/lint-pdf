@@ -30,8 +30,8 @@ async def get_usage(
     feature: str | None = Query(default=None),
     start_date: str | None = Query(default=None, description="ISO date YYYY-MM-DD"),
     end_date: str | None = Query(default=None, description="ISO date YYYY-MM-DD"),
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> AIUsageResponse:
     """View AI usage report with filtering."""
     from lintpdf.ai.access import check_ai_access
@@ -91,8 +91,8 @@ async def get_usage(
 @router.get("/trends", response_model=AITrendResponse)
 async def get_usage_trends(
     period: str = Query(default="30d", description="Period: 7d, 30d, 90d"),
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> AITrendResponse:
     """Get AI usage trend data for SPC dashboard."""
     from lintpdf.ai.access import check_ai_access

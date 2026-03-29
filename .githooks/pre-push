@@ -5,15 +5,15 @@ export PATH="/opt/homebrew/bin:$PATH"
 FAIL=0
 
 # ── Python tests ──────────────────────────────────────────────────────────
-if [ -d "packages/engine" ] && command -v pytest &>/dev/null; then
+if [ -d "packages/engine" ] && python -m pytest --version &>/dev/null; then
   echo "🧪 [engine] pytest..."
-  (cd packages/engine && pytest tests/ -v --tb=short -m "not corpus and not integration" -q) || FAIL=1
+  (cd packages/engine && python -m pytest tests/ -v --tb=short -m "not corpus and not integration" -q) || FAIL=1
 elif [ -d "packages/engine" ]; then
   echo "⚠️  pytest not installed — skipping engine tests"
 fi
-if [ -d "packages/inference" ] && command -v pytest &>/dev/null; then
+if [ -d "packages/inference" ] && python -m pytest --version &>/dev/null; then
   echo "🧪 [inference] pytest..."
-  (cd packages/inference && pytest tests/ -v --tb=short -q) || FAIL=1
+  (cd packages/inference && python -m pytest tests/ -v --tb=short -q) || FAIL=1
 elif [ -d "packages/inference" ]; then
   echo "⚠️  pytest not installed — skipping inference tests"
 fi
