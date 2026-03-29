@@ -1,7 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
-const API_BASE = process.env.API_BASE_URL ?? "https://api.lintpdf.com";
-const WEB_BASE = process.env.WEB_BASE_URL ?? "https://lintpdf.com";
+const isLocal = !process.env.WEB_BASE_URL && !process.env.API_BASE_URL;
+const WEB_BASE = process.env.WEB_BASE_URL ?? (isLocal ? "http://localhost:3000" : "https://lintpdf.com");
+const API_BASE = process.env.API_BASE_URL ?? (isLocal ? "http://localhost:3000" : "https://api.lintpdf.com");
 
 // Support HTTP proxy for sandboxed environments
 const proxyServer = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
@@ -21,6 +22,17 @@ export default defineConfig({
     trace: "on-first-retry",
     ...proxyConfig,
   },
+  // Spin up local dev server when no external URL is provided
+  ...(isLocal
+    ? {
+        webServer: {
+          command: "pnpm dev",
+          port: 3000,
+          reuseExistingServer: true,
+          timeout: 60_000,
+        },
+      }
+    : {}),
   projects: [
     {
       name: "api-tests",
