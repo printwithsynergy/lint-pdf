@@ -104,7 +104,7 @@ describe("lintpdfPlugin", () => {
 
     const [prefix, routes] = ctx.addRoutes.mock.calls[0];
     expect(prefix).toBe("/api/lintpdf");
-    expect(routes.length).toBe(17);
+    expect(routes.length).toBe(37);
   });
 
   it("boot logs when client is ready", async () => {

@@ -34,12 +34,26 @@ fi
 # Runs against APP_BASE_URL (defaults to production if not set).
 # Set APP_BASE_URL=http://localhost:3001 to test against local dev server.
 # External service tests (Stripe) auto-skip when keys aren't set.
+# Skips if the target URLs are unreachable (e.g. sandboxed CI environment).
 echo "🎭 Running Playwright e2e tests..."
 if command -v npx &>/dev/null; then
-  # App e2e tests
-  (cd packages/app && npx playwright test --reporter=list) || FAIL=1
-  # Web e2e tests (API + UI against engine/web)
-  (cd packages/web && npx playwright test --reporter=list) || FAIL=1
+  APP_URL="${APP_BASE_URL:-https://app.lintpdf.com}"
+  WEB_URL="${WEB_BASE_URL:-https://lintpdf.com}"
+  APP_REACHABLE=true
+  WEB_REACHABLE=true
+  curl -sf --max-time 5 "$APP_URL" >/dev/null 2>&1 || APP_REACHABLE=false
+  curl -sf --max-time 5 "$WEB_URL" >/dev/null 2>&1 || WEB_REACHABLE=false
+
+  if $APP_REACHABLE; then
+    (cd packages/app && npx playwright test --reporter=list) || FAIL=1
+  else
+    echo "⚠️  App ($APP_URL) unreachable — skipping app e2e tests"
+  fi
+  if $WEB_REACHABLE; then
+    (cd packages/web && npx playwright test --reporter=list) || FAIL=1
+  else
+    echo "⚠️  Web ($WEB_URL) unreachable — skipping web e2e tests"
+  fi
 else
   echo "⚠️  npx not available — skipping e2e tests"
 fi
