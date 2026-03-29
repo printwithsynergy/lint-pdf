@@ -12,12 +12,8 @@ elif [ -d "packages/engine" ]; then
   echo "⚠️  pytest not installed — skipping engine tests"
 fi
 if [ -d "packages/inference" ] && python -m pytest --version &>/dev/null; then
-  if python -c "import numpy" &>/dev/null; then
-    echo "🧪 [inference] pytest..."
-    (cd packages/inference && python -m pytest tests/ -v --tb=short -q) || FAIL=1
-  else
-    echo "⚠️  numpy not installed — skipping inference tests (ML deps required)"
-  fi
+  echo "🧪 [inference] pytest..."
+  (cd packages/inference && python -m pytest tests/ -v --tb=short -q) || FAIL=1
 elif [ -d "packages/inference" ]; then
   echo "⚠️  pytest not installed — skipping inference tests"
 fi
@@ -39,38 +35,18 @@ fi
 # automatically spin up local dev servers via the webServer option.
 # External service tests (Stripe) auto-skip when keys aren't set.
 echo "🎭 Running Playwright e2e tests..."
-if command -v npx &>/dev/null; then
-  # Install browsers (may fail in sandboxed/offline environments)
-  (cd packages/web && npx playwright install chromium --with-deps 2>&1) || true
-  # Verify the correct browser version is actually installed.
-  # npx playwright install exits 0 even when download silently fails,
-  # so we check the executable path Playwright actually needs.
-  # Must run from a package dir to get the correct Playwright version.
-  BROWSER_OK=false
-  PW_CACHE="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
-  NEED_VER=$(cd packages/web && npx playwright install --dry-run 2>&1 | grep -oP 'chromium_headless_shell-\d+' | head -1 || true)
-  if [ -n "$NEED_VER" ] && [ -d "$PW_CACHE/$NEED_VER" ]; then
-    BROWSER_OK=true
-  fi
+# Ensure browsers are installed
+(cd packages/web && npx playwright install chromium --with-deps 2>&1) || true
 
-  if $BROWSER_OK; then
-    # App e2e tests — require DATABASE_URL or APP_BASE_URL
-    if [ -n "${DATABASE_URL:-}" ] || [ -n "${APP_BASE_URL:-}" ]; then
-      echo "  → App e2e tests..."
-      (cd packages/app && npx playwright test --reporter=list) || FAIL=1
-    else
-      echo "⚠️  DATABASE_URL and APP_BASE_URL not set — skipping app e2e tests"
-    fi
-
-    # Web e2e tests — UI tests run locally, API tests require API_BASE_URL
-    echo "  → Web e2e tests..."
-    (cd packages/web && npx playwright test --reporter=list) || FAIL=1
-  else
-    echo "⚠️  Playwright browsers not available — skipping e2e tests"
-  fi
-else
-  echo "⚠️  npx not available — skipping e2e tests"
+# App e2e tests — require DATABASE_URL or APP_BASE_URL
+if [ -n "${DATABASE_URL:-}" ] || [ -n "${APP_BASE_URL:-}" ]; then
+  echo "  → App e2e tests..."
+  (cd packages/app && npx playwright test --reporter=list) || FAIL=1
 fi
+
+# Web e2e tests — UI tests run locally, API tests require API_BASE_URL
+echo "  → Web e2e tests..."
+(cd packages/web && npx playwright test --reporter=list) || FAIL=1
 
 if [ $FAIL -ne 0 ]; then
   echo "❌ Pre-push checks failed. Fix errors before pushing."
