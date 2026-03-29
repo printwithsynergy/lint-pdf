@@ -4,6 +4,7 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "prepare": "git config core.hooksPath .githooks || true",
+    "postinstall": "node scripts/patch-pd-config-exports.js || true",
     "update:deps": "pnpm update --recursive '@thinkneverland/pixie-dust' '@thinkneverland/pixie-dust-*'",
     "predev": "pnpm update --recursive '@thinkneverland/pixie-dust' '@thinkneverland/pixie-dust-*'",
     "build": "turbo run build",
