@@ -41,12 +41,13 @@ echo "🎭 Running Playwright e2e tests..."
 # App e2e tests — require DATABASE_URL or APP_BASE_URL
 if [ -n "${DATABASE_URL:-}" ] || [ -n "${APP_BASE_URL:-}" ]; then
   echo "  → App e2e tests..."
-  (cd packages/app && npx playwright test --reporter=list) || FAIL=1
+  (cd packages/app && HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= npx playwright test --reporter=list) || FAIL=1
 fi
 
 # Web e2e tests — UI tests run locally, API tests require API_BASE_URL
+# Unset proxy env vars for local tests — sandbox proxies cause auth errors on localhost
 echo "  → Web e2e tests..."
-(cd packages/web && npx playwright test --reporter=list) || FAIL=1
+(cd packages/web && HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= npx playwright test --reporter=list) || FAIL=1
 
 if [ $FAIL -ne 0 ]; then
   echo "❌ Pre-push checks failed. Fix errors before pushing."
