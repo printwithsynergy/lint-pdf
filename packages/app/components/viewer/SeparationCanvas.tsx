@@ -153,12 +153,12 @@ export function SeparationCanvas({
       for (let i = 0; i < data.length; i += 4) {
         // Grayscale value: 0 = full ink, 255 = no ink (inverted)
         // Convert to ink density: 0 = no ink, 255 = full ink
-        const inkDensity = 255 - data[i];
+        const inkDensity = 255 - (data[i] ?? 0);
         // Tinted color = white * (1 - density/255) + channelColor * (density/255)
         const t = inkDensity / 255;
-        data[i] = Math.round(255 * (1 - t) + rgb[0] * t);
-        data[i + 1] = Math.round(255 * (1 - t) + rgb[1] * t);
-        data[i + 2] = Math.round(255 * (1 - t) + rgb[2] * t);
+        data[i] = Math.round(255 * (1 - t) + (rgb[0] ?? 0) * t);
+        data[i + 1] = Math.round(255 * (1 - t) + (rgb[1] ?? 0) * t);
+        data[i + 2] = Math.round(255 * (1 - t) + (rgb[2] ?? 0) * t);
         data[i + 3] = 255;
       }
 

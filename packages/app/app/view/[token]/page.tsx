@@ -107,7 +107,7 @@ function getCookie(name: string): string | null {
   const match = document.cookie.match(
     new RegExp("(^| )" + name + "=([^;]+)"),
   );
-  return match ? decodeURIComponent(match[2]) : null;
+  return match ? decodeURIComponent(match[2]!) : null;
 }
 
 function setCookie(name: string, value: string, days: number) {

@@ -15,6 +15,9 @@ describe("lintpdfPlugin", () => {
       getPlugin: vi.fn(),
       on: vi.fn(),
       emit: vi.fn(),
+      addCSSVariables: vi.fn(),
+      addDarkCSSVariables: vi.fn(),
+      addSchemaExpectation: vi.fn(),
       services: {
         logger: {
           info: vi.fn(),

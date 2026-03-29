@@ -127,8 +127,8 @@ export default function ApiKeysPage() {
 
       {/* Newly created key banner */}
       {newlyCreatedKey && (
-        <div className="mt-4 rounded-md border border-green-200 bg-green-50 p-4">
-          <p className="text-sm font-medium text-green-800">
+        <div className="mt-4 rounded-md border border-success/30 bg-success/10 p-4">
+          <p className="text-sm font-medium text-success">
             API key created! Copy it now — it will not be shown again.
           </p>
           <div className="mt-2 flex items-center gap-2">

@@ -66,12 +66,12 @@ export function PageNavigator({
             {counts && (
               <div className="absolute right-0.5 top-0.5 flex gap-0.5">
                 {counts.errors > 0 && (
-                  <span className="rounded-full bg-red-500 px-1 text-[9px] text-white">
+                  <span className="rounded-full bg-destructive px-1 text-[9px] text-white">
                     {counts.errors}
                   </span>
                 )}
                 {counts.warnings > 0 && (
-                  <span className="rounded-full bg-amber-500 px-1 text-[9px] text-white">
+                  <span className="rounded-full bg-warning px-1 text-[9px] text-white">
                     {counts.warnings}
                   </span>
                 )}

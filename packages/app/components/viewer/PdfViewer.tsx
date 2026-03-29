@@ -110,13 +110,13 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
   );
 
   const handleAnnotationUndo = useCallback(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const el = annotationCanvasRef.current as any;
     el?.__annotationUndo?.();
   }, []);
 
   const handleAnnotationRedo = useCallback(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const el = annotationCanvasRef.current as any;
     el?.__annotationRedo?.();
   }, []);

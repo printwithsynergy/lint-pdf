@@ -13,6 +13,11 @@
     "test": "turbo run test",
     "test:e2e": "cd packages/app && npx playwright test && cd ../web && npx playwright test"
   },
+  "pnpm": {
+    "overrides": {
+      "@thinkneverland/pixie-dust-auth": ">=1.6.3"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "eslint-plugin-security": "^4.0.0",

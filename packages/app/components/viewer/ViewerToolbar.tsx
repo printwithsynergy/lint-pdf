@@ -91,7 +91,7 @@ export function ViewerToolbar({
             onClick={onToggleTacHeatmap}
             className={`rounded border px-3 py-1 text-sm ${
               showTacHeatmap
-                ? "border-amber-500 bg-amber-500/10 text-amber-600"
+                ? "border-warning bg-warning/10 text-warning"
                 : "hover:bg-muted"
             }`}
             title="Toggle TAC heatmap overlay"
