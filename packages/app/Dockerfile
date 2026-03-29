@@ -9,6 +9,7 @@ WORKDIR /app
 RUN corepack enable pnpm
 # Copy workspace config (NO lockfile) + package.json files
 COPY package.json pnpm-workspace.yaml .npmrc ./
+COPY scripts/ scripts/
 COPY packages/app/package.json packages/app/package.json
 COPY packages/plugin/package.json packages/plugin/package.json
 COPY packages/stripe/package.json packages/stripe/package.json
