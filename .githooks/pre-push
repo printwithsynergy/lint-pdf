@@ -12,8 +12,12 @@ elif [ -d "packages/engine" ]; then
   echo "⚠️  pytest not installed — skipping engine tests"
 fi
 if [ -d "packages/inference" ] && python -m pytest --version &>/dev/null; then
-  echo "🧪 [inference] pytest..."
-  (cd packages/inference && python -m pytest tests/ -v --tb=short -q) || FAIL=1
+  if python -c "import numpy" &>/dev/null; then
+    echo "🧪 [inference] pytest..."
+    (cd packages/inference && python -m pytest tests/ -v --tb=short -q) || FAIL=1
+  else
+    echo "⚠️  numpy not installed — skipping inference tests (ML deps required)"
+  fi
 elif [ -d "packages/inference" ]; then
   echo "⚠️  pytest not installed — skipping inference tests"
 fi
@@ -37,13 +41,14 @@ fi
 echo "🎭 Running Playwright e2e tests..."
 if command -v npx &>/dev/null; then
   # Install browsers (may fail in sandboxed/offline environments)
-  npx playwright install chromium --with-deps 2>&1 || true
+  (cd packages/web && npx playwright install chromium --with-deps 2>&1) || true
   # Verify the correct browser version is actually installed.
   # npx playwright install exits 0 even when download silently fails,
   # so we check the executable path Playwright actually needs.
+  # Must run from a package dir to get the correct Playwright version.
   BROWSER_OK=false
   PW_CACHE="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
-  NEED_VER=$(npx playwright install --dry-run 2>&1 | grep -oP 'chromium_headless_shell-\d+' | head -1 || true)
+  NEED_VER=$(cd packages/web && npx playwright install --dry-run 2>&1 | grep -oP 'chromium_headless_shell-\d+' | head -1 || true)
   if [ -n "$NEED_VER" ] && [ -d "$PW_CACHE/$NEED_VER" ]; then
     BROWSER_OK=true
   fi
