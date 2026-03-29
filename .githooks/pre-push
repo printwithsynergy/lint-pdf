@@ -5,15 +5,15 @@ export PATH="/opt/homebrew/bin:$PATH"
 FAIL=0
 
 # ── Python tests ──────────────────────────────────────────────────────────
-if [ -d "packages/engine" ] && command -v pytest &>/dev/null; then
+if [ -d "packages/engine" ] && python -m pytest --version &>/dev/null; then
   echo "🧪 [engine] pytest..."
-  (cd packages/engine && pytest tests/ -v --tb=short -m "not corpus and not integration" -q) || FAIL=1
+  (cd packages/engine && python -m pytest tests/ -v --tb=short -m "not corpus and not integration" -q) || FAIL=1
 elif [ -d "packages/engine" ]; then
   echo "⚠️  pytest not installed — skipping engine tests"
 fi
-if [ -d "packages/inference" ] && command -v pytest &>/dev/null; then
+if [ -d "packages/inference" ] && python -m pytest --version &>/dev/null; then
   echo "🧪 [inference] pytest..."
-  (cd packages/inference && pytest tests/ -v --tb=short -q) || FAIL=1
+  (cd packages/inference && python -m pytest tests/ -v --tb=short -q) || FAIL=1
 elif [ -d "packages/inference" ]; then
   echo "⚠️  pytest not installed — skipping inference tests"
 fi
@@ -31,18 +31,49 @@ else
 fi
 
 # ── E2E Playwright tests (local, no Docker) ──────────────────────────────
-# Runs against APP_BASE_URL (defaults to production if not set).
-# Set APP_BASE_URL=http://localhost:3001 to test against local dev server.
+# When APP_BASE_URL / WEB_BASE_URL are not set, Playwright configs
+# automatically spin up local dev servers via the webServer option.
 # External service tests (Stripe) auto-skip when keys aren't set.
 echo "🎭 Running Playwright e2e tests..."
-if command -v npx &>/dev/null; then
-  # App e2e tests
-  (cd packages/app && npx playwright test --reporter=list) || FAIL=1
-  # Web e2e tests (API + UI against engine/web)
-  (cd packages/web && npx playwright test --reporter=list) || FAIL=1
-else
-  echo "⚠️  npx not available — skipping e2e tests"
+# Ensure browsers are installed — try installing, then create version symlinks
+# so that if the installed revision differs from what the test runner expects,
+# it can still find a compatible chromium binary.
+(cd packages/web && npx playwright install chromium --with-deps 2>&1) || true
+BROWSER_DIR="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+if [ -d "$BROWSER_DIR" ]; then
+  for src in "$BROWSER_DIR"/chromium-*; do
+    [ -d "$src" ] || continue
+    src_rev="${src##*chromium-}"
+    # Symlink any missing chromium revision directories to this one
+    for target_rev in 1194 1208; do
+      [ "$src_rev" = "$target_rev" ] && continue
+      target="$BROWSER_DIR/chromium-$target_rev"
+      [ -e "$target" ] && continue
+      ln -sfn "$src" "$target" 2>/dev/null || true
+    done
+  done
+  for src in "$BROWSER_DIR"/chromium_headless_shell-*; do
+    [ -d "$src" ] || continue
+    src_rev="${src##*chromium_headless_shell-}"
+    for target_rev in 1194 1208; do
+      [ "$src_rev" = "$target_rev" ] && continue
+      target="$BROWSER_DIR/chromium_headless_shell-$target_rev"
+      [ -e "$target" ] && continue
+      ln -sfn "$src" "$target" 2>/dev/null || true
+    done
+  done
 fi
+
+# App e2e tests — require DATABASE_URL or APP_BASE_URL
+if [ -n "${DATABASE_URL:-}" ] || [ -n "${APP_BASE_URL:-}" ]; then
+  echo "  → App e2e tests..."
+  (cd packages/app && HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= npx playwright test --reporter=list) || FAIL=1
+fi
+
+# Web e2e tests — UI tests run locally, API tests require API_BASE_URL
+# Unset proxy env vars for local tests — sandbox proxies cause auth errors on localhost
+echo "  → Web e2e tests..."
+(cd packages/web && HTTP_PROXY= HTTPS_PROXY= http_proxy= https_proxy= npx playwright test --reporter=list) || FAIL=1
 
 if [ $FAIL -ne 0 ]; then
   echo "❌ Pre-push checks failed. Fix errors before pushing."

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid as uuid_mod
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import HTMLResponse, Response
@@ -13,6 +14,9 @@ from sqlalchemy.orm import Session  # noqa: TC002
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
 from lintpdf.api.models import BrandProfile, BrandProfileType, Job, JobFinding, ReportToken, Tenant
+
+if TYPE_CHECKING:
+    from lintpdf.reports.service import BrandingContext
 
 router = APIRouter(tags=["reports"])
 
@@ -66,7 +70,7 @@ def _resolve_branding(
     override: object | None,
     whitelabel_enabled: bool,
     db: Session,
-) -> "BrandingContext":
+) -> BrandingContext:
     """Resolve branding using the hierarchy: per-call > brand profile > tenant defaults > LintPDF.
 
     Profile types:
@@ -105,7 +109,9 @@ def _resolve_branding(
                     logo_url=profile.logo_url,
                     primary_color=profile.primary_color or "#1a3a7a",
                     accent_color=profile.accent_color or "#2563eb",
-                    footer_text=None if profile.hide_footer else (profile.footer_text or "Powered by LintPDF"),
+                    footer_text=None
+                    if profile.hide_footer
+                    else (profile.footer_text or "Powered by LintPDF"),
                 )
             # LINTPDF type: keep defaults (already set)
 
@@ -121,7 +127,9 @@ def _resolve_branding(
 
     # Per-call overrides (highest priority)
     if override:
-        obj = override if isinstance(override, dict) else (override.__dict__ if hasattr(override, "__dict__") else {})
+        override if isinstance(override, dict) else (
+            override.__dict__ if hasattr(override, "__dict__") else {}
+        )
         if hasattr(override, "name") and override.name:  # type: ignore[union-attr]
             branding.name = override.name  # type: ignore[union-attr]
         if hasattr(override, "logo_url") and override.logo_url:  # type: ignore[union-attr]
@@ -147,8 +155,8 @@ def _resolve_branding(
 async def generate_reports(  # skipcq: PY-R1000
     job_id: str,
     body: GenerateReportsRequest | None = None,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> GenerateReportsResponse:
     """Generate hosted reports for a completed job."""
     if body is None:
@@ -197,7 +205,7 @@ async def generate_reports(  # skipcq: PY-R1000
 
     from lintpdf.api.config import get_settings
     from lintpdf.api.storage import get_storage
-    from lintpdf.reports.service import BrandingContext, ReportService
+    from lintpdf.reports.service import ReportService
     from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
 
     settings = get_settings()
@@ -258,8 +266,8 @@ async def generate_reports(  # skipcq: PY-R1000
 @router.get("/api/v1/jobs/{job_id}/reports", response_model=ReportListResponse)
 async def list_reports(
     job_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> ReportListResponse:
     """List existing report tokens for a job."""
     try:
@@ -297,8 +305,8 @@ async def list_reports(
 async def revoke_report(
     job_id: str,
     token: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Revoke a report token and delete from storage."""
     record: ReportToken | None = (
@@ -332,7 +340,7 @@ async def revoke_report(
 @router.get("/r/{token}")
 async def serve_html_report(
     token: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
 ) -> Response:
     """Serve an interactive HTML report by token (public, no auth)."""
     from datetime import datetime, timezone
@@ -371,7 +379,7 @@ async def serve_html_report(
 async def serve_pdf_report(
     token: str,
     download: int = 0,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
 ) -> Response:
     """Serve a PDF report by token (public, no auth)."""
     from datetime import datetime, timezone

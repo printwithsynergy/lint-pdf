@@ -69,7 +69,7 @@ export default function PreflightPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedProfile, setSelectedProfile] = useState("lintpdf-default");
   const [uploading, setUploading] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadDataUrl, setUploadDataUrl] = useState<string | null>(null);
 
   // Confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -107,15 +107,19 @@ export default function PreflightPage() {
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!uploadFile) return;
+    if (!uploadDataUrl) return;
 
     setUploading(true);
 
-    const formData = new FormData();
-    formData.append("file", uploadFile);
-    formData.append("profile_id", selectedProfile);
-
     try {
+      // Convert data URL back to a Blob for FormData upload
+      const res = await fetch(uploadDataUrl);
+      const blob = await res.blob();
+
+      const formData = new FormData();
+      formData.append("file", blob, "upload.pdf");
+      formData.append("profile_id", selectedProfile);
+
       const resp = await fetch("/api/lintpdf/submit", {
         method: "POST",
         body: formData,
@@ -125,7 +129,7 @@ export default function PreflightPage() {
         throw new Error(data.error ?? data.detail ?? "Upload failed");
       }
       toast(`Job submitted: ${data.job_id ?? "processing"}`, "success");
-      setUploadFile(null);
+      setUploadDataUrl(null);
       // Refresh job list after a short delay
       setTimeout(() => fetchJobs(), 1500);
     } catch (err) {
@@ -167,8 +171,8 @@ export default function PreflightPage() {
                     accept=".pdf"
                     acceptedTypes={["application/pdf"]}
                     maxSize={100 * 1024 * 1024}
-                    value={uploadFile}
-                    onChange={setUploadFile}
+                    value={uploadDataUrl}
+                    onChange={setUploadDataUrl}
                     helpText="Drag and drop a PDF or click to browse"
                   />
                 </FormField>
@@ -192,7 +196,7 @@ export default function PreflightPage() {
               <Button
                 type="submit"
                 loading={uploading}
-                disabled={!uploadFile}
+                disabled={!uploadDataUrl}
               >
                 Run Preflight
               </Button>

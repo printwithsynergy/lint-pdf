@@ -43,8 +43,8 @@ Respond with ONLY valid JSON matching the Preflight Profile schema. No explanati
 @router.post("/generate", response_model=NLPreflightProfileResponse)
 async def generate_preflight_profile(
     request: NLPreflightProfileRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> NLPreflightProfileResponse:
     """Generate a Preflight Profile from a natural language description.
 

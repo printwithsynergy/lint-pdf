@@ -100,9 +100,9 @@ def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skip
 async def submit_job(  # skipcq: PY-R1000
     file: UploadFile = _file_param,
     profile_id: str = _profile_param,
-    jdf_file: UploadFile | None = File(default=None, description="Optional JDF/XJDF sidecar"),  # noqa: B008
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    jdf_file: UploadFile | None = File(default=None, description="Optional JDF/XJDF sidecar"),
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> JSONResponse:
     """Submit a PDF for preflight checking.
 
@@ -208,8 +208,8 @@ async def submit_job(  # skipcq: PY-R1000
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(
     job_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> JobResponse:
     """Get job status and results."""
     try:
@@ -279,8 +279,8 @@ async def get_job(
 async def list_jobs(
     page: int = 1,
     page_size: int = 20,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> JobListResponse:
     """List jobs for the current tenant (paginated)."""
     # Clamp pagination parameters to safe ranges
@@ -318,8 +318,8 @@ async def list_jobs(
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_job(
     job_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Cancel or delete a job."""
     try:

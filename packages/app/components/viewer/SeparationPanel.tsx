@@ -148,7 +148,7 @@ function ChannelToggle({
         type="checkbox"
         checked={enabled}
         onChange={onToggle}
-        className="rounded border-gray-300"
+        className="rounded border-border"
       />
       <span
         className="inline-block h-3 w-3 rounded-full border"

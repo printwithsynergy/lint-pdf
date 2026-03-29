@@ -74,11 +74,7 @@ def _get_job_pdf(
     db: Session,
 ) -> tuple[Job, bytes]:
     """Fetch the job and its original PDF bytes from storage."""
-    job = (
-        db.query(Job)
-        .filter(Job.id == job_id, Job.tenant_id == tenant.id)
-        .first()
-    )
+    job = db.query(Job).filter(Job.id == job_id, Job.tenant_id == tenant.id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     if job.status != JobStatus.COMPLETE:
@@ -185,7 +181,7 @@ async def get_page_tile(
     try:
         cached = storage.download_raw(cache_key)
         if cached:
-            etag = hashlib.md5(cached[:1024]).hexdigest()  # noqa: S324
+            etag = hashlib.md5(cached[:1024]).hexdigest()
             return Response(
                 content=cached,
                 media_type="image/png",
@@ -211,7 +207,7 @@ async def get_page_tile(
     except Exception:
         logger.warning("Failed to cache tile to S3: %s", cache_key)
 
-    etag = hashlib.md5(tile_bytes[:1024]).hexdigest()  # noqa: S324
+    etag = hashlib.md5(tile_bytes[:1024]).hexdigest()
     return Response(
         content=tile_bytes,
         media_type="image/png",

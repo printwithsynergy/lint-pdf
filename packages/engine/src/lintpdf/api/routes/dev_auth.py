@@ -38,7 +38,7 @@ class ImpersonateResponse(BaseModel):
 @router.post("/impersonate", response_model=ImpersonateResponse)
 async def impersonate_tenant(
     body: ImpersonateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> ImpersonateResponse:
     """Generate a temporary API key for a tenant (dev/test use only)."""
@@ -84,7 +84,7 @@ class SeedResponse(BaseModel):
 
 @router.post("/seed")
 async def seed_test_data(
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> dict[str, Any]:
     """Seed test tenants (dev/test use only)."""

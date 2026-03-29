@@ -98,12 +98,23 @@ async function main() {
   // ── App Settings (branding) ─────────────────────────────────
   const appSettings = await prisma.appSettings.upsert({
     where: { id: "singleton" },
-    update: {},
+    update: {
+      primaryColor: "#1e40af",
+      emailButtonColor: "#2563eb",
+      loginBgColor: "#080a17",
+      loginHeading: "Sign in to LintPDF",
+      loginSubheading: "Enter your email for a magic link",
+    },
     create: {
       id: "singleton",
       brandName: "LintPDF",
       brandLogoUrl: "/logo.svg",
       brandTagline: "Preflights you won't hate.",
+      primaryColor: "#1e40af",
+      emailButtonColor: "#2563eb",
+      loginBgColor: "#080a17",
+      loginHeading: "Sign in to LintPDF",
+      loginSubheading: "Enter your email for a magic link",
     },
   });
   console.log(

@@ -118,8 +118,8 @@ def _get_feature_info(slug: str) -> AIPresetFeature:
 
 @router.get("", response_model=AIPresetListResponse)
 async def list_presets(
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> AIPresetListResponse:
     """List available AI presets."""
     presets = []
@@ -139,8 +139,8 @@ async def list_presets(
 @router.get("/{slug}", response_model=AIPresetResponse)
 async def get_preset(
     slug: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> AIPresetResponse:
     """Get details of a specific AI preset."""
     if slug not in _AI_PRESETS:

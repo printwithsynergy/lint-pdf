@@ -5,10 +5,8 @@ from __future__ import annotations
 import io
 import logging
 import os
-import re
 import subprocess
 import tempfile
-from pathlib import Path
 
 import pikepdf
 from PIL import Image
@@ -209,7 +207,7 @@ def _find_channel_tif(tmpdir: str, channel: str, output_base: str) -> str | None
     #   {base}1(PANTONE 485 C).tif, etc.
     # Or in older GS: {base}1.Cyan.tif
 
-    safe_channel = channel.replace("(", r"\(").replace(")", r"\)")
+    channel.replace("(", r"\(").replace(")", r"\)")
 
     for f in files:
         fpath = os.path.join(tmpdir, f)
@@ -232,7 +230,7 @@ def _find_channel_tif(tmpdir: str, channel: str, output_base: str) -> str | None
     # Fallback: for process channels, try index-based matching
     # tiffsep generates numbered files for CMYK: index 0=Cyan,1=Magenta,2=Yellow,3=Black
     if channel in PROCESS_CHANNEL_ORDER:
-        idx = PROCESS_CHANNEL_ORDER.index(channel)
+        PROCESS_CHANNEL_ORDER.index(channel)
         # The composite is file 1, then channels start at file with channel name
         # Try numbered fallback: look for sep1(Cyan).tif pattern with different naming
         for f in files:

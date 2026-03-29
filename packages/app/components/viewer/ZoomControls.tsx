@@ -22,7 +22,7 @@ export function ZoomControls({ zoom, onZoomChange }: ZoomControlsProps) {
     <div className="flex items-center gap-1">
       <button
         onClick={zoomOut}
-        disabled={zoom <= ZOOM_STEPS[0]}
+        disabled={zoom <= ZOOM_STEPS[0]!}
         className="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-40"
         title="Zoom out"
       >
@@ -41,7 +41,7 @@ export function ZoomControls({ zoom, onZoomChange }: ZoomControlsProps) {
       </select>
       <button
         onClick={zoomIn}
-        disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]}
+        disabled={zoom >= ZOOM_STEPS[ZOOM_STEPS.length - 1]!}
         className="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-40"
         title="Zoom in"
       >

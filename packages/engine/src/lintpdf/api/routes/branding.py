@@ -45,8 +45,8 @@ def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileR
 )
 async def list_brand_profiles(
     tenant_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> BrandProfileListResponse:
     """List all brand profiles for the tenant."""
     profiles = (
@@ -55,9 +55,7 @@ async def list_brand_profiles(
         .order_by(BrandProfile.created_at)
         .all()
     )
-    return BrandProfileListResponse(
-        profiles=[_profile_to_response(p, tenant) for p in profiles]
-    )
+    return BrandProfileListResponse(profiles=[_profile_to_response(p, tenant) for p in profiles])
 
 
 @router.post(
@@ -68,8 +66,8 @@ async def list_brand_profiles(
 async def create_brand_profile(
     tenant_id: str,
     request: BrandProfileCreateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> BrandProfileResponse:
     """Create a new brand profile."""
     from lintpdf.tenants.entitlements import resolve_entitlements
@@ -116,8 +114,8 @@ async def create_brand_profile(
 async def get_brand_profile(
     tenant_id: str,
     profile_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> BrandProfileResponse:
     """Get a brand profile by ID."""
     try:
@@ -150,8 +148,8 @@ async def update_brand_profile(
     tenant_id: str,
     profile_id: str,
     request: BrandProfileUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> BrandProfileResponse:
     """Update a brand profile."""
     try:
@@ -209,8 +207,8 @@ async def update_brand_profile(
 async def delete_brand_profile(
     tenant_id: str,
     profile_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Delete a brand profile."""
     try:
@@ -247,9 +245,9 @@ async def delete_brand_profile(
 async def upload_brand_logo(
     tenant_id: str,
     profile_id: str,
-    file: UploadFile = File(...),  # noqa: B008
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> BrandProfileResponse:
     """Upload a logo for a brand profile."""
     try:
@@ -314,8 +312,8 @@ async def upload_brand_logo(
 async def set_default_brand_profile(
     tenant_id: str,
     request: SetDefaultBrandProfileRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> BrandProfileResponse | None:
     """Set or clear the tenant's default brand profile."""
     if request.brand_profile_id is None:

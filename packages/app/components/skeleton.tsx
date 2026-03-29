@@ -8,7 +8,7 @@
 export { Skeleton, SkeletonText, SkeletonCard } from "@thinkneverland/pixie-dust-ui";
 
 import { Skeleton, SkeletonCard } from "@thinkneverland/pixie-dust-ui";
-import { Card, CardContent, CardHeader } from "@thinkneverland/pixie-dust-ui";
+import { Card, CardContent } from "@thinkneverland/pixie-dust-ui";
 
 export function SkeletonTable({
   rows = 5,

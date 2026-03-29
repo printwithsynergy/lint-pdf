@@ -309,7 +309,7 @@ export default function WebhooksPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span
-                          className={`inline-block h-2 w-2 rounded-full ${wh.is_active ? "bg-green-500" : "bg-gray-300"}`}
+                          className={`inline-block h-2 w-2 rounded-full ${wh.is_active ? "bg-success" : "bg-muted"}`}
                         />
                         <code className="truncate text-sm">{wh.url}</code>
                       </div>
@@ -328,7 +328,7 @@ export default function WebhooksPage() {
                       </p>
                       {testResult?.id === wh.id && (
                         <div
-                          className={`mt-2 rounded px-2 py-1 text-xs ${testResult.success ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+                          className={`mt-2 rounded px-2 py-1 text-xs ${testResult.success ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}
                         >
                           {testResult.success
                             ? `Test delivered (HTTP ${testResult.status_code})`

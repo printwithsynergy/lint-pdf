@@ -188,7 +188,7 @@ export default function BillingPage() {
             <ul className="mt-3 grid gap-1 text-sm sm:grid-cols-2">
               {PLAN_FEATURES[currentPlan].map((f) => (
                 <li key={f} className="flex items-center gap-1.5">
-                  <span className="text-green-500">&#10003;</span> {f}
+                  <span className="text-success">&#10003;</span> {f}
                 </li>
               ))}
             </ul>

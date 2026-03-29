@@ -65,13 +65,13 @@ interface JobDetail {
 
 function SeverityBadge({ severity }: { severity: string }) {
   const colors: Record<string, string> = {
-    error: "bg-red-100 text-red-700",
-    warning: "bg-yellow-100 text-yellow-700",
-    advisory: "bg-blue-100 text-blue-700",
+    error: "bg-destructive/10 text-destructive",
+    warning: "bg-warning/10 text-warning",
+    advisory: "bg-info/10 text-info",
   };
   return (
     <span
-      className={`rounded px-1.5 py-0.5 text-xs font-medium ${colors[severity] ?? "bg-gray-100 text-gray-700"}`}
+      className={`rounded px-1.5 py-0.5 text-xs font-medium ${colors[severity] ?? "bg-muted text-muted-foreground"}`}
     >
       {severity}
     </span>
@@ -199,10 +199,10 @@ export default function JobDetailPage() {
         <span
           className={`rounded px-2 py-1 text-sm font-medium ${
             job.status === "complete"
-              ? "bg-green-100 text-green-700"
+              ? "bg-success/10 text-success"
               : job.status === "failed"
-                ? "bg-red-100 text-red-700"
-                : "bg-yellow-100 text-yellow-700"
+                ? "bg-destructive/10 text-destructive"
+                : "bg-warning/10 text-warning"
           }`}
         >
           {job.status}
@@ -212,26 +212,26 @@ export default function JobDetailPage() {
       {job.summary && (
         <div className="mt-6 grid gap-3 sm:grid-cols-4">
           <div className="rounded-lg border p-3 text-center">
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {job.summary.error_count}
             </div>
             <div className="text-xs text-muted-foreground">Errors</div>
           </div>
           <div className="rounded-lg border p-3 text-center">
-            <div className="text-2xl font-bold text-yellow-600">
+            <div className="text-2xl font-bold text-warning">
               {job.summary.warning_count}
             </div>
             <div className="text-xs text-muted-foreground">Warnings</div>
           </div>
           <div className="rounded-lg border p-3 text-center">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-info">
               {job.summary.advisory_count}
             </div>
             <div className="text-xs text-muted-foreground">Advisories</div>
           </div>
           <div className="rounded-lg border p-3 text-center">
             <div
-              className={`text-2xl font-bold ${job.summary.passed ? "text-green-600" : "text-red-600"}`}
+              className={`text-2xl font-bold ${job.summary.passed ? "text-success" : "text-destructive"}`}
             >
               {job.summary.passed ? "PASS" : "FAIL"}
             </div>
@@ -289,7 +289,7 @@ export default function JobDetailPage() {
         <div className="mt-6 space-y-6">
           {errors.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-red-600">
+              <h2 className="text-lg font-semibold text-destructive">
                 Errors ({errors.length})
               </h2>
               <div className="mt-2 space-y-2">
@@ -301,7 +301,7 @@ export default function JobDetailPage() {
           )}
           {warnings.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-yellow-600">
+              <h2 className="text-lg font-semibold text-warning">
                 Warnings ({warnings.length})
               </h2>
               <div className="mt-2 space-y-2">
@@ -313,7 +313,7 @@ export default function JobDetailPage() {
           )}
           {advisories.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold text-blue-600">
+              <h2 className="text-lg font-semibold text-info">
                 Advisories ({advisories.length})
               </h2>
               <div className="mt-2 space-y-2">

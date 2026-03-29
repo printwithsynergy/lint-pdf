@@ -84,7 +84,6 @@ class PreflightProfileValidationError(LintPDFError):
     """
 
 
-
 class RuleRegistrationError(LintPDFError):
     """Rule registration failed.
 

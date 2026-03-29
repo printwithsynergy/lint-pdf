@@ -1,6 +1,9 @@
 import { defineConfig } from "@playwright/test";
 
-const APP_BASE = process.env.APP_BASE_URL ?? "https://app.lintpdf.com";
+const hasAppUrl = !!process.env.APP_BASE_URL;
+const hasDb = !!process.env.DATABASE_URL;
+const isLocal = !hasAppUrl && hasDb;
+const APP_BASE = process.env.APP_BASE_URL || (isLocal ? "http://localhost:3001" : "https://app.lintpdf.com");
 
 // Support HTTP proxy for sandboxed environments
 const proxyServer = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
@@ -15,16 +18,26 @@ export default defineConfig({
   reporter: [["html", { open: "never" }], ["list"]],
   use: {
     baseURL: APP_BASE,
-    extraHTTPHeaders: { Accept: "application/json" },
     ignoreHTTPSErrors: true,
     trace: "on-first-retry",
     ...proxyConfig,
   },
+  // Spin up local dev server when DATABASE_URL is set but no external URL
+  ...(isLocal
+    ? {
+        webServer: {
+          command: "pnpm dev",
+          port: 3001,
+          reuseExistingServer: true,
+          timeout: 60_000,
+        },
+      }
+    : {}),
   projects: [
     {
       name: "api-tests",
       testDir: "./e2e/api",
-      use: { baseURL: APP_BASE },
+      use: { baseURL: APP_BASE, extraHTTPHeaders: { Accept: "application/json" } },
     },
     {
       name: "ui-tests",

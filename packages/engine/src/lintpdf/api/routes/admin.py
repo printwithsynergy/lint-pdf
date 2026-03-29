@@ -148,7 +148,7 @@ class AdminJobListResponse(BaseModel):
 async def update_tenant_plan(
     tenant_id: str,
     body: UpdatePlanRequest,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> AdminTenantResponse:
     """Update a tenant's plan (used by Stripe plugin on subscription changes)."""
@@ -183,7 +183,7 @@ async def update_tenant_plan(
 async def update_tenant_stripe(
     tenant_id: str,
     body: UpdateStripeRequest,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> AdminTenantResponse:
     """Set Stripe customer/subscription IDs for a tenant."""
@@ -212,7 +212,7 @@ class CreateTenantResponse(BaseModel):
 @router.post("/tenants", response_model=CreateTenantResponse, status_code=status.HTTP_201_CREATED)
 async def create_tenant(
     body: CreateTenantRequest,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> CreateTenantResponse:
     """Create a new tenant with an API key.
@@ -272,7 +272,7 @@ async def create_tenant(
 async def list_tenants(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> AdminTenantListResponse:
     """List all tenants (paginated)."""
@@ -295,7 +295,7 @@ async def list_tenants(
 @router.get("/tenants/{tenant_id}", response_model=AdminTenantDetail)
 async def get_tenant(
     tenant_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> AdminTenantDetail:
     """Get tenant detail."""
@@ -307,7 +307,7 @@ async def get_tenant(
 async def update_tenant_status(
     tenant_id: str,
     body: UpdateStatusRequest,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> AdminTenantResponse:
     """Activate or suspend a tenant."""
@@ -323,7 +323,7 @@ async def update_tenant_status(
 @router.get("/tenants/{tenant_id}/keys", response_model=ApiKeyListResponse)
 async def list_api_keys(
     tenant_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> ApiKeyListResponse:
     """List API keys for a tenant (masked)."""
@@ -361,7 +361,7 @@ class CreateApiKeyRequest(BaseModel):
 async def create_api_key(
     tenant_id: str,
     body: CreateApiKeyRequest,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> ApiKeyCreatedResponse:
     """Generate a new API key for a tenant. The raw key is returned only once."""
@@ -397,7 +397,7 @@ async def create_api_key(
 async def revoke_api_key(
     tenant_id: str,
     key_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> None:
     """Revoke an API key (soft delete)."""
@@ -419,7 +419,7 @@ async def revoke_api_key(
 async def list_all_jobs(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> AdminJobListResponse:
     """List jobs across all tenants (paginated)."""
@@ -462,7 +462,7 @@ async def list_all_jobs(
 @router.get("/tenants/{tenant_id}/entitlements", response_model=EffectiveEntitlementsResponse)
 async def get_tenant_entitlements(
     tenant_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> EffectiveEntitlementsResponse:
     """Get effective entitlements for a tenant (plan defaults + overrides)."""
@@ -486,7 +486,7 @@ async def get_tenant_entitlements(
 async def update_tenant_entitlements(
     tenant_id: str,
     body: UpdateEntitlementsRequest,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> EntitlementOverridesResponse:
     """Set per-tenant entitlement overrides. Only provided fields are merged."""
@@ -517,7 +517,7 @@ async def update_tenant_entitlements(
 )
 async def reset_tenant_entitlements(
     tenant_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> EntitlementOverridesResponse:
     """Reset all per-tenant overrides (tenant falls back to plan defaults)."""
@@ -576,7 +576,7 @@ def _tenant_to_detail(t: Tenant) -> AdminTenantDetail:
 @router.get("/tenants/{tenant_id}/ai")
 async def get_tenant_ai_status(
     tenant_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _admin: str = Depends(_verify_admin_key),
 ) -> dict[str, Any]:
     """View a tenant's AI status and configuration."""
@@ -604,7 +604,7 @@ async def get_tenant_ai_status(
 @router.put("/tenants/{tenant_id}/ai")
 async def update_tenant_ai(
     tenant_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _admin: str = Depends(_verify_admin_key),
     ai_enabled: bool | None = None,
     billing_mode: str | None = None,
@@ -647,7 +647,7 @@ async def grant_tenant_ai_credits(
     tenant_id: str,
     credit_amount: int = 1000,
     price_paid: float = 0.0,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _admin: str = Depends(_verify_admin_key),
 ) -> dict[str, Any]:
     """Grant AI credits to a tenant (admin only)."""
@@ -679,7 +679,7 @@ async def set_tenant_ai_trial(
     tenant_id: str,
     trial_enabled: bool = True,
     trial_days: int = 14,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _admin: str = Depends(_verify_admin_key),
 ) -> dict[str, Any]:
     """Set AI trial period for a tenant (admin only)."""
@@ -714,7 +714,7 @@ async def set_tenant_ai_trial(
 async def get_all_ai_usage(
     page: int = 1,
     page_size: int = 50,
-    db: Session = Depends(get_db),  # noqa: B008
+    db: Session = Depends(get_db),
     _admin: str = Depends(_verify_admin_key),
 ) -> dict[str, Any]:
     """View AI usage across all tenants (admin only)."""

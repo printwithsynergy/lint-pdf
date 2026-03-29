@@ -31,7 +31,7 @@ export function AnnotationCanvas({
   onHistoryChange,
 }: AnnotationCanvasProps) {
   const canvasElRef = useRef<HTMLCanvasElement>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   const fabricRef = useRef<any>(null);
   const historyRef = useRef<HistoryState>({ stack: [], index: -1 });
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,7 +40,7 @@ export function AnnotationCanvas({
   // ── Helpers ──────────────────────────────────────────────────
 
   const saveToApi = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
     async (canvas: any) => {
       onSavingChange?.(true);
       try {
@@ -60,7 +60,7 @@ export function AnnotationCanvas({
   );
 
   const debouncedSave = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
     (canvas: any) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => saveToApi(canvas), 2000);
@@ -69,7 +69,7 @@ export function AnnotationCanvas({
   );
 
   const pushHistory = useCallback(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
     (canvas: any) => {
       const json = JSON.stringify(canvas.toJSON());
       const h = historyRef.current;
@@ -89,7 +89,7 @@ export function AnnotationCanvas({
     const h = historyRef.current;
     if (!canvas || h.index <= 0) return;
     h.index -= 1;
-    canvas.loadFromJSON(JSON.parse(h.stack[h.index]), () => {
+    canvas.loadFromJSON(JSON.parse(h.stack[h.index]!), () => {
       canvas.renderAll();
       debouncedSave(canvas);
       onHistoryChange?.(h.index > 0, h.index < h.stack.length - 1);
@@ -101,7 +101,7 @@ export function AnnotationCanvas({
     const h = historyRef.current;
     if (!canvas || h.index >= h.stack.length - 1) return;
     h.index += 1;
-    canvas.loadFromJSON(JSON.parse(h.stack[h.index]), () => {
+    canvas.loadFromJSON(JSON.parse(h.stack[h.index]!), () => {
       canvas.renderAll();
       debouncedSave(canvas);
       onHistoryChange?.(h.index > 0, h.index < h.stack.length - 1);
@@ -112,9 +112,9 @@ export function AnnotationCanvas({
   useEffect(() => {
     const el = canvasElRef.current;
     if (!el) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
     (el as any).__annotationUndo = undo;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
     (el as any).__annotationRedo = redo;
   }, [undo, redo]);
 
@@ -236,10 +236,10 @@ export function AnnotationCanvas({
     let isDrawing = false;
     let startX = 0;
     let startY = 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
     let activeShape: any = null;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
     const onMouseDown = async (opt: any) => {
       const pointer = canvas.getPointer(opt.e);
       startX = pointer.x;
@@ -305,7 +305,7 @@ export function AnnotationCanvas({
       }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  
     const onMouseMove = (opt: any) => {
       if (!isDrawing || !activeShape) return;
       const pointer = canvas.getPointer(opt.e);

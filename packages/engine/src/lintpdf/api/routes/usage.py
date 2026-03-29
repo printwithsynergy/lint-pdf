@@ -33,7 +33,7 @@ class UsageResponse(BaseModel):
 
 @router.get("", response_model=UsageResponse)
 async def get_usage(
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> UsageResponse:
     """Get current daily rate limit usage for the authenticated tenant."""
     current = get_current_usage(tenant)

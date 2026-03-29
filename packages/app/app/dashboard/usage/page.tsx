@@ -51,7 +51,7 @@ function ProgressBar({
             isDanger
               ? "bg-destructive"
               : isWarning
-                ? "bg-yellow-500"
+                ? "bg-warning"
                 : "bg-primary"
           }`}
           style={{ width: `${pct}%` }}
@@ -126,7 +126,7 @@ export default function UsagePage() {
               </p>
             )}
             {usage.warning && !usage.blocked && (
-              <p className="text-sm font-medium text-yellow-600">
+              <p className="text-sm font-medium text-warning">
                 Approaching usage limit.
               </p>
             )}

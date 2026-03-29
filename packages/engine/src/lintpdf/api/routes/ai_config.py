@@ -25,8 +25,8 @@ router = APIRouter(prefix="/api/v1/ai/config", tags=["ai-config"])
 
 @router.get("", response_model=AIConfigResponse)
 async def get_ai_config(
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> AIConfigResponse:
     """Get the tenant's AI configuration."""
     from lintpdf.ai.config import get_or_create_ai_config
@@ -61,8 +61,8 @@ async def get_ai_config(
 @router.put("", response_model=AIConfigResponse)
 async def update_ai_config(
     request: AIConfigUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> AIConfigResponse:
     """Update tenant AI configuration (self-service fields only)."""
     from lintpdf.ai.access import check_ai_access
@@ -100,10 +100,10 @@ async def update_ai_config(
 
 @router.post("/logos", response_model=LogoUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_reference_logo(
-    file: UploadFile = File(..., description="Logo image file"),  # noqa: B008
+    file: UploadFile = File(..., description="Logo image file"),
     name: str = Form(..., description="Logo name"),
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> LogoUploadResponse:
     """Upload a reference logo for logo verification."""
     from lintpdf.ai.access import check_ai_access
@@ -137,8 +137,8 @@ async def upload_reference_logo(
 @router.delete("/logos/{logo_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_reference_logo(
     logo_id: str,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Remove a reference logo."""
     from lintpdf.ai.access import check_ai_access
@@ -157,8 +157,8 @@ async def delete_reference_logo(
 @router.put("/palette")
 async def set_brand_palette(
     request: PaletteUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> dict[str, object]:
     """Set the brand color palette for color compliance checks."""
     from lintpdf.ai.access import check_ai_access
@@ -174,8 +174,8 @@ async def set_brand_palette(
 @router.put("/dictionary")
 async def set_custom_dictionary(
     request: DictionaryUpdateRequest,
-    db: Session = Depends(get_db),  # noqa: B008
-    tenant: Tenant = Depends(get_current_tenant),  # noqa: B008
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
 ) -> dict[str, object]:
     """Set custom spell-check dictionary words."""
     from lintpdf.ai.access import check_ai_access
