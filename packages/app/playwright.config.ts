@@ -1,6 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
-const isLocal = !process.env.APP_BASE_URL;
+const hasAppUrl = !!process.env.APP_BASE_URL;
+const hasDb = !!process.env.DATABASE_URL;
+const isLocal = !hasAppUrl && hasDb;
 const APP_BASE = process.env.APP_BASE_URL ?? (isLocal ? "http://localhost:3001" : "https://app.lintpdf.com");
 
 // Support HTTP proxy for sandboxed environments
@@ -21,7 +23,7 @@ export default defineConfig({
     trace: "on-first-retry",
     ...proxyConfig,
   },
-  // Spin up local dev server when no external URL is provided
+  // Spin up local dev server when DATABASE_URL is set but no external URL
   ...(isLocal
     ? {
         webServer: {
