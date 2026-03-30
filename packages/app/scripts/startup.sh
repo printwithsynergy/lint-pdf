@@ -37,6 +37,86 @@ ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "loginHeading" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "loginSubheading" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "disabledPlugins" TEXT;
 
+-- MagicLink ipAddress column added in PD update
+ALTER TABLE "MagicLink" ADD COLUMN IF NOT EXISTS "ipAddress" TEXT;
+CREATE INDEX IF NOT EXISTS "MagicLink_ipAddress_idx" ON "MagicLink"("ipAddress");
+
+-- ApiKey table (pixie-dust-api-keys plugin)
+CREATE TABLE IF NOT EXISTS "ApiKey" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "name" TEXT NOT NULL,
+  "prefix" TEXT NOT NULL,
+  "hash" TEXT NOT NULL,
+  "expiresAt" TIMESTAMP(3),
+  "lastUsedAt" TIMESTAMP(3),
+  "revokedAt" TIMESTAMP(3),
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ApiKey_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "ApiKey_tenantId_idx" ON "ApiKey"("tenantId");
+CREATE INDEX IF NOT EXISTS "ApiKey_hash_idx" ON "ApiKey"("hash");
+CREATE INDEX IF NOT EXISTS "ApiKey_prefix_idx" ON "ApiKey"("prefix");
+
+-- UsageMeter table (pixie-dust-usage plugin)
+CREATE TABLE IF NOT EXISTS "UsageMeter" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "metric" TEXT NOT NULL,
+  "value" BIGINT NOT NULL DEFAULT 0,
+  "period" TEXT NOT NULL,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "UsageMeter_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "UsageMeter_tenantId_metric_period_key" UNIQUE ("tenantId", "metric", "period")
+);
+CREATE INDEX IF NOT EXISTS "UsageMeter_tenantId_idx" ON "UsageMeter"("tenantId");
+CREATE INDEX IF NOT EXISTS "UsageMeter_metric_idx" ON "UsageMeter"("metric");
+
+-- WebhookEndpoint table (pixie-dust-webhooks plugin)
+CREATE TABLE IF NOT EXISTS "WebhookEndpoint" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "url" TEXT NOT NULL,
+  "secret" TEXT NOT NULL,
+  "events" TEXT[] NOT NULL,
+  "active" BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "WebhookEndpoint_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "WebhookEndpoint_tenantId_idx" ON "WebhookEndpoint"("tenantId");
+CREATE INDEX IF NOT EXISTS "WebhookEndpoint_active_idx" ON "WebhookEndpoint"("active");
+
+-- WebhookDelivery table (pixie-dust-webhooks plugin)
+CREATE TABLE IF NOT EXISTS "WebhookDelivery" (
+  "id" TEXT NOT NULL,
+  "endpointId" TEXT NOT NULL,
+  "event" TEXT NOT NULL,
+  "payload" JSONB NOT NULL,
+  "status" INTEGER NOT NULL,
+  "response" TEXT,
+  "attempts" INTEGER NOT NULL DEFAULT 1,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "WebhookDelivery_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "WebhookDelivery_endpointId_fkey" FOREIGN KEY ("endpointId") REFERENCES "WebhookEndpoint"("id") ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS "WebhookDelivery_endpointId_idx" ON "WebhookDelivery"("endpointId");
+CREATE INDEX IF NOT EXISTS "WebhookDelivery_event_idx" ON "WebhookDelivery"("event");
+CREATE INDEX IF NOT EXISTS "WebhookDelivery_createdAt_idx" ON "WebhookDelivery"("createdAt");
+
+-- PluginSettings table (pixie-dust-fairy-ring plugin)
+CREATE TABLE IF NOT EXISTS "PluginSettings" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT,
+  "pluginName" TEXT NOT NULL,
+  "settings" JSONB NOT NULL DEFAULT '{}',
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "PluginSettings_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "PluginSettings_tenantId_pluginName_key" UNIQUE ("tenantId", "pluginName")
+);
+CREATE INDEX IF NOT EXISTS "PluginSettings_tenantId_idx" ON "PluginSettings"("tenantId");
+CREATE INDEX IF NOT EXISTS "PluginSettings_pluginName_idx" ON "PluginSettings"("pluginName");
+
 -- Annotation table for PDF viewer markup
 CREATE TABLE IF NOT EXISTS "Annotation" (
   "id" TEXT NOT NULL,

@@ -1,0 +1,16 @@
+// ============================================
+// USAGE METERING (managed by pixie-dust-usage plugin)
+// ============================================
+
+model UsageMeter {
+  id        String   @id @default(cuid())
+  tenantId  String
+  metric    String   // e.g., "api_calls", "storage_bytes", "seats"
+  value     BigInt   @default(0)
+  period    String   // e.g., "2026-03" (year-month)
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, metric, period])
+  @@index([tenantId])
+  @@index([metric])
+}

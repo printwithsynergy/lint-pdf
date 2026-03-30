@@ -1,0 +1,78 @@
+// ============================================
+// CONTENT PILOT — Article & Keyword Models
+// ============================================
+
+enum ArticleStatus {
+  generating
+  draft
+  pending_review
+  approved
+  published
+  rejected
+  archived
+}
+
+enum KeywordStatus {
+  queued
+  generating
+  completed
+  failed
+}
+
+model ContentPilotArticle {
+  id               String        @id @default(cuid())
+  tenantId         String?
+  title            String
+  slug             String
+  excerpt          String        @default("")
+  content          String        @default("")
+  htmlContent      String        @default("")
+  featuredImageUrl  String?
+  status           ArticleStatus @default(draft)
+  koalaArticleId   String?
+  keyword          String?
+  metaTitle        String?
+  metaDescription  String?
+  rejectionReason  String?
+  publishedAt      DateTime?
+  scheduledAt      DateTime?
+  generatedAt      DateTime?
+  approvedBy       String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  keywords ContentPilotKeyword[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ContentPilotKeyword {
+  id        String        @id @default(cuid())
+  tenantId  String?
+  keyword   String
+  status    KeywordStatus @default(queued)
+  priority  Int           @default(0)
+  articleId String?
+  lastUsedAt DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  article ContentPilotArticle? @relation(fields: [articleId], references: [id])
+
+  @@unique([tenantId, keyword])
+  @@index([tenantId])
+  @@index([priority])
+  @@index([createdAt])
+}
+
+model ContentPilotRssCache {
+  id           String   @id @default("default")
+  tenantId     String?
+  feedXml      String   @default("")
+  articleCount Int      @default(0)
+  generatedAt  DateTime @default(now())
+
+  @@index([tenantId])
+}

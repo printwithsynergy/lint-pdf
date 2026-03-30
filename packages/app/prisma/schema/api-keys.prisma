@@ -1,0 +1,19 @@
+// ============================================
+// API KEYS (managed by pixie-dust-api-keys plugin)
+// ============================================
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  tenantId   String
+  name       String
+  prefix     String    // first 8 chars of the key, shown in UI
+  hash       String    // SHA-256 of the full key
+  expiresAt  DateTime?
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([hash])
+  @@index([prefix])
+}

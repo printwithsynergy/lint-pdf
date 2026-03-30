@@ -1,0 +1,36 @@
+// ============================================
+// WEBHOOKS (managed by pixie-dust-webhooks plugin)
+// ============================================
+
+model WebhookEndpoint {
+  id        String   @id @default(cuid())
+  tenantId  String
+  url       String
+  secret    String   // HMAC-SHA256 signing secret
+  events    String[] // event types to subscribe to
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId])
+  @@index([active])
+}
+
+model WebhookDelivery {
+  id         String   @id @default(cuid())
+  endpointId String
+  event      String
+  payload    Json
+  status     Int      // HTTP response status code
+  response   String?  // Response body (truncated)
+  attempts   Int      @default(1)
+  createdAt  DateTime @default(now())
+
+  endpoint WebhookEndpoint @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@index([endpointId])
+  @@index([event])
+  @@index([createdAt])
+}

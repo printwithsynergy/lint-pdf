@@ -142,6 +142,7 @@ model MagicLink {
   token        String    @unique
   pollingToken String?   @unique
   code         String?
+  ipAddress    String?
   expiresAt    DateTime
   usedAt       DateTime?
   createdAt    DateTime  @default(now())
@@ -153,6 +154,7 @@ model MagicLink {
   @@index([userId])
   @@index([expiresAt])
   @@index([code])
+  @@index([ipAddress])
 }
 
 // ============================================

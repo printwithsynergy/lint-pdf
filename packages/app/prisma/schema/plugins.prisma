@@ -1,0 +1,80 @@
+// ============================================
+// PLUGIN SETTINGS — Per-tenant plugin configuration
+// ============================================
+
+/// Stores per-tenant settings for each plugin.
+/// Plugins declare their settings schema via ctx.addSettings() in Fairy Ring.
+/// The settings JSON is validated against the plugin's Zod schema at read time.
+model PluginSettings {
+  id         String   @id @default(cuid())
+  tenantId   String?
+  /// Plugin name as registered in Fairy Ring (e.g., "content-pilot", "stripe-kit")
+  pluginName String
+  /// Plugin configuration as JSON — validated against plugin's Zod schema
+  settings   Json     @default("{}")
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tenantId, pluginName])
+  @@index([tenantId])
+  @@index([pluginName])
+}
+
+// ============================================
+// CONTENT TYPES — Structured content (WordPress custom post types equivalent)
+// ============================================
+
+/// Defines a custom content type (like WordPress custom post types).
+/// Each content type has a Zod schema stored as JSON that defines its fields.
+model ContentType {
+  id          String   @id @default(cuid())
+  tenantId    String?
+  /// Machine-readable name (e.g., "testimonial", "case-study")
+  slug        String
+  /// Human-readable name (e.g., "Testimonials", "Case Studies")
+  name        String
+  /// Description of this content type
+  description String?
+  /// JSON Zod schema definition for content entries of this type
+  schema      Json     @default("{}")
+  /// Icon name from Lucide (e.g., "MessageSquare", "FileText")
+  icon        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  entries ContentEntry[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+/// An instance of a content type — the actual content data.
+/// The `data` JSON field conforms to the parent ContentType's schema.
+model ContentEntry {
+  id            String        @id @default(cuid())
+  tenantId      String?
+  contentTypeId String
+  /// Entry title (for display in admin lists)
+  title         String
+  /// URL-friendly slug
+  slug          String
+  /// The structured content data — validated against ContentType.schema
+  data          Json          @default("{}")
+  status        ContentStatus @default(DRAFT)
+  publishedAt   DateTime?
+  createdBy     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  contentType ContentType @relation(fields: [contentTypeId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([contentTypeId])
+  @@index([status])
+}
