@@ -43,11 +43,11 @@ const config = {
       config.externals = config.externals || [];
       config.externals.push(
         "crypto",
-        "@thinkneverland/pixie-dust-database",
-        "@prisma/adapter-pg",
-        "pg",
-        "pg-connection-string",
-        "pgpass",
+        { "@thinkneverland/pixie-dust-database": "commonjs @thinkneverland/pixie-dust-database" },
+        { "@prisma/adapter-pg": "commonjs @prisma/adapter-pg" },
+        { "pg": "commonjs pg" },
+        { "pg-connection-string": "commonjs pg-connection-string" },
+        { "pgpass": "commonjs pgpass" },
       );
     }
     return config;
