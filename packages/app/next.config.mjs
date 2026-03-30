@@ -41,7 +41,14 @@ const config = {
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = config.externals || [];
-      config.externals.push("crypto");
+      config.externals.push(
+        "crypto",
+        "@thinkneverland/pixie-dust-database",
+        "@prisma/adapter-pg",
+        "pg",
+        "pg-connection-string",
+        "pgpass",
+      );
     }
     return config;
   },
