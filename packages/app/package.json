@@ -50,10 +50,6 @@
     "superjson": "^2.2.0",
     "zod": "^3.22.0"
   },
-  "prisma": {
-    "schema": "prisma/schema",
-    "seed": "npx tsx prisma/seed.ts"
-  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
     "@playwright/test": "1.56.1",
