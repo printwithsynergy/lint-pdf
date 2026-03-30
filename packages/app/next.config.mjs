@@ -30,7 +30,14 @@ const config = {
     "@thinkneverland/grounded-plugin",
     "@lintpdf/stripe",
   ],
-  serverExternalPackages: ["@prisma/client", "prisma"],
+  serverExternalPackages: [
+    "@prisma/client",
+    "prisma",
+    "@prisma/adapter-pg",
+    "pg",
+    "pg-connection-string",
+    "pgpass",
+  ],
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = config.externals || [];
