@@ -77,7 +77,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/app/public ./packages/ap
 COPY --from=builder --chown=nextjs:nodejs /app/packages/app/prisma ./packages/app/prisma
 
 # Install Prisma CLI globally for runtime migrations (avoids pnpm hoisting issues)
-RUN npm install -g prisma@7
+RUN npm install -g prisma@6
 
 # Copy startup script
 COPY --from=builder --chown=nextjs:nodejs /app/packages/app/scripts/startup.sh ./packages/app/scripts/startup.sh
