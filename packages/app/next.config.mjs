@@ -16,6 +16,7 @@ const config = {
     "@thinkneverland/pixie-dust-cookie-consent",
     "@thinkneverland/pixie-dust-core",
     "@thinkneverland/pixie-dust-dashboard",
+    "@thinkneverland/pixie-dust-database",
     "@thinkneverland/pixie-dust-devtools",
     "@thinkneverland/pixie-dust-email",
     "@thinkneverland/pixie-dust-fairy-ring",
@@ -33,7 +34,6 @@ const config = {
     "@prisma/client",
     "prisma",
     "@prisma/adapter-pg",
-    "@thinkneverland/pixie-dust-database",
     "pg",
     "pg-connection-string",
     "pgpass",
@@ -41,14 +41,7 @@ const config = {
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.externals = config.externals || [];
-      config.externals.push(
-        "crypto",
-        { "@thinkneverland/pixie-dust-database": "commonjs @thinkneverland/pixie-dust-database" },
-        { "@prisma/adapter-pg": "commonjs @prisma/adapter-pg" },
-        { "pg": "commonjs pg" },
-        { "pg-connection-string": "commonjs pg-connection-string" },
-        { "pgpass": "commonjs pgpass" },
-      );
+      config.externals.push("crypto");
     }
     return config;
   },

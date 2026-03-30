@@ -13,7 +13,7 @@ echo "=== LintPDF App Startup ==="
 # is not available as a CJS require in the standalone Next.js output.
 echo "Step 1: Ensuring new columns exist..."
 
-prisma db execute --schema packages/app/prisma/schema --url "$DATABASE_URL" --stdin <<'SQL'
+prisma db execute --schema packages/app/prisma/schema --stdin <<'SQL'
 -- AppSettings columns required by pixie-dust-dashboard
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "primaryColor" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "emailButtonColor" TEXT;
@@ -60,7 +60,7 @@ echo "Step 1 complete (exit code: $?)"
 
 # Step 2: Prisma db push (may warn about engine tables — we continue regardless)
 echo "Step 2: Running prisma db push..."
-prisma db push --schema packages/app/prisma/schema --skip-generate --url "$DATABASE_URL" 2>&1 || echo "prisma db push had warnings — continuing"
+prisma db push --schema packages/app/prisma/schema --skip-generate 2>&1 || echo "prisma db push had warnings — continuing"
 
 # Step 3: Seed (idempotent)
 echo "Step 3: Running seed..."

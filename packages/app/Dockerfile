@@ -51,9 +51,9 @@ RUN pnpm install --filter=@thinkneverland/lintpdf-app... --prefer-offline
 RUN pnpm --filter=@thinkneverland/grounded-plugin build && \
     pnpm --filter=@lintpdf/stripe build
 
-# Generate Prisma client (dummy URL — generate only needs schema, not a real DB)
+# Generate Prisma client
 WORKDIR /app/packages/app
-RUN DATABASE_URL="postgresql://dummy:dummy@localhost:5432/dummy" npx prisma generate
+RUN npx prisma generate
 
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
