@@ -160,17 +160,33 @@ model MagicLink {
 // ============================================
 
 model AppSettings {
-  id                String  @id @default("singleton")
-  brandName         String?
-  brandLogoUrl      String?
-  brandTagline      String?
-  customCss         String?
-  primaryColor      String?
-  emailButtonColor  String?
-  loginBgColor      String?
-  loginHeading      String?
-  loginSubheading   String?
-  updatedAt         DateTime @updatedAt
+  id                   String   @id @default("singleton")
+  brandName            String?
+  brandLogoUrl         String?  /// Logo for light mode / default
+  brandLogoUrlDark     String?  /// Logo for dark mode (falls back to brandLogoUrl)
+  brandTagline         String?
+  customCss            String?
+  primaryColor         String?  /// Hex e.g. "#1d4ed8" — login buttons, email CTA, accents
+  accentColor          String?  /// Hex — accent highlight color (defaults to primaryColor)
+  emailButtonColor     String?  /// Hex — email CTA button (falls back to primaryColor)
+  loginBgColor         String?  /// Hex — login page background in light mode
+  loginCardColor       String?  /// Hex — login card background in light mode
+  loginTextColor       String?  /// Hex — login page text in light mode
+  loginInputColor      String?  /// Hex — login input background in light mode
+  loginRingColor       String?  /// Hex — login focus ring color
+  loginBgColorDark     String?  /// Hex — login page background in dark mode
+  loginCardColorDark   String?  /// Hex — login card background in dark mode
+  loginTextColorDark   String?  /// Hex — login page text in dark mode
+  loginInputColorDark  String?  /// Hex — login input background in dark mode
+  loginRingColorDark   String?  /// Hex — login focus ring in dark mode
+  sidebarBgColor       String?  /// Hex — sidebar background
+  sidebarTextColor     String?  /// Hex — sidebar text color
+  sidebarAccentColor   String?  /// Hex — sidebar active/hover accent
+  faviconUrl           String?  /// Favicon as data URL or path
+  loginHeading         String?  /// Custom login heading
+  loginSubheading      String?  /// Custom login subheading
+  disabledPlugins      String?  /// Comma-separated plugin names to disable
+  updatedAt            DateTime @updatedAt
 }
 
 // ============================================

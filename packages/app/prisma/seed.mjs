@@ -152,29 +152,40 @@ async function main() {
   }
 
   // ── App Settings (branding) ─────────────────────────────────
+  // Full branding matching the marketing site and Pixie Dust theme
+  const brandingData = {
+    brandName: "LintPDF",
+    brandLogoUrl: "/logo.svg",
+    brandLogoUrlDark: "/logo.svg",
+    brandTagline: "Preflights you won't hate.",
+    primaryColor: "#1e40af",
+    accentColor: "#2563eb",
+    emailButtonColor: "#2563eb",
+    // Light-mode login
+    loginBgColor: "#ffffff",
+    loginCardColor: "#f7f9fb",
+    loginTextColor: "#020817",
+    loginInputColor: "#f0f4f8",
+    loginRingColor: "#1e40af",
+    // Dark-mode login
+    loginBgColorDark: "#080a0f",
+    loginCardColorDark: "#1a1b24",
+    loginTextColorDark: "#f0f0f5",
+    loginInputColorDark: "#0f1019",
+    loginRingColorDark: "#1e40af",
+    // Sidebar
+    sidebarBgColor: "#f5f6f8",
+    sidebarTextColor: "#111621",
+    sidebarAccentColor: "#eaedef",
+    // Favicon & copy
+    faviconUrl: "/favicon.svg",
+    loginHeading: "Sign in to LintPDF",
+    loginSubheading: "Enter your email for a magic link",
+  };
   const appSettings = await prisma.appSettings.upsert({
     where: { id: "singleton" },
-    update: {
-      brandName: "LintPDF",
-      brandLogoUrl: "/logo.svg",
-      brandTagline: "Preflights you won't hate.",
-      primaryColor: "#1e40af",
-      emailButtonColor: "#2563eb",
-      loginBgColor: "#080a17",
-      loginHeading: "Sign in to LintPDF",
-      loginSubheading: "Enter your email for a magic link",
-    },
-    create: {
-      id: "singleton",
-      brandName: "LintPDF",
-      brandLogoUrl: "/logo.svg",
-      brandTagline: "Preflights you won't hate.",
-      primaryColor: "#1e40af",
-      emailButtonColor: "#2563eb",
-      loginBgColor: "#080a17",
-      loginHeading: "Sign in to LintPDF",
-      loginSubheading: "Enter your email for a magic link",
-    },
+    update: brandingData,
+    create: { id: "singleton", ...brandingData },
   });
   console.log(
     `App settings: brandName=${appSettings.brandName}, logo=${appSettings.brandLogoUrl}, primaryColor=${appSettings.primaryColor}`,
