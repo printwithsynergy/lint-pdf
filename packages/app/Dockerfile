@@ -53,7 +53,7 @@ RUN pnpm --filter=@thinkneverland/grounded-plugin build && \
 
 # Generate Prisma client
 WORKDIR /app/packages/app
-RUN npx prisma generate
+RUN npx prisma generate --schema=prisma/schema
 
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
