@@ -1,5 +1,5 @@
 import { authenticateRequest } from "@thinkneverland/pixie-dust-auth";
-import { prisma } from "@thinkneverland/pixie-dust-database";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { NextResponse } from "next/server";
 
 /**

@@ -1,6 +1,6 @@
 import { authenticateRequest } from "@thinkneverland/pixie-dust-auth";
 import { getCookieName } from "@thinkneverland/pixie-dust-config";
-import { prisma } from "@thinkneverland/pixie-dust-database";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 

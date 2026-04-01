@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import crypto from "node:crypto";
 
-import { prisma } from "@thinkneverland/pixie-dust-database";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { env } from "@thinkneverland/pixie-dust-config";
 import { NextResponse } from "next/server";
 import { z } from "zod";

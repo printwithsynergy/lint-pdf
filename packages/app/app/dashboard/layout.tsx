@@ -4,7 +4,7 @@ import {
   DashboardShell,
   filterNavByUser,
 } from "@thinkneverland/pixie-dust-dashboard";
-import { prisma } from "@thinkneverland/pixie-dust-database";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 

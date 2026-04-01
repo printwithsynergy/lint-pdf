@@ -6,7 +6,7 @@
  */
 
 import { env } from "@thinkneverland/pixie-dust-config";
-import { prisma } from "@thinkneverland/pixie-dust-database";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import {
   PluginLoader,
   createLogger,

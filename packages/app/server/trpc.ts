@@ -2,7 +2,7 @@ import {
   createTRPCInfra,
   type TRPCContext,
 } from "@thinkneverland/pixie-dust-core";
-import { prisma } from "@thinkneverland/pixie-dust-database";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 
 const trpc = createTRPCInfra({ db: prisma });
 

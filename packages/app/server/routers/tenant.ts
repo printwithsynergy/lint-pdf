@@ -2,7 +2,7 @@ import { assertPermission } from "@thinkneverland/pixie-dust-auth";
 import {
   prisma,
   createTenantClient,
-} from "@thinkneverland/pixie-dust-database";
+} from "@thinkneverland/pixie-dust-database/server";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 

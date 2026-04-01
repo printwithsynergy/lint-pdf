@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { checkMagicLinkStatus } from "@thinkneverland/pixie-dust-auth";
-import { prisma } from "@thinkneverland/pixie-dust-database";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
