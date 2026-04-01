@@ -16,7 +16,6 @@ const config = {
     "@thinkneverland/pixie-dust-cookie-consent",
     "@thinkneverland/pixie-dust-core",
     "@thinkneverland/pixie-dust-dashboard",
-    "@thinkneverland/pixie-dust-database",
     "@thinkneverland/pixie-dust-devtools",
     "@thinkneverland/pixie-dust-email",
     "@thinkneverland/pixie-dust-fairy-ring",
