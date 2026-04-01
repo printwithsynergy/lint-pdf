@@ -53,6 +53,17 @@ const config = {
       tls: false,
       dns: false,
     };
+    // Handle node: protocol URIs used by @prisma/client@7.x ESM runtime.
+    // resolve.fallback only covers bare imports (e.g. 'fs'); the node:
+    // URI scheme needs resolve.alias to provide empty stubs.
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "node:crypto": false,
+      "node:fs": false,
+      "node:module": false,
+      "node:os": false,
+      "node:path": false,
+    };
     return config;
   },
 };
