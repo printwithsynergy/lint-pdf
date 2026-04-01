@@ -128,7 +128,7 @@ const dashboardCorePlugin: PixieDustPlugin = {
  */
 const plugins: PixieDustPlugin[] = [
   dashboardCorePlugin,
-  devtoolsPlugin,
+  ...(env.NODE_ENV !== "production" ? [devtoolsPlugin] : []),
   stripeKitPlugin,
   lintpdfPlugin,
   lintpdfUsagePlugin,
