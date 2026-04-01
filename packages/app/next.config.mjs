@@ -39,6 +39,20 @@ const config = {
       config.externals = config.externals || [];
       config.externals.push("crypto");
     }
+    // Provide empty fallbacks for Node.js built-ins encountered during
+    // edge/instrumentation compilation (pixie-dust-database → pg chain).
+    // serverExternalPackages only applies to the Node.js server bundle;
+    // the instrumentation bundle uses the edge webpack config where the
+    // package is still traversed statically.
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      path: false,
+      stream: false,
+      net: false,
+      tls: false,
+      dns: false,
+    };
     return config;
   },
 };
