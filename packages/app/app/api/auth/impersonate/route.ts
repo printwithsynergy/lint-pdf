@@ -77,7 +77,7 @@ export async function POST(req: Request) {
         action: "admin.impersonation.started",
         entity: "Tenant",
         entityId: tenant.id,
-        impersonatedBy: user.id,
+        // impersonatedBy: user.id, // TODO: Fix Prisma schema generation
         metadata: { tenantName: tenant.name },
       },
     });

@@ -16,18 +16,21 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@thinkneverland/pixie-dust-dashboard": "*",
-    "@thinkneverland/pixie-dust-email": "*",
-    "@thinkneverland/pixie-dust-fairy-ring": "*",
-    "@thinkneverland/pixie-dust-theme-kit": "*",
+    "@thinkneverland/pixie-dust-dashboard": "^1.12.34",
+    "@thinkneverland/pixie-dust-email": "^1.5.8",
+    "@thinkneverland/pixie-dust-fairy-ring": "^1.6.6",
+    "@thinkneverland/pixie-dust-theme-kit": "^1.2.6",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "eslint": "^9.39.4",
     "typescript": "^5.9.3",
     "vitest": "^3.0.0"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
   }

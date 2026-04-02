@@ -43,7 +43,6 @@ htmlcov/
 node_modules/
 package-lock.json
 playwright-report/
-pnpm-lock.yaml
 test-credentials.json
 test-results/
 tests/corpus/
