@@ -42,7 +42,7 @@ importers:
         specifier: ^1.0.11
         version: 1.0.11(react@19.2.4)
       '@thinkneverland/pixie-dust-auth':
-        specifier: '>=1.6.3'
+        specifier: 1.7.6
         version: 1.7.6(typescript@5.9.3)
       '@thinkneverland/pixie-dust-boilerplate':
         specifier: ^1.2.10
@@ -60,8 +60,8 @@ importers:
         specifier: ^1.12.34
         version: 1.12.34(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@thinkneverland/pixie-dust-database':
-        specifier: ^2.1.2
-        version: 2.1.2(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
+        specifier: ^2.1.3
+        version: 2.1.3(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
       '@thinkneverland/pixie-dust-devtools':
         specifier: ^1.0.9
         version: 1.0.9(@opentelemetry/context-async-hooks@1.30.1(@opentelemetry/api@1.9.1))(@opentelemetry/core@1.30.1(@opentelemetry/api@1.9.1))(@opentelemetry/instrumentation@0.57.2(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.1))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(webpack@5.105.4)
@@ -81,8 +81,8 @@ importers:
         specifier: ^1.2.6
         version: 1.2.6
       '@thinkneverland/pixie-dust-ui':
-        specifier: ^4.0.8
-        version: 4.0.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^4.0.12
+        version: 4.0.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@thinkneverland/pixie-dust-usage':
         specifier: ^1.0.10
         version: 1.0.10(react@19.2.4)
@@ -2509,6 +2509,9 @@ packages:
   '@thinkneverland/pixie-dust-database@2.1.2':
     resolution: {integrity: sha512-KTKUb14sZrh1SSIGPpPWKaHAeUrk2hKRPGvqTF6TpsWvlzkKvBigpZrW2+r+oeYWNWdEDviMyMokG+va+VN6LQ==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-database/2.1.2/05eaddff83f099a9978ebdcecb7f617ab8a65c4c}
 
+  '@thinkneverland/pixie-dust-database@2.1.3':
+    resolution: {integrity: sha512-tXNhV8GA5t8HjmET6RkD2VO+Bo8uZXH2LPH3qpQS276r5NS3GJaawugqv6dWRRQ6np87iYJKV5lguWiojCX5gQ==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-database/2.1.3/ea4403675151d722d5587c256fd2d4f6f578e0da}
+
   '@thinkneverland/pixie-dust-devtools@1.0.9':
     resolution: {integrity: sha512-zxAT95rvOD7jO09+l6fM8E9NRXfuxL7rSCrqFQAdATv+0/ZvvFFBG9L7+rsFP8XOkjIIWMIKnWWrjSRXNi4sHA==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-devtools/1.0.9/b7fd4a4e1effb46df3dcca2df8d6b4bdb5d38831}
 
@@ -2535,6 +2538,11 @@ packages:
 
   '@thinkneverland/pixie-dust-tsconfig@1.0.2':
     resolution: {integrity: sha512-D24uQY4M6EkImo7AJRUiFGlrhFFqm1cq2hf6CZru6j6qFR/DFpjb15laKSeLZxxSnvrWm7wl3JfRZxzg4IbUPw==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-tsconfig/1.0.2/3864af473129264a73fdaa41c7af21d85b2d3d4f}
+
+  '@thinkneverland/pixie-dust-ui@4.0.12':
+    resolution: {integrity: sha512-JfQvJqs5GDSJ7dKbRDU+jd9xIGA1bImG//W1NFUitrxjii5gM4DmFiRiQg5lkDnHF8wBka/EcMRu6F4xC1nfsw==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-ui/4.0.12/346c45fe03a2bd0525664531536bb60e548b42a4}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
 
   '@thinkneverland/pixie-dust-ui@4.0.8':
     resolution: {integrity: sha512-0G2tQZhGuYUGKCKL04cggvGnKxxHAbj13SjYo29KKHG+kPnVNvWhvNm1kSyyLktZOzTc8nCfaq/GxeiA8trENA==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-ui/4.0.8/b01f18e8b23f62be72b1140477851d2eed648ab4}
@@ -8032,6 +8040,17 @@ snapshots:
       - prisma
       - typescript
 
+  '@thinkneverland/pixie-dust-database@2.1.3(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)':
+    dependencies:
+      '@prisma/adapter-pg': 7.6.0
+      '@prisma/client': 7.6.0(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
+      pg: 8.20.0
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - pg-native
+      - prisma
+      - typescript
+
   '@thinkneverland/pixie-dust-devtools@1.0.9(@opentelemetry/context-async-hooks@1.30.1(@opentelemetry/api@1.9.1))(@opentelemetry/core@1.30.1(@opentelemetry/api@1.9.1))(@opentelemetry/instrumentation@0.57.2(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.1))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(webpack@5.105.4)':
     dependencies:
       '@sentry/nextjs': 8.55.1(@opentelemetry/context-async-hooks@1.30.1(@opentelemetry/api@1.9.1))(@opentelemetry/core@1.30.1(@opentelemetry/api@1.9.1))(@opentelemetry/instrumentation@0.57.2(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@1.30.1(@opentelemetry/api@1.9.1))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)(webpack@5.105.4)
@@ -8096,6 +8115,44 @@ snapshots:
   '@thinkneverland/pixie-dust-theme-kit@1.2.6': {}
 
   '@thinkneverland/pixie-dust-tsconfig@1.0.2': {}
+
+  '@thinkneverland/pixie-dust-ui@4.0.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+    dependencies:
+      '@radix-ui/react-accordion': 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-alert-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-aspect-ratio': 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-avatar': 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-checkbox': 1.3.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-collapsible': 1.1.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-context-menu': 2.2.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-dialog': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-dropdown-menu': 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-hover-card': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-label': 2.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-menubar': 1.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-navigation-menu': 1.2.14(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-popover': 1.1.15(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-progress': 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-radio-group': 1.3.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-scroll-area': 1.2.10(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-separator': 1.1.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-slider': 1.3.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-slot': 1.2.4(@types/react@19.2.14)(react@19.2.4)
+      '@radix-ui/react-switch': 1.2.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-tabs': 1.1.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-toggle': 1.1.10(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-toggle-group': 1.1.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      '@radix-ui/react-tooltip': 1.2.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      class-variance-authority: 0.7.1
+      clsx: 2.1.1
+      lucide-react: 0.469.0(react@19.2.4)
+      react: 19.2.4
+      react-resizable-panels: 4.8.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+      tailwind-merge: 2.6.1
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
 
   '@thinkneverland/pixie-dust-ui@4.0.8(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:

@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================
+// TENANTS
+// ============================================
+
+model Tenant {
+  id             String       @id @default(cuid())
+  name           String
+  slug           String       @unique
+  domain         String?      @unique
+  engineTenantId String?
+  settings       Json         @default("{}")
+  status         TenantStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  users   TenantUser[]
+  invites TenantInvite[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+enum TenantStatus {
+  ACTIVE
+  ONBOARDING
+  SUSPENDED
+  ARCHIVED
+}
+
+// ============================================
+// USERS
+// ============================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  avatarUrl    String?
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenants TenantUser[]
+  sessions Session[]
+  invites TenantInvite[]
+
+  @@index([email])
+}
+
+// ============================================
+// TENANT USERS (MEMBERSHIPS)
+// ============================================
+
+model TenantUser {
+  id       String    @id @default(cuid())
+  tenantId String
+  userId   String
+  role     UserRole  @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([tenantId])
+  @@index([userId])
+}
+
+enum UserRole {
+  MEMBER
+  ADMIN
+  OWNER
+}
+
+// ============================================
+// TENANT INVITES
+// ============================================
+
+model TenantInvite {
+  id       String    @id @default(cuid())
+  tenantId String
+  email    String
+  role     UserRole  @default(MEMBER)
+  token    String    @unique @default(cuid())
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([email])
+  @@index([expiresAt])
+}
+
+// ============================================
+// SESSIONS
+// ============================================
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  /// When set, the super admin is viewing/acting on behalf of this tenant.
+  /// This is NOT true impersonation — the session still belongs to the super admin.
+  impersonatingTenantId String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ============================================
+// AUDIT LOGS
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json     @default("{}")
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  /// Set when this action was performed by a super admin assisting the tenant.
+  /// The userId is always the super admin's real ID — this field makes it
+  /// explicit in audit queries that the action was on behalf of a customer.
+  impersonatedBy String?
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
