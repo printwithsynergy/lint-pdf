@@ -13,6 +13,7 @@ COPY scripts/ scripts/
 COPY packages/app/package.json packages/app/package.json
 COPY packages/plugin/package.json packages/plugin/package.json
 COPY packages/stripe/package.json packages/stripe/package.json
+COPY packages/database/package.json packages/database/package.json
 # Private @thinkneverland packages need auth
 ARG NODE_AUTH_TOKEN
 ENV NODE_AUTH_TOKEN=$NODE_AUTH_TOKEN
@@ -36,6 +37,7 @@ COPY --from=deps /app/pnpm-lock.yaml ./
 # Copy full workspace package sources
 COPY packages/plugin/ ./packages/plugin/
 COPY packages/stripe/ ./packages/stripe/
+COPY packages/database/ ./packages/database/
 COPY packages/app/ ./packages/app/
 # Copy node_modules from deps stage (already has latest Pixie Dust)
 COPY --from=deps /app/node_modules ./node_modules
@@ -51,10 +53,11 @@ RUN pnpm install --filter=@thinkneverland/lintpdf-app... --prefer-offline
 RUN pnpm --filter=@thinkneverland/grounded-plugin build && \
     pnpm --filter=@lintpdf/stripe build
 
-# Generate Prisma client
-WORKDIR /app/packages/app
-RUN npx prisma generate
+# Generate Prisma client from database package
+WORKDIR /app/packages/database
+RUN pnpm generate
 
+WORKDIR /app/packages/app
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
@@ -74,6 +77,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/packages/app/.next/static ./packa
 COPY --from=builder --chown=nextjs:nodejs /app/packages/app/public ./packages/app/public
 
 # Copy Prisma schema for runtime db push
+COPY --from=builder --chown=nextjs:nodejs /app/packages/database/prisma ./packages/database/prisma
 COPY --from=builder --chown=nextjs:nodejs /app/packages/app/prisma ./packages/app/prisma
 
 # Install Prisma CLI globally for runtime migrations (avoids pnpm hoisting issues)
@@ -89,7 +93,7 @@ ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget -qO- http://localhost:8080/api/health || exit 1
+    CMD wget -qO- http://localhost:8080/api/health || exit 1
 
 # Startup: safe SQL migration → prisma db push → seed → start server
 CMD ["sh", "packages/app/scripts/startup.sh"]
