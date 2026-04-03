@@ -2,7 +2,7 @@
 builder = "RAILPACK"
 
 [deploy]
-startCommand = "echo '=== DEBUG: Current Directory ===' && pwd && echo '=== DEBUG: Listing Files ===' && ls -la && echo '=== DEBUG: Prisma Directory ===' && ls -la prisma/ && echo '=== DEBUG: Trying to cat config ===' && cat prisma.config.ts 2>&1 && echo '=== DEBUG: Running Prisma ===' && npx prisma db push --accept-data-loss && next start"
+startCommand = "npx prisma db push --accept-data-loss && next start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"

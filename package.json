@@ -12,7 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "cd packages/app && npx playwright test && cd ../web && npx playwright test",
-    "start": "cd packages/app && echo '=== DEBUG: Environment Variables ===' && env | grep -E '(DATABASE|DIRECT)' && echo '=== DEBUG: Prisma Config ===' && cat prisma.config.ts && echo '=== DEBUG: Schema Directory ===' && ls -la prisma/ && echo '=== DEBUG: Running Prisma ===' && npx prisma db push --accept-data-loss && next start"
+    "start": "cd packages/app && npx prisma db push --accept-data-loss && next start"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
