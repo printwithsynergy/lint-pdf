@@ -36,6 +36,7 @@ const config = {
     "@prisma/client/runtime/library",
     "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs",
     "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs",
+    "@thinkneverland/pixie-dust-database",
   ],
   webpack: (config, { isServer, webpack }) => {
     if (isServer) {
