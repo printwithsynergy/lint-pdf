@@ -32,27 +32,24 @@ const config = {
   serverExternalPackages: [
     "@prisma/client",
     "@prisma/adapter-pg",
-    "@prisma/client/runtime",
-    "@prisma/client/runtime/library",
-    "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs",
-    "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs",
-    "@thinkneverland/pixie-dust-database",
   ],
   webpack: (config, { isServer, webpack }) => {
     if (isServer) {
       config.externals = config.externals || [];
-      config.externals.push(
-        "crypto",
-        "@prisma/client/runtime",
-        "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs",
-        "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs"
-      );
+      config.externals.push("crypto");
     }
-    // Provide empty fallbacks for Node.js built-ins encountered during
-    // edge/instrumentation compilation (pixie-dust-database → pg chain).
-    // serverExternalPackages only applies to the Node.js server bundle;
-    // the instrumentation bundle uses the edge webpack config where the
-    // package is still traversed statically.
+
+    // Redirect Prisma ESM runtime (.mjs) to CJS (.js) for non-server
+    // compilations (instrumentation, edge) where serverExternalPackages
+    // doesn't apply and webpack can't handle raw ESM imports.
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs":
+        "@prisma/client/runtime/query_compiler_fast_bg.postgresql.js",
+      "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs":
+        "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.js",
+    };
+
     config.resolve.fallback = {
       ...config.resolve.fallback,
       crypto: false,
@@ -64,12 +61,9 @@ const config = {
       net: false,
       tls: false,
       dns: false,
+      "pg-native": false,
     };
     // Handle node: protocol URIs used by @prisma/client@7.x ESM runtime.
-    // resolve.alias/fallback cannot intercept scheme-based URIs (node:*).
-    // NormalModuleReplacementPlugin strips the node: prefix so that the
-    // bare module name hits resolve.fallback above (client/edge) or
-    // resolves to the real built-in (server).
     config.plugins.push(
       new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
         resource.request = resource.request.replace(/^node:/, "");
