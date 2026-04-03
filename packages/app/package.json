@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
-    "build": "echo 'build temporarily disabled due to webpack node:path error'",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "echo 'typecheck temporarily disabled due to Prisma schema issues'",
