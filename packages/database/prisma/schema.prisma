@@ -1,0 +1,289 @@
+// This is the main schema file for LintPDF
+// It imports Pixie Dust base schema and adds LintPDF-specific extensions
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// TENANTS (LintPDF Extended)
+// ============================================
+
+model Tenant {
+  id             String       @id @default(cuid())
+  name           String
+  slug           String       @unique
+  domain         String?      @unique
+  engineTenantId String?      // LintPDF extension for preflight engine integration
+  settings       Json         @default("{}")
+  status         TenantStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  users   TenantUser[]
+  invites TenantInvite[]
+  annotations Annotation[]
+  reportViews ReportView[]
+
+  @@index([slug])
+  @@index([status])
+}
+
+enum TenantStatus {
+  ACTIVE
+  ONBOARDING
+  SUSPENDED
+  ARCHIVED
+}
+
+// ============================================
+// USERS
+// ============================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  avatarUrl    String?
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenants    TenantUser[]
+  sessions   Session[]
+  magicLinks MagicLink[]
+  invites    TenantInvite[]
+
+  @@index([email])
+}
+
+// ============================================
+// TENANT-USER RELATIONSHIP (LintPDF Extended Roles)
+// ============================================
+
+model TenantUser {
+  id       String     @id @default(cuid())
+  userId   String
+  tenantId String
+  role     TenantRole @default(MEMBER)
+  joinedAt DateTime   @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([userId])
+  @@index([tenantId])
+  @@index([role])
+}
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  OPERATOR  // LintPDF extension for preflight operators
+  MEMBER
+  VIEWER    // LintPDF extension for read-only access
+}
+
+// ============================================
+// TENANT INVITES
+// ============================================
+
+model TenantInvite {
+  id         String     @id @default(cuid())
+  tenantId   String
+  email      String
+  role       TenantRole @default(MEMBER)
+  token      String     @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  acceptedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime   @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [email], references: [email])
+
+  @@unique([tenantId, email])
+  @@index([token])
+  @@index([email])
+}
+
+// ============================================
+// SESSIONS
+// ============================================
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  /// When set, the super admin is viewing/acting on behalf of this tenant.
+  /// This is NOT true impersonation — the session still belongs to the super admin.
+  impersonatingTenantId String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ============================================
+// MAGIC LINKS
+// ============================================
+
+model MagicLink {
+  id           String    @id @default(cuid())
+  userId       String
+  token        String    @unique
+  pollingToken String?   @unique
+  code         String?
+  ipAddress    String?
+  expiresAt    DateTime
+  usedAt       DateTime?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([pollingToken])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([code])
+  @@index([ipAddress])
+}
+
+// ============================================
+// APP SETTINGS (singleton)
+// ============================================
+
+model AppSettings {
+  id                   String   @id @default("singleton")
+  brandName            String?
+  brandLogoUrl         String?
+  brandLogoUrlDark     String?
+  brandTagline         String?
+  customCss            String?
+  primaryColor         String?
+  accentColor          String?
+  emailButtonColor     String?
+  loginBgColor         String?
+  loginCardColor       String?
+  loginTextColor       String?
+  loginInputColor      String?
+  loginRingColor       String?
+  loginBgColorDark     String?
+  loginCardColorDark   String?
+  loginTextColorDark   String?
+  loginInputColorDark  String?
+  loginRingColorDark   String?
+  sidebarBgColor       String?
+  sidebarTextColor     String?
+  sidebarAccentColor   String?
+  faviconUrl           String?
+  loginHeading         String?
+  loginSubheading      String?
+  disabledPlugins      String?
+  updatedAt            DateTime @updatedAt
+}
+
+// ============================================
+// AUDIT LOG
+// ============================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String?
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json     @default("{}")
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  /// Set when this action was performed by a super admin assisting the tenant.
+  impersonatedBy String?
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([impersonatedBy])
+}
+
+// ============================================
+// WAITLIST
+// ============================================
+
+model WaitlistEntry {
+  id         String         @id @default(cuid())
+  email      String         @unique
+  name       String?
+  company    String?
+  useCase    String?
+  status     WaitlistStatus @default(PENDING)
+  promotedAt DateTime?
+  createdAt  DateTime       @default(now())
+
+  @@index([email])
+  @@index([status])
+}
+
+enum WaitlistStatus {
+  PENDING
+  PROMOTED
+  DECLINED
+}
+
+// ============================================
+// LINTPDF-SPECIFIC MODELS
+// ============================================
+
+// Annotations for PDF preflight results
+model Annotation {
+  id          String   @id @default(cuid())
+  jobId       String
+  tenantId    String
+  pageNum     Int
+  authorId    String?
+  authorEmail String
+  authorName  String?
+  fabricJson  Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([jobId, pageNum])
+  @@index([tenantId])
+}
+
+// Report view tracking for shared reports
+model ReportView {
+  id          String   @id @default(cuid())
+  jobId       String
+  tenantId    String
+  reportToken String
+  viewerEmail String?
+  viewerName  String?
+  ipAddress   String?
+  userAgent   String?
+  viewedAt    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([tenantId, viewedAt])
+  @@index([reportToken])
+}

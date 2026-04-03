@@ -9,7 +9,7 @@ import {
   getCookieOptions,
   env,
 } from "@thinkneverland/pixie-dust-config";
-import { prisma } from "@thinkneverland/pixie-dust-database/server";
+import { prisma } from "@lintpdf/database/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";

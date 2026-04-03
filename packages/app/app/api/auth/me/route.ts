@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { authenticateRequest } from "@thinkneverland/pixie-dust-auth";
-import { prisma } from "@thinkneverland/pixie-dust-database/server";
+import { prisma } from "@lintpdf/database/server";
 import { NextResponse } from "next/server";
 import { parseSessionCookie } from "@/lib/auth-helpers";
 
