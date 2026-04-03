@@ -7,7 +7,7 @@ import {
   RATE_LIMIT_WINDOW_HOURS,
 } from "@thinkneverland/pixie-dust-config";
 import { checkRateLimit } from "@thinkneverland/pixie-dust-core";
-import { prisma } from "@lintpdf/database/server";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { sendMagicLinkEmail } from "@thinkneverland/pixie-dust-email/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";

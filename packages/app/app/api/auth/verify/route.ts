@@ -10,7 +10,7 @@ import {
   getConfig,
   env,
 } from "@thinkneverland/pixie-dust-config";
-import { prisma } from "@lintpdf/database/server";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getClientInfo } from "@/lib/auth-helpers";

@@ -2,7 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { destroySession } from "@thinkneverland/pixie-dust-auth";
 import { getCookieName, env } from "@thinkneverland/pixie-dust-config";
-import { prisma } from "@lintpdf/database/server";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 

@@ -2,7 +2,7 @@
 builder = "RAILPACK"
 
 [deploy]
-startCommand = "cd packages/database && npx prisma db push --accept-data-loss && cd ../app && next start"
+startCommand = "npx prisma db push --accept-data-loss && next start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"

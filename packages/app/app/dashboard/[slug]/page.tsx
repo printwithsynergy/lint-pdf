@@ -1,4 +1,4 @@
-import { prisma } from "@lintpdf/database/server";
+import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { notFound, redirect } from "next/navigation";
 
 export default async function TenantSlugPage({
