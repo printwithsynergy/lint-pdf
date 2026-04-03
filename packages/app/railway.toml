@@ -1,13 +1,9 @@
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "packages/app/Dockerfile"
-watchPatterns = ["packages/app/**"]
-noCache = true
+builder = "RAILPACK"
 
 [deploy]
-numReplicas = 1
-startCommand = "sh packages/app/scripts/startup.sh"
-healthcheckPath = "/auth/login"
+startCommand = "cd packages/database && npx prisma db push --accept-data-loss && cd ../app && next start"
+healthcheckPath = "/api/health"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
