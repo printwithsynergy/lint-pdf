@@ -12,7 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:e2e": "cd packages/app && npx playwright test && cd ../web && npx playwright test",
-    "start": "cd packages/app && npx prisma db push --accept-data-loss && npx next start"
+    "start": "bash packages/app/scripts/startup.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
