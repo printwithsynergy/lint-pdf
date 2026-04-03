@@ -32,11 +32,13 @@ const config = {
   serverExternalPackages: [
     "@prisma/client",
     "@prisma/adapter-pg",
+    "@prisma/client/runtime",
+    "@prisma/client/runtime/library",
   ],
   webpack: (config, { isServer, webpack }) => {
     if (isServer) {
       config.externals = config.externals || [];
-      config.externals.push("crypto");
+      config.externals.push("crypto", "@prisma/client/runtime");
     }
     // Provide empty fallbacks for Node.js built-ins encountered during
     // edge/instrumentation compilation (pixie-dust-database → pg chain).
