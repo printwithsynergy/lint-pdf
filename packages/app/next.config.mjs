@@ -34,11 +34,18 @@ const config = {
     "@prisma/adapter-pg",
     "@prisma/client/runtime",
     "@prisma/client/runtime/library",
+    "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs",
+    "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs",
   ],
   webpack: (config, { isServer, webpack }) => {
     if (isServer) {
       config.externals = config.externals || [];
-      config.externals.push("crypto", "@prisma/client/runtime");
+      config.externals.push(
+        "crypto",
+        "@prisma/client/runtime",
+        "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs",
+        "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs"
+      );
     }
     // Provide empty fallbacks for Node.js built-ins encountered during
     // edge/instrumentation compilation (pixie-dust-database → pg chain).
