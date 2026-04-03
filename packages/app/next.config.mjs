@@ -32,9 +32,8 @@ const config = {
   serverExternalPackages: [
     "@prisma/client",
     "@prisma/adapter-pg",
-    "@thinkneverland/pixie-dust-database",
   ],
-  webpack: (config, { isServer }) => {
+  webpack: (config, { isServer, webpack }) => {
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push("crypto");
@@ -46,7 +45,10 @@ const config = {
     // package is still traversed statically.
     config.resolve.fallback = {
       ...config.resolve.fallback,
+      crypto: false,
       fs: false,
+      module: false,
+      os: false,
       path: false,
       stream: false,
       net: false,
@@ -54,16 +56,15 @@ const config = {
       dns: false,
     };
     // Handle node: protocol URIs used by @prisma/client@7.x ESM runtime.
-    // resolve.fallback only covers bare imports (e.g. 'fs'); the node:
-    // URI scheme needs resolve.alias to provide empty stubs.
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "node:crypto": false,
-      "node:fs": false,
-      "node:module": false,
-      "node:os": false,
-      "node:path": false,
-    };
+    // resolve.alias/fallback cannot intercept scheme-based URIs (node:*).
+    // NormalModuleReplacementPlugin strips the node: prefix so that the
+    // bare module name hits resolve.fallback above (client/edge) or
+    // resolves to the real built-in (server).
+    config.plugins.push(
+      new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+        resource.request = resource.request.replace(/^node:/, "");
+      }),
+    );
     return config;
   },
 };
