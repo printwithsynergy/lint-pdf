@@ -34,7 +34,8 @@ const config = {
     "@prisma/adapter-pg",
     "@prisma/client/runtime",
     "@prisma/client/runtime/library",
-    "@prisma/client/**",
+    "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs",
+    "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs",
   ],
   webpack: (config, { isServer, webpack }) => {
     if (isServer) {
@@ -42,7 +43,8 @@ const config = {
       config.externals.push(
         "crypto",
         "@prisma/client/runtime",
-        "@prisma/client/**"
+        "@prisma/client/runtime/query_compiler_fast_bg.postgresql.mjs",
+        "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.mjs"
       );
     }
     // Provide empty fallbacks for Node.js built-ins encountered during
