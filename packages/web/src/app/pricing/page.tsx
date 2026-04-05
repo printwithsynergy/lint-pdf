@@ -108,7 +108,7 @@ export default function PricingPage() {
                         : "bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200"
                     }`}
                   >
-                    Join Waitlist
+                    Join the Waitlist
                   </button>
                 ) : (
                   <a
