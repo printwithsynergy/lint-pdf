@@ -126,73 +126,77 @@ test.describe("Role: Viewer", () => {
     await context.close();
   });
 
-  // --- Pages with restricted actions ---
-  // The app renders all dashboard pages for all authenticated roles (returns 200).
-  // Access control is enforced at the action/API level, not by blocking page navigation.
-  // These tests verify the pages load without server errors for this role.
+  // --- Blocked pages ---
+  // The server-side layout redirects unauthorized users to /dashboard.
 
-  test("team invite page loads without error", async ({ browser }) => {
+  test("cannot access team invite page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/team/invite", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/team/invite", { waitUntil: "domcontentloaded" });
+
+    // Should be redirected to /dashboard by the permission layout
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
 
-  test("billing page loads without error", async ({ browser }) => {
+  test("cannot access billing page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/billing", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/billing", { waitUntil: "domcontentloaded" });
+
+    // Should be redirected to /dashboard by the permission layout
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
 
-  test("API keys page loads without error", async ({ browser }) => {
+  test("cannot access API keys page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/api-keys", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/api-keys", { waitUntil: "domcontentloaded" });
+
+    // Should be redirected to /dashboard by the permission layout
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
 
-  test("webhooks page loads without error", async ({ browser }) => {
+  test("cannot access webhooks page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/webhooks", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/webhooks", { waitUntil: "domcontentloaded" });
+
+    // Should be redirected to /dashboard by the permission layout
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
 
-  test("endpoints page loads without error", async ({ browser }) => {
+  test("cannot access endpoints page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/endpoints", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/endpoints", { waitUntil: "domcontentloaded" });
+
+    // Should be redirected to /dashboard by the permission layout
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
 
-  test("account settings page loads without error", async ({ browser }) => {
+  test("cannot access account settings page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/account/settings", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/account/settings", { waitUntil: "domcontentloaded" });
+
+    // Should be redirected to /dashboard by the permission layout
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
