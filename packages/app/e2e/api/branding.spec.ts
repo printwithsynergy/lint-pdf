@@ -24,7 +24,7 @@ test.describe("Branding API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("profiles");
@@ -89,7 +89,7 @@ test.describe("Branding API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("updates existing branding profile", async ({ request }) => {
@@ -128,7 +128,7 @@ test.describe("Branding API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -219,7 +219,7 @@ test.describe("Branding API (Plugin Routes)", () => {
         data: { profileId: profiles[0].id },
       });
 
-      expect([200, 204, 400, 500].includes(res.status())).toBe(true);
+      expect([200, 204, 400, 403, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {

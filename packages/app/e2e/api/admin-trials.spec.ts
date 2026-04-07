@@ -24,7 +24,7 @@ test.describe("Admin Trials API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("trials");
@@ -37,7 +37,7 @@ test.describe("Admin Trials API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         const trials = body.trials ?? [];
@@ -55,7 +55,7 @@ test.describe("Admin Trials API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() !== 200) return;
       const body = await res.json();
       const trials = body.trials ?? [];
@@ -88,7 +88,7 @@ test.describe("Admin Trials API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("trials");

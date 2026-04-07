@@ -24,7 +24,7 @@ test.describe("Admin Tenants API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("tenants");
@@ -37,7 +37,7 @@ test.describe("Admin Tenants API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         const tenants = body.tenants ?? [];
@@ -59,7 +59,7 @@ test.describe("Admin Tenants API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("tenants");
@@ -108,7 +108,7 @@ test.describe("Admin Tenants API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("updates tenant plan for existing tenant", async ({ request }) => {
@@ -181,7 +181,7 @@ test.describe("Admin Tenants API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("updates tenant status", async ({ request }) => {

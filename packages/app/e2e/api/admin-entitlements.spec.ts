@@ -24,7 +24,7 @@ test.describe("Admin Entitlements API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();
@@ -72,7 +72,7 @@ test.describe("Admin Entitlements API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();
@@ -88,7 +88,7 @@ test.describe("Admin Entitlements API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
   });
 

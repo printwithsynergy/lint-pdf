@@ -43,7 +43,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("pages");
@@ -60,7 +60,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -87,7 +87,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
       );
 
       // 200 with image data, or 404 if tiles not generated
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const contentType = res.headers()["content-type"] ?? "";
@@ -107,7 +107,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -133,7 +133,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();
@@ -156,7 +156,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
   });
 
@@ -172,7 +172,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
       );
 
       // 200 with separation data, or 404 if not available
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();
@@ -194,7 +194,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {

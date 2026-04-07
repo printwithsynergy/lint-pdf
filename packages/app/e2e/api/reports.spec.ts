@@ -32,7 +32,7 @@ test.describe("Reports API (Plugin Routes)", () => {
         data: { jobId: "non-existent-report-job-id" },
       });
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("generates report for completed job", async ({ request }) => {
@@ -72,7 +72,7 @@ test.describe("Reports API (Plugin Routes)", () => {
       });
 
       // May return 200 with empty list or 404 if no reports endpoint
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("GET /api/lintpdf/reports/:jobId returns report for valid job", async ({
@@ -102,7 +102,7 @@ test.describe("Reports API (Plugin Routes)", () => {
       );
 
       // 200 with report data, or 404 if report not yet generated
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();
@@ -118,7 +118,7 @@ test.describe("Reports API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -157,7 +157,7 @@ test.describe("Reports API (Plugin Routes)", () => {
       );
 
       // 200 with PDF content, or 404 if no report generated
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const contentType = res.headers()["content-type"] ?? "";

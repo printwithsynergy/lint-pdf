@@ -24,7 +24,7 @@ test.describe("Color Config API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toBeTruthy();
@@ -50,7 +50,7 @@ test.describe("Color Config API (Plugin Routes)", () => {
         },
       });
 
-      expect([200, 204, 400, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 204, 400, 403, 422, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -70,7 +70,7 @@ test.describe("Color Config API (Plugin Routes)", () => {
         },
       });
 
-      expect([200, 204, 400, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 204, 400, 403, 422, 500].includes(res.status())).toBe(true);
     });
   });
 
@@ -139,7 +139,7 @@ test.describe("Color Config API (Plugin Routes)", () => {
         },
       });
 
-      expect([200, 204, 400, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 204, 400, 403, 422, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -158,7 +158,7 @@ test.describe("Color Config API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();

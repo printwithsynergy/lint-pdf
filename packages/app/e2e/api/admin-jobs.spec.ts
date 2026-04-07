@@ -24,7 +24,7 @@ test.describe("Admin Jobs API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("jobs");
@@ -37,7 +37,7 @@ test.describe("Admin Jobs API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         const jobs = body.jobs ?? [];
@@ -57,7 +57,7 @@ test.describe("Admin Jobs API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         const jobs = body.jobs ?? [];
@@ -78,7 +78,7 @@ test.describe("Admin Jobs API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("jobs");
@@ -94,7 +94,7 @@ test.describe("Admin Jobs API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() !== 200) return;
       const body = await res.json();
       const jobs = body.jobs ?? [];

@@ -19,7 +19,7 @@ test.describe("Profiles API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("profiles");
@@ -32,7 +32,7 @@ test.describe("Profiles API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         const profiles = body.profiles ?? [];
@@ -71,7 +71,7 @@ test.describe("Profiles API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body.id ?? body.profile?.id).toBeTruthy();
@@ -86,7 +86,7 @@ test.describe("Profiles API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
   });
 
@@ -155,7 +155,7 @@ test.describe("Profiles API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {

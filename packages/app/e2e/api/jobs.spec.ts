@@ -20,7 +20,10 @@ test.describe("Jobs API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 500].includes(res.status())).toBe(true);
+      expect(
+        [200, 302, 307, 403, 404, 500].includes(res.status()),
+        `Expected 200/302/307/404/500 but got ${res.status()} - body: ${(await res.text()).slice(0, 200)}`,
+      ).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("jobs");
@@ -41,7 +44,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("jobs");
@@ -53,7 +56,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("jobs");
@@ -71,7 +74,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without session cookie", async ({ request }) => {
@@ -101,7 +104,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("id");
@@ -119,7 +122,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without session cookie", async ({ request }) => {

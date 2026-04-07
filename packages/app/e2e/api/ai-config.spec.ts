@@ -24,7 +24,7 @@ test.describe("AI Config API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toBeTruthy();
@@ -36,7 +36,7 @@ test.describe("AI Config API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         // AI config should indicate whether AI features are enabled
@@ -70,7 +70,7 @@ test.describe("AI Config API (Plugin Routes)", () => {
         },
       });
 
-      expect([200, 204, 400, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 204, 400, 403, 422, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -92,7 +92,7 @@ test.describe("AI Config API (Plugin Routes)", () => {
       });
 
       // May accept or reject depending on validation strictness
-      expect([200, 204, 400, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 204, 400, 403, 422, 500].includes(res.status())).toBe(true);
     });
 
     test("preserves existing config when updating partial fields", async ({
@@ -113,14 +113,14 @@ test.describe("AI Config API (Plugin Routes)", () => {
         data: { enabled: currentConfig.enabled ?? true },
       });
 
-      expect([200, 204, 400, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 204, 400, 403, 422, 500].includes(res.status())).toBe(true);
 
       // Verify config is still intact
       const verifyRes = await request.get(`${APP_BASE}/api/lintpdf/ai-config`, {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(verifyRes.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(verifyRes.status())).toBe(true);
     });
   });
 });

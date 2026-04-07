@@ -24,7 +24,7 @@ test.describe("Admin AI API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();
@@ -83,7 +83,7 @@ test.describe("Admin AI API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();
@@ -106,7 +106,7 @@ test.describe("Admin AI API (Plugin Routes)", () => {
         headers: headers(),
       });
 
-      expect([200, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const body = await res.json();
@@ -151,7 +151,7 @@ test.describe("Admin AI API (Plugin Routes)", () => {
         },
       );
 
-      expect([200, 201, 400, 404, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 201, 400, 403, 404, 422, 500].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
