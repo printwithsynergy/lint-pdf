@@ -27,8 +27,9 @@ test.describe("Admin Trials API (Plugin Routes)", () => {
       expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
-        expect(body).toHaveProperty("trials");
-        expect(Array.isArray(body.trials)).toBe(true);
+        const list = body.trials ?? body.submissions;
+        expect(list).toBeDefined();
+        expect(Array.isArray(list)).toBe(true);
       }
     });
 
@@ -40,7 +41,7 @@ test.describe("Admin Trials API (Plugin Routes)", () => {
       expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
-        const trials = body.trials ?? [];
+        const trials = body.trials ?? body.submissions ?? [];
 
         if (trials.length > 0) {
           const trial = trials[0];
@@ -91,7 +92,7 @@ test.describe("Admin Trials API (Plugin Routes)", () => {
       expect([200, 403, 404, 500].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
-        expect(body).toHaveProperty("trials");
+        expect(body.trials ?? body.submissions).toBeDefined();
       }
     });
 

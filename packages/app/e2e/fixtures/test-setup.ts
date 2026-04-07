@@ -166,17 +166,23 @@ async function enableMcpBackdoor(): Promise<void> {
 async function mcpAuth(
   ctx: Awaited<ReturnType<typeof pwRequest.newContext>>,
   email: string,
-): Promise<{ userId: string; sessionToken: string }> {
+  options?: { tenantSlug?: string; role?: string },
+): Promise<{ userId: string; sessionToken: string; tenantId?: string }> {
   const key = process.env.MCP_SECRET_KEY ?? MCP_SECRET_KEY;
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const res = await ctx.post(`${APP_BASE}/api/auth/mcp-backdoor`, {
-      data: { email, mcpSecretKey: key },
+      data: {
+        email,
+        mcpSecretKey: key,
+        ...(options?.tenantSlug ? { tenantSlug: options.tenantSlug } : {}),
+        ...(options?.role ? { role: options.role } : {}),
+      },
     });
 
     if (res.ok()) {
       const data = await res.json();
-      return { userId: data.userId, sessionToken: data.sessionToken };
+      return { userId: data.userId, sessionToken: data.sessionToken, tenantId: data.tenantId };
     }
 
     if (res.status() === 429 && attempt < 4) {
@@ -216,6 +222,10 @@ async function globalSetup() {
 
   const ctx = await pwRequest.newContext({ baseURL: APP_BASE, ignoreHTTPSErrors: true, ...(PROXY ? { proxy: PROXY } : {}) });
 
+  let tenantSlug = "e2e-test-org";
+  let tenantId = "";
+  let engineApiKey = "";
+
   const users: TestState["users"] = {};
   const emails: Record<string, string> = {
     "super-admin": "super-admin@e2e.lintpdf.com",
@@ -226,16 +236,39 @@ async function globalSetup() {
     viewer: "viewer@e2e.lintpdf.com",
   };
 
-  // Step 1: Create all users via MCP backdoor
-  console.log("👤 Creating test users...");
+  const roleMap: Record<string, string> = {
+    "super-admin": "OWNER",
+    owner: "OWNER",
+    admin: "ADMIN",
+    operator: "OPERATOR",
+    member: "MEMBER",
+    viewer: "VIEWER",
+  };
+
+  // Step 1: Create all users via MCP backdoor with tenant + role
+  console.log("👤 Creating test users with tenant memberships...");
   for (const [role, email] of Object.entries(emails)) {
     try {
-      const auth = await mcpAuth(ctx, email);
+      const auth = await mcpAuth(ctx, email, {
+        tenantSlug: tenantSlug,
+        role: roleMap[role] ?? "MEMBER",
+      });
       users[role] = { email, ...auth };
-      console.log(`  ✅ ${role}: ${email} (${auth.userId})`);
+      console.log(`  ✅ ${role}: ${email} (${auth.userId}) tenant=${auth.tenantId ?? "none"}`);
     } catch (err) {
       console.log(`  ❌ ${role}: ${err}`);
     }
+  }
+
+  // Get tenantId from any user's auth result
+  for (const user of Object.values(users)) {
+    if ((user as any).tenantId) {
+      tenantId = (user as any).tenantId;
+      break;
+    }
+  }
+  if (tenantId) {
+    console.log(`  🏢 Tenant: ${tenantSlug} (${tenantId})`);
   }
 
   // Step 2: Promote super-admin
@@ -244,10 +277,8 @@ async function globalSetup() {
     await promoteAdmin(ctx, emails["super-admin"]);
   }
 
-  // Step 3: Create test tenant via super admin session
-  let tenantId = "";
-  let tenantSlug = "e2e-test-org";
-  let engineApiKey = "";
+  // Step 3: Tenant already created by MCP backdoor in Step 1 — get the ID
+  // The MCP backdoor creates the tenant and memberships automatically
 
   if (users["super-admin"]) {
     // Use tRPC to create tenant
@@ -293,57 +324,8 @@ async function globalSetup() {
     }
   }
 
-  // Step 4: Assign roles to users for the test tenant
-  if (tenantId && users["super-admin"]) {
-    console.log("🎭 Assigning tenant roles...");
-    const adminCtx = await pwRequest.newContext({
-      baseURL: APP_BASE,
-      ignoreHTTPSErrors: true,
-      ...(PROXY ? { proxy: PROXY } : {}),
-      extraHTTPHeaders: {
-        Cookie: `pixie-dust-session=${users["super-admin"].sessionToken}`,
-      },
-    });
-
-    const roleMap: Record<string, string> = {
-      owner: "OWNER",
-      admin: "ADMIN",
-      operator: "OPERATOR",
-      member: "MEMBER",
-      viewer: "VIEWER",
-    };
-
-    for (const [roleName, roleValue] of Object.entries(roleMap)) {
-      if (!users[roleName]) continue;
-      try {
-        // Invite user via tRPC or direct API
-        const inviteRes = await adminCtx.post("/api/trpc/tenant.invite", {
-          data: {
-            json: {
-              tenantId,
-              email: users[roleName].email,
-              role: roleValue,
-            },
-          },
-        });
-        if (inviteRes.ok()) {
-          console.log(`  ✅ ${roleName} → ${roleValue}`);
-        } else {
-          const body = await inviteRes.text();
-          // May already be a member
-          if (body.includes("already") || inviteRes.status() === 409) {
-            console.log(`  ℹ️ ${roleName} already in tenant`);
-          } else {
-            console.log(`  ⚠️ ${roleName}: ${inviteRes.status()} ${body.slice(0, 100)}`);
-          }
-        }
-      } catch (err) {
-        console.log(`  ⚠️ ${roleName}: ${err}`);
-      }
-    }
-
-    await adminCtx.dispose();
-  }
+  // Step 4: Roles assigned in Step 1 via MCP backdoor (tenantSlug + role params)
+  console.log("🎭 Roles assigned via MCP backdoor in Step 1");
 
   // Step 5: Generate engine API keys
   if (ADMIN_API_KEY || tenantId) {

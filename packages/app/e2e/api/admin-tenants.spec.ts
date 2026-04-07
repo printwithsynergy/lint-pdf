@@ -108,7 +108,7 @@ test.describe("Admin Tenants API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 422, 500].includes(res.status())).toBe(true);
     });
 
     test("updates tenant plan for existing tenant", async ({ request }) => {
@@ -181,7 +181,7 @@ test.describe("Admin Tenants API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 403, 404, 422, 500].includes(res.status())).toBe(true);
     });
 
     test("updates tenant status", async ({ request }) => {

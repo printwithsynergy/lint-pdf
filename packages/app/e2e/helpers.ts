@@ -67,7 +67,10 @@ export async function createAuthenticatedContext(
   const context = await browser.newContext({ baseURL });
   const request = context.request;
 
-  const auth = await authenticateViaMcpBackdoor(request, email);
+  const auth = await authenticateViaMcpBackdoor(request, email, {
+    tenantSlug: TEST_TENANT_SLUG,
+    role: "MEMBER",
+  });
 
   // The MCP backdoor sets the cookie via Set-Cookie header,
   // but we also set it explicitly in case of cross-origin issues

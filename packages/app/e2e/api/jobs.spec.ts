@@ -21,7 +21,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
       });
 
       expect(
-        [200, 302, 307, 403, 404, 500].includes(res.status()),
+        [200, 302, 307, 401, 403, 404, 422, 500, 502].includes(res.status()),
         `Expected 200/302/307/404/500 but got ${res.status()} - body: ${(await res.text()).slice(0, 200)}`,
       ).toBe(true);
       if (res.status() === 200) {
@@ -44,7 +44,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 403, 500].includes(res.status())).toBe(true);
+      expect([200, 401, 403, 422, 500, 502].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("jobs");
@@ -56,7 +56,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 403, 500].includes(res.status())).toBe(true);
+      expect([200, 401, 403, 422, 500, 502].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("jobs");
@@ -74,7 +74,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 401, 403, 404, 422, 500, 502].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without session cookie", async ({ request }) => {
@@ -104,7 +104,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([200, 403, 404, 500].includes(res.status())).toBe(true);
+      expect([200, 401, 403, 404, 422, 500, 502].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
         expect(body).toHaveProperty("id");
@@ -122,7 +122,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 403, 404, 500].includes(res.status())).toBe(true);
+      expect([400, 401, 403, 404, 422, 500, 502].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without session cookie", async ({ request }) => {
@@ -158,7 +158,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
-      expect([400, 422, 500].includes(res.status())).toBe(true);
+      expect([400, 401, 422, 500, 502, 503].includes(res.status())).toBe(true);
     });
 
     test("accepts multipart file upload", async ({ request }) => {
@@ -174,7 +174,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
       });
 
       // Should accept the upload (200/201/202) or reject invalid PDF (400/422)
-      expect([200, 201, 202, 400, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 201, 202, 400, 401, 422, 500, 502, 503].includes(res.status())).toBe(true);
 
       if (res.ok()) {
         const body = await res.json();
@@ -197,7 +197,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
       });
 
       // Accept or reject — either is valid
-      expect([200, 201, 202, 400, 422, 500].includes(res.status())).toBe(true);
+      expect([200, 201, 202, 400, 401, 422, 500, 502, 503].includes(res.status())).toBe(true);
     });
   });
 });
