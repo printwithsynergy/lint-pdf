@@ -1,0 +1,131 @@
+import { test, expect } from "@playwright/test";
+import { createRoleContext, isMcpBackdoorAvailable } from "../../helpers";
+
+const APP_BASE = process.env.APP_BASE_URL ?? "https://app.lintpdf.com";
+
+test.describe("Admin Health (/dashboard/admin/health)", () => {
+  test.beforeAll(async ({ request }) => {
+    const available = await isMcpBackdoorAvailable(request);
+    test.skip(!available, "MCP backdoor is not enabled on this environment");
+  });
+
+  test("page loads and shows health heading", async ({ browser }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "super-admin");
+    const page = await context.newPage();
+
+    await page.goto("/dashboard/admin/health");
+
+    await expect(
+      page.getByRole("heading", { name: /health|system|status/i }),
+    ).toBeVisible({ timeout: 15_000 });
+
+    await context.close();
+  });
+
+  test("shows engine status indicator", async ({ browser }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "super-admin");
+    const page = await context.newPage();
+
+    await page.goto("/dashboard/admin/health");
+
+    await page.waitForTimeout(3_000);
+
+    const engineStatus = page.locator(
+      "[data-testid*='engine'], :text('Engine'), :text('engine')",
+    ).first();
+
+    await expect(engineStatus).toBeVisible({ timeout: 10_000 });
+
+    await context.close();
+  });
+
+  test("shows database status indicator", async ({ browser }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "super-admin");
+    const page = await context.newPage();
+
+    await page.goto("/dashboard/admin/health");
+
+    await page.waitForTimeout(3_000);
+
+    const dbStatus = page.getByText(/database|postgres|db/i).first();
+    const hasDb = await dbStatus.isVisible().catch(() => false);
+    expect(hasDb).toBe(true);
+
+    await context.close();
+  });
+
+  test("shows Redis status indicator", async ({ browser }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "super-admin");
+    const page = await context.newPage();
+
+    await page.goto("/dashboard/admin/health");
+
+    await page.waitForTimeout(3_000);
+
+    const redisStatus = page.getByText(/redis|cache/i).first();
+    const hasRedis = await redisStatus.isVisible().catch(() => false);
+    expect(hasRedis).toBe(true);
+
+    await context.close();
+  });
+
+  test("shows worker status indicator", async ({ browser }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "super-admin");
+    const page = await context.newPage();
+
+    await page.goto("/dashboard/admin/health");
+
+    await page.waitForTimeout(3_000);
+
+    const workerStatus = page.getByText(/worker|celery|queue/i).first();
+    const hasWorker = await workerStatus.isVisible().catch(() => false);
+    expect(hasWorker).toBe(true);
+
+    await context.close();
+  });
+
+  test("refresh button is present and clickable", async ({ browser }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "super-admin");
+    const page = await context.newPage();
+
+    await page.goto("/dashboard/admin/health");
+
+    await page.waitForTimeout(3_000);
+
+    const refreshButton = page.locator(
+      "button:has-text('Refresh'), button:has-text('Reload'), button[aria-label*='refresh'], [data-testid*='refresh']",
+    );
+
+    await expect(refreshButton.first()).toBeVisible({ timeout: 10_000 });
+
+    // Click refresh and verify page doesn't crash
+    await refreshButton.first().click();
+    await page.waitForTimeout(2_000);
+
+    // Page should still show health heading after refresh
+    await expect(
+      page.getByRole("heading", { name: /health|system|status/i }),
+    ).toBeVisible();
+
+    await context.close();
+  });
+
+  test("health indicators show status values", async ({ browser }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "super-admin");
+    const page = await context.newPage();
+
+    await page.goto("/dashboard/admin/health");
+
+    await page.waitForTimeout(3_000);
+
+    // Look for status indicators like "healthy", "connected", "ok", "online", "up"
+    const statusIndicator = page.getByText(
+      /healthy|connected|ok|online|up|running|degraded|down|error/i,
+    ).first();
+
+    const hasStatus = await statusIndicator.isVisible().catch(() => false);
+    expect(hasStatus).toBe(true);
+
+    await context.close();
+  });
+});

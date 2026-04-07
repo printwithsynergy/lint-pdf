@@ -3,9 +3,13 @@
  * Uses the MCP backdoor endpoint for automated authentication.
  */
 import type { APIRequestContext, Browser } from "@playwright/test";
+import { existsSync, readFileSync } from "fs";
+import { resolve } from "path";
+import type { TestState } from "./fixtures/test-setup";
 
 const MCP_SECRET_KEY = process.env.MCP_SECRET_KEY ?? "";
 const DEFAULT_TEST_EMAIL = "e2e-test@lintpdf.com";
+const STATE_FILE = resolve(__dirname, ".test-state.json");
 
 export interface McpAuthResult {
   success: boolean;
@@ -88,4 +92,135 @@ export async function isMcpBackdoorAvailable(
   } catch {
     return false;
   }
+}
+
+// ---------- Test state helpers ----------
+
+let _testState: TestState | null = null;
+
+export function loadTestState(): TestState | null {
+  if (_testState) return _testState;
+  if (existsSync(STATE_FILE)) {
+    _testState = JSON.parse(readFileSync(STATE_FILE, "utf-8"));
+    return _testState;
+  }
+  return null;
+}
+
+export function getTestTenantSlug(): string {
+  return loadTestState()?.tenantSlug ?? "e2e-test-org";
+}
+
+export function getTestTenantId(): string {
+  return loadTestState()?.tenantId ?? "";
+}
+
+export function getEngineApiKey(): string {
+  return loadTestState()?.engineApiKey ?? process.env.ENGINE_API_KEY ?? "";
+}
+
+export function getAdminApiKey(): string {
+  return loadTestState()?.adminApiKey ?? process.env.ADMIN_API_KEY ?? "";
+}
+
+// ---------- Role-specific auth ----------
+
+export type TestRole = "super-admin" | "owner" | "admin" | "operator" | "member" | "viewer";
+
+const ROLE_EMAILS: Record<TestRole, string> = {
+  "super-admin": "super-admin@e2e.lintpdf.com",
+  owner: "owner@e2e.lintpdf.com",
+  admin: "admin@e2e.lintpdf.com",
+  operator: "operator@e2e.lintpdf.com",
+  member: "member@e2e.lintpdf.com",
+  viewer: "viewer@e2e.lintpdf.com",
+};
+
+/**
+ * Get email for a specific test role.
+ */
+export function getRoleEmail(role: TestRole): string {
+  return ROLE_EMAILS[role];
+}
+
+/**
+ * Create an authenticated browser context for a specific role.
+ */
+export async function createRoleContext(
+  browser: Browser,
+  baseURL: string,
+  role: TestRole,
+) {
+  const email = ROLE_EMAILS[role];
+  return createAuthenticatedContext(browser, baseURL, email);
+}
+
+/**
+ * Authenticate via MCP backdoor for a specific role (API context).
+ */
+export async function authenticateRole(
+  request: APIRequestContext,
+  role: TestRole,
+): Promise<McpAuthResult> {
+  return authenticateViaMcpBackdoor(request, ROLE_EMAILS[role]);
+}
+
+// ---------- Engine helpers ----------
+
+const ENGINE_BASE = process.env.ENGINE_BASE_URL ?? "https://engine.lintpdf.com";
+
+export function getEngineBase(): string {
+  return ENGINE_BASE;
+}
+
+/**
+ * Poll a job via the plugin route until it reaches a terminal status.
+ */
+export async function pollJobViaApp(
+  request: APIRequestContext,
+  jobId: string,
+  sessionToken: string,
+  maxWaitMs = 60_000,
+  intervalMs = 2_000,
+): Promise<Record<string, unknown>> {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    const res = await request.get(`/api/lintpdf/jobs/${jobId}`, {
+      headers: { Cookie: `pixie-dust-session=${sessionToken}` },
+    });
+    if (res.ok()) {
+      const data = await res.json();
+      if (data.status === "complete" || data.status === "failed") {
+        return data;
+      }
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  throw new Error(`Job ${jobId} did not complete within ${maxWaitMs}ms`);
+}
+
+/**
+ * Poll a job via the engine API until it reaches a terminal status.
+ */
+export async function pollJobViaEngine(
+  request: APIRequestContext,
+  jobId: string,
+  apiKey: string,
+  maxWaitMs = 60_000,
+  intervalMs = 2_000,
+): Promise<Record<string, unknown>> {
+  const start = Date.now();
+  while (Date.now() - start < maxWaitMs) {
+    const res = await request.get(`${ENGINE_BASE}/api/v1/jobs/${jobId}`, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (res.ok()) {
+      const data = await res.json();
+      if (data.status === "complete" || data.status === "failed") {
+        return data;
+      }
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  throw new Error(`Job ${jobId} did not complete within ${maxWaitMs}ms`);
 }

@@ -16,6 +16,7 @@ export default defineConfig({
   fullyParallel: true,
   retries: 1,
   reporter: [["html", { open: "never" }], ["list"]],
+  globalSetup: "./e2e/fixtures/test-setup.ts",
   use: {
     baseURL: APP_BASE,
     ignoreHTTPSErrors: true,
@@ -45,6 +46,24 @@ export default defineConfig({
       use: {
         baseURL: APP_BASE,
         browserName: "chromium",
+      },
+    },
+    {
+      name: "roles-tests",
+      testDir: "./e2e/ui/roles",
+      timeout: 180_000,
+      use: {
+        baseURL: APP_BASE,
+        browserName: "chromium",
+      },
+    },
+    {
+      name: "preflight-tests",
+      testDir: "./e2e/preflight",
+      timeout: 300_000, // 5 min — PDF processing can be slow
+      use: {
+        baseURL: APP_BASE,
+        extraHTTPHeaders: { Accept: "application/json" },
       },
     },
   ],
