@@ -32,27 +32,15 @@ test.describe("Account Settings Page", () => {
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
     await page.goto("/dashboard/account");
-    await page.waitForTimeout(5_000);
+    // Wait for page heading to confirm page loaded
+    await expect(
+      page.getByRole("heading", { name: /account settings/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
-    // The plan card has a CardTitle "Plan" and "Current Plan:" text
-    const hasPlanHeading = await page
-      .getByText(/^plan$/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasPlanText = await page
-      .getByText(/current plan/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Fallback: look for plan-related content
-    const hasStatus = await page
-      .getByText(/status/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    expect(hasPlanHeading || hasPlanText || hasStatus).toBeTruthy();
+    // The plan card has a CardTitle "Plan" and text "Current Plan:" inside CardContent
+    await expect(
+      page.getByText(/current plan/i).first(),
+    ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });
 
@@ -234,22 +222,20 @@ test.describe("AI Configuration Page", () => {
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
     await page.goto("/dashboard/account/ai");
-    await page.waitForTimeout(5_000);
+    // Wait for AI Configuration heading to confirm page loaded
+    await expect(
+      page.getByRole("heading", { name: /ai configuration/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
-    // AI Credits heading — h2 with "text-lg font-semibold" class, not heading role
-    const hasCreditsText = await page
-      .getByText(/ai credits/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    expect(hasCreditsText).toBeTruthy();
+    // AI Credits is an h2 rendered with class "text-lg font-semibold" (not a heading role)
+    await expect(
+      page.getByText("AI Credits").first(),
+    ).toBeVisible({ timeout: 5_000 });
 
-    // Credits show "Used:" and "Limit:" as inline labels (not separate text nodes always)
-    const hasUsed = await page.getByText(/used/i).first().isVisible().catch(() => false);
-    const hasLimit = await page.getByText(/limit/i).first().isVisible().catch(() => false);
-    // Fallback: look for any number content in the credits section
-    const hasNumber = await page.locator("strong").first().isVisible().catch(() => false);
-    expect(hasUsed || hasLimit || hasNumber).toBeTruthy();
+    // Credits show inline "Used: <strong>N</strong>" and "Limit: <strong>N</strong>"
+    await expect(
+      page.locator("strong").first(),
+    ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });
 
@@ -343,19 +329,20 @@ test.describe("Branding Page", () => {
     await expect(newButton).toBeVisible({ timeout: 15_000 });
     await newButton.click();
 
-    // Form heading: "New Brand Profile" (h2) — use text match since h2 may not have heading role
-    const hasFormHeading = await page
-      .getByText(/new brand profile/i)
-      .first()
-      .isVisible({ timeout: 5_000 })
-      .catch(() => false);
-    const hasProfileName = await page.locator("#profile-name").isVisible().catch(() => false);
-    expect(hasFormHeading || hasProfileName).toBeTruthy();
+    // Form heading: h2 "New Brand Profile" with class "text-lg font-semibold"
+    await expect(
+      page.getByText("New Brand Profile").first(),
+    ).toBeVisible({ timeout: 5_000 });
 
-    // profile-type is a Select component from pixie-dust-ui
-    const hasTypeSelect = await page.locator("#profile-type").isVisible().catch(() => false);
-    const hasSelect = await page.locator("select").first().isVisible().catch(() => false);
-    expect(hasTypeSelect || hasSelect).toBeTruthy();
+    // Profile Name input with id "profile-name"
+    await expect(
+      page.locator("#profile-name"),
+    ).toBeVisible({ timeout: 5_000 });
+
+    // Profile Type is a Select component (renders as <select>) with id "profile-type"
+    await expect(
+      page.locator("select#profile-type"),
+    ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });
 
@@ -364,21 +351,24 @@ test.describe("Branding Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/account/branding");
 
-    await page.getByRole("button", { name: /new profile/i }).click();
-    await page.waitForTimeout(2_000);
+    const newButton = page.getByRole("button", { name: /new profile/i });
+    await expect(newButton).toBeVisible({ timeout: 15_000 });
+    await newButton.click();
 
-    // The profile type is a Select component (renders as native <select>)
-    const typeSelect = page.locator("#profile-type, select").first();
+    // The profile type is a Select component (renders as native <select>) with id "profile-type"
+    const typeSelect = page.locator("select#profile-type");
     await expect(typeSelect).toBeVisible({ timeout: 5_000 });
 
-    // Options: Custom Branding, LintPDF Default, Blind (No Branding)
-    const customCount = await page.locator("option", { hasText: /custom/i }).count();
-    const lintpdfCount = await page.locator("option", { hasText: /lintpdf/i }).count();
-    const blindCount = await page.locator("option", { hasText: /blind|no branding|none/i }).count();
-    // At minimum the select should have options
-    const optionCount = await page.locator("option").count();
-
-    expect(customCount > 0 || lintpdfCount > 0 || blindCount > 0 || optionCount >= 2).toBeTruthy();
+    // Options: "Custom Branding", "LintPDF Default", "Blind (No Branding)"
+    await expect(
+      page.locator("select#profile-type option", { hasText: "Custom Branding" }),
+    ).toHaveCount(1);
+    await expect(
+      page.locator("select#profile-type option", { hasText: "LintPDF Default" }),
+    ).toHaveCount(1);
+    await expect(
+      page.locator("select#profile-type option", { hasText: /blind/i }),
+    ).toHaveCount(1);
     await context.close();
   });
 
@@ -387,33 +377,32 @@ test.describe("Branding Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/account/branding");
 
-    await page.getByRole("button", { name: /new profile/i }).click();
-    await page.waitForTimeout(2_000);
+    const newButton = page.getByRole("button", { name: /new profile/i });
+    await expect(newButton).toBeVisible({ timeout: 15_000 });
+    await newButton.click();
 
-    // Custom type is default, so fields should be visible.
-    // Check for brand-name and logo-url inputs, with fallback to text labels
-    const hasBrandName = await page.locator("#brand-name").isVisible().catch(() => false);
-    const hasBrandNameLabel = await page.getByText(/brand name/i).first().isVisible().catch(() => false);
-    expect(hasBrandName || hasBrandNameLabel).toBeTruthy();
+    // Custom type is the default, so custom fields should be visible immediately.
+    // Brand Name input (id="brand-name") and its FormField label
+    await expect(page.locator("#brand-name")).toBeVisible({ timeout: 5_000 });
 
-    const hasLogoUrl = await page.locator("#logo-url").isVisible().catch(() => false);
-    const hasLogoLabel = await page.getByText(/logo/i).first().isVisible().catch(() => false);
-    expect(hasLogoUrl || hasLogoLabel).toBeTruthy();
+    // Logo URL input (id="logo-url")
+    await expect(page.locator("#logo-url")).toBeVisible({ timeout: 5_000 });
 
-    // Color fields — the ColorInput component may render differently
-    const hasPrimaryColor = await page.getByText(/primary color/i).first().isVisible().catch(() => false);
-    const hasAccentColor = await page.getByText(/accent color/i).first().isVisible().catch(() => false);
-    const hasColorInput = await page.locator("input[type='color']").first().isVisible().catch(() => false);
-    expect(hasPrimaryColor || hasAccentColor || hasColorInput).toBeTruthy();
+    // Color fields — FormField labels "Primary Color" and "Accent Color"
+    await expect(
+      page.getByText("Primary Color").first(),
+    ).toBeVisible({ timeout: 5_000 });
+    await expect(
+      page.getByText("Accent Color").first(),
+    ).toBeVisible({ timeout: 5_000 });
 
-    const hasFooterText = await page.locator("#footer-text").isVisible().catch(() => false);
-    const hasFooterLabel = await page.getByText(/footer/i).first().isVisible().catch(() => false);
-    expect(hasFooterText || hasFooterLabel).toBeTruthy();
+    // Footer Text input (id="footer-text")
+    await expect(page.locator("#footer-text")).toBeVisible({ timeout: 5_000 });
 
-    const hasHideFooter = await page.getByText(/hide footer/i).first().isVisible().catch(() => false);
-    // Fallback: at least a checkbox exists in the form
-    const hasCheckbox = await page.locator("input[type='checkbox']").first().isVisible().catch(() => false);
-    expect(hasHideFooter || hasCheckbox).toBeTruthy();
+    // "Hide footer completely" checkbox label
+    await expect(
+      page.getByText(/hide footer completely/i).first(),
+    ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });
 
@@ -422,21 +411,20 @@ test.describe("Branding Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/account/branding");
 
-    await page.getByRole("button", { name: /new profile/i }).click();
-    await page.waitForTimeout(2_000);
+    const newButton = page.getByRole("button", { name: /new profile/i });
+    await expect(newButton).toBeVisible({ timeout: 15_000 });
+    await newButton.click();
+
+    // Wait for the form to appear
+    await expect(
+      page.getByText("New Brand Profile").first(),
+    ).toBeVisible({ timeout: 5_000 });
 
     // The button text is "Create Profile" and is disabled when formName is empty
+    // Button uses disabled={!formName} — formName starts as ""
     const createButton = page.getByRole("button", { name: /create profile/i });
-    const hasCreateButton = await createButton.isVisible({ timeout: 5_000 }).catch(() => false);
-
-    if (hasCreateButton) {
-      await expect(createButton).toBeDisabled();
-    } else {
-      // Fallback: look for any disabled button in the form area
-      const disabledButton = page.locator("button[disabled]").first();
-      const hasDisabled = await disabledButton.isVisible().catch(() => false);
-      expect(hasDisabled).toBeTruthy();
-    }
+    await expect(createButton).toBeVisible({ timeout: 5_000 });
+    await expect(createButton).toBeDisabled();
     await context.close();
   });
 

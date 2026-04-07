@@ -60,11 +60,16 @@ test.describe("Admin Health (/dashboard/admin/health)", () => {
 
     await page.goto("/dashboard/admin/health");
 
-    await page.waitForTimeout(3_000);
+    // Wait for page heading to confirm data loaded
+    await expect(
+      page.locator("main").getByRole("heading", { name: /health|system|status/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
-    const redisStatus = page.getByText(/redis|cache/i).first();
-    const hasRedis = await redisStatus.isVisible().catch(() => false);
-    expect(hasRedis).toBe(true);
+    // Redis status is rendered as <span className="font-medium">Redis</span>
+    // inside a bordered card, with status text below it
+    await expect(
+      page.getByText("Redis").first(),
+    ).toBeVisible({ timeout: 10_000 });
 
     await context.close();
   });

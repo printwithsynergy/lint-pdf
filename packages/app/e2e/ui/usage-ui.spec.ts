@@ -13,19 +13,10 @@ test.describe("Usage Page", () => {
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
     await page.goto("/dashboard/usage");
-    // Heading is "Usage & Limits" on success, or "Usage" on error
-    const hasMainHeading = await page
-      .getByRole("heading", { name: /usage/i })
-      .first()
-      .isVisible({ timeout: 15_000 })
-      .catch(() => false);
-    // Fallback: any text containing "usage" visible on page
-    const hasUsageText = await page
-      .getByText(/usage/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    expect(hasMainHeading || hasUsageText).toBeTruthy();
+    // Heading is "Usage & Limits" on success, or "Usage" on error — both are h1
+    // Use expect().toBeVisible() which auto-retries until timeout
+    const heading = page.getByRole("heading", { name: /usage/i }).first();
+    await expect(heading).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
 
@@ -33,31 +24,16 @@ test.describe("Usage Page", () => {
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
     await page.goto("/dashboard/usage");
-    await page.waitForTimeout(5_000);
+    // Wait for the page heading to confirm data loaded
+    await expect(
+      page.getByRole("heading", { name: /usage/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
-    // The plan is rendered as usage.plan.toUpperCase() inside a Badge component.
-    // The page also renders the word "plan" in the description text.
-    // Plan names can be anything — look for the word "plan" which always appears,
-    // or common plan names, or the Badge component structure.
-    const hasPlanWord = await page
-      .getByText(/plan/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Also check for the billing period description text
-    const hasBillingPeriod = await page
-      .getByText(/billing period/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Fallback: look for any badge element
-    const hasBadge = await page
-      .locator("[class*='badge'], [data-slot='badge']")
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    expect(hasPlanWord || hasBillingPeriod || hasBadge).toBeTruthy();
+    // The description text reads "Current billing period usage for your <Badge>PLAN</Badge> plan."
+    // Match the billing period description which always renders when data loads.
+    await expect(
+      page.getByText(/billing period/i).first(),
+    ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });
 
@@ -65,28 +41,15 @@ test.describe("Usage Page", () => {
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
     await page.goto("/dashboard/usage");
-    await page.waitForTimeout(5_000);
+    // Wait for data to load — the h2 "Job Usage" only renders on success
+    await expect(
+      page.getByRole("heading", { name: /usage/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
-    // Heading is "Job Usage" (h2)
-    const hasJobUsageHeading = await page
-      .getByText(/job usage/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Fallback: look for the jobs progress bar label
-    const hasPreflightJobs = await page
-      .getByText(/preflight jobs/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Fallback: any text with "jobs"
-    const hasJobs = await page
-      .getByText(/jobs/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-
-    expect(hasJobUsageHeading || hasPreflightJobs || hasJobs).toBeTruthy();
+    // The section has an h2 "Job Usage" rendered inside a bordered card
+    await expect(
+      page.getByText("Job Usage").first(),
+    ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });
 
@@ -94,27 +57,19 @@ test.describe("Usage Page", () => {
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
     await page.goto("/dashboard/usage");
-    await page.waitForTimeout(5_000);
+    await expect(
+      page.getByRole("heading", { name: /usage/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
-    const hasPreflightLabel = await page
-      .getByText(/preflight jobs/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Progress bar outer container: div with "h-2 overflow-hidden rounded-full bg-muted" classes
-    const hasProgressBar = await page
-      .locator(".overflow-hidden.rounded-full, [role='progressbar']")
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Fallback: the ProgressBar renders "X / Y jobs" text
-    const hasUsageFormat = await page
-      .getByText(/\d[\d,]*\s*\/\s*\d[\d,]*/)
-      .first()
-      .isVisible()
-      .catch(() => false);
+    // ProgressBar label is "Preflight Jobs" rendered as a span.font-medium
+    await expect(
+      page.getByText("Preflight Jobs").first(),
+    ).toBeVisible({ timeout: 5_000 });
 
-    expect(hasPreflightLabel || hasProgressBar || hasUsageFormat).toBeTruthy();
+    // Progress bar outer container has classes "h-2 overflow-hidden rounded-full bg-muted"
+    await expect(
+      page.locator(".overflow-hidden.rounded-full").first(),
+    ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });
 
@@ -122,27 +77,19 @@ test.describe("Usage Page", () => {
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
     await page.goto("/dashboard/usage");
-    await page.waitForTimeout(5_000);
+    await expect(
+      page.getByRole("heading", { name: /usage/i }).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
-    // Text is "Remaining (included)" with value "X jobs"
-    const hasRemaining = await page
-      .getByText(/remaining/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasJobs = await page
-      .getByText(/jobs/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    // Fallback: look for usage data loaded (the "Job Usage" heading)
-    const hasJobUsage = await page
-      .getByText(/job usage/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
+    // The remaining row renders: "Remaining (included)" label and "X jobs" value
+    await expect(
+      page.getByText(/remaining \(included\)/i).first(),
+    ).toBeVisible({ timeout: 5_000 });
 
-    expect(hasRemaining || hasJobs || hasJobUsage).toBeTruthy();
+    // The value next to it always contains "jobs"
+    await expect(
+      page.getByText(/\d[\d,]*\s+jobs/i).first(),
+    ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });
 

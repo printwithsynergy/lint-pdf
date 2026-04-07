@@ -43,27 +43,19 @@ test.describe("Public Report View", () => {
 
   test("invalid token page shows descriptive error message", async ({ page }) => {
     await page.goto(`${APP_BASE}/view/aaaa-bbbb-cccc-dddd`);
-    await page.waitForTimeout(8_000);
 
-    // The error page shows "Unable to load report" heading (h1 with font-display class)
-    // and "Invalid or expired link" or "This link may be invalid or expired." text
-    const hasError = await page
-      .getByText(/unable to load report/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasMessage = await page
-      .getByText(/invalid|expired|unable|failed|not found|this link/i)
-      .first()
-      .isVisible()
-      .catch(() => false);
-    const hasDestructive = await page
-      .locator(".text-destructive")
-      .first()
-      .isVisible()
-      .catch(() => false);
+    // The error page renders:
+    //   <h1 className="font-display text-xl font-bold text-destructive">Unable to load report</h1>
+    //   <p>Invalid or expired link</p>  (or "This link may be invalid or expired.")
+    // Wait for the error heading to appear (API call may take a few seconds)
+    await expect(
+      page.getByText(/unable to load report/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
 
-    expect(hasError || hasMessage || hasDestructive).toBeTruthy();
+    // The descriptive error message below — either from the thrown Error or fallback text
+    await expect(
+      page.getByText(/invalid.*expired|this link may be/i).first(),
+    ).toBeVisible({ timeout: 5_000 });
   });
 
   test("public view page loads without crashing", async ({ page }) => {
