@@ -1,0 +1,407 @@
+import { test, expect } from "@playwright/test";
+import {
+  authenticateRole,
+  isMcpBackdoorAvailable,
+  getEngineApiKey,
+  getEngineBase,
+  pollJobViaEngine,
+} from "../helpers";
+import { readFileSync, existsSync } from "fs";
+import { resolve } from "path";
+
+const ENGINE_BASE_FALLBACK = "https://engine.lintpdf.com";
+const TEST_PDF = resolve(
+  __dirname,
+  "../../../engine/tests/fixtures/test-sample.pdf",
+);
+
+interface ReportResponse {
+  token?: string;
+  report_id?: string;
+  id?: string;
+  url?: string;
+  format?: string;
+  [key: string]: unknown;
+}
+
+interface ReportListItem {
+  report_id?: string;
+  id?: string;
+  token?: string;
+  format?: string;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+test.describe("Preflight: Report Generation", () => {
+  let engineApiKey: string;
+  let engineBase: string;
+  let sessionToken: string;
+  let completedJobId: string;
+  let reportEndpointAvailable = false;
+
+  test.beforeAll(async ({ request }) => {
+    const available = await isMcpBackdoorAvailable(request);
+    test.skip(!available, "MCP backdoor not enabled");
+    test.skip(!existsSync(TEST_PDF), `Test PDF not found at ${TEST_PDF}`);
+
+    engineApiKey = getEngineApiKey();
+    engineBase = getEngineBase();
+    test.skip(!engineApiKey, "Engine API key not available");
+
+    const auth = await authenticateRole(request, "owner");
+    sessionToken = auth.sessionToken;
+
+    // Submit a job and wait for completion
+    const pdfBuffer = readFileSync(TEST_PDF);
+    const submitRes = await request.post(
+      `${engineBase}/api/v1/jobs/submit`,
+      {
+        headers: { Authorization: `Bearer ${engineApiKey}` },
+        multipart: {
+          file: {
+            name: "test-sample.pdf",
+            mimeType: "application/pdf",
+            buffer: pdfBuffer,
+          },
+          profile_id: "lintpdf-default",
+        },
+      },
+    );
+
+    expect(
+      [200, 201, 202].includes(submitRes.status()),
+      `Submit failed: ${submitRes.status()} ${await submitRes.text()}`,
+    ).toBe(true);
+
+    const submitData = await submitRes.json();
+    completedJobId = submitData.job_id ?? submitData.id;
+    expect(completedJobId).toBeTruthy();
+
+    const result = await pollJobViaEngine(
+      request,
+      completedJobId,
+      engineApiKey,
+      120_000,
+    );
+    test.skip(
+      result.status !== "complete",
+      `Job did not complete: ${result.status}`,
+    );
+
+    // Probe report generation endpoint
+    const probeRes = await request.post(
+      `${engineBase}/api/v1/reports/generate`,
+      {
+        headers: {
+          Authorization: `Bearer ${engineApiKey}`,
+          "Content-Type": "application/json",
+        },
+        data: { job_id: "nonexistent", format: "html" },
+      },
+    );
+    // If we get anything other than a route-level 404, the endpoint exists
+    reportEndpointAvailable =
+      probeRes.status() !== 404 || (await probeRes.text()).toLowerCase().includes("job");
+  });
+
+  test.describe("HTML report generation", () => {
+    let htmlReportToken: string;
+    let htmlReportId: string;
+
+    test("POST /api/v1/reports/generate with format html returns a token", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+
+      const res = await request.post(
+        `${engineBase}/api/v1/reports/generate`,
+        {
+          headers: {
+            Authorization: `Bearer ${engineApiKey}`,
+            "Content-Type": "application/json",
+          },
+          data: {
+            job_id: completedJobId,
+            format: "html",
+          },
+        },
+      );
+
+      if (res.status() === 404 || res.status() === 501) {
+        reportEndpointAvailable = false;
+        test.skip(true, "Report generation not implemented");
+        return;
+      }
+
+      expect(
+        [200, 201, 202].includes(res.status()),
+        `Report generation failed: ${res.status()} ${await res.text()}`,
+      ).toBe(true);
+
+      const data = (await res.json()) as ReportResponse;
+      htmlReportToken = data.token ?? "";
+      htmlReportId = data.report_id ?? data.id ?? "";
+
+      expect(
+        htmlReportToken || htmlReportId,
+        "Report generation returned neither token nor report_id",
+      ).toBeTruthy();
+
+      if (data.format) {
+        expect(data.format).toBe("html");
+      }
+    });
+
+    test("GET /r/{token} returns accessible HTML report (public, no auth)", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+      test.skip(!htmlReportToken, "No HTML report token available");
+
+      const res = await request.get(`${engineBase}/r/${htmlReportToken}`, {
+        headers: {}, // No auth — public endpoint
+      });
+
+      expect(
+        res.ok(),
+        `HTML report not accessible: ${res.status()}`,
+      ).toBe(true);
+
+      const contentType = res.headers()["content-type"] ?? "";
+      expect(
+        contentType.includes("text/html"),
+        `Expected text/html content type, got: ${contentType}`,
+      ).toBe(true);
+
+      const body = await res.text();
+      expect(body.length).toBeGreaterThan(0);
+      // Basic check that it looks like HTML
+      expect(
+        body.includes("<") && body.includes(">"),
+        "Response does not appear to be HTML",
+      ).toBe(true);
+    });
+  });
+
+  test.describe("PDF report generation", () => {
+    let pdfReportToken: string;
+
+    test("POST /api/v1/reports/generate with format pdf returns a token", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+
+      const res = await request.post(
+        `${engineBase}/api/v1/reports/generate`,
+        {
+          headers: {
+            Authorization: `Bearer ${engineApiKey}`,
+            "Content-Type": "application/json",
+          },
+          data: {
+            job_id: completedJobId,
+            format: "pdf",
+          },
+        },
+      );
+
+      if (res.status() === 404 || res.status() === 501) {
+        test.skip(true, "PDF report generation not implemented");
+        return;
+      }
+
+      expect(
+        [200, 201, 202].includes(res.status()),
+        `PDF report generation failed: ${res.status()} ${await res.text()}`,
+      ).toBe(true);
+
+      const data = (await res.json()) as ReportResponse;
+      pdfReportToken = data.token ?? "";
+
+      expect(pdfReportToken, "No token returned for PDF report").toBeTruthy();
+    });
+
+    test("GET /r/{token}.pdf returns accessible PDF report (public)", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+      test.skip(!pdfReportToken, "No PDF report token available");
+
+      const res = await request.get(
+        `${engineBase}/r/${pdfReportToken}.pdf`,
+        {
+          headers: {}, // No auth — public endpoint
+        },
+      );
+
+      expect(
+        res.ok(),
+        `PDF report not accessible: ${res.status()}`,
+      ).toBe(true);
+
+      const contentType = res.headers()["content-type"] ?? "";
+      expect(
+        contentType.includes("application/pdf") ||
+          contentType.includes("application/octet-stream"),
+        `Expected PDF content type, got: ${contentType}`,
+      ).toBe(true);
+
+      const body = await res.body();
+      expect(body.length).toBeGreaterThan(0);
+      // PDF files start with %PDF
+      const header = body.slice(0, 5).toString("utf-8");
+      expect(
+        header.startsWith("%PDF"),
+        `Response does not appear to be a PDF (header: ${header})`,
+      ).toBe(true);
+    });
+  });
+
+  test.describe("Report listing", () => {
+    test("GET /api/v1/jobs/{id}/reports lists reports for job", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+
+      const res = await request.get(
+        `${engineBase}/api/v1/jobs/${completedJobId}/reports`,
+        {
+          headers: { Authorization: `Bearer ${engineApiKey}` },
+        },
+      );
+
+      if (res.status() === 404) {
+        // eslint-disable-next-line no-console
+        console.log("  [INFO] Report listing endpoint not implemented");
+        return;
+      }
+
+      expect(res.ok(), `Report listing failed: ${res.status()}`).toBe(true);
+
+      const data = await res.json();
+      const reports: ReportListItem[] = Array.isArray(data)
+        ? data
+        : data.reports ?? [];
+      expect(Array.isArray(reports)).toBe(true);
+
+      // We generated at least one report above
+      expect(
+        reports.length,
+        "Expected at least one report for the completed job",
+      ).toBeGreaterThan(0);
+
+      for (const report of reports) {
+        const reportId = report.report_id ?? report.id;
+        expect(reportId, "Report missing ID").toBeTruthy();
+
+        if (report.format) {
+          expect(
+            ["html", "pdf"],
+            `Unexpected report format: ${report.format}`,
+          ).toContain(report.format);
+        }
+      }
+    });
+  });
+
+  test.describe("Report revocation", () => {
+    let revokeReportId: string;
+    let revokeToken: string;
+
+    test("generate a report to revoke", async ({ request }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+
+      const res = await request.post(
+        `${engineBase}/api/v1/reports/generate`,
+        {
+          headers: {
+            Authorization: `Bearer ${engineApiKey}`,
+            "Content-Type": "application/json",
+          },
+          data: {
+            job_id: completedJobId,
+            format: "html",
+          },
+        },
+      );
+
+      test.skip(!res.ok(), "Could not generate report for revocation test");
+
+      const data = (await res.json()) as ReportResponse;
+      revokeReportId = data.report_id ?? data.id ?? "";
+      revokeToken = data.token ?? "";
+
+      expect(revokeReportId || revokeToken).toBeTruthy();
+    });
+
+    test("DELETE /api/v1/reports/{report_id} revokes the report", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+      test.skip(!revokeReportId, "No report ID to revoke");
+
+      const res = await request.delete(
+        `${engineBase}/api/v1/reports/${revokeReportId}`,
+        {
+          headers: { Authorization: `Bearer ${engineApiKey}` },
+        },
+      );
+
+      if (res.status() === 404 || res.status() === 501) {
+        // eslint-disable-next-line no-console
+        console.log("  [INFO] Report revocation endpoint not implemented");
+        return;
+      }
+
+      expect(
+        [200, 204].includes(res.status()),
+        `Report revocation failed: ${res.status()} ${await res.text()}`,
+      ).toBe(true);
+    });
+
+    test("GET /r/{revoked_token} returns 404 or 410 after revocation", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+      test.skip(!revokeToken, "No revoked token to check");
+
+      const res = await request.get(`${engineBase}/r/${revokeToken}`, {
+        headers: {}, // No auth — public endpoint
+      });
+
+      expect(
+        [404, 410].includes(res.status()),
+        `Expected 404/410 for revoked report, got ${res.status()}`,
+      ).toBe(true);
+    });
+  });
+
+  test.describe("Report auth rejection", () => {
+    test("POST /api/v1/reports/generate rejects unauthenticated requests", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+
+      const res = await request.post(
+        `${engineBase}/api/v1/reports/generate`,
+        {
+          headers: {
+            Authorization: "",
+            "Content-Type": "application/json",
+          },
+          data: {
+            job_id: completedJobId,
+            format: "html",
+          },
+        },
+      );
+
+      expect(res.ok()).toBe(false);
+      expect(
+        [401, 403].includes(res.status()),
+        `Expected 401/403 for unauthenticated report generation, got ${res.status()}`,
+      ).toBe(true);
+    });
+  });
+});

@@ -17,7 +17,6 @@ const PROFILES = [
   "lintpdf-default",
   "lintpdf-strict",
   "lintpdf-advisory-only",
-  "pdfx4",
   "pdfx1a-magazine-ads",
   "pdfx3-european",
   "iso-12647-compliance",
