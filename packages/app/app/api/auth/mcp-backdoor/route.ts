@@ -70,6 +70,20 @@ export async function POST(req: Request) {
       userAgent: "MCP-Backdoor-Test",
     });
 
+    // Auto-set tenant context: find user's first tenant membership
+    const membership = await prisma.tenantUser.findFirst({
+      where: { userId: user.id },
+      select: { tenantId: true },
+      orderBy: { joinedAt: "desc" },
+    });
+
+    if (membership) {
+      await prisma.session.update({
+        where: { id: session.id },
+        data: { impersonatingTenantId: membership.tenantId },
+      });
+    }
+
     const cookieStore = await cookies();
     cookieStore.set(getCookieName(), session.token, {
       ...getCookieOptions(),
@@ -81,6 +95,7 @@ export async function POST(req: Request) {
       userId: user.id,
       sessionToken: session.token,
       expiresAt: session.expiresAt.toISOString(),
+      tenantId: membership?.tenantId ?? null,
     });
   } catch {
     return NextResponse.json(
