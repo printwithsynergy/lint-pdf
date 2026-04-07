@@ -166,16 +166,13 @@ test.describe("Role: Owner", () => {
     await context.close();
   });
 
-  // The app renders all dashboard pages for all authenticated roles (returns 200).
-  // Access control is enforced at the action/API level, not by blocking page navigation.
-
-  test("admin page loads without error", async ({ browser }) => {
+  test("cannot access admin page (super-admin only)", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/admin", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/admin", { waitUntil: "domcontentloaded" });
+
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });

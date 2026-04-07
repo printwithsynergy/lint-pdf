@@ -173,13 +173,13 @@ test.describe("Role: Operator", () => {
     await context.close();
   });
 
-  test("admin page loads without error", async ({ browser }) => {
+  test("cannot access admin page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "operator");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/admin", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/admin", { waitUntil: "domcontentloaded" });
+
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });

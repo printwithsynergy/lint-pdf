@@ -144,7 +144,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
           body.height !== undefined ||
           body.pageNumber !== undefined ||
           body.info !== undefined;
-        expect(hasPageInfo || true).toBe(true);
+        expect(hasPageInfo).toBe(true);
       }
     });
 

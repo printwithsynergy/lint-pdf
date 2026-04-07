@@ -201,35 +201,35 @@ test.describe("Role: Viewer", () => {
     await context.close();
   });
 
-  test("account branding page loads without error", async ({ browser }) => {
+  test("cannot access account branding page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/account/branding", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/account/branding", { waitUntil: "domcontentloaded" });
+
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
 
-  test("admin page loads without error", async ({ browser }) => {
+  test("cannot access admin page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/admin", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/admin", { waitUntil: "domcontentloaded" });
+
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
 
-  test("admin tenants page loads without error", async ({ browser }) => {
+  test("cannot access admin tenants page", async ({ browser }) => {
     const { context } = await createRoleContext(browser, APP_BASE, "viewer");
     const page = await context.newPage();
 
-    const response = await page.goto("/dashboard/admin/tenants", { waitUntil: "domcontentloaded" });
-    expect(response?.status() ?? 0).toBeLessThan(500);
-    expect(page.url()).not.toContain("/auth/login");
+    await page.goto("/dashboard/admin/tenants", { waitUntil: "domcontentloaded" });
+
+    expect(page.url()).toMatch(/\/dashboard\/?$/);
 
     await context.close();
   });
