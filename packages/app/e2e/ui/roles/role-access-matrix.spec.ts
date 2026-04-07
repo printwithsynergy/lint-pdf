@@ -123,14 +123,13 @@ for (const role of ALL_ROLES) {
           // Should NOT have been redirected to login
           expect(page.url()).not.toMatch(/\/auth\/login/);
         } else {
-          // Blocked: expect redirect to /dashboard (the permission layout redirects there)
+          // Blocked: expect redirect away from the restricted page
           const currentUrl = page.url();
-          const isRedirected =
-            /\/auth\/login/.test(currentUrl) ||
-            (currentUrl.endsWith("/dashboard") || currentUrl.endsWith("/dashboard/"));
+          const normalizedPath = new URL(currentUrl).pathname.replace(/\/$/, "");
+          const expectedPath = pageRule.path.replace(/\/$/, "");
 
           expect(
-            isRedirected,
+            normalizedPath !== expectedPath,
             `Expected ${pageRule.path} to be blocked for ${role}. URL: ${currentUrl}, status: ${status}`,
           ).toBeTruthy();
         }

@@ -135,8 +135,9 @@ test.describe("Role: Viewer", () => {
 
     await page.goto("/dashboard/team/invite", { waitUntil: "domcontentloaded" });
 
-    // Should be redirected to /dashboard by the permission layout
-    expect(page.url()).toMatch(/\/dashboard\/?$/);
+    // Should be redirected away from /dashboard/team/invite
+    // Permission layout redirects to /dashboard, page redirect goes to /dashboard/team
+    expect(page.url()).not.toContain("/team/invite");
 
     await context.close();
   });

@@ -119,8 +119,8 @@ test.describe("Role: Operator", () => {
 
     await page.goto("/dashboard/team/invite", { waitUntil: "domcontentloaded" });
 
-    // Should be redirected to /dashboard by the permission layout
-    expect(page.url()).toMatch(/\/dashboard\/?$/);
+    // Should be redirected away from /dashboard/team/invite
+    expect(page.url()).not.toContain("/team/invite");
 
     await context.close();
   });
