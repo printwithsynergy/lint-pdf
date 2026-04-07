@@ -71,17 +71,23 @@ export async function POST(req: Request) {
     });
 
     // Auto-set tenant context: find user's first tenant membership
-    const membership = await prisma.tenantUser.findFirst({
-      where: { userId: user.id },
-      select: { tenantId: true },
-      orderBy: { joinedAt: "desc" },
-    });
-
-    if (membership) {
-      await prisma.session.update({
-        where: { id: session.id },
-        data: { impersonatingTenantId: membership.tenantId },
+    let tenantId: string | null = null;
+    try {
+      const membership = await prisma.tenantUser.findFirst({
+        where: { userId: user.id },
+        select: { tenantId: true },
+        orderBy: { joinedAt: "desc" },
       });
+      if (membership) {
+        tenantId = membership.tenantId;
+        // Set impersonatingTenantId on the session so plugin routes have tenant context
+        await prisma.session.update({
+          where: { token: session.token },
+          data: { impersonatingTenantId: membership.tenantId },
+        });
+      }
+    } catch {
+      // Column may not exist yet — skip silently
     }
 
     const cookieStore = await cookies();
@@ -95,7 +101,7 @@ export async function POST(req: Request) {
       userId: user.id,
       sessionToken: session.token,
       expiresAt: session.expiresAt.toISOString(),
-      tenantId: membership?.tenantId ?? null,
+      tenantId,
     });
   } catch {
     return NextResponse.json(
