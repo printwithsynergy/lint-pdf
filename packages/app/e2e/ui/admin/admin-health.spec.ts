@@ -16,7 +16,7 @@ test.describe("Admin Health (/dashboard/admin/health)", () => {
     await page.goto("/dashboard/admin/health");
 
     await expect(
-      page.getByRole("heading", { name: /health|system|status/i }),
+      page.locator("main").getByRole("heading", { name: /health|system|status/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
 
     await context.close();
@@ -104,7 +104,7 @@ test.describe("Admin Health (/dashboard/admin/health)", () => {
 
     // Page should still show health heading after refresh
     await expect(
-      page.getByRole("heading", { name: /health|system|status/i }),
+      page.locator("main").getByRole("heading", { name: /health|system|status/i }).first(),
     ).toBeVisible();
 
     await context.close();

@@ -6,7 +6,7 @@ test.describe("Login Page", () => {
 
     // Default heading when no custom branding is set
     await expect(
-      page.getByRole("heading", { name: /welcome back/i }),
+      page.getByRole("heading", { name: /welcome back/i }).first(),
     ).toBeVisible();
   });
 

@@ -21,7 +21,7 @@ test.describe("Admin Hub (/dashboard/admin)", () => {
       await page.goto("/dashboard/admin");
 
       await expect(
-        page.getByRole("heading", { name: /site administration/i }),
+        page.locator("main").getByRole("heading", { name: /site administration/i }).first(),
       ).toBeVisible({ timeout: 15_000 });
 
       await context.close();

@@ -16,7 +16,7 @@ test.describe("Admin Jobs (/dashboard/admin/jobs)", () => {
     await page.goto("/dashboard/admin/jobs");
 
     await expect(
-      page.getByRole("heading", { name: /jobs/i }),
+      page.locator("main").getByRole("heading", { name: /jobs/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
 
     await context.close();

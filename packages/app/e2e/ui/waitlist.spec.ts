@@ -14,7 +14,7 @@ test.describe("Waitlist Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/waitlist");
     await expect(
-      page.getByRole("heading", { name: /waitlist/i }),
+      page.locator("main").getByRole("heading", { name: /waitlist/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });

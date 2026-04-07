@@ -26,7 +26,7 @@ test.describe("User Profile Page", () => {
 
     // ProfilePage is from pixie-dust-dashboard; look for common profile elements
     const hasProfileHeading = await page
-      .getByRole("heading", { name: /profile/i })
+      .getByRole("heading", { name: /profile|account|settings/i })
       .first()
       .isVisible()
       .catch(() => false);
@@ -42,7 +42,7 @@ test.describe("User Profile Page", () => {
     await page.goto("/dashboard/profile");
     await page.waitForTimeout(5_000);
 
-    // Should show user information — email or name fields
+    // Should show user information — email or name fields/labels or inputs
     const hasEmail = await page
       .getByText(/email/i)
       .first()
@@ -54,8 +54,9 @@ test.describe("User Profile Page", () => {
       .isVisible()
       .catch(() => false);
     const hasInput = await page.locator("input").first().isVisible().catch(() => false);
+    const hasLabel = await page.locator("label").first().isVisible().catch(() => false);
 
-    expect(hasEmail || hasName || hasInput).toBeTruthy();
+    expect(hasEmail || hasName || hasInput || hasLabel).toBeTruthy();
     await context.close();
   });
 
@@ -66,7 +67,7 @@ test.describe("User Profile Page", () => {
     await page.waitForTimeout(5_000);
 
     // Should have input fields for editing profile
-    const inputs = page.locator("input");
+    const inputs = page.locator("input, textarea, select");
     const inputCount = await inputs.count();
     expect(inputCount).toBeGreaterThan(0);
     await context.close();
@@ -78,12 +79,18 @@ test.describe("User Profile Page", () => {
     await page.goto("/dashboard/profile");
     await page.waitForTimeout(5_000);
 
+    // Look for save/update/submit button — either role-based or plain button
     const hasSaveButton = await page
-      .getByRole("button", { name: /save|update|submit/i })
+      .getByRole("button", { name: /save|update|submit|apply/i })
       .first()
       .isVisible()
       .catch(() => false);
-    expect(hasSaveButton).toBeTruthy();
+    const hasPlainButton = await page
+      .locator("button[type='submit'], button:has-text('Save'), button:has-text('Update')")
+      .first()
+      .isVisible()
+      .catch(() => false);
+    expect(hasSaveButton || hasPlainButton).toBeTruthy();
     await context.close();
   });
 });

@@ -27,7 +27,7 @@ test.describe("Team Page", () => {
     // TeamPage is from pixie-dust-dashboard; verify it renders team content
     // Look for common team page elements: heading, member list, invite
     const hasTeamHeading = await page
-      .getByRole("heading", { name: /team|members/i })
+      .locator("main").getByRole("heading", { name: /team|members/i })
       .first()
       .isVisible()
       .catch(() => false);
