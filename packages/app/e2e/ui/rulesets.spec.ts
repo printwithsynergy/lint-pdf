@@ -14,7 +14,7 @@ test.describe("Rulesets Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/rulesets");
     await expect(
-      page.getByRole("heading", { name: /rulesets/i }),
+      page.locator("main").getByRole("heading", { name: /rulesets/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -34,7 +34,7 @@ test.describe("Rulesets Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/rulesets");
     await expect(
-      page.getByRole("heading", { name: /built-in rulesets/i }),
+      page.locator("main").getByRole("heading", { name: /built-in rulesets/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(
       page.getByText(/pre-configured profiles provided by lintpdf/i),
@@ -148,7 +148,7 @@ test.describe("Rulesets Page", () => {
     await page.goto("/dashboard/rulesets");
     await page.waitForTimeout(3_000);
 
-    const customSection = page.getByRole("heading", { name: /custom rulesets/i });
+    const customSection = page.locator("main").getByRole("heading", { name: /custom rulesets/i }).first();
     const hasCustom = await customSection.isVisible().catch(() => false);
     if (hasCustom) {
       // Custom profiles should have delete buttons
@@ -164,7 +164,7 @@ test.describe("Rulesets Page", () => {
     await page.goto("/dashboard/rulesets");
     await page.waitForTimeout(3_000);
 
-    const customSection = page.getByRole("heading", { name: /custom rulesets/i });
+    const customSection = page.locator("main").getByRole("heading", { name: /custom rulesets/i }).first();
     const hasCustom = await customSection.isVisible().catch(() => false);
     if (hasCustom) {
       const deleteButton = customSection.locator("..").getByRole("button", { name: /delete/i }).first();

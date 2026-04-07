@@ -14,7 +14,7 @@ test.describe("Preflight Jobs Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/preflight");
     await expect(
-      page.getByRole("heading", { name: /preflight jobs/i }),
+      page.locator("main").getByRole("heading", { name: /preflight jobs/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });

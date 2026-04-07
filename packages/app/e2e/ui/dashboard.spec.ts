@@ -26,7 +26,7 @@ test.describe("Dashboard", () => {
 
       // Should show dashboard heading
       await expect(
-        page.getByRole("heading", { name: /dashboard/i }),
+        page.locator("main").getByRole("heading", { name: /dashboard/i }).first(),
       ).toBeVisible({ timeout: 15_000 });
 
       await context.close();
@@ -53,7 +53,7 @@ test.describe("Dashboard", () => {
       await page.goto("/dashboard");
 
       await expect(
-        page.getByRole("heading", { name: /your organizations/i }),
+        page.locator("main").getByRole("heading", { name: /your organizations/i }).first(),
       ).toBeVisible({ timeout: 15_000 });
 
       await context.close();

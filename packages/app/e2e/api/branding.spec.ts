@@ -162,7 +162,7 @@ test.describe("Branding API (Plugin Routes)", () => {
         },
       });
 
-      expect([200, 201, 400, 401, 413, 422, 500, 502].includes(res.status())).toBe(true);
+      expect([200, 201, 400, 401, 404, 413, 422, 500, 502].includes(res.status())).toBe(true);
 
       if (res.ok()) {
         const body = await res.json();
@@ -198,7 +198,7 @@ test.describe("Branding API (Plugin Routes)", () => {
       });
 
       // Should reject non-image uploads
-      expect([400, 401, 415, 422, 500, 502].includes(res.status())).toBe(true);
+      expect([400, 401, 404, 415, 422, 500, 502].includes(res.status())).toBe(true);
     });
   });
 

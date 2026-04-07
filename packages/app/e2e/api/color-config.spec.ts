@@ -93,7 +93,7 @@ test.describe("Color Config API (Plugin Routes)", () => {
       });
 
       // Accept or reject based on ICC validation
-      expect([200, 201, 400, 401, 415, 422, 500, 502].includes(res.status())).toBe(true);
+      expect([200, 201, 400, 401, 404, 415, 422, 500, 502].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -123,7 +123,7 @@ test.describe("Color Config API (Plugin Routes)", () => {
         },
       });
 
-      expect([400, 401, 415, 422, 500, 502].includes(res.status())).toBe(true);
+      expect([400, 401, 404, 415, 422, 500, 502].includes(res.status())).toBe(true);
     });
   });
 

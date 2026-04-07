@@ -135,7 +135,7 @@ for (const role of ALL_ROLES) {
           expect(page.url()).not.toMatch(/\/auth\/login/);
 
           // Should not show an explicit "Unauthorized" or "Forbidden" heading
-          const unauthorizedHeading = page.getByRole("heading", { name: /unauthorized|forbidden|access denied/i });
+          const unauthorizedHeading = page.locator("main").getByRole("heading", { name: /unauthorized|forbidden|access denied/i }).first();
           await expect(unauthorizedHeading).not.toBeVisible({ timeout: 3_000 }).catch(() => {
             // Some pages may not have a heading at all — that's fine for "allowed"
           });

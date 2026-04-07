@@ -14,7 +14,7 @@ test.describe("Usage Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/usage");
     await expect(
-      page.getByRole("heading", { name: /usage & limits/i }),
+      page.locator("main").getByRole("heading", { name: /usage & limits/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -39,7 +39,7 @@ test.describe("Usage Page", () => {
     await page.waitForTimeout(3_000);
 
     await expect(
-      page.getByRole("heading", { name: /job usage/i }),
+      page.locator("main").getByRole("heading", { name: /job usage/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -89,7 +89,7 @@ test.describe("Usage Page", () => {
     await page.goto("/dashboard/usage");
     await page.waitForTimeout(3_000);
 
-    const overageHeading = page.getByRole("heading", { name: /overage/i });
+    const overageHeading = page.locator("main").getByRole("heading", { name: /overage/i }).first();
     const hasOverage = await overageHeading.isVisible().catch(() => false);
     if (hasOverage) {
       await expect(page.getByText(/overage cost/i)).toBeVisible();

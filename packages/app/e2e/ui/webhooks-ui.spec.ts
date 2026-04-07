@@ -14,7 +14,7 @@ test.describe("Webhooks Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/webhooks");
     await expect(
-      page.getByRole("heading", { name: /webhooks/i }),
+      page.locator("main").getByRole("heading", { name: /webhooks/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -63,7 +63,7 @@ test.describe("Webhooks Page", () => {
     await page.getByRole("button", { name: /add webhook/i }).first().click();
 
     await expect(
-      page.getByRole("heading", { name: /new webhook/i }),
+      page.locator("main").getByRole("heading", { name: /new webhook/i }).first(),
     ).toBeVisible({ timeout: 5_000 });
     await expect(page.locator("#webhook-url")).toBeVisible();
     await context.close();

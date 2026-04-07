@@ -14,7 +14,7 @@ test.describe("Custom Endpoints Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/endpoints");
     await expect(
-      page.getByRole("heading", { name: /custom api endpoints/i }),
+      page.locator("main").getByRole("heading", { name: /custom api endpoints/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -56,7 +56,7 @@ test.describe("Custom Endpoints Page", () => {
 
     // Create form should appear
     await expect(
-      page.getByRole("heading", { name: /new custom endpoint/i }),
+      page.locator("main").getByRole("heading", { name: /new custom endpoint/i }).first(),
     ).toBeVisible({ timeout: 5_000 });
     await context.close();
   });

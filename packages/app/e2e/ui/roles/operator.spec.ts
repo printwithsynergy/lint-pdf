@@ -19,7 +19,7 @@ test.describe("Role: Operator", () => {
     const slug = getTestTenantSlug();
 
     await page.goto(`/dashboard/${slug}`);
-    await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -29,7 +29,7 @@ test.describe("Role: Operator", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/preflight");
-    await expect(page.getByRole("heading", { name: /preflight/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /preflight/i }).first()).toBeVisible({ timeout: 15_000 });
 
     // Operator should be able to submit preflight jobs
     const uploadIndicator = page.locator(
@@ -47,7 +47,7 @@ test.describe("Role: Operator", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/rulesets");
-    await expect(page.getByRole("heading", { name: /ruleset/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /ruleset/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -57,7 +57,7 @@ test.describe("Role: Operator", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/endpoints");
-    await expect(page.getByRole("heading", { name: /endpoint/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /endpoint/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -67,7 +67,7 @@ test.describe("Role: Operator", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/usage");
-    await expect(page.getByRole("heading", { name: /usage/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /usage/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -77,7 +77,7 @@ test.describe("Role: Operator", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/reports");
-    await expect(page.getByRole("heading", { name: /report/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /report/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -87,7 +87,7 @@ test.describe("Role: Operator", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/profile");
-    await expect(page.getByRole("heading", { name: /profile/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /profile/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });

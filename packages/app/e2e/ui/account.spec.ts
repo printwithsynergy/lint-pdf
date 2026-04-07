@@ -14,7 +14,7 @@ test.describe("Account Settings Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/account");
     await expect(
-      page.getByRole("heading", { name: /account settings/i }),
+      page.locator("main").getByRole("heading", { name: /account settings/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -115,7 +115,7 @@ test.describe("AI Configuration Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/account/ai");
     await expect(
-      page.getByRole("heading", { name: /ai configuration/i }),
+      page.locator("main").getByRole("heading", { name: /ai configuration/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -127,7 +127,7 @@ test.describe("AI Configuration Page", () => {
     await page.waitForTimeout(3_000);
 
     await expect(
-      page.getByRole("heading", { name: /ai categories/i }),
+      page.locator("main").getByRole("heading", { name: /ai categories/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/barcode detection/i)).toBeVisible();
     await expect(page.getByText(/regulatory label compliance/i)).toBeVisible();
@@ -145,7 +145,7 @@ test.describe("AI Configuration Page", () => {
     await page.waitForTimeout(3_000);
 
     await expect(
-      page.getByRole("heading", { name: /ai credits/i }),
+      page.locator("main").getByRole("heading", { name: /ai credits/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/used:/i)).toBeVisible();
     await expect(page.getByText(/limit:/i)).toBeVisible();
@@ -159,7 +159,7 @@ test.describe("AI Configuration Page", () => {
     await page.waitForTimeout(3_000);
 
     await expect(
-      page.getByRole("heading", { name: /custom dictionary/i }),
+      page.locator("main").getByRole("heading", { name: /custom dictionary/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.locator("textarea")).toBeVisible();
     await context.close();
@@ -187,7 +187,7 @@ test.describe("Branding Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/account/branding");
     await expect(
-      page.getByRole("heading", { name: /brand profiles/i }),
+      page.locator("main").getByRole("heading", { name: /brand profiles/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -212,7 +212,7 @@ test.describe("Branding Page", () => {
     await newButton.click();
 
     await expect(
-      page.getByRole("heading", { name: /new brand profile/i }),
+      page.locator("main").getByRole("heading", { name: /new brand profile/i }).first(),
     ).toBeVisible({ timeout: 5_000 });
     await expect(page.locator("#profile-name")).toBeVisible();
     await expect(page.locator("#profile-type")).toBeVisible();
@@ -317,7 +317,7 @@ test.describe("Color Management Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/account/color");
     await expect(
-      page.getByRole("heading", { name: /color management/i }),
+      page.locator("main").getByRole("heading", { name: /color management/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -329,7 +329,7 @@ test.describe("Color Management Page", () => {
     await page.waitForTimeout(3_000);
 
     await expect(
-      page.getByRole("heading", { name: /output condition/i }),
+      page.locator("main").getByRole("heading", { name: /output condition/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     // Should have a select dropdown with "None" option
     await expect(page.getByText(/none \(no gamut checking\)/i)).toBeAttached();
@@ -343,7 +343,7 @@ test.describe("Color Management Page", () => {
     await page.waitForTimeout(3_000);
 
     await expect(
-      page.getByRole("heading", { name: /default thresholds/i }),
+      page.locator("main").getByRole("heading", { name: /default thresholds/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/tac limit/i)).toBeVisible();
     await expect(page.getByText(/safety zone margin/i)).toBeVisible();
@@ -359,7 +359,7 @@ test.describe("Color Management Page", () => {
     await page.waitForTimeout(3_000);
 
     await expect(
-      page.getByRole("heading", { name: /pantone color overrides/i }),
+      page.locator("main").getByRole("heading", { name: /pantone color overrides/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     // Should have Add Override and Import CSV buttons
     await expect(page.getByRole("button", { name: /add override/i })).toBeVisible();

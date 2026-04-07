@@ -14,7 +14,7 @@ test.describe("Reports Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/reports");
     await expect(
-      page.getByRole("heading", { name: /reports/i }),
+      page.locator("main").getByRole("heading", { name: /reports/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });

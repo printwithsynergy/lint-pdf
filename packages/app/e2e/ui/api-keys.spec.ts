@@ -14,7 +14,7 @@ test.describe("API Keys Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/api-keys");
     await expect(
-      page.getByRole("heading", { name: /api keys/i }),
+      page.locator("main").getByRole("heading", { name: /api keys/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -67,7 +67,7 @@ test.describe("API Keys Page", () => {
 
     // Create form should appear
     await expect(
-      page.getByRole("heading", { name: /new api key/i }),
+      page.locator("main").getByRole("heading", { name: /new api key/i }).first(),
     ).toBeVisible({ timeout: 5_000 });
     await expect(page.locator("#key-label")).toBeVisible();
     await context.close();

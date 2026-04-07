@@ -62,7 +62,9 @@ test.describe("Auth API", () => {
       expect([200, 401, 500].includes(meRes.status())).toBe(true);
 
       if (meRes.status() === 200) {
-        const user = await meRes.json();
+        const body = await meRes.json();
+        // Response may be { id, email } or { user: { id, email } } or { authenticated, user: { id } }
+        const user = body.user ?? body;
         expect(user.id).toBe(auth.userId);
         expect(user.email).toBeTruthy();
       }

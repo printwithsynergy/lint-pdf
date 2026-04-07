@@ -14,7 +14,7 @@ test.describe("Billing Page", () => {
     const page = await context.newPage();
     await page.goto("/dashboard/billing");
     await expect(
-      page.getByRole("heading", { name: /billing & plan/i }),
+      page.locator("main").getByRole("heading", { name: /billing & plan/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await context.close();
   });
@@ -71,11 +71,11 @@ test.describe("Billing Page", () => {
 
     await expect(page.getByText(/compare plans/i)).toBeVisible({ timeout: 15_000 });
     // All 5 plan tiers should be shown
-    await expect(page.getByRole("heading", { name: /free/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /starter/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /growth/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /scale/i })).toBeVisible();
-    await expect(page.getByRole("heading", { name: /enterprise/i })).toBeVisible();
+    await expect(page.locator("main").getByRole("heading", { name: /free/i }).first()).toBeVisible();
+    await expect(page.locator("main").getByRole("heading", { name: /starter/i }).first()).toBeVisible();
+    await expect(page.locator("main").getByRole("heading", { name: /growth/i }).first()).toBeVisible();
+    await expect(page.locator("main").getByRole("heading", { name: /scale/i }).first()).toBeVisible();
+    await expect(page.locator("main").getByRole("heading", { name: /enterprise/i }).first()).toBeVisible();
     await context.close();
   });
 

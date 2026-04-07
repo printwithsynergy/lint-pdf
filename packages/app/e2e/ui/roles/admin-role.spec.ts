@@ -19,7 +19,7 @@ test.describe("Role: Admin", () => {
     const slug = getTestTenantSlug();
 
     await page.goto(`/dashboard/${slug}`);
-    await expect(page.getByRole("heading", { name: /dashboard/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /dashboard/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -29,7 +29,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/team");
-    await expect(page.getByRole("heading", { name: /team/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /team/i }).first()).toBeVisible({ timeout: 15_000 });
 
     // Admin should see management controls (invite button, role selectors, etc.)
     const managementControls = page.locator(
@@ -47,7 +47,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/team/invite");
-    await expect(page.getByRole("heading", { name: /invite|add member/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /invite|add member/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -57,7 +57,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/billing");
-    await expect(page.getByRole("heading", { name: /billing|subscription|plan/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /billing|subscription|plan/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -67,7 +67,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/api-keys");
-    await expect(page.getByRole("heading", { name: /api key/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /api key/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -77,7 +77,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/preflight");
-    await expect(page.getByRole("heading", { name: /preflight/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /preflight/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -87,7 +87,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/rulesets");
-    await expect(page.getByRole("heading", { name: /ruleset/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /ruleset/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -97,7 +97,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/webhooks");
-    await expect(page.getByRole("heading", { name: /webhook/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /webhook/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -107,7 +107,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/account/settings");
-    await expect(page.getByRole("heading", { name: /settings/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /settings/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -117,7 +117,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/account/branding");
-    await expect(page.getByRole("heading", { name: /branding/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /branding/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -127,7 +127,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/account/ai");
-    await expect(page.getByRole("heading", { name: /ai/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /ai/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
@@ -137,7 +137,7 @@ test.describe("Role: Admin", () => {
     const page = await context.newPage();
 
     await page.goto("/dashboard/endpoints");
-    await expect(page.getByRole("heading", { name: /endpoint/i })).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator("main").getByRole("heading", { name: /endpoint/i }).first()).toBeVisible({ timeout: 15_000 });
 
     await context.close();
   });
