@@ -17,6 +17,8 @@ import { getClientInfo } from "@/lib/auth-helpers";
 const requestSchema = z.object({
   email: z.string().email(),
   mcpSecretKey: z.string().min(1),
+  tenantSlug: z.string().optional(),
+  role: z.enum(["OWNER", "ADMIN", "OPERATOR", "MEMBER", "VIEWER"]).optional(),
 });
 
 export async function POST(req: Request) {
@@ -35,7 +37,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { email, mcpSecretKey } = parsed.data;
+    const { email, mcpSecretKey, tenantSlug, role } = parsed.data;
     const mcpKey = env.MCP_SECRET_KEY;
 
     if (!mcpKey) {
@@ -70,20 +72,62 @@ export async function POST(req: Request) {
       userAgent: "MCP-Backdoor-Test",
     });
 
-    // Auto-set tenant context: find user's first tenant membership
+    // Handle tenant membership: create/update if tenantSlug provided, else find existing
     let tenantId: string | null = null;
     try {
-      const membership = await prisma.tenantUser.findFirst({
-        where: { userId: user.id },
-        select: { tenantId: true },
-        orderBy: { joinedAt: "desc" },
-      });
-      if (membership) {
-        tenantId = membership.tenantId;
-        // Set impersonatingTenantId on the session so plugin routes have tenant context
+      if (tenantSlug) {
+        // Find or create tenant by slug
+        let tenant = await prisma.tenant.findUnique({
+          where: { slug: tenantSlug },
+        });
+        if (!tenant) {
+          tenant = await prisma.tenant.create({
+            data: {
+              name: tenantSlug,
+              slug: tenantSlug,
+            },
+          });
+        }
+        tenantId = tenant.id;
+
+        // Upsert tenant membership with requested role
+        const memberRole = role ?? "MEMBER";
+        const existing = await prisma.tenantUser.findUnique({
+          where: { userId_tenantId: { userId: user.id, tenantId: tenant.id } },
+        });
+        if (existing) {
+          if (existing.role !== memberRole) {
+            await prisma.tenantUser.update({
+              where: { id: existing.id },
+              data: { role: memberRole },
+            });
+          }
+        } else {
+          await prisma.tenantUser.create({
+            data: {
+              userId: user.id,
+              tenantId: tenant.id,
+              role: memberRole,
+            },
+          });
+        }
+      } else {
+        // No slug provided — find user's first existing membership
+        const membership = await prisma.tenantUser.findFirst({
+          where: { userId: user.id },
+          select: { tenantId: true },
+          orderBy: { joinedAt: "desc" },
+        });
+        if (membership) {
+          tenantId = membership.tenantId;
+        }
+      }
+
+      // Set impersonatingTenantId on the session so plugin routes have tenant context
+      if (tenantId) {
         await prisma.session.update({
           where: { token: session.token },
-          data: { impersonatingTenantId: membership.tenantId },
+          data: { impersonatingTenantId: tenantId },
         });
       }
     } catch {

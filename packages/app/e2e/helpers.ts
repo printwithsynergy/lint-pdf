@@ -16,6 +16,7 @@ export interface McpAuthResult {
   userId: string;
   sessionToken: string;
   expiresAt: string;
+  tenantId?: string;
 }
 
 /**
@@ -25,10 +26,16 @@ export interface McpAuthResult {
 export async function authenticateViaMcpBackdoor(
   request: APIRequestContext,
   email: string = DEFAULT_TEST_EMAIL,
+  options?: { tenantSlug?: string; role?: string },
 ): Promise<McpAuthResult> {
   for (let attempt = 0; attempt < 5; attempt++) {
     const res = await request.post("/api/auth/mcp-backdoor", {
-      data: { email, mcpSecretKey: MCP_SECRET_KEY },
+      data: {
+        email,
+        mcpSecretKey: MCP_SECRET_KEY,
+        ...(options?.tenantSlug ? { tenantSlug: options.tenantSlug } : {}),
+        ...(options?.role ? { role: options.role } : {}),
+      },
       headers: { "Content-Type": "application/json" },
     });
 
@@ -145,6 +152,17 @@ const ROLE_EMAILS: Record<TestRole, string> = {
   viewer: "viewer@e2e.lintpdf.com",
 };
 
+const ROLE_TO_TENANT_ROLE: Record<TestRole, string> = {
+  "super-admin": "OWNER",
+  owner: "OWNER",
+  admin: "ADMIN",
+  operator: "OPERATOR",
+  member: "MEMBER",
+  viewer: "VIEWER",
+};
+
+const TEST_TENANT_SLUG = "e2e-test-org";
+
 /**
  * Get email for a specific test role.
  */
@@ -161,7 +179,28 @@ export async function createRoleContext(
   role: TestRole,
 ) {
   const email = ROLE_EMAILS[role];
-  return createAuthenticatedContext(browser, baseURL, email);
+  const context = await browser.newContext({ baseURL });
+  const request = context.request;
+
+  const auth = await authenticateViaMcpBackdoor(request, email, {
+    tenantSlug: TEST_TENANT_SLUG,
+    role: ROLE_TO_TENANT_ROLE[role],
+  });
+
+  const url = new URL(baseURL);
+  await context.addCookies([
+    {
+      name: "pixie-dust-session",
+      value: auth.sessionToken,
+      domain: url.hostname,
+      path: "/",
+      httpOnly: true,
+      secure: url.protocol === "https:",
+      sameSite: "Lax",
+    },
+  ]);
+
+  return { context, auth };
 }
 
 /**
@@ -171,7 +210,10 @@ export async function authenticateRole(
   request: APIRequestContext,
   role: TestRole,
 ): Promise<McpAuthResult> {
-  return authenticateViaMcpBackdoor(request, ROLE_EMAILS[role]);
+  return authenticateViaMcpBackdoor(request, ROLE_EMAILS[role], {
+    tenantSlug: TEST_TENANT_SLUG,
+    role: ROLE_TO_TENANT_ROLE[role],
+  });
 }
 
 // ---------- Engine helpers ----------
