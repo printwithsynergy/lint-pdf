@@ -7,6 +7,7 @@
  * 4. Creates a test tenant and assigns roles
  * 5. Generates engine API keys and persists them
  */
+import "../proxy-setup";
 import { request as pwRequest } from "@playwright/test";
 import { writeFileSync } from "fs";
 import { resolve } from "path";
@@ -17,6 +18,22 @@ const MCP_SECRET_KEY = process.env.MCP_SECRET_KEY ?? "";
 const RAILWAY_TOKEN = process.env.RAILWAY_TOKEN ?? "";
 const RAILWAY_PROJECT_ID = process.env.RAILWAY_LINTPDF ?? "5da33de4-8f03-4700-baa6-69a72518b52d";
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY ?? "";
+const RAW_PROXY = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "";
+
+function parseProxy(url: string) {
+  if (!url) return undefined;
+  try {
+    const u = new URL(url);
+    return {
+      server: `${u.protocol}//${u.hostname}:${u.port}`,
+      username: decodeURIComponent(u.username) || undefined,
+      password: decodeURIComponent(u.password) || undefined,
+    };
+  } catch {
+    return { server: url };
+  }
+}
+const PROXY = parseProxy(RAW_PROXY);
 
 const STATE_FILE = resolve(__dirname, "../.test-state.json");
 
@@ -151,17 +168,27 @@ async function mcpAuth(
   email: string,
 ): Promise<{ userId: string; sessionToken: string }> {
   const key = process.env.MCP_SECRET_KEY ?? MCP_SECRET_KEY;
-  const res = await ctx.post(`${APP_BASE}/api/auth/mcp-backdoor`, {
-    data: { email, mcpSecretKey: key },
-  });
 
-  if (!res.ok()) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await ctx.post(`${APP_BASE}/api/auth/mcp-backdoor`, {
+      data: { email, mcpSecretKey: key },
+    });
+
+    if (res.ok()) {
+      const data = await res.json();
+      return { userId: data.userId, sessionToken: data.sessionToken };
+    }
+
+    if (res.status() === 429 && attempt < 4) {
+      await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+      continue;
+    }
+
     const body = await res.text();
     throw new Error(`MCP auth failed for ${email} (${res.status()}): ${body}`);
   }
 
-  const data = await res.json();
-  return { userId: data.userId, sessionToken: data.sessionToken };
+  throw new Error(`MCP auth failed for ${email} after retries`);
 }
 
 async function promoteAdmin(
@@ -187,7 +214,7 @@ async function globalSetup() {
   // Step 0: Enable MCP backdoor on Railway
   await enableMcpBackdoor();
 
-  const ctx = await pwRequest.newContext({ baseURL: APP_BASE, ignoreHTTPSErrors: true });
+  const ctx = await pwRequest.newContext({ baseURL: APP_BASE, ignoreHTTPSErrors: true, ...(PROXY ? { proxy: PROXY } : {}) });
 
   const users: TestState["users"] = {};
   const emails: Record<string, string> = {
@@ -229,6 +256,7 @@ async function globalSetup() {
       const createCtx = await pwRequest.newContext({
         baseURL: APP_BASE,
         ignoreHTTPSErrors: true,
+        ...(PROXY ? { proxy: PROXY } : {}),
         extraHTTPHeaders: {
           Cookie: `pixie-dust-session=${users["super-admin"].sessionToken}`,
         },
@@ -271,6 +299,7 @@ async function globalSetup() {
     const adminCtx = await pwRequest.newContext({
       baseURL: APP_BASE,
       ignoreHTTPSErrors: true,
+      ...(PROXY ? { proxy: PROXY } : {}),
       extraHTTPHeaders: {
         Cookie: `pixie-dust-session=${users["super-admin"].sessionToken}`,
       },

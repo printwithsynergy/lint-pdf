@@ -20,6 +20,7 @@ export function middleware(request: NextRequest) {
       rateLimitExemptPaths: [
         "/api/auth/magic-link/status",
         "/api/auth/claim-session",
+        "/api/auth/mcp-backdoor",
       ],
     },
     {

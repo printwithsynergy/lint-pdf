@@ -26,17 +26,26 @@ export async function authenticateViaMcpBackdoor(
   request: APIRequestContext,
   email: string = DEFAULT_TEST_EMAIL,
 ): Promise<McpAuthResult> {
-  const res = await request.post("/api/auth/mcp-backdoor", {
-    data: { email, mcpSecretKey: MCP_SECRET_KEY },
-    headers: { "Content-Type": "application/json" },
-  });
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await request.post("/api/auth/mcp-backdoor", {
+      data: { email, mcpSecretKey: MCP_SECRET_KEY },
+      headers: { "Content-Type": "application/json" },
+    });
 
-  if (!res.ok()) {
+    if (res.ok()) {
+      return res.json() as Promise<McpAuthResult>;
+    }
+
+    if (res.status() === 429 && attempt < 4) {
+      await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+      continue;
+    }
+
     const body = await res.text();
     throw new Error(`MCP backdoor auth failed (${res.status()}): ${body}`);
   }
 
-  return res.json() as Promise<McpAuthResult>;
+  throw new Error("MCP backdoor auth failed after retries");
 }
 
 /**

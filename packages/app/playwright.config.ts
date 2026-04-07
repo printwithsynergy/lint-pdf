@@ -6,8 +6,21 @@ const isLocal = !hasAppUrl && hasDb;
 const APP_BASE = process.env.APP_BASE_URL || (isLocal ? "http://localhost:3001" : "https://app.lintpdf.com");
 
 // Support HTTP proxy for sandboxed environments
-const proxyServer = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
-const proxyConfig = proxyServer ? { proxy: { server: proxyServer } } : {};
+const rawProxy = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "";
+function parseProxy(url: string) {
+  if (!url) return undefined;
+  try {
+    const u = new URL(url);
+    return {
+      server: `${u.protocol}//${u.hostname}:${u.port}`,
+      username: decodeURIComponent(u.username) || undefined,
+      password: decodeURIComponent(u.password) || undefined,
+    };
+  } catch {
+    return { server: url };
+  }
+}
+const proxyConfig = rawProxy ? { proxy: parseProxy(rawProxy) } : {};
 
 export default defineConfig({
   testDir: "./e2e",
