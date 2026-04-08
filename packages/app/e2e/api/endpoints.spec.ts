@@ -3,7 +3,10 @@ import { authenticateRole, isMcpBackdoorAvailable } from "../helpers";
 
 const APP_BASE = process.env.APP_BASE_URL ?? "https://app.lintpdf.com";
 
-test.describe("Custom Endpoints API (Plugin Routes)", () => {
+// Serial mode: the POST creates an endpoint and stores its id in a closure
+// variable that PATCH/DELETE/list tests depend on. Running in parallel caused
+// PATCH/DELETE to race ahead of POST and skip with "No endpoint was created".
+test.describe.serial("Custom Endpoints API (Plugin Routes)", () => {
   let sessionToken: string;
   let createdEndpointId: string | null = null;
 
@@ -21,24 +24,28 @@ test.describe("Custom Endpoints API (Plugin Routes)", () => {
 
   test.describe("POST /api/lintpdf/endpoints", () => {
     test("creates a custom endpoint", async ({ request }) => {
+      // The plugin is a thin proxy over POST /api/v1/endpoints — the engine
+      // expects snake_case fields (``slug``, ``profile_id``) and rejects
+      // unknown camelCase payloads with 422. See
+      // ``packages/engine/src/lintpdf/api/routes/endpoints.py``.
       const res = await request.post(`${APP_BASE}/api/lintpdf/endpoints`, {
         headers: headers(),
         data: {
+          slug: `e2e-endpoint-${Date.now()}`,
           name: `E2E Endpoint ${Date.now()}`,
           description: "Test endpoint created by E2E tests",
-          profileId: null,
-          webhookUrl: "https://example.com/webhook",
-          active: true,
+          profile_id: "lintpdf-default",
         },
       });
 
-      expect([200, 201, 400, 401, 422, 500, 502].includes(res.status())).toBe(true);
+      expect(
+        [200, 201].includes(res.status()),
+        `Create endpoint failed: ${res.status()} ${await res.text()}`,
+      ).toBe(true);
 
-      if (res.ok()) {
-        const body = await res.json();
-        createdEndpointId = (body.id ?? body.endpoint?.id) as string;
-        expect(createdEndpointId).toBeTruthy();
-      }
+      const body = await res.json();
+      createdEndpointId = (body.id ?? body.endpoint?.id) as string;
+      expect(createdEndpointId).toBeTruthy();
     });
 
     test("returns 400 for missing required fields", async ({ request }) => {

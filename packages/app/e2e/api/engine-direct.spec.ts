@@ -512,25 +512,30 @@ test.describe("Engine Direct API", () => {
 
   // ---------- Endpoints CRUD ----------
 
-  test.describe("Endpoints CRUD (/api/v1/endpoints)", () => {
+  // Serial mode: POST populates ``createdEndpointId`` for PATCH/DELETE.
+  test.describe.serial("Endpoints CRUD (/api/v1/endpoints)", () => {
     let createdEndpointId: string | null = null;
 
     test("POST creates an endpoint", async ({ request }) => {
+      // Engine requires snake_case ``slug`` and ``profile_id`` — see
+      // ``packages/engine/src/lintpdf/api/routes/endpoints.py``.
       const res = await request.post(`${ENGINE_BASE}/api/v1/endpoints`, {
         headers: bearerHeaders(),
         data: {
+          slug: `e2e-engine-${Date.now()}`,
           name: `E2E Engine Endpoint ${Date.now()}`,
-          webhookUrl: "https://example.com/engine-webhook",
-          active: true,
+          profile_id: "lintpdf-default",
         },
       });
 
-      expect([200, 201, 400, 422, 500].includes(res.status())).toBe(true);
+      expect(
+        [200, 201].includes(res.status()),
+        `Create endpoint failed: ${res.status()} ${await res.text()}`,
+      ).toBe(true);
 
-      if (res.ok()) {
-        const body = await res.json();
-        createdEndpointId = (body.id ?? body.endpoint?.id) as string;
-      }
+      const body = await res.json();
+      createdEndpointId = (body.id ?? body.endpoint?.id) as string;
+      expect(createdEndpointId).toBeTruthy();
     });
 
     test("GET lists endpoints", async ({ request }) => {

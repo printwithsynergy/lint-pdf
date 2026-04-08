@@ -170,29 +170,44 @@ test.describe("Profiles API (Plugin Routes)", () => {
     });
 
     test("cannot delete built-in profiles", async ({ request }) => {
-      // List profiles to find a built-in one
+      // List profiles to find a built-in one. Engine returns snake_case
+      // fields — see ``api/routes/profiles.py:ProfileResponse``.
       const listRes = await request.get(`${APP_BASE}/api/lintpdf/profiles`, {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
 
       const listBody = await listRes.json().catch(() => ({ profiles: [] }));
-      const profiles = listBody.profiles ?? [];
+      const profiles = Array.isArray(listBody)
+        ? listBody
+        : listBody.profiles ?? [];
       const builtIn = profiles.find(
         (p: Record<string, unknown>) =>
-          p.builtIn === true || p.isDefault === true || p.system === true,
+          p.is_builtin === true ||
+          p.builtIn === true ||
+          p.isDefault === true ||
+          p.system === true,
       );
 
-      test.skip(!builtIn, "No built-in profile found to test delete rejection");
+      expect(
+        builtIn,
+        "Expected engine to return at least one built-in profile",
+      ).toBeTruthy();
+
+      const builtInId = (builtIn.profile_id ?? builtIn.id) as string;
+      expect(builtInId).toBeTruthy();
 
       const res = await request.delete(
-        `${APP_BASE}/api/lintpdf/profiles/${builtIn.id}`,
+        `${APP_BASE}/api/lintpdf/profiles/${builtInId}`,
         {
           headers: { Cookie: `pixie-dust-session=${sessionToken}` },
         },
       );
 
       // Should reject deletion of built-in profiles
-      expect([400, 401, 403, 409, 422, 500, 502].includes(res.status())).toBe(true);
+      expect(
+        [400, 401, 403, 409, 422, 500, 502].includes(res.status()),
+        `Expected deletion rejection, got ${res.status()}`,
+      ).toBe(true);
     });
   });
 });
