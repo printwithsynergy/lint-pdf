@@ -20,7 +20,7 @@ function engineFetch(path: string, init?: RequestInit): Promise<Response> {
     "Content-Type": "application/json",
     ...(init?.headers as Record<string, string> | undefined),
   };
-  const apiKey = process.env.LINTPDF_ADMIN_API_KEY ?? process.env.LINTPDF_API_KEY;
+  const apiKey = process.env.LINTPDF_API_KEY;
   if (apiKey) {
     headers["Authorization"] = `Bearer ${apiKey}`;
   }

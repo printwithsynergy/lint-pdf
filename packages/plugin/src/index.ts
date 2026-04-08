@@ -76,15 +76,15 @@ export function setPluginDb(db: unknown): void {
  * Returns the engine UUID or falls back to the cuid if no mapping exists.
  */
 export async function resolveEngineTenantId(tenantId: string): Promise<string> {
-  if (!_pluginDb) return tenantId;
+  if (!_pluginDb) return process.env.ENGINE_ADMIN_TENANT_ID ?? tenantId;
   try {
     const tenant = await _pluginDb.tenant.findUnique({
       where: { id: tenantId },
       select: { engineTenantId: true },
     });
-    return tenant?.engineTenantId ?? tenantId;
+    return tenant?.engineTenantId ?? process.env.ENGINE_ADMIN_TENANT_ID ?? tenantId;
   } catch {
-    return tenantId;
+    return process.env.ENGINE_ADMIN_TENANT_ID ?? tenantId;
   }
 }
 
