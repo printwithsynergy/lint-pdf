@@ -17,6 +17,7 @@ export function middleware(request: NextRequest) {
   const result = evaluateMiddleware(
     {
       cookieName: appConfig.cookieName,
+      publicPaths: ["/view"],
       rateLimitExemptPaths: [
         "/api/auth/magic-link/status",
         "/api/auth/claim-session",
