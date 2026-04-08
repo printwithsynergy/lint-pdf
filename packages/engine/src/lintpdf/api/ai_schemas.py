@@ -6,9 +6,21 @@ import uuid  # noqa: TC003
 from datetime import datetime  # noqa: TC003
 from decimal import Decimal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 
 # --- AI Config schemas ---
+
+
+def _decimal_to_float(value: Decimal | None) -> float | None:
+    """Serialise ``Decimal`` fields as JSON numbers, not strings.
+
+    Pydantic v2 emits ``Decimal`` as a string by default to preserve precision,
+    but our public API contract is "credit_balance is a number". Currency-grade
+    precision is preserved via ``Numeric(12, 2)`` in the database; the response
+    layer just converts to float so clients can do arithmetic without first
+    parsing a string.
+    """
+    return None if value is None else float(value)
 
 
 class AIConfigResponse(BaseModel):
@@ -34,6 +46,19 @@ class AIConfigResponse(BaseModel):
     min_image_quality_score: int
     delta_e_warning_threshold: Decimal
     delta_e_error_threshold: Decimal
+
+    @field_serializer(
+        "credit_balance",
+        "overage_rate",
+        "monthly_spending_limit",
+        "default_safe_zone_mm",
+        "default_package_capacity_ml",
+        "default_package_surface_area_cm2",
+        "delta_e_warning_threshold",
+        "delta_e_error_threshold",
+    )
+    def _serialize_decimal(self, value: Decimal | None) -> float | None:
+        return _decimal_to_float(value)
 
 
 class AIConfigUpdateRequest(BaseModel):
@@ -111,6 +136,10 @@ class CreditBalanceResponse(BaseModel):
     package_credits_remaining: int
     monthly_spent: Decimal
     monthly_spending_limit: Decimal | None = None
+
+    @field_serializer("credit_balance", "monthly_spent", "monthly_spending_limit")
+    def _serialize_decimal(self, value: Decimal | None) -> float | None:
+        return _decimal_to_float(value)
 
 
 class CreditTopupRequest(BaseModel):

@@ -64,6 +64,14 @@ class CheckConfig(BaseModel):
         default_factory=dict,
         description='Map of check ID to severity override (e.g. {"LPDF_IMG_002": "ignore"}).',
     )
+    max_severity: str | None = Field(
+        default=None,
+        description=(
+            'Cap every finding severity at this value (one of "error", '
+            '"warning", "advisory"). Used by non-blocking profiles such as '
+            "lintpdf-advisory-only. ``None`` leaves severities untouched."
+        ),
+    )
     per_check: dict[str, PerCheckConfig] = Field(
         default_factory=dict,
         description="Per-check configuration with conditional overrides.",

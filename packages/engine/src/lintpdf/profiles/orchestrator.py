@@ -17,6 +17,21 @@ if TYPE_CHECKING:
     from lintpdf.profiles.schema import PreflightProfile
 
 
+# Higher rank = more severe. Used by ``CheckConfig.max_severity`` to cap
+# findings to a maximum severity (e.g. lintpdf-advisory-only caps everything
+# at advisory).
+_SEVERITY_RANK: dict[Severity, int] = {
+    Severity.ADVISORY: 0,
+    Severity.WARNING: 1,
+    Severity.ERROR: 2,
+}
+
+
+def _severity_rank(sev: Severity) -> int:
+    """Numeric ordering for severity comparison."""
+    return _SEVERITY_RANK.get(sev, 0)
+
+
 @dataclass(frozen=True)
 class PreflightSummary:
     """Summary statistics for a preflight run."""
@@ -477,6 +492,32 @@ class PreflightOrchestrator:
                     source=finding.source,
                     category=finding.category,
                 )
+
+            # Profile-wide severity cap (e.g. lintpdf-advisory-only forces all
+            # findings down to "advisory"). Applied last so per-check overrides
+            # are still capped if they exceed the ceiling.
+            cap = self._plan.checks.max_severity
+            if cap:
+                try:
+                    cap_sev = Severity(cap)
+                except ValueError:
+                    cap_sev = None
+                if cap_sev is not None and _severity_rank(finding.severity) > _severity_rank(
+                    cap_sev
+                ):
+                    finding = Finding(
+                        inspection_id=finding.inspection_id,
+                        severity=cap_sev,
+                        message=finding.message,
+                        page_num=finding.page_num,
+                        details=finding.details,
+                        iso_clause=finding.iso_clause,
+                        object_id=finding.object_id,
+                        object_type=finding.object_type,
+                        bbox=finding.bbox,
+                        source=finding.source,
+                        category=finding.category,
+                    )
 
             result.append(finding)
 
