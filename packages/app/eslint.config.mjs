@@ -11,7 +11,7 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig = [
-  { ignores: [".next/**", "dist/**"] },
+  { ignores: [".next/**", "dist/**", "playwright-report/**", "test-results/**"] },
   ...compat.extends("next/core-web-vitals"),
   pluginSecurity.configs.recommended,
 ];
