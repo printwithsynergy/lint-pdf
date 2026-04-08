@@ -146,27 +146,38 @@ test.describe("Preflight: Viewer Integration", () => {
       expect(res.ok(), `Page info failed: ${res.status()}`).toBe(true);
       const info = await res.json();
 
-      // Page info should contain dimensional data
+      // Page info should contain dimensional data. The engine returns
+      // ``width_pts``/``height_pts`` (matches the PageInfo Pydantic model
+      // and the app's components/viewer/types.ts contract).
       expect(info).toBeTruthy();
-      if (info.width !== undefined) {
-        expect(typeof info.width).toBe("number");
-        expect(info.width).toBeGreaterThan(0);
+      const width = info.width_pts ?? info.width;
+      const height = info.height_pts ?? info.height;
+      if (width !== undefined) {
+        expect(typeof width).toBe("number");
+        expect(width).toBeGreaterThan(0);
       }
-      if (info.height !== undefined) {
-        expect(typeof info.height).toBe("number");
-        expect(info.height).toBeGreaterThan(0);
+      if (height !== undefined) {
+        expect(typeof height).toBe("number");
+        expect(height).toBeGreaterThan(0);
       }
-      // Media box and trim box may be present
-      if (info.media_box ?? info.mediaBox) {
-        const mediaBox = info.media_box ?? info.mediaBox;
-        expect(Array.isArray(mediaBox)).toBe(true);
-        expect(mediaBox.length).toBe(4);
-      }
-      if (info.trim_box ?? info.trimBox) {
-        const trimBox = info.trim_box ?? info.trimBox;
-        expect(Array.isArray(trimBox)).toBe(true);
-        expect(trimBox.length).toBe(4);
-      }
+      // Media/trim/crop/bleed boxes are returned as typed PageBox objects
+      // ``{x0, y0, x1, y1}`` (not 4-element arrays). This matches the
+      // PageBox interface in packages/app/components/viewer/types.ts.
+      const checkBox = (box: unknown, label: string): void => {
+        if (box == null) return;
+        expect(typeof box, `${label} should be an object`).toBe("object");
+        const b = box as Record<string, number>;
+        expect(typeof b.x0).toBe("number");
+        expect(typeof b.y0).toBe("number");
+        expect(typeof b.x1).toBe("number");
+        expect(typeof b.y1).toBe("number");
+        expect(b.x1).toBeGreaterThan(b.x0);
+        expect(b.y1).toBeGreaterThan(b.y0);
+      };
+      checkBox(info.media_box ?? info.mediaBox, "media_box");
+      checkBox(info.trim_box ?? info.trimBox, "trim_box");
+      checkBox(info.crop_box ?? info.cropBox, "crop_box");
+      checkBox(info.bleed_box ?? info.bleedBox, "bleed_box");
     });
   });
 

@@ -6,6 +6,7 @@ import hashlib
 import io
 import logging
 import re
+import uuid as uuid_mod
 from typing import Any
 
 import pikepdf
@@ -74,7 +75,18 @@ def _get_job_pdf(
     db: Session,
 ) -> tuple[Job, bytes]:
     """Fetch the job and its original PDF bytes from storage."""
-    job = db.query(Job).filter(Job.id == job_id, Job.tenant_id == tenant.id).first()
+    # Job.id is a UUID column — pre-validate the parameter so a malformed
+    # path like ``/jobs/nonexistent-job-id-000/...`` returns 404 instead of
+    # bubbling up an SQLAlchemy cast error as a 500.
+    try:
+        job_uuid = uuid_mod.UUID(job_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found",
+        ) from exc
+
+    job = db.query(Job).filter(Job.id == job_uuid, Job.tenant_id == tenant.id).first()
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     if job.status != JobStatus.COMPLETE:
@@ -92,6 +104,28 @@ def _get_job_pdf(
             detail="Could not retrieve original PDF from storage",
         ) from exc
     return job, pdf_bytes
+
+
+def _validate_page_num(pdf_bytes: bytes, page_num: int) -> None:
+    """Raise 404 if ``page_num`` is out of range for this PDF.
+
+    Done before calling renderers so an out-of-range page returns a clean
+    404 rather than a 503 from the rendering backend's "Failed to render
+    page" RuntimeError.
+    """
+    try:
+        with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+            page_count = len(pdf.pages)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Could not read PDF",
+        ) from exc
+    if page_num < 1 or page_num > page_count:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Page {page_num} not found (PDF has {page_count} pages)",
+        )
 
 
 def _extract_box(page: Any, name: str) -> PageBox | None:
@@ -174,6 +208,7 @@ async def get_page_tile(
     Tiles are cached in S3 — subsequent requests serve the cached version.
     """
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
     cache_key = _tile_cache_key(str(tenant.id), str(job.id), page_num, dpi)
 
@@ -272,6 +307,7 @@ async def get_separation_channel(
     from lintpdf.reports.separation_renderer import render_separation_channel
 
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
     cache_key = _channel_cache_key(str(tenant.id), str(job.id), page_num, dpi, channel_name)
 
@@ -318,6 +354,7 @@ async def get_tac_heatmap(
     from lintpdf.reports.separation_renderer import render_tac_heatmap
 
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
     cache_key = _tac_cache_key(str(tenant.id), str(job.id), page_num, dpi)
 
