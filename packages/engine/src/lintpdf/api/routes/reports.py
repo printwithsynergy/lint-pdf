@@ -335,44 +335,14 @@ async def revoke_report(
 
 
 # --- Public endpoints (token-based, no auth) ---
-
-
-@router.get("/r/{token}")
-async def serve_html_report(
-    token: str,
-    db: Session = Depends(get_db),
-) -> Response:
-    """Serve an interactive HTML report by token (public, no auth)."""
-    from datetime import datetime, timezone
-
-    record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
-    if record is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
-
-    if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
-        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Report has expired.")
-
-    if record.format != "html":
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="HTML report not found for this token.",
-        )
-
-    # Increment access count
-    record.accessed_count += 1
-    record.last_accessed_at = datetime.now(timezone.utc)
-    db.commit()
-
-    # Fetch from storage (run in thread to avoid blocking event loop)
-    from lintpdf.api.storage import get_storage
-
-    storage = get_storage()
-    loop = asyncio.get_running_loop()
-    content = await loop.run_in_executor(
-        None, storage.download_report, str(record.tenant_id), str(record.job_id), "html"
-    )
-
-    return HTMLResponse(content=content)
+#
+# IMPORTANT: the PDF route must be registered BEFORE the HTML route.
+# Starlette matches routes in declaration order, and the ``{token}`` path
+# converter is greedy (matches any non-slash characters, including dots).
+# If ``/r/{token}`` comes first, a request for ``/r/abc.pdf`` captures
+# ``token='abc.pdf'`` and 404s because the DB stores ``abc``. Declaring the
+# ``.pdf``-suffixed route first lets Starlette try the specific pattern
+# before falling back to the catch-all.
 
 
 @router.get("/r/{token}.pdf")
@@ -417,3 +387,41 @@ async def serve_pdf_report(
         media_type="application/pdf",
         headers={"Content-Disposition": f'{disposition}; filename="report.pdf"'},
     )
+
+
+@router.get("/r/{token}")
+async def serve_html_report(
+    token: str,
+    db: Session = Depends(get_db),
+) -> Response:
+    """Serve an interactive HTML report by token (public, no auth)."""
+    from datetime import datetime, timezone
+
+    record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
+    if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Report has expired.")
+
+    if record.format != "html":
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="HTML report not found for this token.",
+        )
+
+    # Increment access count
+    record.accessed_count += 1
+    record.last_accessed_at = datetime.now(timezone.utc)
+    db.commit()
+
+    # Fetch from storage (run in thread to avoid blocking event loop)
+    from lintpdf.api.storage import get_storage
+
+    storage = get_storage()
+    loop = asyncio.get_running_loop()
+    content = await loop.run_in_executor(
+        None, storage.download_report, str(record.tenant_id), str(record.job_id), "html"
+    )
+
+    return HTMLResponse(content=content)

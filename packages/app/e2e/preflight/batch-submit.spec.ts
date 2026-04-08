@@ -64,6 +64,10 @@ async function pollBatch(
   throw new Error(`Batch ${batchId} did not complete within ${maxWaitMs}ms`);
 }
 
+// Serial mode: tests share closure state (batchId, batchResult) across
+// describe boundaries; parallel workers would each see undefined state.
+test.describe.configure({ mode: "serial" });
+
 test.describe("Preflight: Batch Submit", () => {
   let engineApiKey: string;
   let engineBase: string;

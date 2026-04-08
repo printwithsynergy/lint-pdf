@@ -245,6 +245,11 @@ async def submit_batch(
 
     job_infos: list[BatchJobInfo] = []
     job_ids: list[str] = []
+    # Collect (job_id, file_key) pairs so we can queue tasks AFTER commit.
+    # Queueing before commit is racy: a worker may pick up the task and
+    # query the DB before the row is visible, causing the job to silently
+    # never run.
+    pending_queue: list[tuple[str, str]] = []
 
     for upload in files:
         # Each file counts against the rate limit individually.
@@ -285,11 +290,7 @@ async def submit_batch(
         except Exception:
             logger.debug("Failed to cache PDF in Redis — worker will use storage")
 
-        run_preflight.apply_async(
-            args=[str(job_id), profile_id, file_key],
-            queue=queue_name,
-        )
-
+        pending_queue.append((str(job_id), file_key))
         job_ids.append(str(job_id))
         job_infos.append(
             BatchJobInfo(
@@ -300,6 +301,14 @@ async def submit_batch(
         )
 
     db.commit()
+
+    # Queue Celery tasks only after the DB transaction commits, so that
+    # the worker is guaranteed to see the row when it loads the job.
+    for queued_job_id, queued_file_key in pending_queue:
+        run_preflight.apply_async(
+            args=[queued_job_id, profile_id, queued_file_key],
+            queue=queue_name,
+        )
 
     _store_batch(batch_id, str(tenant.id), job_ids)
 

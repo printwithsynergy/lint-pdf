@@ -42,6 +42,10 @@ interface ReportListItem {
   [key: string]: unknown;
 }
 
+// Serial mode: tests share closure state (completedJobId, tokens) and must
+// run in a single worker so the state persists across describe boundaries.
+test.describe.configure({ mode: "serial" });
+
 test.describe("Preflight: Report Generation", () => {
   let engineApiKey: string;
   let engineBase: string;

@@ -20,6 +20,10 @@ interface CustomEndpoint {
   profile_id: string;
 }
 
+// Serial mode: tests share the createdEndpoint across describe boundaries —
+// parallel workers would each start without it and skip.
+test.describe.configure({ mode: "serial" });
+
 test.describe("Preflight: Custom Endpoint Submit", () => {
   let engineApiKey: string;
   let engineBase: string;
