@@ -135,11 +135,11 @@ export function getTestTenantId(): string {
 }
 
 export function getEngineApiKey(): string {
-  return loadTestState()?.engineApiKey ?? process.env.ENGINE_API_KEY ?? "";
+  return loadTestState()?.engineApiKey || process.env.ENGINE_API_KEY || "";
 }
 
 export function getAdminApiKey(): string {
-  return loadTestState()?.adminApiKey ?? process.env.ADMIN_API_KEY ?? "";
+  return loadTestState()?.adminApiKey || process.env.ADMIN_API_KEY || "";
 }
 
 // ---------- Role-specific auth ----------

@@ -99,7 +99,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
 
       test.skip(jobs.length === 0, "No existing jobs to test detail endpoint");
 
-      const jobId = jobs[0].id ?? jobs[0].jobId;
+      const jobId = jobs[0].job_id ?? jobs[0].id ?? jobs[0].jobId;
       const res = await request.get(`${APP_BASE}/api/lintpdf/jobs/${jobId}`, {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
       });
@@ -107,7 +107,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
       expect([200, 401, 403, 404, 422, 500, 502].includes(res.status())).toBe(true);
       if (res.status() === 200) {
         const body = await res.json();
-        expect(body).toHaveProperty("id");
+        expect(body.job_id ?? body.id).toBeTruthy();
         expect(body).toHaveProperty("status");
       }
     });

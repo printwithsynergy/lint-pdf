@@ -77,9 +77,9 @@ test.describe("Webhooks Page", () => {
     await page.getByRole("button", { name: /add webhook/i }).first().click();
     await page.waitForTimeout(1_000);
 
-    // Should show event checkboxes
-    await expect(page.getByText("job.completed")).toBeVisible({ timeout: 5_000 });
-    await expect(page.getByText("job.failed")).toBeVisible();
+    // Should show event checkboxes (use .first() since existing webhooks may also display these event names)
+    await expect(page.getByText("job.completed").first()).toBeVisible({ timeout: 5_000 });
+    await expect(page.getByText("job.failed").first()).toBeVisible();
 
     // Checkboxes should be checked by default
     const completedCheckbox = page.locator("input[type='checkbox']").first();

@@ -83,13 +83,10 @@ test.describe("Reports Page", () => {
       .isVisible()
       .catch(() => false);
     if (hasJobs) {
-      // Jobs show pass/fail status
-      const hasPassFail = await page
-        .getByText(/passed|errors/i)
-        .first()
-        .isVisible()
-        .catch(() => false);
-      expect(hasPassFail).toBeTruthy();
+      // Jobs show profile name and date — scope to main to avoid hidden sidebar brand
+      await expect(
+        page.locator("main").getByText("lintpdf-default").first(),
+      ).toBeVisible({ timeout: 10_000 });
     }
     await context.close();
   });

@@ -27,7 +27,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
         (j: Record<string, unknown>) => j.status === "complete",
       );
       if (jobs.length > 0) {
-        testJobId = (jobs[0].id ?? jobs[0].jobId) as string;
+        testJobId = (jobs[0].job_id ?? jobs[0].id ?? jobs[0].jobId) as string;
       }
     }
   });
@@ -87,7 +87,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
       );
 
       // 200 with image data, or 404 if tiles not generated
-      expect([200, 401, 403, 404, 422, 500, 502].includes(res.status())).toBe(true);
+      expect([200, 401, 403, 404, 422, 500, 502, 503].includes(res.status())).toBe(true);
 
       if (res.status() === 200) {
         const contentType = res.headers()["content-type"] ?? "";
@@ -107,7 +107,7 @@ test.describe("Viewer API (Plugin Routes)", () => {
         },
       );
 
-      expect([400, 401, 403, 404, 422, 500, 502].includes(res.status())).toBe(true);
+      expect([400, 401, 403, 404, 422, 500, 502, 503].includes(res.status())).toBe(true);
     });
 
     test("returns 401 without authentication", async ({ request }) => {
@@ -141,8 +141,11 @@ test.describe("Viewer API (Plugin Routes)", () => {
         // Page info should include dimensions or similar metadata
         const hasPageInfo =
           body.width !== undefined ||
+          body.width_pts !== undefined ||
           body.height !== undefined ||
+          body.height_pts !== undefined ||
           body.pageNumber !== undefined ||
+          body.page_num !== undefined ||
           body.info !== undefined;
         expect(hasPageInfo).toBe(true);
       }

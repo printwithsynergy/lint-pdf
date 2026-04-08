@@ -27,7 +27,7 @@ test.describe("Annotations API (Plugin Routes)", () => {
         (j: Record<string, unknown>) => j.status === "complete",
       );
       if (jobs.length > 0) {
-        testJobId = (jobs[0].id ?? jobs[0].jobId) as string;
+        testJobId = (jobs[0].job_id ?? jobs[0].id ?? jobs[0].jobId) as string;
       }
     }
   });
