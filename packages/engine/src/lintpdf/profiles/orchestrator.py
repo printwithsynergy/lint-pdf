@@ -6,6 +6,7 @@ analyzer execution, conformance validation, and finding filtering.
 
 from __future__ import annotations
 
+import fnmatch
 import time
 import uuid
 from dataclasses import dataclass
@@ -242,7 +243,13 @@ class PreflightOrchestrator:
         events: list[Any],
         pdf_bytes: bytes,
     ) -> list[Finding]:
-        """Run AI analyzers if AI is enabled in the profile."""
+        """Run AI analyzers if AI is enabled in the profile.
+
+        Always emits a single ``AI_SCAN_001`` advisory marker when at least
+        one AI analyzer ran (even if all of them returned zero findings) so
+        the report contains an audit trail of the AI scan and so callers
+        can detect "AI ran" by filtering for ``source == 'ai'``.
+        """
         import logging
 
         logger = logging.getLogger(__name__)
@@ -261,16 +268,45 @@ class PreflightOrchestrator:
                 return []
 
             ai_findings: list[Finding] = []
+            ran_categories: set[str] = set()
+            ran_features: list[str] = []
             for analyzer in analyzers:
                 try:
                     findings = analyzer.analyze(document, events, pdf_bytes, self._ai_config)
                     ai_findings.extend(findings)
+                    ran_categories.add(analyzer.category)
+                    ran_features.append(analyzer.feature_slug)
                 except Exception:
                     logger.exception(
                         "AI analyzer %s.%s failed",
                         analyzer.category,
                         analyzer.feature_slug,
                     )
+
+            # Emit an audit-trail marker so the report records that the AI
+            # pipeline ran. Users (and the E2E test contract) can rely on
+            # ``source == 'ai'`` being present whenever AI was enabled.
+            if ran_features:
+                ai_findings.append(
+                    Finding(
+                        inspection_id="AI_SCAN_001",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"AI scan completed: ran {len(ran_features)} "
+                            f"analyzer(s) across {len(ran_categories)} "
+                            f"category(ies); emitted {len(ai_findings)} "
+                            "finding(s)."
+                        ),
+                        page_num=0,
+                        details={
+                            "categories": sorted(ran_categories),
+                            "features": ran_features,
+                            "findings_count": len(ai_findings),
+                        },
+                        source="ai",
+                        category="ai_scan",
+                    )
+                )
 
             return ai_findings
 
@@ -425,7 +461,22 @@ class PreflightOrchestrator:
         total_pages = self._page_count if hasattr(self, "_page_count") else 0
 
         for finding in findings:
-            if not self._plan.is_check_enabled(finding.inspection_id):
+            # AI findings (source == "ai") are gated separately by
+            # ``profile.ai.enabled`` and use ``AI_*`` inspection IDs that
+            # would never match the default ``LPDF_*`` enabled patterns.
+            # Exempt them from the pattern filter so they actually surface
+            # when AI is enabled. ``checks.disabled`` and
+            # ``severity_overrides[id] == "ignore"`` still apply via the
+            # explicit ``is_check_enabled`` checks below.
+            if finding.source == "ai":
+                if any(
+                    fnmatch.fnmatch(finding.inspection_id, pattern)
+                    for pattern in self._plan.checks.disabled
+                ):
+                    continue
+                if self._plan.checks.severity_overrides.get(finding.inspection_id) == "ignore":
+                    continue
+            elif not self._plan.is_check_enabled(finding.inspection_id):
                 continue
 
             # Per-check disabled
