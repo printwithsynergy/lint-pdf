@@ -177,6 +177,24 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
     },
     {
       method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/interpretation",
+      auth: true,
+      permission: "preflight:view",
+      description:
+        "Get AI interpretation for a job (proxies to engine captains-log)",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/captains-log/${req.params.jobId}/interpret`),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
       path: "/viewer/:jobId/pages/:pageNum/tac-heatmap",
       auth: true,
       permission: "preflight:view",
