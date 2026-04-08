@@ -162,12 +162,30 @@ async def _extract_batch_form(
     uploads: list[UploadFile] = []
     profile_id = "lintpdf-default"
 
-    for key, value in form.multi_items():
-        if key == "profile_id" and isinstance(value, str):
-            profile_id = value
+    # Iterate keys so we can use getlist — multi_items() isn't consistently
+    # available across Starlette versions for FormData.
+    for key in list(form.keys()):
+        if key == "profile_id":
+            raw = form.get("profile_id")
+            if isinstance(raw, str) and raw:
+                profile_id = raw
             continue
-        if isinstance(value, UploadFile) and _FILE_FIELD_RE.match(key):
-            uploads.append(value)
+        if not _FILE_FIELD_RE.match(key):
+            continue
+        for value in form.getlist(key):
+            # Duck-type check for UploadFile — the canonical attributes are
+            # ``filename`` and ``read``. This avoids isinstance pitfalls when
+            # Starlette's UploadFile is re-exported or shadowed.
+            if hasattr(value, "filename") and hasattr(value, "read"):
+                uploads.append(value)  # type: ignore[arg-type]
+
+    if not uploads:
+        # Log received keys once to help debug unexpected client formats —
+        # they'll show up in engine logs without leaking file contents.
+        logger.info(
+            "batch submit: no files matched; received keys=%s",
+            list(form.keys()),
+        )
 
     return uploads, profile_id
 
@@ -198,9 +216,20 @@ async def submit_batch(
     files, profile_id = await _extract_batch_form(request)
 
     if not files:
+        # Echo back what we actually saw so clients can debug mismatched
+        # field names without having to inspect server logs.
+        try:
+            form = await request.form()
+            debug_keys = list(form.keys())
+        except Exception:
+            debug_keys = []
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="At least one file is required.",
+            detail=(
+                "At least one file is required. Expected fields named "
+                "'files', 'files[]', 'files[N]', 'file', or 'file_N'. "
+                f"Received keys: {debug_keys}"
+            ),
         )
 
     batch_id = str(uuid_mod.uuid4())
