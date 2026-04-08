@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid as uuid_mod
+from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
@@ -32,6 +33,28 @@ router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
 _file_param = File(..., description="PDF file to preflight")
 _profile_param = Form(default="lintpdf-default", description="Profile to use")
+_ai_enabled_param = Form(
+    default=None,
+    description=(
+        "Per-job AI override. If true, AI analyzers run regardless of the "
+        "profile's ai.enabled setting (subject to tenant entitlements). "
+        "If false, AI is force-disabled. If unset, profile setting wins."
+    ),
+)
+_ai_categories_param = Form(
+    default=None,
+    description=(
+        "Comma-separated AI categories to enable for this job (overrides "
+        "profile.ai.categories). Only applies when ``ai_enabled`` is true."
+    ),
+)
+_ai_features_param = Form(
+    default=None,
+    description=(
+        "Comma-separated AI feature slugs to enable for this job (overrides "
+        "profile.ai.features). Only applies when ``ai_enabled`` is true."
+    ),
+)
 
 
 def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skipcq: PY-R1000
@@ -101,6 +124,9 @@ async def submit_job(  # skipcq: PY-R1000
     file: UploadFile = _file_param,
     profile_id: str = _profile_param,
     jdf_file: UploadFile | None = File(default=None, description="Optional JDF/XJDF sidecar"),
+    ai_enabled: bool | None = _ai_enabled_param,
+    ai_categories: str | None = _ai_categories_param,
+    ai_features: str | None = _ai_features_param,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> JSONResponse:
@@ -187,9 +213,15 @@ async def submit_job(  # skipcq: PY-R1000
 
     queue_name = "priority" if entitlements.priority_processing else "default"
     task_args = [str(job_id), profile_id, file_key]
-    task_kwargs = {}
+    task_kwargs: dict[str, Any] = {}
     if jdf_overrides:
         task_kwargs["jdf_overrides"] = jdf_overrides
+    if ai_enabled is not None:
+        task_kwargs["ai_enabled"] = ai_enabled
+    if ai_categories:
+        task_kwargs["ai_categories"] = [c.strip() for c in ai_categories.split(",") if c.strip()]
+    if ai_features:
+        task_kwargs["ai_features"] = [f.strip() for f in ai_features.split(",") if f.strip()]
     run_preflight.apply_async(
         args=task_args,
         kwargs=task_kwargs,

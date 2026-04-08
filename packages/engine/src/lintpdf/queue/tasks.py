@@ -26,6 +26,9 @@ def run_preflight(
     profile_id: str,
     file_key: str,
     jdf_overrides: dict[str, Any] | None = None,
+    ai_enabled: bool | None = None,
+    ai_categories: list[str] | None = None,
+    ai_features: list[str] | None = None,
 ) -> dict[str, Any]:  # skipcq: PY-R1000
     """Execute preflight job.
 
@@ -126,6 +129,22 @@ def run_preflight(
                     profile = profile.model_copy(
                         update={"conformance": jdf_overrides["conformance"]}
                     )
+
+            # Apply per-job AI overrides if provided. ``ai_enabled`` flips the
+            # profile's AI on or off; ``ai_categories``/``ai_features`` further
+            # narrow which analyzers run. None means "leave profile alone".
+            if ai_enabled is not None or ai_categories or ai_features:
+                from lintpdf.profiles.schema import AIFeatureConfig
+
+                base_ai = profile.ai or AIFeatureConfig()
+                ai_data = base_ai.model_dump()
+                if ai_enabled is not None:
+                    ai_data["enabled"] = ai_enabled
+                if ai_categories:
+                    ai_data["categories"] = ai_categories
+                if ai_features:
+                    ai_data["features"] = ai_features
+                profile = profile.model_copy(update={"ai": AIFeatureConfig(**ai_data)})
 
             # Load AI config if AI is enabled in the profile
             ai_config = None
