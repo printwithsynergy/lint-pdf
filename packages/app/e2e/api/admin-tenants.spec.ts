@@ -46,7 +46,7 @@ test.describe("Admin Tenants API (Plugin Routes)", () => {
           const tenant = tenants[0];
           expect(tenant).toHaveProperty("name");
           expect(tenant.plan ?? tenant.planId ?? tenant.subscription).toBeDefined();
-          expect(tenant.status ?? tenant.active ?? tenant.suspended).toBeDefined();
+          expect(tenant.status ?? tenant.active ?? tenant.is_active ?? tenant.suspended).toBeDefined();
         }
       }
     });

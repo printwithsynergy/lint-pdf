@@ -41,6 +41,7 @@ test.describe("Usage API (Plugin Routes)", () => {
         const body = await res.json();
 
         const hasJobCount =
+          body.used !== undefined ||
           body.jobCount !== undefined ||
           body.jobs !== undefined ||
           body.totalJobs !== undefined ||

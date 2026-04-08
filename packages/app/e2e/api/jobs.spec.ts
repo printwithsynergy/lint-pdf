@@ -179,7 +179,7 @@ test.describe("Jobs API (Plugin Routes)", () => {
       if (res.ok()) {
         const body = await res.json();
         // Should return a job ID
-        expect(body.jobId ?? body.id ?? body.job?.id).toBeTruthy();
+        expect(body.job_id ?? body.jobId ?? body.id ?? body.job?.id).toBeTruthy();
       }
     });
 
