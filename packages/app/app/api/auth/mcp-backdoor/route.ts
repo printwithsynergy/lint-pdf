@@ -85,10 +85,19 @@ export async function POST(req: Request) {
             data: {
               name: tenantSlug,
               slug: tenantSlug,
+              engineTenantId: process.env.ENGINE_ADMIN_TENANT_ID ?? null,
             },
           });
         }
         tenantId = tenant.id;
+
+        // Ensure engineTenantId is set on existing tenants
+        if (!tenant.engineTenantId && process.env.ENGINE_ADMIN_TENANT_ID) {
+          await prisma.tenant.update({
+            where: { id: tenant.id },
+            data: { engineTenantId: process.env.ENGINE_ADMIN_TENANT_ID },
+          });
+        }
 
         // Upsert tenant membership with requested role
         const memberRole = role ?? "MEMBER";
