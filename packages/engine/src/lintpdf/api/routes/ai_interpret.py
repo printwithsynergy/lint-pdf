@@ -48,12 +48,14 @@ async def interpret_captains_log(
 
     check_ai_access(tenant, db)
 
+    # A malformed UUID is just one form of "this job does not exist" — return
+    # 404 rather than 422 so clients can rely on a single status code.
     try:
         uid = uuid_mod.UUID(job_id)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid job ID format.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job '{job_id}' not found.",
         ) from exc
 
     job = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()

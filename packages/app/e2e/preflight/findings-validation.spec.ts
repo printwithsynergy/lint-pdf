@@ -13,7 +13,9 @@ const TEST_PDF = resolve(
   "../../../engine/tests/fixtures/test-sample.pdf",
 );
 
-const VALID_SEVERITIES = ["ERROR", "WARNING", "ADVISORY"];
+// Engine emits canonical lowercase severities — see
+// ``packages/engine/src/lintpdf/analyzers/finding.py:Severity``.
+const VALID_SEVERITIES = ["error", "warning", "advisory"];
 const VALID_SOURCES = ["engine", "ai"];
 const INSPECTION_ID_PATTERN = /^LPDF_/;
 
@@ -150,13 +152,13 @@ test.describe("Preflight: Findings Validation", () => {
       const findings = completedJob.findings as Finding[];
 
       const errorCount = findings.filter(
-        (f) => f.severity === "ERROR",
+        (f) => f.severity === "error",
       ).length;
       const warningCount = findings.filter(
-        (f) => f.severity === "WARNING",
+        (f) => f.severity === "warning",
       ).length;
       const advisoryCount = findings.filter(
-        (f) => f.severity === "ADVISORY",
+        (f) => f.severity === "advisory",
       ).length;
 
       expect(summary.error_count).toBe(errorCount);
@@ -202,17 +204,19 @@ test.describe("Preflight: Findings Validation", () => {
   test.describe("Finding details and bbox", () => {
     test("findings with details have a valid details object", () => {
       const findings = completedJob.findings as Finding[];
-      const withDetails = findings.filter((f) => f.details !== undefined);
+      // Engine omits the field for findings that have no details, but the
+      // serialiser may still emit ``null``. Filter both undefined and null
+      // so we only assert against findings that actually have a payload.
+      const withDetails = findings.filter((f) => f.details != null);
 
       for (const finding of withDetails) {
         expect(typeof finding.details).toBe("object");
-        expect(finding.details).not.toBeNull();
       }
     });
 
     test("findings with bbox have exactly 4 numeric values", () => {
       const findings = completedJob.findings as Finding[];
-      const withBbox = findings.filter((f) => f.bbox !== undefined);
+      const withBbox = findings.filter((f) => f.bbox != null);
 
       for (const finding of withBbox) {
         expect(Array.isArray(finding.bbox)).toBe(true);

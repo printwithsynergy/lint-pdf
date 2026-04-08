@@ -36,10 +36,30 @@ function createMockClient(
 
 describe("jobRoutes", () => {
   let routes: ReturnType<typeof jobRoutes>;
+  let fetchSpy: ReturnType<typeof vi.fn>;
+
+  /** Build a fetch implementation that resolves to a fake ``Response``. */
+  function fakeFetch(
+    status: number,
+    body: unknown,
+  ): () => Promise<Response> {
+    return () =>
+      Promise.resolve({
+        ok: status >= 200 && status < 300,
+        status,
+        json: async () => body,
+        text: async () =>
+          typeof body === "string" ? body : JSON.stringify(body),
+      } as Response);
+  }
 
   beforeEach(() => {
     vi.clearAllMocks();
     routes = jobRoutes();
+    // jobs.ts calls global ``fetch`` directly via ``engineFetch``; replace it
+    // with a vi.fn() so we can both stub the response and assert the URL.
+    fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as unknown as typeof globalThis.fetch;
   });
 
   it("returns 3 route definitions", () => {
@@ -72,17 +92,6 @@ describe("jobRoutes", () => {
   });
 
   describe("GET /jobs handler", () => {
-    it("returns 503 when client is not configured", async () => {
-      vi.mocked(getClient).mockReturnValue(null);
-      const handler = routes.find(
-        (r) => r.method === "GET" && r.path === "/jobs",
-      )?.handler;
-
-      const res = await handler!(createMockRequest());
-      expect(res.status).toBe(503);
-      expect(res.body).toEqual({ error: "LintPDF API not configured" });
-    });
-
     it("lists jobs with default pagination", async () => {
       const mockJobs = {
         jobs: [{ job_id: "j1" }],
@@ -90,10 +99,7 @@ describe("jobRoutes", () => {
         page: 1,
         page_size: 20,
       };
-      const mockClient = createMockClient({
-        listJobs: vi.fn().mockResolvedValue(mockJobs),
-      });
-      vi.mocked(getClient).mockReturnValue(mockClient);
+      fetchSpy.mockImplementation(fakeFetch(200, mockJobs));
 
       const handler = routes.find(
         (r) => r.method === "GET" && r.path === "/jobs",
@@ -102,17 +108,14 @@ describe("jobRoutes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJobs);
-      expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
-          .listJobs,
-      ).toHaveBeenCalledWith(1, 20);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/jobs?page=1&page_size=20"),
+        expect.any(Object),
+      );
     });
 
     it("lists jobs with custom pagination from query params", async () => {
-      const mockClient = createMockClient({
-        listJobs: vi.fn().mockResolvedValue({ jobs: [] }),
-      });
-      vi.mocked(getClient).mockReturnValue(mockClient);
+      fetchSpy.mockImplementation(fakeFetch(200, { jobs: [] }));
 
       const handler = routes.find(
         (r) => r.method === "GET" && r.path === "/jobs",
@@ -121,32 +124,27 @@ describe("jobRoutes", () => {
         createMockRequest({ query: { page: "3", page_size: "10" } }),
       );
 
-      expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
-          .listJobs,
-      ).toHaveBeenCalledWith(3, 10);
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/jobs?page=3&page_size=10"),
+        expect.any(Object),
+      );
+    });
+
+    it("propagates engine error status codes", async () => {
+      fetchSpy.mockImplementation(fakeFetch(503, "engine down"));
+
+      const handler = routes.find(
+        (r) => r.method === "GET" && r.path === "/jobs",
+      )?.handler;
+      const res = await handler!(createMockRequest());
+      expect(res.status).toBe(503);
     });
   });
 
   describe("GET /jobs/:jobId handler", () => {
-    it("returns 503 when client is not configured", async () => {
-      vi.mocked(getClient).mockReturnValue(null);
-      const handler = routes.find(
-        (r) => r.method === "GET" && r.path === "/jobs/:jobId",
-      )?.handler;
-
-      const res = await handler!(
-        createMockRequest({ params: { jobId: "abc" } }),
-      );
-      expect(res.status).toBe(503);
-    });
-
     it("returns job by ID", async () => {
       const mockJob = { job_id: "abc", status: "complete" };
-      const mockClient = createMockClient({
-        getJob: vi.fn().mockResolvedValue(mockJob),
-      });
-      vi.mocked(getClient).mockReturnValue(mockClient);
+      fetchSpy.mockImplementation(fakeFetch(200, mockJob));
 
       const handler = routes.find(
         (r) => r.method === "GET" && r.path === "/jobs/:jobId",
@@ -157,31 +155,30 @@ describe("jobRoutes", () => {
 
       expect(res.status).toBe(200);
       expect(res.body).toEqual(mockJob);
-      expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
-          .getJob,
-      ).toHaveBeenCalledWith("abc");
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/jobs/abc"),
+        expect.any(Object),
+      );
+    });
+
+    it("returns 404 when engine returns 404", async () => {
+      fetchSpy.mockImplementation(
+        fakeFetch(404, { detail: "not found" }),
+      );
+
+      const handler = routes.find(
+        (r) => r.method === "GET" && r.path === "/jobs/:jobId",
+      )?.handler;
+      const res = await handler!(
+        createMockRequest({ params: { jobId: "missing" } }),
+      );
+      expect(res.status).toBe(404);
     });
   });
 
   describe("DELETE /jobs/:jobId handler", () => {
-    it("returns 503 when client is not configured", async () => {
-      vi.mocked(getClient).mockReturnValue(null);
-      const handler = routes.find(
-        (r) => r.method === "DELETE" && r.path === "/jobs/:jobId",
-      )?.handler;
-
-      const res = await handler!(
-        createMockRequest({ params: { jobId: "abc" } }),
-      );
-      expect(res.status).toBe(503);
-    });
-
     it("deletes job and returns 204", async () => {
-      const mockClient = createMockClient({
-        deleteJob: vi.fn().mockResolvedValue(undefined),
-      });
-      vi.mocked(getClient).mockReturnValue(mockClient);
+      fetchSpy.mockImplementation(fakeFetch(204, null));
 
       const handler = routes.find(
         (r) => r.method === "DELETE" && r.path === "/jobs/:jobId",
@@ -191,10 +188,10 @@ describe("jobRoutes", () => {
       );
 
       expect(res.status).toBe(204);
-      expect(
-        (mockClient as unknown as Record<string, ReturnType<typeof vi.fn>>)
-          .deleteJob,
-      ).toHaveBeenCalledWith("del_123");
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/api/v1/jobs/del_123"),
+        expect.objectContaining({ method: "DELETE" }),
+      );
     });
   });
 });

@@ -55,7 +55,11 @@ test.describe("Preflight: AI Profile Generation", () => {
         `Profile generation failed: ${res.status()} ${await res.text()}`,
       ).toBe(true);
 
-      const profile = await res.json();
+      // Engine wraps the generated profile in ``NLPreflightProfileResponse``:
+      // ``{preflight_profile, explanation, confidence}``. See
+      // ``api/routes/ai_generate.py:generate_preflight_profile``.
+      const responseData = await res.json();
+      const profile = responseData.preflight_profile ?? responseData;
       expect(profile).toBeTruthy();
 
       // Profile should have a structure with checks or thresholds
@@ -90,7 +94,8 @@ test.describe("Preflight: AI Profile Generation", () => {
       );
 
       expect(res.ok()).toBe(true);
-      const profile = await res.json();
+      const responseData = await res.json();
+      const profile = responseData.preflight_profile ?? responseData;
 
       // Flatten all values to look for a DPI-related threshold near 300
       const jsonStr = JSON.stringify(profile).toLowerCase();
@@ -140,8 +145,10 @@ test.describe("Preflight: AI Profile Generation", () => {
       expect(magazineRes.ok()).toBe(true);
       expect(webRes.ok()).toBe(true);
 
-      const magazineProfile = await magazineRes.json();
-      const webProfile = await webRes.json();
+      const magazineData = await magazineRes.json();
+      const webData = await webRes.json();
+      const magazineProfile = magazineData.preflight_profile ?? magazineData;
+      const webProfile = webData.preflight_profile ?? webData;
 
       // The two profiles should differ in some meaningful way
       const magazineStr = JSON.stringify(magazineProfile);

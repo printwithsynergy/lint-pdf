@@ -16,8 +16,10 @@ const TEST_PDF = resolve(
 );
 
 interface AiConfig {
-  enabled: boolean;
-  credits_remaining?: number;
+  // Engine returns ``ai_enabled`` (see ``api/ai_schemas.py:AIConfigResponse``);
+  // ``credit_balance`` rather than ``credits_remaining``.
+  ai_enabled: boolean;
+  credit_balance?: number;
   model?: string;
   provider?: string;
 }
@@ -59,15 +61,15 @@ test.describe("Preflight: AI Features", () => {
 
       if (res.status() === 200) {
         aiConfig = await res.json();
-        expect(typeof aiConfig.enabled).toBe("boolean");
+        expect(typeof aiConfig.ai_enabled).toBe("boolean");
       } else {
         // If 404, AI config endpoint is not implemented; treat as disabled
-        aiConfig = { enabled: false };
+        aiConfig = { ai_enabled: false };
       }
     });
 
     test("AI credit balance is reported when enabled", async ({ request }) => {
-      test.skip(!aiConfig?.enabled, "AI is not enabled in this environment");
+      test.skip(!aiConfig?.ai_enabled, "AI is not enabled in this environment");
 
       const res = await request.get(`${APP_BASE}/api/lintpdf/ai-config`, {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
@@ -75,9 +77,9 @@ test.describe("Preflight: AI Features", () => {
       expect(res.ok()).toBe(true);
 
       const config = await res.json();
-      expect(config.credits_remaining).toBeDefined();
-      expect(typeof config.credits_remaining).toBe("number");
-      expect(config.credits_remaining).toBeGreaterThanOrEqual(0);
+      expect(config.credit_balance).toBeDefined();
+      expect(typeof config.credit_balance).toBe("number");
+      expect(config.credit_balance).toBeGreaterThanOrEqual(0);
     });
 
     test("AI config rejects unauthenticated requests", async ({ request }) => {
@@ -94,7 +96,7 @@ test.describe("Preflight: AI Features", () => {
     test("submit with AI-enabled profile produces AI findings", async ({
       request,
     }) => {
-      test.skip(!aiConfig?.enabled, "AI is not enabled in this environment");
+      test.skip(!aiConfig?.ai_enabled, "AI is not enabled in this environment");
 
       const pdfBuffer = readFileSync(TEST_PDF);
       const submitRes = await request.post(`${APP_BASE}/api/lintpdf/submit`, {
@@ -140,11 +142,12 @@ test.describe("Preflight: AI Features", () => {
           "Expected at least one AI-sourced finding when AI is enabled",
         ).toBeGreaterThan(0);
 
-        // Validate AI findings have the same structure as engine findings
+        // Validate AI findings have the same structure as engine findings.
+        // Engine emits lowercase severities — see ``analyzers/finding.py``.
         for (const finding of aiFindings) {
           expect(finding.inspection_id).toBeTruthy();
           expect(finding.severity).toBeTruthy();
-          expect(["ERROR", "WARNING", "ADVISORY"]).toContain(finding.severity);
+          expect(["error", "warning", "advisory"]).toContain(finding.severity);
           expect(typeof finding.message).toBe("string");
           expect(finding.message.length).toBeGreaterThan(0);
         }
@@ -154,7 +157,7 @@ test.describe("Preflight: AI Features", () => {
     test("AI interpretation endpoint returns data for completed job", async ({
       request,
     }) => {
-      test.skip(!aiConfig?.enabled, "AI is not enabled in this environment");
+      test.skip(!aiConfig?.ai_enabled, "AI is not enabled in this environment");
 
       // Submit and complete a job first
       const pdfBuffer = readFileSync(TEST_PDF);
@@ -214,7 +217,7 @@ test.describe("Preflight: AI Features", () => {
 
   test.describe("AI usage statistics", () => {
     test("AI usage stats endpoint returns data", async ({ request }) => {
-      test.skip(!aiConfig?.enabled, "AI is not enabled in this environment");
+      test.skip(!aiConfig?.ai_enabled, "AI is not enabled in this environment");
 
       const res = await request.get(`${APP_BASE}/api/lintpdf/ai-usage`, {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },
@@ -336,7 +339,7 @@ test.describe("Preflight: AI Features", () => {
     test("GET /api/lintpdf/ai-presets lists presets through the app", async ({
       request,
     }) => {
-      test.skip(!aiConfig?.enabled, "AI is not enabled in this environment");
+      test.skip(!aiConfig?.ai_enabled, "AI is not enabled in this environment");
 
       const res = await request.get(`${APP_BASE}/api/lintpdf/ai-presets`, {
         headers: { Cookie: `pixie-dust-session=${sessionToken}` },

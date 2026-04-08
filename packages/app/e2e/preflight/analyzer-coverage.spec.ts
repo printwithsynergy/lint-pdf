@@ -23,11 +23,15 @@ interface Finding {
   bbox?: number[];
 }
 
+// "required" means the analyzer category MUST produce at least one finding
+// on the standard test PDF. Image/font findings are negative checks that only
+// fire when something is wrong, so a clean fixture won't trigger them — those
+// categories must stay optional even though the analyzers exist and run.
 const ANALYZER_CATEGORIES = [
   { prefix: "LPDF_DOC_", name: "Document", required: true },
-  { prefix: "LPDF_IMG_", name: "Image", required: true },
+  { prefix: "LPDF_IMG_", name: "Image", required: false },
   { prefix: "LPDF_COLOR_", name: "Color", required: true },
-  { prefix: "LPDF_FONT_", name: "Font", required: true },
+  { prefix: "LPDF_FONT_", name: "Font", required: false },
   { prefix: "LPDF_BOX_", name: "Page Geometry", required: true },
   { prefix: "LPDF_TRANS_", name: "Transparency", required: false },
   { prefix: "LPDF_META_", name: "Metadata", required: true },
@@ -183,8 +187,9 @@ test.describe("Preflight: Analyzer Coverage", () => {
       ).toBe("string");
 
       expect(finding.severity, "Finding missing severity").toBeTruthy();
+      // Engine emits lowercase severities — see ``analyzers/finding.py``.
       expect(
-        ["ERROR", "WARNING", "ADVISORY"],
+        ["error", "warning", "advisory"],
         `Invalid severity "${finding.severity}" on ${finding.inspection_id}`,
       ).toContain(finding.severity);
 

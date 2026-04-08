@@ -39,6 +39,15 @@ interface CompletedJob {
 }
 
 /** Submit a job with the given profile and poll to completion. */
+/** Multipart payload accepted by Playwright's ``request.post``. */
+type MultipartFields = {
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | { name: string; mimeType: string; buffer: Buffer };
+};
+
 async function submitAndPoll(
   request: import("@playwright/test").APIRequestContext,
   sessionToken: string,
@@ -46,7 +55,7 @@ async function submitAndPoll(
   extraFields?: Record<string, string>,
 ): Promise<CompletedJob | null> {
   const pdfBuffer = readFileSync(TEST_PDF);
-  const multipart: Record<string, unknown> = {
+  const multipart: MultipartFields = {
     file: {
       name: "test-sample.pdf",
       mimeType: "application/pdf",
@@ -124,16 +133,17 @@ test.describe("Preflight: Profile Comparison", () => {
       ).toBe(true);
     });
 
-    test("lintpdf-advisory-only produces only ADVISORY findings", () => {
+    test("lintpdf-advisory-only produces only advisory findings", () => {
       test.skip(!advisoryJob || advisoryJob.status !== "complete", "Advisory job not complete");
 
       const findings = advisoryJob!.findings;
       expect(findings.length).toBeGreaterThan(0);
 
-      const nonAdvisory = findings.filter((f) => f.severity !== "ADVISORY");
+      // Engine emits lowercase severities — see ``analyzers/finding.py``.
+      const nonAdvisory = findings.filter((f) => f.severity !== "advisory");
       expect(
         nonAdvisory.length,
-        `Expected all findings to be ADVISORY, but found ${nonAdvisory.length} non-ADVISORY: ` +
+        `Expected all findings to be advisory, but found ${nonAdvisory.length} non-advisory: ` +
           nonAdvisory
             .slice(0, 5)
             .map((f) => `${f.inspection_id} (${f.severity})`)
@@ -241,13 +251,14 @@ test.describe("Preflight: Profile Comparison", () => {
         "Expected conformance-related findings from pdfx1a-magazine-ads profile",
       ).toBeGreaterThan(0);
 
-      // Should have some ERROR or WARNING level findings for a non-PDF/X file
+      // Should have some error or warning level findings for a non-PDF/X file.
+      // Engine emits lowercase severities — see ``analyzers/finding.py``.
       const serious = job!.findings.filter(
-        (f) => f.severity === "ERROR" || f.severity === "WARNING",
+        (f) => f.severity === "error" || f.severity === "warning",
       );
       expect(
         serious.length,
-        "Expected ERROR or WARNING findings from pdfx1a-magazine-ads on non-compliant PDF",
+        "Expected error or warning findings from pdfx1a-magazine-ads on non-compliant PDF",
       ).toBeGreaterThan(0);
     });
 
