@@ -15,7 +15,16 @@ const TEST_PDF = resolve(
   "../../../engine/tests/fixtures/test-sample.pdf",
 );
 
+interface ReportInfo {
+  token: string;
+  format: string;
+  url?: string;
+  expires_at?: string;
+}
+
 interface ReportResponse {
+  reports?: ReportInfo[];
+  // Legacy single-report fields (for compatibility)
   token?: string;
   report_id?: string;
   id?: string;
@@ -55,7 +64,7 @@ test.describe("Preflight: Report Generation", () => {
     // Submit a job and wait for completion
     const pdfBuffer = readFileSync(TEST_PDF);
     const submitRes = await request.post(
-      `${engineBase}/api/v1/jobs/submit`,
+      `${engineBase}/api/v1/jobs`,
       {
         headers: { Authorization: `Bearer ${engineApiKey}` },
         multipart: {
@@ -89,41 +98,34 @@ test.describe("Preflight: Report Generation", () => {
       `Job did not complete: ${result.status}`,
     );
 
-    // Probe report generation endpoint
-    const probeRes = await request.post(
-      `${engineBase}/api/v1/reports/generate`,
+    // Probe report generation endpoint by listing reports for the just-completed job
+    const probeRes = await request.get(
+      `${engineBase}/api/v1/jobs/${completedJobId}/reports`,
       {
-        headers: {
-          Authorization: `Bearer ${engineApiKey}`,
-          "Content-Type": "application/json",
-        },
-        data: { job_id: "nonexistent", format: "html" },
+        headers: { Authorization: `Bearer ${engineApiKey}` },
       },
     );
-    // If we get anything other than a route-level 404, the endpoint exists
-    reportEndpointAvailable =
-      probeRes.status() !== 404 || (await probeRes.text()).toLowerCase().includes("job");
+    // 200 = endpoint exists; 404 only if route is missing entirely
+    reportEndpointAvailable = probeRes.status() === 200;
   });
 
   test.describe("HTML report generation", () => {
     let htmlReportToken: string;
-    let htmlReportId: string;
 
-    test("POST /api/v1/reports/generate with format html returns a token", async ({
+    test("POST /api/v1/jobs/{job_id}/reports with html format returns a token", async ({
       request,
     }) => {
       test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
 
       const res = await request.post(
-        `${engineBase}/api/v1/reports/generate`,
+        `${engineBase}/api/v1/jobs/${completedJobId}/reports`,
         {
           headers: {
             Authorization: `Bearer ${engineApiKey}`,
             "Content-Type": "application/json",
           },
           data: {
-            job_id: completedJobId,
-            format: "html",
+            formats: ["html"],
           },
         },
       );
@@ -140,17 +142,14 @@ test.describe("Preflight: Report Generation", () => {
       ).toBe(true);
 
       const data = (await res.json()) as ReportResponse;
-      htmlReportToken = data.token ?? "";
-      htmlReportId = data.report_id ?? data.id ?? "";
+      const reports = data.reports ?? [];
+      const htmlReport = reports.find((r) => r.format === "html");
+      htmlReportToken = htmlReport?.token ?? "";
 
       expect(
-        htmlReportToken || htmlReportId,
-        "Report generation returned neither token nor report_id",
+        htmlReportToken,
+        "Report generation returned no html token",
       ).toBeTruthy();
-
-      if (data.format) {
-        expect(data.format).toBe("html");
-      }
     });
 
     test("GET /r/{token} returns accessible HTML report (public, no auth)", async ({
@@ -187,21 +186,20 @@ test.describe("Preflight: Report Generation", () => {
   test.describe("PDF report generation", () => {
     let pdfReportToken: string;
 
-    test("POST /api/v1/reports/generate with format pdf returns a token", async ({
+    test("POST /api/v1/jobs/{job_id}/reports with pdf format returns a token", async ({
       request,
     }) => {
       test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
 
       const res = await request.post(
-        `${engineBase}/api/v1/reports/generate`,
+        `${engineBase}/api/v1/jobs/${completedJobId}/reports`,
         {
           headers: {
             Authorization: `Bearer ${engineApiKey}`,
             "Content-Type": "application/json",
           },
           data: {
-            job_id: completedJobId,
-            format: "pdf",
+            formats: ["pdf"],
           },
         },
       );
@@ -217,7 +215,9 @@ test.describe("Preflight: Report Generation", () => {
       ).toBe(true);
 
       const data = (await res.json()) as ReportResponse;
-      pdfReportToken = data.token ?? "";
+      const reports = data.reports ?? [];
+      const pdfReport = reports.find((r) => r.format === "pdf");
+      pdfReportToken = pdfReport?.token ?? "";
 
       expect(pdfReportToken, "No token returned for PDF report").toBeTruthy();
     });
@@ -292,8 +292,9 @@ test.describe("Preflight: Report Generation", () => {
       ).toBeGreaterThan(0);
 
       for (const report of reports) {
-        const reportId = report.report_id ?? report.id;
-        expect(reportId, "Report missing ID").toBeTruthy();
+        // List endpoint returns token (not report_id)
+        const reportToken = report.token ?? report.report_id ?? report.id;
+        expect(reportToken, "Report missing token").toBeTruthy();
 
         if (report.format) {
           expect(
@@ -306,22 +307,20 @@ test.describe("Preflight: Report Generation", () => {
   });
 
   test.describe("Report revocation", () => {
-    let revokeReportId: string;
     let revokeToken: string;
 
     test("generate a report to revoke", async ({ request }) => {
       test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
 
       const res = await request.post(
-        `${engineBase}/api/v1/reports/generate`,
+        `${engineBase}/api/v1/jobs/${completedJobId}/reports`,
         {
           headers: {
             Authorization: `Bearer ${engineApiKey}`,
             "Content-Type": "application/json",
           },
           data: {
-            job_id: completedJobId,
-            format: "html",
+            formats: ["html"],
           },
         },
       );
@@ -329,20 +328,20 @@ test.describe("Preflight: Report Generation", () => {
       test.skip(!res.ok(), "Could not generate report for revocation test");
 
       const data = (await res.json()) as ReportResponse;
-      revokeReportId = data.report_id ?? data.id ?? "";
-      revokeToken = data.token ?? "";
+      const reports = data.reports ?? [];
+      revokeToken = reports.find((r) => r.format === "html")?.token ?? "";
 
-      expect(revokeReportId || revokeToken).toBeTruthy();
+      expect(revokeToken).toBeTruthy();
     });
 
-    test("DELETE /api/v1/reports/{report_id} revokes the report", async ({
+    test("DELETE /api/v1/jobs/{job_id}/reports/{token} revokes the report", async ({
       request,
     }) => {
       test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
-      test.skip(!revokeReportId, "No report ID to revoke");
+      test.skip(!revokeToken, "No report token to revoke");
 
       const res = await request.delete(
-        `${engineBase}/api/v1/reports/${revokeReportId}`,
+        `${engineBase}/api/v1/jobs/${completedJobId}/reports/${revokeToken}`,
         {
           headers: { Authorization: `Bearer ${engineApiKey}` },
         },
@@ -378,21 +377,20 @@ test.describe("Preflight: Report Generation", () => {
   });
 
   test.describe("Report auth rejection", () => {
-    test("POST /api/v1/reports/generate rejects unauthenticated requests", async ({
+    test("POST /api/v1/jobs/{job_id}/reports rejects unauthenticated requests", async ({
       request,
     }) => {
       test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
 
       const res = await request.post(
-        `${engineBase}/api/v1/reports/generate`,
+        `${engineBase}/api/v1/jobs/${completedJobId}/reports`,
         {
           headers: {
             Authorization: "",
             "Content-Type": "application/json",
           },
           data: {
-            job_id: completedJobId,
-            format: "html",
+            formats: ["html"],
           },
         },
       );
