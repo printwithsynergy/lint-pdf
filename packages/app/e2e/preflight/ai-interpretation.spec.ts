@@ -197,8 +197,16 @@ test.describe("Preflight: AI Interpretation", () => {
     });
   });
 
-  test.describe("App proxy: viewer interpretation", () => {
+  // The app proxy uses LINTPDF_API_KEY on the server side, which belongs to
+  // a different engine tenant than our E2E test tenant (see
+  // ``packages/plugin/src/routes/viewer.ts``). Jobs submitted directly to the
+  // engine with our engineApiKey are NOT visible to the app proxy, and vice
+  // versa — so we submit a second job via the app proxy here and verify
+  // interpretation round-trips via the cookie path. Runs serially so ``appJobId``
+  // is populated before the interpretation tests.
+  test.describe.serial("App proxy: viewer interpretation", () => {
     let sessionToken: string;
+    let appJobId: string | undefined;
 
     test.beforeAll(async ({ request }) => {
       const available = await isMcpBackdoorAvailable(request);
@@ -208,20 +216,67 @@ test.describe("Preflight: AI Interpretation", () => {
       sessionToken = auth.sessionToken;
     });
 
+    test("submit via app proxy yields a job the app can see", async ({
+      request,
+    }) => {
+      const pdfBuffer = readFileSync(TEST_PDF);
+      const submitRes = await request.post(`${APP_BASE}/api/lintpdf/submit`, {
+        headers: { Cookie: `pixie-dust-session=${sessionToken}` },
+        multipart: {
+          file: {
+            name: "test-sample.pdf",
+            mimeType: "application/pdf",
+            buffer: pdfBuffer,
+          },
+          profile_id: "lintpdf-default",
+          ai_enabled: "true",
+        },
+      });
+
+      expect(
+        [200, 201, 202].includes(submitRes.status()),
+        `App submit failed: ${submitRes.status()} ${await submitRes.text()}`,
+      ).toBe(true);
+
+      const submitData = await submitRes.json();
+      appJobId = submitData.job_id ?? submitData.id;
+      expect(appJobId).toBeTruthy();
+
+      // Poll via the app route until complete
+      const start = Date.now();
+      while (Date.now() - start < 180_000) {
+        const statusRes = await request.get(
+          `${APP_BASE}/api/lintpdf/jobs/${appJobId}`,
+          { headers: { Cookie: `pixie-dust-session=${sessionToken}` } },
+        );
+        if (statusRes.ok()) {
+          const data = await statusRes.json();
+          if (data.status === "complete" || data.status === "failed") {
+            expect(data.status).toBe("complete");
+            return;
+          }
+        }
+        await new Promise((r) => setTimeout(r, 2_000));
+      }
+      throw new Error(`App-submitted job ${appJobId} did not complete`);
+    });
+
     test("GET /api/lintpdf/viewer/{jobId}/interpretation returns via session auth", async ({
       request,
     }) => {
+      test.skip(!appJobId, "No app-submitted job");
+
       const res = await request.get(
-        `${APP_BASE}/api/lintpdf/viewer/${jobId}/interpretation`,
+        `${APP_BASE}/api/lintpdf/viewer/${appJobId}/interpretation`,
         { headers: { Cookie: `pixie-dust-session=${sessionToken}` } },
       );
 
-      // The app proxy may not be wired up yet (404) or AI may be disabled
+      // AI may be disabled on the app's tenant — accept 404/402/503 as
+      // graceful degrade, but never a 200 with a mangled body.
       if (res.status() === 200) {
         const interp = await res.json();
         expect(interp).toBeTruthy();
 
-        // Should have some textual content
         const summary =
           interp.summary ??
           interp.interpretation ??
@@ -242,22 +297,26 @@ test.describe("Preflight: AI Interpretation", () => {
     test("app proxy and engine direct return consistent structure", async ({
       request,
     }) => {
-      // Fetch from both endpoints
+      test.skip(!appJobId, "No app-submitted job");
+
+      // App proxy: uses the cookie, job visible to LINTPDF_API_KEY's tenant.
+      const appRes = await request.get(
+        `${APP_BASE}/api/lintpdf/viewer/${appJobId}/interpretation`,
+        { headers: { Cookie: `pixie-dust-session=${sessionToken}` } },
+      );
+
+      // Engine direct: uses our E2E engine key on OUR job (the one submitted
+      // in the outer beforeAll). We compare STRUCTURE not data because the
+      // two jobs are in different tenants.
       const engineRes = await request.get(
         `${engineBase}/api/v1/captains-log/${jobId}/interpret`,
         { headers: { Authorization: `Bearer ${engineApiKey}` } },
       );
 
-      const appRes = await request.get(
-        `${APP_BASE}/api/lintpdf/viewer/${jobId}/interpretation`,
-        { headers: { Cookie: `pixie-dust-session=${sessionToken}` } },
-      );
-
-      // Both must be available to compare
       if (engineRes.status() !== 200 || appRes.status() !== 200) {
         test.skip(
           true,
-          `Cannot compare: engine=${engineRes.status()}, app=${appRes.status()}`,
+          `Cannot compare structures: engine=${engineRes.status()}, app=${appRes.status()} (AI may be disabled on one tenant)`,
         );
         return;
       }
@@ -265,15 +324,15 @@ test.describe("Preflight: AI Interpretation", () => {
       const engineInterp = await engineRes.json();
       const appInterp = await appRes.json();
 
-      // Both should have the same top-level keys
+      // Both should have overlapping top-level keys. The plugin is a straight
+      // passthrough (see ``plugin/src/routes/viewer.ts``), so identical keys
+      // are expected — but we only require non-empty overlap.
       const engineKeys = Object.keys(engineInterp).sort();
       const appKeys = Object.keys(appInterp).sort();
-
-      // The app proxy may wrap or rename keys, but core content should overlap
       const sharedKeys = engineKeys.filter((k) => appKeys.includes(k));
       expect(
         sharedKeys.length,
-        "Expected at least some shared keys between engine and app proxy responses",
+        `Expected shared keys. engine=${JSON.stringify(engineKeys)} app=${JSON.stringify(appKeys)}`,
       ).toBeGreaterThan(0);
     });
   });
