@@ -4,7 +4,24 @@ import {
   isMcpBackdoorAvailable,
   getEngineApiKey,
   getEngineBase,
+  pollJobViaEngine,
 } from "../helpers";
+import { readFileSync, existsSync } from "fs";
+import { resolve } from "path";
+
+const TEST_PDF = resolve(
+  __dirname,
+  "../../../engine/tests/fixtures/test-sample.pdf",
+);
+
+interface AiFinding {
+  inspection_id: string;
+  severity: string;
+  message: string;
+  source?: string;
+  category?: string;
+  page_num: number;
+}
 
 interface AiPreset {
   // Engine emits ``slug`` as the canonical identifier — see
@@ -145,43 +162,122 @@ test.describe("Preflight: AI Presets Coverage", () => {
     }
   });
 
-  test.describe("AI preset job submissions", () => {
-    // Test a representative subset of presets to avoid excessive runtime
+  // Serial mode: the three preset submissions populate a shared cache
+  // which the ``structure validation`` and ``different categories``
+  // nested describes read. Parallel workers would see an empty cache.
+  test.describe.serial("AI preset job submissions", () => {
+    // Test a representative subset of presets to avoid excessive runtime.
     const PRESETS_TO_SUBMIT = [
       AI_PRESETS.find((p) => p.id === "full-ai-scan")!,
       AI_PRESETS.find((p) => p.id === "brand-compliance")!,
       AI_PRESETS.find((p) => p.id === "packaging-qc")!,
     ];
 
-    // The engine's POST /api/v1/jobs endpoint accepts only ``file``,
-    // ``profile_id`` and ``jdf_file`` form fields — there is no per-job
-    // ``ai_preset`` wiring (see ``api/routes/jobs.py:submit_job``). AI is
-    // configured at the tenant level via ``/api/v1/ai/config``. Until the
-    // engine grows per-job AI preset support, this submission round-trip is
-    // verified by the tenant-level ``ai-features.spec.ts`` flow instead.
+    // Cache of submitted-job results keyed by preset id, so the follow-up
+    // ``AI finding structure validation`` and ``Different presets produce
+    // different categories`` describes can reuse the same submissions
+    // instead of running three more ~30s jobs.
+    const submittedFindingsByPreset: Record<string, AiFinding[]> = {};
+
+    // The engine supports per-job AI preset submission via the
+    // ``ai_preset`` form field on ``POST /api/v1/jobs`` — see
+    // ``api/routes/jobs.py:submit_job``. The preset expands to a feature
+    // list and implicitly sets ``ai_enabled=true`` for this job.
     for (const preset of PRESETS_TO_SUBMIT) {
-      test(`submit with AI preset "${preset.name}" produces AI findings`, async () => {
-        test.skip(
-          true,
-          `Per-job AI preset submission not supported by the engine; ` +
-            `use tenant-level AI config to enable preset "${preset.id}".`,
+      test(`submit with AI preset "${preset.name}" produces AI findings`, async ({
+        request,
+      }) => {
+        test.skip(!presetsAvailable, "AI presets endpoint not available");
+        test.skip(!existsSync(TEST_PDF), `Test PDF not found at ${TEST_PDF}`);
+
+        const pdfBuffer = readFileSync(TEST_PDF);
+        const submitRes = await request.post(`${engineBase}/api/v1/jobs`, {
+          headers: { Authorization: `Bearer ${engineApiKey}` },
+          multipart: {
+            file: {
+              name: "test-sample.pdf",
+              mimeType: "application/pdf",
+              buffer: pdfBuffer,
+            },
+            profile_id: "lintpdf-default",
+            ai_preset: preset.id,
+          },
+        });
+
+        expect(
+          [200, 201, 202].includes(submitRes.status()),
+          `Engine submit failed: ${submitRes.status()} ${await submitRes.text()}`,
+        ).toBe(true);
+
+        const submitData = await submitRes.json();
+        const jobId = submitData.job_id ?? submitData.id;
+        expect(jobId).toBeTruthy();
+
+        const completedJob = await pollJobViaEngine(
+          request,
+          jobId,
+          engineApiKey,
+          120_000,
         );
+        expect(completedJob.status).toBe("complete");
+
+        const findings =
+          (completedJob.findings as AiFinding[] | undefined) ?? [];
+        const aiFindings = findings.filter((f) => f.source === "ai");
+        expect(
+          aiFindings.length,
+          `Expected AI findings for preset "${preset.id}"`,
+        ).toBeGreaterThan(0);
+
+        submittedFindingsByPreset[preset.id] = aiFindings;
       });
     }
-  });
 
-  test.describe("AI finding structure validation", () => {
-    // See note above on per-job AI preset wiring — once the engine accepts
-    // an ``ai_preset`` form field on POST /api/v1/jobs (or an equivalent
-    // mechanism), reinstate the live submission round-trip here.
-    test("AI findings have valid structure (inspection_id, severity, message, category)", async () => {
-      test.skip(true, "Per-job AI preset submission not supported by the engine.");
+    test.describe("AI finding structure validation", () => {
+      test("AI findings have valid structure (inspection_id, severity, message, category)", async () => {
+        const anyPreset = Object.keys(submittedFindingsByPreset)[0];
+        test.skip(
+          !anyPreset,
+          "No preset submission succeeded — cannot validate structure",
+        );
+        const findings = submittedFindingsByPreset[anyPreset!];
+        for (const f of findings) {
+          expect(typeof f.inspection_id).toBe("string");
+          expect(f.inspection_id.length).toBeGreaterThan(0);
+          expect(typeof f.severity).toBe("string");
+          expect(typeof f.message).toBe("string");
+        }
+      });
     });
-  });
 
-  test.describe("Different presets produce different AI finding categories", () => {
-    test("brand-compliance and packaging-qc yield different categories", async () => {
-      test.skip(true, "Per-job AI preset submission not supported by the engine.");
+    test.describe("Different presets produce different AI finding categories", () => {
+      test("brand-compliance and packaging-qc yield different categories", async () => {
+        const brand = submittedFindingsByPreset["brand-compliance"];
+        const pkg = submittedFindingsByPreset["packaging-qc"];
+        test.skip(
+          !brand || !pkg,
+          "Both brand-compliance and packaging-qc submissions must have succeeded",
+        );
+
+        const brandIds = new Set(
+          brand!.map((f) => f.inspection_id).filter((id) => id !== "AI_SCAN_001"),
+        );
+        const pkgIds = new Set(
+          pkg!.map((f) => f.inspection_id).filter((id) => id !== "AI_SCAN_001"),
+        );
+
+        // The two presets share the ``logo_detection`` feature, so some
+        // overlap is expected. The assertion is that the two sets are
+        // NOT identical — at least one inspection id differs in either
+        // direction.
+        const identical =
+          brandIds.size === pkgIds.size &&
+          [...brandIds].every((id) => pkgIds.has(id));
+        expect(
+          identical,
+          "brand-compliance and packaging-qc produced identical findings — expected different analyzers to run",
+        ).toBe(false);
+      });
     });
   });
 });

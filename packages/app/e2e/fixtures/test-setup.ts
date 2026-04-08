@@ -40,6 +40,7 @@ const STATE_FILE = resolve(__dirname, "../.test-state.json");
 export interface TestState {
   tenantId: string;
   tenantSlug: string;
+  engineTenantId: string;
   engineApiKey: string;
   adminApiKey: string;
   users: Record<string, { email: string; userId: string; sessionToken: string }>;
@@ -224,6 +225,7 @@ async function globalSetup() {
 
   let tenantSlug = "e2e-test-org";
   let tenantId = "";
+  let engineTenantId = "";
   let engineApiKey = "";
 
   const users: TestState["users"] = {};
@@ -327,31 +329,132 @@ async function globalSetup() {
   // Step 4: Roles assigned in Step 1 via MCP backdoor (tenantSlug + role params)
   console.log("🎭 Roles assigned via MCP backdoor in Step 1");
 
-  // Step 5: Generate engine API keys
-  if (ADMIN_API_KEY || tenantId) {
-    console.log("🔑 Generating engine API keys...");
+  // Step 5: Provision engine-side tenant + API key.
+  //
+  // The engine (SQLAlchemy, UUID tenant IDs) and app (Prisma, CUID tenant
+  // IDs) live in the same database but use separate tables. We can't pass
+  // the Prisma CUID to the engine — it expects UUIDs and rejects anything
+  // else with ``Invalid UUID.``. Instead, find-or-create a dedicated
+  // engine-side tenant for E2E tests and store its UUID + raw key so
+  // engine-direct tests can hit /api/v1 endpoints.
+  if (ADMIN_API_KEY) {
+    console.log("🔑 Provisioning engine-side tenant + API key...");
+    const E2E_ENGINE_TENANT_NAME = "E2E Test Engine";
     try {
-      const adminKey = ADMIN_API_KEY;
-      if (adminKey && tenantId) {
-        const keyRes = await ctx.post(`${ENGINE_BASE}/api/v1/admin/tenants/${tenantId}/keys`, {
-          headers: { "X-Admin-Key": adminKey },
-          data: { label: "e2e-test-key" },
+      // Try to find an existing engine tenant with our known name so we
+      // don't create a new one on every run.
+      const listRes = await ctx.get(`${ENGINE_BASE}/api/v1/admin/tenants`, {
+        headers: { "X-Admin-Key": ADMIN_API_KEY },
+      });
+      if (listRes.ok()) {
+        const listData = await listRes.json();
+        const existing = (listData?.tenants ?? []).find(
+          (t: any) => t.name === E2E_ENGINE_TENANT_NAME,
+        );
+        if (existing) {
+          engineTenantId = existing.id;
+          console.log(`  ℹ️ Found engine tenant: ${engineTenantId}`);
+        }
+      } else {
+        console.log(`  ⚠️ List tenants failed: ${listRes.status()}`);
+      }
+
+      // If none exists, create one. ``POST /api/v1/admin/tenants`` returns
+      // the raw api_key in its response — the only time we ever see it.
+      if (!engineTenantId) {
+        const createRes = await ctx.post(`${ENGINE_BASE}/api/v1/admin/tenants`, {
+          headers: { "X-Admin-Key": ADMIN_API_KEY },
+          data: {
+            name: E2E_ENGINE_TENANT_NAME,
+            contact_email: "e2e@lintpdf.com",
+            plan: "enterprise",
+          },
         });
+        if (createRes.ok()) {
+          const createData = await createRes.json();
+          engineTenantId = createData.id ?? "";
+          engineApiKey = createData.api_key ?? "";
+          console.log(`  ✅ Created engine tenant ${engineTenantId} + key`);
+        } else {
+          console.log(
+            `  ⚠️ Create engine tenant failed: ${createRes.status()} ${await createRes.text()}`,
+          );
+        }
+      }
+
+      // For an existing tenant we don't have the raw key, so issue a
+      // fresh one via ``POST /tenants/:id/keys``. Note: that endpoint
+      // returns ``raw_key`` (not ``api_key`` like the tenant-create
+      // endpoint does) — see ApiKeyCreateResponse in admin.py.
+      if (engineTenantId && !engineApiKey) {
+        const keyRes = await ctx.post(
+          `${ENGINE_BASE}/api/v1/admin/tenants/${engineTenantId}/keys`,
+          {
+            headers: { "X-Admin-Key": ADMIN_API_KEY },
+            data: { label: "e2e-test-key" },
+          },
+        );
         if (keyRes.ok()) {
           const keyData = await keyRes.json();
-          engineApiKey = keyData.api_key ?? keyData.key ?? "";
-          console.log(`  ✅ Engine API key created`);
+          engineApiKey =
+            keyData.raw_key ?? keyData.api_key ?? keyData.key ?? "";
+          console.log(`  ✅ Engine API key issued for existing tenant`);
+        } else {
+          console.log(
+            `  ⚠️ Key creation failed: ${keyRes.status()} ${await keyRes.text()}`,
+          );
+        }
+      }
+
+      // Enable AI features for the E2E test tenant so the AI-focused
+      // specs (captains-log interpret, ai-profile-generation,
+      // ai-features, ai-presets-coverage, etc.) actually exercise the
+      // AI pipeline instead of being silently gated out by the
+      // entitlement check. This is idempotent — calling PUT /ai with
+      // ai_enabled=true on an already-enabled tenant is a no-op.
+      if (engineTenantId) {
+        const aiRes = await ctx.fetch(
+          `${ENGINE_BASE}/api/v1/admin/tenants/${engineTenantId}/ai?ai_enabled=true`,
+          {
+            method: "PUT",
+            headers: { "X-Admin-Key": ADMIN_API_KEY },
+          },
+        );
+        if (aiRes.ok()) {
+          console.log(`  ✅ AI features enabled for engine tenant`);
+        } else {
+          console.log(
+            `  ⚠️ AI enable failed: ${aiRes.status()} ${await aiRes.text()}`,
+          );
+        }
+
+        // Grant a generous credit allowance so AI-gated tests never
+        // fail for lack of credits. 100k credits covers thousands of
+        // AI calls — plenty for a single test run.
+        const creditsRes = await ctx.post(
+          `${ENGINE_BASE}/api/v1/admin/tenants/${engineTenantId}/ai/credits?credit_amount=100000&price_paid=0`,
+          { headers: { "X-Admin-Key": ADMIN_API_KEY } },
+        );
+        if (creditsRes.ok()) {
+          console.log(`  ✅ AI credits granted`);
+        } else {
+          console.log(
+            `  ⚠️ AI credit grant failed: ${creditsRes.status()} ${await creditsRes.text()}`,
+          );
         }
       }
     } catch (err) {
-      console.log(`  ⚠️ API key gen: ${err}`);
+      console.log(`  ⚠️ Engine provisioning: ${err}`);
     }
+  } else {
+    console.log("⏭ No ADMIN_API_KEY — skipping engine tenant provisioning");
   }
 
   // Persist state
   const state: TestState = {
     tenantId,
     tenantSlug,
+    engineTenantId,
     engineApiKey,
     adminApiKey: ADMIN_API_KEY,
     users,

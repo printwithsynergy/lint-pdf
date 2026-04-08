@@ -134,6 +134,16 @@ export function getTestTenantId(): string {
   return loadTestState()?.tenantId ?? "";
 }
 
+/**
+ * Get the engine-side tenant UUID. Engine tenants are distinct from app
+ * (Prisma) tenants — they live in the same Postgres database but use
+ * different tables and ID formats (UUID vs CUID). Use this for any test
+ * that calls ``/api/v1/admin/tenants/:id/*`` directly.
+ */
+export function getEngineTenantId(): string {
+  return loadTestState()?.engineTenantId || process.env.ENGINE_TENANT_ID || "";
+}
+
 export function getEngineApiKey(): string {
   return loadTestState()?.engineApiKey || process.env.ENGINE_API_KEY || "";
 }

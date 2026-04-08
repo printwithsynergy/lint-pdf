@@ -55,6 +55,16 @@ _ai_features_param = Form(
         "profile.ai.features). Only applies when ``ai_enabled`` is true."
     ),
 )
+_ai_preset_param = Form(
+    default=None,
+    description=(
+        "AI preset slug (e.g. ``brand-compliance``, ``packaging-qc``, "
+        "``full-ai-scan``). When provided the engine expands the preset to "
+        "its feature list and implicitly enables AI for this job. Mutually "
+        "compatible with ``ai_features``/``ai_categories`` — explicit lists "
+        "override the preset's defaults."
+    ),
+)
 
 
 def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skipcq: PY-R1000
@@ -127,6 +137,7 @@ async def submit_job(  # skipcq: PY-R1000
     ai_enabled: bool | None = _ai_enabled_param,
     ai_categories: str | None = _ai_categories_param,
     ai_features: str | None = _ai_features_param,
+    ai_preset: str | None = _ai_preset_param,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> JSONResponse:
@@ -211,6 +222,31 @@ async def submit_job(  # skipcq: PY-R1000
     except Exception:
         logger.debug("Failed to cache PDF in Redis — worker will use R2")
 
+    # Expand an ``ai_preset`` into its feature list. A preset implicitly
+    # enables AI (``ai_enabled=true``) unless the caller already supplied
+    # an explicit ``ai_enabled=false`` to force-disable. Explicit
+    # ``ai_features``/``ai_categories`` values still win over the
+    # preset's defaults so callers can customize a preset.
+    preset_features: list[str] | None = None
+    preset_categories: list[str] | None = None
+    if ai_preset:
+        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+
+        if ai_preset not in _AI_PRESETS:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"AI preset '{ai_preset}' not found",
+            )
+        raw_features = _AI_PRESETS[ai_preset].get("features", [])
+        # ``full-ai-scan`` uses the sentinel ``["all"]`` which the
+        # registry reads as categories=["all"] → run everything.
+        if raw_features == ["all"]:
+            preset_categories = ["all"]
+        else:
+            preset_features = [str(f) for f in raw_features]
+        if ai_enabled is None:
+            ai_enabled = True
+
     queue_name = "priority" if entitlements.priority_processing else "default"
     task_args = [str(job_id), profile_id, file_key]
     task_kwargs: dict[str, Any] = {}
@@ -220,8 +256,12 @@ async def submit_job(  # skipcq: PY-R1000
         task_kwargs["ai_enabled"] = ai_enabled
     if ai_categories:
         task_kwargs["ai_categories"] = [c.strip() for c in ai_categories.split(",") if c.strip()]
+    elif preset_categories:
+        task_kwargs["ai_categories"] = preset_categories
     if ai_features:
         task_kwargs["ai_features"] = [f.strip() for f in ai_features.split(",") if f.strip()]
+    elif preset_features:
+        task_kwargs["ai_features"] = preset_features
     run_preflight.apply_async(
         args=task_args,
         kwargs=task_kwargs,

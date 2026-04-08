@@ -43,6 +43,22 @@ test.describe("Preflight: AI Features", () => {
 
     const auth = await authenticateRole(request, "owner");
     sessionToken = auth.sessionToken;
+
+    // Fetch AI config up-front so every test in this file can gate on
+    // ``aiConfig.ai_enabled`` regardless of which worker picks it up.
+    // Previously this was set inside the first test of the
+    // ``AI configuration`` describe, which meant any test running on a
+    // different Playwright worker saw ``aiConfig`` as ``undefined`` and
+    // skipped silently. ``beforeAll`` runs once per worker, so every
+    // worker gets its own populated copy.
+    const cfgRes = await request.get(`${APP_BASE}/api/lintpdf/ai-config`, {
+      headers: { Cookie: `pixie-dust-session=${sessionToken}` },
+    });
+    if (cfgRes.status() === 200) {
+      aiConfig = await cfgRes.json();
+    } else {
+      aiConfig = { ai_enabled: false };
+    }
   });
 
   test.describe("AI configuration", () => {
@@ -60,11 +76,8 @@ test.describe("Preflight: AI Features", () => {
       ).toBe(true);
 
       if (res.status() === 200) {
-        aiConfig = await res.json();
-        expect(typeof aiConfig.ai_enabled).toBe("boolean");
-      } else {
-        // If 404, AI config endpoint is not implemented; treat as disabled
-        aiConfig = { ai_enabled: false };
+        const latest = await res.json();
+        expect(typeof latest.ai_enabled).toBe("boolean");
       }
     });
 
