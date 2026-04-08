@@ -65,33 +65,38 @@ test.describe("Preflight Jobs Page", () => {
   });
 
   test("job list table renders with correct headers when jobs exist", async ({ browser }) => {
-    test.fixme(true, "Preflight page loading timing is inconsistent — needs investigation");
     const { context } = await createRoleContext(browser, APP_BASE, "owner");
     const page = await context.newPage();
-    await page.goto("/dashboard/preflight");
+    await page.goto("/dashboard/preflight", { waitUntil: "networkidle" });
 
-    // Wait for the page to load — look for Run Preflight button or heading
+    // Wait for the page shell (Run Preflight button is always visible)
     await expect(
       page.getByRole("button", { name: /run preflight/i }),
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 30_000 });
 
-    // Wait for jobs to load — the skeleton disappears and either table or empty state shows
-    // Use a combined locator to wait for any of these states
+    // Wait for the async jobs list to resolve. The ``TableHead`` component
+    // from the UI kit renders as ``<td>`` (not ``<th>``), so the header cells
+    // show up as role ``cell`` rather than ``columnheader``. We match the
+    // first row of the table rowgroup directly.
+    const headerRow = page.locator("table thead tr").first();
     await expect(
-      page.getByText(/no preflight jobs yet/i)
-        .or(page.getByRole("columnheader", { name: /file/i }))
+      page
+        .getByText(/no preflight jobs yet/i)
+        .or(headerRow)
         .or(page.getByText(/failed to load/i))
         .first(),
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: 30_000 });
 
-    const hasJobTable = await page
-      .getByRole("columnheader", { name: /file/i })
-      .isVisible()
-      .catch(() => false);
+    const hasJobTable = await headerRow.isVisible().catch(() => false);
 
     if (hasJobTable) {
-      await expect(page.getByRole("columnheader", { name: /profile/i })).toBeVisible();
-      await expect(page.getByRole("columnheader", { name: /status/i })).toBeVisible();
+      await expect(headerRow.getByText("File", { exact: true })).toBeVisible();
+      await expect(
+        headerRow.getByText("Profile", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        headerRow.getByText("Status", { exact: true }),
+      ).toBeVisible();
     }
     await context.close();
   });
