@@ -440,7 +440,7 @@ class TenantCustomDomainResponse(BaseModel):
     requested_at: datetime | None
     plan_allows_whitelabel: bool
     dns_target: str = Field(
-        default="api.lintpdf.com",
+        default="reports.lintpdf.com",
         description="The CNAME target customers should point their subdomain at.",
     )
 

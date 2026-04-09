@@ -355,7 +355,7 @@ async def upload_brand_logo(
     # Update profile logo URL using the per-tenant resolver — if the tenant
     # has a verified custom domain, logos come from that host too so the
     # whole report (HTML + <img>) is served under one hostname. Otherwise
-    # logos use the global report_base_url (defaults to api.lintpdf.com).
+    # logos use the global report_base_url (defaults to reports.lintpdf.com).
     from lintpdf.api.config import get_settings
     from lintpdf.reports.service import resolve_report_base_url
     from lintpdf.tenants.entitlements import resolve_entitlements

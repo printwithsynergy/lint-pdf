@@ -85,7 +85,7 @@ class ReportService:
         formats: list[str] | None = None,
         expiry_days: int | None = None,
         branding: BrandingContext | None = None,
-        report_base_url: str = "https://api.lintpdf.com",
+        report_base_url: str = "https://reports.lintpdf.com",
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 

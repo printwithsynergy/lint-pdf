@@ -35,7 +35,7 @@ class _FakeEntitlements:
 
 @dataclass
 class _FakeSettings:
-    report_base_url: str = "https://api.lintpdf.com"
+    report_base_url: str = "https://reports.lintpdf.com"
 
 
 def test_returns_default_when_tenant_has_nothing() -> None:
@@ -45,7 +45,7 @@ def test_returns_default_when_tenant_has_nothing() -> None:
         _FakeEntitlements(),
         _FakeSettings(),
     )
-    assert url == "https://api.lintpdf.com"
+    assert url == "https://reports.lintpdf.com"
 
 
 def test_returns_default_when_domain_set_but_unverified() -> None:
@@ -54,7 +54,7 @@ def test_returns_default_when_domain_set_but_unverified() -> None:
         brand_custom_domain_verified=False,
     )
     url = resolve_report_base_url(tenant, None, _FakeEntitlements(), _FakeSettings())
-    assert url == "https://api.lintpdf.com"
+    assert url == "https://reports.lintpdf.com"
 
 
 def test_returns_tenant_custom_domain_when_verified() -> None:
@@ -80,7 +80,7 @@ def test_returns_default_when_plan_drops_whitelabel() -> None:
         _FakeEntitlements(whitelabel_enabled=False),
         _FakeSettings(),
     )
-    assert url == "https://api.lintpdf.com"
+    assert url == "https://reports.lintpdf.com"
 
 
 def test_brand_profile_custom_domain_wins_over_tenant() -> None:

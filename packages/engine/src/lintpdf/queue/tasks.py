@@ -422,6 +422,7 @@ def _resolve_cname(hostname: str) -> str | None:
 # point at either the engine's primary host or Railway's edge (which is
 # technically what a Railway custom domain resolves to once registered).
 _ACCEPTABLE_CNAME_TARGETS: tuple[str, ...] = (
+    "reports.lintpdf.com",
     "api.lintpdf.com",
     "lintpdf-production.up.railway.app",
     "backboard.railway.app",
