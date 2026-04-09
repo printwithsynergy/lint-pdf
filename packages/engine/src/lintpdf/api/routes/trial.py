@@ -105,6 +105,56 @@ def _check_trial_rate_limit(email: str) -> None:
         logger.debug("Trial rate limit check failed — allowing submission")
 
 
+async def _queue_preflight_for_file(
+    db: Session,
+    submission: TrialSubmission,
+    tf: TrialFile,
+    profile_id: str,
+) -> uuid_mod.UUID:
+    """Create a preflight job for a trial file and queue the Celery task.
+
+    Shared by the admin manual trigger and the auto-submit path. Caller is
+    responsible for commit()'ing the session after one or more calls.
+    """
+    from lintpdf.api.storage import get_storage
+
+    trial_tenant = _get_or_create_trial_tenant(db)
+
+    storage = get_storage()
+    loop = asyncio.get_running_loop()
+    pdf_bytes = await loop.run_in_executor(None, storage.download_pdf, tf.file_key)
+
+    job_id = uuid_mod.uuid4()
+    file_key = await loop.run_in_executor(
+        None, storage.upload_pdf, str(trial_tenant.id), str(job_id), pdf_bytes
+    )
+
+    job = Job(
+        id=job_id,
+        tenant_id=trial_tenant.id,
+        status=JobStatus.PENDING,
+        profile_id=profile_id,
+        file_key=file_key,
+        file_name=tf.file_name,
+        file_size=tf.file_size,
+    )
+    db.add(job)
+
+    tf.job_id = job_id
+    if submission.status == TrialSubmissionStatus.PENDING:
+        submission.status = TrialSubmissionStatus.PROCESSING
+
+    # Queue the preflight task
+    from lintpdf.queue.tasks import run_preflight
+
+    run_preflight.apply_async(
+        args=[str(job_id), profile_id, file_key],
+        queue="default",
+    )
+
+    return job_id
+
+
 # ── Request/Response schemas ─────────────────────────────────
 
 
@@ -257,6 +307,30 @@ async def submit_trial(
         db.add(tf)
     db.commit()
 
+    # Auto-submit preflight if enabled via LINTPDF_TRIAL_AUTO_SUBMIT.
+    # Failures here must NOT reject the upload — the submission is already saved
+    # and an admin can re-run from the dashboard.
+    auto_submitted = False
+    if settings.trial_auto_submit:
+        logger.info(
+            "trial.auto_submit",
+            extra={"submission_id": str(submission_id), "file_count": len(trial_files)},
+        )
+        queued_any = False
+        for tf in trial_files:
+            try:
+                await _queue_preflight_for_file(
+                    db, submission, tf, settings.trial_auto_submit_profile_id
+                )
+                queued_any = True
+            except Exception:
+                logger.exception(
+                    "Auto-submit preflight failed for trial file %s", tf.id
+                )
+        if queued_any:
+            db.commit()
+            auto_submitted = True
+
     # Notify admin via email
     try:
         from lintpdf.email.service import get_email_client
@@ -264,6 +338,12 @@ async def submit_trial(
         if get_email_client() is not None:
             from lintpdf.email.service import _send
 
+            status_note = (
+                "Auto-Submit: ON — preflight queued automatically. "
+                "Review the results in your admin dashboard and send the report."
+                if auto_submitted
+                else "Review and run preflight in your admin dashboard."
+            )
             _send(
                 to=os.environ.get("LINTPDF_ADMIN_EMAIL", "hello@thinkneverland.com"),
                 subject=f"New Trial Submission — {name.strip()} ({len(trial_files)} files)",
@@ -277,7 +357,7 @@ async def submit_trial(
     <tr><td style="padding: 8px; color: #64748b;">Phone</td><td style="padding: 8px;">{phone.strip() or "—"}</td></tr>
     <tr><td style="padding: 8px; color: #64748b;">Files</td><td style="padding: 8px;"><strong>{len(trial_files)}</strong></td></tr>
   </table>
-  <p style="font-size: 14px; color: #64748b;">Review in your admin dashboard.</p>
+  <p style="font-size: 14px; color: #64748b;">{status_note}</p>
 </div>""",
             )
     except Exception:
@@ -294,6 +374,26 @@ async def submit_trial(
 
 
 # ── Admin endpoints ──────────────────────────────────────────
+
+
+@router.get("/api/v1/admin/trials/config")
+async def get_trials_config(
+    _key: str = Depends(verify_admin_key),
+) -> JSONResponse:
+    """Expose the trial auto-submit flag to the admin UI.
+
+    Registered BEFORE ``/api/v1/admin/trials/{submission_id}`` so it doesn't
+    get shadowed by the UUID-parameterized route.
+    """
+    from lintpdf.api.config import get_settings
+
+    settings = get_settings()
+    return JSONResponse(
+        content={
+            "auto_submit": bool(settings.trial_auto_submit),
+            "auto_submit_profile_id": settings.trial_auto_submit_profile_id,
+        }
+    )
 
 
 @router.get("/api/v1/admin/trials", response_model=TrialListResponse)
@@ -441,44 +541,12 @@ async def run_trial_preflight(
                 detail="Preflight already running for this file.",
             )
 
-    trial_tenant = _get_or_create_trial_tenant(db)
-
-    # Download the file from storage, re-upload under trial tenant path
-    from lintpdf.api.storage import get_storage
-
-    storage = get_storage()
-    loop = asyncio.get_running_loop()
-    pdf_bytes = await loop.run_in_executor(None, storage.download_pdf, tf.file_key)
-
-    job_id = uuid_mod.uuid4()
-    file_key = await loop.run_in_executor(
-        None, storage.upload_pdf, str(trial_tenant.id), str(job_id), pdf_bytes
-    )
-
-    job = Job(
-        id=job_id,
-        tenant_id=trial_tenant.id,
-        status=JobStatus.PENDING,
-        profile_id=profile_id,
-        file_key=file_key,
-        file_name=tf.file_name,
-        file_size=tf.file_size,
-    )
-    db.add(job)
-
-    tf.job_id = job_id
     sub = db.query(TrialSubmission).filter(TrialSubmission.id == s_uid).first()
-    if sub and sub.status == TrialSubmissionStatus.PENDING:
-        sub.status = TrialSubmissionStatus.PROCESSING
+    if sub is None:
+        raise HTTPException(status_code=404, detail="Submission not found.")
+
+    job_id = await _queue_preflight_for_file(db, sub, tf, profile_id)
     db.commit()
-
-    # Queue the preflight task
-    from lintpdf.queue.tasks import run_preflight
-
-    run_preflight.apply_async(
-        args=[str(job_id), profile_id, file_key],
-        queue="default",
-    )
 
     return JSONResponse(
         content={"job_id": str(job_id), "message": "Preflight queued."},

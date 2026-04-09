@@ -295,13 +295,21 @@ def _detect_custom_mime(content: bytes) -> str | None:
 
 
 def scan_for_malware(content: bytes, settings: Settings) -> None:
-    """Scan file bytes with ClamAV if configured.
+    """Scan file bytes with ClamAV.
 
-    Fails open: if ClamAV is unreachable, logs a warning and returns
-    (does not block the upload). Raises HTTPException(422) if malware found.
+    Fails CLOSED: if ClamAV is not configured or unreachable, raises
+    HTTPException(503) to block the upload. Raises HTTPException(422)
+    if malware is found. This is a hard security requirement — all
+    upload endpoints that pass ``settings`` require a working clamd.
     """
     if not settings.clamav_url:
-        return
+        logger.error(
+            "ClamAV is not configured (LINTPDF_CLAMAV_URL is unset) — rejecting upload"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Virus scanning is not configured. Upload refused.",
+        )
 
     try:
         host, _, port_str = settings.clamav_url.rpartition(":")
@@ -311,18 +319,24 @@ def scan_for_malware(content: bytes, settings: Settings) -> None:
 
         scanner = _clamd_mod.ClamdNetworkSocket(host=host, port=port, timeout=30)
         result = scanner.instream(BytesIO(content))
-
-        if result and result.get("stream", ("OK",))[0] == "FOUND":
-            virus_name = result["stream"][1]
-            logger.warning("Malware detected in upload: %s", virus_name)
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="File rejected: potential malware detected.",
-            )
     except HTTPException:
         raise
-    except Exception:
-        logger.warning("ClamAV scan failed — service may be unreachable", exc_info=True)
+    except Exception as exc:
+        logger.warning(
+            "ClamAV scan failed — service unreachable at %s", settings.clamav_url, exc_info=True
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Virus scanning is temporarily unavailable. Please try again.",
+        ) from exc
+
+    if result and result.get("stream", ("OK",))[0] == "FOUND":
+        virus_name = result["stream"][1]
+        logger.warning("Malware detected in upload: %s", virus_name)
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="File rejected: potential malware detected.",
+        )
 
 
 # ---------------------------------------------------------------------------

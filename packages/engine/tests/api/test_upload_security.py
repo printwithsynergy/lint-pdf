@@ -507,13 +507,15 @@ class TestSizeLimits:
 
 class TestClamAVScanning:
     @pytest.mark.asyncio
-    async def test_scan_skipped_when_no_url(self) -> None:
-        """When settings.clamav_url is None, scanning is skipped."""
+    async def test_scan_fails_closed_when_no_url(self) -> None:
+        """When settings.clamav_url is unset, upload is REFUSED (fail-closed)."""
         settings = MagicMock()
         settings.clamav_url = None
         upload = _make_upload(MINIMAL_PDF, "clean.pdf")
-        content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
-        assert content == MINIMAL_PDF
+        with pytest.raises(HTTPException) as exc_info:
+            await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
+        assert exc_info.value.status_code == 503
+        assert "not configured" in exc_info.value.detail.lower()
 
     @pytest.mark.asyncio
     async def test_scan_rejects_malware(self) -> None:
@@ -548,16 +550,28 @@ class TestClamAVScanning:
             assert content == MINIMAL_PDF
 
     @pytest.mark.asyncio
-    async def test_scan_fails_open_on_error(self) -> None:
-        """When ClamAV is unreachable, the upload should still proceed (fail-open)."""
+    async def test_scan_fails_closed_on_unreachable(self) -> None:
+        """When ClamAV is unreachable, the upload is REFUSED (fail-closed)."""
         settings = MagicMock()
         settings.clamav_url = "unreachable:3310"
 
         with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
             mock_clamd.ClamdNetworkSocket.side_effect = ConnectionError("unreachable")
             upload = _make_upload(MINIMAL_PDF, "file.pdf")
-            content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
-            assert content == MINIMAL_PDF
+            with pytest.raises(HTTPException) as exc_info:
+                await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
+            assert exc_info.value.status_code == 503
+            assert "unavailable" in exc_info.value.detail.lower()
+
+    @pytest.mark.asyncio
+    async def test_scan_skipped_when_no_settings(self) -> None:
+        """When no settings object is passed, scanning is entirely skipped.
+
+        This is the internal/test-only path — production callers always pass settings.
+        """
+        upload = _make_upload(MINIMAL_PDF, "clean.pdf")
+        content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=None)
+        assert content == MINIMAL_PDF
 
 
 # ---------------------------------------------------------------------------

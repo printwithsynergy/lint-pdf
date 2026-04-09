@@ -55,11 +55,18 @@ class Settings(BaseSettings):
     # GPU inference service URL (required for AI features — set LINTPDF_GPU_INFERENCE_URL)
     gpu_inference_url: str = ""
 
-    # ClamAV malware scanning (optional — set to enable virus scanning on uploads)
+    # ClamAV malware scanning — REQUIRED: uploads fail-closed if unset or unreachable.
+    # Format: "host:port" (e.g. "clamd:3310"). Set via LINTPDF_CLAMAV_URL.
     clamav_url: str | None = None
 
     # Trial upload secret (shared with marketing site)
     trial_secret: str = ""
+
+    # Trial: auto-queue preflight on submission instead of waiting for admin action.
+    # When false (default), submissions sit in PENDING until an admin clicks "Run Preflight".
+    # When true, preflight is queued immediately on submit; admin still sends the report.
+    trial_auto_submit: bool = False
+    trial_auto_submit_profile_id: str = "lintpdf-default"
 
     @property
     def max_upload_size_bytes(self) -> int:

@@ -41,7 +41,26 @@ export default function AdminTrialsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [autoSubmit, setAutoSubmit] = useState<boolean | null>(null);
   const pageSize = 50;
+
+  // Fetch the engine's trial auto-submit flag so the admin knows which mode we're in.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/lintpdf/admin/trials/config")
+      .then((resp) => (resp.ok ? resp.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.auto_submit === "boolean") {
+          setAutoSubmit(data.auto_submit);
+        }
+      })
+      .catch(() => {
+        // Non-fatal — just don't show the banner.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const fetchSubmissions = useCallback(async () => {
     setLoading(true);
@@ -200,6 +219,30 @@ export default function AdminTrialsPage() {
         prospects
       </p>
 
+      {/* Auto-submit mode banner */}
+      {autoSubmit !== null && (
+        <div
+          className={`mt-4 rounded-md border p-3 text-sm ${
+            autoSubmit
+              ? "border-green-200 bg-green-50 text-green-800"
+              : "border-amber-200 bg-amber-50 text-amber-800"
+          }`}
+        >
+          {autoSubmit ? (
+            <>
+              <strong>Auto-Submit: ON</strong> — incoming trials are
+              preflighted automatically. You only need to review the results
+              and send the report email.
+            </>
+          ) : (
+            <>
+              <strong>Auto-Submit: OFF</strong> — review pending submissions
+              and click &ldquo;Run Preflight&rdquo; to process each file.
+            </>
+          )}
+        </div>
+      )}
+
       {/* Filters */}
       <div className="mt-4 flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Filter:</span>
@@ -301,6 +344,18 @@ export default function AdminTrialsPage() {
                               </span>
                               <span className="text-xs text-muted-foreground">
                                 {formatSize(f.file_size)}
+                                {" · "}
+                                <span
+                                  className={
+                                    f.scan_clean
+                                      ? "text-green-700"
+                                      : "text-red-700"
+                                  }
+                                >
+                                  {f.scan_clean
+                                    ? "Virus scan: clean"
+                                    : "Virus scan: unknown"}
+                                </span>
                                 {f.job_status
                                   ? ` · Preflight: ${f.job_status}`
                                   : ""}

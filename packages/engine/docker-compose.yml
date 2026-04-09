@@ -11,6 +11,7 @@ services:
       - LINTPDF_REDIS_URL=redis://redis:6379/0
       - REDIS_URL=redis://redis:6379/0
       - LINTPDF_VERAPDF_URL=http://verapdf:8080
+      - LINTPDF_CLAMAV_URL=clamav:3310
     depends_on:
       postgres:
         condition: service_healthy
@@ -18,6 +19,8 @@ services:
         condition: service_healthy
       verapdf:
         condition: service_started
+      clamav:
+        condition: service_healthy
     volumes:
       - ./src:/app/src  # Hot reload in dev
 
@@ -119,6 +122,24 @@ services:
       - "8080:8080"
     environment:
       JAVA_OPTS: "-Xmx512m"
+
+  # --- ClamAV (virus scanning sidecar) ---
+  # Required by upload_security.scan_for_malware — endpoints fail-closed
+  # if this is unreachable. The first start downloads signatures and can
+  # take a minute or two; healthcheck gates dependent services until ready.
+  clamav:
+    image: clamav/clamav:stable
+    ports:
+      - "3310:3310"
+    environment:
+      CLAMAV_NO_MILTERD: "true"
+      CLAMAV_NO_FRESHCLAMD: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 1 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
 
 volumes:
   pgdata:

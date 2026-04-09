@@ -73,6 +73,27 @@ def _disable_lifespan_services(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "")
     monkeypatch.setenv("LINTPDF_DATABASE_URL", "")
     monkeypatch.setenv("LINTPDF_REDIS_URL", "")
+    # Provide a ClamAV URL so scan_for_malware doesn't fail-closed in tests.
+    # Individual tests that want to exercise ClamAV behavior override _clamd_mod.
+    monkeypatch.setenv("LINTPDF_CLAMAV_URL", "mockclamav:3310")
+
+
+@pytest.fixture(autouse=True)
+def _mock_clamav_clean(monkeypatch, request):
+    """Return a 'clean' ClamAV result by default so upload tests pass.
+
+    Tests in ``test_upload_security.py`` assert real scan_for_malware behavior;
+    they patch ``_clamd_mod`` themselves and override this default.
+    """
+    if "test_upload_security" in request.node.nodeid:
+        return  # let the real tests exercise their own patches
+    from unittest.mock import MagicMock
+
+    mock_scanner = MagicMock()
+    mock_scanner.instream.return_value = {"stream": ("OK", None)}
+    mock_clamd = MagicMock()
+    mock_clamd.ClamdNetworkSocket.return_value = mock_scanner
+    monkeypatch.setattr("lintpdf.api.upload_security._clamd_mod", mock_clamd)
 
 
 @pytest.fixture(autouse=True)

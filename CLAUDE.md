@@ -91,6 +91,33 @@ When adding new columns to the Prisma schema that Pixie Dust expects, also add t
 
 ---
 
+## Trial / Try-It Page
+
+The public `/try-it` page (`packages/web/src/app/try-it/page.tsx`) lets prospects upload PDFs for a free preflight report. The flow is **env-gated**:
+
+| `LINTPDF_TRIAL_AUTO_SUBMIT` | Behavior |
+|---|---|
+| `false` *(default)* | Submission lands in the admin queue with status `PENDING`. An admin must log into `/dashboard/admin/trials`, click **Run Preflight** on each file, wait for the job to complete, then click **Send Report Email**. |
+| `true` | Preflight is queued **automatically** on submission. The submission still shows up in the admin queue (for monitoring and re-runs), but moves straight to `PROCESSING`. The admin still manually clicks **Send Report Email** once jobs complete — report delivery is never automated. |
+
+Supporting env vars:
+- `LINTPDF_TRIAL_SECRET` — shared secret between the marketing site and the engine (required).
+- `LINTPDF_TRIAL_AUTO_SUBMIT_PROFILE_ID` — profile id used for auto-submit (default: `lintpdf-default`).
+- `LINTPDF_ADMIN_EMAIL` — recipient for new-submission notifications.
+
+The admin UI (`packages/app/app/dashboard/admin/trials/page.tsx`) reads the current mode via `GET /api/v1/admin/trials/config` and shows an **Auto-Submit: ON/OFF** banner so admins know whether action is required.
+
+### ClamAV is REQUIRED (fail-closed)
+
+Every upload endpoint (`/api/v1/jobs`, `/api/v1/batch/submit`, `/api/v1/endpoints/{id}/submit`, `/api/v1/trial/submit`, `/api/v1/ai/config/logos`) calls `validate_upload()` in `packages/engine/src/lintpdf/api/upload_security.py`, which fails-closed:
+- `LINTPDF_CLAMAV_URL` unset → HTTP 503, upload refused.
+- `clamd` unreachable/timeout → HTTP 503, upload refused.
+- Malware detected → HTTP 422, upload rejected.
+
+**Before deploying, `LINTPDF_CLAMAV_URL` MUST be set and a reachable `clamd` daemon MUST be running**, otherwise every upload breaks. Local dev is handled by the `clamav` service in `packages/engine/docker-compose.yml` (first boot downloads signatures and takes ~1–2 minutes — the healthcheck gates the api container until it's ready).
+
+---
+
 ## Shared Database
 
 The app (Prisma) and engine (SQLAlchemy/Alembic) share the same PostgreSQL database. This means:
