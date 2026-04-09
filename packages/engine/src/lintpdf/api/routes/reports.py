@@ -70,18 +70,24 @@ def _resolve_branding(
     override: object | None,
     whitelabel_enabled: bool,
     db: Session,
-) -> BrandingContext:
+) -> tuple[BrandingContext, BrandProfile | None]:
     """Resolve branding using the hierarchy: per-call > brand profile > tenant defaults > LintPDF.
 
     Profile types:
     - CUSTOM: use the profile's brand fields
     - LINTPDF: use LintPDF default branding
     - NONE: blank everything (blind/neutral mode)
+
+    Returns:
+        (branding_context, active_brand_profile) — the active profile is
+        returned alongside so callers can pass it to
+        ``resolve_report_base_url()`` without re-querying the DB.
     """
     from lintpdf.reports.service import BrandingContext
 
     # Start with LintPDF defaults
     branding = BrandingContext()
+    profile: BrandProfile | None = None
 
     # If whitelabel enabled, check for a default brand profile
     if whitelabel_enabled and tenant.default_brand_profile_id:
@@ -141,7 +147,7 @@ def _resolve_branding(
         if hasattr(override, "hide_footer") and override.hide_footer is not None:  # type: ignore[union-attr]
             branding.footer_text = None if override.hide_footer else "Powered by LintPDF"  # type: ignore[union-attr]
 
-    return branding
+    return branding, profile
 
 
 # --- Authenticated endpoints ---
@@ -205,15 +211,19 @@ async def generate_reports(  # skipcq: PY-R1000
 
     from lintpdf.api.config import get_settings
     from lintpdf.api.storage import get_storage
-    from lintpdf.reports.service import ReportService
+    from lintpdf.reports.service import ReportService, resolve_report_base_url
     from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
 
     settings = get_settings()
     storage = get_storage()
     service = ReportService(storage, db)
 
-    # Build branding context — resolve from brand profile hierarchy
-    branding = _resolve_branding(tenant, body.branding, entitlements.whitelabel_enabled, db)
+    # Build branding context — resolve from brand profile hierarchy.
+    # We also get the active profile back so we can pass it to the report
+    # base URL resolver (per-profile custom domains beat tenant ones).
+    branding, active_profile = _resolve_branding(
+        tenant, body.branding, entitlements.whitelabel_enabled, db
+    )
 
     # Determine expiry
     expiry_days = body.expiry_days
@@ -254,7 +264,9 @@ async def generate_reports(  # skipcq: PY-R1000
             formats=body.formats,
             expiry_days=expiry_days,
             branding=branding,
-            report_base_url=settings.report_base_url,
+            report_base_url=resolve_report_base_url(
+                tenant, active_profile, entitlements, settings
+            ),
         ),
     )
 

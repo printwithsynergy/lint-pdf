@@ -69,7 +69,7 @@ class TestSettingsDefaults:
     def test_default_report_base_url() -> None:
         with patch.dict("os.environ", {}, clear=True):
             s = Settings()
-            assert s.report_base_url == "https://reports.lintpdf.com"
+            assert s.report_base_url == "https://api.lintpdf.com"
 
     @staticmethod
     def test_default_admin_api_key() -> None:

@@ -259,7 +259,7 @@ class TestSendReport:
             to="user@example.com",
             tenant_name="Acme Corp",
             job_id="job-001",
-            report_url="https://reports.lintpdf.com/r/abc123",
+            report_url="https://api.lintpdf.com/r/abc123",
             finding_count=0,
             passed=True,
         )
@@ -267,7 +267,7 @@ class TestSendReport:
         call_args = mock_email_client.send.call_args[0][0]
         assert "passed" in call_args["subject"]
         assert "PASS" in call_args["html"]
-        assert "https://reports.lintpdf.com/r/abc123" in call_args["html"]
+        assert "https://api.lintpdf.com/r/abc123" in call_args["html"]
 
     @staticmethod
     def test_failed_report(mock_email_client: MagicMock) -> None:
@@ -275,7 +275,7 @@ class TestSendReport:
             to="user@example.com",
             tenant_name="Acme Corp",
             job_id="job-001",
-            report_url="https://reports.lintpdf.com/r/abc123",
+            report_url="https://api.lintpdf.com/r/abc123",
             finding_count=3,
             passed=False,
         )
@@ -289,7 +289,7 @@ class TestSendReport:
             to="user@example.com",
             tenant_name="Acme Corp",
             job_id="job-001",
-            report_url="https://reports.lintpdf.com/r/abc",
+            report_url="https://api.lintpdf.com/r/abc",
             finding_count=0,
             passed=True,
             brand_name="AcmePrint",

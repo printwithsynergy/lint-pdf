@@ -32,6 +32,9 @@ dependencies = [
     "defusedxml>=0.7.0",
     "filetype>=1.2.0",
     "clamd>=1.0.2",
+    # DNS resolution for the white-label custom domain probe task —
+    # checks customers' CNAME records before flipping `verified=True`.
+    "dnspython>=2.6.0",
     # Required by viewer routes (tile rendering, separation channels, TAC heatmap).
     # Previously these were only in [ai] extras, but the viewer is a core
     # feature, not an AI feature, so it must work without the AI extras.

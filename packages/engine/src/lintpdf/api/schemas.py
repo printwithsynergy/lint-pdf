@@ -408,3 +408,77 @@ class SetDefaultBrandProfileRequest(BaseModel):
     brand_profile_id: uuid.UUID | None = Field(
         description="ID of the brand profile to set as default, or null to clear."
     )
+
+
+# --- White-label custom report domain schemas ---
+
+
+class SetCustomDomainRequest(BaseModel):
+    """Request to set or clear a tenant's white-label custom report domain.
+
+    Pass null to clear the domain. Setting always resets the verified
+    flag to False — only admins can flip verified=True after confirming
+    Railway + DNS are in place.
+    """
+
+    domain: str | None = Field(
+        default=None,
+        max_length=255,
+        description=(
+            "Hostname (no scheme, no path, no port) — e.g. 'reports.acmeprint.com'. "
+            "Pass null to remove the existing domain."
+        ),
+    )
+
+
+class TenantCustomDomainResponse(BaseModel):
+    """Current state of a tenant's white-label custom report domain."""
+
+    tenant_id: uuid.UUID
+    domain: str | None
+    verified: bool
+    requested_at: datetime | None
+    plan_allows_whitelabel: bool
+    dns_target: str = Field(
+        default="api.lintpdf.com",
+        description="The CNAME target customers should point their subdomain at.",
+    )
+
+
+class AdminCustomDomainRow(BaseModel):
+    """Admin view of a tenant-level or profile-level custom domain."""
+
+    scope: str = Field(description="'tenant' or 'brand_profile'")
+    tenant_id: uuid.UUID
+    tenant_name: str
+    brand_profile_id: uuid.UUID | None = None
+    brand_profile_name: str | None = None
+    domain: str
+    verified: bool
+    requested_at: datetime | None
+
+
+class AdminCustomDomainListResponse(BaseModel):
+    """Paginated-ish list of custom domains from the admin panel."""
+
+    pending: list[AdminCustomDomainRow]
+    active: list[AdminCustomDomainRow]
+
+
+class AdminUpdateCustomDomainRequest(BaseModel):
+    """Admin PATCH to set verification state on a custom domain.
+
+    Scope is implicit from which URL parameter is populated — tenant_id
+    vs (tenant_id, profile_id). This body only carries the fields the
+    admin is changing.
+    """
+
+    domain: str | None = Field(
+        default=None,
+        max_length=255,
+        description="New domain value. Pass null to clear the domain entirely.",
+    )
+    verified: bool | None = Field(
+        default=None,
+        description="Flip verified state. null = no change.",
+    )

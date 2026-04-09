@@ -150,6 +150,38 @@ CREATE TABLE IF NOT EXISTS "ReportView" (
 CREATE INDEX IF NOT EXISTS "ReportView_jobId_idx" ON "ReportView"("jobId");
 CREATE INDEX IF NOT EXISTS "ReportView_tenantId_viewedAt_idx" ON "ReportView"("tenantId", "viewedAt");
 CREATE INDEX IF NOT EXISTS "ReportView_reportToken_idx" ON "ReportView"("reportToken");
+
+-- Engine: white-label custom report domain columns (Alembic 014).
+-- These live in the engine-owned "tenants" and "brand_profiles" tables, but
+-- adding them here as well means the columns exist even when Alembic hasn't
+-- run yet (e.g. during a deploy where the app boots before the worker).
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS brand_custom_domain_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS brand_custom_domain_requested_at TIMESTAMPTZ NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS ix_tenants_brand_custom_domain_unique
+  ON tenants (brand_custom_domain)
+  WHERE brand_custom_domain IS NOT NULL;
+
+ALTER TABLE brand_profiles
+  ADD COLUMN IF NOT EXISTS custom_domain VARCHAR(255) NULL;
+ALTER TABLE brand_profiles
+  ADD COLUMN IF NOT EXISTS custom_domain_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE brand_profiles
+  ADD COLUMN IF NOT EXISTS custom_domain_requested_at TIMESTAMPTZ NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS ix_brand_profiles_custom_domain_unique
+  ON brand_profiles (custom_domain)
+  WHERE custom_domain IS NOT NULL;
+
+-- One-shot data migration: rewrite any logo URLs still pinned to the dead
+-- reports.lintpdf.com host (never configured in DNS) to the working
+-- api.lintpdf.com host. Safe to run repeatedly — a no-op on fresh rows.
+UPDATE brand_profiles
+   SET logo_url = REPLACE(logo_url, 'https://reports.lintpdf.com/', 'https://api.lintpdf.com/')
+ WHERE logo_url LIKE 'https://reports.lintpdf.com/%';
+UPDATE tenants
+   SET brand_logo_url = REPLACE(brand_logo_url, 'https://reports.lintpdf.com/', 'https://api.lintpdf.com/')
+ WHERE brand_logo_url LIKE 'https://reports.lintpdf.com/%';
 SQL
 
 echo "Step 1 complete (exit code: $?)"

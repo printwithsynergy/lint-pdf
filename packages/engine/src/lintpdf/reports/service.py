@@ -6,9 +6,47 @@ import logging
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from lintpdf.api.config import Settings
+    from lintpdf.api.models import BrandProfile, Tenant
+    from lintpdf.tenants.entitlements import TenantEntitlements
 
 logger = logging.getLogger(__name__)
+
+
+def resolve_report_base_url(
+    tenant: Tenant,
+    brand_profile: BrandProfile | None,
+    entitlements: TenantEntitlements,
+    settings: Settings,
+) -> str:
+    """Pick the report base URL for a tenant + active brand profile.
+
+    Resolution priority, highest wins:
+      1. brand_profile.custom_domain (if whitelabel_enabled AND verified)
+      2. tenant.brand_custom_domain   (if whitelabel_enabled AND verified)
+      3. settings.report_base_url     (the global default)
+
+    Unverified domains are ignored — the verified flag is the
+    source of truth for "this CNAME is actually live in Railway".
+    This prevents generating broken URLs during the onboarding
+    window between "customer enters domain" and "ops/probe marks active".
+
+    Tenants on plans without the whitelabel entitlement (FREE, STARTER,
+    GROWTH) always get the global default no matter what's in the DB.
+    """
+    if entitlements.whitelabel_enabled:
+        if (
+            brand_profile is not None
+            and brand_profile.custom_domain
+            and brand_profile.custom_domain_verified
+        ):
+            return f"https://{brand_profile.custom_domain}"
+        if tenant.brand_custom_domain and tenant.brand_custom_domain_verified:
+            return f"https://{tenant.brand_custom_domain}"
+    return settings.report_base_url
 
 
 @dataclass
@@ -47,7 +85,7 @@ class ReportService:
         formats: list[str] | None = None,
         expiry_days: int | None = None,
         branding: BrandingContext | None = None,
-        report_base_url: str = "https://reports.lintpdf.com",
+        report_base_url: str = "https://api.lintpdf.com",
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 

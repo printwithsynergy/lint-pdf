@@ -44,7 +44,18 @@ class Settings(BaseSettings):
     s3_region: str = "auto"
 
     # Report hosting
-    report_base_url: str = "https://reports.lintpdf.com"
+    #
+    # The engine serves /r/{token} routes at this base URL. Default points at
+    # api.lintpdf.com (the engine's primary custom domain) because that's the
+    # host we actually own and route to this service in Railway. An earlier
+    # draft defaulted to https://reports.lintpdf.com which does not exist in
+    # DNS — clicking report links was bouncing users to a generic login page.
+    #
+    # Tenants with the whitelabel entitlement can override per-tenant (via
+    # tenants.brand_custom_domain, gated on brand_custom_domain_verified) or
+    # per-brand-profile (via brand_profiles.custom_domain); the override is
+    # resolved by lintpdf.reports.service.resolve_report_base_url().
+    report_base_url: str = "https://api.lintpdf.com"
 
     # Admin
     admin_api_key: str = ""

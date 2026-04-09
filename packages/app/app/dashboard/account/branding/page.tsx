@@ -173,7 +173,8 @@ export default function BrandingPage() {
 
   return (
     <main className="max-w-4xl p-8">
-      <div className="flex items-center justify-between">
+      <CustomReportDomainCard />
+      <div className="mt-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Brand Profiles</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -400,5 +401,229 @@ export default function BrandingPage() {
         confirmLabel="Delete"
       />
     </main>
+  );
+}
+
+
+// ----------------------------------------------------------------------
+// White-label custom report domain card (self-service)
+// ----------------------------------------------------------------------
+
+interface CustomDomainState {
+  tenant_id: string;
+  domain: string | null;
+  verified: boolean;
+  requested_at: string | null;
+  plan_allows_whitelabel: boolean;
+  dns_target: string;
+}
+
+function CustomReportDomainCard() {
+  const { toast } = useToast();
+  const [state, setState] = useState<CustomDomainState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formDomain, setFormDomain] = useState("");
+  const [editMode, setEditMode] = useState(false);
+
+  const fetchState = useCallback(async () => {
+    try {
+      const resp = await fetch("/api/lintpdf/branding/custom-domain");
+      if (!resp.ok) {
+        if (resp.status === 403) {
+          // Plan doesn't allow — still show the upsell card
+          setState({
+            tenant_id: "",
+            domain: null,
+            verified: false,
+            requested_at: null,
+            plan_allows_whitelabel: false,
+            dns_target: "api.lintpdf.com",
+          });
+        }
+        return;
+      }
+      const data = (await resp.json()) as CustomDomainState;
+      setState(data);
+      setFormDomain(data.domain ?? "");
+    } catch {
+      // ignore — card just stays empty
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchState();
+  }, [fetchState]);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const resp = await fetch("/api/lintpdf/branding/custom-domain", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: formDomain.trim() || null }),
+      });
+      if (!resp.ok) {
+        const err = (await resp.json().catch(() => ({}))) as {
+          error?: string;
+          detail?: string;
+        };
+        throw new Error(err.detail ?? err.error ?? "Failed to save");
+      }
+      toast("Custom domain saved", "success");
+      setEditMode(false);
+      await fetchState();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleClear() {
+    setSaving(true);
+    try {
+      const resp = await fetch("/api/lintpdf/branding/custom-domain", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: null }),
+      });
+      if (!resp.ok) throw new Error("Failed to remove domain");
+      toast("Custom domain removed", "success");
+      setFormDomain("");
+      setEditMode(false);
+      await fetchState();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to remove", "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return null;
+  }
+  if (!state) return null;
+
+  // Gate: plan doesn't include white-label
+  if (!state.plan_allows_whitelabel) {
+    return (
+      <div className="rounded-lg border bg-muted/30 p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold">White-Label Custom Report Domain</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Host your reports at your own domain (e.g. <code>reports.yourcompany.com</code>) so
+              clients never see a LintPDF URL. Available on Scale and Enterprise plans.
+            </p>
+          </div>
+          <Badge variant="outline">Upgrade required</Badge>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">White-Label Custom Report Domain</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Serve hosted reports at your own subdomain. All <code>/r/&lt;token&gt;</code> links
+            returned by the API will use this host after verification.
+          </p>
+        </div>
+        {state.domain && state.verified && <Badge variant="success">Active</Badge>}
+        {state.domain && !state.verified && <Badge variant="outline">Pending</Badge>}
+        {!state.domain && <Badge variant="secondary">Not set</Badge>}
+      </div>
+
+      {/* Read mode */}
+      {!editMode && (
+        <div className="mt-4 space-y-3">
+          {state.domain ? (
+            <div className="rounded-md bg-muted/40 p-3 font-mono text-sm">
+              https://{state.domain}/r/&lt;token&gt;
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">No custom domain configured.</p>
+          )}
+
+          {state.domain && !state.verified && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-100">
+              <p className="font-semibold">Next steps to activate</p>
+              <ol className="ml-5 mt-2 list-decimal space-y-1">
+                <li>
+                  In your DNS provider, add a <code>CNAME</code> record:{" "}
+                  <code>{state.domain}</code> &rarr; <code>{state.dns_target}</code>
+                </li>
+                <li>
+                  Wait for DNS to propagate (usually a few minutes).
+                </li>
+                <li>
+                  LintPDF checks your CNAME every 5 minutes and will automatically activate the
+                  domain once it resolves. You can also email <code>support@lintpdf.com</code> to
+                  have an operator fast-track verification.
+                </li>
+              </ol>
+              <p className="mt-2">
+                Reports keep using the default LintPDF URL until the check passes.
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setEditMode(true)}>
+              {state.domain ? "Change domain" : "Set custom domain"}
+            </Button>
+            {state.domain && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleClear}
+                disabled={saving}
+              >
+                Remove
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Edit mode */}
+      {editMode && (
+        <div className="mt-4 space-y-3">
+          <FormField label="Custom domain">
+            <Input
+              placeholder="reports.yourcompany.com"
+              value={formDomain}
+              onChange={(e) => setFormDomain(e.target.value)}
+              disabled={saving}
+            />
+          </FormField>
+          <p className="text-xs text-muted-foreground">
+            Enter a bare hostname — no scheme, no path, no port. Setting a new value resets
+            verification and requires DNS to be re-pointed.
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={saving || !formDomain.trim()}>
+              {saving ? "Saving..." : "Save"}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setEditMode(false);
+                setFormDomain(state.domain ?? "");
+              }}
+              disabled={saving}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

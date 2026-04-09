@@ -13,6 +13,10 @@ from sqlalchemy.orm import Session  # noqa: TC002
 from lintpdf.api.auth import generate_api_key, hash_api_key, verify_admin_key
 from lintpdf.api.database import get_db
 from lintpdf.api.models import ApiKey, Job, Tenant
+from lintpdf.api.schemas import (
+    AdminCustomDomainListResponse,
+    AdminUpdateCustomDomainRequest,
+)
 
 router = APIRouter(prefix="/api/v1/admin", tags=["admin"])
 
@@ -315,6 +319,159 @@ async def update_tenant_status(
     tenant.is_active = body.is_active
     db.commit()
     return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
+
+
+# ── White-label custom report domain (admin override) ───────
+
+
+@router.get(
+    "/custom-domains",
+    response_model=AdminCustomDomainListResponse,
+)
+async def admin_list_custom_domains(
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminCustomDomainListResponse:
+    """List all tenant + brand-profile custom domains, split by verified status."""
+    from lintpdf.api.models import BrandProfile
+    from lintpdf.api.schemas import AdminCustomDomainRow
+
+    tenant_rows = (
+        db.query(Tenant)
+        .filter(Tenant.brand_custom_domain.isnot(None))
+        .all()
+    )
+    profile_rows = (
+        db.query(BrandProfile, Tenant)
+        .join(Tenant, BrandProfile.tenant_id == Tenant.id)
+        .filter(BrandProfile.custom_domain.isnot(None))
+        .all()
+    )
+
+    pending: list[AdminCustomDomainRow] = []
+    active: list[AdminCustomDomainRow] = []
+
+    for t in tenant_rows:
+        row = AdminCustomDomainRow(
+            scope="tenant",
+            tenant_id=t.id,
+            tenant_name=t.name,
+            brand_profile_id=None,
+            brand_profile_name=None,
+            domain=t.brand_custom_domain or "",
+            verified=t.brand_custom_domain_verified,
+            requested_at=t.brand_custom_domain_requested_at,
+        )
+        (active if t.brand_custom_domain_verified else pending).append(row)
+
+    for profile, tenant in profile_rows:
+        row = AdminCustomDomainRow(
+            scope="brand_profile",
+            tenant_id=tenant.id,
+            tenant_name=tenant.name,
+            brand_profile_id=profile.id,
+            brand_profile_name=profile.name,
+            domain=profile.custom_domain or "",
+            verified=profile.custom_domain_verified,
+            requested_at=profile.custom_domain_requested_at,
+        )
+        (active if profile.custom_domain_verified else pending).append(row)
+
+    return AdminCustomDomainListResponse(pending=pending, active=active)
+
+
+@router.patch(
+    "/tenants/{tenant_id}/custom-domain",
+    response_model=AdminTenantResponse,
+)
+async def admin_update_tenant_custom_domain(
+    tenant_id: str,
+    body: AdminUpdateCustomDomainRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminTenantResponse:
+    """Admin override: set/clear a tenant's custom domain and/or flip verified."""
+    from sqlalchemy.exc import IntegrityError
+
+    from lintpdf.api.routes.branding import validate_custom_domain
+
+    tenant = _get_tenant(db, tenant_id)
+
+    if body.domain is not None:
+        if body.domain.strip() == "":
+            tenant.brand_custom_domain = None
+            tenant.brand_custom_domain_verified = False
+            tenant.brand_custom_domain_requested_at = None
+        else:
+            tenant.brand_custom_domain = validate_custom_domain(body.domain)
+
+    if body.verified is not None:
+        tenant.brand_custom_domain_verified = body.verified
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That domain is already claimed by another tenant.",
+        ) from exc
+
+    return AdminTenantResponse(
+        id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True
+    )
+
+
+@router.patch(
+    "/brand-profiles/{profile_id}/custom-domain",
+    response_model=AdminTenantResponse,
+)
+async def admin_update_brand_profile_custom_domain(
+    profile_id: str,
+    body: AdminUpdateCustomDomainRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminTenantResponse:
+    """Admin override for a per-profile custom domain."""
+    from sqlalchemy.exc import IntegrityError
+
+    from lintpdf.api.models import BrandProfile
+    from lintpdf.api.routes.branding import validate_custom_domain
+
+    pid = _parse_uuid(profile_id)
+    profile = db.query(BrandProfile).filter(BrandProfile.id == pid).first()
+    if profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Brand profile not found."
+        )
+
+    if body.domain is not None:
+        if body.domain.strip() == "":
+            profile.custom_domain = None
+            profile.custom_domain_verified = False
+            profile.custom_domain_requested_at = None
+        else:
+            profile.custom_domain = validate_custom_domain(body.domain)
+
+    if body.verified is not None:
+        profile.custom_domain_verified = body.verified
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That domain is already claimed by another brand profile.",
+        ) from exc
+
+    tenant = db.query(Tenant).filter(Tenant.id == profile.tenant_id).first()
+    return AdminTenantResponse(
+        id=str(profile.tenant_id),
+        name=tenant.name if tenant else "",
+        plan=tenant.plan if tenant else None,
+        updated=True,
+    )
 
 
 # ── API key management ───────────────────────────────────────

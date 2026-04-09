@@ -389,6 +389,181 @@ def cleanup_expired_reports() -> dict[str, Any]:
         db.close()
 
 
+# --- White-label custom domain DNS verification probe --------------------
+
+
+def _resolve_cname(hostname: str) -> str | None:
+    """Return the CNAME target for ``hostname`` (FQDN, lowercase, no trailing dot).
+
+    Returns None if the lookup fails or no CNAME is set. Wrapped so the task
+    can be unit-tested with a simple monkeypatch, and so the slightly odd
+    dnspython import surface is isolated.
+    """
+    try:
+        import dns.resolver  # type: ignore[import-untyped]
+    except ImportError:
+        logger.warning("dnspython not installed — DNS probe disabled")
+        return None
+
+    try:
+        answers = dns.resolver.resolve(hostname, "CNAME", lifetime=5.0)
+    except Exception as exc:
+        logger.debug("CNAME lookup failed for %s: %s", hostname, exc)
+        return None
+
+    for answer in answers:
+        target = str(answer.target).rstrip(".").lower()
+        if target:
+            return target
+    return None
+
+
+# CNAME targets we consider "correctly pointed at LintPDF". Customers can
+# point at either the engine's primary host or Railway's edge (which is
+# technically what a Railway custom domain resolves to once registered).
+_ACCEPTABLE_CNAME_TARGETS: tuple[str, ...] = (
+    "api.lintpdf.com",
+    "lintpdf-production.up.railway.app",
+    "backboard.railway.app",
+)
+
+
+def _cname_is_acceptable(target: str | None) -> bool:
+    if not target:
+        return False
+    target = target.rstrip(".").lower()
+    return any(
+        target == t or target.endswith(f".{t}") or target.endswith(t)
+        for t in _ACCEPTABLE_CNAME_TARGETS
+    )
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    name="lintpdf.queue.tasks.probe_pending_custom_domains",
+)
+def probe_pending_custom_domains() -> dict[str, Any]:
+    """Check every pending custom report domain's CNAME; auto-activate when live.
+
+    For each unverified domain (tenant-level OR brand-profile-level):
+
+      1. Do a CNAME lookup.
+      2. If CNAME points at an acceptable LintPDF host:
+         a. Try to register the domain on Railway via GraphQL.
+         b. If created / already_exists, flip verified=True in the DB.
+      3. If CNAME doesn't match or Railway is disabled, leave pending.
+
+    Runs on a 5-minute Celery beat schedule. Safe to run concurrently
+    (commits per-row) and idempotent (verified rows are ignored).
+    """
+    from lintpdf.api.database import get_db_session
+    from lintpdf.api.models import BrandProfile, Tenant
+    from lintpdf.integrations.railway import RailwayClient
+
+    result: dict[str, Any] = {
+        "checked": 0,
+        "activated": 0,
+        "railway_registered": 0,
+        "cname_mismatch": 0,
+        "railway_disabled": 0,
+        "errors": 0,
+    }
+
+    client = RailwayClient()
+    db = get_db_session()
+    try:
+        pending_tenants: list[Tenant] = (
+            db.query(Tenant)
+            .filter(
+                Tenant.brand_custom_domain.isnot(None),
+                Tenant.brand_custom_domain_verified.is_(False),
+            )
+            .all()
+        )
+        pending_profiles: list[BrandProfile] = (
+            db.query(BrandProfile)
+            .filter(
+                BrandProfile.custom_domain.isnot(None),
+                BrandProfile.custom_domain_verified.is_(False),
+            )
+            .all()
+        )
+
+        for tenant in pending_tenants:
+            result["checked"] += 1
+            domain = tenant.brand_custom_domain
+            if not domain:
+                continue
+            cname = _resolve_cname(domain)
+            if not _cname_is_acceptable(cname):
+                result["cname_mismatch"] += 1
+                logger.info(
+                    "Custom domain %s not yet pointed at LintPDF (CNAME=%s)",
+                    domain,
+                    cname,
+                )
+                continue
+
+            outcome = client.add_custom_domain(domain)
+            if outcome.status in ("created", "already_exists"):
+                result["railway_registered"] += 1
+                tenant.brand_custom_domain_verified = True
+                db.commit()
+                result["activated"] += 1
+                logger.info(
+                    "Activated tenant custom domain %s (tenant=%s, railway=%s)",
+                    domain,
+                    tenant.id,
+                    outcome.status,
+                )
+            elif outcome.status == "disabled":
+                result["railway_disabled"] += 1
+                # Railway auto-registration is off; ops flips verified by hand.
+            elif outcome.status == "unauthorized":
+                result["railway_disabled"] += 1
+                logger.warning(
+                    "Railway rejected domain %s — project token lacks permission; "
+                    "ops must mark it active manually",
+                    domain,
+                )
+            else:
+                result["errors"] += 1
+                logger.warning(
+                    "Railway add_custom_domain failed for %s: %s",
+                    domain,
+                    outcome.message,
+                )
+
+        for profile in pending_profiles:
+            result["checked"] += 1
+            domain = profile.custom_domain
+            if not domain:
+                continue
+            cname = _resolve_cname(domain)
+            if not _cname_is_acceptable(cname):
+                result["cname_mismatch"] += 1
+                continue
+
+            outcome = client.add_custom_domain(domain)
+            if outcome.status in ("created", "already_exists"):
+                result["railway_registered"] += 1
+                profile.custom_domain_verified = True
+                db.commit()
+                result["activated"] += 1
+            elif outcome.status in ("disabled", "unauthorized"):
+                result["railway_disabled"] += 1
+            else:
+                result["errors"] += 1
+                logger.warning(
+                    "Railway add_custom_domain failed for profile domain %s: %s",
+                    domain,
+                    outcome.message,
+                )
+
+        return result
+    finally:
+        db.close()
+
+
 @celery_app.task(  # type: ignore[untyped-decorator]
     name="lintpdf.viewer.prerender_tiles",
     time_limit=120,

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import re
 import uuid as uuid_mod
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
@@ -15,10 +18,67 @@ from lintpdf.api.schemas import (
     BrandProfileListResponse,
     BrandProfileResponse,
     BrandProfileUpdateRequest,
+    SetCustomDomainRequest,
     SetDefaultBrandProfileRequest,
+    TenantCustomDomainResponse,
 )
 
 router = APIRouter(tags=["branding"])
+
+
+# --- Custom report domain validation ---
+#
+# The validator is intentionally strict because the value ends up in a
+# URL we hand out to the customer's end users. An invalid hostname here
+# would break every report link the customer generates.
+
+_HOSTNAME_RE = re.compile(
+    r"^(?=.{1,253}$)(?!-)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$"
+)
+_BLOCKED_EXACT: frozenset[str] = frozenset(
+    {"lintpdf.com", "localhost", "example.com", "invalid"}
+)
+_BLOCKED_SUFFIXES: tuple[str, ...] = (
+    ".lintpdf.com",
+    ".railway.app",
+    ".railway.internal",
+    ".localhost",
+    ".local",
+    ".internal",
+    ".example.com",
+    ".invalid",
+    ".test",
+)
+
+
+def validate_custom_domain(raw: str) -> str:
+    """Normalize + validate a customer-submitted custom report domain.
+
+    Returns the canonical lowercase hostname on success. Raises HTTP
+    422 on any format issue or if the domain is on the blocklist
+    (LintPDF-owned hosts, localhost, Railway internals).
+    """
+    d = (raw or "").strip().lower().rstrip(".")
+    # Reject scheme or path
+    if "://" in d or "/" in d or " " in d or ":" in d:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "Custom domain must be a bare hostname — no scheme, path, or port. "
+                "Example: reports.acmeprint.com"
+            ),
+        )
+    if not _HOSTNAME_RE.match(d):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="That doesn't look like a valid hostname.",
+        )
+    if d in _BLOCKED_EXACT or any(d.endswith(s) for s in _BLOCKED_SUFFIXES):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="That domain is reserved and can't be used as a custom report domain.",
+        )
+    return d
 
 
 def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileResponse:
@@ -292,11 +352,18 @@ async def upload_brand_logo(
     file_key = f"brand-logos/{tenant.id}/{profile.id}.{ext}"
     storage.upload_file(file_key, content, content_type=file.content_type or "image/png")
 
-    # Update profile logo URL
+    # Update profile logo URL using the per-tenant resolver — if the tenant
+    # has a verified custom domain, logos come from that host too so the
+    # whole report (HTML + <img>) is served under one hostname. Otherwise
+    # logos use the global report_base_url (defaults to api.lintpdf.com).
     from lintpdf.api.config import get_settings
+    from lintpdf.reports.service import resolve_report_base_url
+    from lintpdf.tenants.entitlements import resolve_entitlements
 
     settings = get_settings()
-    logo_url = f"{settings.report_base_url}/assets/{file_key}"
+    entitlements = resolve_entitlements(tenant)
+    base_url = resolve_report_base_url(tenant, profile, entitlements, settings)
+    logo_url = f"{base_url}/assets/{file_key}"
     profile.logo_url = logo_url
 
     db.commit()
@@ -339,4 +406,166 @@ async def set_default_brand_profile(
     db.commit()
     db.refresh(profile)
 
+    return _profile_to_response(profile, tenant)
+
+
+# --- White-label custom report domain (customer self-service) ---
+
+
+def _tenant_custom_domain_response(tenant: Tenant) -> TenantCustomDomainResponse:
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    entitlements = resolve_entitlements(tenant)
+    return TenantCustomDomainResponse(
+        tenant_id=tenant.id,
+        domain=tenant.brand_custom_domain,
+        verified=tenant.brand_custom_domain_verified,
+        requested_at=tenant.brand_custom_domain_requested_at,
+        plan_allows_whitelabel=entitlements.whitelabel_enabled,
+    )
+
+
+@router.get(
+    "/api/v1/tenants/{tenant_id}/custom-domain",
+    response_model=TenantCustomDomainResponse,
+)
+async def get_tenant_custom_domain(
+    tenant_id: str,
+    tenant: Tenant = Depends(get_current_tenant),
+) -> TenantCustomDomainResponse:
+    """Return the current state of the tenant's white-label custom report domain."""
+    if str(tenant.id) != tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
+    return _tenant_custom_domain_response(tenant)
+
+
+@router.patch(
+    "/api/v1/tenants/{tenant_id}/custom-domain",
+    response_model=TenantCustomDomainResponse,
+)
+async def set_tenant_custom_domain(
+    tenant_id: str,
+    request: SetCustomDomainRequest,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> TenantCustomDomainResponse:
+    """Customer self-service: set (or clear) the tenant's white-label custom domain.
+
+    Setting always resets ``brand_custom_domain_verified`` to False —
+    only the admin flow (or the DNS probe task) can flip it back to True.
+
+    Returns 403 if the tenant's plan doesn't include the whitelabel
+    entitlement (SCALE/ENTERPRISE only), 409 if another tenant already
+    claims this domain, 422 if the domain is on the blocklist or
+    otherwise invalid.
+    """
+    if str(tenant.id) != tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
+
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    entitlements = resolve_entitlements(tenant)
+    if not entitlements.whitelabel_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "White-label custom report domains require the Scale or "
+                "Enterprise plan."
+            ),
+        )
+
+    if request.domain is None or request.domain.strip() == "":
+        # Clearing
+        tenant.brand_custom_domain = None
+        tenant.brand_custom_domain_verified = False
+        tenant.brand_custom_domain_requested_at = None
+    else:
+        canonical = validate_custom_domain(request.domain)
+        tenant.brand_custom_domain = canonical
+        tenant.brand_custom_domain_verified = False
+        tenant.brand_custom_domain_requested_at = datetime.now(timezone.utc)
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That domain is already claimed by another tenant.",
+        ) from exc
+
+    db.refresh(tenant)
+    return _tenant_custom_domain_response(tenant)
+
+
+@router.patch(
+    "/api/v1/tenants/{tenant_id}/brand-profiles/{profile_id}/custom-domain",
+    response_model=BrandProfileResponse,
+)
+async def set_brand_profile_custom_domain(
+    tenant_id: str,
+    profile_id: str,
+    request: SetCustomDomainRequest,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> BrandProfileResponse:
+    """Customer self-service: set a per-brand-profile custom report domain.
+
+    Useful for agencies serving multiple clients — each brand profile
+    can point reports at the owning client's own subdomain.
+    """
+    if str(tenant.id) != tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
+
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    entitlements = resolve_entitlements(tenant)
+    if not entitlements.whitelabel_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "White-label custom report domains require the Scale or "
+                "Enterprise plan."
+            ),
+        )
+
+    try:
+        pid = uuid_mod.UUID(profile_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid profile ID format.",
+        ) from exc
+
+    profile = (
+        db.query(BrandProfile)
+        .filter(BrandProfile.id == pid, BrandProfile.tenant_id == tenant.id)
+        .first()
+    )
+    if profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Brand profile not found.",
+        )
+
+    if request.domain is None or request.domain.strip() == "":
+        profile.custom_domain = None
+        profile.custom_domain_verified = False
+        profile.custom_domain_requested_at = None
+    else:
+        canonical = validate_custom_domain(request.domain)
+        profile.custom_domain = canonical
+        profile.custom_domain_verified = False
+        profile.custom_domain_requested_at = datetime.now(timezone.utc)
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That domain is already claimed by another brand profile.",
+        ) from exc
+
+    db.refresh(profile)
     return _profile_to_response(profile, tenant)

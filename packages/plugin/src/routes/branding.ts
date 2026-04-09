@@ -147,5 +147,62 @@ export function brandingRoutes(): RouteDefinition[] {
         return { status: 200, body: await resp.json() };
       }) as RouteHandler,
     },
+    // -- White-label custom report domain (self-service) ------------------
+    {
+      method: "GET" as HttpMethod,
+      path: "/branding/custom-domain",
+      auth: true,
+      permission: "branding:manage",
+      description: "Get the tenant's white-label custom report domain state",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
+        const resp = await engineFetch(
+          `/api/v1/tenants/${tenantId}/custom-domain`,
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "PATCH" as HttpMethod,
+      path: "/branding/custom-domain",
+      auth: true,
+      permission: "branding:manage",
+      description: "Set or clear the tenant's white-label custom report domain",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
+        const resp = await engineFetch(
+          `/api/v1/tenants/${tenantId}/custom-domain`,
+          { method: "PATCH", body: JSON.stringify(req.body) },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "PATCH" as HttpMethod,
+      path: "/branding/profiles/:profileId/custom-domain",
+      auth: true,
+      permission: "branding:manage",
+      description: "Set or clear a brand profile's white-label custom report domain",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const tenantId = await getTenantId(req);
+        if (!tenantId) return { status: 400, body: { error: "Missing tenant context" } };
+        const resp = await engineFetch(
+          `/api/v1/tenants/${tenantId}/brand-profiles/${req.params.profileId}/custom-domain`,
+          { method: "PATCH", body: JSON.stringify(req.body) },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
   ];
 }
