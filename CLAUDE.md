@@ -107,14 +107,14 @@ Supporting env vars:
 
 The admin UI (`packages/app/app/dashboard/admin/trials/page.tsx`) reads the current mode via `GET /api/v1/admin/trials/config` and shows an **Auto-Submit: ON/OFF** banner so admins know whether action is required.
 
-### ClamAV is REQUIRED (fail-closed)
+### ClamAV scanning (best-effort, fail-open)
 
-Every upload endpoint (`/api/v1/jobs`, `/api/v1/batch/submit`, `/api/v1/endpoints/{id}/submit`, `/api/v1/trial/submit`, `/api/v1/ai/config/logos`) calls `validate_upload()` in `packages/engine/src/lintpdf/api/upload_security.py`, which fails-closed:
-- `LINTPDF_CLAMAV_URL` unset → HTTP 503, upload refused.
-- `clamd` unreachable/timeout → HTTP 503, upload refused.
-- Malware detected → HTTP 422, upload rejected.
+Every upload endpoint (`/api/v1/jobs`, `/api/v1/batch/submit`, `/api/v1/endpoints/{id}/submit`, `/api/v1/trial/submit`, `/api/v1/ai/config/logos`) calls `validate_upload()` in `packages/engine/src/lintpdf/api/upload_security.py`. ClamAV scanning is **best-effort**:
+- `LINTPDF_CLAMAV_URL` unset → scan skipped, upload proceeds (warning logged).
+- `clamd` unreachable/timeout → scan skipped, upload proceeds (warning logged).
+- Malware positively detected → HTTP 422, upload rejected.
 
-**Before deploying, `LINTPDF_CLAMAV_URL` MUST be set and a reachable `clamd` daemon MUST be running**, otherwise every upload breaks. Local dev is handled by the `clamav` service in `packages/engine/docker-compose.yml` (first boot downloads signatures and takes ~1–2 minutes — the healthcheck gates the api container until it's ready).
+**Why fail-open?** The production `thinkneverland/railway-clamav` sidecar has a latent bug: its Dockerfile runs `configure-env.sh` at build time instead of runtime, so `CLAMD_CONF_TCPSocket` / `CLAMD_CONF_TCPAddr` env vars are silently ignored and clamd only binds the Unix socket — TCP probes from the engine fail with `Connection refused`. Until that repo's Dockerfile is fixed (move `configure-env.sh` into an entrypoint wrapper, or bake `TCPSocket 3310` into clamd.conf directly), fail-closed behavior turns every production upload into a 503. Local dev still has a working clamd via the `clamav` service in `packages/engine/docker-compose.yml`.
 
 ---
 
