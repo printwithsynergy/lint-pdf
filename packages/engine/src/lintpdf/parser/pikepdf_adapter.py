@@ -38,27 +38,58 @@ from lintpdf.parser.adapter import (
 logger = logging.getLogger(__name__)
 
 
+# Hard caps on PDF object graph traversal. PDFs can have arbitrarily deep
+# and wide object graphs (e.g. an outline tree with thousands of nested
+# bookmarks, or content streams referenced from many pages). Without limits,
+# `_pikepdf_to_python` can explode combinatorially and trip Celery's
+# SoftTimeLimitExceeded.
+_MAX_PIKEPDF_DEPTH = 12
+_MAX_PIKEPDF_NODES = 5000
+
+
 def _pikepdf_to_python(
-    obj: Object, *, _depth: int = 0, _seen: set[int] | None = None
+    obj: Object,
+    *,
+    _depth: int = 0,
+    _seen: set[int] | None = None,
+    _budget: list[int] | None = None,
 ) -> Any:  # skipcq: PY-R1000
     """Convert a pikepdf object to a native Python type.
 
-    pikepdf uses its own object types that wrap C++ objects.
-    This function recursively converts them to standard Python types
-    for use in our adapter interface.
+    pikepdf uses its own object types that wrap C++ objects. This function
+    recursively converts them to standard Python types for use in our
+    adapter interface. It enforces three safety limits:
 
-    Includes depth limiting and cycle detection to handle circular
-    references in PDF object graphs (e.g., trailer → catalog → pages → parent).
+    1. Depth limit (``_MAX_PIKEPDF_DEPTH``) — prevents stack overflow on
+       pathologically nested structures.
+    2. Node count limit (``_MAX_PIKEPDF_NODES``) — prevents combinatorial
+       explosions when the tree is shallow but very wide. Critical because
+       pikepdf creates a fresh Python wrapper per access, so id-based cycle
+       detection alone never trips on a graph with shared sub-trees and the
+       traversal can produce many copies of the same logical sub-tree.
+    3. Cycle detection via ``id(obj)`` — best-effort only (see above), kept
+       as a cheap second line of defense.
+
+    When any limit is exceeded the function returns a stable sentinel string
+    so callers see a deterministic shape rather than a partial/empty result.
 
     Args:
         obj: Any pikepdf object.
         _depth: Current recursion depth (internal).
-        _seen: Set of seen object ids for cycle detection (internal).
+        _seen: Set of seen wrapper ids (internal).
+        _budget: Single-element list used as a mutable node count counter
+            shared across the recursion (internal).
 
     Returns:
         Python-native equivalent (dict, list, str, int, float, bytes, bool, None).
     """
-    if _depth > 20:
+    if _budget is None:
+        _budget = [_MAX_PIKEPDF_NODES]
+    if _budget[0] <= 0:
+        return "<truncated: node budget exceeded>"
+    _budget[0] -= 1
+
+    if _depth > _MAX_PIKEPDF_DEPTH:
         return str(obj)
 
     if _seen is None:
@@ -72,17 +103,24 @@ def _pikepdf_to_python(
     try:
         if isinstance(obj, Dictionary):
             return {
-                str(k): _pikepdf_to_python(v, _depth=_depth + 1, _seen=_seen)
+                str(k): _pikepdf_to_python(
+                    v, _depth=_depth + 1, _seen=_seen, _budget=_budget
+                )
                 for k, v in obj.items()
             }
         if isinstance(obj, Array):
-            return [_pikepdf_to_python(item, _depth=_depth + 1, _seen=_seen) for item in iter(obj)]
+            return [
+                _pikepdf_to_python(item, _depth=_depth + 1, _seen=_seen, _budget=_budget)
+                for item in iter(obj)
+            ]
         if isinstance(obj, Name):
             return str(obj)
         if isinstance(obj, Stream):
             # Return dict representation for stream dictionaries
             return {
-                str(k): _pikepdf_to_python(v, _depth=_depth + 1, _seen=_seen)
+                str(k): _pikepdf_to_python(
+                    v, _depth=_depth + 1, _seen=_seen, _budget=_budget
+                )
                 for k, v in obj.items()
             }
         if isinstance(obj, pikepdf.String):
