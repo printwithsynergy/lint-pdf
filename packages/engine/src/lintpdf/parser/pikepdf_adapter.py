@@ -38,79 +38,84 @@ from lintpdf.parser.adapter import (
 logger = logging.getLogger(__name__)
 
 
-# Hard caps on PDF object graph traversal. PDFs can have arbitrarily deep
-# and wide object graphs (e.g. an outline tree with thousands of nested
-# bookmarks, or content streams referenced from many pages). Without limits,
-# `_pikepdf_to_python` can explode combinatorially and trip Celery's
-# SoftTimeLimitExceeded.
-_MAX_PIKEPDF_DEPTH = 12
-_MAX_PIKEPDF_NODES = 5000
+# Depth cap for pikepdf object graph traversal. The real cycle detection
+# below (via objgen) handles sharing in the object graph, so this is just
+# a stack-overflow guard for pathologically nested structures.
+_MAX_PIKEPDF_DEPTH = 50
+
+
+def _objgen_key(obj: Object) -> tuple[int, int] | None:
+    """Return the indirect-object key for ``obj``, or None for direct objects.
+
+    pikepdf creates a fresh Python wrapper for each access of an indirect
+    object, so ``id(obj)`` is unstable. The canonical PDF identifier is
+    ``(object_number, generation_number)`` — exposed as ``obj.objgen`` —
+    which is stable across wrapper recreations and unique within a PDF.
+    Only indirect objects have an objgen; direct (inline) values don't.
+    """
+    try:
+        og = obj.objgen
+    except (AttributeError, Exception):
+        return None
+    if og and isinstance(og, tuple) and len(og) == 2 and og[0] != 0:
+        return (int(og[0]), int(og[1]))
+    return None
 
 
 def _pikepdf_to_python(
     obj: Object,
     *,
     _depth: int = 0,
-    _seen: set[int] | None = None,
-    _budget: list[int] | None = None,
+    _seen: set[tuple[int, int]] | None = None,
 ) -> Any:  # skipcq: PY-R1000
     """Convert a pikepdf object to a native Python type.
 
     pikepdf uses its own object types that wrap C++ objects. This function
     recursively converts them to standard Python types for use in our
-    adapter interface. It enforces three safety limits:
+    adapter interface.
 
-    1. Depth limit (``_MAX_PIKEPDF_DEPTH``) — prevents stack overflow on
-       pathologically nested structures.
-    2. Node count limit (``_MAX_PIKEPDF_NODES``) — prevents combinatorial
-       explosions when the tree is shallow but very wide. Critical because
-       pikepdf creates a fresh Python wrapper per access, so id-based cycle
-       detection alone never trips on a graph with shared sub-trees and the
-       traversal can produce many copies of the same logical sub-tree.
-    3. Cycle detection via ``id(obj)`` — best-effort only (see above), kept
-       as a cheap second line of defense.
+    Cycle / sharing handling: PDF object graphs frequently contain shared
+    sub-trees (e.g. multiple pages pointing at the same Resources or Font
+    dictionary, every page's Parent pointing back at the Pages root). We
+    track visited *indirect* objects by their canonical ``(obj_num, gen)``
+    key. If the same indirect object is encountered again during this
+    traversal we return a sentinel string instead of re-walking it. This
+    bounds total work by the number of unique objects in the PDF rather
+    than by the size of the unfolded tree, which can be exponentially
+    larger.
 
-    When any limit is exceeded the function returns a stable sentinel string
-    so callers see a deterministic shape rather than a partial/empty result.
+    A depth cap of ``_MAX_PIKEPDF_DEPTH`` is kept as a stack-overflow
+    safety net for pathologically nested direct (inline) values.
 
     Args:
         obj: Any pikepdf object.
         _depth: Current recursion depth (internal).
-        _seen: Set of seen wrapper ids (internal).
-        _budget: Single-element list used as a mutable node count counter
-            shared across the recursion (internal).
+        _seen: Set of (obj_num, gen) keys already visited (internal).
 
     Returns:
         Python-native equivalent (dict, list, str, int, float, bytes, bool, None).
     """
-    if _budget is None:
-        _budget = [_MAX_PIKEPDF_NODES]
-    if _budget[0] <= 0:
-        return "<truncated: node budget exceeded>"
-    _budget[0] -= 1
-
     if _depth > _MAX_PIKEPDF_DEPTH:
         return str(obj)
 
     if _seen is None:
         _seen = set()
 
-    obj_id = id(obj)
-    if obj_id in _seen:
-        return f"<circular ref: {obj!r}>"
-    _seen.add(obj_id)
+    key = _objgen_key(obj)
+    if key is not None:
+        if key in _seen:
+            return f"<shared ref: {key[0]} {key[1]} R>"
+        _seen.add(key)
 
     try:
         if isinstance(obj, Dictionary):
             return {
-                str(k): _pikepdf_to_python(
-                    v, _depth=_depth + 1, _seen=_seen, _budget=_budget
-                )
+                str(k): _pikepdf_to_python(v, _depth=_depth + 1, _seen=_seen)
                 for k, v in obj.items()
             }
         if isinstance(obj, Array):
             return [
-                _pikepdf_to_python(item, _depth=_depth + 1, _seen=_seen, _budget=_budget)
+                _pikepdf_to_python(item, _depth=_depth + 1, _seen=_seen)
                 for item in iter(obj)
             ]
         if isinstance(obj, Name):
@@ -118,9 +123,7 @@ def _pikepdf_to_python(
         if isinstance(obj, Stream):
             # Return dict representation for stream dictionaries
             return {
-                str(k): _pikepdf_to_python(
-                    v, _depth=_depth + 1, _seen=_seen, _budget=_budget
-                )
+                str(k): _pikepdf_to_python(v, _depth=_depth + 1, _seen=_seen)
                 for k, v in obj.items()
             }
         if isinstance(obj, pikepdf.String):
@@ -147,7 +150,11 @@ def _pikepdf_to_python(
         except Exception:
             return repr(obj)
     finally:
-        _seen.discard(obj_id)
+        # We deliberately do NOT remove `key` from `_seen` on unwind.
+        # Indirect objects are shared globally; the goal is to visit each
+        # one at most once for the entire traversal, not just within one
+        # ancestor chain.
+        pass
 
 
 def _extract_box(page_dict: dict[str, Any], key: str) -> tuple[float, float, float, float] | None:
