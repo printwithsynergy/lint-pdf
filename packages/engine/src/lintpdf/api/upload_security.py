@@ -295,23 +295,22 @@ def _detect_custom_mime(content: bytes) -> str | None:
 
 
 def scan_for_malware(content: bytes, settings: Settings) -> None:
-    """Scan file bytes with ClamAV if configured.
+    """Scan file bytes with ClamAV.
 
-    Fails OPEN on infrastructure issues: if ``LINTPDF_CLAMAV_URL`` is unset
-    or clamd is unreachable, logs a warning and allows the upload through.
-    Only raises ``HTTPException(422)`` when clamd positively detects malware.
-
-    Rationale: the production clamd deployment (railway-clamav sidecar)
-    has historically been unreliable — the upstream Dockerfile applies
-    CLAMD_CONF_* env vars at build time instead of runtime, so clamd
-    often listens only on the Unix socket and TCP probes fail-closed.
-    Blocking uploads on this latent infra breakage turns every upload
-    into a 503. Until the sidecar is fixed, keep the scan best-effort:
-    real infections still produce 422, but connection failures are a
-    warning log, not an outage.
+    Fails CLOSED on infrastructure issues: if ``LINTPDF_CLAMAV_URL`` is unset
+    or clamd is unreachable, raises ``HTTPException(503)`` to block the
+    upload. Raises ``HTTPException(422)`` when clamd positively detects
+    malware. This is a hard security requirement — every upload endpoint
+    that passes ``settings`` requires a working clamd.
     """
     if not settings.clamav_url:
-        return
+        logger.error(
+            "ClamAV is not configured (LINTPDF_CLAMAV_URL is unset) — rejecting upload"
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Virus scanning is not configured. Upload refused.",
+        )
 
     try:
         host, _, port_str = settings.clamav_url.rpartition(":")
@@ -323,13 +322,16 @@ def scan_for_malware(content: bytes, settings: Settings) -> None:
         result = scanner.instream(BytesIO(content))
     except HTTPException:
         raise
-    except Exception:
+    except Exception as exc:
         logger.warning(
-            "ClamAV scan failed — service unreachable at %s, allowing upload",
+            "ClamAV scan failed — service unreachable at %s",
             settings.clamav_url,
             exc_info=True,
         )
-        return
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Virus scanning is temporarily unavailable. Please try again.",
+        ) from exc
 
     if result and result.get("stream", ("OK",))[0] == "FOUND":
         virus_name = result["stream"][1]

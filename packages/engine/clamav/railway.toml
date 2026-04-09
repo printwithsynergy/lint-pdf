@@ -1,0 +1,25 @@
+# Railway deploy config for the LintPDF ClamAV sidecar.
+#
+# To activate this replacement image:
+#   1. Railway dashboard -> ClamAV service -> Settings -> Source
+#   2. Repo: thinkneverland/lint-pdf
+#      Branch: main
+#      Root Directory: packages/engine/clamav
+#   3. Clear the runtime startCommand override (it's no longer needed —
+#      the Dockerfile bakes TCPSocket/TCPAddr into clamd.conf at build).
+#   4. Remove throwaway env vars if present:
+#        CLAMD_CONFIG_INJECTED
+#        CLAMD_CONF_TCPAddr
+#        CLAMD_CONF_TCPSocket
+#   5. Redeploy.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# No HTTP healthcheck — clamd speaks its own protocol over TCP and needs
+# 60-120s on first boot to load signatures. Let Railway's default process
+# liveness monitoring + the engine's scan-time retry logic handle it.
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
