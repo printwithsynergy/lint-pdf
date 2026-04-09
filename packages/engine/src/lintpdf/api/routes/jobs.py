@@ -295,15 +295,12 @@ async def get_job(
     tenant: Tenant = Depends(get_current_tenant),
 ) -> JobResponse:
     """Get job status and results."""
-    # A malformed UUID is just one form of "this job does not exist" — return
-    # 404 rather than 422 so clients can rely on a single status code for the
-    # "not found" case regardless of how the ID was constructed.
     try:
         uid = uuid_mod.UUID(job_id)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job '{job_id}' not found.",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
         ) from exc
 
     job: Job | None = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
@@ -408,13 +405,12 @@ async def delete_job(
     tenant: Tenant = Depends(get_current_tenant),
 ) -> None:
     """Cancel or delete a job."""
-    # See ``get_job`` — malformed UUID returns 404, not 422.
     try:
         uid = uuid_mod.UUID(job_id)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job '{job_id}' not found.",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
         ) from exc
 
     job: Job | None = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()

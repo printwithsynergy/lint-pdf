@@ -185,14 +185,12 @@ async def generate_reports(  # skipcq: PY-R1000
             detail="White-label branding (Livery) requires Scale or Enterprise plan.",
         )
 
-    # A malformed UUID is just one form of "this job does not exist" — return
-    # 404 rather than 422 so clients can rely on a single status code.
     try:
         uid = uuid_mod.UUID(job_id)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job not found.",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
         ) from exc
 
     job: Job | None = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
@@ -272,13 +270,12 @@ async def list_reports(
     tenant: Tenant = Depends(get_current_tenant),
 ) -> ReportListResponse:
     """List existing report tokens for a job."""
-    # See ``generate_reports`` — malformed UUID returns 404, not 422.
     try:
         uid = uuid_mod.UUID(job_id)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job not found.",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
         ) from exc
 
     tokens = (
@@ -370,19 +367,27 @@ async def serve_pdf_report(
             detail="PDF report not found for this token.",
         )
 
-    # Increment access count
-    record.accessed_count += 1
-    record.last_accessed_at = datetime.now(timezone.utc)
-    db.commit()
-
-    # Fetch from storage (run in thread to avoid blocking event loop)
+    # Fetch from storage (run in thread to avoid blocking event loop).
+    # Missing file means the token points at a report that was never stored
+    # (or was evicted) — treat as 404 rather than leaking a 500.
     from lintpdf.api.storage import get_storage
 
     storage = get_storage()
     loop = asyncio.get_running_loop()
-    content = await loop.run_in_executor(
-        None, storage.download_report, str(record.tenant_id), str(record.job_id), "pdf"
-    )
+    try:
+        content = await loop.run_in_executor(
+            None, storage.download_report, str(record.tenant_id), str(record.job_id), "pdf"
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF report not found for this token.",
+        ) from exc
+
+    # Increment access count only after we've successfully fetched the payload.
+    record.accessed_count += 1
+    record.last_accessed_at = datetime.now(timezone.utc)
+    db.commit()
 
     disposition = "attachment" if download else "inline"
     return Response(
@@ -413,18 +418,26 @@ async def serve_html_report(
             detail="HTML report not found for this token.",
         )
 
-    # Increment access count
-    record.accessed_count += 1
-    record.last_accessed_at = datetime.now(timezone.utc)
-    db.commit()
-
-    # Fetch from storage (run in thread to avoid blocking event loop)
+    # Fetch from storage (run in thread to avoid blocking event loop).
+    # Missing file means the token points at a report that was never stored
+    # (or was evicted) — treat as 404 rather than leaking a 500.
     from lintpdf.api.storage import get_storage
 
     storage = get_storage()
     loop = asyncio.get_running_loop()
-    content = await loop.run_in_executor(
-        None, storage.download_report, str(record.tenant_id), str(record.job_id), "html"
-    )
+    try:
+        content = await loop.run_in_executor(
+            None, storage.download_report, str(record.tenant_id), str(record.job_id), "html"
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="HTML report not found for this token.",
+        ) from exc
+
+    # Increment access count only after we've successfully fetched the payload.
+    record.accessed_count += 1
+    record.last_accessed_at = datetime.now(timezone.utc)
+    db.commit()
 
     return HTMLResponse(content=content)
