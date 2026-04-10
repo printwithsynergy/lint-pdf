@@ -204,6 +204,67 @@
       .findings-table th, .findings-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--gray-200); }
       .findings-table th { background: var(--gray-50); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--gray-500); }
 
+      /* --- Detail level badge --- */
+      .detail-badge {
+        display: inline-block; padding: 2px 10px; border-radius: 4px;
+        font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        margin-left: 8px;
+      }
+      .detail-executive { background: #fef3c7; color: #92400e; }
+      .detail-standard { background: #dbeafe; color: #1e40af; }
+      .detail-comprehensive { background: #ede9fe; color: #5b21b6; }
+
+      /* --- Top Findings (executive) --- */
+      .top-findings { margin: 16px 0; }
+      .top-finding {
+        display: flex; gap: 12px; padding: 12px 14px; margin-bottom: 6px;
+        border-radius: 8px; background: var(--gray-50); border-left: 3px solid var(--gray-300);
+        font-size: 13px;
+      }
+      .top-finding.sev-error { border-left-color: var(--error); background: #fef2f2; }
+      .top-finding.sev-warning { border-left-color: var(--warning); background: #fffbeb; }
+      .top-finding.sev-advisory { border-left-color: var(--advisory); background: #eff6ff; }
+      .top-finding-rank {
+        flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 800; background: var(--gray-200); color: var(--gray-700);
+      }
+      .top-finding.sev-error .top-finding-rank { background: var(--error); color: #fff; }
+      .top-finding.sev-warning .top-finding-rank { background: var(--warning); color: #fff; }
+
+      /* --- Comprehensive tables --- */
+      .data-table {
+        width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;
+        border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden;
+      }
+      .data-table th {
+        background: var(--gray-50); font-weight: 600; font-size: 11px;
+        text-transform: uppercase; letter-spacing: 0.3px; color: var(--gray-500);
+        padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--gray-200);
+      }
+      .data-table td {
+        padding: 8px 12px; border-bottom: 1px solid var(--gray-100);
+      }
+      .data-table tr:last-child td { border-bottom: none; }
+      .score-bar {
+        height: 6px; border-radius: 3px; background: var(--gray-200);
+        position: relative; overflow: hidden;
+      }
+      .score-bar-fill {
+        height: 100%; border-radius: 3px;
+        background: linear-gradient(90deg, var(--error), var(--warning), var(--pass));
+      }
+      .finding-detail-toggle {
+        font-size: 11px; color: var(--accent); cursor: pointer; text-decoration: underline;
+        margin-top: 4px; display: inline-block;
+      }
+      .finding-detail-content {
+        display: none; margin-top: 6px; padding: 8px 10px;
+        background: var(--gray-50); border-radius: 6px; font-size: 11px;
+        font-family: 'SF Mono', 'Cascadia Code', monospace;
+        white-space: pre-wrap; word-break: break-all; color: var(--gray-700);
+      }
+
       /* --- Footer --- */
       .report-footer {
         margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--gray-200);
@@ -253,7 +314,9 @@
           class="brand-logo"
         />{% endif %}
         <div>
-          <h1>{% if brand and brand.name %}{{ brand.name }}{% endif %} Preflight Report</h1>
+          <h1>{% if brand and brand.name %}{{ brand.name }}{% endif %} Preflight Report
+            {% if detail_level is defined and detail_level != 'standard' %}<span class="detail-badge detail-{{ detail_level }}">{{ detail_level }}</span>{% endif %}
+          </h1>
           <div class="subtitle">
             Profile: {{ result.profile_id }}
             {% if file_name %} | {{ file_name }}{% endif %}
@@ -341,9 +404,36 @@
       <tr><td>Duration</td><td>{{ result.duration_ms }} ms</td></tr>
     </table>
 
-    {# ===== FINDINGS ===== #}
+    {# ===== TOP FINDINGS (all levels — primary content for executive) ===== #}
+    {% if top_findings is defined and top_findings %}
+    <h2 class="section-title">{% if detail_level is defined and detail_level == 'executive' %}Key Findings{% else %}Top Issues{% endif %}</h2>
+    <div class="top-findings">
+      {% for f in top_findings %}
+      <div class="top-finding sev-{{ f.severity }}">
+        <div class="top-finding-rank">{{ loop.index }}</div>
+        <div style="flex:1; min-width:0;">
+          <div>
+            <span class="callout-check">{{ f.inspection_id }}</span>
+            <span class="severity-tag severity-{{ f.severity }}">{{ f.severity }}</span>
+            {% if f.page_num %}<span style="font-size:11px; color:var(--gray-500); margin-left:6px;">p.{{ f.page_num }}</span>{% endif %}
+          </div>
+          <div class="callout-message">{{ f.message }}</div>
+        </div>
+      </div>
+      {% endfor %}
+      {% if detail_level is defined and detail_level == 'executive' and result.findings|length > top_findings|length %}
+      <p style="font-size:12px; color:var(--gray-500); margin-top:8px; font-style:italic;">
+        Showing top {{ top_findings|length }} of {{ result.findings|length }} total findings. Request a Standard or Comprehensive report for full details.
+      </p>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {# ===== FULL FINDINGS (standard + comprehensive only) ===== #}
+    {% if detail_level is not defined or detail_level != 'executive' %}
+
     {% if result.findings %}
-    <h2 class="section-title">Findings</h2>
+    <h2 class="section-title">All Findings</h2>
 
     {# --- Document-Level Findings (page_num == 0) --- #}
     {% if findings_by_page.get(0) %}
@@ -372,6 +462,13 @@
                 {% if f.object_id %}Object: {{ f.object_id }}{% endif %}
                 {% if f.category %} [{{ f.category }}]{% endif %}
               </div>
+              {% endif %}
+              {% if detail_level is defined and detail_level == 'comprehensive' and f.iso_clause %}
+              <div class="callout-meta">ISO: {{ f.iso_clause }}</div>
+              {% endif %}
+              {% if detail_level is defined and detail_level == 'comprehensive' and f.details %}
+              <span class="finding-detail-toggle" onclick="toggleDetail(this)">Show details</span>
+              <div class="finding-detail-content">{{ f.details }}</div>
               {% endif %}
             </div>
           </div>
@@ -404,7 +501,6 @@
           {# --- Finding Callouts --- #}
           <div class="page-findings-list">
             {% if annotated_pages is defined and annotated_pages and page_num in annotated_pages %}
-              {# Numbered callouts matching the screenshot annotations #}
               {% for callout in annotated_pages[page_num].callouts %}
               <div class="callout-item sev-{{ callout.severity }} finding-row"
                    data-severity="{{ callout.severity }}"
@@ -429,7 +525,6 @@
               </div>
               {% endfor %}
             {% else %}
-              {# Fallback: text-only findings table when no screenshot available #}
               {% for f in page_findings %}
               <div class="callout-item sev-{{ f.severity }} finding-row"
                    data-severity="{{ f.severity }}"
@@ -449,6 +544,13 @@
                     {% if f.category %} [{{ f.category }}]{% endif %}
                   </div>
                   {% endif %}
+                  {% if detail_level is defined and detail_level == 'comprehensive' and f.iso_clause %}
+                  <div class="callout-meta">ISO: {{ f.iso_clause }}</div>
+                  {% endif %}
+                  {% if detail_level is defined and detail_level == 'comprehensive' and f.details %}
+                  <span class="finding-detail-toggle" onclick="toggleDetail(this)">Show details</span>
+                  <div class="finding-detail-content">{{ f.details }}</div>
+                  {% endif %}
                 </div>
               </div>
               {% endfor %}
@@ -463,6 +565,107 @@
     {% else %}
     <h2 class="section-title">Findings</h2>
     <p style="padding: 16px; color: var(--gray-500);">No findings detected. The document passed all enabled checks.</p>
+    {% endif %}
+
+    {% endif %}{# end standard/comprehensive gate #}
+
+    {# ===== COMPREHENSIVE: Color Score Breakdown ===== #}
+    {% if detail_level is defined and detail_level == 'comprehensive' and color_score_breakdown %}
+    <h2 class="section-title">Color Quality Breakdown</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Score</th>
+          <th style="width:200px">Visual</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat, score in color_score_breakdown.items() %}
+        <tr>
+          <td style="text-transform:capitalize;">{{ cat|replace('_',' ') }}</td>
+          <td><strong>{{ "%.1f"|format(score) }}</strong> / 100</td>
+          <td>
+            <div class="score-bar"><div class="score-bar-fill" style="width:{{ score }}%"></div></div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {# ===== COMPREHENSIVE: Ink Separation Coverage ===== #}
+    {% if detail_level is defined and detail_level == 'comprehensive' and ink_separations %}
+    <h2 class="section-title">Ink Separation Coverage</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Separation</th>
+          <th>Max Coverage</th>
+          <th>Pages Used</th>
+          <th>Events</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sep in ink_separations %}
+        <tr>
+          <td><strong>{{ sep.name }}</strong></td>
+          <td>{{ "%.1f"|format(sep.max_value * 100) }}%</td>
+          <td>{{ sep.pages_used|length }} page{{ 's' if sep.pages_used|length != 1 else '' }}</td>
+          <td>{{ sep.event_count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {# ===== COMPREHENSIVE: Per-Page TAC Summary ===== #}
+    {% if detail_level is defined and detail_level == 'comprehensive' and ink_tac_by_page %}
+    <h2 class="section-title">Per-Page Ink Coverage (TAC)</h2>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Page</th>
+          <th>Max TAC</th>
+          <th>Limit</th>
+          <th>Status</th>
+          <th>Samples</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for page, tac in ink_tac_by_page.items()|sort %}
+        <tr>
+          <td>{{ page }}</td>
+          <td><strong>{{ "%.1f"|format(tac.max_tac) }}%</strong></td>
+          <td>{{ "%.0f"|format(tac.tac_limit) }}%</td>
+          <td>
+            {% if tac.max_tac > tac.tac_limit %}
+            <span class="severity-tag severity-error">Exceeds</span>
+            {% elif tac.max_tac > tac.tac_limit * 0.9 %}
+            <span class="severity-tag severity-warning">Near Limit</span>
+            {% else %}
+            <span class="severity-tag severity-advisory">OK</span>
+            {% endif %}
+          </td>
+          <td>{{ tac.sample_count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+
+    {# ===== COMPREHENSIVE: Ink Channel Inventory ===== #}
+    {% if detail_level is defined and detail_level == 'comprehensive' and ink_inventory %}
+    <h2 class="section-title">Ink Channel Inventory</h2>
+    <table class="meta-table">
+      {% if ink_inventory.process_channels %}
+      <tr><td>Process Channels</td><td>{{ ink_inventory.process_channels|join(', ') }}</td></tr>
+      {% endif %}
+      {% if ink_inventory.spot_colors %}
+      <tr><td>Spot Colors</td><td>{{ ink_inventory.spot_colors|join(', ') }}</td></tr>
+      {% endif %}
+      <tr><td>Total Channels</td><td>{{ ink_inventory.get('total_channel_count', 0) }}</td></tr>
+    </table>
     {% endif %}
 
     {# ===== FOOTER ===== #}
@@ -502,6 +705,14 @@
         var body = header.nextElementSibling;
         if (body) {
           body.style.display = body.style.display === 'none' ? '' : 'none';
+        }
+      }
+      function toggleDetail(el) {
+        var content = el.nextElementSibling;
+        if (content) {
+          var show = content.style.display === 'none' || !content.style.display;
+          content.style.display = show ? 'block' : 'none';
+          el.textContent = show ? 'Hide details' : 'Show details';
         }
       }
     </script>

@@ -32,26 +32,33 @@ def _build_template_context(  # skipcq: PY-R1000
     branding: BrandingContext | None = None,
     pdf_bytes: bytes | None = None,
     annotation_dpi: int = 150,
+    detail_level: str = "standard",
 ) -> dict[str, Any]:
     """Build template context from preflight result."""
+    from lintpdf.reports.service import ReportDetailLevel
+
     # Group findings by page
     findings_by_page: dict[int, list[dict[str, Any]]] = {}
+    all_finding_dicts: list[dict[str, Any]] = []
     for f in result.findings:
         page = f.page_num or 0
+        finding_dict: dict[str, Any] = {
+            "inspection_id": f.inspection_id,
+            "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
+            "message": f.message,
+            "object_id": f.object_id,
+            "object_type": f.object_type,
+            "source": getattr(f, "source", "engine"),
+            "category": getattr(f, "category", None),
+            "bbox": f.bbox if hasattr(f, "bbox") else None,
+            "page_num": f.page_num,
+            "iso_clause": getattr(f, "iso_clause", ""),
+            "details": f.details if hasattr(f, "details") else {},
+        }
+        all_finding_dicts.append(finding_dict)
         if page not in findings_by_page:
             findings_by_page[page] = []
-        findings_by_page[page].append(
-            {
-                "inspection_id": f.inspection_id,
-                "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
-                "message": f.message,
-                "object_id": f.object_id,
-                "object_type": f.object_type,
-                "source": getattr(f, "source", "engine"),
-                "category": getattr(f, "category", None),
-                "bbox": f.bbox if hasattr(f, "bbox") else None,
-            }
-        )
+        findings_by_page[page].append(finding_dict)
 
     # Group findings by severity
     severity_groups: dict[str, list[dict[str, Any]]] = {
@@ -59,23 +66,54 @@ def _build_template_context(  # skipcq: PY-R1000
         "warning": [],
         "advisory": [],
     }
-    for f in result.findings:
-        sev = f.severity.value if hasattr(f.severity, "value") else str(f.severity)
+    for fd in all_finding_dicts:
+        sev = fd["severity"]
         if sev in severity_groups:
-            severity_groups[sev].append(
-                {
-                    "inspection_id": f.inspection_id,
-                    "message": f.message,
-                    "page_num": f.page_num,
-                }
-            )
+            severity_groups[sev].append(fd)
 
-    # Generate annotated page screenshots if PDF bytes available
+    # Top findings (sorted by severity: errors first)
+    severity_order = {"error": 0, "warning": 1, "advisory": 2}
+    top_findings = sorted(
+        all_finding_dicts,
+        key=lambda fd: severity_order.get(fd["severity"], 3),
+    )[:10]
+
+    # Generate annotated page screenshots (standard + comprehensive only)
     annotated_pages: dict[int, Any] = {}
-    if pdf_bytes is not None:
+    if pdf_bytes is not None and detail_level != ReportDetailLevel.EXECUTIVE:
         annotated_pages = _render_annotated_pages(
             pdf_bytes, findings_by_page, dpi=annotation_dpi
         )
+
+    # Extract comprehensive-only data
+    ink_separations: list[dict[str, Any]] = []
+    ink_tac_by_page: dict[int, dict[str, Any]] = {}
+    ink_inventory: dict[str, Any] = {}
+    color_score_breakdown: dict[str, Any] = {}
+
+    if detail_level == ReportDetailLevel.COMPREHENSIVE:
+        for fd in all_finding_dicts:
+            iid = fd.get("inspection_id", "")
+            details = fd.get("details") or {}
+            if iid == "LPDF_INK_002":
+                ink_separations.append({
+                    "name": details.get("separation_name", ""),
+                    "pages_used": details.get("pages_used", []),
+                    "max_value": details.get("max_value", 0),
+                    "event_count": details.get("event_count", 0),
+                })
+            elif iid == "LPDF_INK_001":
+                page = fd.get("page_num", 0)
+                if page and page > 0:
+                    ink_tac_by_page[page] = {
+                        "max_tac": details.get("max_tac", 0),
+                        "tac_limit": details.get("tac_limit", 0),
+                        "sample_count": details.get("sample_count", 0),
+                    }
+            elif iid == "LPDF_INK_003" and details.get("process_channels"):
+                ink_inventory = details
+
+        color_score_breakdown = result.metadata.get("color_score_breakdown", {})
 
     context: dict[str, Any] = {
         "result": result,
@@ -91,6 +129,14 @@ def _build_template_context(  # skipcq: PY-R1000
         "color_quality_grade": result.metadata.get("color_quality_grade"),
         "file_name": result.metadata.get("file_name", ""),
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        # Detail level controls
+        "detail_level": detail_level,
+        "top_findings": top_findings,
+        # Comprehensive-only data
+        "ink_separations": ink_separations,
+        "ink_tac_by_page": ink_tac_by_page,
+        "ink_inventory": ink_inventory,
+        "color_score_breakdown": color_score_breakdown,
     }
     return context
 
@@ -117,6 +163,7 @@ def generate_html_report(
     branding: BrandingContext | None = None,
     pdf_bytes: bytes | None = None,
     annotation_dpi: int = 150,
+    detail_level: str = "standard",
 ) -> bytes:
     """Generate an HTML report from preflight results.
 
@@ -127,6 +174,7 @@ def generate_html_report(
             When provided, pages with findings are rendered to images
             with annotated bounding boxes and embedded in the report.
         annotation_dpi: DPI for page screenshot rendering.
+        detail_level: Report detail ("executive", "standard", "comprehensive").
 
     Returns:
         UTF-8 encoded HTML bytes.
@@ -138,6 +186,7 @@ def generate_html_report(
         branding=branding,
         pdf_bytes=pdf_bytes,
         annotation_dpi=annotation_dpi,
+        detail_level=detail_level,
     )
     html = template.render(**context)  # nosemgrep: direct-use-of-jinja2
     return html.encode("utf-8")

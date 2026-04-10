@@ -6,7 +6,16 @@ import logging
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
+
+
+class ReportDetailLevel(StrEnum):
+    """Report detail levels — controls how much data is included."""
+
+    EXECUTIVE = "executive"  # 1-page summary: verdict, top findings, doc info
+    STANDARD = "standard"  # Production report: screenshots, full findings
+    COMPREHENSIVE = "comprehensive"  # Deep analysis: score breakdown, ink data, details
 
 if TYPE_CHECKING:
     from lintpdf.api.config import Settings
@@ -86,6 +95,7 @@ class ReportService:
         expiry_days: int | None = None,
         branding: BrandingContext | None = None,
         report_base_url: str = "https://reports.lintpdf.com",
+        detail_level: str = "standard",
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 
@@ -97,6 +107,7 @@ class ReportService:
             expiry_days: Days until report tokens expire (None = no expiry).
             branding: White-label branding context.
             report_base_url: Base URL for hosted report links.
+            detail_level: Report detail level ("executive", "standard", "comprehensive").
 
         Returns:
             ReportResult with generated report URLs and tokens.
@@ -128,11 +139,15 @@ class ReportService:
             branding.report_url = f"{report_base_url}/r/{tokens['html']}"
 
         # Fetch original PDF bytes for page screenshot rendering (lazy, once).
-        # This is best-effort — if it fails, reports degrade to text-only.
-        pdf_bytes = self._fetch_original_pdf(result_json)
+        # Executive reports skip screenshots entirely — no PDF fetch needed.
+        pdf_bytes: bytes | None = None
+        if detail_level != ReportDetailLevel.EXECUTIVE:
+            pdf_bytes = self._fetch_original_pdf(result_json)
 
         for fmt in formats:
-            content = self._generate_format(result_json, fmt, branding, pdf_bytes=pdf_bytes)
+            content = self._generate_format(
+                result_json, fmt, branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+            )
             if content is None:
                 continue
 
@@ -255,22 +270,28 @@ class ReportService:
         branding: BrandingContext,
         *,
         pdf_bytes: bytes | None = None,
+        detail_level: str = "standard",
     ) -> bytes | None:
         """Generate report content in the requested format."""
         if fmt == "html":
-            return self._generate_html(result_json, branding, pdf_bytes=pdf_bytes)
+            return self._generate_html(
+                result_json, branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+            )
         if fmt == "pdf":
-            return self._generate_pdf(result_json, branding, pdf_bytes=pdf_bytes)
+            return self._generate_pdf(
+                result_json, branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+            )
         if fmt == "annotated_pdf":
             return self._generate_annotated_pdf(result_json, branding)
         return None
 
     @staticmethod
-    def _generate_html(
+    def _generate_html(  # skipcq: PY-R1000
         result_json: dict[str, Any],
         branding: BrandingContext,
         *,
         pdf_bytes: bytes | None = None,
+        detail_level: str = "standard",
     ) -> bytes:
         """Generate branded HTML report from result JSON."""
         from jinja2 import Environment, FileSystemLoader
@@ -295,9 +316,9 @@ class ReportService:
                 findings_by_page[page] = []
             findings_by_page[page].append(f)
 
-        # Generate annotated page screenshots if PDF bytes available
+        # Generate annotated page screenshots (standard + comprehensive only)
         annotated_pages: dict[int, Any] = {}
-        if pdf_bytes is not None:
+        if pdf_bytes is not None and detail_level != ReportDetailLevel.EXECUTIVE:
             try:
                 from lintpdf.reports.page_renderer import render_annotated_pages
 
@@ -306,6 +327,44 @@ class ReportService:
                 )
             except Exception:
                 logger.exception("Failed to render annotated pages for service report")
+
+        # Build top findings for executive summary (sorted by severity priority)
+        severity_order = {"error": 0, "warning": 1, "advisory": 2}
+        sorted_findings = sorted(
+            findings,
+            key=lambda f: severity_order.get(f.get("severity", "advisory"), 3),
+        )
+        top_findings = sorted_findings[:10]
+
+        # Extract ink coverage data for comprehensive reports
+        ink_separations: list[dict[str, Any]] = []
+        ink_tac_by_page: dict[int, dict[str, Any]] = {}
+        ink_inventory: dict[str, Any] = {}
+        color_score_breakdown: dict[str, Any] = {}
+
+        if detail_level == ReportDetailLevel.COMPREHENSIVE:
+            for f in findings:
+                iid = f.get("inspection_id", "")
+                details = f.get("details") or {}
+                if iid == "LPDF_INK_002":
+                    ink_separations.append({
+                        "name": details.get("separation_name", ""),
+                        "pages_used": details.get("pages_used", []),
+                        "max_value": details.get("max_value", 0),
+                        "event_count": details.get("event_count", 0),
+                    })
+                elif iid == "LPDF_INK_001":
+                    page = f.get("page_num", 0)
+                    if page > 0:
+                        ink_tac_by_page[page] = {
+                            "max_tac": details.get("max_tac", 0),
+                            "tac_limit": details.get("tac_limit", 0),
+                            "sample_count": details.get("sample_count", 0),
+                        }
+                elif iid == "LPDF_INK_003" and details.get("process_channels"):
+                    ink_inventory = details
+
+            color_score_breakdown = metadata.get("color_score_breakdown", {})
 
         passed = summary.get("passed", True)
         context = {
@@ -331,6 +390,14 @@ class ReportService:
             "color_quality_grade": metadata.get("color_quality_grade"),
             "file_name": result_json.get("file_name", metadata.get("file_name", "")),
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+            # Detail level controls
+            "detail_level": detail_level,
+            "top_findings": top_findings,
+            # Comprehensive-only data
+            "ink_separations": ink_separations,
+            "ink_tac_by_page": ink_tac_by_page,
+            "ink_inventory": ink_inventory,
+            "color_score_breakdown": color_score_breakdown,
         }
 
         html = template.render(**context)  # nosemgrep: direct-use-of-jinja2
@@ -342,11 +409,14 @@ class ReportService:
         branding: BrandingContext,
         *,
         pdf_bytes: bytes | None = None,
+        detail_level: str = "standard",
     ) -> bytes:
         """Generate PDF from branded HTML."""
         from weasyprint import HTML
 
-        html_bytes = self._generate_html(result_json, branding, pdf_bytes=pdf_bytes)
+        html_bytes = self._generate_html(
+            result_json, branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+        )
         pdf_bytes_out: bytes = HTML(string=html_bytes.decode("utf-8")).write_pdf()
         return pdf_bytes_out
 

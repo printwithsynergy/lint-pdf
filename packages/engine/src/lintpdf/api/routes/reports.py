@@ -37,6 +37,7 @@ class GenerateReportsRequest(BaseModel):
     expiry_days: int | None = None
     email_to: str | None = None
     branding: BrandingOverride | None = None
+    detail_level: str = "standard"  # "executive", "standard", "comprehensive"
 
 
 class ReportInfo(BaseModel):
@@ -265,6 +266,13 @@ async def generate_reports(  # skipcq: PY-R1000
     if "file_key" not in result_json["metadata"]:
         result_json["metadata"]["file_key"] = job.file_key
 
+    # Validate detail level
+    from lintpdf.reports.service import ReportDetailLevel
+
+    detail_level = body.detail_level
+    if detail_level not in ReportDetailLevel.__members__.values():
+        detail_level = ReportDetailLevel.STANDARD
+
     # Run in thread to avoid blocking event loop (storage uploads are sync)
     loop = asyncio.get_running_loop()
     result = await loop.run_in_executor(
@@ -279,6 +287,7 @@ async def generate_reports(  # skipcq: PY-R1000
             report_base_url=resolve_report_base_url(
                 tenant, active_profile, entitlements, settings
             ),
+            detail_level=detail_level,
         ),
     )
 

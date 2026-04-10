@@ -216,6 +216,24 @@ class ColorConfig(BaseModel):
     epm_mode: bool | None = Field(default=None, description="Enable/disable EPM mode override.")
 
 
+class ReportConfig(BaseModel):
+    """Report generation configuration within a preflight profile."""
+
+    default_detail_level: str = Field(
+        default="standard",
+        description='Default report detail level ("executive", "standard", "comprehensive").',
+    )
+    max_screenshot_pages: int = Field(
+        default=30, ge=0, description="Max pages to render annotated screenshots for."
+    )
+    screenshot_dpi: int = Field(
+        default=150, ge=72, le=300, description="DPI for page screenshot rendering."
+    )
+    top_findings_limit: int = Field(
+        default=10, ge=1, le=50, description="Max findings shown in executive summary."
+    )
+
+
 class PreflightProfile(BaseModel):
     """A complete preflight configuration profile.
 
@@ -238,6 +256,7 @@ class PreflightProfile(BaseModel):
     thresholds: ThresholdConfig = Field(default_factory=ThresholdConfig)
     ai: AIFeatureConfig = Field(default_factory=AIFeatureConfig)
     color: ColorConfig = Field(default_factory=ColorConfig)
+    report: ReportConfig = Field(default_factory=ReportConfig)
 
     def is_check_enabled(self, check_id: str) -> bool:
         """Determine if a check ID is enabled by this profile."""

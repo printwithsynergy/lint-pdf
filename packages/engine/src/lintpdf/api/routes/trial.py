@@ -656,6 +656,7 @@ async def send_trial_report(
                 expiry_days=30,
                 branding=_br,
                 report_base_url=settings.report_base_url,
+                detail_level="standard",
             ),
         )
 

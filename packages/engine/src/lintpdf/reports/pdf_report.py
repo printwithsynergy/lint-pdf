@@ -15,6 +15,7 @@ def generate_pdf_report(
     branding: BrandingContext | None = None,
     pdf_bytes: bytes | None = None,
     annotation_dpi: int = 150,
+    detail_level: str = "standard",
 ) -> bytes:
     """Generate a PDF report from preflight results.
 
@@ -26,6 +27,7 @@ def generate_pdf_report(
         branding: Optional white-label branding context.
         pdf_bytes: Original PDF bytes for page screenshot rendering.
         annotation_dpi: DPI for page screenshot rendering.
+        detail_level: Report detail ("executive", "standard", "comprehensive").
 
     Returns:
         PDF bytes.
@@ -39,6 +41,7 @@ def generate_pdf_report(
         branding=branding,
         pdf_bytes=pdf_bytes,
         annotation_dpi=annotation_dpi,
+        detail_level=detail_level,
     )
     html_string = html_bytes.decode("utf-8")
 

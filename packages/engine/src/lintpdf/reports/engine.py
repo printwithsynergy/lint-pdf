@@ -19,6 +19,7 @@ class ReportEngine:
         *,
         branding: BrandingContext | None = None,
         pdf_bytes: bytes | None = None,
+        detail_level: str = "standard",
     ) -> bytes:
         """Generate a report in the requested format.
 
@@ -27,6 +28,7 @@ class ReportEngine:
             fmt: Output format ("json", "html", "pdf", "xml").
             branding: Optional white-label branding context.
             pdf_bytes: Original PDF bytes (enables page screenshots in html/pdf).
+            detail_level: Report detail ("executive", "standard", "comprehensive").
 
         Returns:
             Report content as bytes.
@@ -37,9 +39,13 @@ class ReportEngine:
         if fmt == "json":
             return self.to_json(result)
         if fmt == "html":
-            return self.to_html(result, branding=branding, pdf_bytes=pdf_bytes)
+            return self.to_html(
+                result, branding=branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+            )
         if fmt == "pdf":
-            return self.to_pdf(result, branding=branding, pdf_bytes=pdf_bytes)
+            return self.to_pdf(
+                result, branding=branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+            )
         if fmt == "xml":
             return self.to_xml(result)
         msg = f"Unsupported report format: {fmt}"
@@ -58,11 +64,14 @@ class ReportEngine:
         *,
         branding: BrandingContext | None = None,
         pdf_bytes: bytes | None = None,
+        detail_level: str = "standard",
     ) -> bytes:
         """Generate HTML report with optional page screenshots."""
         from lintpdf.reports.html_report import generate_html_report
 
-        return generate_html_report(result, branding=branding, pdf_bytes=pdf_bytes)
+        return generate_html_report(
+            result, branding=branding, pdf_bytes=pdf_bytes, detail_level=detail_level,
+        )
 
     @staticmethod
     def to_pdf(
@@ -70,11 +79,14 @@ class ReportEngine:
         *,
         branding: BrandingContext | None = None,
         pdf_bytes: bytes | None = None,
+        detail_level: str = "standard",
     ) -> bytes:
         """Generate PDF report with optional page screenshots."""
         from lintpdf.reports.pdf_report import generate_pdf_report
 
-        return generate_pdf_report(result, branding=branding, pdf_bytes=pdf_bytes)
+        return generate_pdf_report(
+            result, branding=branding, pdf_bytes=pdf_bytes, detail_level=detail_level,
+        )
 
     @staticmethod
     def to_xml(result: PreflightResult) -> bytes:
