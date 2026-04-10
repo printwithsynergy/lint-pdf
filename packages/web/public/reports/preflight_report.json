@@ -1,0 +1,4652 @@
+{
+  "job_id": "acce969d-54ac-4124-b661-c0dc7e9bb58a",
+  "profile_id": "full-preflight-ai",
+  "summary": {
+    "passed": false,
+    "total_findings": 231,
+    "error_count": 29,
+    "warning_count": 69,
+    "advisory_count": 133,
+    "page_count": 10,
+    "file_size_bytes": 625744
+  },
+  "document": {
+    "pdf_version": "1.4",
+    "page_count": 10,
+    "is_encrypted": false
+  },
+  "findings": [
+    {
+      "inspection_id": "LPDF_IMG_002",
+      "severity": "advisory",
+      "message": "Image 'FormXob.6b8351906a9795c6bb495543e85b2be4' has excessive resolution: 871 DPI (maximum useful 600 DPI)",
+      "page_num": 5,
+      "object_id": "FormXob.6b8351906a9795c6bb495543e85b2be4",
+      "object_type": "image",
+      "iso_clause": "ISO 32000-2:2020 8.9",
+      "details": {
+        "image_name": "FormXob.6b8351906a9795c6bb495543e85b2be4",
+        "dpi_effective": 870.8571290340138,
+        "max_dpi": 600.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_IMG_017",
+      "severity": "advisory",
+      "message": "Image 'FormXob.6b8351906a9795c6bb495543e85b2be4' is scaled to 8% on page 5 (extreme scaling detected)",
+      "page_num": 5,
+      "object_id": "FormXob.6b8351906a9795c6bb495543e85b2be4",
+      "object_type": "image",
+      "iso_clause": "ISO 32000-2:2020 8.3.4",
+      "details": {
+        "image_name": "FormXob.6b8351906a9795c6bb495543e85b2be4",
+        "scale_x_percent": 8.3,
+        "scale_y_percent": 8.3,
+        "scale_percent": 8.3,
+        "pixel_width": 1200,
+        "pixel_height": 1200
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_IMG_001",
+      "severity": "warning",
+      "message": "Image 'FormXob.879b1d24c2dd00ba96183bf515a53cfb' has low resolution: 37 DPI (minimum 150 DPI)",
+      "page_num": 6,
+      "object_id": "FormXob.879b1d24c2dd00ba96183bf515a53cfb",
+      "object_type": "image",
+      "iso_clause": "ISO 32000-2:2020 8.9",
+      "details": {
+        "image_name": "FormXob.879b1d24c2dd00ba96183bf515a53cfb",
+        "dpi_x": 37.39444228041422,
+        "dpi_y": 46.264284979931986,
+        "dpi_effective": 37.39444228041422,
+        "pixel_width": 106,
+        "pixel_height": 51,
+        "min_dpi": 150.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_IMG_006",
+      "severity": "warning",
+      "message": "Image 'FormXob.879b1d24c2dd00ba96183bf515a53cfb' is upscaled 193% on page 6 (>150% causes visible quality loss)",
+      "page_num": 6,
+      "object_id": "FormXob.879b1d24c2dd00ba96183bf515a53cfb",
+      "object_type": "image",
+      "iso_clause": "",
+      "details": {
+        "image_name": "FormXob.879b1d24c2dd00ba96183bf515a53cfb",
+        "upscale_percent": 192.54198113207548,
+        "pixel_width": 106,
+        "pixel_height": 51
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_COLOR_017",
+      "severity": "warning",
+      "message": "Impure black detected (C=60% M=40% Y=40% K=100%) on page 4 \u2014 unnecessary CMY in near-K-only color",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.3",
+      "details": {
+        "color_values": [
+          0.6,
+          0.4,
+          0.4,
+          1.0
+        ],
+        "c_percent": 60.0,
+        "m_percent": 40.0,
+        "y_percent": 40.0,
+        "k_percent": 100.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_COLOR_004",
+      "severity": "warning",
+      "message": "TAC 400% exceeds limit 300% (fill color on page 4)",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.3",
+      "details": {
+        "tac": 400.0,
+        "tac_limit": 300.0,
+        "color_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "stroking": false
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_COLOR_005",
+      "severity": "warning",
+      "message": "Registration color (100% all CMYK) used as fill on page 4",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "color_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "stroking": false
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_COLOR_017",
+      "severity": "warning",
+      "message": "Impure black detected (C=100% M=100% Y=100% K=100%) on page 4 \u2014 unnecessary CMY in near-K-only color",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.3",
+      "details": {
+        "color_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "c_percent": 100.0,
+        "m_percent": 100.0,
+        "y_percent": 100.0,
+        "k_percent": 100.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_COLOR_006",
+      "severity": "warning",
+      "message": "No Output Intent defined in document",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 15930-7:2010 6.2.3",
+      "details": {},
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_COLOR_014",
+      "severity": "advisory",
+      "message": "Color space inventory: 2 unique color space type(s) used in document",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "inventory": {
+          "DeviceRGB": {
+            "count": 216,
+            "pages": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10
+            ]
+          },
+          "DeviceCMYK": {
+            "count": 3,
+            "pages": [
+              4
+            ]
+          }
+        }
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_FONT_003",
+      "severity": "advisory",
+      "message": "Standard 14 font 'Helvetica' used (rendering may vary across viewers)",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 9.6.2.2",
+      "details": {
+        "font_name": "/F1",
+        "base_font": "Helvetica"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_FONT_007",
+      "severity": "advisory",
+      "message": "Font 'AAAAAA+DejaVuSans-Bold' has no encoding specified",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 9.6.1",
+      "details": {
+        "font_name": "/F2+0",
+        "base_font": "AAAAAA+DejaVuSans-Bold",
+        "font_type": "TrueType"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_FONT_007",
+      "severity": "advisory",
+      "message": "Font 'AAAAAA+DejaVuSans' has no encoding specified",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 9.6.1",
+      "details": {
+        "font_name": "/F3+0",
+        "base_font": "AAAAAA+DejaVuSans",
+        "font_type": "TrueType"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_FONT_007",
+      "severity": "advisory",
+      "message": "Font 'AAAAAA+DejaVuSans-Oblique' has no encoding specified",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 9.6.1",
+      "details": {
+        "font_name": "/F4+0",
+        "base_font": "AAAAAA+DejaVuSans-Oblique",
+        "font_type": "TrueType"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_FONT_007",
+      "severity": "advisory",
+      "message": "Font 'AAAAAA+DejaVuSansMono' has no encoding specified",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 9.6.1",
+      "details": {
+        "font_name": "/F5+0",
+        "base_font": "AAAAAA+DejaVuSansMono",
+        "font_type": "TrueType"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_FONT_003",
+      "severity": "advisory",
+      "message": "Standard 14 font 'Times-Roman' used (rendering may vary across viewers)",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 9.6.2.2",
+      "details": {
+        "font_name": "/F6",
+        "base_font": "Times-Roman"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 2: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 3: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 4: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 5: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 6: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 7: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 8: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 9: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_003",
+      "severity": "warning",
+      "message": "Inadequate bleed on page 10: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)",
+      "page_num": 10,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "GWG 2022 6.1",
+      "details": {
+        "bleeds": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "inadequate_sides": {
+          "left": 0.0,
+          "right": 0.0,
+          "bottom": 0.0,
+          "top": 0.0
+        },
+        "min_bleed_pts": 8.503937007
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_BOX_009",
+      "severity": "advisory",
+      "message": "Document has inconsistent page sizes (2 unique sizes found across 10 pages)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "unique_sizes": [
+          {
+            "width_pt": 595.0,
+            "height_pt": 842.0,
+            "pages": [
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          {
+            "width_pt": 612.0,
+            "height_pt": 792.0,
+            "pages": [
+              10
+            ]
+          }
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 1",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 1",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 2",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 2",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 2 (may knock out background content)",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 3",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 3",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 3 (may knock out background content)",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_STROKE_003",
+      "severity": "advisory",
+      "message": "Butt cap on thin stroke (0.400pt) on page 3 (round cap recommended for thin lines)",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "line_width": 0.4,
+        "line_cap": 0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 4",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 4",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 4 (may knock out background content)",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 4",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 5",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 5",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 5 (may knock out background content)",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 6",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 6",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 6 (may knock out background content)",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 7 (may knock out background content)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 7",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (5.4pt effective) on page 7 (below 6.0pt)",
+      "page_num": 7,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 5.4,
+        "effective_size": 5.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 8",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 8",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 8 (may knock out background content)",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 9",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 9",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 9 (may knock out background content)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.2pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.2,
+        "effective_size": 4.2,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.4pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.4,
+        "effective_size": 4.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.6pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.6,
+        "effective_size": 4.6,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.2pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.2,
+        "effective_size": 4.2,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.4pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.4,
+        "effective_size": 4.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.6pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.6,
+        "effective_size": 4.6,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.2pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.2,
+        "effective_size": 4.2,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.4pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.4,
+        "effective_size": 4.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.6pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.6,
+        "effective_size": 4.6,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.2pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.2,
+        "effective_size": 4.2,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.4pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.4,
+        "effective_size": 4.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.6pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.6,
+        "effective_size": 4.6,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.2pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.2,
+        "effective_size": 4.2,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.4pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.4,
+        "effective_size": 4.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.6pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.6,
+        "effective_size": 4.6,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.2pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.2,
+        "effective_size": 4.2,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.4pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.4,
+        "effective_size": 4.4,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_001",
+      "severity": "advisory",
+      "message": "Small text (4.6pt effective) on page 9 (below 6.0pt)",
+      "page_num": 9,
+      "object_id": "F3+0",
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "font_size": 4.6,
+        "effective_size": 4.6,
+        "threshold": 6.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 10",
+      "page_num": 10,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F2+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TEXT_004",
+      "severity": "advisory",
+      "message": "White text detected on page 10",
+      "page_num": 10,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "font_name": "F3+0",
+        "color_space": "DeviceRGB",
+        "color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_PATH_002",
+      "severity": "advisory",
+      "message": "White fill path on page 10 (may knock out background content)",
+      "page_num": 10,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "fill_color_space": "DeviceRGB",
+        "fill_color_values": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TRANS_004",
+      "severity": "advisory",
+      "message": "Low non-stroking opacity (0.45) on page 5 (content may be nearly invisible in print)",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "non_stroking_alpha": 0.45
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_TRANS_003",
+      "severity": "advisory",
+      "message": "Image 'FormXob.6b8351906a9795c6bb495543e85b2be4' uses soft mask on page 5 (increases rendering complexity)",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 11.6.5.3",
+      "details": {
+        "image_name": "FormXob.6b8351906a9795c6bb495543e85b2be4"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_DOC_001",
+      "severity": "advisory",
+      "message": "Document has 2 different page sizes (may cause imposition issues)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "page_sizes": [
+          {
+            "width": 595.3,
+            "height": 841.9
+          },
+          {
+            "width": 612.0,
+            "height": 792.0
+          }
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_STRUCT_001",
+      "severity": "error",
+      "message": "Document contains JavaScript (not allowed in print workflows)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 15930-7:2010 6.2.8",
+      "details": {
+        "source": "catalog"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ANNOT_001",
+      "severity": "warning",
+      "message": "Printable Widget annotation inside trim area on page 8",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 12.5.3",
+      "details": {
+        "subtype": "Widget",
+        "flags": 4
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ANNOT_001",
+      "severity": "warning",
+      "message": "Printable Widget annotation inside trim area on page 8",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 12.5.3",
+      "details": {
+        "subtype": "Widget",
+        "flags": 4
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ANNOT_003",
+      "severity": "advisory",
+      "message": "Link annotation on page 8",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "subtype": "Link"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ANNOT_001",
+      "severity": "warning",
+      "message": "Printable Widget annotation inside trim area on page 8",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 12.5.3",
+      "details": {
+        "subtype": "Widget",
+        "flags": 4
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ANNOT_001",
+      "severity": "warning",
+      "message": "Printable Widget annotation inside trim area on page 8",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 32000-2:2020 12.5.3",
+      "details": {
+        "subtype": "Widget",
+        "flags": 4
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ANNOT_003",
+      "severity": "advisory",
+      "message": "Link annotation on page 8",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "subtype": "Link"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_META_001",
+      "severity": "warning",
+      "message": "XMP metadata stream is missing",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 15930-7:2010 6.2.2",
+      "details": {},
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ACCESS_001",
+      "severity": "advisory",
+      "message": "Document has no structure tree (not tagged for accessibility)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 14289-1:2014 7.1",
+      "details": {
+        "has_struct_tree": false
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ACCESS_002",
+      "severity": "advisory",
+      "message": "Document has no language specified (/Lang missing from catalog)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 14289-1:2014 7.2",
+      "details": {
+        "has_lang": false
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ACCESS_004",
+      "severity": "warning",
+      "message": "Document language not specified (/Lang missing or empty in catalog)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 14289-1:2014 7.2",
+      "details": {
+        "lang": null
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ACCESS_012",
+      "severity": "advisory",
+      "message": "No output intents defined; text-background contrast cannot be verified for accessibility",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "has_output_intents": false
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_INK_001",
+      "severity": "advisory",
+      "message": "TAC heatmap data for page 4: max TAC 400%, 3 sample(s)",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "max_tac": 400.0,
+        "max_tac_color_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "max_tac_bbox": null,
+        "sample_count": 3,
+        "tac_limit": 300.0,
+        "samples": [
+          {
+            "color_values": [
+              0.6,
+              0.2,
+              0.0,
+              0.0
+            ],
+            "tac": 80.0,
+            "bbox": null
+          },
+          {
+            "color_values": [
+              0.6,
+              0.4,
+              0.4,
+              1.0
+            ],
+            "tac": 240.0,
+            "bbox": null
+          },
+          {
+            "color_values": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "tac": 400.0,
+            "bbox": null
+          }
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_INK_002",
+      "severity": "advisory",
+      "message": "Separation 'C': used on 1 page(s), max value 100%, 6 event(s)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "separation_name": "C",
+        "pages_used": [
+          4
+        ],
+        "max_value": 1.0,
+        "event_count": 6
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_INK_002",
+      "severity": "advisory",
+      "message": "Separation 'K': used on 1 page(s), max value 100%, 4 event(s)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "separation_name": "K",
+        "pages_used": [
+          4
+        ],
+        "max_value": 1.0,
+        "event_count": 4
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_INK_002",
+      "severity": "advisory",
+      "message": "Separation 'M': used on 1 page(s), max value 100%, 6 event(s)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "separation_name": "M",
+        "pages_used": [
+          4
+        ],
+        "max_value": 1.0,
+        "event_count": 6
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_INK_002",
+      "severity": "advisory",
+      "message": "Separation 'Y': used on 1 page(s), max value 100%, 4 event(s)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "separation_name": "Y",
+        "pages_used": [
+          4
+        ],
+        "max_value": 1.0,
+        "event_count": 4
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_INK_003",
+      "severity": "advisory",
+      "message": "Ink channel inventory: 4 channel(s) (4 process, 0 spot)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "process_channels": [
+          "C",
+          "K",
+          "M",
+          "Y"
+        ],
+        "spot_colors": [],
+        "total_channel_count": 4
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ADV_002",
+      "severity": "advisory",
+      "message": "Ink savings estimation: 3 CMYK fill event(s) analyzed, 0.0% with GCR headroom, estimated savings 0.0-0.0%",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "total_cmyk_fills": 3,
+        "fills_with_headroom": 0,
+        "headroom_percent": 0.0,
+        "estimated_savings_low": 0.0,
+        "estimated_savings_high": 0.0
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ADV_004",
+      "severity": "advisory",
+      "message": "No CxF spectral data detected in output intents",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "cxf_detected": false
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ADV_005",
+      "severity": "error",
+      "message": "Registration color on non-mark path object on page 4 (C=100% M=100% Y=100% K=100%)",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "path",
+      "iso_clause": "",
+      "details": {
+        "color_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "classification": "registration"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_ADV_005",
+      "severity": "advisory",
+      "message": "Black composition breakdown: 0 pure K, 1 rich black, 1 registration, 0 non-standard (2 total CMYK black events)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "pure_k_count": 0,
+        "rich_black_count": 1,
+        "registration_count": 1,
+        "non_standard_count": 0,
+        "total": 2,
+        "target_rich_black": {
+          "c": 60.0,
+          "m": 40.0,
+          "y": 40.0,
+          "k": 100.0
+        }
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_STD_001",
+      "severity": "warning",
+      "message": "G7 pre-compliance: No G7-compatible OutputIntent profile found (expected GRACoL or SWOP identifier)",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "output_intent_count": 0,
+        "g7_profile_found": false
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_STD_001",
+      "severity": "warning",
+      "message": "G7 pre-compliance: TAC 400% exceeds G7 limit of 320% on page 4",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "max_tac": 400.0,
+        "tac_limit": 320.0,
+        "color_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_STD_002",
+      "severity": "warning",
+      "message": "GRACoL compliance: No GRACoL-compatible OutputIntent profile found",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "output_intent_count": 0,
+        "gracol_profile_found": false
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_STD_002",
+      "severity": "warning",
+      "message": "GRACoL compliance: TAC 400% exceeds GRACoL 2006 limit of 340% on page 4",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "max_tac": 400.0,
+        "tac_limit": 340.0,
+        "color_values": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "LPDF_STD_003",
+      "severity": "warning",
+      "message": "ISO 12647 compliance: No OutputIntent defined; cannot validate against ISO 12647-2 reference conditions",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "ISO 12647-2",
+      "details": {
+        "iso_12647_compliant": false,
+        "reason": "no_output_intent"
+      },
+      "source": "engine",
+      "category": ""
+    },
+    {
+      "inspection_id": "AI_BRAND_001",
+      "severity": "advisory",
+      "message": "No brand palette configured \u2014 skipping palette compliance check.",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "no_palette"
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 1: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 1: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 1: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 2: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 2: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 2: ratio 4.0:1 for normal text (font F2+0, 12.0pt), required 4.5:1",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 4.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F2+0",
+        "font_size_pt": 12.0,
+        "fg_srgb": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 2: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 3: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 3: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 3: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 4: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 4: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 4: ratio 1.0:1 for normal text (font F2+0, 14.0pt), required 4.5:1",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F2+0",
+        "font_size_pt": 14.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 4: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 5: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 5: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 5: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 6: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 6: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 6: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 7: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 7: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 7: ratio 1.0:1 for normal text (font F2+0, 16.2pt), required 4.5:1",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F2+0",
+        "font_size_pt": 16.2,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 7: ratio 1.0:1 for normal text (font F3+0, 7.2pt), required 4.5:1",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 7.2,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 7: ratio 1.0:1 for normal text (font F2+0, 10.8pt), required 4.5:1",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F2+0",
+        "font_size_pt": 10.8,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 7: ratio 1.0:1 for normal text (font F3+0, 5.4pt), required 4.5:1",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 5.4,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 7: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 8: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 8: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 8: ratio 4.0:1 for normal text (font F3+0, 10.0pt), required 4.5:1",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 4.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 10.0,
+        "fg_srgb": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 8: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 9: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 9: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 9: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 10: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1",
+      "page_num": 10,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 3.0,
+        "wcag_level": "AA",
+        "text_type": "large text",
+        "font_name": "F2+0",
+        "font_size_pt": 18.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 10: ratio 1.0:1 for normal text (font F3+0, 9.0pt), required 4.5:1",
+      "page_num": 10,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 1.0,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 9.0,
+        "fg_srgb": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_WCAG_001",
+      "severity": "warning",
+      "message": "WCAG AA contrast failure on page 10: ratio 3.95:1 for normal text (font F3+0, 8.0pt), required 4.5:1",
+      "page_num": 10,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "contrast_ratio": 3.95,
+        "required_ratio": 4.5,
+        "wcag_level": "AA",
+        "text_type": "normal text",
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "fg_srgb": [
+          0.501961,
+          0.501961,
+          0.501961
+        ],
+        "is_bold": false
+      },
+      "source": "ai",
+      "category": "color_compliance"
+    },
+    {
+      "inspection_id": "AI_DIE_003",
+      "severity": "advisory",
+      "message": "No die line detected (file does not appear to be packaging artwork).",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "checked_layers": [],
+        "checked_spot_colors": []
+      },
+      "source": "ai",
+      "category": "dieline_detection"
+    },
+    {
+      "inspection_id": "AI_AFP_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for preflight profile recommendation: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "document_classification"
+    },
+    {
+      "inspection_id": "AI_FCLASS_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for document classification: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "document_classification"
+    },
+    {
+      "inspection_id": "AI_VDIFF_001",
+      "severity": "advisory",
+      "message": "No reference file provided for version comparison. Configure a reference file ID in AI settings to enable diff.",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "no_reference_file"
+      },
+      "source": "ai",
+      "category": "file_comparison"
+    },
+    {
+      "inspection_id": "AI_IQ_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for image quality assessment: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "image_analysis"
+    },
+    {
+      "inspection_id": "AI_SIM_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for image similarity embedding: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "image_analysis"
+    },
+    {
+      "inspection_id": "AI_NSFW_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for NSFW detection: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "image_analysis"
+    },
+    {
+      "inspection_id": "AI_LOGO_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for logo detection: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "logo_verification"
+    },
+    {
+      "inspection_id": "AI_LANG_001",
+      "severity": "advisory",
+      "message": "No target languages configured for multi-language reports. Configure target_languages in AI settings.",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "no_target_languages"
+      },
+      "source": "ai",
+      "category": "nlp_interfaces"
+    },
+    {
+      "inspection_id": "AI_EU1169_001",
+      "severity": "error",
+      "message": "Text x-height 0.91mm below EU FIR 1169/2011 minimum (1.2mm) on page 7 (font F3+0, 5.4pt)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 0.914,
+        "min_required_mm": 1.2,
+        "font_name": "F3+0",
+        "font_size_pt": 5.4,
+        "is_small_package": false,
+        "surface_area_cm2": null,
+        "regulation": "EU FIR 1169/2011 Article 13"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_EU1169_001",
+      "severity": "error",
+      "message": "Text x-height 1.05mm below EU FIR 1169/2011 minimum (1.2mm) on page 7 (font F3+0, 6.2pt)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.05,
+        "min_required_mm": 1.2,
+        "font_name": "F3+0",
+        "font_size_pt": 6.2,
+        "is_small_package": false,
+        "surface_area_cm2": null,
+        "regulation": "EU FIR 1169/2011 Article 13"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_EU1169_001",
+      "severity": "error",
+      "message": "Text x-height 0.71mm below EU FIR 1169/2011 minimum (1.2mm) on page 9 (font F3+0, 4.2pt)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 0.711,
+        "min_required_mm": 1.2,
+        "font_name": "F3+0",
+        "font_size_pt": 4.2,
+        "is_small_package": false,
+        "surface_area_cm2": null,
+        "regulation": "EU FIR 1169/2011 Article 13"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_EU1169_001",
+      "severity": "error",
+      "message": "Text x-height 0.74mm below EU FIR 1169/2011 minimum (1.2mm) on page 9 (font F3+0, 4.4pt)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 0.745,
+        "min_required_mm": 1.2,
+        "font_name": "F3+0",
+        "font_size_pt": 4.4,
+        "is_small_package": false,
+        "surface_area_cm2": null,
+        "regulation": "EU FIR 1169/2011 Article 13"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_EU1169_001",
+      "severity": "error",
+      "message": "Text x-height 0.78mm below EU FIR 1169/2011 minimum (1.2mm) on page 9 (font F3+0, 4.6pt)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 0.779,
+        "min_required_mm": 1.2,
+        "font_name": "F3+0",
+        "font_size_pt": 4.6,
+        "is_small_package": false,
+        "surface_area_cm2": null,
+        "regulation": "EU FIR 1169/2011 Article 13"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_EU1169_002",
+      "severity": "warning",
+      "message": "Allergen 'cereals containing gluten' (matched: 'wheat') may not be emphasised on page 7 (EU FIR 1169/2011 Article 21 requires bold, caps, or other emphasis)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "allergen": "cereals containing gluten",
+        "matched_text": "wheat",
+        "is_caps": false,
+        "is_bold": false,
+        "regulation": "EU FIR 1169/2011 Article 21"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_EU1169_002",
+      "severity": "warning",
+      "message": "Allergen 'milk' (matched: 'milk') may not be emphasised on page 7 (EU FIR 1169/2011 Article 21 requires bold, caps, or other emphasis)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "allergen": "milk",
+        "matched_text": "milk",
+        "is_caps": false,
+        "is_bold": false,
+        "regulation": "EU FIR 1169/2011 Article 21"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_FDA_001",
+      "severity": "error",
+      "message": "Calories declaration may be below minimum font size (largest: 18.0pt, required: \u226522.0pt per 21 CFR 101.9)",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "element": "Calories",
+        "found_size_pt": 18.0,
+        "required_min_pt": 22.0,
+        "regulation": "21 CFR 101.9"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_FDA_003",
+      "severity": "warning",
+      "message": "No bold fonts detected in Nutrition Facts panel. 21 CFR 101.9 requires bold for key headings (Nutrition Facts, Calories, Serving size, % Daily Value).",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "regulation": "21 CFR 101.9",
+        "fonts_found": [
+          "F2+0",
+          "F3+0"
+        ]
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_FDA_004",
+      "severity": "error",
+      "message": "Potentially missing required nutrients in NFP: Total Fat, Saturated Fat, Trans Fat, Cholesterol, Sodium, Total Carbohydrate, Dietary Fiber, Total Sugars, Added Sugars, Protein, Vitamin D, Calcium, Iron, Potassium",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "missing_nutrients": [
+          "Total Fat",
+          "Saturated Fat",
+          "Trans Fat",
+          "Cholesterol",
+          "Sodium",
+          "Total Carbohydrate",
+          "Dietary Fiber",
+          "Total Sugars",
+          "Added Sugars",
+          "Protein",
+          "Vitamin D",
+          "Calcium",
+          "Iron",
+          "Potassium"
+        ],
+        "regulation": "21 CFR 101.9 (2016 rule)",
+        "total_required": 14,
+        "total_missing": 14
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_FDA_001",
+      "severity": "error",
+      "message": "Calories declaration may be below minimum font size (largest: 18.0pt, required: \u226522.0pt per 21 CFR 101.9)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "element": "Calories",
+        "found_size_pt": 18.0,
+        "required_min_pt": 22.0,
+        "regulation": "21 CFR 101.9"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_FDA_002",
+      "severity": "error",
+      "message": "Nutrition Facts text below minimum readable size (5.4pt, FDA requires \u22656pt for any NFP text)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "found_min_size_pt": 5.4,
+        "required_min_pt": 6.0,
+        "regulation": "21 CFR 101.9"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_FDA_003",
+      "severity": "warning",
+      "message": "No bold fonts detected in Nutrition Facts panel. 21 CFR 101.9 requires bold for key headings (Nutrition Facts, Calories, Serving size, % Daily Value).",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "regulation": "21 CFR 101.9",
+        "fonts_found": [
+          "F2+0",
+          "F3+0"
+        ]
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_FDA_004",
+      "severity": "error",
+      "message": "Potentially missing required nutrients in NFP: Added Sugars, Vitamin D, Calcium, Iron, Potassium",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "missing_nutrients": [
+          "Added Sugars",
+          "Vitamin D",
+          "Calcium",
+          "Iron",
+          "Potassium"
+        ],
+        "regulation": "21 CFR 101.9 (2016 rule)",
+        "total_required": 14,
+        "total_missing": 5
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 1 (font F3+0, 8.0pt)",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 2 (font F3+0, 8.0pt)",
+      "page_num": 2,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 3 (font F3+0, 8.0pt)",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 4 (font F3+0, 8.0pt)",
+      "page_num": 4,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 5 (font F3+0, 8.0pt)",
+      "page_num": 5,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 6 (font F3+0, 8.0pt)",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 6 (font F1, 8.0pt)",
+      "page_num": 6,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F1",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 7 (font F3+0, 8.0pt)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.22mm (required \u22651.4mm, 7pt Didot equivalent) on page 7 (font F3+0, 7.2pt)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.219,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 7.2,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 0.91mm (required \u22651.4mm, 7pt Didot equivalent) on page 7 (font F3+0, 5.4pt)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 0.914,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 5.4,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.05mm (required \u22651.4mm, 7pt Didot equivalent) on page 7 (font F3+0, 6.2pt)",
+      "page_num": 7,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.05,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 6.2,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 8 (font F3+0, 8.0pt)",
+      "page_num": 8,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 9 (font F3+0, 8.0pt)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 0.71mm (required \u22651.4mm, 7pt Didot equivalent) on page 9 (font F3+0, 4.2pt)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 0.711,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 4.2,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 0.75mm (required \u22651.4mm, 7pt Didot equivalent) on page 9 (font F3+0, 4.4pt)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 0.745,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 4.4,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 0.78mm (required \u22651.4mm, 7pt Didot equivalent) on page 9 (font F3+0, 4.6pt)",
+      "page_num": 9,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 0.779,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 4.6,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_PHARMA_001",
+      "severity": "error",
+      "message": "EU pharma font below minimum: x-height 1.35mm (required \u22651.4mm, 7pt Didot equivalent) on page 10 (font F3+0, 8.0pt)",
+      "page_num": 10,
+      "object_id": null,
+      "object_type": "text",
+      "iso_clause": "",
+      "details": {
+        "x_height_mm": 1.355,
+        "min_required_mm": 1.4,
+        "font_name": "F3+0",
+        "font_size_pt": 8.0,
+        "regulation": "EU Pharmaceutical Readability Guideline"
+      },
+      "source": "ai",
+      "category": "regulatory_compliance"
+    },
+    {
+      "inspection_id": "AI_SZ_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for safe zone analysis: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "spatial_analysis"
+    },
+    {
+      "inspection_id": "AI_PSTEP_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for processing step detection: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "symbol_detection"
+    },
+    {
+      "inspection_id": "AI_RSYM_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for regulatory symbol detection: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 1,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "symbol_detection"
+    },
+    {
+      "inspection_id": "AI_TAO_001",
+      "severity": "advisory",
+      "message": "GPU inference service unavailable for text-as-outlines verification: GPU service error: Request URL is missing an 'http://' or 'https://' protocol.",
+      "page_num": 3,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "reason": "gpu_unavailable"
+      },
+      "source": "ai",
+      "category": "text_analysis"
+    },
+    {
+      "inspection_id": "AI_SCAN_001",
+      "severity": "advisory",
+      "message": "AI scan completed: ran 36 analyzer(s) across 15 category(ies); emitted 82 finding(s).",
+      "page_num": 0,
+      "object_id": null,
+      "object_type": null,
+      "iso_clause": "",
+      "details": {
+        "categories": [
+          "barcode",
+          "color_analysis",
+          "color_compliance",
+          "content_quality",
+          "dieline_detection",
+          "document_classification",
+          "file_comparison",
+          "image_analysis",
+          "logo_verification",
+          "nlp_interfaces",
+          "regulatory_compliance",
+          "spatial_analysis",
+          "symbol_detection",
+          "text_analysis",
+          "trend_analysis"
+        ],
+        "features": [
+          "barcode_content_validation",
+          "barcode_content_and_qr_matching",
+          "barcode_decode",
+          "barcode_dimension_validation",
+          "pharma_serialization_validation",
+          "qr_human_readable_matching",
+          "qr_validation",
+          "banding_detection",
+          "color_cast_detection",
+          "cross_document_consistency",
+          "skin_tone_validation",
+          "brand_palette_check",
+          "dieline_by_color_name",
+          "wcag_contrast_check",
+          "duplicate_detection",
+          "language_detection",
+          "dieline_by_name",
+          "auto_preflight_profile_recommendation",
+          "file_classification",
+          "version_diff",
+          "image_quality_assessment",
+          "image_similarity_search",
+          "nsfw_detection",
+          "logo_detection",
+          "multi_language_reports",
+          "nl_report_interpretation",
+          "nl_preflight_profile_creation",
+          "eu_fir_1169",
+          "fda_nutrition_facts",
+          "ghs_clp_compliance",
+          "pharma_font_compliance",
+          "safe_zone_violations",
+          "processing_steps_ai_fallback",
+          "regulatory_symbol_detection",
+          "text_as_outlines_detection",
+          "submission_quality_spc"
+        ],
+        "findings_count": 82
+      },
+      "source": "ai",
+      "category": "ai_scan"
+    }
+  ],
+  "metadata": {
+    "pdf_version": "1.4",
+    "page_count": 10,
+    "is_encrypted": false,
+    "conformance": null,
+    "workflow": "CMYK",
+    "ai_enabled": true,
+    "ai_findings_count": 83,
+    "color_quality_score": 85.5,
+    "color_quality_grade": "Good",
+    "color_score_breakdown": {
+      "color_spaces": 15.0,
+      "ink_coverage": 20.5,
+      "profiles": 20.0,
+      "spot_colors": 15.0,
+      "overprint": 15.0
+    }
+  },
+  "duration_ms": 75214
+}
