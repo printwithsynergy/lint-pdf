@@ -51,3 +51,6 @@ venv/
 # Temporary report/screenshot artifacts from testing
 preflight_report*.html
 report_*.png
+
+# Local engine storage (runtime data from seed_and_serve.py)
+.local-storage/
