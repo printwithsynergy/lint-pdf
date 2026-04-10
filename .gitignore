@@ -47,3 +47,7 @@ test-credentials.json
 test-results/
 tests/corpus/
 venv/
+
+# Temporary report/screenshot artifacts from testing
+preflight_report*.html
+report_*.png
