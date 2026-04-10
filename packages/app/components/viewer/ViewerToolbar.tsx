@@ -73,8 +73,15 @@ export function ViewerToolbar({
 }: ViewerToolbarProps) {
   return (
     <div className="flex items-center justify-between border-b bg-background px-4 py-2">
-      {/* Left: Page navigation */}
-      <div className="flex items-center gap-2">
+      {/* Left: Brand logo + Page navigation */}
+      <div className="flex items-center gap-3">
+        {(config.viewer_logo_url || config.brand_logo_url) && (
+          <img
+            src={config.viewer_logo_url ?? config.brand_logo_url ?? undefined}
+            alt={config.brand_name}
+            className="h-7 w-auto shrink-0"
+          />
+        )}
         <button
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage <= 1}

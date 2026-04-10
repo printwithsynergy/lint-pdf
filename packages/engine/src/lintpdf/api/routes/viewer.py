@@ -22,6 +22,7 @@ from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
 from lintpdf.api.models import BrandProfile, Job, JobStatus, Tenant
 from lintpdf.api.storage import get_storage
+from lintpdf.reports.service import _LINTPDF_DEFAULT_LOGO
 
 logger = logging.getLogger(__name__)
 
@@ -416,9 +417,9 @@ class ViewerConfigResponse(BaseModel):
     viewer_accent_color: str | None = None
     toolbar_position: str = "top"
     dark_mode: bool = False
-    # Resolved branding from brand profile
+    # Resolved branding from brand profile (defaults to LintPDF branding)
     brand_name: str = "LintPDF"
-    brand_logo_url: str | None = None
+    brand_logo_url: str | None = _LINTPDF_DEFAULT_LOGO
     brand_primary_color: str = "#1a3a7a"
     brand_accent_color: str = "#2563eb"
 
@@ -439,10 +440,10 @@ async def get_viewer_config(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    # Start with defaults
+    # Start with defaults — fall back to LintPDF branding when tenant has none
     config = ViewerConfigResponse(
         brand_name=tenant.brand_name or "LintPDF",
-        brand_logo_url=tenant.brand_logo_url,
+        brand_logo_url=tenant.brand_logo_url or _LINTPDF_DEFAULT_LOGO,
         brand_primary_color=tenant.brand_primary_color or "#1a3a7a",
         brand_accent_color=tenant.brand_accent_color or "#2563eb",
     )

@@ -109,6 +109,37 @@ export const SEVERITY_COLORS = {
 export const DEFAULT_DPI = 150;
 export const THUMBNAIL_DPI = 72;
 
+/** Default LintPDF logo as an embedded SVG data URI — used when no tenant
+ *  branding override is configured. */
+const LINTPDF_DEFAULT_LOGO =
+  "data:image/svg+xml;base64," +
+  "PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyB3aWR0aD0iMTAy" +
+  "NCIgaGVpZ2h0PSIxMDI0IiB2aWV3Qm94PSIwIDAgMTAyNCAxMDI0IiBmaWxsPSJub25lIiB4" +
+  "bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDx0aXRsZT5MaW50UERGLXN0" +
+  "eWxlIGJyYWNrZXQgbG9nbzwvdGl0bGU+CiAgPGRlc2M+VmVjdG9yIHJlY3JlYXRpb24gb2Yg" +
+  "dGhlIHVwbG9hZGVkIGZsYXQgYnJhY2tldCBsb2dvLjwvZGVzYz4KICA8IS0tIEJhY2tncm91" +
+  "bmQgLS0+CiAgPHJlY3QgeD0iMTgiIHk9IjE4IiB3aWR0aD0iOTg4IiBoZWlnaHQ9Ijk4OCIg" +
+  "cng9IjE2NSIgZmlsbD0iIzQwODdGNyIvPgogIDwhLS0gQ2VudGVyIGNvbnRlbnQgYXJlYSAt" +
+  "LT4KICA8IS0tIEJyYWNrZXRzIC0tPgogIDxwYXRoIGQ9Ik0yMTAgMjcwCiAgICAgICAgICAg" +
+  "QzIxMCAyMzYgMjM2IDIxMCAyNzAgMjEwCiAgICAgICAgICAgSDM1OAogICAgICAgICAgIEMz" +
+  "ODAgMjEwIDM5OCAyMjggMzk4IDI1MAogICAgICAgICAgIEMzOTggMjcyIDM4MCAyOTAgMzU4" +
+  "IDI5MAogICAgICAgICAgIEgyNjYKICAgICAgICAgICBWNzM0CiAgICAgICAgICAgSDM1OAogICAg" +
+  "ICAgICAgIEMzODAgNzM0IDM5OCA3NTIgMzk4IDc3NAogICAgICAgICAgIEMzOTggNzk2IDM4" +
+  "MCA4MTQgMzU4IDgxNAogICAgICAgICAgIEgyNzAKICAgICAgICAgICBDMjM2IDgxNCAyMTAg" +
+  "Nzg4IDIxMCA3NTQKICAgICAgICAgICBWMjcwWiIKICAgICAgICBmaWxsPSIjRjJGMkYyIi8+" +
+  "CiAgPHBhdGggZD0iTTgxNCAyNzAKICAgICAgICAgICBDODE0IDIzNiA3ODggMjEwIDc1NCAy" +
+  "MTAKICAgICAgICAgICBINjY2CiAgICAgICAgICAgQzY0NCAyMTAgNjI2IDIyOCA2MjYgMjUw" +
+  "CiAgICAgICAgICAgQzYyNiAyNzIgNjQ0IDI5MCA2NjYgMjkwCiAgICAgICAgICAgSDc1OAog" +
+  "ICAgICAgICAgIFY3MzQKICAgICAgICAgICBINjY2CiAgICAgICAgICAgQzY0NCA3MzQgNjI2" +
+  "IDc1MiA2MjYgNzc0CiAgICAgICAgICAgQzYyNiA3OTYgNjQ0IDgxNCA2NjYgODE0CiAgICAg" +
+  "ICAgICAgSDc1NAogICAgICAgICAgIEM3ODggODE0IDgxNCA3ODggODE0IDc1NAogICAgICAg" +
+  "ICAgIFYyNzBaIgogICAgICAgIGZpbGw9IiNGMkYyRjIiLz4KICA8IS0tIFRleHQgbGluZXMg" +
+  "LS0+CiAgPHJlY3QgeD0iMzQ3IiB5PSIzNTYiIHdpZHRoPSIzMzAiIGhlaWdodD0iMzYiIHJ4" +
+  "PSIxOCIgZmlsbD0iIzkzQzVGRCIvPgogIDxyZWN0IHg9IjM5MiIgeT0iNDU1IiB3aWR0aD0i" +
+  "MjQwIiBoZWlnaHQ9IjM2IiByeD0iMTgiIGZpbGw9IiM5M0M1RkQiLz4KICA8cmVjdCB4PSIz" +
+  "NjYiIHk9IjU1NCIgd2lkdGg9IjI5NCIgaGVpZ2h0PSIzNiIgcng9IjE4IiBmaWxsPSIjOTND" +
+  "NUZEIi8+Cjwvc3ZnPgo=";
+
 export const DEFAULT_VIEWER_CONFIG: ViewerConfig = {
   enable_separations: true,
   enable_tac_heatmap: true,
@@ -130,7 +161,7 @@ export const DEFAULT_VIEWER_CONFIG: ViewerConfig = {
   toolbar_position: "top",
   dark_mode: false,
   brand_name: "LintPDF",
-  brand_logo_url: null,
+  brand_logo_url: LINTPDF_DEFAULT_LOGO,
   brand_primary_color: "#1a3a7a",
   brand_accent_color: "#2563eb",
 };
