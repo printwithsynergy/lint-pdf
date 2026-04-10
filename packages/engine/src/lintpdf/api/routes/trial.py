@@ -620,11 +620,23 @@ async def send_trial_report(
                 "severity": f.severity,
                 "message": f.message,
                 "page_num": f.page_num,
-                "object_id": None,
-                "object_type": None,
+                "object_id": f.object_id,
+                "object_type": f.object_type,
+                "source": f.source or "engine",
+                "category": f.category,
+                "details": f.details,
+                "bbox": [f.bbox_x0, f.bbox_y0, f.bbox_x1, f.bbox_y1]
+                if f.bbox_x0 is not None
+                else None,
             }
             for f in findings
         ]
+
+        # Ensure file_key is available for page screenshot rendering
+        if "metadata" not in result_json:
+            result_json["metadata"] = {}
+        if "file_key" not in result_json["metadata"]:
+            result_json["metadata"]["file_key"] = job.file_key
 
         summary = result_json.get("summary", {})
         total_findings += summary.get("total_findings", 0)

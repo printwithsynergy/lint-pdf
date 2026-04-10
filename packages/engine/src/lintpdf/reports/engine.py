@@ -2,21 +2,31 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from lintpdf.profiles.orchestrator import PreflightResult
+    from lintpdf.reports.service import BrandingContext
 
 
 class ReportEngine:
     """Generates reports in multiple formats from preflight results."""
 
-    def generate(self, result: PreflightResult, fmt: str) -> bytes:
+    def generate(
+        self,
+        result: PreflightResult,
+        fmt: str,
+        *,
+        branding: BrandingContext | None = None,
+        pdf_bytes: bytes | None = None,
+    ) -> bytes:
         """Generate a report in the requested format.
 
         Args:
             result: Preflight result to generate report for.
             fmt: Output format ("json", "html", "pdf", "xml").
+            branding: Optional white-label branding context.
+            pdf_bytes: Original PDF bytes (enables page screenshots in html/pdf).
 
         Returns:
             Report content as bytes.
@@ -27,9 +37,9 @@ class ReportEngine:
         if fmt == "json":
             return self.to_json(result)
         if fmt == "html":
-            return self.to_html(result)
+            return self.to_html(result, branding=branding, pdf_bytes=pdf_bytes)
         if fmt == "pdf":
-            return self.to_pdf(result)
+            return self.to_pdf(result, branding=branding, pdf_bytes=pdf_bytes)
         if fmt == "xml":
             return self.to_xml(result)
         msg = f"Unsupported report format: {fmt}"
@@ -43,18 +53,28 @@ class ReportEngine:
         return generate_json_report(result)
 
     @staticmethod
-    def to_html(result: PreflightResult) -> bytes:
-        """Generate HTML report."""
+    def to_html(
+        result: PreflightResult,
+        *,
+        branding: BrandingContext | None = None,
+        pdf_bytes: bytes | None = None,
+    ) -> bytes:
+        """Generate HTML report with optional page screenshots."""
         from lintpdf.reports.html_report import generate_html_report
 
-        return generate_html_report(result)
+        return generate_html_report(result, branding=branding, pdf_bytes=pdf_bytes)
 
     @staticmethod
-    def to_pdf(result: PreflightResult) -> bytes:
-        """Generate PDF report."""
+    def to_pdf(
+        result: PreflightResult,
+        *,
+        branding: BrandingContext | None = None,
+        pdf_bytes: bytes | None = None,
+    ) -> bytes:
+        """Generate PDF report with optional page screenshots."""
         from lintpdf.reports.pdf_report import generate_pdf_report
 
-        return generate_pdf_report(result)
+        return generate_pdf_report(result, branding=branding, pdf_bytes=pdf_bytes)
 
     @staticmethod
     def to_xml(result: PreflightResult) -> bytes:

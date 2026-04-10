@@ -127,8 +127,12 @@ class ReportService:
         if "html" in tokens:
             branding.report_url = f"{report_base_url}/r/{tokens['html']}"
 
+        # Fetch original PDF bytes for page screenshot rendering (lazy, once).
+        # This is best-effort — if it fails, reports degrade to text-only.
+        pdf_bytes = self._fetch_original_pdf(result_json)
+
         for fmt in formats:
-            content = self._generate_format(result_json, fmt, branding)
+            content = self._generate_format(result_json, fmt, branding, pdf_bytes=pdf_bytes)
             if content is None:
                 continue
 
@@ -227,17 +231,36 @@ class ReportService:
 
         return count
 
+    def _fetch_original_pdf(self, result_json: dict[str, Any]) -> bytes | None:
+        """Attempt to retrieve original PDF bytes from storage.
+
+        Best-effort: returns None if unavailable, so reports degrade
+        gracefully to text-only mode without page screenshots.
+        """
+        file_key = result_json.get("metadata", {}).get("file_key", "")
+        if not file_key:
+            logger.debug("No file_key in result_json — reports will render without page screenshots")
+            return None
+
+        try:
+            return self._storage.download_pdf(file_key)
+        except Exception:
+            logger.warning("Failed to download original PDF for report screenshots (file_key=%s)", file_key)
+            return None
+
     def _generate_format(
         self,
         result_json: dict[str, Any],
         fmt: str,
         branding: BrandingContext,
+        *,
+        pdf_bytes: bytes | None = None,
     ) -> bytes | None:
         """Generate report content in the requested format."""
         if fmt == "html":
-            return self._generate_html(result_json, branding)
+            return self._generate_html(result_json, branding, pdf_bytes=pdf_bytes)
         if fmt == "pdf":
-            return self._generate_pdf(result_json, branding)
+            return self._generate_pdf(result_json, branding, pdf_bytes=pdf_bytes)
         if fmt == "annotated_pdf":
             return self._generate_annotated_pdf(result_json, branding)
         return None
@@ -246,6 +269,8 @@ class ReportService:
     def _generate_html(
         result_json: dict[str, Any],
         branding: BrandingContext,
+        *,
+        pdf_bytes: bytes | None = None,
     ) -> bytes:
         """Generate branded HTML report from result JSON."""
         from jinja2 import Environment, FileSystemLoader
@@ -270,6 +295,18 @@ class ReportService:
                 findings_by_page[page] = []
             findings_by_page[page].append(f)
 
+        # Generate annotated page screenshots if PDF bytes available
+        annotated_pages: dict[int, Any] = {}
+        if pdf_bytes is not None:
+            try:
+                from lintpdf.reports.page_renderer import render_annotated_pages
+
+                annotated_pages = render_annotated_pages(
+                    pdf_bytes, findings_by_page, dpi=150
+                )
+            except Exception:
+                logger.exception("Failed to render annotated pages for service report")
+
         passed = summary.get("passed", True)
         context = {
             "result": type(
@@ -289,6 +326,11 @@ class ReportService:
             "pass_fail": "PASS" if passed else "FAIL",
             "badge_color": "#22c55e" if passed else "#ef4444",
             "brand": branding,
+            "annotated_pages": annotated_pages,
+            "color_quality_score": metadata.get("color_quality_score"),
+            "color_quality_grade": metadata.get("color_quality_grade"),
+            "file_name": result_json.get("file_name", metadata.get("file_name", "")),
+            "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         }
 
         html = template.render(**context)  # nosemgrep: direct-use-of-jinja2
@@ -298,13 +340,15 @@ class ReportService:
         self,
         result_json: dict[str, Any],
         branding: BrandingContext,
+        *,
+        pdf_bytes: bytes | None = None,
     ) -> bytes:
         """Generate PDF from branded HTML."""
         from weasyprint import HTML
 
-        html_bytes = self._generate_html(result_json, branding)
-        pdf_bytes: bytes = HTML(string=html_bytes.decode("utf-8")).write_pdf()
-        return pdf_bytes
+        html_bytes = self._generate_html(result_json, branding, pdf_bytes=pdf_bytes)
+        pdf_bytes_out: bytes = HTML(string=html_bytes.decode("utf-8")).write_pdf()
+        return pdf_bytes_out
 
     def _generate_annotated_pdf(
         self,

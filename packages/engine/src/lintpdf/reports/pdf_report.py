@@ -6,15 +6,26 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from lintpdf.profiles.orchestrator import PreflightResult
+    from lintpdf.reports.service import BrandingContext
 
 
-def generate_pdf_report(result: PreflightResult) -> bytes:
+def generate_pdf_report(
+    result: PreflightResult,
+    *,
+    branding: BrandingContext | None = None,
+    pdf_bytes: bytes | None = None,
+    annotation_dpi: int = 150,
+) -> bytes:
     """Generate a PDF report from preflight results.
 
-    Uses WeasyPrint to convert the HTML report to PDF.
+    Uses WeasyPrint to convert the HTML report to PDF.  When *pdf_bytes*
+    is provided, annotated page screenshots are embedded in the report.
 
     Args:
         result: Preflight result to render.
+        branding: Optional white-label branding context.
+        pdf_bytes: Original PDF bytes for page screenshot rendering.
+        annotation_dpi: DPI for page screenshot rendering.
 
     Returns:
         PDF bytes.
@@ -23,8 +34,13 @@ def generate_pdf_report(result: PreflightResult) -> bytes:
 
     from lintpdf.reports.html_report import generate_html_report
 
-    html_bytes = generate_html_report(result)
+    html_bytes = generate_html_report(
+        result,
+        branding=branding,
+        pdf_bytes=pdf_bytes,
+        annotation_dpi=annotation_dpi,
+    )
     html_string = html_bytes.decode("utf-8")
 
-    pdf_bytes: bytes = HTML(string=html_string).write_pdf()
-    return pdf_bytes
+    pdf_bytes_out: bytes = HTML(string=html_string).write_pdf()
+    return pdf_bytes_out

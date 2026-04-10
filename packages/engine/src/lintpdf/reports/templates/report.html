@@ -10,87 +10,278 @@
       :root {
         --primary: {% if brand and brand.primary_color %}{{ brand.primary_color }}{% else %}#0ea5e9{% endif %};
         --accent: {% if brand and brand.accent_color %}{{ brand.accent_color }}{% else %}#2563eb{% endif %};
+        --error: #dc2626;
+        --warning: #ea580c;
+        --advisory: #2563eb;
+        --pass: #16a34a;
+        --fail: #dc2626;
+        --gray-50: #f9fafb;
+        --gray-100: #f3f4f6;
+        --gray-200: #e5e7eb;
+        --gray-300: #d1d5db;
+        --gray-500: #6b7280;
+        --gray-700: #374151;
+        --gray-900: #111827;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1a1a1a; line-height: 1.5; max-width: 960px; margin: 0 auto; padding: 24px; }
-      h1 { font-size: 24px; margin-bottom: 8px; color: var(--primary); }
-      h2 { font-size: 18px; margin: 24px 0 12px; border-bottom: 2px solid #e5e5e5; padding-bottom: 4px; }
-      h3 { font-size: 15px; margin: 16px 0 8px; cursor: pointer; user-select: none; }
-      h3:hover { color: var(--accent); }
-      .brand-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-      .brand-logo { max-height: 40px; max-width: 160px; }
-      .badge { display: inline-block; padding: 4px 16px; border-radius: 4px; color: white; font-weight: bold; font-size: 14px; background-color: {{ badge_color }}; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        color: var(--gray-900);
+        line-height: 1.6;
+        max-width: 1040px;
+        margin: 0 auto;
+        padding: 32px 24px;
+        background: #fff;
+      }
+
+      /* --- Header / Branding --- */
+      .report-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        background: linear-gradient(135deg, var(--primary), var(--accent));
+        border-radius: 12px;
+        margin-bottom: 24px;
+        color: #fff;
+      }
+      .report-header .brand-block { display: flex; align-items: center; gap: 14px; }
+      .report-header .brand-logo { max-height: 44px; max-width: 180px; border-radius: 4px; }
+      .report-header h1 { font-size: 22px; font-weight: 700; }
+      .report-header .subtitle { font-size: 13px; opacity: 0.85; margin-top: 2px; }
+      .verdict {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 24px;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 18px;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      .verdict-pass { background: rgba(255,255,255,0.95); color: var(--pass); }
+      .verdict-fail { background: rgba(255,255,255,0.95); color: var(--fail); }
+      .verdict-icon { font-size: 22px; }
+
+      /* --- Toolbar --- */
       .toolbar { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
-      .toolbar button, .toolbar a { padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 6px; background: white; cursor: pointer; font-size: 13px; text-decoration: none; color: #374151; }
-      .toolbar button:hover, .toolbar a:hover { background: #f3f4f6; }
-      .toolbar .active { background: var(--accent); color: white; border-color: var(--accent); }
-      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
-      .summary-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; text-align: center; }
-      .summary-card .count { font-size: 28px; font-weight: bold; }
-      .summary-card .label { font-size: 12px; color: #6b7280; text-transform: uppercase; }
-      .error .count { color: #dc2626; }
-      .warning .count { color: #ea580c; }
-      .advisory .count { color: #2563eb; }
-      table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
-      th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #e5e7eb; }
-      th { background: #f9fafb; font-weight: 600; }
-      .severity-tag { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; cursor: pointer; }
-      .severity-error { background: #fef2f2; color: #dc2626; }
-      .severity-warning { background: #fff7ed; color: #ea580c; }
-      .severity-advisory { background: #eff6ff; color: #2563eb; }
-      .source-tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; text-transform: uppercase; margin-left: 4px; }
+      .toolbar button, .toolbar a {
+        padding: 6px 14px; border: 1px solid var(--gray-300); border-radius: 6px;
+        background: #fff; cursor: pointer; font-size: 13px; text-decoration: none; color: var(--gray-700);
+        transition: all 0.15s;
+      }
+      .toolbar button:hover, .toolbar a:hover { background: var(--gray-100); }
+      .toolbar .active { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .search-box {
+        width: 100%; padding: 10px 14px; border: 1px solid var(--gray-300);
+        border-radius: 8px; font-size: 13px; margin: 8px 0;
+      }
+      .search-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+      /* --- Summary Cards --- */
+      .summary-grid {
+        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0;
+      }
+      .summary-card {
+        background: var(--gray-50); border: 1px solid var(--gray-200);
+        border-radius: 10px; padding: 16px; text-align: center;
+        transition: transform 0.15s;
+      }
+      .summary-card:hover { transform: translateY(-1px); }
+      .summary-card .count { font-size: 32px; font-weight: 800; line-height: 1.1; }
+      .summary-card .label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+      .summary-card.error { border-left: 4px solid var(--error); }
+      .summary-card.error .count { color: var(--error); }
+      .summary-card.warning { border-left: 4px solid var(--warning); }
+      .summary-card.warning .count { color: var(--warning); }
+      .summary-card.advisory { border-left: 4px solid var(--advisory); }
+      .summary-card.advisory .count { color: var(--advisory); }
+      .summary-card.total { border-left: 4px solid var(--primary); }
+      .summary-card.total .count { color: var(--primary); }
+
+      /* --- Color Quality Score --- */
+      .score-section {
+        display: flex; align-items: center; gap: 20px;
+        background: var(--gray-50); border: 1px solid var(--gray-200);
+        border-radius: 10px; padding: 16px 20px; margin: 12px 0;
+      }
+      .score-ring {
+        width: 64px; height: 64px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px; font-weight: 800; color: #fff; flex-shrink: 0;
+      }
+      .score-a { background: #16a34a; }
+      .score-b { background: #65a30d; }
+      .score-c { background: #ca8a04; }
+      .score-d { background: #ea580c; }
+      .score-f { background: #dc2626; }
+      .score-label { font-size: 14px; font-weight: 600; color: var(--gray-700); }
+      .score-sublabel { font-size: 12px; color: var(--gray-500); }
+
+      /* --- Section headings --- */
+      .section-title {
+        font-size: 17px; font-weight: 700; margin: 28px 0 12px;
+        padding-bottom: 6px; border-bottom: 2px solid var(--gray-200);
+        color: var(--primary);
+      }
+
+      /* --- Document Info --- */
+      .meta-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+      .meta-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-200); }
+      .meta-table td:first-child { font-weight: 600; width: 180px; color: var(--gray-700); }
+      .meta-table tr:last-child td { border-bottom: none; }
+
+      /* --- Page Section (screenshot + findings) --- */
+      .page-section {
+        margin: 24px 0;
+        border: 1px solid var(--gray-200);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .page-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 12px 16px; background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+        cursor: pointer; user-select: none;
+      }
+      .page-header:hover { background: var(--gray-100); }
+      .page-header h3 { font-size: 15px; font-weight: 700; color: var(--primary); }
+      .page-header .finding-count {
+        font-size: 12px; color: var(--gray-500);
+        background: var(--gray-200); padding: 2px 10px; border-radius: 12px;
+      }
+      .page-body { padding: 16px; }
+      .page-layout { display: flex; gap: 20px; align-items: flex-start; }
+      .page-screenshot {
+        flex: 0 0 auto; max-width: 420px; border: 1px solid var(--gray-200);
+        border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      }
+      .page-screenshot img { width: 100%; height: auto; display: block; }
+      .page-findings-list { flex: 1; min-width: 0; }
+
+      /* --- Callout Item --- */
+      .callout-item {
+        display: flex; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
+        border-radius: 8px; background: var(--gray-50);
+        border-left: 3px solid var(--gray-300);
+        font-size: 13px; line-height: 1.5;
+      }
+      .callout-item.sev-error { border-left-color: var(--error); background: #fef2f2; }
+      .callout-item.sev-warning { border-left-color: var(--warning); background: #fffbeb; }
+      .callout-item.sev-advisory { border-left-color: var(--advisory); background: #eff6ff; }
+      .callout-badge {
+        flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 800; color: #fff;
+      }
+      .callout-badge.sev-error { background: var(--error); }
+      .callout-badge.sev-warning { background: var(--warning); }
+      .callout-badge.sev-advisory { background: var(--advisory); }
+      .callout-content { flex: 1; min-width: 0; }
+      .callout-check { font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 12px; font-weight: 600; color: var(--gray-700); }
+      .callout-message { color: var(--gray-700); margin-top: 2px; }
+      .callout-meta { font-size: 11px; color: var(--gray-500); margin-top: 3px; }
+
+      /* --- Severity / Source Tags --- */
+      .severity-tag {
+        display: inline-block; padding: 2px 8px; border-radius: 4px;
+        font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
+        cursor: pointer;
+      }
+      .severity-error { background: #fef2f2; color: var(--error); }
+      .severity-warning { background: #fff7ed; color: var(--warning); }
+      .severity-advisory { background: #eff6ff; color: var(--advisory); }
+      .source-tag {
+        display: inline-block; padding: 1px 6px; border-radius: 3px;
+        font-size: 9px; font-weight: 700; text-transform: uppercase; margin-left: 4px;
+      }
       .source-ai { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-      .source-engine { background: #f9fafb; color: #6b7280; border: 1px solid #e5e7eb; }
-      .meta-table td:first-child { font-weight: 600; width: 180px; }
-      .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e5e5e5; font-size: 11px; color: #9ca3af; }
-      .search-box { width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; margin: 8px 0; }
-      .collapsible { overflow: hidden; transition: max-height 0.2s ease-out; }
+      .source-engine { background: var(--gray-50); color: var(--gray-500); border: 1px solid var(--gray-200); }
+
+      /* --- Findings Table (fallback when no screenshots) --- */
+      table.findings-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+      .findings-table th, .findings-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--gray-200); }
+      .findings-table th { background: var(--gray-50); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--gray-500); }
+
+      /* --- Footer --- */
+      .report-footer {
+        margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--gray-200);
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: 11px; color: var(--gray-500);
+      }
+
+      /* --- Collapsible --- */
+      .collapsible { overflow: hidden; }
       .hidden { display: none; }
-      @media (max-width: 640px) { .summary-grid { grid-template-columns: repeat(2, 1fr); } }
-      @media print { body { max-width: 100%; padding: 12px; } .toolbar { display: none; } .search-box { display: none; } }
+
+      /* --- Responsive --- */
+      @media (max-width: 768px) {
+        .summary-grid { grid-template-columns: repeat(2, 1fr); }
+        .page-layout { flex-direction: column; }
+        .page-screenshot { max-width: 100%; }
+        .report-header { flex-direction: column; gap: 12px; text-align: center; }
+      }
+
+      /* --- Print --- */
+      @media print {
+        body { max-width: 100%; padding: 12px; font-size: 11px; }
+        .toolbar, .search-box { display: none; }
+        .report-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .summary-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .callout-item { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .callout-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .page-section { break-inside: avoid; page-break-inside: avoid; }
+        .page-screenshot img { max-width: 380px; }
+      }
+
+      /* --- WeasyPrint / PDF page rules --- */
+      @page {
+        size: A4;
+        margin: 18mm 15mm;
+      }
     </style>
   </head>
   <body>
-    <div class="brand-header">
-      {% if brand and brand.name and brand.logo_url %}<img
-        src="{{ brand.logo_url }}"
-        alt="{{ brand.name }}"
-        class="brand-logo"
-      />{% endif %}
-      <h1>
-        {% if brand and brand.name %}{{ brand.name }} Preflight Report{% else %}Preflight Report{% endif %}
-        <span class="badge">{{ pass_fail }}</span>
-      </h1>
-    </div>
-    <p>
-      Profile: <strong>{{ result.profile_id }}</strong> | Job: {{ result.job_id
-      }}
-    </p>
 
+    {# ===== HEADER / BRANDING ===== #}
+    <div class="report-header">
+      <div class="brand-block">
+        {% if brand and brand.logo_url %}<img
+          src="{{ brand.logo_url }}"
+          alt="{{ brand.name or 'Logo' }}"
+          class="brand-logo"
+        />{% endif %}
+        <div>
+          <h1>{% if brand and brand.name %}{{ brand.name }}{% endif %} Preflight Report</h1>
+          <div class="subtitle">
+            Profile: {{ result.profile_id }}
+            {% if file_name %} | {{ file_name }}{% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="verdict verdict-{{ 'pass' if pass_fail == 'PASS' else 'fail' }}">
+        <span class="verdict-icon">{% if pass_fail == 'PASS' %}&#10003;{% else %}&#10007;{% endif %}</span>
+        {{ pass_fail }}
+      </div>
+    </div>
+
+    {# ===== TOOLBAR ===== #}
     <div class="toolbar">
-      <button onclick="filterSeverity('')" class="active" data-filter="all">
-        All
-      </button>
-      <button onclick="filterSeverity('error')" data-filter="error">
-        Error
-      </button>
-      <button onclick="filterSeverity('warning')" data-filter="warning">
-        Warning
-      </button>
-      <button onclick="filterSeverity('advisory')" data-filter="advisory">
-        Info
-      </button>
+      <button onclick="filterSeverity('')" class="active" data-filter="all">All</button>
+      <button onclick="filterSeverity('error')" data-filter="error">Errors</button>
+      <button onclick="filterSeverity('warning')" data-filter="warning">Warnings</button>
+      <button onclick="filterSeverity('advisory')" data-filter="advisory">Info</button>
       <button onclick="filterSource('ai')" data-source="ai">AI Only</button>
       <button onclick="filterSource('')" data-source="all">All Sources</button>
       <button onclick="window.print()">Print</button>
-      {# nosemgrep: var-in-href -- URL validated to start with https://,
-      http://, or / #} {% if brand and brand.pdf_download_url and
-      (brand.pdf_download_url.startswith('https://') or
-      brand.pdf_download_url.startswith('http://') or
-      brand.pdf_download_url.startswith('/')) %}<a
+      {# nosemgrep: var-in-href -- URL validated to start with https://, http://, or / #}
+      {% if brand and brand.pdf_download_url and
+        (brand.pdf_download_url.startswith('https://') or
+         brand.pdf_download_url.startswith('http://') or
+         brand.pdf_download_url.startswith('/')) %}<a
         href="{{ brand.pdf_download_url }}"
-        >Download PDF</a
-      >{% endif %}
+      >Download PDF</a>{% endif %}
     </div>
 
     <input
@@ -100,7 +291,8 @@
       oninput="searchFindings(this.value)"
     />
 
-    <h2>Summary</h2>
+    {# ===== SUMMARY ===== #}
+    <h2 class="section-title">Summary</h2>
     <div class="summary-grid">
       <div class="summary-card error">
         <div class="count">{{ summary.error_count }}</div>
@@ -114,142 +306,202 @@
         <div class="count">{{ summary.advisory_count }}</div>
         <div class="label">Info</div>
       </div>
-      <div class="summary-card">
+      <div class="summary-card total">
         <div class="count">{{ summary.total_findings }}</div>
         <div class="label">Total</div>
       </div>
     </div>
 
-    <h2>Document Info</h2>
+    {# ===== COLOR QUALITY SCORE ===== #}
+    {% if color_quality_score is defined and color_quality_score is not none %}
+    <div class="score-section">
+      {% set grade = color_quality_grade or 'C' %}
+      <div class="score-ring score-{{ grade|lower }}">{{ "%.0f"|format(color_quality_score) }}</div>
+      <div>
+        <div class="score-label">Color Quality Score: Grade {{ grade }}</div>
+        <div class="score-sublabel">Measures ink coverage accuracy, gamut compliance, and color consistency</div>
+      </div>
+    </div>
+    {% endif %}
+
+    {# ===== DOCUMENT INFO ===== #}
+    <h2 class="section-title">Document Info</h2>
     <table class="meta-table">
-      <tr>
-        <td>PDF Version</td>
-        <td>{{ metadata.get('pdf_version', 'N/A') }}</td>
-      </tr>
-      <tr>
-        <td>Pages</td>
-        <td>{{ summary.page_count }}</td>
-      </tr>
+      {% if file_name is defined and file_name %}
+      <tr><td>File Name</td><td>{{ file_name }}</td></tr>
+      {% endif %}
+      <tr><td>PDF Version</td><td>{{ metadata.get('pdf_version', 'N/A') }}</td></tr>
+      <tr><td>Pages</td><td>{{ summary.page_count }}</td></tr>
       <tr>
         <td>File Size</td>
         <td>{{ "%.1f"|format(summary.file_size_bytes / 1048576) }} MB</td>
       </tr>
-      <tr>
-        <td>Encrypted</td>
-        <td>{{ 'Yes' if metadata.get('is_encrypted') else 'No' }}</td>
-      </tr>
-      <tr>
-        <td>Conformance</td>
-        <td>{{ metadata.get('conformance') or 'None' }}</td>
-      </tr>
-      <tr>
-        <td>Duration</td>
-        <td>{{ result.duration_ms }} ms</td>
-      </tr>
+      <tr><td>Encrypted</td><td>{{ 'Yes' if metadata.get('is_encrypted') else 'No' }}</td></tr>
+      <tr><td>Conformance</td><td>{{ metadata.get('conformance') or 'None' }}</td></tr>
+      <tr><td>Duration</td><td>{{ result.duration_ms }} ms</td></tr>
     </table>
 
+    {# ===== FINDINGS ===== #}
     {% if result.findings %}
-    <h2>Findings</h2>
+    <h2 class="section-title">Findings</h2>
 
-    {% for page_num, page_findings in findings_by_page.items() %}
-    <h3 class="page-header" onclick="toggleSection(this)">
-      {% if page_num > 0 %}Page {{ page_num }}{% else %}Document Level{% endif
-      %}
-      <span style="font-size: 12px; color: #9ca3af"
-        >({{ page_findings|length }})</span
-      >
-    </h3>
-    <div class="collapsible">
-      <table class="findings-table">
-        <thead>
-          <tr>
-            <th>Check</th>
-            <th>Severity</th>
-            <th>Message</th>
-            <th>Object</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for f in page_findings %}
-          <tr
-            class="finding-row"
-            data-severity="{{ f.severity }}"
-            data-source="{{ f.source|default('engine') }}"
-            data-search="{{ f.inspection_id }} {{ f.message }}"
-          >
-            <td>
-              <code>{{ f.inspection_id }}</code>{% if f.source|default('engine')
-              == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}
-            </td>
-            <td>
-              <span
-                class="severity-tag severity-{{ f.severity }}"
-                onclick="filterSeverity('{{ f.severity }}')"
-                >{{ f.severity }}</span
-              >
-            </td>
-            <td>
-              {{ f.message }}{% if f.category %}
-              <span style="font-size: 11px; color: #9ca3af"
-                >[{{ f.category }}]</span
-              >{% endif %}
-            </td>
-            <td>{{ f.object_id or '' }}</td>
-          </tr>
+    {# --- Document-Level Findings (page_num == 0) --- #}
+    {% if findings_by_page.get(0) %}
+    <div class="page-section" data-page="0">
+      <div class="page-header" onclick="toggleSection(this)">
+        <h3>Document Level</h3>
+        <span class="finding-count">{{ findings_by_page[0]|length }} finding{{ 's' if findings_by_page[0]|length != 1 else '' }}</span>
+      </div>
+      <div class="page-body collapsible">
+        <div class="page-findings-list">
+          {% for f in findings_by_page[0] %}
+          <div class="callout-item sev-{{ f.severity }} finding-row"
+               data-severity="{{ f.severity }}"
+               data-source="{{ f.source|default('engine') }}"
+               data-search="{{ f.inspection_id }} {{ f.message }}">
+            <div class="callout-badge sev-{{ f.severity }}">{{ loop.index }}</div>
+            <div class="callout-content">
+              <div>
+                <span class="callout-check">{{ f.inspection_id }}</span>
+                <span class="severity-tag severity-{{ f.severity }}">{{ f.severity }}</span>
+                {% if f.source|default('engine') == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}
+              </div>
+              <div class="callout-message">{{ f.message }}</div>
+              {% if f.object_id or f.category %}
+              <div class="callout-meta">
+                {% if f.object_id %}Object: {{ f.object_id }}{% endif %}
+                {% if f.category %} [{{ f.category }}]{% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
           {% endfor %}
-        </tbody>
-      </table>
+        </div>
+      </div>
     </div>
-    {% endfor %} {% else %}
-    <h2>Findings</h2>
-    <p>No findings detected. The document passed all enabled checks.</p>
-    {% endif %} {% if brand and brand.footer_text %}
-    <div class="footer">{{ brand.footer_text }}</div>
     {% endif %}
+
+    {# --- Per-Page Findings with Screenshots --- #}
+    {% for page_num, page_findings in findings_by_page.items() %}
+    {% if page_num > 0 %}
+    <div class="page-section" data-page="{{ page_num }}">
+      <div class="page-header" onclick="toggleSection(this)">
+        <h3>Page {{ page_num }}</h3>
+        <span class="finding-count">{{ page_findings|length }} finding{{ 's' if page_findings|length != 1 else '' }}</span>
+      </div>
+      <div class="page-body collapsible">
+        <div class="page-layout">
+          {# --- Annotated Page Screenshot --- #}
+          {% if annotated_pages is defined and annotated_pages and page_num in annotated_pages %}
+          <div class="page-screenshot">
+            <img src="data:image/png;base64,{{ annotated_pages[page_num].image_base64 }}"
+                 alt="Page {{ page_num }} with annotated findings"
+                 width="{{ annotated_pages[page_num].width }}"
+                 height="{{ annotated_pages[page_num].height }}" />
+          </div>
+          {% endif %}
+
+          {# --- Finding Callouts --- #}
+          <div class="page-findings-list">
+            {% if annotated_pages is defined and annotated_pages and page_num in annotated_pages %}
+              {# Numbered callouts matching the screenshot annotations #}
+              {% for callout in annotated_pages[page_num].callouts %}
+              <div class="callout-item sev-{{ callout.severity }} finding-row"
+                   data-severity="{{ callout.severity }}"
+                   data-source="{{ callout.source }}"
+                   data-search="{{ callout.inspection_id }} {{ callout.message }}">
+                <div class="callout-badge sev-{{ callout.severity }}">{{ callout.number }}</div>
+                <div class="callout-content">
+                  <div>
+                    <span class="callout-check">{{ callout.inspection_id }}</span>
+                    <span class="severity-tag severity-{{ callout.severity }}">{{ callout.severity }}</span>
+                    {% if callout.source == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}
+                  </div>
+                  <div class="callout-message">{{ callout.message }}</div>
+                  {% if callout.object_id or callout.category %}
+                  <div class="callout-meta">
+                    {% if callout.object_id %}Object: {{ callout.object_id }}{% endif %}
+                    {% if callout.object_type %} ({{ callout.object_type }}){% endif %}
+                    {% if callout.category %} [{{ callout.category }}]{% endif %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              {# Fallback: text-only findings table when no screenshot available #}
+              {% for f in page_findings %}
+              <div class="callout-item sev-{{ f.severity }} finding-row"
+                   data-severity="{{ f.severity }}"
+                   data-source="{{ f.source|default('engine') }}"
+                   data-search="{{ f.inspection_id }} {{ f.message }}">
+                <div class="callout-badge sev-{{ f.severity }}">{{ loop.index }}</div>
+                <div class="callout-content">
+                  <div>
+                    <span class="callout-check">{{ f.inspection_id }}</span>
+                    <span class="severity-tag severity-{{ f.severity }}">{{ f.severity }}</span>
+                    {% if f.source|default('engine') == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}
+                  </div>
+                  <div class="callout-message">{{ f.message }}</div>
+                  {% if f.object_id or f.category %}
+                  <div class="callout-meta">
+                    {% if f.object_id %}Object: {{ f.object_id }}{% endif %}
+                    {% if f.category %} [{{ f.category }}]{% endif %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    {% else %}
+    <h2 class="section-title">Findings</h2>
+    <p style="padding: 16px; color: var(--gray-500);">No findings detected. The document passed all enabled checks.</p>
+    {% endif %}
+
+    {# ===== FOOTER ===== #}
+    <div class="report-footer">
+      <div>{% if brand and brand.footer_text %}{{ brand.footer_text }}{% endif %}</div>
+      <div>
+        {% if generated_at is defined and generated_at %}Generated {{ generated_at }}{% endif %}
+        | Job {{ result.job_id }}
+      </div>
+    </div>
 
     <script>
       function filterSeverity(sev) {
-        document.querySelectorAll(".toolbar button").forEach(function (b) {
-          b.classList.toggle(
-            "active",
-            b.getAttribute("data-filter") === (sev || "all"),
-          );
+        document.querySelectorAll('.toolbar button[data-filter]').forEach(function(b) {
+          b.classList.toggle('active', b.getAttribute('data-filter') === (sev || 'all'));
         });
-        document.querySelectorAll(".finding-row").forEach(function (row) {
-          row.classList.toggle(
-            "hidden",
-            sev && row.getAttribute("data-severity") !== sev,
-          );
+        document.querySelectorAll('.finding-row').forEach(function(row) {
+          row.classList.toggle('hidden', sev && row.getAttribute('data-severity') !== sev);
         });
       }
       function filterSource(src) {
-        document
-          .querySelectorAll(".toolbar button[data-source]")
-          .forEach(function (b) {
-            b.classList.toggle(
-              "active",
-              b.getAttribute("data-source") === (src || "all"),
-            );
-          });
-        document.querySelectorAll(".finding-row").forEach(function (row) {
-          row.classList.toggle(
-            "hidden",
-            src && row.getAttribute("data-source") !== src,
-          );
+        document.querySelectorAll('.toolbar button[data-source]').forEach(function(b) {
+          b.classList.toggle('active', b.getAttribute('data-source') === (src || 'all'));
+        });
+        document.querySelectorAll('.finding-row').forEach(function(row) {
+          row.classList.toggle('hidden', src && row.getAttribute('data-source') !== src);
         });
       }
       function searchFindings(query) {
         var q = query.toLowerCase();
-        document.querySelectorAll(".finding-row").forEach(function (row) {
-          var text = (row.getAttribute("data-search") || "").toLowerCase();
-          row.classList.toggle("hidden", q && text.indexOf(q) === -1);
+        document.querySelectorAll('.finding-row').forEach(function(row) {
+          var text = (row.getAttribute('data-search') || '').toLowerCase();
+          row.classList.toggle('hidden', q && text.indexOf(q) === -1);
         });
       }
       function toggleSection(header) {
-        var section = header.nextElementSibling;
-        if (section && section.classList.contains("collapsible")) {
-          section.style.display =
-            section.style.display === "none" ? "" : "none";
+        var body = header.nextElementSibling;
+        if (body) {
+          body.style.display = body.style.display === 'none' ? '' : 'none';
         }
       }
     </script>

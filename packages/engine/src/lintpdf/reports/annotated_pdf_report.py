@@ -1,10 +1,12 @@
 """Annotated PDF report generator.
 
-Renders each PDF page as an image and overlays finding bounding boxes
-with color-coded annotations. Produces a new PDF with visual indicators
-showing exactly where issues were detected.
+Renders the original PDF with color-coded finding overlays drawn directly
+onto each page using pikepdf content streams.  Each finding gets:
+  - A severity-colored semi-transparent rectangle over its bounding box
+  - A numbered callout circle at the top-right corner of the bbox
+  - A legend sidebar/page listing what each number means
 
-Requires: pikepdf (already a dependency), Pillow, reportlab
+Requires: pikepdf (already a dependency)
 """
 
 from __future__ import annotations
@@ -16,21 +18,34 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-# Severity colors (RGBA)
+# Severity colors (RGB 0-1 range for PDF operators)
 _SEVERITY_COLORS = {
-    "error": (239, 68, 68, 128),  # Red, semi-transparent
-    "warning": (245, 158, 11, 128),  # Amber, semi-transparent
-    "advisory": (59, 130, 246, 128),  # Blue, semi-transparent
+    "error": (0.937, 0.267, 0.267),  # #ef4444
+    "warning": (0.961, 0.620, 0.043),  # #f59e0b
+    "advisory": (0.231, 0.510, 0.965),  # #3b82f6
 }
 
 _SEVERITY_STROKE = {
-    "error": (220, 38, 38),  # Darker red
-    "warning": (217, 119, 6),  # Darker amber
-    "advisory": (37, 99, 235),  # Darker blue
+    "error": (0.863, 0.149, 0.149),  # #dc2626
+    "warning": (0.851, 0.467, 0.024),  # #d97706
+    "advisory": (0.145, 0.388, 0.922),  # #2563eb
+}
+
+_SEVERITY_LABELS = {
+    "error": "Error",
+    "warning": "Warning",
+    "advisory": "Info",
 }
 
 # Default DPI for page rendering
 DEFAULT_ANNOTATION_DPI = 150
+
+# Badge sizing (PDF points)
+BADGE_RADIUS = 8
+BADGE_FONT_SIZE = 9
+LEGEND_FONT_SIZE = 7
+LEGEND_LINE_HEIGHT = 12
+LEGEND_MAX_ENTRIES = 40
 
 
 def generate_annotated_pdf(
@@ -43,9 +58,8 @@ def generate_annotated_pdf(
     """Generate an annotated PDF with finding overlays.
 
     Approach: Use pikepdf to read the original PDF, then draw overlay
-    rectangles and labels directly onto each page using PDF content streams.
-    This avoids external rendering dependencies and preserves the original
-    PDF quality.
+    rectangles, numbered callout badges, and a color legend directly
+    onto each page using PDF content streams.
 
     Args:
         pdf_bytes: Original PDF file bytes.
@@ -61,8 +75,6 @@ def generate_annotated_pdf(
     # Group findings by page
     findings_by_page: dict[int, list[dict[str, Any]]] = {}
     for f in findings:
-        if f.get("bbox") is None:
-            continue
         page_num = f.get("page_num", 0)
         if page_num < 1:
             continue
@@ -71,11 +83,20 @@ def generate_annotated_pdf(
         findings_by_page[page_num].append(f)
 
     if not findings_by_page:
-        # No findings with bounding boxes — return original with a summary page
+        # No page-level findings — return original with a summary page
         return _add_summary_page(pdf_bytes, findings, branding_name)
 
     # Open the PDF and add overlays
     pdf = pikepdf.open(io.BytesIO(pdf_bytes))
+
+    # Register Helvetica font for callout numbers
+    helvetica = pikepdf.Dictionary(
+        {
+            "/Type": pikepdf.Name("/Font"),
+            "/Subtype": pikepdf.Name("/Type1"),
+            "/BaseFont": pikepdf.Name("/Helvetica-Bold"),
+        }
+    )
 
     for page_idx, page in enumerate(pdf.pages):
         page_num = page_idx + 1
@@ -88,27 +109,39 @@ def generate_annotated_pdf(
         if media_box is None:
             continue
 
+        mb = [float(v) for v in media_box]
+
+        # Ensure resources exist
+        if "/Resources" not in page:
+            page["/Resources"] = pikepdf.Dictionary({})
+        resources = page["/Resources"]
+        if "/XObject" not in resources:
+            resources["/XObject"] = pikepdf.Dictionary({})
+        if "/Font" not in resources:
+            resources["/Font"] = pikepdf.Dictionary({})
+
+        # Add our font
+        resources["/Font"]["/LPDFBadge"] = pdf.copy_foreign(helvetica) if False else helvetica
+
         # Build overlay content stream
-        overlay_stream = _build_overlay_stream(page_findings)
+        overlay_stream = _build_overlay_stream(page_findings, mb)
         if overlay_stream:
-            # Create a Form XObject for the overlay
             overlay_dict = pikepdf.Dictionary(
                 {
                     "/Type": pikepdf.Name("/XObject"),
                     "/Subtype": pikepdf.Name("/Form"),
                     "/BBox": media_box,
-                    "/Resources": pikepdf.Dictionary({}),
+                    "/Resources": pikepdf.Dictionary(
+                        {
+                            "/Font": pikepdf.Dictionary(
+                                {"/LPDFBadge": helvetica}
+                            )
+                        }
+                    ),
                 }
             )
             overlay_obj = pdf.make_stream(overlay_stream.encode("latin-1"), overlay_dict)
 
-            # Add overlay to page resources
-            if "/XObject" not in page.get("/Resources", pikepdf.Dictionary()):
-                if "/Resources" not in page:
-                    page["/Resources"] = pikepdf.Dictionary({})
-                page["/Resources"]["/XObject"] = pikepdf.Dictionary({})
-
-            resources = page["/Resources"]
             xobjects = resources.get("/XObject", pikepdf.Dictionary({}))
             if not isinstance(xobjects, pikepdf.Dictionary):
                 xobjects = pikepdf.Dictionary({})
@@ -126,6 +159,9 @@ def generate_annotated_pdf(
                 else:
                     page["/Contents"] = pikepdf.Array([existing_contents, overlay_ref_stream])
 
+    # Add a findings legend page at the end
+    _add_legend_page(pdf, findings_by_page, branding_name)
+
     # Write output
     output = io.BytesIO()
     pdf.save(output)
@@ -133,22 +169,25 @@ def generate_annotated_pdf(
     return output.getvalue()
 
 
-def _build_overlay_stream(findings: list[dict[str, Any]]) -> str:
-    """Build a PDF content stream with annotation rectangles.
-
-    Uses PDF graphics operators to draw semi-transparent rectangles
-    over finding bounding boxes.
-    """
+def _build_overlay_stream(
+    findings: list[dict[str, Any]],
+    media_box: list[float],
+) -> str:
+    """Build a PDF content stream with annotation rectangles and numbered badges."""
     lines: list[str] = []
+    callout_num = 0
 
     for f in findings:
         bbox = f.get("bbox")
-        if bbox is None or len(bbox) != 4:
+        has_bbox = bbox is not None and len(bbox) == 4 and bbox[0] is not None
+        callout_num += 1
+
+        if not has_bbox:
             continue
 
         severity = f.get("severity", "advisory")
-        stroke_color = _SEVERITY_STROKE.get(severity, (37, 99, 235))
-        fill_color = _SEVERITY_COLORS.get(severity, (59, 130, 246, 128))
+        stroke = _SEVERITY_STROKE.get(severity, _SEVERITY_STROKE["advisory"])
+        fill = _SEVERITY_COLORS.get(severity, _SEVERITY_COLORS["advisory"])
 
         x0, y0, x1, y1 = bbox
         width = x1 - x0
@@ -157,27 +196,178 @@ def _build_overlay_stream(findings: list[dict[str, Any]]) -> str:
         if width <= 0 or height <= 0:
             continue
 
-        # Set graphics state for semi-transparent overlay
+        # --- Draw rectangle ---
         lines.append("q")  # Save graphics state
 
-        # Set stroke color (RGB, 0-1 range)
-        r, g, b = stroke_color
-        lines.append(f"{r / 255:.3f} {g / 255:.3f} {b / 255:.3f} RG")
-
-        # Set fill color with alpha (using transparency via ExtGState would
-        # require more setup, so we use a lighter fill instead)
-        fr, fg, fb, _fa = fill_color
-        lines.append(f"{fr / 255:.3f} {fg / 255:.3f} {fb / 255:.3f} rg")
-
-        # Set line width
-        lines.append("1.5 w")
-
+        # Stroke color
+        lines.append(f"{stroke[0]:.3f} {stroke[1]:.3f} {stroke[2]:.3f} RG")
+        # Fill color (lighter)
+        lines.append(f"{fill[0]:.3f} {fill[1]:.3f} {fill[2]:.3f} rg")
+        # Line width
+        lines.append("2 w")
+        # Dashed line for visual distinction
+        lines.append("[4 2] 0 d")
         # Draw rectangle (fill and stroke)
         lines.append(f"{x0:.2f} {y0:.2f} {width:.2f} {height:.2f} re B")
 
         lines.append("Q")  # Restore graphics state
 
+        # --- Draw numbered badge at top-right of bbox ---
+        badge_x = x1 + 2
+        badge_y = y1 - BADGE_RADIUS
+
+        # Clamp badge to page bounds
+        page_w = media_box[2] - media_box[0]
+        page_h = media_box[3] - media_box[1]
+        if badge_x + BADGE_RADIUS > media_box[0] + page_w:
+            badge_x = x1 - BADGE_RADIUS - 2
+        if badge_y + BADGE_RADIUS > media_box[1] + page_h:
+            badge_y = media_box[1] + page_h - BADGE_RADIUS - 2
+        if badge_y - BADGE_RADIUS < media_box[1]:
+            badge_y = media_box[1] + BADGE_RADIUS + 2
+
+        lines.append("q")
+        # Badge circle (filled)
+        lines.append(f"{stroke[0]:.3f} {stroke[1]:.3f} {stroke[2]:.3f} rg")
+        lines.append("1 1 1 RG")  # White outline
+        lines.append("1 w")
+        # Approximate circle with 4 Bezier curves
+        r = BADGE_RADIUS
+        k = 0.5523  # magic number for circle approximation
+        cx, cy = badge_x, badge_y
+        lines.append(f"{cx + r:.2f} {cy:.2f} m")
+        lines.append(f"{cx + r:.2f} {cy + r * k:.2f} {cx + r * k:.2f} {cy + r:.2f} {cx:.2f} {cy + r:.2f} c")
+        lines.append(f"{cx - r * k:.2f} {cy + r:.2f} {cx - r:.2f} {cy + r * k:.2f} {cx - r:.2f} {cy:.2f} c")
+        lines.append(f"{cx - r:.2f} {cy - r * k:.2f} {cx - r * k:.2f} {cy - r:.2f} {cx:.2f} {cy - r:.2f} c")
+        lines.append(f"{cx + r * k:.2f} {cy - r:.2f} {cx + r:.2f} {cy - r * k:.2f} {cx + r:.2f} {cy:.2f} c")
+        lines.append("B")  # Fill and stroke
+
+        # Badge number (white text)
+        text = str(callout_num)
+        # Approximate centering
+        text_x = cx - len(text) * BADGE_FONT_SIZE * 0.3
+        text_y = cy - BADGE_FONT_SIZE * 0.35
+        lines.append(f"BT /LPDFBadge {BADGE_FONT_SIZE} Tf")
+        lines.append("1 1 1 rg")  # White text
+        lines.append(f"{text_x:.2f} {text_y:.2f} Td")
+        lines.append(f"({text}) Tj ET")
+
+        lines.append("Q")
+
     return "\n".join(lines)
+
+
+def _add_legend_page(
+    pdf: Any,
+    findings_by_page: dict[int, list[dict[str, Any]]],
+    branding_name: str,
+) -> None:
+    """Add a findings legend page at the end of the PDF."""
+    import pikepdf
+
+    page_width = 612  # US Letter
+    page_height = 792
+    margin = 54  # 0.75 inches
+    y = page_height - margin
+
+    lines: list[str] = []
+
+    # Title
+    lines.append(f"BT /F1 16 Tf {margin} {y} Td ({branding_name} Preflight Report \u2014 Findings Legend) Tj ET")
+    y -= 28
+
+    # Color legend
+    for sev, label in _SEVERITY_LABELS.items():
+        color = _SEVERITY_STROKE.get(sev, (0, 0, 0))
+        lines.append("q")
+        lines.append(f"{color[0]:.3f} {color[1]:.3f} {color[2]:.3f} rg")
+        lines.append(f"{margin} {y - 2} 10 10 re f")
+        lines.append("Q")
+        lines.append(f"BT /F1 10 Tf {margin + 16} {y} Td ({label}) Tj ET")
+        y -= 16
+
+    y -= 12
+
+    # Findings by page
+    entry_count = 0
+    for page_num in sorted(findings_by_page.keys()):
+        if entry_count >= LEGEND_MAX_ENTRIES:
+            lines.append(f"BT /F1 9 Tf {margin} {y} Td (... and more findings \\(see full report\\)) Tj ET")
+            break
+
+        page_findings = findings_by_page[page_num]
+        lines.append(f"BT /F1 11 Tf {margin} {y} Td (Page {page_num}) Tj ET")
+        y -= 16
+
+        callout_num = 0
+        for f in page_findings:
+            callout_num += 1
+            entry_count += 1
+            if entry_count > LEGEND_MAX_ENTRIES:
+                break
+
+            severity = f.get("severity", "advisory")
+            color = _SEVERITY_STROKE.get(severity, (0, 0, 0))
+            check_id = f.get("inspection_id", "")
+            # Escape parentheses in message for PDF string
+            message = f.get("message", "")[:80].replace("(", "\\(").replace(")", "\\)")
+
+            lines.append("q")
+            # Badge circle
+            lines.append(f"{color[0]:.3f} {color[1]:.3f} {color[2]:.3f} rg")
+            cx = margin + 8
+            cy_badge = y + 3
+            r = 5
+            k = 0.5523
+            lines.append(f"{cx + r:.2f} {cy_badge:.2f} m")
+            lines.append(f"{cx + r:.2f} {cy_badge + r * k:.2f} {cx + r * k:.2f} {cy_badge + r:.2f} {cx:.2f} {cy_badge + r:.2f} c")
+            lines.append(f"{cx - r * k:.2f} {cy_badge + r:.2f} {cx - r:.2f} {cy_badge + r * k:.2f} {cx - r:.2f} {cy_badge:.2f} c")
+            lines.append(f"{cx - r:.2f} {cy_badge - r * k:.2f} {cx - r * k:.2f} {cy_badge - r:.2f} {cx:.2f} {cy_badge - r:.2f} c")
+            lines.append(f"{cx + r * k:.2f} {cy_badge - r:.2f} {cx + r:.2f} {cy_badge - r * k:.2f} {cx + r:.2f} {cy_badge:.2f} c")
+            lines.append("f")
+
+            # Number in badge
+            lines.append(f"BT /F1 {LEGEND_FONT_SIZE} Tf 1 1 1 rg {cx - 2:.2f} {cy_badge - 3:.2f} Td ({callout_num}) Tj ET")
+            lines.append("Q")
+
+            # Check ID + message
+            lines.append(f"BT /F1 8 Tf 0 0 0 rg {margin + 20} {y} Td ({check_id}: {message}) Tj ET")
+            y -= LEGEND_LINE_HEIGHT
+
+            # Page break if we run out of space
+            if y < margin + 20 and entry_count < LEGEND_MAX_ENTRIES:
+                break  # Just stop on this page — not worth adding another page for legend
+
+        y -= 8  # gap between page groups
+
+    # Create the summary page
+    summary_page = pikepdf.Dictionary(
+        {
+            "/Type": pikepdf.Name("/Page"),
+            "/MediaBox": pikepdf.Array([0, 0, page_width, page_height]),
+            "/Resources": pikepdf.Dictionary(
+                {
+                    "/Font": pikepdf.Dictionary(
+                        {
+                            "/F1": pikepdf.Dictionary(
+                                {
+                                    "/Type": pikepdf.Name("/Font"),
+                                    "/Subtype": pikepdf.Name("/Type1"),
+                                    "/BaseFont": pikepdf.Name("/Helvetica"),
+                                }
+                            )
+                        }
+                    )
+                }
+            ),
+        }
+    )
+
+    content = "\n".join(lines)
+    content_stream = pdf.make_stream(content.encode("latin-1"))
+    summary_page["/Contents"] = content_stream
+
+    pdf.pages.append(pikepdf.Page(summary_page))
 
 
 def _add_summary_page(
@@ -199,15 +389,32 @@ def _add_summary_page(
     advisory_count = sum(1 for f in findings if f.get("severity") == "advisory")
     total = len(findings)
 
-    # Create a simple text-based summary page
-    summary_text = (
-        f"BT /F1 14 Tf 72 750 Td "
-        f"({branding_name} Annotated Report - Summary) Tj ET\n"
-        f"BT /F1 10 Tf 72 720 Td "
-        f"(Total findings: {total}) Tj ET\n"
-        f"BT /F1 10 Tf 72 706 Td "
-        f"(Error: {error_count} | Warning: {warning_count} | Advisory: {advisory_count}) Tj ET\n"
-    )
+    margin = 54
+    y = 740
+
+    lines: list[str] = []
+    lines.append(f"BT /F1 16 Tf {margin} {y} Td ({branding_name} Preflight Report) Tj ET")
+    y -= 28
+    lines.append(f"BT /F1 11 Tf {margin} {y} Td (Total findings: {total}) Tj ET")
+    y -= 16
+    lines.append(f"BT /F1 11 Tf {margin} {y} Td (Errors: {error_count}  |  Warnings: {warning_count}  |  Info: {advisory_count}) Tj ET")
+    y -= 24
+
+    # List individual findings
+    for f in findings[:LEGEND_MAX_ENTRIES]:
+        severity = f.get("severity", "advisory")
+        sev_label = _SEVERITY_LABELS.get(severity, severity)
+        check_id = f.get("inspection_id", "")
+        page = f.get("page_num", 0)
+        message = f.get("message", "")[:70].replace("(", "\\(").replace(")", "\\)")
+        page_text = f"p.{page}" if page > 0 else "doc"
+
+        lines.append(f"BT /F1 8 Tf {margin} {y} Td ([{sev_label}] {check_id} \\({page_text}\\): {message}) Tj ET")
+        y -= LEGEND_LINE_HEIGHT
+
+        if y < 60:
+            lines.append(f"BT /F1 8 Tf {margin} {y} Td (... and {total - findings.index(f) - 1} more findings) Tj ET")
+            break
 
     # Create the summary page
     summary_page = pikepdf.Dictionary(
@@ -232,7 +439,8 @@ def _add_summary_page(
         }
     )
 
-    content_stream = pdf.make_stream(summary_text.encode("latin-1"))
+    content = "\n".join(lines)
+    content_stream = pdf.make_stream(content.encode("latin-1"))
     summary_page["/Contents"] = content_stream
 
     pdf.pages.append(pikepdf.Page(summary_page))

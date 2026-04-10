@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -9,6 +11,9 @@ from jinja2 import Environment, FileSystemLoader
 
 if TYPE_CHECKING:
     from lintpdf.profiles.orchestrator import PreflightResult
+    from lintpdf.reports.service import BrandingContext
+
+logger = logging.getLogger(__name__)
 
 _TEMPLATE_DIR = Path(__file__).parent / "templates"
 
@@ -21,7 +26,13 @@ def _get_template_env() -> Environment:
     )
 
 
-def _build_template_context(result: PreflightResult) -> dict[str, Any]:  # skipcq: PY-R1000
+def _build_template_context(  # skipcq: PY-R1000
+    result: PreflightResult,
+    *,
+    branding: BrandingContext | None = None,
+    pdf_bytes: bytes | None = None,
+    annotation_dpi: int = 150,
+) -> dict[str, Any]:
     """Build template context from preflight result."""
     # Group findings by page
     findings_by_page: dict[int, list[dict[str, Any]]] = {}
@@ -38,6 +49,7 @@ def _build_template_context(result: PreflightResult) -> dict[str, Any]:  # skipc
                 "object_type": f.object_type,
                 "source": getattr(f, "source", "engine"),
                 "category": getattr(f, "category", None),
+                "bbox": f.bbox if hasattr(f, "bbox") else None,
             }
         )
 
@@ -58,7 +70,14 @@ def _build_template_context(result: PreflightResult) -> dict[str, Any]:  # skipc
                 }
             )
 
-    return {
+    # Generate annotated page screenshots if PDF bytes available
+    annotated_pages: dict[int, Any] = {}
+    if pdf_bytes is not None:
+        annotated_pages = _render_annotated_pages(
+            pdf_bytes, findings_by_page, dpi=annotation_dpi
+        )
+
+    context: dict[str, Any] = {
         "result": result,
         "summary": result.summary,
         "metadata": result.metadata,
@@ -66,20 +85,59 @@ def _build_template_context(result: PreflightResult) -> dict[str, Any]:  # skipc
         "severity_groups": severity_groups,
         "pass_fail": "PASS" if result.summary.passed else "FAIL",
         "badge_color": "#22c55e" if result.summary.passed else "#ef4444",
+        "brand": branding,
+        "annotated_pages": annotated_pages,
+        "color_quality_score": result.metadata.get("color_quality_score"),
+        "color_quality_grade": result.metadata.get("color_quality_grade"),
+        "file_name": result.metadata.get("file_name", ""),
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
     }
+    return context
 
 
-def generate_html_report(result: PreflightResult) -> bytes:
+def _render_annotated_pages(
+    pdf_bytes: bytes,
+    findings_by_page: dict[int, list[dict[str, Any]]],
+    *,
+    dpi: int = 150,
+) -> dict[int, Any]:
+    """Render annotated page screenshots for pages that have findings."""
+    try:
+        from lintpdf.reports.page_renderer import render_annotated_pages
+
+        return render_annotated_pages(pdf_bytes, findings_by_page, dpi=dpi)
+    except Exception:
+        logger.exception("Failed to render annotated pages for report")
+        return {}
+
+
+def generate_html_report(
+    result: PreflightResult,
+    *,
+    branding: BrandingContext | None = None,
+    pdf_bytes: bytes | None = None,
+    annotation_dpi: int = 150,
+) -> bytes:
     """Generate an HTML report from preflight results.
 
     Args:
         result: Preflight result to render.
+        branding: Optional white-label branding context.
+        pdf_bytes: Original PDF bytes for page screenshot rendering.
+            When provided, pages with findings are rendered to images
+            with annotated bounding boxes and embedded in the report.
+        annotation_dpi: DPI for page screenshot rendering.
 
     Returns:
         UTF-8 encoded HTML bytes.
     """
     env = _get_template_env()
     template = env.get_template("report.html")
-    context = _build_template_context(result)
+    context = _build_template_context(
+        result,
+        branding=branding,
+        pdf_bytes=pdf_bytes,
+        annotation_dpi=annotation_dpi,
+    )
     html = template.render(**context)  # nosemgrep: direct-use-of-jinja2
     return html.encode("utf-8")
