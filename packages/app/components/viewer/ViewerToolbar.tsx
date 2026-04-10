@@ -1,6 +1,11 @@
 "use client";
 
 import { ZoomControls } from "./ZoomControls";
+import type { ViewerConfig } from "./types";
+import { DEFAULT_VIEWER_CONFIG } from "./types";
+
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
+type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface ViewerToolbarProps {
   currentPage: number;
@@ -9,12 +14,44 @@ interface ViewerToolbarProps {
   onPageChange: (page: number) => void;
   onZoomChange: (zoom: number) => void;
   jobId: string;
-  separationMode?: boolean;
-  onToggleSeparationMode?: () => void;
+  config?: ViewerConfig;
+  viewerMode?: ViewerMode;
+  onToggleMode?: (mode: ViewerMode) => void;
+  measureMode?: MeasureMode;
+  onToggleMeasure?: (mode: MeasureMode) => void;
   showTacHeatmap?: boolean;
   onToggleTacHeatmap?: () => void;
+  showBoxOverlay?: boolean;
+  onToggleBoxOverlay?: () => void;
+  // Legacy props for backward compat
+  separationMode?: boolean;
+  onToggleSeparationMode?: () => void;
   annotationMode?: boolean;
   onToggleAnnotationMode?: () => void;
+}
+
+function ToolButton({
+  label,
+  active,
+  onClick,
+  activeClass = "border-primary bg-primary/10 text-primary",
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+  activeClass?: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded border px-3 py-1 text-sm transition-colors ${
+        active ? activeClass : "hover:bg-muted"
+      }`}
+      title={label}
+    >
+      {label}
+    </button>
+  );
 }
 
 export function ViewerToolbar({
@@ -24,12 +61,15 @@ export function ViewerToolbar({
   onPageChange,
   onZoomChange,
   jobId,
-  separationMode = false,
-  onToggleSeparationMode,
+  config = DEFAULT_VIEWER_CONFIG,
+  viewerMode = "normal",
+  onToggleMode,
+  measureMode = "none",
+  onToggleMeasure,
   showTacHeatmap = false,
   onToggleTacHeatmap,
-  annotationMode = false,
-  onToggleAnnotationMode,
+  showBoxOverlay = false,
+  onToggleBoxOverlay,
 }: ViewerToolbarProps) {
   return (
     <div className="flex items-center justify-between border-b bg-background px-4 py-2">
@@ -69,64 +109,109 @@ export function ViewerToolbar({
       </div>
 
       {/* Center: Zoom */}
-      <ZoomControls zoom={zoom} onZoomChange={onZoomChange} />
+      {config.enable_zoom && (
+        <ZoomControls zoom={zoom} onZoomChange={onZoomChange} />
+      )}
 
-      {/* Right: Actions */}
-      <div className="flex items-center gap-2">
-        {onToggleSeparationMode && (
-          <button
-            onClick={onToggleSeparationMode}
-            className={`rounded border px-3 py-1 text-sm ${
-              separationMode
-                ? "border-primary bg-primary/10 text-primary"
-                : "hover:bg-muted"
-            }`}
-            title="Toggle separation channel view"
-          >
-            Separations
-          </button>
+      {/* Right: Tool buttons */}
+      <div className="flex items-center gap-1.5">
+        {/* Inspection tools */}
+        {config.enable_separations && onToggleMode && (
+          <ToolButton
+            label="Separations"
+            active={viewerMode === "separation"}
+            onClick={() => onToggleMode("separation")}
+          />
         )}
-        {onToggleTacHeatmap && (
-          <button
+
+        {config.enable_layers && onToggleMode && (
+          <ToolButton
+            label="Layers"
+            active={viewerMode === "layers"}
+            onClick={() => onToggleMode("layers")}
+            activeClass="border-violet-500 bg-violet-500/10 text-violet-600"
+          />
+        )}
+
+        {config.enable_tac_heatmap && onToggleTacHeatmap && (
+          <ToolButton
+            label="TAC"
+            active={showTacHeatmap}
             onClick={onToggleTacHeatmap}
-            className={`rounded border px-3 py-1 text-sm ${
-              showTacHeatmap
-                ? "border-warning bg-warning/10 text-warning"
-                : "hover:bg-muted"
-            }`}
-            title="Toggle TAC heatmap overlay"
-          >
-            TAC
-          </button>
+            activeClass="border-amber-500 bg-amber-500/10 text-amber-600"
+          />
         )}
-        {onToggleAnnotationMode && (
-          <button
-            onClick={onToggleAnnotationMode}
-            className={`rounded border px-3 py-1 text-sm ${
-              annotationMode
-                ? "border-violet-500 bg-violet-500/10 text-violet-600"
-                : "hover:bg-muted"
-            }`}
-            title="Toggle annotation mode"
-          >
-            Annotate
-          </button>
+
+        {onToggleBoxOverlay && (
+          <ToolButton
+            label="Boxes"
+            active={showBoxOverlay}
+            onClick={onToggleBoxOverlay}
+            activeClass="border-blue-500 bg-blue-500/10 text-blue-600"
+          />
         )}
-        <span className="mx-1 h-4 border-r" />
-        <a
-          href={`/api/lintpdf/reports/${jobId}/html`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded border px-3 py-1 text-sm hover:bg-muted"
-        >
-          HTML Report
-        </a>
-        <a
-          href={`/api/lintpdf/reports/${jobId}/download`}
-          className="rounded border px-3 py-1 text-sm hover:bg-muted"
-        >
-          Download PDF
-        </a>
+
+        {/* Measurement tools */}
+        {config.enable_measurement && onToggleMeasure && (
+          <>
+            <span className="mx-0.5 h-4 border-r" />
+            <ToolButton
+              label="&#128270;"
+              active={measureMode === "densitometer"}
+              onClick={() => onToggleMeasure("densitometer")}
+              activeClass="border-cyan-500 bg-cyan-500/10 text-cyan-600"
+            />
+            <ToolButton
+              label="&#8596;"
+              active={measureMode === "ruler"}
+              onClick={() => onToggleMeasure("ruler")}
+              activeClass="border-green-500 bg-green-500/10 text-green-600"
+            />
+          </>
+        )}
+
+        {/* Annotation + Comparison */}
+        <span className="mx-0.5 h-4 border-r" />
+
+        {config.enable_annotations && onToggleMode && (
+          <ToolButton
+            label="Annotate"
+            active={viewerMode === "annotation"}
+            onClick={() => onToggleMode("annotation")}
+            activeClass="border-violet-500 bg-violet-500/10 text-violet-600"
+          />
+        )}
+
+        {config.enable_comparison && onToggleMode && (
+          <ToolButton
+            label="Compare"
+            active={viewerMode === "comparison"}
+            onClick={() => onToggleMode("comparison")}
+            activeClass="border-indigo-500 bg-indigo-500/10 text-indigo-600"
+          />
+        )}
+
+        {/* Export links */}
+        <span className="mx-0.5 h-4 border-r" />
+
+        {config.enable_html_report_link && (
+          <a
+            href={`/api/lintpdf/reports/${jobId}/html`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded border px-3 py-1 text-sm hover:bg-muted"
+          >
+            Report
+          </a>
+        )}
+        {config.enable_download && (
+          <a
+            href={`/api/lintpdf/reports/${jobId}/download`}
+            className="rounded border px-3 py-1 text-sm hover:bg-muted"
+          >
+            PDF
+          </a>
+        )}
       </div>
     </div>
   );

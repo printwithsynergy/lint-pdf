@@ -152,6 +152,12 @@ class Job(Base):
     color_quality_score: Mapped[Any | None] = mapped_column(Numeric(5, 1), nullable=True)
     jdf_overrides: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
+    # Verdict (manual review disposition)
+    verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    verdict_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    verdict_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    verdict_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Relationships
     tenant: Mapped[Tenant] = relationship(back_populates="jobs")
     findings: Mapped[list[JobFinding]] = relationship(
@@ -574,6 +580,7 @@ class BrandProfile(Base):
     custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    viewer_config: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

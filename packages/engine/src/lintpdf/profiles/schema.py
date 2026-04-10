@@ -216,6 +216,40 @@ class ColorConfig(BaseModel):
     epm_mode: bool | None = Field(default=None, description="Enable/disable EPM mode override.")
 
 
+class ViewerConfig(BaseModel):
+    """Viewer feature toggles and defaults — stored on BrandProfile.viewer_config."""
+
+    # Feature toggles
+    enable_separations: bool = Field(default=True, description="Show ink separation channel toggling.")
+    enable_tac_heatmap: bool = Field(default=True, description="Show TAC heatmap overlay toggle.")
+    enable_annotations: bool = Field(default=True, description="Show annotation tools.")
+    enable_measurement: bool = Field(default=True, description="Show densitometer and ruler tools.")
+    enable_comparison: bool = Field(default=True, description="Show file comparison (A/B) mode.")
+    enable_layers: bool = Field(default=True, description="Show PDF layer (OCG) toggling.")
+    enable_findings_panel: bool = Field(default=True, description="Show findings side panel.")
+    enable_page_thumbnails: bool = Field(default=True, description="Show page thumbnail navigator.")
+    enable_zoom: bool = Field(default=True, description="Show zoom controls.")
+    enable_download: bool = Field(default=True, description="Show download buttons.")
+    enable_html_report_link: bool = Field(default=True, description="Show HTML report link.")
+
+    # Verdict mode
+    verdict_mode: str = Field(
+        default="auto",
+        description='Verdict mode: "auto" (from preflight), "manual" (user pass/fail), "disabled".',
+    )
+
+    # Defaults
+    default_zoom: int = Field(default=100, ge=25, le=400, description="Default zoom percentage.")
+    default_dpi: int = Field(default=150, ge=72, le=600, description="Default tile DPI.")
+    default_tac_limit: float = Field(default=300.0, ge=100, le=500, description="Default TAC threshold (%).")
+
+    # Branding overrides (inherits from BrandProfile if not set)
+    viewer_logo_url: str | None = Field(default=None, description="Override brand logo for viewer.")
+    viewer_accent_color: str | None = Field(default=None, description="Override accent color for viewer.")
+    toolbar_position: str = Field(default="top", description='Toolbar position: "top" or "bottom".')
+    dark_mode: bool = Field(default=False, description="Enable dark mode for viewer.")
+
+
 class ReportConfig(BaseModel):
     """Report generation configuration within a preflight profile."""
 

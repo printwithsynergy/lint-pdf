@@ -223,6 +223,158 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       }) as RouteHandler,
     },
 
+    // ── Viewer config ──────────────────────────────────────
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/config",
+      auth: true,
+      permission: "preflight:view",
+      description: "Get resolved viewer configuration for a job",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/config`),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+
+    // ── Densitometer (color sample) ──────────────────────
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/pages/:pageNum/sample",
+      auth: true,
+      permission: "preflight:view",
+      description: "Sample color at a point on a page",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const x = req.query.x ?? "0";
+        const y = req.query.y ?? "0";
+        const dpi = req.query.dpi ?? "300";
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/pages/${req.params.pageNum}/sample?x=${x}&y=${y}&dpi=${dpi}`,
+          ),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+
+    // ── PDF Layers (OCG) ─────────────────────────────────
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/layers",
+      auth: true,
+      permission: "preflight:view",
+      description: "List PDF layers (Optional Content Groups)",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/layers`),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+
+    // ── Verdict ──────────────────────────────────────────
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/verdict",
+      auth: true,
+      permission: "preflight:view",
+      description: "Get verdict for a job",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/verdict`),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/:jobId/verdict",
+      auth: true,
+      permission: "preflight:manage",
+      description: "Set verdict for a job",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/verdict`),
+          {
+            method: "POST",
+            headers: { ...authHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify(req.body),
+          },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+
+    // ── File Comparison ──────────────────────────────────
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/compare",
+      auth: true,
+      permission: "preflight:view",
+      description: "Create a file comparison between two jobs",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl("/api/v1/viewer/compare"),
+          {
+            method: "POST",
+            headers: { ...authHeaders(), "Content-Type": "application/json" },
+            body: JSON.stringify(req.body),
+          },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/compare/:comparisonId/pages/:pageNum/diff",
+      auth: true,
+      permission: "preflight:view",
+      description: "Get comparison diff image",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/compare/${req.params.comparisonId}/pages/${req.params.pageNum}/diff`,
+          ),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: "Diff not found" } };
+        }
+        const buffer = await resp.arrayBuffer();
+        return {
+          status: 200,
+          body: Buffer.from(buffer),
+          headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=3600",
+          },
+        } as RouteResponse;
+      }) as RouteHandler,
+    },
+
     // ── Public viewer routes (no auth) ─────────────────────
 
     {

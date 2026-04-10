@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PageInfo, ViewerFinding } from "./types";
+import type { ComparisonState, PageInfo, ViewerConfig, ViewerFinding } from "./types";
+import { DEFAULT_VIEWER_CONFIG } from "./types";
 import { PageCanvas } from "./PageCanvas";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./PageNavigator";
@@ -13,6 +14,15 @@ import { AnnotationCanvas } from "./AnnotationCanvas";
 import { AnnotationToolbar } from "./AnnotationToolbar";
 import type { AnnotationTool } from "./AnnotationToolbar";
 import { AnnotationThread } from "./AnnotationThread";
+import { DensitometerTool } from "./DensitometerTool";
+import { MeasureTool } from "./MeasureTool";
+import { BoxOverlay } from "./BoxOverlay";
+import { LayerPanel } from "./LayerPanel";
+import { VerdictBar } from "./VerdictBar";
+import { ComparisonPanel } from "./ComparisonPanel";
+
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
+type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface PdfViewerProps {
   jobId: string;
@@ -21,35 +31,52 @@ interface PdfViewerProps {
 export function PdfViewer({ jobId }: PdfViewerProps) {
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [findings, setFindings] = useState<ViewerFinding[]>([]);
+  const [config, setConfig] = useState<ViewerConfig>(DEFAULT_VIEWER_CONFIG);
   const [currentPage, setCurrentPage] = useState(1);
   const [zoom, setZoom] = useState(100);
-  const [selectedFinding, setSelectedFinding] = useState<ViewerFinding | null>(
-    null,
-  );
+  const [selectedFinding, setSelectedFinding] = useState<ViewerFinding | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [separationMode, setSeparationMode] = useState(false);
+
+  // Mode states (mutually exclusive main modes)
+  const [viewerMode, setViewerMode] = useState<ViewerMode>("normal");
+  const [measureMode, setMeasureMode] = useState<MeasureMode>("none");
+  const [showTacHeatmap, setShowTacHeatmap] = useState(false);
+  const [showBoxOverlay, setShowBoxOverlay] = useState(false);
+
+  // Separation state
   const [enabledChannels, setEnabledChannels] = useState<Set<string>>(
     new Set(["Cyan", "Magenta", "Yellow", "Black"]),
   );
   const [allChannelNames, setAllChannelNames] = useState<string[]>([]);
-  const [showTacHeatmap, setShowTacHeatmap] = useState(false);
-  const [annotationMode, setAnnotationMode] = useState(false);
+
+  // Layer state
+  const [enabledLayers, setEnabledLayers] = useState<Set<number>>(new Set());
+  const [allLayerIndices, setAllLayerIndices] = useState<number[]>([]);
+
+  // Annotation state
   const [annotationTool, setAnnotationTool] = useState<AnnotationTool>("pointer");
   const [strokeColor, setStrokeColor] = useState("#ef4444");
   const [annotationSaving, setAnnotationSaving] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
   const annotationCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Comparison state
+  const [comparison, setComparison] = useState<ComparisonState | null>(null);
+  const [comparisonMode, setComparisonMode] = useState<"ab" | "side-by-side" | "overlay">("ab");
+  const [showVersionB, setShowVersionB] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Load pages + findings on mount
+  // Load pages + findings + config on mount
   useEffect(() => {
     async function load() {
       try {
-        const [pagesResp, jobResp] = await Promise.all([
+        const [pagesResp, jobResp, configResp] = await Promise.all([
           fetch(`/api/lintpdf/viewer/${jobId}/pages`),
           fetch(`/api/lintpdf/jobs/${jobId}`),
+          fetch(`/api/lintpdf/viewer/${jobId}/config`),
         ]);
 
         if (!pagesResp.ok) throw new Error("Failed to load page data");
@@ -60,6 +87,12 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
 
         setPages(pagesData.pages ?? []);
         setFindings(jobData.findings ?? []);
+
+        if (configResp.ok) {
+          const configData = await configResp.json();
+          setConfig({ ...DEFAULT_VIEWER_CONFIG, ...configData });
+          setZoom(configData.default_zoom ?? 100);
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load viewer");
       } finally {
@@ -82,7 +115,7 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
 
   // Load channel names when separation mode is first enabled
   useEffect(() => {
-    if (!separationMode || allChannelNames.length > 0) return;
+    if (viewerMode !== "separation" || allChannelNames.length > 0) return;
     fetch(`/api/lintpdf/viewer/${jobId}/separations`)
       .then((r) => r.json())
       .then((data) => {
@@ -91,7 +124,20 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         setEnabledChannels(new Set(names));
       })
       .catch(() => {});
-  }, [separationMode, allChannelNames.length, jobId]);
+  }, [viewerMode, allChannelNames.length, jobId]);
+
+  // Load layer list when layer mode is first enabled
+  useEffect(() => {
+    if (viewerMode !== "layers" || allLayerIndices.length > 0) return;
+    fetch(`/api/lintpdf/viewer/${jobId}/layers`)
+      .then((r) => r.json())
+      .then((data) => {
+        const indices = (data.layers ?? []).map((l: { ocg_index: number }) => l.ocg_index);
+        setAllLayerIndices(indices);
+        setEnabledLayers(new Set(indices));
+      })
+      .catch(() => {});
+  }, [viewerMode, allLayerIndices.length, jobId]);
 
   const handleToggleChannel = useCallback((channel: string) => {
     setEnabledChannels((prev) => {
@@ -109,14 +155,28 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
     [allChannelNames],
   );
 
-  const handleAnnotationUndo = useCallback(() => {
+  const handleToggleLayer = useCallback((ocgIndex: number) => {
+    setEnabledLayers((prev) => {
+      const next = new Set(prev);
+      if (next.has(ocgIndex)) next.delete(ocgIndex);
+      else next.add(ocgIndex);
+      return next;
+    });
+  }, []);
 
+  const handleSetAllLayers = useCallback(
+    (enabled: boolean) => {
+      setEnabledLayers(enabled ? new Set(allLayerIndices) : new Set());
+    },
+    [allLayerIndices],
+  );
+
+  const handleAnnotationUndo = useCallback(() => {
     const el = annotationCanvasRef.current as any;
     el?.__annotationUndo?.();
   }, []);
 
   const handleAnnotationRedo = useCallback(() => {
-
     const el = annotationCanvasRef.current as any;
     el?.__annotationRedo?.();
   }, []);
@@ -126,10 +186,20 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
     setCanRedo(redo);
   }, []);
 
+  // Mode toggles
+  const toggleMode = useCallback((mode: ViewerMode) => {
+    setViewerMode((prev) => (prev === mode ? "normal" : mode));
+    setMeasureMode("none");
+  }, []);
+
+  const toggleMeasure = useCallback((mode: MeasureMode) => {
+    setMeasureMode((prev) => (prev === mode ? "none" : mode));
+  }, []);
+
   // Keyboard shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement || e.target instanceof HTMLTextAreaElement) return;
       if (e.key === "ArrowRight" || e.key === "PageDown") {
         e.preventDefault();
         setCurrentPage((p) => Math.min(pages.length, p + 1));
@@ -142,18 +212,19 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
       } else if (e.key === "-") {
         e.preventDefault();
         setZoom((z) => Math.max(25, z - 25));
+      } else if (e.key === "Escape") {
+        setMeasureMode("none");
+        if (viewerMode !== "normal") setViewerMode("normal");
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [pages.length]);
+  }, [pages.length, viewerMode]);
 
   if (loading) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
-        <span className="animate-pulse text-muted-foreground">
-          Loading viewer...
-        </span>
+        <span className="animate-pulse text-muted-foreground">Loading viewer...</span>
       </div>
     );
   }
@@ -175,9 +246,14 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
   }
 
   const currentPageInfo = pages.find((p) => p.page_num === currentPage);
+  const canvasWidth = currentPageInfo ? Math.round(currentPageInfo.width_pts * (zoom / 100)) : 0;
+  const canvasHeight = currentPageInfo ? Math.round(currentPageInfo.height_pts * (zoom / 100)) : 0;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col">
+    <div className={`flex h-[calc(100vh-4rem)] flex-col ${config.dark_mode ? "dark bg-neutral-900" : ""}`}>
+      {/* Verdict bar */}
+      <VerdictBar jobId={jobId} config={config} />
+
       {/* Toolbar */}
       <ViewerToolbar
         currentPage={currentPage}
@@ -186,16 +262,19 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         onPageChange={setCurrentPage}
         onZoomChange={setZoom}
         jobId={jobId}
-        separationMode={separationMode}
-        onToggleSeparationMode={() => setSeparationMode((v) => !v)}
+        config={config}
+        viewerMode={viewerMode}
+        onToggleMode={toggleMode}
+        measureMode={measureMode}
+        onToggleMeasure={toggleMeasure}
         showTacHeatmap={showTacHeatmap}
         onToggleTacHeatmap={() => setShowTacHeatmap((v) => !v)}
-        annotationMode={annotationMode}
-        onToggleAnnotationMode={() => setAnnotationMode((v) => !v)}
+        showBoxOverlay={showBoxOverlay}
+        onToggleBoxOverlay={() => setShowBoxOverlay((v) => !v)}
       />
 
       {/* Annotation toolbar */}
-      {annotationMode && (
+      {viewerMode === "annotation" && (
         <div className="flex justify-center border-b bg-muted/30 px-4 py-1">
           <AnnotationToolbar
             activeTool={annotationTool}
@@ -211,39 +290,34 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         </div>
       )}
 
-      {/* Main content: thumbnails | canvas | findings */}
+      {/* Main content: thumbnails | canvas | panel */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: Page thumbnails */}
-        <div className="w-28 shrink-0 border-r bg-muted/30 overflow-y-auto">
-          <PageNavigator
-            pages={pages}
-            currentPage={currentPage}
-            findings={findings}
-            jobId={jobId}
-            onPageChange={setCurrentPage}
-          />
-        </div>
+        {config.enable_page_thumbnails && (
+          <div className="w-28 shrink-0 border-r bg-muted/30 overflow-y-auto">
+            <PageNavigator
+              pages={pages}
+              currentPage={currentPage}
+              findings={findings}
+              jobId={jobId}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
 
         {/* Center: Page canvas */}
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-auto bg-neutral-800 p-4"
-        >
+        <div ref={scrollRef} className="flex-1 overflow-auto bg-neutral-800 p-4">
           <div className="flex justify-center">
             {currentPageInfo && (
               <div className="relative">
-                {separationMode ? (
+                {viewerMode === "separation" ? (
                   <SeparationCanvas
                     jobId={jobId}
                     pageNum={currentPage}
                     enabledChannels={enabledChannels}
                     allChannels={allChannelNames}
-                    width={Math.round(
-                      currentPageInfo.width_pts * (zoom / 100),
-                    )}
-                    height={Math.round(
-                      currentPageInfo.height_pts * (zoom / 100),
-                    )}
+                    width={canvasWidth}
+                    height={canvasHeight}
                   />
                 ) : (
                   <PageCanvas
@@ -255,32 +329,70 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
                     onFindingClick={handleSelectFinding}
                   />
                 )}
-                {annotationMode && currentPageInfo && (
+
+                {/* Annotation overlay */}
+                {viewerMode === "annotation" && currentPageInfo && (
                   <AnnotationCanvas
                     jobId={jobId}
                     pageNum={currentPage}
-                    width={Math.round(
-                      currentPageInfo.width_pts * (zoom / 100),
-                    )}
-                    height={Math.round(
-                      currentPageInfo.height_pts * (zoom / 100),
-                    )}
+                    width={canvasWidth}
+                    height={canvasHeight}
                     activeTool={annotationTool}
                     strokeColor={strokeColor}
                     onSavingChange={setAnnotationSaving}
                     onHistoryChange={handleHistoryChange}
                   />
                 )}
+
+                {/* TAC heatmap overlay */}
                 {showTacHeatmap && currentPageInfo && (
                   <TACHeatmapOverlay
                     jobId={jobId}
                     pageNum={currentPage}
-                    width={Math.round(
-                      currentPageInfo.width_pts * (zoom / 100),
-                    )}
-                    height={Math.round(
-                      currentPageInfo.height_pts * (zoom / 100),
-                    )}
+                    width={canvasWidth}
+                    height={canvasHeight}
+                    tacLimit={config.default_tac_limit}
+                  />
+                )}
+
+                {/* Box overlay (trim/bleed/crop) */}
+                {showBoxOverlay && currentPageInfo && (
+                  <BoxOverlay
+                    page={currentPageInfo}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
+                  />
+                )}
+
+                {/* Densitometer tool overlay */}
+                {measureMode === "densitometer" && currentPageInfo && (
+                  <DensitometerTool
+                    jobId={jobId}
+                    pageNum={currentPage}
+                    pageWidthPts={currentPageInfo.width_pts}
+                    pageHeightPts={currentPageInfo.height_pts}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
+                  />
+                )}
+
+                {/* Ruler tool overlay */}
+                {measureMode === "ruler" && currentPageInfo && (
+                  <MeasureTool
+                    pageWidthPts={currentPageInfo.width_pts}
+                    pageHeightPts={currentPageInfo.height_pts}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
+                  />
+                )}
+
+                {/* Comparison diff overlay */}
+                {viewerMode === "comparison" && comparison && comparisonMode === "overlay" && (
+                  <img
+                    src={`/api/lintpdf/viewer/compare/${comparison.comparison_id}/pages/${currentPage}/diff`}
+                    alt="Difference overlay"
+                    className="pointer-events-none absolute inset-0"
+                    style={{ width: canvasWidth, height: canvasHeight, opacity: 0.7 }}
                   />
                 )}
               </div>
@@ -288,28 +400,42 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
           </div>
         </div>
 
-        {/* Right: Findings panel, Separation panel, or Annotation thread */}
+        {/* Right: Context panel */}
         <div className="w-80 shrink-0 border-l bg-background overflow-hidden overflow-y-auto">
-          {annotationMode ? (
-            <AnnotationThread
-              jobId={jobId}
-              onJumpToPage={setCurrentPage}
-            />
-          ) : separationMode ? (
+          {viewerMode === "annotation" ? (
+            <AnnotationThread jobId={jobId} onJumpToPage={setCurrentPage} />
+          ) : viewerMode === "separation" ? (
             <SeparationPanel
               jobId={jobId}
               enabledChannels={enabledChannels}
               onToggleChannel={handleToggleChannel}
               onSetAllChannels={handleSetAllChannels}
             />
-          ) : (
+          ) : viewerMode === "layers" ? (
+            <LayerPanel
+              jobId={jobId}
+              enabledLayers={enabledLayers}
+              onToggleLayer={handleToggleLayer}
+              onSetAllLayers={handleSetAllLayers}
+            />
+          ) : viewerMode === "comparison" ? (
+            <ComparisonPanel
+              jobId={jobId}
+              comparison={comparison}
+              onStartComparison={setComparison}
+              comparisonMode={comparisonMode}
+              onModeChange={setComparisonMode}
+              currentPage={currentPage}
+              onPageChange={setCurrentPage}
+            />
+          ) : config.enable_findings_panel ? (
             <FindingsPanel
               findings={findings}
               selectedFinding={selectedFinding}
               onSelectFinding={handleSelectFinding}
               currentPage={currentPage}
             />
-          )}
+          ) : null}
         </div>
       </div>
     </div>

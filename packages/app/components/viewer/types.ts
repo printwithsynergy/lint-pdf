@@ -38,6 +38,68 @@ export interface ViewerState {
   severityFilter: Set<string>;
 }
 
+export interface ViewerConfig {
+  enable_separations: boolean;
+  enable_tac_heatmap: boolean;
+  enable_annotations: boolean;
+  enable_measurement: boolean;
+  enable_comparison: boolean;
+  enable_layers: boolean;
+  enable_findings_panel: boolean;
+  enable_page_thumbnails: boolean;
+  enable_zoom: boolean;
+  enable_download: boolean;
+  enable_html_report_link: boolean;
+  verdict_mode: "auto" | "manual" | "disabled";
+  default_zoom: number;
+  default_dpi: number;
+  default_tac_limit: number;
+  viewer_logo_url: string | null;
+  viewer_accent_color: string | null;
+  toolbar_position: "top" | "bottom";
+  dark_mode: boolean;
+  brand_name: string;
+  brand_logo_url: string | null;
+  brand_primary_color: string;
+  brand_accent_color: string;
+}
+
+export interface LayerInfo {
+  name: string;
+  ocg_index: number;
+  default_on: boolean;
+}
+
+export interface ColorSample {
+  x: number;
+  y: number;
+  rgb: [number, number, number];
+  hex: string;
+  tac: number | null;
+}
+
+export interface VerdictState {
+  verdict: "pass" | "fail" | null;
+  auto_passed: boolean | null;
+  verdict_by: string | null;
+  verdict_at: string | null;
+  notes: string | null;
+}
+
+export interface ComparisonPageSummary {
+  page_num: number;
+  ssim_score: number;
+  diff_pixel_count: number;
+  total_pixels: number;
+}
+
+export interface ComparisonState {
+  comparison_id: string;
+  page_count_a: number;
+  page_count_b: number;
+  pages: ComparisonPageSummary[];
+}
+
 export const SEVERITY_COLORS = {
   error: { fill: "rgba(239, 68, 68, 0.15)", stroke: "#ef4444" },
   warning: { fill: "rgba(245, 158, 11, 0.15)", stroke: "#f59e0b" },
@@ -46,3 +108,29 @@ export const SEVERITY_COLORS = {
 
 export const DEFAULT_DPI = 150;
 export const THUMBNAIL_DPI = 72;
+
+export const DEFAULT_VIEWER_CONFIG: ViewerConfig = {
+  enable_separations: true,
+  enable_tac_heatmap: true,
+  enable_annotations: true,
+  enable_measurement: true,
+  enable_comparison: true,
+  enable_layers: true,
+  enable_findings_panel: true,
+  enable_page_thumbnails: true,
+  enable_zoom: true,
+  enable_download: true,
+  enable_html_report_link: true,
+  verdict_mode: "auto",
+  default_zoom: 100,
+  default_dpi: 150,
+  default_tac_limit: 300,
+  viewer_logo_url: null,
+  viewer_accent_color: null,
+  toolbar_position: "top",
+  dark_mode: false,
+  brand_name: "LintPDF",
+  brand_logo_url: null,
+  brand_primary_color: "#1a3a7a",
+  brand_accent_color: "#2563eb",
+};
