@@ -6,327 +6,168 @@
     <title>
       {% if brand and brand.name %}{{ brand.name }} Preflight Report{% else %}Preflight Report{% endif %}
     </title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --primary: {% if brand and brand.primary_color %}{{ brand.primary_color }}{% else %}#0ea5e9{% endif %};
+        --primary: {% if brand and brand.primary_color %}{{ brand.primary_color }}{% else %}#1e3a8a{% endif %};
         --accent: {% if brand and brand.accent_color %}{{ brand.accent_color }}{% else %}#2563eb{% endif %};
         --error: #dc2626;
         --warning: #ea580c;
         --advisory: #2563eb;
-        --pass: #16a34a;
-        --fail: #dc2626;
-        --gray-50: #f9fafb;
-        --gray-100: #f3f4f6;
-        --gray-200: #e5e7eb;
-        --gray-300: #d1d5db;
-        --gray-500: #6b7280;
-        --gray-700: #374151;
-        --gray-900: #111827;
+        --pass: #22c55e;
+        --fail: #ef4444;
+        --bg: #f8fafc;
+        --card-bg: #ffffff;
+        --border: #e2e8f0;
+        --text: #1e293b;
+        --text-muted: #64748b;
+        --text-light: #94a3b8;
+        --mono-font: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-        color: var(--gray-900);
-        line-height: 1.6;
-        max-width: 1040px;
-        margin: 0 auto;
-        padding: 32px 24px;
-        background: #fff;
-      }
+      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); line-height: 1.6; background: var(--bg); }
 
-      /* --- Header / Branding --- */
-      .report-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 20px 24px;
-        background: linear-gradient(135deg, var(--primary), var(--accent));
-        border-radius: 12px;
-        margin-bottom: 24px;
-        color: #fff;
-      }
-      .report-header .brand-block { display: flex; align-items: center; gap: 14px; }
-      .report-header .brand-logo { max-height: 44px; max-width: 180px; border-radius: 4px; }
-      .report-header h1 { font-size: 22px; font-weight: 700; }
-      .report-header .subtitle { font-size: 13px; opacity: 0.85; margin-top: 2px; }
-      .verdict {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 24px;
-        border-radius: 8px;
-        font-weight: 800;
-        font-size: 18px;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-      }
-      .verdict-pass { background: rgba(255,255,255,0.95); color: var(--pass); }
-      .verdict-fail { background: rgba(255,255,255,0.95); color: var(--fail); }
-      .verdict-icon { font-size: 22px; }
+      /* Header */
+      .header { background: var(--primary); color: white; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; }
+      .header-left { display: flex; align-items: center; gap: 14px; }
+      .header-logo { height: 36px; width: auto; border-radius: 6px; }
+      .header h1 { font-size: 18px; font-weight: 700; }
+      .header .subtitle { font-size: 12px; opacity: 0.8; margin-top: 1px; }
+      .verdict { padding: 6px 18px; border-radius: 20px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; }
+      .verdict.pass { background: var(--pass); }
+      .verdict.fail { background: var(--fail); }
 
-      /* --- Toolbar --- */
-      .toolbar { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+      /* Summary bar */
+      .summary-bar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+      .stat { text-align: center; min-width: 60px; }
+      .stat-value { font-size: 22px; font-weight: 700; }
+      .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+      .stat.errors .stat-value { color: var(--error); }
+      .stat.warnings .stat-value { color: var(--warning); }
+      .stat.advisory .stat-value { color: var(--advisory); }
+      .stat-divider { width: 1px; height: 36px; background: var(--border); }
+
+      /* Toolbar */
+      .toolbar { display: flex; gap: 6px; padding: 12px 28px; background: var(--card-bg); border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
       .toolbar button, .toolbar a {
-        padding: 6px 14px; border: 1px solid var(--gray-300); border-radius: 6px;
-        background: #fff; cursor: pointer; font-size: 13px; text-decoration: none; color: var(--gray-700);
-        transition: all 0.15s;
+        font-family: inherit; font-size: 12px; font-weight: 500;
+        padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
+        background: var(--card-bg); color: var(--text); cursor: pointer; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s;
       }
-      .toolbar button:hover, .toolbar a:hover { background: var(--gray-100); }
+      .toolbar button:hover, .toolbar a:hover { background: var(--bg); }
       .toolbar .active { background: var(--accent); color: #fff; border-color: var(--accent); }
-      .search-box {
-        width: 100%; padding: 10px 14px; border: 1px solid var(--gray-300);
-        border-radius: 8px; font-size: 13px; margin: 8px 0;
-      }
-      .search-box:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+      .toolbar .viewer-link { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
+      .toolbar .viewer-link:hover { opacity: 0.9; }
 
-      /* --- Summary Cards --- */
-      .summary-grid {
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0;
-      }
-      .summary-card {
-        background: var(--gray-50); border: 1px solid var(--gray-200);
-        border-radius: 10px; padding: 16px; text-align: center;
-        transition: transform 0.15s;
-      }
-      .summary-card:hover { transform: translateY(-1px); }
-      .summary-card .count { font-size: 32px; font-weight: 800; line-height: 1.1; }
-      .summary-card .label { font-size: 11px; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
-      .summary-card.error { border-left: 4px solid var(--error); }
-      .summary-card.error .count { color: var(--error); }
-      .summary-card.warning { border-left: 4px solid var(--warning); }
-      .summary-card.warning .count { color: var(--warning); }
-      .summary-card.advisory { border-left: 4px solid var(--advisory); }
-      .summary-card.advisory .count { color: var(--advisory); }
-      .summary-card.total { border-left: 4px solid var(--primary); }
-      .summary-card.total .count { color: var(--primary); }
+      /* Search */
+      .search-box { display: block; width: 100%; max-width: 500px; margin: 0 auto 16px; padding: 8px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; font-family: inherit; }
 
-      /* --- Color Quality Score --- */
-      .score-section {
-        display: flex; align-items: center; gap: 20px;
-        background: var(--gray-50); border: 1px solid var(--gray-200);
-        border-radius: 10px; padding: 16px 20px; margin: 12px 0;
-      }
-      .score-ring {
-        width: 64px; height: 64px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 20px; font-weight: 800; color: #fff; flex-shrink: 0;
-      }
-      .score-a { background: #16a34a; }
-      .score-b { background: #65a30d; }
-      .score-c { background: #ca8a04; }
-      .score-d { background: #ea580c; }
-      .score-f { background: #dc2626; }
-      .score-label { font-size: 14px; font-weight: 600; color: var(--gray-700); }
-      .score-sublabel { font-size: 12px; color: var(--gray-500); }
+      /* Content */
+      .content { max-width: 920px; margin: 20px auto; padding: 0 20px; }
+      .section-title { font-size: 15px; font-weight: 700; color: var(--primary); margin: 28px 0 12px; padding-bottom: 6px; border-bottom: 2px solid var(--border); }
 
-      /* --- Section headings --- */
-      .section-title {
-        font-size: 17px; font-weight: 700; margin: 28px 0 12px;
-        padding-bottom: 6px; border-bottom: 2px solid var(--gray-200);
-        color: var(--primary);
+      /* Finding card */
+      .finding-card {
+        background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border);
+        margin-bottom: 12px; overflow: hidden; display: flex; transition: box-shadow 0.15s;
       }
+      .finding-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+      .finding-thumb {
+        width: 170px; min-height: 120px; background: #f1f5f9;
+        border-right: 1px solid var(--border); flex-shrink: 0;
+        position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+      }
+      .finding-thumb img { width: 100%; height: 100%; object-fit: cover; }
+      .finding-thumb .page-label {
+        position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.6);
+        color: white; font-size: 10px; padding: 1px 6px; border-radius: 3px; font-weight: 500;
+      }
+      .finding-thumb-placeholder {
+        color: var(--text-light); font-size: 11px; text-align: center; padding: 8px;
+      }
+      .finding-body { flex: 1; padding: 14px 18px; }
+      .finding-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+      .sev-badge {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 22px; height: 22px; border-radius: 50%; color: white;
+        font-size: 11px; font-weight: 700; flex-shrink: 0;
+      }
+      .sev-badge.error { background: var(--error); }
+      .sev-badge.warning { background: var(--warning); }
+      .sev-badge.advisory { background: var(--advisory); }
+      .finding-name { font-size: 14px; font-weight: 600; color: var(--text); }
+      .finding-id { font-family: var(--mono-font); font-size: 11px; color: var(--text-light); background: #f1f5f9; padding: 1px 7px; border-radius: 4px; }
+      .sev-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+      .sev-label.error { color: var(--error); }
+      .sev-label.warning { color: var(--warning); }
+      .sev-label.advisory { color: var(--advisory); }
+      .ai-tag { display: inline-flex; align-items: center; gap: 3px; background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; font-size: 10px; font-weight: 600; padding: 0px 5px; border-radius: 3px; }
+      .finding-desc { font-size: 13px; color: var(--text-muted); line-height: 1.4; margin-bottom: 4px; }
+      .finding-message { font-size: 12px; color: var(--text-light); line-height: 1.4; }
+      .finding-meta { margin-top: 6px; font-size: 11px; color: var(--text-light); display: flex; gap: 10px; flex-wrap: wrap; }
 
-      /* --- Document Info --- */
-      .meta-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
-      .meta-table td { padding: 8px 12px; border-bottom: 1px solid var(--gray-200); }
-      .meta-table td:first-child { font-weight: 600; width: 180px; color: var(--gray-700); }
-      .meta-table tr:last-child td { border-bottom: none; }
+      /* Comprehensive sections */
+      .data-table { width: 100%; border-collapse: collapse; margin: 8px 0 20px; font-size: 13px; }
+      .data-table th { text-align: left; padding: 6px 10px; background: #f1f5f9; border-bottom: 2px solid var(--border); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+      .data-table td { padding: 6px 10px; border-bottom: 1px solid var(--border); }
+      .data-table tr:hover td { background: #f8fafc; }
 
-      /* --- Page Section (screenshot + findings) --- */
-      .page-section {
-        margin: 24px 0;
-        border: 1px solid var(--gray-200);
-        border-radius: 10px;
-        overflow: hidden;
-      }
-      .page-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 12px 16px; background: var(--gray-50);
-        border-bottom: 1px solid var(--gray-200);
-        cursor: pointer; user-select: none;
-      }
-      .page-header:hover { background: var(--gray-100); }
-      .page-header h3 { font-size: 15px; font-weight: 700; color: var(--primary); }
-      .page-header .finding-count {
-        font-size: 12px; color: var(--gray-500);
-        background: var(--gray-200); padding: 2px 10px; border-radius: 12px;
-      }
-      .page-body { padding: 16px; }
-      .page-layout { display: flex; gap: 20px; align-items: flex-start; }
-      .page-screenshot {
-        flex: 0 0 auto; max-width: 420px; border: 1px solid var(--gray-200);
-        border-radius: 6px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      }
-      .page-screenshot img { width: 100%; height: auto; display: block; }
-      .page-findings-list { flex: 1; min-width: 0; }
+      /* Render failed banner */
+      .render-warning { background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; color: #92400e; font-size: 13px; }
+      .render-warning a { color: #d97706; font-weight: 600; }
 
-      /* --- Callout Item --- */
-      .callout-item {
-        display: flex; gap: 10px; padding: 10px 12px; margin-bottom: 8px;
-        border-radius: 8px; background: var(--gray-50);
-        border-left: 3px solid var(--gray-300);
-        font-size: 13px; line-height: 1.5;
-      }
-      .callout-item.sev-error { border-left-color: var(--error); background: #fef2f2; }
-      .callout-item.sev-warning { border-left-color: var(--warning); background: #fffbeb; }
-      .callout-item.sev-advisory { border-left-color: var(--advisory); background: #eff6ff; }
-      .callout-badge {
-        flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 12px; font-weight: 800; color: #fff;
-      }
-      .callout-badge.sev-error { background: var(--error); }
-      .callout-badge.sev-warning { background: var(--warning); }
-      .callout-badge.sev-advisory { background: var(--advisory); }
-      .callout-content { flex: 1; min-width: 0; }
-      .callout-check { font-family: 'SF Mono', 'Cascadia Code', monospace; font-size: 12px; font-weight: 600; color: var(--gray-700); }
-      .callout-message { color: var(--gray-700); margin-top: 2px; }
-      .callout-meta { font-size: 11px; color: var(--gray-500); margin-top: 3px; }
+      /* Footer */
+      .footer { text-align: center; padding: 20px; color: var(--text-light); font-size: 11px; border-top: 1px solid var(--border); margin-top: 32px; }
+      .footer a { color: var(--accent); text-decoration: none; }
 
-      /* --- Severity / Source Tags --- */
-      .severity-tag {
-        display: inline-block; padding: 2px 8px; border-radius: 4px;
-        font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px;
-        cursor: pointer;
-      }
-      .severity-error { background: #fef2f2; color: var(--error); }
-      .severity-warning { background: #fff7ed; color: var(--warning); }
-      .severity-advisory { background: #eff6ff; color: var(--advisory); }
-      .source-tag {
-        display: inline-block; padding: 1px 6px; border-radius: 3px;
-        font-size: 9px; font-weight: 700; text-transform: uppercase; margin-left: 4px;
-      }
-      .source-ai { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
-      .source-engine { background: var(--gray-50); color: var(--gray-500); border: 1px solid var(--gray-200); }
-
-      /* --- Findings Table (fallback when no screenshots) --- */
-      table.findings-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
-      .findings-table th, .findings-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--gray-200); }
-      .findings-table th { background: var(--gray-50); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--gray-500); }
-
-      /* --- Detail level badge --- */
-      .detail-badge {
-        display: inline-block; padding: 2px 10px; border-radius: 4px;
-        font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-        margin-left: 8px;
-      }
-      .detail-executive { background: #fef3c7; color: #92400e; }
-      .detail-standard { background: #dbeafe; color: #1e40af; }
-      .detail-comprehensive { background: #ede9fe; color: #5b21b6; }
-
-      /* --- Top Findings (executive) --- */
-      .top-findings { margin: 16px 0; }
-      .top-finding {
-        display: flex; gap: 12px; padding: 12px 14px; margin-bottom: 6px;
-        border-radius: 8px; background: var(--gray-50); border-left: 3px solid var(--gray-300);
-        font-size: 13px;
-      }
-      .top-finding.sev-error { border-left-color: var(--error); background: #fef2f2; }
-      .top-finding.sev-warning { border-left-color: var(--warning); background: #fffbeb; }
-      .top-finding.sev-advisory { border-left-color: var(--advisory); background: #eff6ff; }
-      .top-finding-rank {
-        flex-shrink: 0; width: 24px; height: 24px; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center;
-        font-size: 11px; font-weight: 800; background: var(--gray-200); color: var(--gray-700);
-      }
-      .top-finding.sev-error .top-finding-rank { background: var(--error); color: #fff; }
-      .top-finding.sev-warning .top-finding-rank { background: var(--warning); color: #fff; }
-
-      /* --- Comprehensive tables --- */
-      .data-table {
-        width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0;
-        border: 1px solid var(--gray-200); border-radius: 8px; overflow: hidden;
-      }
-      .data-table th {
-        background: var(--gray-50); font-weight: 600; font-size: 11px;
-        text-transform: uppercase; letter-spacing: 0.3px; color: var(--gray-500);
-        padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--gray-200);
-      }
-      .data-table td {
-        padding: 8px 12px; border-bottom: 1px solid var(--gray-100);
-      }
-      .data-table tr:last-child td { border-bottom: none; }
-      .score-bar {
-        height: 6px; border-radius: 3px; background: var(--gray-200);
-        position: relative; overflow: hidden;
-      }
-      .score-bar-fill {
-        height: 100%; border-radius: 3px;
-        background: linear-gradient(90deg, var(--error), var(--warning), var(--pass));
-      }
-      .finding-detail-toggle {
-        font-size: 11px; color: var(--accent); cursor: pointer; text-decoration: underline;
-        margin-top: 4px; display: inline-block;
-      }
-      .finding-detail-content {
-        display: none; margin-top: 6px; padding: 8px 10px;
-        background: var(--gray-50); border-radius: 6px; font-size: 11px;
-        font-family: 'SF Mono', 'Cascadia Code', monospace;
-        white-space: pre-wrap; word-break: break-all; color: var(--gray-700);
-      }
-
-      /* --- Footer --- */
-      .report-footer {
-        margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--gray-200);
-        display: flex; justify-content: space-between; align-items: center;
-        font-size: 11px; color: var(--gray-500);
-      }
-
-      /* --- Collapsible --- */
-      .collapsible { overflow: hidden; }
-      .hidden { display: none; }
-
-      /* --- Responsive --- */
-      @media (max-width: 768px) {
-        .summary-grid { grid-template-columns: repeat(2, 1fr); }
-        .page-layout { flex-direction: column; }
-        .page-screenshot { max-width: 100%; }
-        .report-header { flex-direction: column; gap: 12px; text-align: center; }
-      }
-
-      /* --- Print --- */
+      /* Print */
       @media print {
-        body { max-width: 100%; padding: 12px; font-size: 11px; }
         .toolbar, .search-box { display: none; }
-        .report-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .summary-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .callout-item { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .callout-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .page-section { break-inside: avoid; page-break-inside: avoid; }
-        .page-screenshot img { max-width: 380px; }
+        .header, .summary-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .finding-card { break-inside: avoid; }
+        .sev-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body { background: white; }
       }
-
-      /* --- WeasyPrint / PDF page rules --- */
-      @page {
-        size: A4;
-        margin: 18mm 15mm;
+      /* Responsive */
+      @media (max-width: 640px) {
+        .finding-card { flex-direction: column; }
+        .finding-thumb { width: 100%; min-height: 100px; max-height: 160px; border-right: none; border-bottom: 1px solid var(--border); }
+        .summary-bar { gap: 12px; }
+        .header { flex-direction: column; gap: 8px; text-align: center; }
       }
     </style>
   </head>
   <body>
 
-    {# ===== HEADER / BRANDING ===== #}
-    <div class="report-header">
-      <div class="brand-block">
-        {% if brand and brand.logo_url %}<img
-          src="{{ brand.logo_url }}"
-          alt="{{ brand.name or 'Logo' }}"
-          class="brand-logo"
-        />{% endif %}
+    {# ===== HEADER ===== #}
+    <div class="header">
+      <div class="header-left">
+        {% if brand and brand.logo_url %}
+          <img src="{{ brand.logo_url }}" alt="" class="header-logo" />
+        {% endif %}
         <div>
-          <h1>{% if brand and brand.name %}{{ brand.name }}{% endif %} Preflight Report
-            {% if detail_level is defined and detail_level != 'standard' %}<span class="detail-badge detail-{{ detail_level }}">{{ detail_level }}</span>{% endif %}
-          </h1>
-          <div class="subtitle">
-            Profile: {{ result.profile_id }}
-            {% if file_name %} | {{ file_name }}{% endif %}
-          </div>
+          <h1>{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %} Preflight Report</h1>
+          <div class="subtitle">{{ file_name }}{% if summary %} &middot; {{ summary.page_count }} page{{ 's' if summary.page_count != 1 else '' }}{% endif %} &middot; {{ generated_at }}</div>
         </div>
       </div>
-      <div class="verdict verdict-{{ 'pass' if pass_fail == 'PASS' else 'fail' }}">
-        <span class="verdict-icon">{% if pass_fail == 'PASS' %}&#10003;{% else %}&#10007;{% endif %}</span>
-        {{ pass_fail }}
-      </div>
+      <div class="verdict {{ 'pass' if summary.passed else 'fail' }}">{{ pass_fail }}</div>
+    </div>
+
+    {# ===== SUMMARY BAR ===== #}
+    <div class="summary-bar">
+      <div class="stat errors"><div class="stat-value">{{ summary.error_count }}</div><div class="stat-label">Errors</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat warnings"><div class="stat-value">{{ summary.warning_count }}</div><div class="stat-label">Warnings</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat advisory"><div class="stat-value">{{ summary.advisory_count }}</div><div class="stat-label">Advisory</div></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><div class="stat-value" style="color:var(--primary)">{{ summary.total_findings }}</div><div class="stat-label">Total</div></div>
+      {% if color_quality_score %}
+      <div class="stat-divider"></div>
+      <div class="stat"><div class="stat-value" style="color:var(--pass)">{{ color_quality_score }}</div><div class="stat-label">Color Score</div></div>
+      {% endif %}
     </div>
 
     {# ===== TOOLBAR ===== #}
@@ -334,11 +175,10 @@
       <button onclick="filterSeverity('')" class="active" data-filter="all">All</button>
       <button onclick="filterSeverity('error')" data-filter="error">Errors</button>
       <button onclick="filterSeverity('warning')" data-filter="warning">Warnings</button>
-      <button onclick="filterSeverity('advisory')" data-filter="advisory">Info</button>
+      <button onclick="filterSeverity('advisory')" data-filter="advisory">Advisory</button>
       <button onclick="filterSource('ai')" data-source="ai">AI Only</button>
       <button onclick="filterSource('')" data-source="all">All Sources</button>
       <button onclick="window.print()">Print</button>
-      {# nosemgrep: var-in-href -- URL validated to start with https://, http://, or / #}
       {% if brand and brand.pdf_download_url and
         (brand.pdf_download_url.startswith('https://') or
          brand.pdf_download_url.startswith('http://') or
@@ -351,388 +191,160 @@
          brand.viewer_url.startswith('/')) %}<a
         href="{{ brand.viewer_url }}"
         target="_blank"
-        style="background:var(--accent);color:#fff;border-color:var(--accent);"
+        class="viewer-link"
       >&#9654; Open Interactive Viewer</a>{% endif %}
     </div>
 
-    <input
-      type="text"
-      class="search-box"
-      placeholder="Search findings by check ID or message..."
-      oninput="searchFindings(this.value)"
-    />
+    <div class="content">
 
-    {# ===== SUMMARY ===== #}
-    <h2 class="section-title">Summary</h2>
-    <div class="summary-grid">
-      <div class="summary-card error">
-        <div class="count">{{ summary.error_count }}</div>
-        <div class="label">Errors</div>
-      </div>
-      <div class="summary-card warning">
-        <div class="count">{{ summary.warning_count }}</div>
-        <div class="label">Warnings</div>
-      </div>
-      <div class="summary-card advisory">
-        <div class="count">{{ summary.advisory_count }}</div>
-        <div class="label">Info</div>
-      </div>
-      <div class="summary-card total">
-        <div class="count">{{ summary.total_findings }}</div>
-        <div class="label">Total</div>
-      </div>
-    </div>
+      <input type="text" class="search-box" placeholder="Search findings by name, check ID, or message..." oninput="searchFindings(this.value)" />
 
-    {# ===== COLOR QUALITY SCORE ===== #}
-    {% if color_quality_score is defined and color_quality_score is not none %}
-    <div class="score-section">
-      {% set grade = color_quality_grade or 'C' %}
-      <div class="score-ring score-{{ grade|lower }}">{{ "%.0f"|format(color_quality_score) }}</div>
-      <div>
-        <div class="score-label">Color Quality Score: Grade {{ grade }}</div>
-        <div class="score-sublabel">Measures ink coverage accuracy, gamut compliance, and color consistency</div>
+      {# ===== RENDER FAILED BANNER ===== #}
+      {% if render_failed is defined and render_failed %}
+      <div class="render-warning">
+        <strong>&#9888; Page screenshots unavailable.</strong>
+        The original PDF could not be rendered for visual annotation. Findings are listed without thumbnails.
+        {% if brand and brand.viewer_url %}<a href="{{ brand.viewer_url }}" target="_blank">Open Interactive Viewer &rarr;</a>{% endif %}
       </div>
-    </div>
-    {% endif %}
-
-    {# ===== DOCUMENT INFO ===== #}
-    <h2 class="section-title">Document Info</h2>
-    <table class="meta-table">
-      {% if file_name is defined and file_name %}
-      <tr><td>File Name</td><td>{{ file_name }}</td></tr>
       {% endif %}
-      <tr><td>PDF Version</td><td>{{ metadata.get('pdf_version', 'N/A') }}</td></tr>
-      <tr><td>Pages</td><td>{{ summary.page_count }}</td></tr>
-      <tr>
-        <td>File Size</td>
-        <td>{{ "%.1f"|format(summary.file_size_bytes / 1048576) }} MB</td>
-      </tr>
-      <tr><td>Encrypted</td><td>{{ 'Yes' if metadata.get('is_encrypted') else 'No' }}</td></tr>
-      <tr><td>Conformance</td><td>{{ metadata.get('conformance') or 'None' }}</td></tr>
-      <tr><td>Duration</td><td>{{ result.duration_ms }} ms</td></tr>
-    </table>
 
-    {# ===== TOP FINDINGS (all levels — primary content for executive) ===== #}
-    {% if top_findings is defined and top_findings %}
-    <h2 class="section-title">{% if detail_level is defined and detail_level == 'executive' %}Key Findings{% else %}Top Issues{% endif %}</h2>
-    <div class="top-findings">
-      {% for f in top_findings %}
-      <div class="top-finding sev-{{ f.severity }}">
-        <div class="top-finding-rank">{{ loop.index }}</div>
-        <div style="flex:1; min-width:0;">
-          <div>
-            <span class="callout-check">{{ f.inspection_id }}</span>
-            <span class="severity-tag severity-{{ f.severity }}">{{ f.severity }}</span>
-            {% if f.page_num %}<span style="font-size:11px; color:var(--gray-500); margin-left:6px;">p.{{ f.page_num }}</span>{% endif %}
+      {# ===== FINDINGS (card layout, sorted by severity) ===== #}
+      {% set counter = {'n': 0} %}
+      {% for finding in all_findings_sorted %}
+      {% if counter.update({'n': counter.n + 1}) %}{% endif %}
+      <div class="finding-card finding-row"
+           data-severity="{{ finding.severity }}"
+           data-source="{{ finding.source }}"
+           data-search="{{ finding.friendly_name }} {{ finding.inspection_id }} {{ finding.message }}">
+        <div class="finding-thumb">
+          {% if finding.thumbnail_base64 %}
+            <img src="data:image/png;base64,{{ finding.thumbnail_base64 }}"
+                 alt="Page {{ finding.page_num }} — {{ finding.friendly_name }}" loading="lazy" />
+          {% else %}
+            <div class="finding-thumb-placeholder">
+              {% if finding.page_num and finding.page_num > 0 %}Page {{ finding.page_num }}{% else %}Document-level{% endif %}
+            </div>
+          {% endif %}
+          {% if finding.page_num and finding.page_num > 0 %}
+            <span class="page-label">p.{{ finding.page_num }}</span>
+          {% endif %}
+        </div>
+        <div class="finding-body">
+          <div class="finding-header">
+            <div class="sev-badge {{ finding.severity }}">{{ counter.n }}</div>
+            <span class="finding-name">{{ finding.friendly_name or finding.inspection_id }}</span>
+            <span class="finding-id">{{ finding.inspection_id }}</span>
+            <span class="sev-label {{ finding.severity }}">{{ finding.severity | upper }}</span>
+            {% if finding.source == 'ai' %}<span class="ai-tag">&#9733; AI</span>{% endif %}
           </div>
-          <div class="callout-message">{{ f.message }}</div>
+          {% if finding.friendly_description %}
+          <div class="finding-desc">{{ finding.friendly_description }}</div>
+          {% endif %}
+          <div class="finding-message">{{ finding.message }}</div>
+          <div class="finding-meta">
+            {% if finding.page_num and finding.page_num > 0 %}<span>Page {{ finding.page_num }}</span>{% else %}<span>Document</span>{% endif %}
+            {% if finding.iso_clause %}<span>{{ finding.iso_clause }}</span>{% endif %}
+            {% if finding.object_id %}<span>{{ finding.object_type }}: {{ finding.object_id }}</span>{% endif %}
+          </div>
         </div>
       </div>
       {% endfor %}
-      {% if detail_level is defined and detail_level == 'executive' and result.findings|length > top_findings|length %}
-      <p style="font-size:12px; color:var(--gray-500); margin-top:8px; font-style:italic;">
-        Showing top {{ top_findings|length }} of {{ result.findings|length }} total findings. Request a Standard or Comprehensive report for full details.
-      </p>
-      {% endif %}
-    </div>
-    {% endif %}
 
-    {# ===== FULL FINDINGS (standard + comprehensive only) ===== #}
-    {% if detail_level is not defined or detail_level != 'executive' %}
-
-    {% if result.findings %}
-    <h2 class="section-title">All Findings</h2>
-
-    {# --- Document-Level Findings (page_num == 0) --- #}
-    {% if findings_by_page.get(0) %}
-    <div class="page-section" data-page="0">
-      <div class="page-header" onclick="toggleSection(this)">
-        <h3>Document Level</h3>
-        <span class="finding-count">{{ findings_by_page[0]|length }} finding{{ 's' if findings_by_page[0]|length != 1 else '' }}</span>
-      </div>
-      <div class="page-body collapsible">
-        <div class="page-findings-list">
-          {% for f in findings_by_page[0] %}
-          <div class="callout-item sev-{{ f.severity }} finding-row"
-               data-severity="{{ f.severity }}"
-               data-source="{{ f.source|default('engine') }}"
-               data-search="{{ f.inspection_id }} {{ f.message }}">
-            <div class="callout-badge sev-{{ f.severity }}">{{ loop.index }}</div>
-            <div class="callout-content">
-              <div>
-                <span class="callout-check">{{ f.inspection_id }}</span>
-                <span class="severity-tag severity-{{ f.severity }}">{{ f.severity }}</span>
-                {% if f.source|default('engine') == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}
-              </div>
-              <div class="callout-message">{{ f.message }}</div>
-              {% if f.object_id or f.category %}
-              <div class="callout-meta">
-                {% if f.object_id %}Object: {{ f.object_id }}{% endif %}
-                {% if f.category %} [{{ f.category }}]{% endif %}
-              </div>
-              {% endif %}
-              {% if detail_level is defined and detail_level == 'comprehensive' and f.iso_clause %}
-              <div class="callout-meta">ISO: {{ f.iso_clause }}</div>
-              {% endif %}
-              {% if detail_level is defined and detail_level == 'comprehensive' and f.details %}
-              <span class="finding-detail-toggle" onclick="toggleDetail(this)">Show details</span>
-              <div class="finding-detail-content">{{ f.details }}</div>
-              {% endif %}
-            </div>
-          </div>
+      {# ===== COMPREHENSIVE: INK SEPARATIONS ===== #}
+      {% if detail_level == 'comprehensive' and ink_separations %}
+      <h2 class="section-title">Ink Separations</h2>
+      <table class="data-table">
+        <thead><tr><th>Channel</th><th>Pages</th><th>Max Value</th><th>Events</th></tr></thead>
+        <tbody>
+          {% for sep in ink_separations %}
+          <tr>
+            <td><strong>{{ sep.name }}</strong></td>
+            <td>{{ sep.pages_used | length }}</td>
+            <td>{{ sep.max_value }}%</td>
+            <td>{{ sep.event_count }}</td>
+          </tr>
           {% endfor %}
-        </div>
-      </div>
-    </div>
-    {% endif %}
-
-    {# --- Render-failed banner --- #}
-    {% if render_failed is defined and render_failed %}
-    <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:20px;color:#92400e;font-size:0.9rem;">
-      <strong>&#9888; Page screenshots unavailable.</strong>
-      The original PDF could not be rendered for visual annotation. Findings are listed in text-only mode below.
-      {% if brand and brand.viewer_url %}
-      <a href="{{ brand.viewer_url }}" target="_blank" style="color:#d97706;font-weight:600;margin-left:8px;">Open Interactive Viewer &rarr;</a>
+        </tbody>
+      </table>
       {% endif %}
-    </div>
-    {% endif %}
 
-    {# --- Per-Page Findings with Screenshots --- #}
-    {% for page_num, page_findings in findings_by_page.items() %}
-    {% if page_num > 0 %}
-    <div class="page-section" data-page="{{ page_num }}">
-      <div class="page-header" onclick="toggleSection(this)">
-        <h3>Page {{ page_num }}</h3>
-        <span class="finding-count">{{ page_findings|length }} finding{{ 's' if page_findings|length != 1 else '' }}</span>
-      </div>
-      <div class="page-body collapsible">
-        <div class="page-layout">
-          {# --- Annotated Page Screenshot --- #}
-          {% if annotated_pages is defined and annotated_pages and page_num in annotated_pages %}
-          <div class="page-screenshot">
-            <img src="data:image/png;base64,{{ annotated_pages[page_num].image_base64 }}"
-                 alt="Page {{ page_num }} with annotated findings"
-                 width="{{ annotated_pages[page_num].width }}"
-                 height="{{ annotated_pages[page_num].height }}" />
-          </div>
-          {% endif %}
-
-          {# --- Finding Callouts --- #}
-          <div class="page-findings-list">
-            {% if annotated_pages is defined and annotated_pages and page_num in annotated_pages %}
-              {% for callout in annotated_pages[page_num].callouts %}
-              <div class="callout-item sev-{{ callout.severity }} finding-row"
-                   data-severity="{{ callout.severity }}"
-                   data-source="{{ callout.source }}"
-                   data-search="{{ callout.inspection_id }} {{ callout.message }}">
-                <div class="callout-badge sev-{{ callout.severity }}">{{ callout.number }}</div>
-                <div class="callout-content">
-                  <div>
-                    <span class="callout-check">{{ callout.inspection_id }}</span>
-                    <span class="severity-tag severity-{{ callout.severity }}">{{ callout.severity }}</span>
-                    {% if callout.source == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}
-                  </div>
-                  <div class="callout-message">{{ callout.message }}</div>
-                  {% if callout.object_id or callout.category %}
-                  <div class="callout-meta">
-                    {% if callout.object_id %}Object: {{ callout.object_id }}{% endif %}
-                    {% if callout.object_type %} ({{ callout.object_type }}){% endif %}
-                    {% if callout.category %} [{{ callout.category }}]{% endif %}
-                  </div>
-                  {% endif %}
-                </div>
-              </div>
-              {% endfor %}
-            {% else %}
-              {% for f in page_findings %}
-              <div class="callout-item sev-{{ f.severity }} finding-row"
-                   data-severity="{{ f.severity }}"
-                   data-source="{{ f.source|default('engine') }}"
-                   data-search="{{ f.inspection_id }} {{ f.message }}">
-                <div class="callout-badge sev-{{ f.severity }}">{{ loop.index }}</div>
-                <div class="callout-content">
-                  <div>
-                    <span class="callout-check">{{ f.inspection_id }}</span>
-                    <span class="severity-tag severity-{{ f.severity }}">{{ f.severity }}</span>
-                    {% if f.source|default('engine') == 'ai' %}<span class="source-tag source-ai">AI</span>{% endif %}
-                  </div>
-                  <div class="callout-message">{{ f.message }}</div>
-                  {% if f.object_id or f.category %}
-                  <div class="callout-meta">
-                    {% if f.object_id %}Object: {{ f.object_id }}{% endif %}
-                    {% if f.category %} [{{ f.category }}]{% endif %}
-                  </div>
-                  {% endif %}
-                  {% if detail_level is defined and detail_level == 'comprehensive' and f.iso_clause %}
-                  <div class="callout-meta">ISO: {{ f.iso_clause }}</div>
-                  {% endif %}
-                  {% if detail_level is defined and detail_level == 'comprehensive' and f.details %}
-                  <span class="finding-detail-toggle" onclick="toggleDetail(this)">Show details</span>
-                  <div class="finding-detail-content">{{ f.details }}</div>
-                  {% endif %}
-                </div>
-              </div>
-              {% endfor %}
-            {% endif %}
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endif %}
-    {% endfor %}
-
-    {% else %}
-    <h2 class="section-title">Findings</h2>
-    <p style="padding: 16px; color: var(--gray-500);">No findings detected. The document passed all enabled checks.</p>
-    {% endif %}
-
-    {% endif %}{# end standard/comprehensive gate #}
-
-    {# ===== COMPREHENSIVE: Color Score Breakdown ===== #}
-    {% if detail_level is defined and detail_level == 'comprehensive' and color_score_breakdown %}
-    <h2 class="section-title">Color Quality Breakdown</h2>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Category</th>
-          <th>Score</th>
-          <th style="width:200px">Visual</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for cat, score in color_score_breakdown.items() %}
-        <tr>
-          <td style="text-transform:capitalize;">{{ cat|replace('_',' ') }}</td>
-          <td><strong>{{ "%.1f"|format(score) }}</strong> / 100</td>
-          <td>
-            <div class="score-bar"><div class="score-bar-fill" style="width:{{ score }}%"></div></div>
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
-
-    {# ===== COMPREHENSIVE: Ink Separation Coverage ===== #}
-    {% if detail_level is defined and detail_level == 'comprehensive' and ink_separations %}
-    <h2 class="section-title">Ink Separation Coverage</h2>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Separation</th>
-          <th>Max Coverage</th>
-          <th>Pages Used</th>
-          <th>Events</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for sep in ink_separations %}
-        <tr>
-          <td><strong>{{ sep.name }}</strong></td>
-          <td>{{ "%.1f"|format(sep.max_value * 100) }}%</td>
-          <td>{{ sep.pages_used|length }} page{{ 's' if sep.pages_used|length != 1 else '' }}</td>
-          <td>{{ sep.event_count }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
-
-    {# ===== COMPREHENSIVE: Per-Page TAC Summary ===== #}
-    {% if detail_level is defined and detail_level == 'comprehensive' and ink_tac_by_page %}
-    <h2 class="section-title">Per-Page Ink Coverage (TAC)</h2>
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Page</th>
-          <th>Max TAC</th>
-          <th>Limit</th>
-          <th>Status</th>
-          <th>Samples</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for page, tac in ink_tac_by_page.items()|sort %}
-        <tr>
-          <td>{{ page }}</td>
-          <td><strong>{{ "%.1f"|format(tac.max_tac) }}%</strong></td>
-          <td>{{ "%.0f"|format(tac.tac_limit) }}%</td>
-          <td>
-            {% if tac.max_tac > tac.tac_limit %}
-            <span class="severity-tag severity-error">Exceeds</span>
-            {% elif tac.max_tac > tac.tac_limit * 0.9 %}
-            <span class="severity-tag severity-warning">Near Limit</span>
-            {% else %}
-            <span class="severity-tag severity-advisory">OK</span>
-            {% endif %}
-          </td>
-          <td>{{ tac.sample_count }}</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
-
-    {# ===== COMPREHENSIVE: Ink Channel Inventory ===== #}
-    {% if detail_level is defined and detail_level == 'comprehensive' and ink_inventory %}
-    <h2 class="section-title">Ink Channel Inventory</h2>
-    <table class="meta-table">
-      {% if ink_inventory.process_channels %}
-      <tr><td>Process Channels</td><td>{{ ink_inventory.process_channels|join(', ') }}</td></tr>
+      {% if detail_level == 'comprehensive' and ink_tac_by_page %}
+      <h2 class="section-title">TAC by Page</h2>
+      <table class="data-table">
+        <thead><tr><th>Page</th><th>Max TAC</th><th>Limit</th><th>Samples</th></tr></thead>
+        <tbody>
+          {% for page, data in ink_tac_by_page.items() %}
+          <tr>
+            <td>{{ page }}</td>
+            <td>{{ data.max_tac }}%</td>
+            <td>{{ data.tac_limit }}%</td>
+            <td>{{ data.sample_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
       {% endif %}
-      {% if ink_inventory.spot_colors %}
-      <tr><td>Spot Colors</td><td>{{ ink_inventory.spot_colors|join(', ') }}</td></tr>
+
+      {% if detail_level == 'comprehensive' and color_score_breakdown %}
+      <h2 class="section-title">Color Quality Breakdown</h2>
+      <table class="data-table">
+        <thead><tr><th>Category</th><th>Score</th></tr></thead>
+        <tbody>
+          {% for cat, score in color_score_breakdown.items() %}
+          <tr><td>{{ cat | replace('_', ' ') | title }}</td><td>{{ score }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
       {% endif %}
-      <tr><td>Total Channels</td><td>{{ ink_inventory.get('total_channel_count', 0) }}</td></tr>
-    </table>
-    {% endif %}
+
+      {# ===== METADATA ===== #}
+      {% if metadata %}
+      <h2 class="section-title">Document Info</h2>
+      <table class="data-table">
+        <tbody>
+          <tr><td><strong>PDF Version</strong></td><td>{{ metadata.pdf_version }}</td></tr>
+          <tr><td><strong>Pages</strong></td><td>{{ metadata.page_count }}</td></tr>
+          <tr><td><strong>File Size</strong></td><td>{{ (summary.file_size_bytes / 1024) | round(1) }} KB</td></tr>
+          <tr><td><strong>Encrypted</strong></td><td>{{ 'Yes' if metadata.is_encrypted else 'No' }}</td></tr>
+          <tr><td><strong>Conformance</strong></td><td>{{ metadata.conformance or 'None' }}</td></tr>
+          <tr><td><strong>Workflow</strong></td><td>{{ metadata.workflow }}</td></tr>
+          <tr><td><strong>AI Enabled</strong></td><td>{{ 'Yes' if metadata.ai_enabled else 'No' }}</td></tr>
+          {% if metadata.ai_findings_count %}<tr><td><strong>AI Findings</strong></td><td>{{ metadata.ai_findings_count }}</td></tr>{% endif %}
+          {% if color_quality_grade %}<tr><td><strong>Color Quality</strong></td><td>{{ color_quality_score }} / {{ color_quality_grade }}</td></tr>{% endif %}
+        </tbody>
+      </table>
+      {% endif %}
+
+    </div>
 
     {# ===== FOOTER ===== #}
-    <div class="report-footer">
-      <div>{% if brand and brand.footer_text %}{{ brand.footer_text }}{% endif %}</div>
-      <div>
-        {% if generated_at is defined and generated_at %}Generated {{ generated_at }}{% endif %}
-        | Job {{ result.job_id }}
-      </div>
+    <div class="footer">
+      {% if brand and brand.footer_text %}{{ brand.footer_text }}{% else %}Powered by <a href="https://lintpdf.com">LintPDF</a>{% endif %}
+      &middot; Profile: {{ result.profile_id }} &middot; {{ generated_at }}
     </div>
 
     <script>
       function filterSeverity(sev) {
-        document.querySelectorAll('.toolbar button[data-filter]').forEach(function(b) {
-          b.classList.toggle('active', b.getAttribute('data-filter') === (sev || 'all'));
+        document.querySelectorAll('.finding-row').forEach(function(el) {
+          el.style.display = (!sev || el.dataset.severity === sev) ? '' : 'none';
         });
-        document.querySelectorAll('.finding-row').forEach(function(row) {
-          row.classList.toggle('hidden', sev && row.getAttribute('data-severity') !== sev);
+        document.querySelectorAll('.toolbar button[data-filter]').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.filter === (sev || 'all'));
         });
       }
       function filterSource(src) {
-        document.querySelectorAll('.toolbar button[data-source]').forEach(function(b) {
-          b.classList.toggle('active', b.getAttribute('data-source') === (src || 'all'));
+        document.querySelectorAll('.finding-row').forEach(function(el) {
+          el.style.display = (!src || el.dataset.source === src) ? '' : 'none';
         });
-        document.querySelectorAll('.finding-row').forEach(function(row) {
-          row.classList.toggle('hidden', src && row.getAttribute('data-source') !== src);
+        document.querySelectorAll('.toolbar button[data-source]').forEach(function(b) {
+          b.classList.toggle('active', b.dataset.source === (src || 'all'));
         });
       }
       function searchFindings(query) {
         var q = query.toLowerCase();
-        document.querySelectorAll('.finding-row').forEach(function(row) {
-          var text = (row.getAttribute('data-search') || '').toLowerCase();
-          row.classList.toggle('hidden', q && text.indexOf(q) === -1);
+        document.querySelectorAll('.finding-row').forEach(function(el) {
+          el.style.display = (!q || (el.dataset.search || '').toLowerCase().includes(q)) ? '' : 'none';
         });
-      }
-      function toggleSection(header) {
-        var body = header.nextElementSibling;
-        if (body) {
-          body.style.display = body.style.display === 'none' ? '' : 'none';
-        }
-      }
-      function toggleDetail(el) {
-        var content = el.nextElementSibling;
-        if (content) {
-          var show = content.style.display === 'none' || !content.style.display;
-          content.style.display = show ? 'block' : 'none';
-          el.textContent = show ? 'Hide details' : 'Show details';
-        }
       }
     </script>
   </body>
