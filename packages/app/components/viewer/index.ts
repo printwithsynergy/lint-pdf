@@ -17,3 +17,4 @@ export { LayerPanel } from "./LayerPanel";
 export { VerdictBar } from "./VerdictBar";
 export { ComparisonPanel } from "./ComparisonPanel";
 export { MobileBottomSheet } from "./MobileBottomSheet";
+export { MobileDrawer } from "./MobileDrawer";

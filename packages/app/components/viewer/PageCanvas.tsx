@@ -11,6 +11,8 @@ interface PageCanvasProps {
   findings: ViewerFinding[];
   selectedFinding: ViewerFinding | null;
   onFindingClick: (finding: ViewerFinding) => void;
+  onZoomChange?: (zoom: number) => void;
+  onPageChange?: (delta: number) => void;
 }
 
 const SEVERITY_HEX: Record<string, string> = {
@@ -26,11 +28,57 @@ export function PageCanvas({
   findings,
   selectedFinding,
   onFindingClick,
+  onZoomChange,
+  onPageChange,
 }: PageCanvasProps) {
   const { apiBase } = useViewerApi();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tileImg, setTileImg] = useState<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Touch gesture tracking
+  const touchRef = useRef<{ x: number; y: number; dist: number; zoom: number; moved: boolean } | null>(null);
+
+  const getTouchDist = (touches: React.TouchList) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[1]!.clientX - touches[0]!.clientX;
+    const dy = touches[1]!.clientY - touches[0]!.clientY;
+    return Math.hypot(dx, dy);
+  };
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 2 && onZoomChange) {
+      e.preventDefault();
+      touchRef.current = { x: 0, y: 0, dist: getTouchDist(e.touches), zoom, moved: false };
+    } else if (e.touches.length === 1) {
+      touchRef.current = { x: e.touches[0]!.clientX, y: e.touches[0]!.clientY, dist: 0, zoom, moved: false };
+    }
+  }, [zoom, onZoomChange]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchRef.current) return;
+    if (e.touches.length === 2 && onZoomChange && touchRef.current.dist > 0) {
+      e.preventDefault();
+      const newDist = getTouchDist(e.touches);
+      const scale = newDist / touchRef.current.dist;
+      const newZoom = Math.round(Math.max(25, Math.min(400, touchRef.current.zoom * scale)));
+      onZoomChange(newZoom);
+      touchRef.current.moved = true;
+    } else if (e.touches.length === 1) {
+      touchRef.current.moved = true;
+    }
+  }, [onZoomChange]);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchRef.current || !onPageChange) return;
+    if (touchRef.current.dist === 0 && touchRef.current.moved && e.changedTouches.length === 1) {
+      const dx = e.changedTouches[0]!.clientX - touchRef.current.x;
+      if (Math.abs(dx) > 60) {
+        onPageChange(dx < 0 ? 1 : -1);
+      }
+    }
+    touchRef.current = null;
+  }, [onPageChange]);
   const [pulsePhase, setPulsePhase] = useState(0);
 
   // Scale factor: zoom% maps to DPI scaling
@@ -208,7 +256,13 @@ export function PageCanvas({
   };
 
   return (
-    <div className="relative inline-block">
+    <div
+      className="relative inline-block"
+      style={{ touchAction: onZoomChange || onPageChange ? "none" : undefined }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {loading && (
         <div
           className="flex items-center justify-center bg-muted/50"

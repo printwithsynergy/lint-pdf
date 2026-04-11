@@ -21,6 +21,7 @@ import { LayerPanel } from "./LayerPanel";
 import { VerdictBar } from "./VerdictBar";
 import { ComparisonPanel } from "./ComparisonPanel";
 import { MobileBottomSheet } from "./MobileBottomSheet";
+import { MobileDrawer } from "./MobileDrawer";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
 type MeasureMode = "none" | "densitometer" | "ruler";
@@ -50,6 +51,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
 
   // Mobile detection
   const [isMobile, setIsMobile] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
@@ -379,6 +381,82 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
       {/* Verdict bar */}
       <VerdictBar jobId={jobId} config={config} />
 
+      {isMobile ? (
+        <>
+          {/* ── MOBILE LAYOUT ── */}
+          {/* Compact top bar */}
+          <div
+            className="flex h-11 shrink-0 items-center justify-between px-3 text-white"
+            style={{ backgroundColor: config.brand_primary_color || "#1e293b" }}
+          >
+            <button onClick={() => setDrawerOpen(true)} className="rounded p-1.5 hover:bg-white/10">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-2 text-sm">
+              <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="p-1 hover:bg-white/10 rounded">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <span className="min-w-[3rem] text-center font-medium">{currentPage} / {pages.length}</span>
+              <button onClick={() => setCurrentPage((p) => Math.min(pages.length, p + 1))} className="p-1 hover:bg-white/10 rounded">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+            <span className="text-xs font-medium opacity-80">{zoom}%</span>
+          </div>
+
+          {/* Full-screen canvas */}
+          <div className="flex-1 overflow-auto bg-neutral-800">
+            <div className="flex min-h-full items-start justify-center p-2">
+              {currentPageInfo && (
+                <div className="relative">
+                  {viewerMode === "separation" ? (
+                    <SeparationCanvas jobId={jobId} pageNum={currentPage} enabledChannels={enabledChannels} allChannels={allChannelNames} width={canvasWidth} height={canvasHeight} />
+                  ) : (
+                    <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} findings={findings} selectedFinding={selectedFinding} onFindingClick={handleSelectFinding} onZoomChange={setZoom} onPageChange={(d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d)))} />
+                  )}
+                  {showTacHeatmap && currentPageInfo && (
+                    <TACHeatmapOverlay jobId={jobId} pageNum={currentPage} width={canvasWidth} height={canvasHeight} tacLimit={config.default_tac_limit} />
+                  )}
+                  {showBoxOverlay && currentPageInfo && (
+                    <BoxOverlay page={currentPageInfo} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
+                  )}
+                  {measureMode === "densitometer" && currentPageInfo && (
+                    <DensitometerTool jobId={jobId} pageNum={currentPage} pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
+                  )}
+                  {measureMode === "ruler" && currentPageInfo && (
+                    <MeasureTool pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bottom sheet with findings */}
+          <MobileBottomSheet summary={summaryNode}>
+            {renderLeftPanel()}
+          </MobileBottomSheet>
+
+          {/* Hamburger drawer */}
+          <MobileDrawer
+            isOpen={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            config={config}
+            viewerMode={viewerMode}
+            onToggleMode={toggleMode}
+            measureMode={measureMode}
+            onToggleMeasure={toggleMeasure}
+            showTacHeatmap={showTacHeatmap}
+            onToggleTacHeatmap={() => setShowTacHeatmap((v) => !v)}
+            showBoxOverlay={showBoxOverlay}
+            onToggleBoxOverlay={() => setShowBoxOverlay((v) => !v)}
+            findingSummary={findingsSummary}
+          />
+        </>
+      ) : (
+        <>
+      {/* ── DESKTOP LAYOUT ── */}
       {/* Toolbar at top */}
       <ViewerToolbar
         currentPage={currentPage}
@@ -520,11 +598,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         </div>
       </div>
 
-      {/* Mobile bottom sheet */}
-      {isMobile && (
-        <MobileBottomSheet summary={summaryNode}>
-          {renderLeftPanel()}
-        </MobileBottomSheet>
+      </>
       )}
     </div>
     </ViewerApiContext.Provider>
