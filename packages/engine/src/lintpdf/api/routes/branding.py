@@ -569,3 +569,89 @@ async def set_brand_profile_custom_domain(
 
     db.refresh(profile)
     return _profile_to_response(profile, tenant)
+
+
+# --- White-label app/viewer custom domain (customer self-service) ---
+
+
+class AppCustomDomainResponse(BaseModel):
+    tenant_id: str | None = None
+    domain: str | None = None
+    verified: bool = False
+    requested_at: str | None = None
+    plan_allows_whitelabel: bool = False
+
+
+@router.get(
+    "/api/v1/tenants/{tenant_id}/app-custom-domain",
+    response_model=AppCustomDomainResponse,
+)
+async def get_tenant_app_custom_domain(
+    tenant_id: str,
+    tenant: Tenant = Depends(get_current_tenant),
+) -> AppCustomDomainResponse:
+    """Return the current state of the tenant's white-label app/viewer domain."""
+    if str(tenant.id) != tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    ent = resolve_entitlements(tenant)
+    return AppCustomDomainResponse(
+        tenant_id=str(tenant.id),
+        domain=tenant.app_custom_domain,
+        verified=tenant.app_custom_domain_verified,
+        requested_at=tenant.app_custom_domain_requested_at.isoformat() if tenant.app_custom_domain_requested_at else None,
+        plan_allows_whitelabel=ent.whitelabel_enabled,
+    )
+
+
+@router.patch(
+    "/api/v1/tenants/{tenant_id}/app-custom-domain",
+    response_model=AppCustomDomainResponse,
+)
+async def set_tenant_app_custom_domain(
+    tenant_id: str,
+    request: SetCustomDomainRequest,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> AppCustomDomainResponse:
+    """Customer self-service: set (or clear) the tenant's app/viewer custom domain."""
+    if str(tenant.id) != tenant_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden.")
+
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    ent = resolve_entitlements(tenant)
+    if not ent.whitelabel_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="White-label custom domains require the Scale or Enterprise plan.",
+        )
+
+    if request.domain is None or request.domain.strip() == "":
+        tenant.app_custom_domain = None
+        tenant.app_custom_domain_verified = False
+        tenant.app_custom_domain_requested_at = None
+    else:
+        canonical = validate_custom_domain(request.domain)
+        tenant.app_custom_domain = canonical
+        tenant.app_custom_domain_verified = False
+        tenant.app_custom_domain_requested_at = datetime.now(timezone.utc)
+
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That domain is already claimed by another tenant.",
+        ) from exc
+
+    db.refresh(tenant)
+    return AppCustomDomainResponse(
+        tenant_id=str(tenant.id),
+        domain=tenant.app_custom_domain,
+        verified=tenant.app_custom_domain_verified,
+        requested_at=tenant.app_custom_domain_requested_at.isoformat() if tenant.app_custom_domain_requested_at else None,
+        plan_allows_whitelabel=ent.whitelabel_enabled,
+    )

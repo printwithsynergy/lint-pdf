@@ -87,6 +87,13 @@ class Tenant(Base):
     brand_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
+    app_custom_domain_verified: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    app_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     brand_hide_footer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     report_default_expiry_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     report_email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -579,6 +586,13 @@ class BrandProfile(Base):
         Boolean, nullable=False, default=False
     )
     custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
+    app_custom_domain_verified: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    app_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     viewer_config: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)

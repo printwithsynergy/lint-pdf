@@ -30,7 +30,7 @@ def _auto_generate_reports(
     from datetime import datetime, timedelta, timezone
 
     from lintpdf.api.config import get_settings
-    from lintpdf.api.models import JobFinding, ReportToken
+    from lintpdf.api.models import JobFinding, ReportToken, Tenant
     from lintpdf.reports.service import BrandingContext, ReportDetailLevel, ReportService
 
     settings = get_settings()
@@ -77,7 +77,12 @@ def _auto_generate_reports(
     # Set cross-links and viewer URL
     branding.pdf_download_url = f"{report_base_url}/r/{tokens['pdf']}.pdf"
     branding.report_url = f"{report_base_url}/r/{tokens['html']}"
-    branding.viewer_url = f"{app_base}/view/{tokens['html']}"
+    # Use tenant's app custom domain if verified, otherwise default
+    tenant_obj = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+    viewer_base = app_base
+    if tenant_obj and getattr(tenant_obj, "app_custom_domain", None) and tenant_obj.app_custom_domain_verified:
+        viewer_base = f"https://{tenant_obj.app_custom_domain}"
+    branding.viewer_url = f"{viewer_base.rstrip('/')}/view/{tokens['html']}"
 
     for fmt in ["html", "pdf"]:
         content = service._generate_format(
@@ -525,6 +530,7 @@ def _resolve_cname(hostname: str) -> str | None:
 _ACCEPTABLE_CNAME_TARGETS: tuple[str, ...] = (
     "reports.lintpdf.com",
     "api.lintpdf.com",
+    "app.lintpdf.com",
     "lintpdf-production.up.railway.app",
     "backboard.railway.app",
 )
@@ -660,6 +666,68 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                     domain,
                     outcome.message,
                 )
+
+        # ── App/viewer custom domains ──
+        pending_app_tenants: list[Tenant] = (
+            db.query(Tenant)
+            .filter(
+                Tenant.app_custom_domain.isnot(None),
+                Tenant.app_custom_domain_verified.is_(False),
+            )
+            .all()
+        )
+        for tenant in pending_app_tenants:
+            result["checked"] += 1
+            domain = tenant.app_custom_domain
+            if not domain:
+                continue
+            cname = _resolve_cname(domain)
+            if not _cname_is_acceptable(cname):
+                result["cname_mismatch"] += 1
+                continue
+            outcome = client.add_custom_domain(
+                domain, service_id=client.app_service_id
+            )
+            if outcome.status in ("created", "already_exists"):
+                result["railway_registered"] += 1
+                tenant.app_custom_domain_verified = True
+                db.commit()
+                result["activated"] += 1
+                logger.info("Activated tenant app domain %s (tenant=%s)", domain, tenant.id)
+            elif outcome.status in ("disabled", "unauthorized"):
+                result["railway_disabled"] += 1
+            else:
+                result["errors"] += 1
+
+        pending_app_profiles: list[BrandProfile] = (
+            db.query(BrandProfile)
+            .filter(
+                BrandProfile.app_custom_domain.isnot(None),
+                BrandProfile.app_custom_domain_verified.is_(False),
+            )
+            .all()
+        )
+        for profile in pending_app_profiles:
+            result["checked"] += 1
+            domain = profile.app_custom_domain
+            if not domain:
+                continue
+            cname = _resolve_cname(domain)
+            if not _cname_is_acceptable(cname):
+                result["cname_mismatch"] += 1
+                continue
+            outcome = client.add_custom_domain(
+                domain, service_id=client.app_service_id
+            )
+            if outcome.status in ("created", "already_exists"):
+                result["railway_registered"] += 1
+                profile.app_custom_domain_verified = True
+                db.commit()
+                result["activated"] += 1
+            elif outcome.status in ("disabled", "unauthorized"):
+                result["railway_disabled"] += 1
+            else:
+                result["errors"] += 1
 
         return result
     finally:

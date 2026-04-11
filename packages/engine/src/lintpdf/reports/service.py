@@ -58,6 +58,31 @@ def resolve_report_base_url(
     return settings.report_base_url
 
 
+def resolve_viewer_base_url(
+    tenant: Tenant,
+    brand_profile: BrandProfile | None,
+    entitlements: TenantEntitlements,
+    settings: Settings,
+) -> str:
+    """Pick the viewer/app base URL for a tenant + active brand profile.
+
+    Resolution priority, highest wins:
+      1. brand_profile.app_custom_domain (if whitelabel_enabled AND verified)
+      2. tenant.app_custom_domain        (if whitelabel_enabled AND verified)
+      3. settings.app_base_url           (the global default)
+    """
+    if entitlements.whitelabel_enabled:
+        if (
+            brand_profile is not None
+            and getattr(brand_profile, "app_custom_domain", None)
+            and brand_profile.app_custom_domain_verified
+        ):
+            return f"https://{brand_profile.app_custom_domain}"
+        if getattr(tenant, "app_custom_domain", None) and tenant.app_custom_domain_verified:
+            return f"https://{tenant.app_custom_domain}"
+    return settings.app_base_url
+
+
 # Default LintPDF logo as an embedded base64 data URI so reports always have
 # branding even when no tenant/brand override is configured.
 _LINTPDF_DEFAULT_LOGO = (

@@ -56,6 +56,7 @@ class RailwayClient:
             environment_id or os.environ.get("RAILWAY_ENVIRONMENT_ID") or ""
         )
         self.service_id = service_id or os.environ.get("RAILWAY_API_SERVICE_ID") or ""
+        self.app_service_id = os.environ.get("RAILWAY_APP_SERVICE_ID") or ""
         self.timeout = timeout
 
     @property
@@ -86,13 +87,17 @@ class RailwayClient:
             response.raise_for_status()
             return response.json()
 
-    def add_custom_domain(self, domain: str) -> RailwayDomainResult:
-        """Register a custom domain on the configured API service.
+    def add_custom_domain(
+        self, domain: str, *, service_id: str | None = None
+    ) -> RailwayDomainResult:
+        """Register a custom domain on the configured service.
+
+        Args:
+            domain: Customer's hostname to register.
+            service_id: Override the default API service ID (e.g., pass
+                ``self.app_service_id`` for viewer/app domains).
 
         Returns a :class:`RailwayDomainResult` describing the outcome.
-        Never raises on Railway-side errors — they're converted into
-        a status the caller can inspect without a try/except cluttering
-        the probe task's loop.
         """
         if not self.enabled:
             return RailwayDomainResult(
@@ -113,7 +118,7 @@ class RailwayClient:
             "input": {
                 "projectId": self.project_id,
                 "environmentId": self.environment_id,
-                "serviceId": self.service_id,
+                "serviceId": service_id or self.service_id,
                 "domain": domain,
                 "targetPort": 443,
             }
