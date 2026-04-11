@@ -13,6 +13,12 @@ interface PageCanvasProps {
   onFindingClick: (finding: ViewerFinding) => void;
 }
 
+const SEVERITY_HEX: Record<string, string> = {
+  error: "#ef4444",
+  warning: "#f59e0b",
+  advisory: "#3b82f6",
+};
+
 export function PageCanvas({
   jobId,
   page,
@@ -25,6 +31,7 @@ export function PageCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tileImg, setTileImg] = useState<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pulsePhase, setPulsePhase] = useState(0);
 
   // Scale factor: zoom% maps to DPI scaling
   const scale = zoom / 100;
@@ -48,6 +55,22 @@ export function PageCanvas({
     img.onerror = () => setLoading(false);
   }, [apiBase, page.page_num, dpi]);
 
+  // Animate pulse for selected finding
+  useEffect(() => {
+    if (!selectedFinding?.bbox || selectedFinding.page_num !== page.page_num) return;
+    let raf: number;
+    let start: number | null = null;
+    const animate = (ts: number) => {
+      if (start === null) start = ts;
+      const elapsed = ts - start;
+      // Oscillate between 0 and 1 over 1.5s
+      setPulsePhase((Math.sin((elapsed / 750) * Math.PI) + 1) / 2);
+      raf = requestAnimationFrame(animate);
+    };
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [selectedFinding, page.page_num]);
+
   // Render canvas
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -67,8 +90,17 @@ export function PageCanvas({
       (f) => f.page_num === page.page_num && f.bbox,
     );
 
+    const hasSelected =
+      selectedFinding &&
+      selectedFinding.page_num === page.page_num &&
+      selectedFinding.bbox;
+
+    // Counter for badge numbering
+    let badgeIndex = 0;
+
     for (const finding of pageFindings) {
       if (!finding.bbox) continue;
+      badgeIndex++;
       const [x0, y0, x1, y1] = finding.bbox;
 
       // Convert PDF coordinates (origin lower-left) to canvas (origin upper-left)
@@ -78,21 +110,61 @@ export function PageCanvas({
       const ph = (y1 - y0) * ptsToPixels * scale;
 
       const colors = SEVERITY_COLORS[finding.severity];
+      const severityHex = SEVERITY_HEX[finding.severity];
       const isSelected =
         selectedFinding?.inspection_id === finding.inspection_id &&
         selectedFinding?.page_num === finding.page_num &&
         selectedFinding?.message === finding.message;
 
-      // Fill
-      ctx.fillStyle = isSelected
-        ? colors.fill.replace("0.15", "0.3")
-        : colors.fill;
-      ctx.fillRect(px0, py0, pw, ph);
+      if (hasSelected && !isSelected) {
+        // Dimmed: other findings when one is selected
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = colors.fill;
+        ctx.fillRect(px0, py0, pw, ph);
+        ctx.strokeStyle = colors.stroke;
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px0, py0, pw, ph);
+        ctx.globalAlpha = 1;
+      } else if (isSelected) {
+        // Selected finding: prominent highlight with animated glow
+        const glowAlpha = 0.15 + pulsePhase * 0.2;
+        ctx.fillStyle = colors.fill.replace(
+          /[\d.]+\)$/,
+          `${glowAlpha.toFixed(2)})`,
+        );
+        ctx.fillRect(px0, py0, pw, ph);
 
-      // Stroke
-      ctx.strokeStyle = colors.stroke;
-      ctx.lineWidth = isSelected ? 3 : 1.5;
-      ctx.strokeRect(px0, py0, pw, ph);
+        // Animated outer glow
+        const glowSize = 4 + pulsePhase * 4;
+        ctx.shadowColor = severityHex;
+        ctx.shadowBlur = glowSize;
+        ctx.strokeStyle = severityHex;
+        ctx.lineWidth = 4;
+        ctx.strokeRect(px0, py0, pw, ph);
+        ctx.shadowColor = "transparent";
+        ctx.shadowBlur = 0;
+
+        // Numbered badge at top-right corner
+        const badgeRadius = 10;
+        const bx = px0 + pw - 2;
+        const by = py0 - 2;
+        ctx.fillStyle = severityHex;
+        ctx.beginPath();
+        ctx.arc(bx, by, badgeRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 11px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(String(badgeIndex), bx, by);
+      } else {
+        // No selection active: show all at normal opacity
+        ctx.fillStyle = colors.fill;
+        ctx.fillRect(px0, py0, pw, ph);
+        ctx.strokeStyle = colors.stroke;
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px0, py0, pw, ph);
+      }
     }
   }, [
     tileImg,
@@ -103,6 +175,7 @@ export function PageCanvas({
     ptsToPixels,
     scale,
     selectedFinding,
+    pulsePhase,
   ]);
 
   useEffect(() => {

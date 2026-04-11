@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import type { ComparisonState, PageInfo, ViewerConfig, ViewerFinding } from "./types";
 import { DEFAULT_VIEWER_CONFIG, ViewerApiContext } from "./types";
 import { PageCanvas } from "./PageCanvas";
@@ -20,6 +20,7 @@ import { BoxOverlay } from "./BoxOverlay";
 import { LayerPanel } from "./LayerPanel";
 import { VerdictBar } from "./VerdictBar";
 import { ComparisonPanel } from "./ComparisonPanel";
+import { MobileBottomSheet } from "./MobileBottomSheet";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
 type MeasureMode = "none" | "densitometer" | "ruler";
@@ -46,6 +47,18 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   const [selectedFinding, setSelectedFinding] = useState<ViewerFinding | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Collapsible thumbnails (for left panel header)
+  const [thumbnailsExpanded, setThumbnailsExpanded] = useState(false);
 
   // Mode states (mutually exclusive main modes)
   const [viewerMode, setViewerMode] = useState<ViewerMode>("normal");
@@ -77,6 +90,13 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   const [showVersionB, setShowVersionB] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Findings summary for mobile bottom sheet
+  const findingsSummary = useMemo(() => {
+    const counts = { error: 0, warning: 0, advisory: 0 };
+    for (const f of findings) counts[f.severity]++;
+    return counts;
+  }, [findings]);
 
   // Load pages + findings + config on mount
   useEffect(() => {
@@ -260,13 +280,106 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
 
   const ctxValue = { apiBase, jobApiBase, readOnly };
 
+  // Determine what to render in the left panel
+  const renderLeftPanel = () => {
+    if (viewerMode === "annotation") {
+      return <AnnotationThread jobId={jobId} onJumpToPage={setCurrentPage} />;
+    }
+    if (viewerMode === "separation") {
+      return (
+        <SeparationPanel
+          jobId={jobId}
+          enabledChannels={enabledChannels}
+          onToggleChannel={handleToggleChannel}
+          onSetAllChannels={handleSetAllChannels}
+        />
+      );
+    }
+    if (viewerMode === "layers") {
+      return (
+        <LayerPanel
+          jobId={jobId}
+          enabledLayers={enabledLayers}
+          onToggleLayer={handleToggleLayer}
+          onSetAllLayers={handleSetAllLayers}
+        />
+      );
+    }
+    if (viewerMode === "comparison") {
+      return (
+        <ComparisonPanel
+          jobId={jobId}
+          comparison={comparison}
+          onStartComparison={setComparison}
+          comparisonMode={comparisonMode}
+          onModeChange={setComparisonMode}
+          currentPage={currentPage}
+          onPageChange={setCurrentPage}
+        />
+      );
+    }
+    if (config.enable_findings_panel) {
+      return (
+        <>
+          {/* Collapsible horizontal page thumbnails strip */}
+          {config.enable_page_thumbnails && (
+            <div className="shrink-0 border-b border-slate-700">
+              <button
+                onClick={() => setThumbnailsExpanded((v) => !v)}
+                className="flex w-full items-center justify-between px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200"
+              >
+                <span>Pages ({pages.length})</span>
+                <svg
+                  className={`h-3.5 w-3.5 transition-transform ${thumbnailsExpanded ? "rotate-180" : ""}`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {thumbnailsExpanded && (
+                <div className="flex gap-1.5 overflow-x-auto px-3 pb-2">
+                  <PageNavigator
+                    pages={pages}
+                    currentPage={currentPage}
+                    findings={findings}
+                    jobId={jobId}
+                    onPageChange={setCurrentPage}
+                    horizontal
+                  />
+                </div>
+              )}
+            </div>
+          )}
+          <FindingsPanel
+            findings={findings}
+            selectedFinding={selectedFinding}
+            onSelectFinding={handleSelectFinding}
+            currentPage={currentPage}
+          />
+        </>
+      );
+    }
+    return null;
+  };
+
+  const summaryNode = (
+    <div className="flex items-center gap-3 text-xs font-medium">
+      <span className="text-red-400">{findingsSummary.error} errors</span>
+      <span className="text-amber-400">{findingsSummary.warning} warnings</span>
+      <span className="text-blue-400">{findingsSummary.advisory} advisory</span>
+    </div>
+  );
+
   return (
     <ViewerApiContext.Provider value={ctxValue}>
     <div className={`flex h-[calc(100vh-4rem)] flex-col ${config.dark_mode ? "dark bg-neutral-900" : ""}`}>
       {/* Verdict bar */}
       <VerdictBar jobId={jobId} config={config} />
 
-      {/* Toolbar */}
+      {/* Toolbar at top */}
       <ViewerToolbar
         currentPage={currentPage}
         pageCount={pages.length}
@@ -302,22 +415,16 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         </div>
       )}
 
-      {/* Main content: thumbnails | canvas | panel */}
+      {/* Main content: LEFT panel | RIGHT canvas */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left: Page thumbnails */}
-        {config.enable_page_thumbnails && (
-          <div className="w-28 shrink-0 border-r bg-muted/30 overflow-y-auto">
-            <PageNavigator
-              pages={pages}
-              currentPage={currentPage}
-              findings={findings}
-              jobId={jobId}
-              onPageChange={setCurrentPage}
-            />
+        {/* LEFT: Findings / context panel (desktop only) */}
+        {!isMobile && (
+          <div className="flex w-[340px] shrink-0 flex-col border-r border-slate-700 bg-slate-900 overflow-hidden">
+            {renderLeftPanel()}
           </div>
         )}
 
-        {/* Center: Page canvas */}
+        {/* RIGHT: Page canvas */}
         <div ref={scrollRef} className="flex-1 overflow-auto bg-neutral-800 p-4">
           <div className="flex justify-center">
             {currentPageInfo && (
@@ -411,45 +518,14 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             )}
           </div>
         </div>
-
-        {/* Right: Context panel */}
-        <div className="w-80 shrink-0 border-l bg-background overflow-hidden overflow-y-auto">
-          {viewerMode === "annotation" ? (
-            <AnnotationThread jobId={jobId} onJumpToPage={setCurrentPage} />
-          ) : viewerMode === "separation" ? (
-            <SeparationPanel
-              jobId={jobId}
-              enabledChannels={enabledChannels}
-              onToggleChannel={handleToggleChannel}
-              onSetAllChannels={handleSetAllChannels}
-            />
-          ) : viewerMode === "layers" ? (
-            <LayerPanel
-              jobId={jobId}
-              enabledLayers={enabledLayers}
-              onToggleLayer={handleToggleLayer}
-              onSetAllLayers={handleSetAllLayers}
-            />
-          ) : viewerMode === "comparison" ? (
-            <ComparisonPanel
-              jobId={jobId}
-              comparison={comparison}
-              onStartComparison={setComparison}
-              comparisonMode={comparisonMode}
-              onModeChange={setComparisonMode}
-              currentPage={currentPage}
-              onPageChange={setCurrentPage}
-            />
-          ) : config.enable_findings_panel ? (
-            <FindingsPanel
-              findings={findings}
-              selectedFinding={selectedFinding}
-              onSelectFinding={handleSelectFinding}
-              currentPage={currentPage}
-            />
-          ) : null}
-        </div>
       </div>
+
+      {/* Mobile bottom sheet */}
+      {isMobile && (
+        <MobileBottomSheet summary={summaryNode}>
+          {renderLeftPanel()}
+        </MobileBottomSheet>
+      )}
     </div>
     </ViewerApiContext.Provider>
   );

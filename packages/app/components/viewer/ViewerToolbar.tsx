@@ -14,6 +14,7 @@ interface ViewerToolbarProps {
   onPageChange: (page: number) => void;
   onZoomChange: (zoom: number) => void;
   jobId: string;
+  fileName?: string;
   config?: ViewerConfig;
   viewerMode?: ViewerMode;
   onToggleMode?: (mode: ViewerMode) => void;
@@ -30,13 +31,16 @@ interface ViewerToolbarProps {
   onToggleAnnotationMode?: () => void;
 }
 
+/** Compact icon-only tool button with tooltip */
 function ToolButton({
   label,
+  icon,
   active,
   onClick,
-  activeClass = "border-primary bg-primary/10 text-primary",
+  activeClass = "bg-white/20 text-white",
 }: {
   label: string;
+  icon: string;
   active: boolean;
   onClick: () => void;
   activeClass?: string;
@@ -44,14 +48,18 @@ function ToolButton({
   return (
     <button
       onClick={onClick}
-      className={`rounded border px-3 py-1 text-sm transition-colors ${
-        active ? activeClass : "hover:bg-muted"
+      className={`rounded p-1.5 text-sm transition-colors ${
+        active ? activeClass : "text-slate-300 hover:bg-white/10 hover:text-white"
       }`}
       title={label}
     >
-      {label}
+      {icon}
     </button>
   );
+}
+
+function Divider() {
+  return <span className="mx-1 h-5 w-px bg-white/20" />;
 }
 
 export function ViewerToolbar({
@@ -61,6 +69,7 @@ export function ViewerToolbar({
   onPageChange,
   onZoomChange,
   jobId,
+  fileName,
   config = DEFAULT_VIEWER_CONFIG,
   viewerMode = "normal",
   onToggleMode,
@@ -72,27 +81,45 @@ export function ViewerToolbar({
   onToggleBoxOverlay,
 }: ViewerToolbarProps) {
   const { apiBase, readOnly } = useViewerApi();
+
+  const bgColor = config.brand_primary_color || "#1e293b";
+
   return (
-    <div className="flex items-center justify-between border-b bg-background px-4 py-2">
-      {/* Left: Brand logo + Page navigation */}
-      <div className="flex items-center gap-3">
-        {(config.viewer_logo_url || config.brand_logo_url) && (
-          <img
-            src={config.viewer_logo_url ?? config.brand_logo_url ?? undefined}
-            alt={config.brand_name}
-            className="h-7 w-auto shrink-0"
-          />
-        )}
+    <div
+      className="flex items-center gap-2 px-3 py-1.5 text-white"
+      style={{ backgroundColor: bgColor }}
+    >
+      {/* Logo */}
+      {(config.viewer_logo_url || config.brand_logo_url) && (
+        <img
+          src={config.viewer_logo_url ?? config.brand_logo_url ?? undefined}
+          alt={config.brand_name}
+          className="h-6 w-auto shrink-0"
+        />
+      )}
+
+      {/* File name */}
+      {fileName && (
+        <span className="max-w-[200px] truncate text-xs font-medium text-slate-200">
+          {fileName}
+        </span>
+      )}
+
+      <Divider />
+
+      {/* Page navigation */}
+      <div className="flex items-center gap-1">
         <button
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage <= 1}
-          className="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-40"
+          className="rounded p-1 text-sm text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40"
           title="Previous page"
         >
-          ← Prev
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
-        <span className="text-sm">
-          Page{" "}
+        <span className="text-xs text-slate-200">
           <input
             type="number"
             min={1}
@@ -102,31 +129,38 @@ export function ViewerToolbar({
               const p = Number(e.target.value);
               if (p >= 1 && p <= pageCount) onPageChange(p);
             }}
-            className="w-12 rounded border px-1 py-0.5 text-center text-sm"
-          />{" "}
-          of {pageCount}
+            className="w-10 rounded border border-white/20 bg-white/10 px-1 py-0.5 text-center text-xs text-white outline-none focus:border-white/40"
+          />
+          <span className="ml-1 text-slate-400">/ {pageCount}</span>
         </span>
         <button
           onClick={() => onPageChange(Math.min(pageCount, currentPage + 1))}
           disabled={currentPage >= pageCount}
-          className="rounded border px-2 py-1 text-sm hover:bg-muted disabled:opacity-40"
+          className="rounded p-1 text-sm text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40"
           title="Next page"
         >
-          Next →
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path d="M9 5l7 7-7 7" />
+          </svg>
         </button>
       </div>
 
-      {/* Center: Zoom */}
+      {/* Zoom */}
       {config.enable_zoom && (
-        <ZoomControls zoom={zoom} onZoomChange={onZoomChange} />
+        <>
+          <Divider />
+          <ZoomControls zoom={zoom} onZoomChange={onZoomChange} compact dark />
+        </>
       )}
 
-      {/* Right: Tool buttons */}
-      <div className="flex items-center gap-1.5">
-        {/* Inspection tools */}
+      <Divider />
+
+      {/* Tool buttons (icon-only with tooltips) */}
+      <div className="flex items-center gap-0.5">
         {config.enable_separations && onToggleMode && (
           <ToolButton
             label="Separations"
+            icon="CMYK"
             active={viewerMode === "separation"}
             onClick={() => onToggleMode("separation")}
           />
@@ -135,79 +169,80 @@ export function ViewerToolbar({
         {config.enable_layers && onToggleMode && (
           <ToolButton
             label="Layers"
+            icon="Layers"
             active={viewerMode === "layers"}
             onClick={() => onToggleMode("layers")}
-            activeClass="border-violet-500 bg-violet-500/10 text-violet-600"
           />
         )}
 
         {config.enable_tac_heatmap && onToggleTacHeatmap && (
           <ToolButton
-            label="TAC"
+            label="TAC Heatmap"
+            icon="TAC"
             active={showTacHeatmap}
             onClick={onToggleTacHeatmap}
-            activeClass="border-amber-500 bg-amber-500/10 text-amber-600"
           />
         )}
 
         {onToggleBoxOverlay && (
           <ToolButton
-            label="Boxes"
+            label="Trim/Bleed Boxes"
+            icon="Boxes"
             active={showBoxOverlay}
             onClick={onToggleBoxOverlay}
-            activeClass="border-blue-500 bg-blue-500/10 text-blue-600"
           />
         )}
 
         {/* Measurement tools */}
         {config.enable_measurement && onToggleMeasure && (
           <>
-            <span className="mx-0.5 h-4 border-r" />
+            <Divider />
             <ToolButton
-              label="&#128270;"
+              label="Densitometer"
+              icon={"\u{1F50D}"}
               active={measureMode === "densitometer"}
               onClick={() => onToggleMeasure("densitometer")}
-              activeClass="border-cyan-500 bg-cyan-500/10 text-cyan-600"
             />
             <ToolButton
-              label="&#8596;"
+              label="Ruler"
+              icon={"\u2194"}
               active={measureMode === "ruler"}
               onClick={() => onToggleMeasure("ruler")}
-              activeClass="border-green-500 bg-green-500/10 text-green-600"
             />
           </>
         )}
 
         {/* Annotation + Comparison */}
-        <span className="mx-0.5 h-4 border-r" />
+        <Divider />
 
         {!readOnly && config.enable_annotations && onToggleMode && (
           <ToolButton
             label="Annotate"
+            icon={"\u270E"}
             active={viewerMode === "annotation"}
             onClick={() => onToggleMode("annotation")}
-            activeClass="border-violet-500 bg-violet-500/10 text-violet-600"
           />
         )}
 
         {!readOnly && config.enable_comparison && onToggleMode && (
           <ToolButton
-            label="Compare"
+            label="Compare Versions"
+            icon={"\u2194\uFE0F"}
             active={viewerMode === "comparison"}
             onClick={() => onToggleMode("comparison")}
-            activeClass="border-indigo-500 bg-indigo-500/10 text-indigo-600"
           />
         )}
 
         {/* Export links */}
-        <span className="mx-0.5 h-4 border-r" />
+        <Divider />
 
         {config.enable_html_report_link && (
           <a
             href={`${apiBase.replace(/\/viewer\/.*$/, '/reports/' + jobId)}/html`}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded border px-3 py-1 text-sm hover:bg-muted"
+            className="rounded p-1.5 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+            title="View HTML Report"
           >
             Report
           </a>
@@ -215,7 +250,8 @@ export function ViewerToolbar({
         {config.enable_download && (
           <a
             href={`${apiBase.replace(/\/viewer\/.*$/, '/reports/' + jobId)}/download`}
-            className="rounded border px-3 py-1 text-sm hover:bg-muted"
+            className="rounded p-1.5 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+            title="Download PDF"
           >
             PDF
           </a>
