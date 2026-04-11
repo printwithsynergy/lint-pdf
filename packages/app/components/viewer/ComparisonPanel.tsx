@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { ComparisonState } from "./types";
+import { useViewerApi } from "./types";
 
 interface ComparisonPanelProps {
   jobId: string;
@@ -22,6 +23,7 @@ export function ComparisonPanel({
   currentPage,
   onPageChange,
 }: ComparisonPanelProps) {
+  const { apiBase } = useViewerApi();
   const [compareJobId, setCompareJobId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -32,7 +34,7 @@ export function ComparisonPanel({
     setError("");
 
     try {
-      const resp = await fetch("/api/lintpdf/viewer/compare", {
+      const resp = await fetch(`${apiBase.replace(/\/viewer\/.*$/, '/viewer/compare')}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -55,7 +57,7 @@ export function ComparisonPanel({
     } finally {
       setLoading(false);
     }
-  }, [jobId, compareJobId, onStartComparison]);
+  }, [apiBase, jobId, compareJobId, onStartComparison]);
 
   return (
     <div className="flex h-full flex-col">

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { LayerInfo } from "./types";
+import { useViewerApi } from "./types";
 
 interface LayerPanelProps {
   jobId: string;
@@ -16,13 +17,14 @@ export function LayerPanel({
   onToggleLayer,
   onSetAllLayers,
 }: LayerPanelProps) {
+  const { apiBase } = useViewerApi();
   const [layers, setLayers] = useState<LayerInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const fetchLayers = useCallback(async () => {
     try {
-      const resp = await fetch(`/api/lintpdf/viewer/${jobId}/layers`);
+      const resp = await fetch(`${apiBase}/layers`);
       if (!resp.ok) throw new Error("Failed to load layers");
       const data = await resp.json();
       setLayers(data.layers ?? []);
@@ -31,7 +33,7 @@ export function LayerPanel({
     } finally {
       setLoading(false);
     }
-  }, [jobId]);
+  }, [apiBase]);
 
   useEffect(() => {
     fetchLayers();

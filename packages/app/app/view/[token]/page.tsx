@@ -239,7 +239,7 @@ export default function PublicViewerPage() {
 
       {/* Viewer */}
       <main className="flex-1">
-        <PdfViewer jobId={jobData.jobId} />
+        <PdfViewer jobId={jobData.jobId} publicToken={token} />
       </main>
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnnotationTool } from "./AnnotationToolbar";
+import { useViewerApi } from "./types";
 
 interface AnnotationCanvasProps {
   jobId: string;
@@ -30,6 +31,7 @@ export function AnnotationCanvas({
   onSavingChange,
   onHistoryChange,
 }: AnnotationCanvasProps) {
+  const { apiBase, readOnly } = useViewerApi();
   const canvasElRef = useRef<HTMLCanvasElement>(null);
 
   const fabricRef = useRef<any>(null);
@@ -42,10 +44,11 @@ export function AnnotationCanvas({
   const saveToApi = useCallback(
   
     async (canvas: any) => {
+      if (readOnly) return;
       onSavingChange?.(true);
       try {
         const fabricJson = canvas.toJSON();
-        await fetch(`/api/lintpdf/annotations/${jobId}/${pageNum}`, {
+        await fetch(`${apiBase.replace(/\/viewer\/.*$/, '/annotations/' + jobId)}/${pageNum}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ fabricJson }),
@@ -56,7 +59,7 @@ export function AnnotationCanvas({
         onSavingChange?.(false);
       }
     },
-    [jobId, pageNum, onSavingChange],
+    [apiBase, jobId, pageNum, readOnly, onSavingChange],
   );
 
   const debouncedSave = useCallback(
@@ -137,7 +140,7 @@ export function AnnotationCanvas({
       // Load existing annotations from the API
       try {
         const resp = await fetch(
-          `/api/lintpdf/annotations/${jobId}/${pageNum}`,
+          `${apiBase.replace(/\/viewer\/.*$/, '/annotations/' + jobId)}/${pageNum}`,
         );
         if (resp.ok) {
           const annotations = await resp.json();

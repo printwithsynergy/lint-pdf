@@ -474,3 +474,88 @@ async def serve_html_report(
     db.commit()
 
     return HTMLResponse(content=content)
+
+
+# --- Token validation endpoint (used by plugin proxy for public viewer) ---
+
+
+@router.get("/api/v1/reports/tokens/{token}")
+async def validate_report_token(
+    token: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Validate a report token and return job metadata.
+
+    Used by the Fairy Ring plugin to verify public viewer access tokens
+    before proxying viewer API requests to the engine.
+    """
+    from datetime import datetime, timezone
+
+    from lintpdf.api.auth import get_current_tenant as _get_tenant  # noqa: F811
+
+    record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Token not found.")
+
+    if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Token has expired.")
+
+    job: Job | None = db.query(Job).filter(Job.id == record.job_id).first()
+    file_name = job.file_name if job else "Untitled"
+
+    # Check if the tenant requires email identification for public views
+    tenant: Tenant | None = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+    email_required = True  # default to requiring email
+
+    return {
+        "job_id": str(record.job_id),
+        "tenant_id": str(record.tenant_id),
+        "file_name": file_name,
+        "email_required": email_required,
+    }
+
+
+@router.get("/api/v1/reports/tokens/{token}/findings")
+async def get_token_findings(
+    token: str,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Get findings for a job via report token (public, no auth).
+
+    Returns the same finding data as GET /api/v1/jobs/{job_id} but
+    authenticated by report token instead of tenant API key.
+    """
+    from datetime import datetime, timezone
+
+    record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Token not found.")
+
+    if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Token has expired.")
+
+    findings = (
+        db.query(JobFinding)
+        .filter(JobFinding.job_id == record.job_id)
+        .all()
+    )
+
+    return {
+        "findings": [
+            {
+                "inspection_id": f.inspection_id,
+                "severity": f.severity,
+                "message": f.message,
+                "page_num": f.page_num,
+                "details": f.details,
+                "source": f.source or "engine",
+                "category": f.category,
+                "bbox": [f.bbox_x0, f.bbox_y0, f.bbox_x1, f.bbox_y1]
+                if f.bbox_x0 is not None
+                else None,
+                "object_id": f.object_id,
+                "object_type": f.object_type,
+            }
+            for f in findings
+        ]
+    }

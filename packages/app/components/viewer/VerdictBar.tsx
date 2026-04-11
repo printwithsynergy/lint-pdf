@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { VerdictState, ViewerConfig } from "./types";
+import { useViewerApi } from "./types";
 
 interface VerdictBarProps {
   jobId: string;
@@ -9,6 +10,7 @@ interface VerdictBarProps {
 }
 
 export function VerdictBar({ jobId, config }: VerdictBarProps) {
+  const { apiBase, readOnly } = useViewerApi();
   const [verdict, setVerdict] = useState<VerdictState | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFailForm, setShowFailForm] = useState(false);
@@ -17,7 +19,7 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
 
   const fetchVerdict = useCallback(async () => {
     try {
-      const resp = await fetch(`/api/lintpdf/viewer/${jobId}/verdict`);
+      const resp = await fetch(`${apiBase}/verdict`);
       if (resp.ok) {
         setVerdict(await resp.json());
       }
@@ -26,7 +28,7 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
     } finally {
       setLoading(false);
     }
-  }, [jobId]);
+  }, [apiBase]);
 
   useEffect(() => {
     fetchVerdict();
@@ -36,7 +38,7 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
     async (v: "pass" | "fail", notes?: string) => {
       setSubmitting(true);
       try {
-        const resp = await fetch(`/api/lintpdf/viewer/${jobId}/verdict`, {
+        const resp = await fetch(`${apiBase}/verdict`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ verdict: v, notes: notes || null }),
@@ -52,7 +54,7 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
         setSubmitting(false);
       }
     },
-    [jobId],
+    [apiBase],
   );
 
   if (config.verdict_mode === "disabled" || loading) return null;
@@ -115,7 +117,7 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
       </div>
 
       {/* Manual verdict controls */}
-      {!isAuto && (
+      {!isAuto && !readOnly && (
         <div className="flex items-center gap-2">
           {showFailForm ? (
             <div className="flex items-center gap-2">

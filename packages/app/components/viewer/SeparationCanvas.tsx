@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_DPI } from "./types";
+import { DEFAULT_DPI, useViewerApi } from "./types";
 
 /**
  * RGB tint colors for compositing each channel onto a white background
@@ -60,6 +60,7 @@ export function SeparationCanvas({
   height,
   dpi = DEFAULT_DPI,
 }: SeparationCanvasProps) {
+  const { apiBase } = useViewerApi();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [channelImages, setChannelImages] = useState<
     Map<string, HTMLImageElement>
@@ -78,7 +79,7 @@ export function SeparationCanvas({
 
       const img = new Image();
       img.crossOrigin = "anonymous";
-      const url = `/api/lintpdf/viewer/${jobId}/pages/${pageNum}/channel/${encodeURIComponent(channelName)}?dpi=${dpi}`;
+      const url = `${apiBase}/pages/${pageNum}/channel/${encodeURIComponent(channelName)}?dpi=${dpi}`;
 
       await new Promise<void>((resolve) => {
         img.onload = () => {
@@ -105,7 +106,7 @@ export function SeparationCanvas({
         img.src = url;
       });
     },
-    [jobId, pageNum, dpi, channelImages, loadingChannels],
+    [apiBase, pageNum, dpi, channelImages, loadingChannels],
   );
 
   // Load enabled channels

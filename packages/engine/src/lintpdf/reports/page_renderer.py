@@ -11,7 +11,7 @@ from __future__ import annotations
 import base64
 import io
 import logging
-import math
+import shutil
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -19,6 +19,24 @@ import pikepdf
 from PIL import Image, ImageDraw, ImageFont
 
 logger = logging.getLogger(__name__)
+
+_poppler_checked = False
+_poppler_available = False
+
+
+def _check_poppler() -> bool:
+    """Verify that Poppler's pdftoppm is installed (required by pdf2image)."""
+    global _poppler_checked, _poppler_available  # noqa: PLW0603
+    if _poppler_checked:
+        return _poppler_available
+    _poppler_checked = True
+    _poppler_available = shutil.which("pdftoppm") is not None
+    if not _poppler_available:
+        logger.error(
+            "poppler-utils is not installed (pdftoppm not found on PATH). "
+            "Page screenshots will NOT be rendered. Install poppler-utils."
+        )
+    return _poppler_available
 
 # ---------------------------------------------------------------------------
 # Severity colours (matching annotated_pdf_report.py)
@@ -207,6 +225,12 @@ def _draw_annotations(
         callouts.append(callout)
 
         if not has_bbox:
+            # Draw a small severity-colored flag on the left edge so findings
+            # without precise bounding boxes are still visible on the page.
+            flag_y = 20 + (callout_num - 1) * (BADGE_RADIUS * 2 + 8)
+            flag_y = min(flag_y, img.size[1] - BADGE_RADIUS - 4)
+            badge_bg = SEVERITY_BADGE_BG.get(severity, SEVERITY_BADGE_BG["advisory"])
+            _draw_badge(draw, font, callout_num, BADGE_RADIUS + 6, flag_y, badge_bg, img.size)
             continue
 
         px = _pdf_bbox_to_pixels(
@@ -363,6 +387,9 @@ def render_annotated_pages(
     """
     results: dict[int, AnnotatedPageResult] = {}
     rendered = 0
+
+    if not _check_poppler():
+        return results
 
     # Get total page count for validation
     try:

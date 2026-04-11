@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DEFAULT_DPI } from "./types";
+import { DEFAULT_DPI, useViewerApi } from "./types";
 
 interface TACHeatmapOverlayProps {
   jobId: string;
@@ -22,6 +22,7 @@ export function TACHeatmapOverlay({
   dpi = DEFAULT_DPI,
   tacLimit = 300,
 }: TACHeatmapOverlayProps) {
+  const { apiBase } = useViewerApi();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [heatmapImg, setHeatmapImg] = useState<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,8 +42,8 @@ export function TACHeatmapOverlay({
       setError("Failed to load TAC heatmap");
       setLoading(false);
     };
-    img.src = `/api/lintpdf/viewer/${jobId}/pages/${pageNum}/tac-heatmap?dpi=${dpi}&tac_limit=${tacLimit}`;
-  }, [jobId, pageNum, dpi, tacLimit]);
+    img.src = `${apiBase}/pages/${pageNum}/tac-heatmap?dpi=${dpi}&tac_limit=${tacLimit}`;
+  }, [apiBase, pageNum, dpi, tacLimit]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

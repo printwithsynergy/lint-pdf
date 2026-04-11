@@ -80,10 +80,21 @@ def _build_template_context(  # skipcq: PY-R1000
 
     # Generate annotated page screenshots (standard + comprehensive only)
     annotated_pages: dict[int, Any] = {}
+    render_failed = False
     if pdf_bytes is not None and detail_level != ReportDetailLevel.EXECUTIVE:
         annotated_pages = _render_annotated_pages(
             pdf_bytes, findings_by_page, dpi=annotation_dpi
         )
+        if not annotated_pages and findings_by_page:
+            render_failed = True
+            logger.error(
+                "Page annotation rendering returned no images despite %d pages having findings. "
+                "Check poppler-utils installation and PDF validity.",
+                len(findings_by_page),
+            )
+    elif pdf_bytes is None and detail_level != ReportDetailLevel.EXECUTIVE:
+        render_failed = True
+        logger.error("pdf_bytes is None — report will render in text-only mode (no page screenshots)")
 
     # Extract comprehensive-only data
     ink_separations: list[dict[str, Any]] = []
@@ -125,6 +136,7 @@ def _build_template_context(  # skipcq: PY-R1000
         "badge_color": "#22c55e" if result.summary.passed else "#ef4444",
         "brand": branding,
         "annotated_pages": annotated_pages,
+        "render_failed": render_failed,
         "color_quality_score": result.metadata.get("color_quality_score"),
         "color_quality_grade": result.metadata.get("color_quality_grade"),
         "file_name": result.metadata.get("file_name", ""),

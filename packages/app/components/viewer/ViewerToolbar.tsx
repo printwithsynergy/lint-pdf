@@ -2,7 +2,7 @@
 
 import { ZoomControls } from "./ZoomControls";
 import type { ViewerConfig } from "./types";
-import { DEFAULT_VIEWER_CONFIG } from "./types";
+import { DEFAULT_VIEWER_CONFIG, useViewerApi } from "./types";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
 type MeasureMode = "none" | "densitometer" | "ruler";
@@ -71,6 +71,7 @@ export function ViewerToolbar({
   showBoxOverlay = false,
   onToggleBoxOverlay,
 }: ViewerToolbarProps) {
+  const { apiBase, readOnly } = useViewerApi();
   return (
     <div className="flex items-center justify-between border-b bg-background px-4 py-2">
       {/* Left: Brand logo + Page navigation */}
@@ -180,7 +181,7 @@ export function ViewerToolbar({
         {/* Annotation + Comparison */}
         <span className="mx-0.5 h-4 border-r" />
 
-        {config.enable_annotations && onToggleMode && (
+        {!readOnly && config.enable_annotations && onToggleMode && (
           <ToolButton
             label="Annotate"
             active={viewerMode === "annotation"}
@@ -189,7 +190,7 @@ export function ViewerToolbar({
           />
         )}
 
-        {config.enable_comparison && onToggleMode && (
+        {!readOnly && config.enable_comparison && onToggleMode && (
           <ToolButton
             label="Compare"
             active={viewerMode === "comparison"}
@@ -203,7 +204,7 @@ export function ViewerToolbar({
 
         {config.enable_html_report_link && (
           <a
-            href={`/api/lintpdf/reports/${jobId}/html`}
+            href={`${apiBase.replace(/\/viewer\/.*$/, '/reports/' + jobId)}/html`}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded border px-3 py-1 text-sm hover:bg-muted"
@@ -213,7 +214,7 @@ export function ViewerToolbar({
         )}
         {config.enable_download && (
           <a
-            href={`/api/lintpdf/reports/${jobId}/download`}
+            href={`${apiBase.replace(/\/viewer\/.*$/, '/reports/' + jobId)}/download`}
             className="rounded border px-3 py-1 text-sm hover:bg-muted"
           >
             PDF

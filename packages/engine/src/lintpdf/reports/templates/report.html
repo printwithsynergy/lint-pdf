@@ -345,6 +345,14 @@
          brand.pdf_download_url.startswith('/')) %}<a
         href="{{ brand.pdf_download_url }}"
       >Download PDF</a>{% endif %}
+      {% if brand and brand.viewer_url and
+        (brand.viewer_url.startswith('https://') or
+         brand.viewer_url.startswith('http://') or
+         brand.viewer_url.startswith('/')) %}<a
+        href="{{ brand.viewer_url }}"
+        target="_blank"
+        style="background:var(--accent);color:#fff;border-color:var(--accent);"
+      >&#9654; Open Interactive Viewer</a>{% endif %}
     </div>
 
     <input
@@ -475,6 +483,17 @@
           {% endfor %}
         </div>
       </div>
+    </div>
+    {% endif %}
+
+    {# --- Render-failed banner --- #}
+    {% if render_failed is defined and render_failed %}
+    <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px 16px;margin-bottom:20px;color:#92400e;font-size:0.9rem;">
+      <strong>&#9888; Page screenshots unavailable.</strong>
+      The original PDF could not be rendered for visual annotation. Findings are listed in text-only mode below.
+      {% if brand and brand.viewer_url %}
+      <a href="{{ brand.viewer_url }}" target="_blank" style="color:#d97706;font-weight:600;margin-left:8px;">Open Interactive Viewer &rarr;</a>
+      {% endif %}
     </div>
     {% endif %}
 

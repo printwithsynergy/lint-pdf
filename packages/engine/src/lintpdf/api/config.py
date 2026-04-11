@@ -60,6 +60,10 @@ class Settings(BaseSettings):
     # resolved by lintpdf.reports.service.resolve_report_base_url().
     report_base_url: str = "https://reports.lintpdf.com"
 
+    # App base URL (Next.js dashboard — used to build interactive viewer links
+    # in static HTML reports).  Override via LINTPDF_APP_BASE_URL.
+    app_base_url: str = "https://app.lintpdf.com"
+
     # Admin
     admin_api_key: str = ""
 

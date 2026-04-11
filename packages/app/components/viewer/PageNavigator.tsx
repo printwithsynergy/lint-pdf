@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { PageInfo, ViewerFinding } from "./types";
-import { THUMBNAIL_DPI } from "./types";
+import { THUMBNAIL_DPI, useViewerApi } from "./types";
 
 interface PageNavigatorProps {
   pages: PageInfo[];
@@ -19,6 +19,7 @@ export function PageNavigator({
   jobId,
   onPageChange,
 }: PageNavigatorProps) {
+  const { apiBase } = useViewerApi();
   const activeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export function PageNavigator({
             }`}
           >
             <img
-              src={`/api/lintpdf/viewer/${jobId}/pages/${page.page_num}/tile?dpi=${THUMBNAIL_DPI}`}
+              src={`${apiBase}/pages/${page.page_num}/tile?dpi=${THUMBNAIL_DPI}`}
               alt={`Page ${page.page_num}`}
               className="w-full rounded"
               loading="lazy"

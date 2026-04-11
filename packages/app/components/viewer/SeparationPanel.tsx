@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useViewerApi } from "./types";
 
 interface SeparationChannel {
   name: string;
@@ -38,13 +39,14 @@ export function SeparationPanel({
   onToggleChannel,
   onSetAllChannels,
 }: SeparationPanelProps) {
+  const { apiBase } = useViewerApi();
   const [channels, setChannels] = useState<SeparationChannel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const fetchChannels = useCallback(async () => {
     try {
-      const resp = await fetch(`/api/lintpdf/viewer/${jobId}/separations`);
+      const resp = await fetch(`${apiBase}/separations`);
       if (!resp.ok) throw new Error("Failed to load separations");
       const data = await resp.json();
       setChannels(data.channels ?? []);
@@ -53,7 +55,7 @@ export function SeparationPanel({
     } finally {
       setLoading(false);
     }
-  }, [jobId]);
+  }, [apiBase]);
 
   useEffect(() => {
     fetchChannels();

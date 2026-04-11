@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useViewerApi } from "./types";
 
 interface AnnotationEntry {
   id: string;
@@ -23,12 +24,13 @@ export function AnnotationThread({
   currentUserEmail,
   onJumpToPage,
 }: AnnotationThreadProps) {
+  const { apiBase, readOnly } = useViewerApi();
   const [annotations, setAnnotations] = useState<AnnotationEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
-      const resp = await fetch(`/api/lintpdf/annotations/${jobId}`);
+      const resp = await fetch(`${apiBase.replace(/\/viewer\/.*$/, '/annotations/' + jobId)}`);
       if (resp.ok) {
         const data = await resp.json();
         setAnnotations(data);
@@ -38,7 +40,7 @@ export function AnnotationThread({
     } finally {
       setLoading(false);
     }
-  }, [jobId]);
+  }, [apiBase, jobId]);
 
   useEffect(() => {
     load();
@@ -48,7 +50,7 @@ export function AnnotationThread({
     async (annotationId: string) => {
       try {
         const resp = await fetch(
-          `/api/lintpdf/annotations/${jobId}/${annotationId}`,
+          `${apiBase.replace(/\/viewer\/.*$/, '/annotations/' + jobId)}/${annotationId}`,
           { method: "DELETE" },
         );
         if (resp.ok || resp.status === 204) {
@@ -58,7 +60,7 @@ export function AnnotationThread({
         // ignore
       }
     },
-    [jobId],
+    [apiBase, jobId],
   );
 
   if (loading) {
@@ -100,7 +102,7 @@ export function AnnotationThread({
               Jump to page
             </button>
           </div>
-          {currentUserEmail && a.authorEmail === currentUserEmail && (
+          {!readOnly && currentUserEmail && a.authorEmail === currentUserEmail && (
             <button
               onClick={() => handleDelete(a.id)}
               className="ml-2 shrink-0 rounded px-1.5 py-0.5 text-xs text-destructive hover:bg-destructive/10"

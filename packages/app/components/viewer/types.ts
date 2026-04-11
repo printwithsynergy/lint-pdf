@@ -1,5 +1,33 @@
 /** Shared types for the PDF viewer components. */
 
+import { createContext, useContext } from "react";
+
+/**
+ * Context that provides the API base URL and read-only mode to all
+ * viewer child components. In authenticated mode the base is
+ * `/api/lintpdf/viewer/{jobId}`. In public-token mode it becomes
+ * `/api/lintpdf/viewer/public/{token}` and `readOnly` is true (no
+ * annotation writing, verdict setting, or comparison initiation).
+ */
+export interface ViewerApiContextValue {
+  /** Base path for viewer API calls (no trailing slash). */
+  apiBase: string;
+  /** Base path for job-level API calls (findings, reports). */
+  jobApiBase: string;
+  /** When true, hide write-only UI (annotations, verdict, comparison). */
+  readOnly: boolean;
+}
+
+export const ViewerApiContext = createContext<ViewerApiContextValue>({
+  apiBase: "",
+  jobApiBase: "",
+  readOnly: false,
+});
+
+export function useViewerApi(): ViewerApiContextValue {
+  return useContext(ViewerApiContext);
+}
+
 export interface PageBox {
   x0: number;
   y0: number;

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComparisonState, PageInfo, ViewerConfig, ViewerFinding } from "./types";
-import { DEFAULT_VIEWER_CONFIG } from "./types";
+import { DEFAULT_VIEWER_CONFIG, ViewerApiContext } from "./types";
 import { PageCanvas } from "./PageCanvas";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./PageNavigator";
@@ -26,9 +26,18 @@ type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface PdfViewerProps {
   jobId: string;
+  /** When set, the viewer uses token-based public proxy routes (read-only). */
+  publicToken?: string;
 }
 
-export function PdfViewer({ jobId }: PdfViewerProps) {
+export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
+  const readOnly = !!publicToken;
+  const apiBase = publicToken
+    ? `/api/lintpdf/viewer/public/${publicToken}`
+    : `/api/lintpdf/viewer/${jobId}`;
+  const jobApiBase = publicToken
+    ? `/api/lintpdf/viewer/public/${publicToken}`
+    : `/api/lintpdf/jobs/${jobId}`;
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [findings, setFindings] = useState<ViewerFinding[]>([]);
   const [config, setConfig] = useState<ViewerConfig>(DEFAULT_VIEWER_CONFIG);
@@ -74,9 +83,9 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
     async function load() {
       try {
         const [pagesResp, jobResp, configResp] = await Promise.all([
-          fetch(`/api/lintpdf/viewer/${jobId}/pages`),
-          fetch(`/api/lintpdf/jobs/${jobId}`),
-          fetch(`/api/lintpdf/viewer/${jobId}/config`),
+          fetch(`${apiBase}/pages`),
+          fetch(publicToken ? `${apiBase}/findings` : `/api/lintpdf/jobs/${jobId}`),
+          fetch(`${apiBase}/config`),
         ]);
 
         if (!pagesResp.ok) throw new Error("Failed to load page data");
@@ -100,7 +109,7 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
       }
     }
     load();
-  }, [jobId]);
+  }, [jobId, apiBase, publicToken]);
 
   // Navigate to a finding
   const handleSelectFinding = useCallback(
@@ -116,7 +125,7 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
   // Load channel names when separation mode is first enabled
   useEffect(() => {
     if (viewerMode !== "separation" || allChannelNames.length > 0) return;
-    fetch(`/api/lintpdf/viewer/${jobId}/separations`)
+    fetch(`${apiBase}/separations`)
       .then((r) => r.json())
       .then((data) => {
         const names = (data.channels ?? []).map((c: { name: string }) => c.name);
@@ -124,12 +133,12 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         setEnabledChannels(new Set(names));
       })
       .catch(() => {});
-  }, [viewerMode, allChannelNames.length, jobId]);
+  }, [viewerMode, allChannelNames.length, apiBase]);
 
   // Load layer list when layer mode is first enabled
   useEffect(() => {
     if (viewerMode !== "layers" || allLayerIndices.length > 0) return;
-    fetch(`/api/lintpdf/viewer/${jobId}/layers`)
+    fetch(`${apiBase}/layers`)
       .then((r) => r.json())
       .then((data) => {
         const indices = (data.layers ?? []).map((l: { ocg_index: number }) => l.ocg_index);
@@ -137,7 +146,7 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         setEnabledLayers(new Set(indices));
       })
       .catch(() => {});
-  }, [viewerMode, allLayerIndices.length, jobId]);
+  }, [viewerMode, allLayerIndices.length, apiBase]);
 
   const handleToggleChannel = useCallback((channel: string) => {
     setEnabledChannels((prev) => {
@@ -249,7 +258,10 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
   const canvasWidth = currentPageInfo ? Math.round(currentPageInfo.width_pts * (zoom / 100)) : 0;
   const canvasHeight = currentPageInfo ? Math.round(currentPageInfo.height_pts * (zoom / 100)) : 0;
 
+  const ctxValue = { apiBase, jobApiBase, readOnly };
+
   return (
+    <ViewerApiContext.Provider value={ctxValue}>
     <div className={`flex h-[calc(100vh-4rem)] flex-col ${config.dark_mode ? "dark bg-neutral-900" : ""}`}>
       {/* Verdict bar */}
       <VerdictBar jobId={jobId} config={config} />
@@ -273,8 +285,8 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         onToggleBoxOverlay={() => setShowBoxOverlay((v) => !v)}
       />
 
-      {/* Annotation toolbar */}
-      {viewerMode === "annotation" && (
+      {/* Annotation toolbar (hidden in read-only / public mode) */}
+      {viewerMode === "annotation" && !readOnly && (
         <div className="flex justify-center border-b bg-muted/30 px-4 py-1">
           <AnnotationToolbar
             activeTool={annotationTool}
@@ -439,5 +451,6 @@ export function PdfViewer({ jobId }: PdfViewerProps) {
         </div>
       </div>
     </div>
+    </ViewerApiContext.Provider>
   );
 }

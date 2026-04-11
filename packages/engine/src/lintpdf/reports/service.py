@@ -102,6 +102,7 @@ class BrandingContext:
     footer_text: str | None = "Powered by LintPDF"
     pdf_download_url: str | None = None
     report_url: str | None = None
+    viewer_url: str | None = None
 
 
 @dataclass
@@ -170,6 +171,11 @@ class ReportService:
             branding.pdf_download_url = f"{report_base_url}/r/{tokens['pdf']}.pdf"
         if "html" in tokens:
             branding.report_url = f"{report_base_url}/r/{tokens['html']}"
+            # Link to the interactive viewer (served by the Next.js app)
+            from lintpdf.api.config import get_settings as _get_settings
+
+            app_base = _get_settings().app_base_url.rstrip("/")
+            branding.viewer_url = f"{app_base}/view/{tokens['html']}"
 
         # Fetch original PDF bytes for page screenshot rendering (lazy, once).
         # Executive reports skip screenshots entirely — no PDF fetch needed.
@@ -286,14 +292,25 @@ class ReportService:
         gracefully to text-only mode without page screenshots.
         """
         file_key = result_json.get("metadata", {}).get("file_key", "")
+        job_id = result_json.get("job_id", "unknown")
         if not file_key:
-            logger.debug("No file_key in result_json — reports will render without page screenshots")
+            logger.error(
+                "No file_key in result_json for job %s — "
+                "report will render without page screenshots",
+                job_id,
+            )
             return None
 
         try:
             return self._storage.download_pdf(file_key)
         except Exception:
-            logger.warning("Failed to download original PDF for report screenshots (file_key=%s)", file_key)
+            logger.error(
+                "Failed to download original PDF for report screenshots "
+                "(job_id=%s, file_key=%s)",
+                job_id,
+                file_key,
+                exc_info=True,
+            )
             return None
 
     def _generate_format(

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 import type { ColorSample } from "./types";
+import { useViewerApi } from "./types";
 
 interface DensitometerToolProps {
   jobId: string;
@@ -20,6 +21,7 @@ export function DensitometerTool({
   canvasWidth,
   canvasHeight,
 }: DensitometerToolProps) {
+  const { apiBase } = useViewerApi();
   const [sample, setSample] = useState<ColorSample | null>(null);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,7 +41,7 @@ export function DensitometerTool({
 
       try {
         const resp = await fetch(
-          `/api/lintpdf/viewer/${jobId}/pages/${pageNum}/sample?x=${pdfX.toFixed(1)}&y=${pdfY.toFixed(1)}&dpi=300`,
+          `${apiBase}/pages/${pageNum}/sample?x=${pdfX.toFixed(1)}&y=${pdfY.toFixed(1)}&dpi=300`,
         );
         if (resp.ok) {
           const data = await resp.json();
@@ -51,7 +53,7 @@ export function DensitometerTool({
         setLoading(false);
       }
     },
-    [jobId, pageNum, pageWidthPts, pageHeightPts, canvasWidth, canvasHeight],
+    [apiBase, pageNum, pageWidthPts, pageHeightPts, canvasWidth, canvasHeight],
   );
 
   return (

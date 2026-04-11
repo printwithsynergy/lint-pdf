@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PageInfo, ViewerFinding } from "./types";
-import { DEFAULT_DPI, SEVERITY_COLORS } from "./types";
+import { DEFAULT_DPI, SEVERITY_COLORS, useViewerApi } from "./types";
 
 interface PageCanvasProps {
   jobId: string;
@@ -21,6 +21,7 @@ export function PageCanvas({
   selectedFinding,
   onFindingClick,
 }: PageCanvasProps) {
+  const { apiBase } = useViewerApi();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tileImg, setTileImg] = useState<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,13 +40,13 @@ export function PageCanvas({
     setLoading(true);
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = `/api/lintpdf/viewer/${jobId}/pages/${page.page_num}/tile?dpi=${dpi}`;
+    img.src = `${apiBase}/pages/${page.page_num}/tile?dpi=${dpi}`;
     img.onload = () => {
       setTileImg(img);
       setLoading(false);
     };
     img.onerror = () => setLoading(false);
-  }, [jobId, page.page_num, dpi]);
+  }, [apiBase, page.page_num, dpi]);
 
   // Render canvas
   const draw = useCallback(() => {
