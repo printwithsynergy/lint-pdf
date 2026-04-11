@@ -958,3 +958,79 @@ async def get_all_ai_usage(
         "page": page,
         "page_size": page_size,
     }
+
+
+# ── Site-level branding (Prisma AppSettings — shared DB) ──────────
+
+
+class SiteBrandingRequest(BaseModel):
+    """Update Pixie Dust AppSettings branding columns.
+
+    The engine and the Next.js app share the same PostgreSQL database.
+    This endpoint updates the Prisma-managed AppSettings table directly
+    via raw SQL so the login page, dashboard, and emails reflect the
+    configured brand identity.
+    """
+
+    app_name: str | None = None
+    brand_logo_url: str | None = None
+    brand_logo_url_dark: str | None = None
+    primary_color: str | None = None
+    accent_color: str | None = None
+    favicon_url: str | None = None
+    login_bg_color: str | None = None
+    login_heading: str | None = None
+    login_subheading: str | None = None
+
+
+@router.patch("/site-branding")
+async def update_site_branding(
+    body: SiteBrandingRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """Update the Pixie Dust AppSettings branding (admin only).
+
+    Writes directly to the shared PostgreSQL database's AppSettings table
+    that the Next.js app reads for login page, dashboard, and email branding.
+    """
+    from sqlalchemy import text
+
+    # Build SET clause from non-null fields
+    updates: dict[str, str] = {}
+    if body.app_name is not None:
+        updates['"appName"'] = body.app_name
+    if body.brand_logo_url is not None:
+        updates['"brandLogoUrl"'] = body.brand_logo_url
+    if body.brand_logo_url_dark is not None:
+        updates['"brandLogoUrlDark"'] = body.brand_logo_url_dark
+    if body.primary_color is not None:
+        updates['"primaryColor"'] = body.primary_color
+    if body.accent_color is not None:
+        updates['"accentColor"'] = body.accent_color
+    if body.favicon_url is not None:
+        updates['"faviconUrl"'] = body.favicon_url
+    if body.login_bg_color is not None:
+        updates['"loginBgColor"'] = body.login_bg_color
+    if body.login_heading is not None:
+        updates['"loginHeading"'] = body.login_heading
+    if body.login_subheading is not None:
+        updates['"loginSubheading"'] = body.login_subheading
+
+    if not updates:
+        return {"updated": False, "message": "No fields to update"}
+
+    # Build parameterized UPDATE
+    set_clauses = []
+    params: dict[str, str] = {}
+    for i, (col, val) in enumerate(updates.items()):
+        param_name = f"v{i}"
+        set_clauses.append(f"{col} = :{param_name}")
+        params[param_name] = val
+
+    sql = f'UPDATE "AppSettings" SET {", ".join(set_clauses)}'
+    db.execute(text(sql), params)
+    db.commit()
+
+    return {"updated": True, "fields": list(updates.keys())}
+
