@@ -14,7 +14,6 @@ export default function BetaJoinPage() {
   const [company, setCompany] = useState("");
   const [useCase, setUseCase] = useState("");
   const [state, setState] = useState<FormState>("idle");
-  const [position, setPosition] = useState<number | null>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -44,7 +43,6 @@ export default function BetaJoinPage() {
           setState("duplicate");
           return;
         }
-        setPosition(data.position ?? null);
         setState("success");
       } catch {
         setState("error");
@@ -83,11 +81,6 @@ export default function BetaJoinPage() {
             <p className="text-slate-500 mb-1">
               We&rsquo;ll email you when your spot is ready.
             </p>
-            {position !== null && (
-              <p className="text-sm text-slate-400 mb-6">
-                Position: #{position}
-              </p>
-            )}
             <Link
               href="/"
               className="inline-block rounded-xl bg-brand-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-800"

@@ -17,7 +17,6 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
   const [company, setCompany] = useState("");
   const [useCase, setUseCase] = useState("");
   const [state, setState] = useState<FormState>("idle");
-  const [position, setPosition] = useState<number | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -55,7 +54,6 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
           setState("duplicate");
           return;
         }
-        setPosition(data.position ?? null);
         setState("success");
       } catch {
         setState("error");
@@ -70,7 +68,6 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
     setName("");
     setCompany("");
     setUseCase("");
-    setPosition(null);
     onClose();
   }, [onClose]);
 
@@ -128,9 +125,6 @@ export function WaitlistModal({ open, onClose }: WaitlistModalProps) {
             <p className="text-slate-500 mb-1">
               We&rsquo;ll email you when your spot is ready.
             </p>
-            {position !== null && (
-              <p className="text-sm text-slate-400">Position: #{position}</p>
-            )}
             <button
               type="button"
               onClick={handleClose}

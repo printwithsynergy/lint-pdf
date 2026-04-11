@@ -56,10 +56,8 @@ export async function POST(req: Request) {
       },
     });
 
-    const position = await prisma.waitlistEntry.count();
-
     return NextResponse.json(
-      { id: entry.id, position },
+      { id: entry.id },
       { status: 201, headers: corsHeaders },
     );
   } catch (err) {
