@@ -223,6 +223,24 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       }) as RouteHandler,
     },
 
+    // ── Check name registry ─────────────────────────────────
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/check-names",
+      auth: true,
+      permission: "preflight:view",
+      description: "Get human-friendly check name registry",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(engineUrl("/api/v1/check-names"), { headers: authHeaders() });
+        if (!resp.ok) return { status: resp.status, body: {} };
+        return {
+          status: 200,
+          body: await resp.json(),
+          headers: { "Cache-Control": "public, max-age=86400" },
+        } as RouteResponse;
+      }) as RouteHandler,
+    },
+
     // ── Viewer config ──────────────────────────────────────
     {
       method: "GET" as HttpMethod,
@@ -546,6 +564,21 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
         const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/config`), { headers: authHeaders() });
         if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
         return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/public/:token/check-names",
+      auth: false,
+      description: "Public: get human-friendly check name registry",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(engineUrl("/api/v1/check-names"), { headers: authHeaders() });
+        if (!resp.ok) return { status: resp.status, body: {} };
+        return {
+          status: 200,
+          body: await resp.json(),
+          headers: { "Cache-Control": "public, max-age=86400" },
+        } as RouteResponse;
       }) as RouteHandler,
     },
     {

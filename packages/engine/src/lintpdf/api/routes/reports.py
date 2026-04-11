@@ -559,3 +559,23 @@ async def get_token_findings(
             for f in findings
         ]
     }
+
+
+# --- Check name registry endpoint ---
+
+
+@router.get("/api/v1/check-names")
+async def get_check_names() -> dict:
+    """Return the human-friendly check name registry.
+
+    Static data — clients should cache aggressively.
+    """
+    try:
+        from lintpdf.reports.check_names import CHECK_NAMES
+
+        return {
+            check_id: {"name": info.name, "description": info.description}
+            for check_id, info in CHECK_NAMES.items()
+        }
+    except ImportError:
+        return {}

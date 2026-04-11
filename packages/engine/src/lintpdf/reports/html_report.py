@@ -40,8 +40,24 @@ def _build_template_context(  # skipcq: PY-R1000
     # Group findings by page
     findings_by_page: dict[int, list[dict[str, Any]]] = {}
     all_finding_dicts: list[dict[str, Any]] = []
+
+    # Load friendly check names
+    try:
+        from lintpdf.reports.check_names import get_check_info
+    except ImportError:
+        from dataclasses import dataclass as _dc
+
+        @_dc(frozen=True)
+        class _Fallback:
+            name: str = ""
+            description: str = ""
+
+        def get_check_info(_id: str) -> _Fallback:  # type: ignore[misc]
+            return _Fallback()
+
     for f in result.findings:
         page = f.page_num or 0
+        info = get_check_info(f.inspection_id)
         finding_dict: dict[str, Any] = {
             "inspection_id": f.inspection_id,
             "severity": f.severity.value if hasattr(f.severity, "value") else str(f.severity),
@@ -54,6 +70,9 @@ def _build_template_context(  # skipcq: PY-R1000
             "page_num": f.page_num,
             "iso_clause": getattr(f, "iso_clause", ""),
             "details": f.details if hasattr(f, "details") else {},
+            "friendly_name": info.name,
+            "friendly_description": info.description,
+            "thumbnail_base64": "",  # populated below
         }
         all_finding_dicts.append(finding_dict)
         if page not in findings_by_page:
@@ -95,6 +114,21 @@ def _build_template_context(  # skipcq: PY-R1000
     elif pdf_bytes is None and detail_level != ReportDetailLevel.EXECUTIVE:
         render_failed = True
         logger.error("pdf_bytes is None — report will render in text-only mode (no page screenshots)")
+
+    # Generate per-finding cropped thumbnails (standard + comprehensive)
+    if pdf_bytes is not None and detail_level != ReportDetailLevel.EXECUTIVE:
+        try:
+            from lintpdf.reports.page_renderer import render_finding_thumbnails
+
+            render_finding_thumbnails(pdf_bytes, all_finding_dicts, dpi=120)
+        except Exception:
+            logger.exception("Failed to render per-finding thumbnails")
+
+    # Build sorted flat list of all findings (errors first)
+    all_findings_sorted = sorted(
+        all_finding_dicts,
+        key=lambda fd: (severity_order.get(fd["severity"], 3), fd.get("page_num") or 0),
+    )
 
     # Extract comprehensive-only data
     ink_separations: list[dict[str, Any]] = []
@@ -144,6 +178,7 @@ def _build_template_context(  # skipcq: PY-R1000
         # Detail level controls
         "detail_level": detail_level,
         "top_findings": top_findings,
+        "all_findings_sorted": all_findings_sorted,
         # Comprehensive-only data
         "ink_separations": ink_separations,
         "ink_tac_by_page": ink_tac_by_page,

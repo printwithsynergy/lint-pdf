@@ -438,3 +438,144 @@ def render_page_thumbnail(
     except Exception:
         logger.debug("Failed to render thumbnail for page %d", page_num)
         return ""
+
+
+# ---------------------------------------------------------------------------
+# Per-finding cropped thumbnails
+# ---------------------------------------------------------------------------
+
+THUMB_PADDING = 60  # pixels around bbox in cropped thumbnail
+THUMB_MAX_W = 240
+THUMB_MAX_H = 180
+
+
+def _crop_finding_thumbnail(
+    page_img: Image.Image,
+    finding: dict[str, Any],
+    media_box: tuple[float, float, float, float],
+) -> str:
+    """Crop a page image around a finding's bbox and draw a severity highlight.
+
+    Returns a base64-encoded PNG of the cropped area, or an empty string
+    if the finding has no bounding box.
+    """
+    bbox = finding.get("bbox")
+    has_bbox = bbox is not None and len(bbox) == 4 and bbox[0] is not None
+    severity = finding.get("severity", "advisory")
+
+    if has_bbox:
+        px = _pdf_bbox_to_pixels(
+            tuple(bbox),  # type: ignore[arg-type]
+            media_box,
+            page_img.width,
+            page_img.height,
+        )
+        px_x0, px_y0, px_x1, px_y1 = px
+
+        # Skip degenerate boxes — fall back to center crop
+        if px_x1 - px_x0 < 4 or px_y1 - px_y0 < 4:
+            has_bbox = False
+
+    if has_bbox:
+        # Crop around bbox with padding
+        crop_x0 = max(0, px_x0 - THUMB_PADDING)
+        crop_y0 = max(0, px_y0 - THUMB_PADDING)
+        crop_x1 = min(page_img.width, px_x1 + THUMB_PADDING)
+        crop_y1 = min(page_img.height, px_y1 + THUMB_PADDING)
+
+        cropped = page_img.crop((crop_x0, crop_y0, crop_x1, crop_y1)).copy()
+
+        # Draw severity highlight on the cropped image
+        overlay = Image.new("RGBA", cropped.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        fill = SEVERITY_FILL.get(severity, SEVERITY_FILL["advisory"])
+        stroke = SEVERITY_STROKE.get(severity, SEVERITY_STROKE["advisory"])
+
+        # Bbox position relative to crop
+        rel_x0 = px_x0 - crop_x0
+        rel_y0 = px_y0 - crop_y0
+        rel_x1 = px_x1 - crop_x0
+        rel_y1 = px_y1 - crop_y0
+        draw.rectangle([rel_x0, rel_y0, rel_x1, rel_y1], fill=fill, outline=stroke, width=3)
+
+        if cropped.mode != "RGBA":
+            cropped = cropped.convert("RGBA")
+        composited = Image.alpha_composite(cropped, overlay).convert("RGB")
+    else:
+        # No bbox — crop center of page
+        cw = min(page_img.width, THUMB_MAX_W * 2)
+        ch = min(page_img.height, THUMB_MAX_H * 2)
+        cx = page_img.width // 2
+        cy = page_img.height // 3  # bias toward top of page
+        crop_x0 = max(0, cx - cw // 2)
+        crop_y0 = max(0, cy - ch // 2)
+        crop_x1 = min(page_img.width, crop_x0 + cw)
+        crop_y1 = min(page_img.height, crop_y0 + ch)
+        composited = page_img.crop((crop_x0, crop_y0, crop_x1, crop_y1)).copy()
+        if composited.mode != "RGB":
+            composited = composited.convert("RGB")
+
+    # Resize to thumbnail
+    composited.thumbnail((THUMB_MAX_W, THUMB_MAX_H), Image.LANCZOS)
+
+    buf = io.BytesIO()
+    composited.save(buf, format="PNG", optimize=True)
+    return base64.b64encode(buf.getvalue()).decode("ascii")
+
+
+def render_finding_thumbnails(
+    pdf_bytes: bytes,
+    findings: list[dict[str, Any]],
+    *,
+    dpi: int = 120,
+    max_pages: int = MAX_PAGES,
+) -> None:
+    """Render cropped thumbnails for each finding, in-place.
+
+    Adds ``thumbnail_base64`` key to each finding dict. Caches page images
+    so each page is rendered only once regardless of how many findings it has.
+
+    Args:
+        pdf_bytes: Raw PDF bytes.
+        findings: List of finding dicts (modified in-place).
+        dpi: Render resolution for page images.
+        max_pages: Max distinct pages to render.
+    """
+    if not _check_poppler():
+        return
+
+    from lintpdf.ai.rendering import render_page_to_image
+
+    # Cache rendered page images + media boxes
+    page_cache: dict[int, tuple[Image.Image, tuple[float, float, float, float]]] = {}
+    rendered_pages = 0
+
+    for finding in findings:
+        page_num = finding.get("page_num", 0)
+        if page_num < 1:
+            finding["thumbnail_base64"] = ""
+            continue
+
+        # Render page if not cached
+        if page_num not in page_cache:
+            if rendered_pages >= max_pages:
+                finding["thumbnail_base64"] = ""
+                continue
+            try:
+                png_bytes = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
+                img = Image.open(io.BytesIO(png_bytes)).convert("RGB")
+                media_box = _get_page_media_box(pdf_bytes, page_num)
+                page_cache[page_num] = (img, media_box)
+                rendered_pages += 1
+            except Exception:
+                logger.debug("Failed to render page %d for thumbnails", page_num)
+                finding["thumbnail_base64"] = ""
+                continue
+
+        img, media_box = page_cache[page_num]
+
+        try:
+            finding["thumbnail_base64"] = _crop_finding_thumbnail(img, finding, media_box)
+        except Exception:
+            logger.debug("Failed to crop thumbnail for finding on page %d", page_num)
+            finding["thumbnail_base64"] = ""
