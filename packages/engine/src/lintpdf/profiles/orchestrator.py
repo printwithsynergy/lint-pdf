@@ -154,6 +154,9 @@ class PreflightOrchestrator:
         except Exception:
             pass
 
+        # Step 9b: Enrich findings with bounding boxes from events
+        findings = self._enrich_bboxes(findings, events)
+
         # Step 10: Build result
         duration_ms = int((time.monotonic() - start) * 1000)
         summary = self._build_summary(findings, document.page_count, len(pdf_bytes))
@@ -573,6 +576,96 @@ class PreflightOrchestrator:
             result.append(finding)
 
         return result
+
+    @staticmethod
+    def _enrich_bboxes(
+        findings: list[Finding], events: list[Any]
+    ) -> list[Finding]:
+        """Enrich findings with bounding boxes from content stream events.
+
+        Matches findings to events by page_num + object_id. For images,
+        the bbox is derived from the CTM. For text, it uses the event's
+        existing bbox field. Findings that already have a bbox are not
+        modified.
+        """
+        from lintpdf.semantic.events import (
+            ImagePlacedEvent,
+            PathPaintingEvent,
+            TextRenderedEvent,
+        )
+
+        # Build lookup: (page_num, object_id_or_font) → bbox
+        event_bboxes: dict[tuple[int, str], tuple[float, float, float, float]] = {}
+
+        for ev in events:
+            if isinstance(ev, ImagePlacedEvent):
+                # Derive bbox from CTM: image occupies a 1x1 unit square
+                # transformed by the CTM.
+                ctm = ev.ctm
+                if hasattr(ctm, "a"):
+                    x = ctm.e if hasattr(ctm, "e") else 0
+                    y = ctm.f if hasattr(ctm, "f") else 0
+                    w = abs(ctm.a) if hasattr(ctm, "a") else 0
+                    h = abs(ctm.d) if hasattr(ctm, "d") else 0
+                    if w > 0 and h > 0:
+                        event_bboxes[(ev.page_num, ev.image_name)] = (x, y, x + w, y + h)
+                elif isinstance(ctm, (list, tuple)) and len(ctm) >= 6:
+                    x, y = float(ctm[4]), float(ctm[5])
+                    w, h = abs(float(ctm[0])), abs(float(ctm[3]))
+                    if w > 0 and h > 0:
+                        event_bboxes[(ev.page_num, ev.image_name)] = (x, y, x + w, y + h)
+
+            elif isinstance(ev, TextRenderedEvent) and ev.bbox:
+                event_bboxes[(ev.page_num, ev.font_name)] = ev.bbox
+
+            elif isinstance(ev, PathPaintingEvent):
+                if hasattr(ev, "bbox") and ev.bbox:
+                    key = f"path_{ev.operator_index}"
+                    event_bboxes[(ev.page_num, key)] = ev.bbox
+
+        if not event_bboxes:
+            return findings
+
+        enriched: list[Finding] = []
+        for f in findings:
+            if f.bbox is not None or f.page_num < 1:
+                enriched.append(f)
+                continue
+
+            # Try to match by (page_num, object_id)
+            bbox = None
+            if f.object_id:
+                bbox = event_bboxes.get((f.page_num, f.object_id))
+
+            # Fallback: match by object_id prefix (e.g., "FormXob.abc" → "abc")
+            if bbox is None and f.object_id and "." in f.object_id:
+                short_id = f.object_id.split(".")[-1]
+                bbox = event_bboxes.get((f.page_num, short_id))
+
+            # Fallback: match font name from details
+            if bbox is None and f.details:
+                font = f.details.get("font_name", "")
+                if font:
+                    bbox = event_bboxes.get((f.page_num, font))
+
+            if bbox is not None:
+                enriched.append(Finding(
+                    inspection_id=f.inspection_id,
+                    severity=f.severity,
+                    message=f.message,
+                    page_num=f.page_num,
+                    details=f.details,
+                    iso_clause=f.iso_clause,
+                    object_id=f.object_id,
+                    object_type=f.object_type,
+                    bbox=bbox,
+                    source=f.source,
+                    category=f.category,
+                ))
+            else:
+                enriched.append(f)
+
+        return enriched
 
     @staticmethod
     def _build_summary(
