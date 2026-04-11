@@ -17,7 +17,7 @@ export function middleware(request: NextRequest) {
   const result = evaluateMiddleware(
     {
       cookieName: appConfig.cookieName,
-      publicPaths: ["/view"],
+      publicPaths: ["/view", "/api/waitlist"],
       rateLimitExemptPaths: [
         "/api/auth/magic-link/status",
         "/api/auth/claim-session",
@@ -25,6 +25,7 @@ export function middleware(request: NextRequest) {
         "/api/lintpdf",
         "/api/auth",
         "/api/trpc",
+        "/api/waitlist",
       ],
     },
     {
