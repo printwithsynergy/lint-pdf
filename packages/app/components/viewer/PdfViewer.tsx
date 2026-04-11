@@ -24,7 +24,7 @@ import { MobileBottomSheet } from "./MobileBottomSheet";
 import type { SnapPosition } from "./MobileBottomSheet";
 import { MobileDrawer } from "./MobileDrawer";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health";
 type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface PdfViewerProps {
@@ -107,6 +107,15 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     for (const f of findings) counts[f.severity]++;
     return counts;
   }, [findings]);
+
+  // Health score
+  const health = useMemo(() => {
+    const { error, warning, advisory } = findingsSummary;
+    const score = Math.max(0, Math.min(100, Math.round(100 - error * 10 - warning * 3 - advisory * 0.5)));
+    const grade = score >= 90 ? "A" : score >= 80 ? "B" : score >= 70 ? "C" : score >= 60 ? "D" : "F";
+    const color = score >= 80 ? "#22c55e" : score >= 70 ? "#f59e0b" : "#ef4444";
+    return { score, grade, color };
+  }, [findingsSummary]);
 
   // Load pages + findings + config on mount
   useEffect(() => {
@@ -310,6 +319,61 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
 
   // Determine what to render in the left panel
   const renderLeftPanel = () => {
+    if (viewerMode === "health") {
+      return (
+        <div className="flex flex-col gap-4 p-4 text-slate-200">
+          {/* Health gauge */}
+          <div className="flex items-center gap-4">
+            <div
+              className="flex h-20 w-20 shrink-0 items-center justify-center rounded-full border-[6px]"
+              style={{ borderColor: health.color }}
+            >
+              <div className="text-center">
+                <div className="text-2xl font-extrabold leading-none" style={{ color: health.color }}>{health.score}</div>
+                <div className="text-[10px] text-slate-500">/100</div>
+              </div>
+            </div>
+            <div>
+              <div className="text-lg font-bold" style={{ color: health.color }}>Grade {health.grade}</div>
+              <div className="text-xs text-slate-400">{config.enable_findings_panel ? `${findingsSummary.error + findingsSummary.warning + findingsSummary.advisory} total findings` : ""}</div>
+            </div>
+          </div>
+
+          {/* Finding breakdown bars */}
+          <div className="space-y-2">
+            {([
+              { label: "Errors", count: findingsSummary.error, color: "#ef4444", max: Math.max(findingsSummary.error, findingsSummary.warning, findingsSummary.advisory, 1) },
+              { label: "Warnings", count: findingsSummary.warning, color: "#f59e0b", max: Math.max(findingsSummary.error, findingsSummary.warning, findingsSummary.advisory, 1) },
+              { label: "Advisory", count: findingsSummary.advisory, color: "#3b82f6", max: Math.max(findingsSummary.error, findingsSummary.warning, findingsSummary.advisory, 1) },
+            ] as const).map(({ label, count, color, max }) => (
+              <div key={label}>
+                <div className="mb-0.5 flex items-center justify-between text-xs">
+                  <span className="text-slate-400">{label}</span>
+                  <span className="font-bold" style={{ color }}>{count}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${(count / max) * 100}%`, backgroundColor: color }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* File info */}
+          <div className="space-y-1 border-t border-slate-700 pt-3 text-xs text-slate-400">
+            <div><span className="text-slate-500">Pages:</span> {pages.length}</div>
+            <div><span className="text-slate-500">Profile:</span> {config.brand_name}</div>
+          </div>
+
+          {/* Verdict */}
+          <div className="rounded-lg border border-slate-700 p-3 text-center">
+            <div className={`text-lg font-extrabold ${findingsSummary.error > 0 ? "text-red-400" : "text-green-400"}`}>
+              {findingsSummary.error > 0 ? "FAIL" : "PASS"}
+            </div>
+            <div className="text-[10px] text-slate-500">Auto verdict from preflight</div>
+          </div>
+        </div>
+      );
+    }
     if (viewerMode === "annotation") {
       return <AnnotationThread jobId={jobId} onJumpToPage={setCurrentPage} />;
     }
@@ -424,7 +488,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             {/* Active mode badge */}
             {viewerMode !== "normal" && (
               <span className="shrink-0 rounded-full bg-blue-500/30 px-1.5 py-0.5 text-[10px] font-bold text-blue-300">
-                {viewerMode === "separation" ? "CMYK" : viewerMode === "layers" ? "LAYERS" : viewerMode === "annotation" ? "ANNOTATE" : "COMPARE"}
+                {viewerMode === "separation" ? "CMYK" : viewerMode === "layers" ? "LAYERS" : viewerMode === "annotation" ? "ANNOTATE" : viewerMode === "health" ? "HEALTH" : "COMPARE"}
               </span>
             )}
             {(showTacHeatmap || measureMode !== "none") && (

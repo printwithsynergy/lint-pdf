@@ -15,8 +15,8 @@ interface MobileBottomSheetProps {
 
 const SNAP_HEIGHTS: Record<SnapPosition, string> = {
   collapsed: "64px",
-  half: "50vh",
-  full: "90vh",
+  half: "35vh",
+  full: "85vh",
 };
 
 const SNAP_ORDER: SnapPosition[] = ["collapsed", "half", "full"];

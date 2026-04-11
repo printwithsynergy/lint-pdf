@@ -5,7 +5,7 @@ import type { ViewerConfig } from "./types";
 import { useViewerApi } from "./types";
 import { ZoomControls } from "./ZoomControls";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health";
 type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface MobileDrawerProps {
@@ -260,6 +260,12 @@ export function MobileDrawer({
 
           {/* ── View Modes ── */}
           <DrawerSection title="View" defaultOpen>
+            <DrawerItem
+              label="Health Report"
+              icon={Icons.report}
+              active={viewerMode === "health"}
+              onClick={() => handlePanelMode(() => onToggleMode("health"))}
+            />
             <DrawerItem
               label="Findings"
               icon={Icons.findings}

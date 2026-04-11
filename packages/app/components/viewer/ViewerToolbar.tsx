@@ -4,7 +4,7 @@ import { ZoomControls } from "./ZoomControls";
 import type { ViewerConfig } from "./types";
 import { DEFAULT_VIEWER_CONFIG, useViewerApi } from "./types";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health";
 type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface ViewerToolbarProps {
@@ -157,6 +157,15 @@ export function ViewerToolbar({
 
       {/* Tool buttons (icon-only with tooltips) */}
       <div className="flex items-center gap-0.5">
+        {onToggleMode && (
+          <ToolButton
+            label="Health Report"
+            icon="Health"
+            active={viewerMode === "health"}
+            onClick={() => onToggleMode("health")}
+          />
+        )}
+
         {config.enable_separations && onToggleMode && (
           <ToolButton
             label="Separations"
