@@ -7,6 +7,7 @@ import uuid as uuid_mod
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from pydantic import BaseModel as _BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session  # noqa: TC002
 
@@ -574,7 +575,7 @@ async def set_brand_profile_custom_domain(
 # --- White-label app/viewer custom domain (customer self-service) ---
 
 
-class AppCustomDomainResponse(BaseModel):
+class AppCustomDomainResponse(_BaseModel):
     tenant_id: str | None = None
     domain: str | None = None
     verified: bool = False
