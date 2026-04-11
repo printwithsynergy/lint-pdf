@@ -997,9 +997,10 @@ async def update_site_branding(
     from sqlalchemy import text
 
     # Build SET clause from non-null fields
+    # Column names must match the Prisma schema exactly (camelCase, quoted)
     updates: dict[str, str] = {}
     if body.app_name is not None:
-        updates['"appName"'] = body.app_name
+        updates['"brandName"'] = body.app_name
     if body.brand_logo_url is not None:
         updates['"brandLogoUrl"'] = body.brand_logo_url
     if body.brand_logo_url_dark is not None:

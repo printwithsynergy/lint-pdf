@@ -122,7 +122,17 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         if (configResp.ok) {
           const configData = await configResp.json();
           setConfig({ ...DEFAULT_VIEWER_CONFIG, ...configData });
-          setZoom(configData.default_zoom ?? 100);
+
+          // Auto-fit zoom on mobile: fit page width to screen
+          const firstPage = (pagesData.pages ?? [])[0];
+          if (window.innerWidth < 768 && firstPage) {
+            const ptsToPixels = 150 / 72; // DEFAULT_DPI / 72
+            const pagePixelWidth = firstPage.width_pts * ptsToPixels;
+            const fitZoom = Math.round(((window.innerWidth - 16) / pagePixelWidth) * 100);
+            setZoom(Math.max(25, Math.min(200, fitZoom)));
+          } else {
+            setZoom(configData.default_zoom ?? 100);
+          }
         }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to load viewer");
