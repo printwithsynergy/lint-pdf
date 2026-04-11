@@ -90,6 +90,7 @@ class Tenant(Base):
     brand_hide_footer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     report_default_expiry_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     report_email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    report_summary_page: Mapped[str] = mapped_column(String(10), nullable=False, default="prepend")
     report_storage_used_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     default_brand_profile_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
     entitlement_overrides: Mapped[dict[str, Any] | None] = mapped_column(

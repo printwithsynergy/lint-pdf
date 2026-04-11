@@ -84,6 +84,7 @@ def _auto_generate_reports(
             enriched, fmt, branding,
             pdf_bytes=pdf_bytes,
             detail_level=ReportDetailLevel.COMPREHENSIVE,
+            summary_page="prepend",
         )
         if content is None:
             continue

@@ -38,6 +38,7 @@ class GenerateReportsRequest(BaseModel):
     email_to: str | None = None
     branding: BrandingOverride | None = None
     detail_level: str = "standard"  # "executive", "standard", "comprehensive"
+    summary_page: str | None = None  # "prepend" (default ON), "only", "off"
 
 
 class ReportInfo(BaseModel):
@@ -288,6 +289,7 @@ async def generate_reports(  # skipcq: PY-R1000
                 tenant, active_profile, entitlements, settings
             ),
             detail_level=detail_level,
+            summary_page=body.summary_page or getattr(tenant, "report_summary_page", None) or "prepend",
         ),
     )
 

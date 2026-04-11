@@ -146,11 +146,119 @@
   </head>
   <body>
 
+    {# ===== SUMMARY PAGE (cover sheet) ===== #}
+    {% if summary_page in ("prepend", "only") %}
+    <div class="summary-cover" style="page-break-after: always; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+      {# Cover header #}
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 3px solid {{ brand.primary_color if brand else '#1e3a8a' }}; padding-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          {% if brand and brand.logo_url %}
+            {% if brand.logo_url.startswith('data:image/svg') %}
+              {{ brand.logo_url | decode_svg_data_uri }}
+            {% else %}
+              <img src="{{ brand.logo_url }}" alt="" style="height: 40px; width: auto;" />
+            {% endif %}
+          {% endif %}
+          <div>
+            <div style="font-size: 20px; font-weight: 700; color: {{ brand.primary_color if brand else '#1e3a8a' }};">{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %}</div>
+            <div style="font-size: 11px; color: #6b7280;">Preflight Summary</div>
+          </div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-size: 11px; color: #6b7280;">{{ generated_at }}</div>
+          <div style="font-size: 11px; color: #6b7280;">{{ file_name }}</div>
+        </div>
+      </div>
+
+      {# Health score + verdict row #}
+      <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+        {# Health gauge #}
+        <div style="text-align: center; min-width: 120px;">
+          <div style="width: 100px; height: 100px; border-radius: 50%; border: 8px solid {{ health.color }}; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
+            <div>
+              <div style="font-size: 32px; font-weight: 800; color: {{ health.color }}; line-height: 1;">{{ health.score }}</div>
+              <div style="font-size: 11px; color: #6b7280; margin-top: -2px;">/100</div>
+            </div>
+          </div>
+          <div style="font-size: 14px; font-weight: 700; color: {{ health.color }};">Grade {{ health.grade }}</div>
+        </div>
+
+        {# Stats #}
+        <div style="flex: 1;">
+          <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+            <div style="display: inline-block; padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 700; color: white; background: {{ badge_color }};">{{ pass_fail }}</div>
+            <div style="font-size: 12px; color: #6b7280; padding-top: 8px;">{% if summary %}{{ summary.page_count }} page{{ 's' if summary.page_count != 1 else '' }} &middot; {{ summary.total_findings }} findings{% endif %}</div>
+          </div>
+          <div style="display: flex; gap: 16px;">
+            <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #ef4444;">{{ summary.error_count }}</div><div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Errors</div></div>
+            <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #f59e0b;">{{ summary.warning_count }}</div><div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Warnings</div></div>
+            <div style="text-align: center;"><div style="font-size: 24px; font-weight: 700; color: #3b82f6;">{{ summary.advisory_count }}</div><div style="font-size: 10px; color: #6b7280; text-transform: uppercase;">Advisory</div></div>
+          </div>
+        </div>
+
+        {# Color info #}
+        <div style="min-width: 160px; padding: 8px 12px; background: #f8fafc; border-radius: 8px; font-size: 11px;">
+          <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 6px;">Color Profile</div>
+          <div style="margin-bottom: 4px;">Spaces: {{ summary_color_info.color_spaces | join(', ') }}</div>
+          {% if summary_color_info.spot_colors %}<div style="margin-bottom: 4px;">Spots: {{ summary_color_info.spot_colors | join(', ') }}</div>{% endif %}
+          {% if summary_color_info.max_tac > 0 %}<div>Max TAC: {{ summary_color_info.max_tac }}%</div>{% endif %}
+        </div>
+      </div>
+
+      {# Page thumbnails grid #}
+      {% if page_thumbnails %}
+      <div style="margin-bottom: 20px;">
+        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px;">Page Preview</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          {% for thumb in page_thumbnails %}
+          {% if thumb %}
+          <div style="border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; width: 80px;">
+            <img src="data:image/png;base64,{{ thumb }}" alt="Page {{ loop.index }}" style="width: 100%; height: auto; display: block;" />
+            <div style="text-align: center; font-size: 9px; color: #9ca3af; padding: 2px 0;">{{ loop.index }}</div>
+          </div>
+          {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {# Top findings #}
+      {% if top_findings %}
+      <div>
+        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 8px;">Top Issues</div>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+          {% for f in top_findings[:5] %}
+          <tr style="border-bottom: 1px solid #f3f4f6;">
+            <td style="padding: 6px 8px; width: 16px;">
+              <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50; background: {{ '#ef4444' if f.severity == 'error' else '#f59e0b' if f.severity == 'warning' else '#3b82f6' }};"></span>
+            </td>
+            <td style="padding: 6px 4px; font-family: monospace; font-size: 10px; color: #6b7280; white-space: nowrap;">{{ f.inspection_id }}</td>
+            <td style="padding: 6px 8px; color: #374151;">{{ f.message[:100] }}{% if f.message|length > 100 %}...{% endif %}</td>
+            <td style="padding: 6px 8px; text-align: right; font-size: 10px; color: #9ca3af; white-space: nowrap;">{% if f.page_num %}p.{{ f.page_num }}{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% endif %}
+
+      {% if brand and brand.viewer_url %}
+      <div style="margin-top: 16px; text-align: center;">
+        <a href="{{ brand.viewer_url }}" target="_blank" style="display: inline-block; padding: 8px 24px; background: {{ brand.primary_color if brand else '#1e3a8a' }}; color: white; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600;">Open Interactive Viewer</a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% if summary_page != "only" %}
     {# ===== HEADER ===== #}
     <div class="header">
       <div class="header-left">
         {% if brand and brand.logo_url %}
-          <img src="{{ brand.logo_url }}" alt="" class="header-logo" />
+          {% if brand.logo_url.startswith('data:image/svg') %}
+            {{ brand.logo_url | decode_svg_data_uri }}
+          {% else %}
+            <img src="{{ brand.logo_url }}" alt="" class="header-logo" />
+          {% endif %}
         {% endif %}
         <div>
           <h1>{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %} Preflight Report</h1>
@@ -352,5 +460,6 @@
         });
       }
     </script>
+    {% endif %}{# end summary_page != "only" #}
   </body>
 </html>

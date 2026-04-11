@@ -129,7 +129,12 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
 
         if (configResp.ok) {
           const configData = await configResp.json();
-          setConfig({ ...DEFAULT_VIEWER_CONFIG, ...configData });
+          // Filter out null values so API nulls don't override defaults
+          // (e.g., brand_logo_url: null would erase the default logo)
+          const filtered = Object.fromEntries(
+            Object.entries(configData).filter(([, v]) => v != null),
+          );
+          setConfig({ ...DEFAULT_VIEWER_CONFIG, ...filtered });
 
           // Auto-fit zoom on mobile: fit page width to screen
           const firstPage = (pagesData.pages ?? [])[0];

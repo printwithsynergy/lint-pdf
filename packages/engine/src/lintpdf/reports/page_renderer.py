@@ -440,6 +440,28 @@ def render_page_thumbnail(
         return ""
 
 
+def render_page_thumbnail_grid(
+    pdf_bytes: bytes,
+    *,
+    max_pages: int = 12,
+    dpi: int = 72,
+) -> list[str]:
+    """Render small page thumbnails for the summary page cover sheet.
+
+    Returns a list of base64-encoded PNGs (one per page, up to max_pages).
+    """
+    try:
+        page_count = len(pikepdf.Pdf.open(io.BytesIO(pdf_bytes)).pages)
+    except Exception:
+        return []
+
+    result: list[str] = []
+    for i in range(1, min(page_count + 1, max_pages + 1)):
+        thumb = render_page_thumbnail(pdf_bytes, i, dpi=dpi)
+        result.append(thumb)
+    return result
+
+
 # ---------------------------------------------------------------------------
 # Per-finding cropped thumbnails
 # ---------------------------------------------------------------------------

@@ -36,6 +36,10 @@ export function PageCanvas({
   const [tileImg, setTileImg] = useState<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Tooltip state: shows finding info near the clicked bbox
+  const [tooltip, setTooltip] = useState<{ finding: ViewerFinding; x: number; y: number } | null>(null);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Touch gesture tracking
   const touchRef = useRef<{ x: number; y: number; dist: number; zoom: number; moved: boolean } | null>(null);
 
@@ -229,7 +233,7 @@ export function PageCanvas({
     draw();
   }, [draw]);
 
-  // Handle click on canvas to detect finding
+  // Handle click on canvas to detect finding and show tooltip
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -250,9 +254,20 @@ export function PageCanvas({
       const [x0, y0, x1, y1] = finding.bbox;
       if (pdfX >= x0 && pdfX <= x1 && pdfY >= y0 && pdfY <= y1) {
         onFindingClick(finding);
+
+        // Position tooltip near the bbox center (in CSS pixels relative to canvas)
+        const bboxCenterX = ((x0 + x1) / 2) * ptsToPixels * scale * (rect.width / canvas.width);
+        const bboxTopY = (page.height_pts - y1) * ptsToPixels * scale * (rect.height / canvas.height);
+        setTooltip({ finding, x: bboxCenterX, y: bboxTopY });
+
+        // Auto-dismiss after 5 seconds
+        if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+        tooltipTimerRef.current = setTimeout(() => setTooltip(null), 5000);
         return;
       }
     }
+    // Clicked empty area: dismiss tooltip
+    setTooltip(null);
   };
 
   return (
@@ -280,6 +295,32 @@ export function PageCanvas({
         className={`cursor-crosshair ${loading ? "hidden" : ""}`}
         style={{ width: canvasWidth, height: canvasHeight }}
       />
+      {/* Finding tooltip */}
+      {tooltip && (
+        <div
+          className="pointer-events-none absolute z-40 max-w-[280px] rounded-lg bg-black/90 px-3 py-2 text-xs text-white shadow-xl"
+          style={{
+            left: Math.max(8, Math.min(tooltip.x - 100, canvasWidth - 288)),
+            top: Math.max(8, tooltip.y - 8),
+            transform: "translateY(-100%)",
+          }}
+        >
+          <div className="mb-1 flex items-center gap-2">
+            <span
+              className="inline-block h-2 w-2 shrink-0 rounded-full"
+              style={{ backgroundColor: SEVERITY_HEX[tooltip.finding.severity] }}
+            />
+            <span className="font-bold uppercase" style={{ color: SEVERITY_HEX[tooltip.finding.severity] }}>
+              {tooltip.finding.severity}
+            </span>
+            <code className="ml-auto text-[10px] text-gray-400">{tooltip.finding.inspection_id}</code>
+          </div>
+          <p className="leading-snug text-gray-200">{tooltip.finding.message.length > 120 ? tooltip.finding.message.slice(0, 120) + "..." : tooltip.finding.message}</p>
+          {tooltip.finding.category && (
+            <span className="mt-1 inline-block rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-gray-400">{tooltip.finding.category}</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

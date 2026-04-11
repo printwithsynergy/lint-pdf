@@ -112,6 +112,27 @@ class ReportResult:
     reports: list[dict[str, Any]] = field(default_factory=list)
 
 
+def compute_health_score(summary: dict[str, Any], findings: list[dict[str, Any]]) -> dict[str, Any]:
+    """Compute an overall preflight health score (0-100) with letter grade."""
+    errors = summary.get("error_count", 0)
+    warnings = summary.get("warning_count", 0)
+    advisory = summary.get("advisory_count", 0)
+
+    score = max(0, min(100, round(100 - errors * 10 - warnings * 3 - advisory * 0.5)))
+    if score >= 90:
+        grade, color = "A", "#22c55e"
+    elif score >= 80:
+        grade, color = "B", "#22c55e"
+    elif score >= 70:
+        grade, color = "C", "#f59e0b"
+    elif score >= 60:
+        grade, color = "D", "#ef4444"
+    else:
+        grade, color = "F", "#ef4444"
+
+    return {"score": score, "grade": grade, "color": color}
+
+
 class ReportService:
     """Generates, stores, and serves branded preflight reports."""
 
@@ -130,6 +151,7 @@ class ReportService:
         branding: BrandingContext | None = None,
         report_base_url: str = "https://reports.lintpdf.com",
         detail_level: str = "standard",
+        summary_page: str = "prepend",
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 
@@ -185,7 +207,8 @@ class ReportService:
 
         for fmt in formats:
             content = self._generate_format(
-                result_json, fmt, branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+                result_json, fmt, branding, pdf_bytes=pdf_bytes,
+                detail_level=detail_level, summary_page=summary_page,
             )
             if content is None:
                 continue
@@ -321,15 +344,18 @@ class ReportService:
         *,
         pdf_bytes: bytes | None = None,
         detail_level: str = "standard",
+        summary_page: str = "prepend",
     ) -> bytes | None:
         """Generate report content in the requested format."""
         if fmt == "html":
             return self._generate_html(
-                result_json, branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+                result_json, branding, pdf_bytes=pdf_bytes,
+                detail_level=detail_level, summary_page=summary_page,
             )
         if fmt == "pdf":
             return self._generate_pdf(
-                result_json, branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+                result_json, branding, pdf_bytes=pdf_bytes,
+                detail_level=detail_level, summary_page=summary_page,
             )
         if fmt == "annotated_pdf":
             return self._generate_annotated_pdf(result_json, branding)
@@ -342,6 +368,7 @@ class ReportService:
         *,
         pdf_bytes: bytes | None = None,
         detail_level: str = "standard",
+        summary_page: str = "prepend",
     ) -> bytes:
         """Generate branded HTML report from result JSON."""
         from jinja2 import Environment, FileSystemLoader
@@ -352,6 +379,24 @@ class ReportService:
             loader=FileSystemLoader(str(_TEMPLATE_DIR)),
             autoescape=True,
         )
+
+        def _decode_svg_data_uri(data_uri: str) -> str:
+            """Decode a base64 SVG data URI to inline <svg> markup for WeasyPrint."""
+            import base64
+            from markupsafe import Markup
+
+            try:
+                # Strip the data:image/svg+xml;base64, prefix
+                b64 = data_uri.split(",", 1)[1]
+                svg = base64.b64decode(b64).decode("utf-8")
+                # Add class for sizing
+                svg = svg.replace("<svg ", '<svg class="header-logo" ', 1)
+                return Markup(svg)
+            except Exception:
+                return Markup("")
+
+        env.filters["decode_svg_data_uri"] = _decode_svg_data_uri
+
         template = env.get_template("report.html")
 
         summary = result_json.get("summary", {})
@@ -448,6 +493,41 @@ class ReportService:
             key=lambda f: (severity_order.get(f.get("severity", "advisory"), 3), f.get("page_num") or 0),
         )
 
+        # Summary page data (thumbnails + health score)
+        page_thumbnails: list[str] = []
+        health = compute_health_score(summary, findings)
+        if summary_page != "off" and pdf_bytes is not None:
+            try:
+                from lintpdf.reports.page_renderer import render_page_thumbnail_grid
+                page_thumbnails = render_page_thumbnail_grid(pdf_bytes, max_pages=12, dpi=72)
+            except Exception:
+                logger.exception("Failed to render page thumbnails for summary page")
+
+        # Extract color info for summary page
+        color_spaces_used = set()
+        spot_colors: list[str] = []
+        max_tac = 0.0
+        for f in findings:
+            iid = f.get("inspection_id", "")
+            details = f.get("details") or {}
+            if iid == "LPDF_INK_002":
+                name = details.get("separation_name", "")
+                if name and name not in ("Cyan", "Magenta", "Yellow", "Black"):
+                    spot_colors.append(name)
+            if iid == "LPDF_INK_001":
+                mt = details.get("max_tac", 0)
+                if mt > max_tac:
+                    max_tac = mt
+            if iid == "LPDF_COLOR_014":
+                cs = details.get("color_spaces", [])
+                color_spaces_used.update(cs if isinstance(cs, list) else [])
+
+        summary_color_info = {
+            "color_spaces": sorted(color_spaces_used) or ["DeviceCMYK"],
+            "spot_colors": spot_colors[:6],
+            "max_tac": round(max_tac, 1),
+        }
+
         passed = summary.get("passed", True)
         context = {
             "result": type(
@@ -482,6 +562,11 @@ class ReportService:
             "ink_tac_by_page": ink_tac_by_page,
             "ink_inventory": ink_inventory,
             "color_score_breakdown": color_score_breakdown,
+            # Summary page
+            "summary_page": summary_page,
+            "page_thumbnails": page_thumbnails,
+            "health": health,
+            "summary_color_info": summary_color_info,
         }
 
         html = template.render(**context)  # nosemgrep: direct-use-of-jinja2
@@ -494,12 +579,14 @@ class ReportService:
         *,
         pdf_bytes: bytes | None = None,
         detail_level: str = "standard",
+        summary_page: str = "prepend",
     ) -> bytes:
         """Generate PDF from branded HTML."""
         from weasyprint import HTML
 
         html_bytes = self._generate_html(
-            result_json, branding, pdf_bytes=pdf_bytes, detail_level=detail_level
+            result_json, branding, pdf_bytes=pdf_bytes,
+            detail_level=detail_level, summary_page=summary_page,
         )
         pdf_bytes_out: bytes = HTML(string=html_bytes.decode("utf-8")).write_pdf()
         return pdf_bytes_out
