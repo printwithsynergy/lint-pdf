@@ -64,6 +64,7 @@ class JobResponse(BaseModel):
     color_quality_score: float | None = None
     color_quality_grade: str | None = None
     color_score_breakdown: dict[str, float] | None = None
+    reports: dict[str, str] | None = None
 
 
 class JobListResponse(BaseModel):

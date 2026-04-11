@@ -1,12 +1,12 @@
 {
   "name": "LintPDF Default",
-  "description": "Sensible defaults for general print preflight. No conformance standard enforced.",
-  "version": "1.0",
-  "conformance": null,
+  "description": "Comprehensive preflight with all engine checks, PDF/X-4 conformance, and AI analysis.",
+  "version": "1.1",
+  "conformance": "pdfx4",
   "workflow": "CMYK",
   "checks": {
-    "enabled": ["LPDF_*"],
-    "disabled": ["PDFX4-*"],
+    "enabled": ["LPDF_*", "PDFX4-*", "PDFX1A-*", "PDFA-*", "AI_*"],
+    "disabled": [],
     "severity_overrides": {}
   },
   "thresholds": {
@@ -19,5 +19,10 @@
     "very_small_text_threshold": 4.0,
     "safety_margin_mm": 3.0,
     "max_file_size_mb": 500.0
+  },
+  "ai": {
+    "enabled": true,
+    "categories": ["all"],
+    "features": []
   }
 }

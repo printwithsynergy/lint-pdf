@@ -12,6 +12,98 @@ from lintpdf.queue.app import celery_app
 logger = logging.getLogger(__name__)
 
 
+def _auto_generate_reports(
+    db: Any,
+    job: Any,
+    result_dict: dict[str, Any],
+    pdf_bytes: bytes,
+    storage: Any,
+) -> None:
+    """Auto-generate HTML + PDF reports after job completion.
+
+    Creates report tokens so reports are available immediately via
+    ``GET /api/v1/jobs/{id}`` response without requiring a separate
+    ``POST /reports`` call.
+    """
+    import secrets
+    import uuid as uuid_mod
+    from datetime import datetime, timedelta, timezone
+
+    from lintpdf.api.config import get_settings
+    from lintpdf.api.models import JobFinding, ReportToken
+    from lintpdf.reports.service import BrandingContext, ReportDetailLevel, ReportService
+
+    settings = get_settings()
+    service = ReportService(storage, db)
+
+    # Build a result_json with findings for the report generator
+    findings = db.query(JobFinding).filter(JobFinding.job_id == job.id).all()
+    enriched = dict(result_dict)
+    enriched["job_id"] = str(job.id)
+    enriched["profile_id"] = job.profile_id
+    enriched["duration_ms"] = job.duration_ms or 0
+    enriched["file_name"] = job.file_name
+    enriched["findings"] = [
+        {
+            "inspection_id": f.inspection_id,
+            "severity": f.severity,
+            "message": f.message,
+            "page_num": f.page_num,
+            "object_id": f.object_id,
+            "object_type": f.object_type,
+            "source": f.source or "engine",
+            "category": f.category,
+            "details": f.details,
+            "bbox": [f.bbox_x0, f.bbox_y0, f.bbox_x1, f.bbox_y1]
+            if f.bbox_x0 is not None
+            else None,
+        }
+        for f in findings
+    ]
+    if "metadata" not in enriched:
+        enriched["metadata"] = {}
+    enriched["metadata"]["file_key"] = job.file_key
+
+    branding = BrandingContext()
+    report_base_url = settings.report_base_url
+    app_base = settings.app_base_url.rstrip("/")
+    tokens: dict[str, str] = {}
+    expires_at = datetime.now(timezone.utc) + timedelta(days=30)
+
+    for fmt in ["html", "pdf"]:
+        tok = secrets.token_urlsafe(32)
+        tokens[fmt] = tok
+
+    # Set cross-links and viewer URL
+    branding.pdf_download_url = f"{report_base_url}/r/{tokens['pdf']}.pdf"
+    branding.report_url = f"{report_base_url}/r/{tokens['html']}"
+    branding.viewer_url = f"{app_base}/view/{tokens['html']}"
+
+    for fmt in ["html", "pdf"]:
+        content = service._generate_format(
+            enriched, fmt, branding,
+            pdf_bytes=pdf_bytes,
+            detail_level=ReportDetailLevel.COMPREHENSIVE,
+        )
+        if content is None:
+            continue
+        storage.upload_report(str(job.tenant_id), str(job.id), fmt, content)
+        db.add(ReportToken(
+            id=uuid_mod.uuid4(),
+            job_id=job.id,
+            tenant_id=job.tenant_id,
+            token=tokens[fmt],
+            format=fmt,
+            expires_at=expires_at,
+        ))
+
+    db.commit()
+    logger.info(
+        "Auto-generated HTML + PDF reports for job %s: %s/r/%s",
+        job.id, report_base_url, tokens.get("html", "?"),
+    )
+
+
 @celery_app.task(  # type: ignore[untyped-decorator]
     bind=True,
     name="lintpdf.preflight.run",
@@ -307,6 +399,14 @@ def run_preflight(
                     "summary": result_dict["summary"],
                 },
             )
+
+            # Auto-generate HTML + PDF reports so they're ready immediately.
+            # Callers get report URLs from GET /api/v1/jobs/{id} without a
+            # separate POST /reports step.
+            try:
+                _auto_generate_reports(db, job, result_dict, pdf_bytes, storage)
+            except Exception:
+                logger.exception("Auto report generation failed for job %s (non-fatal)", job_id)
 
             # Kick off async tile pre-rendering for the viewer (non-blocking)
             try:

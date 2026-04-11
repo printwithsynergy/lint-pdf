@@ -355,6 +355,22 @@ async def get_job(
             for f in findings
         ]
 
+        # Include auto-generated report URLs if available
+        from lintpdf.api.config import get_settings as _get_settings
+        from lintpdf.api.models import ReportToken
+
+        report_tokens = (
+            db.query(ReportToken)
+            .filter(ReportToken.job_id == uid, ReportToken.tenant_id == tenant.id)
+            .all()
+        )
+        if report_tokens:
+            base_url = _get_settings().report_base_url
+            response.reports = {
+                t.format: f"{base_url}/r/{t.token}{'.pdf' if t.format == 'pdf' else ''}"
+                for t in report_tokens
+            }
+
     return response
 
 
