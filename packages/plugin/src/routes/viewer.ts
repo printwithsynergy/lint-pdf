@@ -463,34 +463,39 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
 
     // ── Public viewer proxy routes (token auth, read-only) ──
     //
-    // These mirror the authenticated viewer routes above but use a report
-    // token for auth instead of a session.  Each handler validates the
-    // token, extracts the jobId, and proxies to the engine using the
-    // server-to-server API key.
+    // These proxy directly to the engine's /api/v1/viewer/public/{token}/...
+    // endpoints which validate the report token themselves — no tenant API
+    // key or session needed.
 
-    {
+    ...([
+      { path: "/viewer/public/:token/pages", engine: (t: string) => `/api/v1/viewer/public/${t}/pages`, type: "json" as const },
+      { path: "/viewer/public/:token/separations", engine: (t: string) => `/api/v1/viewer/public/${t}/separations`, type: "json" as const },
+      { path: "/viewer/public/:token/config", engine: (t: string) => `/api/v1/viewer/public/${t}/config`, type: "json" as const },
+      { path: "/viewer/public/:token/layers", engine: (t: string) => `/api/v1/viewer/public/${t}/layers`, type: "json" as const },
+      { path: "/viewer/public/:token/verdict", engine: (t: string) => `/api/v1/viewer/public/${t}/verdict`, type: "json" as const },
+      { path: "/viewer/public/:token/findings", engine: (t: string) => `/api/v1/reports/tokens/${t}/findings`, type: "json" as const },
+      { path: "/viewer/public/:token/check-names", engine: () => "/api/v1/check-names", type: "json" as const },
+    ]).map((r) => ({
       method: "GET" as HttpMethod,
-      path: "/viewer/public/:token/pages",
+      path: r.path,
       auth: false,
-      description: "Public: list pages via report token",
+      description: `Public: ${r.path.split("/").pop()}`,
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/pages`), { headers: authHeaders() });
+        const resp = await fetch(engineUrl(r.engine(req.params.token)));
         if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
         return { status: 200, body: await resp.json() };
       }) as RouteHandler,
-    },
+    })),
+
+    // Page-level public endpoints (need pageNum, some return images)
     {
       method: "GET" as HttpMethod,
       path: "/viewer/public/:token/pages/:pageNum/tile",
       auth: false,
-      description: "Public: get page tile PNG",
+      description: "Public: page tile PNG",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
         const dpi = req.query.dpi ?? "150";
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/pages/${req.params.pageNum}/tile?dpi=${dpi}`), { headers: authHeaders() });
+        const resp = await fetch(engineUrl(`/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/tile?dpi=${dpi}`));
         if (!resp.ok) return { status: resp.status, body: { error: "Failed to render tile" } };
         const buffer = await resp.arrayBuffer();
         return { status: 200, body: Buffer.from(buffer), headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } } as RouteResponse;
@@ -500,24 +505,9 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       method: "GET" as HttpMethod,
       path: "/viewer/public/:token/pages/:pageNum/info",
       auth: false,
-      description: "Public: get page info",
+      description: "Public: page info",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/pages/${req.params.pageNum}/info`), { headers: authHeaders() });
-        if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
-        return { status: 200, body: await resp.json() };
-      }) as RouteHandler,
-    },
-    {
-      method: "GET" as HttpMethod,
-      path: "/viewer/public/:token/separations",
-      auth: false,
-      description: "Public: list ink separation channels",
-      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/separations`), { headers: authHeaders() });
+        const resp = await fetch(engineUrl(`/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/info`));
         if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
         return { status: 200, body: await resp.json() };
       }) as RouteHandler,
@@ -526,12 +516,10 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       method: "GET" as HttpMethod,
       path: "/viewer/public/:token/pages/:pageNum/channel/:channelName",
       auth: false,
-      description: "Public: get separation channel PNG",
+      description: "Public: separation channel PNG",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
         const dpi = req.query.dpi ?? "150";
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/pages/${req.params.pageNum}/channel/${encodeURIComponent(req.params.channelName)}?dpi=${dpi}`), { headers: authHeaders() });
+        const resp = await fetch(engineUrl(`/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/channel/${encodeURIComponent(req.params.channelName)}?dpi=${dpi}`));
         if (!resp.ok) return { status: resp.status, body: { error: "Failed to render channel" } };
         const buffer = await resp.arrayBuffer();
         return { status: 200, body: Buffer.from(buffer), headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } } as RouteResponse;
@@ -541,13 +529,11 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       method: "GET" as HttpMethod,
       path: "/viewer/public/:token/pages/:pageNum/tac-heatmap",
       auth: false,
-      description: "Public: get TAC heatmap overlay PNG",
+      description: "Public: TAC heatmap PNG",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
         const dpi = req.query.dpi ?? "150";
         const tacLimit = req.query.tac_limit ?? "300";
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/pages/${req.params.pageNum}/tac-heatmap?dpi=${dpi}&tac_limit=${tacLimit}`), { headers: authHeaders() });
+        const resp = await fetch(engineUrl(`/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/tac-heatmap?dpi=${dpi}&tac_limit=${tacLimit}`));
         if (!resp.ok) return { status: resp.status, body: { error: "Failed to render heatmap" } };
         const buffer = await resp.arrayBuffer();
         return { status: 200, body: Buffer.from(buffer), headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } } as RouteResponse;
@@ -555,86 +541,12 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
     },
     {
       method: "GET" as HttpMethod,
-      path: "/viewer/public/:token/config",
-      auth: false,
-      description: "Public: get viewer configuration",
-      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/config`), { headers: authHeaders() });
-        if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
-        return { status: 200, body: await resp.json() };
-      }) as RouteHandler,
-    },
-    {
-      method: "GET" as HttpMethod,
-      path: "/viewer/public/:token/check-names",
-      auth: false,
-      description: "Public: get human-friendly check name registry",
-      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
-        const resp = await fetch(engineUrl("/api/v1/check-names"), { headers: authHeaders() });
-        if (!resp.ok) return { status: resp.status, body: {} };
-        return {
-          status: 200,
-          body: await resp.json(),
-          headers: { "Cache-Control": "public, max-age=86400" },
-        } as RouteResponse;
-      }) as RouteHandler,
-    },
-    {
-      method: "GET" as HttpMethod,
       path: "/viewer/public/:token/pages/:pageNum/sample",
       auth: false,
-      description: "Public: densitometer color sample",
+      description: "Public: densitometer sample",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
-        const x = req.query.x ?? "0";
-        const y = req.query.y ?? "0";
-        const dpi = req.query.dpi ?? "300";
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/pages/${req.params.pageNum}/sample?x=${x}&y=${y}&dpi=${dpi}`), { headers: authHeaders() });
-        if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
-        return { status: 200, body: await resp.json() };
-      }) as RouteHandler,
-    },
-    {
-      method: "GET" as HttpMethod,
-      path: "/viewer/public/:token/layers",
-      auth: false,
-      description: "Public: list PDF layers (OCGs)",
-      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/layers`), { headers: authHeaders() });
-        if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
-        return { status: 200, body: await resp.json() };
-      }) as RouteHandler,
-    },
-    {
-      method: "GET" as HttpMethod,
-      path: "/viewer/public/:token/verdict",
-      auth: false,
-      description: "Public: get verdict (read-only)",
-      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
-        const resp = await fetch(engineUrl(`/api/v1/viewer/jobs/${t.jobId}/verdict`), { headers: authHeaders() });
-        if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
-        return { status: 200, body: await resp.json() };
-      }) as RouteHandler,
-    },
-    {
-      method: "GET" as HttpMethod,
-      path: "/viewer/public/:token/findings",
-      auth: false,
-      description: "Public: get job findings for sidebar",
-      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const t = await validateToken(req.params.token);
-        if (!t) return { status: 404, body: { error: "Invalid or expired token" } };
-        const resp = await fetch(
-          engineUrl(`/api/v1/reports/tokens/${req.params.token}/findings`),
-          { headers: authHeaders() },
-        );
+        const { x = "0", y = "0", dpi = "300" } = req.query;
+        const resp = await fetch(engineUrl(`/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/sample?x=${x}&y=${y}&dpi=${dpi}`));
         if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
         return { status: 200, body: await resp.json() };
       }) as RouteHandler,

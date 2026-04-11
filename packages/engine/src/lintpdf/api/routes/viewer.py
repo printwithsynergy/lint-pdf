@@ -73,15 +73,50 @@ class PagesResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+def _get_job_pdf_by_token(
+    token: str,
+    db: Session,
+) -> tuple[Job, bytes]:
+    """Resolve a job from a report token and return its PDF bytes.
+
+    Used by public (unauthenticated) viewer endpoints. The token acts as
+    both authentication and authorization — it proves the caller was given
+    access to this specific job's report.
+    """
+    from lintpdf.api.models import ReportToken
+
+    record = db.query(ReportToken).filter(ReportToken.token == token).first()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Token not found")
+
+    if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Token expired")
+
+    job = db.query(Job).filter(Job.id == record.job_id).first()
+    if not job:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
+    if job.status != JobStatus.COMPLETE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Job is not complete",
+        )
+    storage = get_storage()
+    try:
+        pdf_bytes = storage.download_pdf(job.file_key)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not retrieve original PDF",
+        ) from exc
+    return job, pdf_bytes
+
+
 def _get_job_pdf(
     job_id: str,
     tenant: Tenant,
     db: Session,
 ) -> tuple[Job, bytes]:
     """Fetch the job and its original PDF bytes from storage."""
-    # Job.id is a UUID column — pre-validate the parameter so a malformed
-    # path like ``/jobs/nonexistent-job-id-000/...`` returns 404 instead of
-    # bubbling up an SQLAlchemy cast error as a 500.
     try:
         job_uuid = uuid_mod.UUID(job_id)
     except ValueError as exc:
@@ -877,3 +912,174 @@ async def get_comparison_diff(
         pass
 
     raise HTTPException(status_code=404, detail="Diff image not found")
+
+
+# ---------------------------------------------------------------------------
+# Public token-based viewer endpoints (no tenant auth)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/public/{token}/pages")
+async def public_list_pages(token: str, db: Session = Depends(get_db)) -> PagesResponse:
+    """Public: list pages via report token."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    pages: list[PageInfo] = []
+    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+        for i, page in enumerate(pdf.pages, start=1):
+            media = _extract_box(page, "/MediaBox")
+            if media is None:
+                media = PageBox(x0=0, y0=0, x1=612, y1=792)
+            pages.append(PageInfo(
+                page_num=i,
+                width_pts=media.x1 - media.x0,
+                height_pts=media.y1 - media.y0,
+                media_box=media,
+                crop_box=_extract_box(page, "/CropBox"),
+                trim_box=_extract_box(page, "/TrimBox"),
+                bleed_box=_extract_box(page, "/BleedBox"),
+                rotation=int(page.get("/Rotate", 0)),
+            ))
+    return PagesResponse(job_id=str(job.id), page_count=len(pages), pages=pages)
+
+
+@router.get("/public/{token}/pages/{page_num}/tile")
+async def public_get_tile(
+    token: str, page_num: int, dpi: int = Query(default=150, ge=36, le=600),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Public: render a page tile as PNG."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _validate_page_num(pdf_bytes, page_num)
+    from lintpdf.ai.rendering import render_page_to_image
+    png = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
+    return Response(content=png, media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.get("/public/{token}/pages/{page_num}/info")
+async def public_page_info(
+    token: str, page_num: int, db: Session = Depends(get_db),
+) -> dict:
+    """Public: get page dimensions and box info."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _validate_page_num(pdf_bytes, page_num)
+    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+        page = pdf.pages[page_num - 1]
+        media = _extract_box(page, "/MediaBox") or PageBox(x0=0, y0=0, x1=612, y1=792)
+        return {
+            "page_num": page_num,
+            "width_pts": media.x1 - media.x0,
+            "height_pts": media.y1 - media.y0,
+            "media_box": media.model_dump(),
+            "crop_box": (_extract_box(page, "/CropBox") or media).model_dump(),
+            "trim_box": (b.model_dump() if (b := _extract_box(page, "/TrimBox")) else None),
+            "bleed_box": (b2.model_dump() if (b2 := _extract_box(page, "/BleedBox")) else None),
+        }
+
+
+@router.get("/public/{token}/separations")
+async def public_separations(token: str, db: Session = Depends(get_db)) -> dict:
+    """Public: list ink separation channels."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    from lintpdf.reports.separation_renderer import list_separations
+    channels = list_separations(pdf_bytes)
+    return {"job_id": str(job.id), "channels": channels}
+
+
+@router.get("/public/{token}/pages/{page_num}/channel/{channel_name}")
+async def public_channel(
+    token: str, page_num: int, channel_name: str,
+    dpi: int = Query(default=150, ge=36, le=600),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Public: render a separation channel as grayscale PNG."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _validate_page_num(pdf_bytes, page_num)
+    from lintpdf.reports.separation_renderer import render_separation_channel
+    png = render_separation_channel(pdf_bytes, page_num, channel_name, dpi=dpi)
+    return Response(content=png, media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.get("/public/{token}/pages/{page_num}/tac-heatmap")
+async def public_tac_heatmap(
+    token: str, page_num: int,
+    dpi: int = Query(default=150, ge=36, le=600),
+    tac_limit: float = Query(default=300, ge=100, le=500),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Public: render TAC heatmap overlay as RGBA PNG."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _validate_page_num(pdf_bytes, page_num)
+    from lintpdf.reports.separation_renderer import render_tac_heatmap
+    png = render_tac_heatmap(pdf_bytes, page_num, dpi=dpi, tac_limit=tac_limit)
+    return Response(content=png, media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@router.get("/public/{token}/config")
+async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
+    """Public: get viewer configuration."""
+    from lintpdf.api.models import ReportToken
+    from lintpdf.profiles.schema import ViewerConfig
+    record = db.query(ReportToken).filter(ReportToken.token == token).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Token not found")
+    return ViewerConfig().model_dump()
+
+
+@router.get("/public/{token}/pages/{page_num}/sample")
+async def public_sample(
+    token: str, page_num: int,
+    x: float = Query(default=0), y: float = Query(default=0),
+    dpi: int = Query(default=300, ge=72, le=600),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Public: densitometer color sample."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _validate_page_num(pdf_bytes, page_num)
+    from lintpdf.ai.rendering import render_page_to_image
+    from PIL import Image
+    png = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
+    img = Image.open(io.BytesIO(png)).convert("RGB")
+    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+        page = pdf.pages[page_num - 1]
+        mb = _extract_box(page, "/MediaBox") or PageBox(x0=0, y0=0, x1=612, y1=792)
+    pw, ph = mb.x1 - mb.x0, mb.y1 - mb.y0
+    px = int((x - mb.x0) / pw * img.width) if pw > 0 else 0
+    py = int((1 - (y - mb.y0) / ph) * img.height) if ph > 0 else 0
+    px = max(0, min(px, img.width - 1))
+    py = max(0, min(py, img.height - 1))
+    r, g, b = img.getpixel((px, py))
+    return {"x": x, "y": y, "rgb": [r, g, b], "hex": f"#{r:02x}{g:02x}{b:02x}", "tac": None}
+
+
+@router.get("/public/{token}/layers")
+async def public_layers(token: str, db: Session = Depends(get_db)) -> dict:
+    """Public: list PDF layers (OCGs)."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    layers = []
+    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+        ocprops = pdf.Root.get("/OCProperties")
+        if ocprops:
+            ocgs = ocprops.get("/OCGs", [])
+            for i, ocg in enumerate(ocgs):
+                name = str(ocg.get("/Name", f"Layer {i + 1}"))
+                layers.append({"name": name, "ocg_index": i, "default_on": True})
+    return {"layers": layers}
+
+
+@router.get("/public/{token}/verdict")
+async def public_verdict(token: str, db: Session = Depends(get_db)) -> dict:
+    """Public: get verdict (read-only)."""
+    job, _ = _get_job_pdf_by_token(token, db)
+    passed = True
+    if job.result_json:
+        passed = job.result_json.get("summary", {}).get("passed", True)
+    return {
+        "verdict": job.verdict,
+        "auto_passed": passed,
+        "verdict_by": job.verdict_by,
+        "verdict_at": job.verdict_at.isoformat() if job.verdict_at else None,
+        "notes": job.verdict_notes,
+    }
