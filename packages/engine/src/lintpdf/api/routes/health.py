@@ -5,12 +5,19 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter
+from fastapi.responses import RedirectResponse
 
 from lintpdf.api.schemas import HealthResponse, StatusResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+@router.get("/", include_in_schema=False)
+async def root_redirect() -> RedirectResponse:
+    """Redirect browser visits to the marketing site."""
+    return RedirectResponse("https://lintpdf.com", status_code=302)
 
 
 @router.get("/health", response_model=HealthResponse, tags=["health"])
