@@ -78,7 +78,6 @@ export function SeparationCanvas({
       setLoadingChannels((prev) => new Set(prev).add(channelName));
 
       const img = new Image();
-      img.crossOrigin = "anonymous";
       const url = `${apiBase}/pages/${pageNum}/channel/${encodeURIComponent(channelName)}?dpi=${dpi}`;
 
       await new Promise<void>((resolve) => {

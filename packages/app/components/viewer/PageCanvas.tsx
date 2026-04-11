@@ -46,7 +46,6 @@ export function PageCanvas({
   useEffect(() => {
     setLoading(true);
     const img = new Image();
-    img.crossOrigin = "anonymous";
     img.src = `${apiBase}/pages/${page.page_num}/tile?dpi=${dpi}`;
     img.onload = () => {
       setTileImg(img);

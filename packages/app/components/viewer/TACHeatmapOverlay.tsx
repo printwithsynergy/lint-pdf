@@ -33,7 +33,6 @@ export function TACHeatmapOverlay({
     setError("");
 
     const img = new Image();
-    img.crossOrigin = "anonymous";
     img.onload = () => {
       setHeatmapImg(img);
       setLoading(false);

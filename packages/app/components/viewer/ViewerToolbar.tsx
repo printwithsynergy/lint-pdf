@@ -86,8 +86,8 @@ export function ViewerToolbar({
 
   return (
     <div
-      className="flex items-center gap-2 px-3 py-1.5 text-white"
-      style={{ backgroundColor: bgColor }}
+      className="flex items-center gap-2 overflow-x-auto px-3 py-1.5 text-white scrollbar-none"
+      style={{ backgroundColor: bgColor, WebkitOverflowScrolling: "touch" }}
     >
       {/* Logo */}
       {(config.viewer_logo_url || config.brand_logo_url) && (
