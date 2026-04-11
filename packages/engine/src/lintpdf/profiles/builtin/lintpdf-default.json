@@ -1,8 +1,8 @@
 {
   "name": "LintPDF Default",
-  "description": "Comprehensive preflight with all engine checks, PDF/X-4 conformance, and AI analysis.",
-  "version": "1.1",
-  "conformance": "pdfx4",
+  "description": "Comprehensive preflight with all engine checks and AI analysis.",
+  "version": "1.2",
+  "conformance": null,
   "workflow": "CMYK",
   "checks": {
     "enabled": ["LPDF_*", "PDFX4-*", "PDFX1A-*", "PDFA-*", "AI_*"],

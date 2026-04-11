@@ -239,6 +239,9 @@ async def create_tenant(
     key_hash = hash_api_key(raw_key)
     tenant_id = uuid_mod.uuid4()
 
+    # Default to LintPDF branding for all new tenants
+    from lintpdf.reports.service import _LINTPDF_DEFAULT_LOGO
+
     tenant = Tenant(
         id=tenant_id,
         name=body.name,
@@ -248,6 +251,10 @@ async def create_tenant(
         max_file_size_mb=limits["max_file_size_mb"],
         contact_email=body.contact_email,
         is_active=True,
+        brand_name="LintPDF",
+        brand_logo_url=_LINTPDF_DEFAULT_LOGO,
+        brand_primary_color="#1e3a8a",
+        brand_accent_color="#2563eb",
     )
     db.add(tenant)
     db.flush()
@@ -317,6 +324,40 @@ async def update_tenant_status(
     """Activate or suspend a tenant."""
     tenant = _get_tenant(db, tenant_id)
     tenant.is_active = body.is_active
+    db.commit()
+    return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
+
+
+# ── Tenant branding (admin) ────────────────────────────────
+
+
+class UpdateBrandingRequest(BaseModel):
+    brand_name: str | None = None
+    brand_logo_url: str | None = None
+    brand_primary_color: str | None = None
+    brand_accent_color: str | None = None
+    brand_hide_footer: bool | None = None
+
+
+@router.patch("/tenants/{tenant_id}/branding", response_model=AdminTenantResponse)
+async def update_tenant_branding(
+    tenant_id: str,
+    body: UpdateBrandingRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminTenantResponse:
+    """Set branding fields on a tenant (admin only)."""
+    tenant = _get_tenant(db, tenant_id)
+    if body.brand_name is not None:
+        tenant.brand_name = body.brand_name
+    if body.brand_logo_url is not None:
+        tenant.brand_logo_url = body.brand_logo_url
+    if body.brand_primary_color is not None:
+        tenant.brand_primary_color = body.brand_primary_color
+    if body.brand_accent_color is not None:
+        tenant.brand_accent_color = body.brand_accent_color
+    if body.brand_hide_footer is not None:
+        tenant.brand_hide_footer = body.brand_hide_footer
     db.commit()
     return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
 
