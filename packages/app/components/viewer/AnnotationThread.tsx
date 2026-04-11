@@ -74,25 +74,25 @@ export function AnnotationThread({
 
   if (annotations.length === 0) {
     return (
-      <div className="p-4 text-sm text-muted-foreground">
+      <div className="p-4 text-sm text-slate-400">
         No annotations yet. Toggle annotation mode to start marking up the PDF.
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2 p-3">
-      <h3 className="text-sm font-semibold">Annotations</h3>
+    <div className="flex flex-col gap-2 p-3 text-slate-200">
+      <h3 className="text-sm font-semibold text-white">Annotations</h3>
       {annotations.map((a) => (
         <div
           key={a.id}
-          className="flex items-start justify-between rounded border p-2 text-xs"
+          className="flex items-start justify-between rounded border border-slate-700 p-2 text-xs"
         >
           <div className="flex-1">
-            <div className="font-medium">
+            <div className="font-medium text-slate-200">
               {a.authorName ?? a.authorEmail}
             </div>
-            <div className="text-muted-foreground">
+            <div className="text-slate-400">
               Page {a.pageNum} &middot;{" "}
               {new Date(a.updatedAt).toLocaleString()}
             </div>

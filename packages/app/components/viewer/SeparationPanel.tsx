@@ -80,19 +80,19 @@ export function SeparationPanel({
   const spotChannels = channels.filter((c) => c.type === "spot");
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-3 p-3 text-slate-200">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Separations</h3>
+        <h3 className="text-sm font-semibold text-white">Separations</h3>
         <div className="flex gap-1">
           <button
             onClick={() => onSetAllChannels(true)}
-            className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+            className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
           >
             All On
           </button>
           <button
             onClick={() => onSetAllChannels(false)}
-            className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+            className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
           >
             All Off
           </button>
@@ -100,8 +100,9 @@ export function SeparationPanel({
       </div>
 
       {/* Process channels (CMYK) */}
-      <div className="space-y-1">
-        <p className="text-xs font-medium text-muted-foreground">Process</p>
+      <div>
+        <p className="mb-1 text-xs font-medium text-slate-400">Process</p>
+        <div className="grid grid-cols-2 gap-0.5">
         {processChannels.map((ch) => (
           <ChannelToggle
             key={ch.name}
@@ -111,14 +112,16 @@ export function SeparationPanel({
             onToggle={() => onToggleChannel(ch.name)}
           />
         ))}
+        </div>
       </div>
 
       {/* Spot colors */}
       {spotChannels.length > 0 && (
         <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground">
+          <p className="mb-1 text-xs font-medium text-slate-400">
             Spot Colors ({spotChannels.length})
           </p>
+          <div className="grid grid-cols-2 gap-0.5">
           {spotChannels.map((ch) => (
             <ChannelToggle
               key={ch.name}
@@ -128,6 +131,7 @@ export function SeparationPanel({
               onToggle={() => onToggleChannel(ch.name)}
             />
           ))}
+          </div>
         </div>
       )}
     </div>
@@ -146,15 +150,15 @@ function ChannelToggle({
   onToggle: () => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-muted">
+    <label className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-slate-200 hover:bg-slate-800">
       <input
         type="checkbox"
         checked={enabled}
         onChange={onToggle}
-        className="rounded border-border"
+        className="rounded border-slate-600"
       />
       <span
-        className="inline-block h-3 w-3 rounded-full border"
+        className="inline-block h-3 w-3 shrink-0 rounded-full border border-slate-600"
         style={{ backgroundColor: color }}
       />
       <span className="truncate text-xs">{name}</span>

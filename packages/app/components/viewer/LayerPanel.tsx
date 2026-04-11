@@ -54,26 +54,26 @@ export function LayerPanel({
 
   if (layers.length === 0) {
     return (
-      <div className="p-3 text-xs text-muted-foreground">
+      <div className="p-3 text-xs text-slate-400">
         This PDF has no optional content layers (OCGs).
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 p-3">
+    <div className="space-y-3 p-3 text-slate-200">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Layers</h3>
+        <h3 className="text-sm font-semibold text-white">Layers</h3>
         <div className="flex gap-1">
           <button
             onClick={() => onSetAllLayers(true)}
-            className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+            className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
           >
             All On
           </button>
           <button
             onClick={() => onSetAllLayers(false)}
-            className="rounded border px-2 py-0.5 text-xs hover:bg-muted"
+            className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
           >
             All Off
           </button>
@@ -84,15 +84,15 @@ export function LayerPanel({
         {layers.map((layer) => (
           <label
             key={layer.ocg_index}
-            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 hover:bg-muted"
+            className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-slate-200 hover:bg-slate-800"
           >
             <input
               type="checkbox"
               checked={enabledLayers.has(layer.ocg_index)}
               onChange={() => onToggleLayer(layer.ocg_index)}
-              className="rounded border-border"
+              className="rounded border-slate-600"
             />
-            <span className="inline-block h-3 w-3 rounded border bg-violet-400/40" />
+            <span className="inline-block h-3 w-3 shrink-0 rounded border border-slate-600 bg-violet-400/40" />
             <span className="truncate text-xs">{layer.name}</span>
           </label>
         ))}

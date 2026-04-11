@@ -60,15 +60,15 @@ export function ComparisonPanel({
   }, [apiBase, jobId, compareJobId, onStartComparison]);
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="border-b px-3 py-2">
-        <h3 className="text-sm font-semibold">File Comparison</h3>
+    <div className="flex h-full flex-col text-slate-200">
+      <div className="border-b border-slate-700 px-3 py-2">
+        <h3 className="text-sm font-semibold text-white">File Comparison</h3>
       </div>
 
       {/* Job selector */}
-      <div className="space-y-2 border-b p-3">
-        <div className="text-xs text-muted-foreground">
-          Current: <code className="text-[10px]">{jobId.slice(0, 8)}...</code>
+      <div className="space-y-2 border-b border-slate-700 p-3">
+        <div className="text-xs text-slate-400">
+          Current: <code className="text-[10px] text-slate-300">{jobId.slice(0, 8)}...</code>
         </div>
         <div className="flex gap-1">
           <input
@@ -76,12 +76,12 @@ export function ComparisonPanel({
             value={compareJobId}
             onChange={(e) => setCompareJobId(e.target.value)}
             placeholder="Compare with Job ID..."
-            className="flex-1 rounded border px-2 py-1 text-xs"
+            className="flex-1 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-slate-200 placeholder-slate-500"
           />
           <button
             onClick={handleCompare}
             disabled={loading || !compareJobId.trim()}
-            className="rounded bg-primary px-3 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
+            className="rounded bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-40"
           >
             {loading ? "..." : "Compare"}
           </button>
@@ -93,15 +93,15 @@ export function ComparisonPanel({
       {comparison && (
         <>
           {/* Mode selector */}
-          <div className="flex gap-1 border-b p-2">
+          <div className="flex gap-1 border-b border-slate-700 p-2">
             {(["ab", "side-by-side", "overlay"] as const).map((mode) => (
               <button
                 key={mode}
                 onClick={() => onModeChange(mode)}
                 className={`rounded px-2 py-1 text-xs ${
                   comparisonMode === mode
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-muted"
+                    ? "bg-blue-600 text-white"
+                    : "text-slate-300 hover:bg-slate-800"
                 }`}
               >
                 {mode === "ab"
@@ -115,7 +115,7 @@ export function ComparisonPanel({
 
           {/* Page SSIM scores */}
           <div className="flex-1 overflow-y-auto">
-            <div className="p-2 text-xs text-muted-foreground">
+            <div className="p-2 text-xs text-slate-400">
               {comparison.page_count_a} pages (A) vs {comparison.page_count_b} pages (B)
             </div>
             {comparison.pages.map((p) => {
@@ -126,8 +126,8 @@ export function ComparisonPanel({
                 <button
                   key={p.page_num}
                   onClick={() => onPageChange(p.page_num)}
-                  className={`flex w-full items-center justify-between border-b px-3 py-2 text-left text-xs hover:bg-muted/50 ${
-                    isActive ? "bg-primary/5 ring-1 ring-inset ring-primary/20" : ""
+                  className={`flex w-full items-center justify-between border-b border-slate-800 px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 ${
+                    isActive ? "bg-slate-800 ring-1 ring-inset ring-blue-500/30" : ""
                   }`}
                 >
                   <span>Page {p.page_num}</span>
@@ -156,7 +156,7 @@ export function ComparisonPanel({
                       {pct}%
                     </span>
                     {p.diff_pixel_count > 0 && (
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-[10px] text-slate-500">
                         {p.diff_pixel_count.toLocaleString()} px
                       </span>
                     )}

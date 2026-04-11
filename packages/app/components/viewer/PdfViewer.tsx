@@ -619,7 +619,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: Findings / context panel (desktop only) */}
         {!isMobile && (
-          <div className="flex w-[340px] shrink-0 flex-col border-r border-slate-700 bg-slate-900 overflow-hidden">
+          <div className="flex w-[280px] shrink-0 flex-col border-r border-slate-700 bg-slate-900 overflow-hidden">
             {renderLeftPanel()}
           </div>
         )}
