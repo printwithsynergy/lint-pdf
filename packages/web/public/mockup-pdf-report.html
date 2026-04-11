@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LintPDF — PDF Report Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8fafc; color: #1e293b; }
+
+  /* Header */
+  .header {
+    background: #1a3a7a;
+    color: white;
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-left { display: flex; align-items: center; gap: 16px; }
+  .logo {
+    width: 40px; height: 40px;
+    background: #2563eb;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: white;
+  }
+  .header h1 { font-size: 20px; font-weight: 700; }
+  .header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 2px; }
+  .verdict {
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .verdict.fail { background: #ef4444; }
+  .verdict.pass { background: #22c55e; }
+
+  /* Summary bar */
+  .summary-bar {
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 16px 32px;
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+  .stat { text-align: center; }
+  .stat-value { font-size: 24px; font-weight: 700; }
+  .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat.errors .stat-value { color: #dc2626; }
+  .stat.warnings .stat-value { color: #ea580c; }
+  .stat.advisory .stat-value { color: #2563eb; }
+  .stat-divider { width: 1px; height: 40px; background: #e2e8f0; }
+
+  /* Content */
+  .content { max-width: 900px; margin: 24px auto; padding: 0 24px; }
+
+  /* Finding card */
+  .finding-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 16px;
+    overflow: hidden;
+    display: flex;
+  }
+  .finding-thumbnail {
+    width: 180px;
+    min-height: 140px;
+    background: #f1f5f9;
+    border-right: 1px solid #e2e8f0;
+    position: relative;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .finding-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .thumb-page-label {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  /* Issue circle overlay on thumbnail */
+  .thumb-circle {
+    position: absolute;
+    border: 3px solid;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+  .thumb-circle.error { border-color: #ef4444; background: rgba(239,68,68,0.12); }
+  .thumb-circle.warning { border-color: #f59e0b; background: rgba(245,158,11,0.12); }
+  .thumb-circle.advisory { border-color: #3b82f6; background: rgba(59,130,246,0.12); }
+
+  .finding-body { flex: 1; padding: 16px 20px; }
+  .finding-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .sev-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    color: white;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .sev-badge.error { background: #dc2626; }
+  .sev-badge.warning { background: #ea580c; }
+  .sev-badge.advisory { background: #2563eb; }
+  .finding-id {
+    font-family: 'SF Mono', SFMono-Regular, monospace;
+    font-size: 12px;
+    color: #64748b;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .finding-sev-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .finding-sev-label.error { color: #dc2626; }
+  .finding-sev-label.warning { color: #ea580c; }
+  .finding-sev-label.advisory { color: #2563eb; }
+  .finding-message { font-size: 14px; line-height: 1.5; color: #334155; }
+  .finding-meta { margin-top: 8px; font-size: 12px; color: #94a3b8; display: flex; gap: 12px; }
+  .ai-tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0;
+    font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px;
+  }
+
+  /* Page section header */
+  .page-section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 32px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .page-section-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a3a7a;
+  }
+  .page-count-badge {
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 12px;
+    padding: 2px 10px;
+    border-radius: 12px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 24px;
+    color: #94a3b8;
+    font-size: 12px;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 40px;
+  }
+  .footer a { color: #2563eb; text-decoration: none; }
+
+  /* Mockup label */
+  .mockup-label {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: #fbbf24;
+    color: #78350f;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px;
+    z-index: 999;
+  }
+  body { padding-top: 32px; }
+
+  /* Thumbnail placeholder graphics */
+  .thumb-placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 11px;
+  }
+</style>
+</head>
+<body>
+
+<div class="mockup-label">MOCKUP — PDF Report Layout (each finding has a cropped page thumbnail with issue circled)</div>
+
+<!-- Header with LintPDF branding -->
+<div class="header">
+  <div class="header-left">
+    <div class="logo">LP</div>
+    <div>
+      <h1>Preflight Report</h1>
+      <div class="subtitle">lintpdf_preflight_test_final.pdf &middot; 10 pages &middot; Generated Apr 11, 2026</div>
+    </div>
+  </div>
+  <div class="verdict fail">FAIL</div>
+</div>
+
+<!-- Summary -->
+<div class="summary-bar">
+  <div class="stat errors"><div class="stat-value">29</div><div class="stat-label">Errors</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat warnings"><div class="stat-value">79</div><div class="stat-label">Warnings</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat advisory"><div class="stat-value">141</div><div class="stat-label">Advisory</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat"><div class="stat-value" style="color:#1a3a7a">249</div><div class="stat-label">Total</div></div>
+  <div class="stat-divider"></div>
+  <div class="stat"><div class="stat-value" style="color:#22c55e">85.5</div><div class="stat-label">Color Score</div></div>
+</div>
+
+<div class="content">
+
+  <!-- Page 1 Findings -->
+  <div class="page-section-header">
+    <h2>Page 1</h2>
+    <span class="page-count-badge">8 findings</span>
+  </div>
+
+  <!-- Finding with thumbnail -->
+  <div class="finding-card">
+    <div class="finding-thumbnail">
+      <div class="thumb-placeholder" style="background:#f8f8f8;">
+        <svg width="160" height="120" viewBox="0 0 160 120"><rect fill="#e2e8f0" width="160" height="120" rx="2"/><rect fill="#cbd5e1" x="10" y="10" width="80" height="8" rx="2"/><rect fill="#cbd5e1" x="10" y="24" width="60" height="6" rx="2"/><rect fill="#cbd5e1" x="10" y="36" width="70" height="6" rx="2"/><rect fill="#94a3b8" x="10" y="52" width="140" height="50" rx="4"/><text x="80" y="80" font-size="10" fill="#64748b" text-anchor="middle">PDF area</text></svg>
+      </div>
+      <div class="thumb-page-label">p.1</div>
+      <div class="thumb-circle error" style="top:40px;left:20px;width:120px;height:60px;"></div>
+    </div>
+    <div class="finding-body">
+      <div class="finding-header">
+        <div class="sev-badge error">1</div>
+        <span class="finding-id">LPDF_STRUCT_001</span>
+        <span class="finding-sev-label error">ERROR</span>
+      </div>
+      <div class="finding-message">Document contains JavaScript (not allowed in print workflows)</div>
+      <div class="finding-meta">
+        <span>Page 1</span>
+        <span>ISO 32000-2 §7.4.7</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Warning finding -->
+  <div class="finding-card">
+    <div class="finding-thumbnail">
+      <div class="thumb-placeholder" style="background:#f8f8f8;">
+        <svg width="160" height="120" viewBox="0 0 160 120"><rect fill="#e2e8f0" width="160" height="120" rx="2"/><rect fill="#cbd5e1" x="10" y="10" width="80" height="8" rx="2"/><rect fill="#cbd5e1" x="10" y="24" width="60" height="6" rx="2"/><rect fill="#94a3b8" x="10" y="40" width="140" height="70" rx="4"/></svg>
+      </div>
+      <div class="thumb-page-label">p.1</div>
+      <div class="thumb-circle warning" style="top:8px;left:8px;width:144px;height:104px;"></div>
+    </div>
+    <div class="finding-body">
+      <div class="finding-header">
+        <div class="sev-badge warning">2</div>
+        <span class="finding-id">LPDF_BOX_003</span>
+        <span class="finding-sev-label warning">WARNING</span>
+      </div>
+      <div class="finding-message">Inadequate bleed on page 1: left 0.0pt, right 0.0pt, bottom 0.0pt, top 0.0pt (minimum 8.5pt / 3.0mm)</div>
+      <div class="finding-meta">
+        <span>Page 1</span>
+        <span>Bleed &lt; 3mm all sides</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI finding -->
+  <div class="finding-card">
+    <div class="finding-thumbnail">
+      <div class="thumb-placeholder" style="background:#f8f8f8;">
+        <svg width="160" height="120" viewBox="0 0 160 120"><rect fill="#e2e8f0" width="160" height="120" rx="2"/><rect fill="#cbd5e1" x="15" y="50" width="50" height="6" rx="2"/><rect fill="#cbd5e1" x="15" y="60" width="40" height="5" rx="2"/><rect fill="#cbd5e1" x="15" y="70" width="55" height="5" rx="2"/></svg>
+      </div>
+      <div class="thumb-page-label">p.1</div>
+      <div class="thumb-circle warning" style="top:35px;left:10px;width:80px;height:55px;"></div>
+    </div>
+    <div class="finding-body">
+      <div class="finding-header">
+        <div class="sev-badge warning">3</div>
+        <span class="finding-id">AI_WCAG_001</span>
+        <span class="finding-sev-label warning">WARNING</span>
+        <span class="ai-tag">&#9733; AI</span>
+      </div>
+      <div class="finding-message">WCAG AA contrast failure on page 1: ratio 1.0:1 for large text (font F2+0, 18.0pt), required 3.0:1</div>
+      <div class="finding-meta">
+        <span>Page 1</span>
+        <span>Font: F2+0 18pt</span>
+        <span>WCAG 2.1 SC 1.4.3</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Advisory finding -->
+  <div class="finding-card">
+    <div class="finding-thumbnail">
+      <div class="thumb-placeholder" style="background:#f8f8f8;">
+        <svg width="160" height="120" viewBox="0 0 160 120"><rect fill="#e2e8f0" width="160" height="120" rx="2"/><rect fill="#cbd5e1" x="10" y="15" width="90" height="7" rx="2"/><rect fill="#94a3b8" x="10" y="28" width="30" height="30" rx="2"/></svg>
+      </div>
+      <div class="thumb-page-label">p.1</div>
+      <div class="thumb-circle advisory" style="top:10px;left:8px;width:50px;height:55px;"></div>
+    </div>
+    <div class="finding-body">
+      <div class="finding-header">
+        <div class="sev-badge advisory">4</div>
+        <span class="finding-id">LPDF_FONT_003</span>
+        <span class="finding-sev-label advisory">ADVISORY</span>
+      </div>
+      <div class="finding-message">Standard 14 font 'Helvetica' used (rendering may vary across viewers)</div>
+      <div class="finding-meta">
+        <span>Page 1</span>
+        <span>Font: Helvetica</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Page 7 section (dense findings) -->
+  <div class="page-section-header">
+    <h2>Page 7</h2>
+    <span class="page-count-badge">42 findings</span>
+  </div>
+
+  <div class="finding-card">
+    <div class="finding-thumbnail">
+      <div class="thumb-placeholder" style="background:#f8f8f8;">
+        <svg width="160" height="120" viewBox="0 0 160 120"><rect fill="#e2e8f0" width="160" height="120" rx="2"/><text x="80" y="20" font-size="7" fill="#94a3b8" text-anchor="middle">Nutrition Facts</text><rect fill="#cbd5e1" x="20" y="28" width="120" height="2" rx="1"/><rect fill="#cbd5e1" x="20" y="34" width="80" height="4" rx="1"/><rect fill="#cbd5e1" x="20" y="42" width="90" height="4" rx="1"/><rect fill="#cbd5e1" x="20" y="50" width="70" height="4" rx="1"/><rect fill="#cbd5e1" x="20" y="58" width="100" height="4" rx="1"/><rect fill="#cbd5e1" x="20" y="66" width="60" height="4" rx="1"/><rect fill="#cbd5e1" x="20" y="74" width="85" height="4" rx="1"/></svg>
+      </div>
+      <div class="thumb-page-label">p.7</div>
+      <div class="thumb-circle error" style="top:20px;left:15px;width:130px;height:70px;"></div>
+    </div>
+    <div class="finding-body">
+      <div class="finding-header">
+        <div class="sev-badge error">1</div>
+        <span class="finding-id">AI_FDA_002</span>
+        <span class="finding-sev-label error">ERROR</span>
+        <span class="ai-tag">&#9733; AI</span>
+      </div>
+      <div class="finding-message">Nutrition Facts text below minimum readable size (5.4pt, FDA requires ≥6pt for any NFP text)</div>
+      <div class="finding-meta">
+        <span>Page 7</span>
+        <span>21 CFR 101.9</span>
+        <span>Font: 5.4pt</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  Powered by <a href="#">LintPDF</a> &middot; Profile: lintpdf-default &middot; Report generated Apr 11, 2026
+</div>
+
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>LintPDF — Interactive Viewer Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; overflow: hidden; height: 100vh; }
+
+  /* Mockup label */
+  .mockup-label {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: #fbbf24; color: #78350f; text-align: center;
+    font-size: 13px; font-weight: 600; padding: 6px; z-index: 999;
+  }
+
+  /* Top toolbar */
+  .toolbar {
+    background: #1a3a7a;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 8px;
+    margin-top: 32px;
+    border-bottom: 1px solid #2563eb;
+  }
+  .toolbar-logo {
+    width: 32px; height: 32px;
+    background: #2563eb; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 11px; color: white; flex-shrink: 0;
+  }
+  .toolbar-brand {
+    font-weight: 700; font-size: 15px; color: white;
+    margin-right: 12px; flex-shrink: 0;
+  }
+  .toolbar-divider { width: 1px; height: 28px; background: rgba(255,255,255,0.2); margin: 0 4px; }
+  .toolbar-filename { font-size: 13px; color: rgba(255,255,255,0.7); margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .tool-group { display: flex; gap: 2px; }
+  .tool-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+    white-space: nowrap;
+  }
+  .tool-btn:hover { background: rgba(255,255,255,0.15); }
+  .tool-btn.active { background: #2563eb; border-color: #3b82f6; color: white; }
+  .tool-btn svg { width: 14px; height: 14px; }
+
+  /* Page nav */
+  .page-nav {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13px; color: white;
+  }
+  .page-nav input {
+    width: 36px; text-align: center; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 4px;
+    color: white; font-size: 12px; padding: 3px;
+  }
+  .page-nav button {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: white; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+  }
+  .zoom-select {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: white; font-size: 12px; padding: 4px 8px; border-radius: 4px;
+  }
+
+  /* Main layout */
+  .main { display: flex; height: calc(100vh - 80px); }
+
+  /* LEFT: Findings panel */
+  .findings-panel {
+    width: 340px;
+    background: #1e293b;
+    border-right: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+  .findings-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .findings-header h2 { font-size: 14px; font-weight: 700; }
+  .findings-tabs {
+    display: flex; gap: 4px; padding: 8px 12px;
+    border-bottom: 1px solid #334155;
+  }
+  .findings-tab {
+    font-size: 11px; padding: 4px 10px; border-radius: 12px;
+    cursor: pointer; border: 1px solid transparent;
+    color: #94a3b8;
+  }
+  .findings-tab.active { background: #dc2626; color: white; border-color: #dc2626; }
+  .findings-tab.warn.active { background: #ea580c; border-color: #ea580c; }
+  .findings-tab.info.active { background: #2563eb; border-color: #2563eb; }
+  .findings-tab:hover { color: white; }
+  .count-badge { font-size: 10px; margin-left: 4px; opacity: 0.8; }
+
+  .findings-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .finding-item {
+    padding: 10px 16px;
+    border-bottom: 1px solid #1e293b;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-left: 3px solid transparent;
+  }
+  .finding-item:hover { background: rgba(255,255,255,0.04); }
+  .finding-item.selected {
+    background: rgba(37, 99, 235, 0.15);
+    border-left-color: #2563eb;
+  }
+  .finding-item.selected.error { border-left-color: #ef4444; background: rgba(239,68,68,0.1); }
+  .finding-item.selected.warning { border-left-color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .finding-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .finding-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .finding-dot.error { background: #ef4444; }
+  .finding-dot.warning { background: #f59e0b; }
+  .finding-dot.advisory { background: #3b82f6; }
+  .finding-item-id { font-size: 11px; font-family: monospace; color: #64748b; }
+  .finding-item-page { font-size: 10px; color: #475569; margin-left: auto; }
+  .finding-item-msg { font-size: 12px; color: #94a3b8; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* Search in findings */
+  .findings-search {
+    padding: 8px 12px;
+    border-bottom: 1px solid #334155;
+  }
+  .findings-search input {
+    width: 100%;
+    background: #0f172a;
+    border: 1px solid #334155;
+    color: #e2e8f0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+  .findings-search input::placeholder { color: #475569; }
+
+  /* RIGHT: PDF canvas area */
+  .canvas-area {
+    flex: 1;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: auto;
+  }
+  .pdf-page {
+    background: white;
+    width: 595px;
+    height: 842px;
+    border-radius: 2px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  /* Simulated page content */
+  .page-content {
+    padding: 40px;
+    color: #334155;
+  }
+  .page-content h3 { font-size: 18px; color: #1a3a7a; margin-bottom: 12px; }
+  .page-text-line {
+    height: 8px; background: #cbd5e1; border-radius: 2px;
+    margin-bottom: 6px;
+  }
+  .page-text-line:nth-child(odd) { width: 85%; }
+  .page-text-line:nth-child(even) { width: 65%; }
+  .page-image-placeholder {
+    width: 200px; height: 140px; background: #f1f5f9; border: 1px solid #e2e8f0;
+    border-radius: 4px; margin: 16px 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #94a3b8; font-size: 12px;
+  }
+
+  /* Issue highlight overlays on the PDF page */
+  .issue-highlight {
+    position: absolute;
+    border: 3px solid;
+    border-radius: 3px;
+    pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .issue-highlight.error { border-color: #ef4444; background: rgba(239,68,68,0.1); }
+  .issue-highlight.warning { border-color: #f59e0b; background: rgba(245,158,11,0.1); }
+  .issue-highlight.advisory { border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+  .issue-highlight.selected { border-width: 4px; box-shadow: 0 0 0 2px rgba(255,255,255,0.3); }
+  .issue-badge {
+    position: absolute;
+    top: -12px; right: -12px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    color: white;
+    font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .issue-badge.error { background: #dc2626; }
+  .issue-badge.warning { background: #ea580c; }
+  .issue-badge.advisory { background: #2563eb; }
+
+  /* Verdict bar */
+  .verdict-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 16px;
+    font-size: 12px;
+    margin-top: 32px;
+  }
+  .verdict-indicator {
+    display: flex; align-items: center; gap: 6px;
+    background: #dc2626;
+    color: white; padding: 4px 12px; border-radius: 4px; font-weight: 600;
+  }
+  .verdict-stats { color: #94a3b8; margin-left: auto; }
+</style>
+</head>
+<body>
+
+<div class="mockup-label">MOCKUP — Interactive Web Viewer (ProofScope layout: findings LEFT, PDF RIGHT, tools TOP)</div>
+
+<!-- Top toolbar with branding + tools -->
+<div class="toolbar">
+  <div class="toolbar-logo">LP</div>
+  <span class="toolbar-brand">LintPDF</span>
+  <span class="toolbar-filename">lintpdf_preflight_test_final.pdf</span>
+  <div class="toolbar-divider"></div>
+
+  <!-- Page navigation -->
+  <div class="page-nav">
+    <button>&larr;</button>
+    <input value="1" />
+    <span>/ 10</span>
+    <button>&rarr;</button>
+  </div>
+  <div class="toolbar-divider"></div>
+
+  <!-- Zoom -->
+  <select class="zoom-select">
+    <option>50%</option>
+    <option>75%</option>
+    <option selected>100%</option>
+    <option>150%</option>
+    <option>200%</option>
+    <option>Fit Width</option>
+  </select>
+  <div class="toolbar-divider"></div>
+
+  <!-- Tool buttons -->
+  <div class="tool-group">
+    <div class="tool-btn active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      Inspect
+    </div>
+    <div class="tool-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M6 12h12"/></svg>
+      Seps
+    </div>
+    <div class="tool-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18"/></svg>
+      TAC
+    </div>
+    <div class="tool-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4l16 16M4 20L20 4"/></svg>
+      Measure
+    </div>
+    <div class="tool-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12h20"/></svg>
+      Densito
+    </div>
+    <div class="tool-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Boxes
+    </div>
+  </div>
+</div>
+
+<!-- Main layout -->
+<div class="main">
+
+  <!-- LEFT: Findings Panel -->
+  <div class="findings-panel">
+    <div class="findings-header">
+      <h2>Findings</h2>
+      <span style="font-size:12px;color:#ef4444;font-weight:600;">FAIL</span>
+    </div>
+
+    <div class="findings-search">
+      <input placeholder="Search findings..." />
+    </div>
+
+    <div class="findings-tabs">
+      <div class="findings-tab">All <span class="count-badge">249</span></div>
+      <div class="findings-tab active">Errors <span class="count-badge">29</span></div>
+      <div class="findings-tab warn">Warnings <span class="count-badge">79</span></div>
+      <div class="findings-tab info">Advisory <span class="count-badge">141</span></div>
+    </div>
+
+    <div class="findings-list">
+      <!-- Selected finding -->
+      <div class="finding-item selected error">
+        <div class="finding-item-header">
+          <div class="finding-dot error"></div>
+          <span class="finding-item-id">LPDF_STRUCT_001</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">Document contains JavaScript (not allowed in print workflows)</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot error"></div>
+          <span class="finding-item-id">AI_FDA_001</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">Calories declaration may be below minimum font size</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot error"></div>
+          <span class="finding-item-id">AI_FDA_004</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">Missing required nutrients in NFP: Total Fat, Saturated Fat, Trans Fat...</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot error"></div>
+          <span class="finding-item-id">AI_PHARMA_001</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">EU pharma font below minimum: x-height 1.35mm (required &ge;1.4mm)</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot warning"></div>
+          <span class="finding-item-id">LPDF_BOX_003</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">Inadequate bleed: 0.0pt all sides (minimum 8.5pt / 3.0mm)</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot warning"></div>
+          <span class="finding-item-id">AI_WCAG_001</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">WCAG AA contrast failure: ratio 1.0:1 for large text, required 3.0:1</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot warning"></div>
+          <span class="finding-item-id">AI_WCAG_001</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">WCAG AA contrast failure: ratio 3.95:1 for normal text, required 4.5:1</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot advisory"></div>
+          <span class="finding-item-id">LPDF_FONT_003</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">Standard 14 font 'Helvetica' used (rendering may vary)</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot advisory"></div>
+          <span class="finding-item-id">LPDF_TEXT_004</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">White text detected on page 1</div>
+      </div>
+
+      <div class="finding-item">
+        <div class="finding-item-header">
+          <div class="finding-dot advisory"></div>
+          <span class="finding-item-id">LPDF_FONT_007</span>
+          <span class="finding-item-page">p.1</span>
+        </div>
+        <div class="finding-item-msg">Font 'AAAAAA+DejaVuSans-Bold' has no encoding specified</div>
+      </div>
+
+      <!-- More findings would continue... -->
+      <div style="padding:16px;text-align:center;color:#475569;font-size:12px;">
+        + 239 more findings...
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: PDF canvas -->
+  <div class="canvas-area">
+    <div class="pdf-page">
+      <div class="page-content">
+        <h3>LintPDF Preflight Test</h3>
+        <div class="page-text-line" style="width:70%"></div>
+        <div class="page-text-line" style="width:90%"></div>
+        <div class="page-text-line" style="width:55%"></div>
+        <div class="page-text-line" style="width:80%"></div>
+        <div class="page-image-placeholder">Image content</div>
+        <div class="page-text-line" style="width:75%"></div>
+        <div class="page-text-line" style="width:60%"></div>
+        <div class="page-text-line" style="width:85%"></div>
+        <div class="page-text-line" style="width:45%"></div>
+        <div class="page-text-line" style="width:70%"></div>
+        <div class="page-text-line" style="width:90%"></div>
+        <div class="page-text-line" style="width:50%"></div>
+        <div class="page-text-line" style="width:80%"></div>
+        <div class="page-text-line" style="width:65%"></div>
+        <div class="page-text-line" style="width:75%"></div>
+        <div class="page-text-line" style="width:40%"></div>
+        <div class="page-text-line" style="width:85%"></div>
+        <div class="page-text-line" style="width:55%"></div>
+        <div class="page-text-line" style="width:70%"></div>
+        <div class="page-text-line" style="width:60%"></div>
+        <div class="page-text-line" style="width:90%"></div>
+      </div>
+
+      <!-- Issue highlights overlaid on the page (selected finding is emphasized) -->
+      <div class="issue-highlight error selected" style="top:30px;left:30px;width:535px;height:50px;">
+        <div class="issue-badge error">1</div>
+      </div>
+
+      <div class="issue-highlight warning" style="top:200px;left:30px;width:200px;height:155px;">
+        <div class="issue-badge warning">5</div>
+      </div>
+
+      <div class="issue-highlight warning" style="top:100px;left:250px;width:220px;height:30px;">
+        <div class="issue-badge warning">6</div>
+      </div>
+
+      <div class="issue-highlight advisory" style="top:420px;left:30px;width:300px;height:20px;">
+        <div class="issue-badge advisory">8</div>
+      </div>
+
+      <div class="issue-highlight advisory" style="top:500px;left:30px;width:250px;height:18px;">
+        <div class="issue-badge advisory">9</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
