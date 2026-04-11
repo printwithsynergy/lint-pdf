@@ -358,6 +358,18 @@ class ReportService:
         metadata = result_json.get("metadata", {})
         findings = result_json.get("findings", [])
 
+        # Enrich findings with friendly names
+        try:
+            from lintpdf.reports.check_names import get_check_info
+
+            for f in findings:
+                info = get_check_info(f.get("inspection_id", ""))
+                f.setdefault("friendly_name", info.name)
+                f.setdefault("friendly_description", info.description)
+                f.setdefault("thumbnail_base64", "")
+        except Exception:
+            pass
+
         # Build findings_by_page from flat findings list
         findings_by_page: dict[int, list[dict[str, Any]]] = {}
         for f in findings:
@@ -368,6 +380,7 @@ class ReportService:
 
         # Generate annotated page screenshots (standard + comprehensive only)
         annotated_pages: dict[int, Any] = {}
+        render_failed = False
         if pdf_bytes is not None and detail_level != ReportDetailLevel.EXECUTIVE:
             try:
                 from lintpdf.reports.page_renderer import render_annotated_pages
@@ -377,6 +390,19 @@ class ReportService:
                 )
             except Exception:
                 logger.exception("Failed to render annotated pages for service report")
+
+            # Generate per-finding cropped thumbnails
+            try:
+                from lintpdf.reports.page_renderer import render_finding_thumbnails
+
+                render_finding_thumbnails(pdf_bytes, findings, dpi=120)
+            except Exception:
+                logger.exception("Failed to render per-finding thumbnails")
+
+            if not annotated_pages and findings_by_page:
+                render_failed = True
+        elif pdf_bytes is None and detail_level != ReportDetailLevel.EXECUTIVE:
+            render_failed = True
 
         # Build top findings for executive summary (sorted by severity priority)
         severity_order = {"error": 0, "warning": 1, "advisory": 2}
@@ -416,6 +442,12 @@ class ReportService:
 
             color_score_breakdown = metadata.get("color_score_breakdown", {})
 
+        # Build sorted flat list (errors first, then warnings, advisory)
+        all_findings_sorted = sorted(
+            findings,
+            key=lambda f: (severity_order.get(f.get("severity", "advisory"), 3), f.get("page_num") or 0),
+        )
+
         passed = summary.get("passed", True)
         context = {
             "result": type(
@@ -436,6 +468,7 @@ class ReportService:
             "badge_color": "#22c55e" if passed else "#ef4444",
             "brand": branding,
             "annotated_pages": annotated_pages,
+            "render_failed": render_failed,
             "color_quality_score": metadata.get("color_quality_score"),
             "color_quality_grade": metadata.get("color_quality_grade"),
             "file_name": result_json.get("file_name", metadata.get("file_name", "")),
@@ -443,6 +476,7 @@ class ReportService:
             # Detail level controls
             "detail_level": detail_level,
             "top_findings": top_findings,
+            "all_findings_sorted": all_findings_sorted,
             # Comprehensive-only data
             "ink_separations": ink_separations,
             "ink_tac_by_page": ink_tac_by_page,
