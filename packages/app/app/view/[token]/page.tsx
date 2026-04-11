@@ -9,6 +9,8 @@ interface JobData {
   tenantId: string;
   fileName: string;
   emailRequired: boolean;
+  brandName?: string;
+  logoUrl?: string;
 }
 
 function IdentifyScreen({
@@ -229,9 +231,15 @@ export default function PublicViewerPage() {
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between border-b bg-background px-4">
         <div className="flex items-center gap-3">
-          <span className="font-display text-lg font-bold">LintPDF</span>
-          <span className="text-sm text-muted-foreground">|</span>
-          <span className="text-sm text-muted-foreground truncate max-w-[300px]">
+          <img
+            src={jobData.logoUrl || "/logo.svg"}
+            alt={jobData.brandName || "LintPDF"}
+            className="h-7 w-auto"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+          <span className="font-display text-lg font-bold">{jobData.brandName || "LintPDF"}</span>
+          <span className="hidden text-sm text-muted-foreground sm:inline">|</span>
+          <span className="hidden text-sm text-muted-foreground truncate max-w-[300px] sm:inline">
             {jobData.fileName}
           </span>
         </div>

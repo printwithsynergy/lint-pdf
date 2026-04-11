@@ -42,19 +42,28 @@ function authHeaders(): Record<string, string> {
  */
 async function validateToken(
   token: string,
-): Promise<{ jobId: string; tenantId: string; fileName: string; emailRequired: boolean } | null> {
+): Promise<{ jobId: string; tenantId: string; fileName: string; emailRequired: boolean; brandName?: string; logoUrl?: string } | null> {
   try {
-    const resp = await fetch(
-      engineUrl(`/api/v1/reports/tokens/${token}`),
-      { headers: authHeaders() },
-    );
-    if (!resp.ok) return null;
-    const data = await resp.json() as Record<string, unknown>;
+    const [tokenResp, configResp] = await Promise.all([
+      fetch(engineUrl(`/api/v1/reports/tokens/${token}`), { headers: authHeaders() }),
+      fetch(engineUrl(`/api/v1/viewer/public/${token}/config`)).catch(() => null),
+    ]);
+    if (!tokenResp.ok) return null;
+    const data = await tokenResp.json() as Record<string, unknown>;
+    let brandName: string | undefined;
+    let logoUrl: string | undefined;
+    if (configResp?.ok) {
+      const cfg = await configResp.json() as Record<string, unknown>;
+      brandName = (cfg.brand_name as string) || undefined;
+      logoUrl = (cfg.brand_logo_url as string) || undefined;
+    }
     return {
       jobId: (data.job_id ?? data.jobId) as string,
       tenantId: (data.tenant_id ?? data.tenantId ?? "") as string,
       fileName: (data.file_name ?? data.fileName ?? "Untitled") as string,
       emailRequired: (data.email_required ?? data.emailRequired ?? true) as boolean,
+      brandName,
+      logoUrl,
     };
   } catch {
     return null;
@@ -412,6 +421,8 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
             tenantId: tokenData.tenantId,
             fileName: tokenData.fileName,
             emailRequired: tokenData.emailRequired,
+            brandName: tokenData.brandName,
+            logoUrl: tokenData.logoUrl,
           },
         };
       }) as RouteHandler,
