@@ -69,7 +69,7 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
 
   return (
     <div
-      className={`flex items-center justify-between border-b px-4 py-2 text-sm ${
+      className={`flex flex-col gap-2 border-b px-4 py-2 text-sm sm:flex-row sm:items-center sm:justify-between ${
         displayVerdict === "pass"
           ? "border-green-200 bg-green-50 dark:bg-green-950/20"
           : displayVerdict === "fail"
@@ -77,7 +77,7 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
             : "border-amber-200 bg-amber-50 dark:bg-amber-950/20"
       }`}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Verdict badge */}
         <span
           className={`rounded px-3 py-1 text-xs font-bold uppercase ${
@@ -118,16 +118,15 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
 
       {/* Manual verdict controls */}
       {!isAuto && !readOnly && (
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {showFailForm ? (
-            <div className="flex items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <input
                 type="text"
                 value={failNotes}
                 onChange={(e) => setFailNotes(e.target.value)}
                 placeholder="Failure notes (required)..."
-                className="rounded border px-2 py-1 text-xs"
-                style={{ width: 240 }}
+                className="w-full rounded border px-2 py-1 text-xs sm:w-60"
               />
               <button
                 onClick={() => submitVerdict("fail", failNotes)}

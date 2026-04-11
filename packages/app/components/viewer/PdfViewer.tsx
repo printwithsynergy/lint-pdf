@@ -21,6 +21,7 @@ import { LayerPanel } from "./LayerPanel";
 import { VerdictBar } from "./VerdictBar";
 import { ComparisonPanel } from "./ComparisonPanel";
 import { MobileBottomSheet } from "./MobileBottomSheet";
+import type { SnapPosition } from "./MobileBottomSheet";
 import { MobileDrawer } from "./MobileDrawer";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison";
@@ -49,14 +50,21 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Mobile detection
-  const [isMobile, setIsMobile] = useState(false);
+  // Mobile detection (SSR-safe: check window width on first client render)
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== "undefined" ? window.innerWidth < 768 : false,
+  );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [bottomSheetSnap, setBottomSheetSnap] = useState<SnapPosition>("collapsed");
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
-    check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
+  }, []);
+
+  // Auto-expand bottom sheet when a panel-mode is selected on mobile
+  const handleExpandSheet = useCallback(() => {
+    setBottomSheetSnap("half");
   }, []);
 
   // Collapsible thumbnails (for left panel header)
@@ -396,29 +404,53 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
           {/* ── MOBILE LAYOUT ── */}
           {/* Compact top bar */}
           <div
-            className="flex h-11 shrink-0 items-center justify-between px-3 text-white"
+            className="flex h-11 shrink-0 items-center justify-between gap-1 px-2 text-white"
             style={{ backgroundColor: config.brand_primary_color || "#1e293b" }}
           >
-            <button onClick={() => setDrawerOpen(true)} className="rounded p-1.5 hover:bg-white/10">
+            <button onClick={() => setDrawerOpen(true)} className="shrink-0 rounded p-1.5 hover:bg-white/10">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div className="flex items-center gap-2 text-sm">
+
+            {/* Active mode badge */}
+            {viewerMode !== "normal" && (
+              <span className="shrink-0 rounded-full bg-blue-500/30 px-1.5 py-0.5 text-[10px] font-bold text-blue-300">
+                {viewerMode === "separation" ? "CMYK" : viewerMode === "layers" ? "LAYERS" : viewerMode === "annotation" ? "ANNOTATE" : "COMPARE"}
+              </span>
+            )}
+            {(showTacHeatmap || measureMode !== "none") && (
+              <span className="shrink-0 rounded-full bg-green-500/30 px-1.5 py-0.5 text-[10px] font-bold text-green-300">
+                {showTacHeatmap ? "TAC" : measureMode === "ruler" ? "RULER" : "DENSITY"}
+              </span>
+            )}
+
+            {/* Page navigation */}
+            <div className="flex items-center gap-1 text-sm">
               <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} className="p-1 hover:bg-white/10 rounded">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M15 19l-7-7 7-7" /></svg>
               </button>
-              <span className="min-w-[3rem] text-center font-medium">{currentPage} / {pages.length}</span>
+              <span className="min-w-[2.5rem] text-center text-xs font-medium">{currentPage}/{pages.length}</span>
               <button onClick={() => setCurrentPage((p) => Math.min(pages.length, p + 1))} className="p-1 hover:bg-white/10 rounded">
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M9 5l7 7-7 7" /></svg>
               </button>
             </div>
-            <span className="text-xs font-medium opacity-80">{zoom}%</span>
+
+            {/* Zoom controls */}
+            <div className="flex shrink-0 items-center gap-0.5">
+              <button onClick={() => setZoom((z) => Math.max(25, z - 25))} className="rounded p-1 text-xs hover:bg-white/10">
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M5 12h14" /></svg>
+              </button>
+              <span className="min-w-[2rem] text-center text-[10px] font-medium">{zoom}%</span>
+              <button onClick={() => setZoom((z) => Math.min(400, z + 25))} className="rounded p-1 text-xs hover:bg-white/10">
+                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M12 5v14M5 12h14" /></svg>
+              </button>
+            </div>
           </div>
 
           {/* Full-screen canvas */}
           <div className="flex-1 overflow-auto bg-neutral-800">
-            <div className="flex min-h-full items-start justify-center p-2">
+            <div className="flex min-h-full items-start justify-center p-2 pb-20">
               {currentPageInfo && (
                 <div className="relative">
                   {viewerMode === "separation" ? (
@@ -426,6 +458,21 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                   ) : (
                     <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} findings={findings} selectedFinding={selectedFinding} onFindingClick={handleSelectFinding} onZoomChange={setZoom} onPageChange={(d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d)))} />
                   )}
+
+                  {/* Annotation overlay */}
+                  {viewerMode === "annotation" && currentPageInfo && (
+                    <AnnotationCanvas
+                      jobId={jobId}
+                      pageNum={currentPage}
+                      width={canvasWidth}
+                      height={canvasHeight}
+                      activeTool={annotationTool}
+                      strokeColor={strokeColor}
+                      onSavingChange={setAnnotationSaving}
+                      onHistoryChange={handleHistoryChange}
+                    />
+                  )}
+
                   {showTacHeatmap && currentPageInfo && (
                     <TACHeatmapOverlay jobId={jobId} pageNum={currentPage} width={canvasWidth} height={canvasHeight} tacLimit={config.default_tac_limit} />
                   )}
@@ -438,13 +485,71 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                   {measureMode === "ruler" && currentPageInfo && (
                     <MeasureTool pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
                   )}
+
+                  {/* Comparison diff overlay */}
+                  {viewerMode === "comparison" && comparison && comparisonMode === "overlay" && (
+                    <img
+                      src={`/api/lintpdf/viewer/compare/${comparison.comparison_id}/pages/${currentPage}/diff`}
+                      alt="Difference overlay"
+                      className="pointer-events-none absolute inset-0"
+                      style={{ width: canvasWidth, height: canvasHeight, opacity: 0.7 }}
+                    />
+                  )}
                 </div>
               )}
             </div>
           </div>
 
+          {/* Mobile annotation toolbar */}
+          {viewerMode === "annotation" && !readOnly && (
+            <div className="shrink-0 overflow-x-auto border-t border-slate-700 bg-slate-900 px-2 py-1.5">
+              <div className="flex items-center gap-1 min-w-max">
+                {/* Tool buttons */}
+                {([
+                  { id: "pointer" as AnnotationTool, label: "Select", icon: "\u25B3" },
+                  { id: "pen" as AnnotationTool, label: "Pen", icon: "\u270E" },
+                  { id: "arrow" as AnnotationTool, label: "Arrow", icon: "\u2192" },
+                  { id: "rectangle" as AnnotationTool, label: "Rect", icon: "\u25A1" },
+                  { id: "ellipse" as AnnotationTool, label: "Ellipse", icon: "\u25CB" },
+                  { id: "text" as AnnotationTool, label: "Text", icon: "T" },
+                  { id: "highlight" as AnnotationTool, label: "Highlight", icon: "\u2588" },
+                ]).map((tool) => (
+                  <button
+                    key={tool.id}
+                    onClick={() => setAnnotationTool(tool.id)}
+                    className={`rounded px-2 py-1.5 text-sm font-medium transition-colors ${
+                      annotationTool === tool.id
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-300 hover:bg-slate-800"
+                    }`}
+                    title={tool.label}
+                  >
+                    {tool.icon}
+                  </button>
+                ))}
+                <span className="mx-1 h-5 w-px bg-slate-700" />
+                {/* Color swatches */}
+                {["#ef4444", "#f59e0b", "#22c55e", "#3b82f6", "#8b5cf6", "#000000", "#ffffff"].map((color) => (
+                  <button
+                    key={color}
+                    onClick={() => setStrokeColor(color)}
+                    className={`h-5 w-5 shrink-0 rounded-full border-2 transition-transform ${
+                      strokeColor === color ? "scale-125 border-blue-400" : "border-transparent hover:scale-110"
+                    }`}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+                <span className="mx-1 h-5 w-px bg-slate-700" />
+                {/* Undo/Redo */}
+                <button onClick={handleAnnotationUndo} disabled={!canUndo} className="rounded px-2 py-1 text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40">Undo</button>
+                <button onClick={handleAnnotationRedo} disabled={!canRedo} className="rounded px-2 py-1 text-xs text-slate-300 hover:bg-slate-800 disabled:opacity-40">Redo</button>
+                {annotationSaving && <span className="text-[10px] text-slate-500">Saving...</span>}
+              </div>
+            </div>
+          )}
+
           {/* Bottom sheet with findings */}
-          <MobileBottomSheet summary={summaryNode}>
+          <MobileBottomSheet summary={summaryNode} snap={bottomSheetSnap} onSnapChange={setBottomSheetSnap}>
             {renderLeftPanel()}
           </MobileBottomSheet>
 
@@ -462,6 +567,10 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             showBoxOverlay={showBoxOverlay}
             onToggleBoxOverlay={() => setShowBoxOverlay((v) => !v)}
             findingSummary={findingsSummary}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            jobId={jobId}
+            onExpandSheet={handleExpandSheet}
           />
         </>
       ) : (

@@ -1,13 +1,17 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+
+export type SnapPosition = "collapsed" | "half" | "full";
 
 interface MobileBottomSheetProps {
   children: React.ReactNode;
-  summary: React.ReactNode; // shown when collapsed
+  summary: React.ReactNode;
+  /** Controlled snap position from parent. */
+  snap?: SnapPosition;
+  /** Notify parent when snap changes (drag or tap). */
+  onSnapChange?: (snap: SnapPosition) => void;
 }
-
-type SnapPosition = "collapsed" | "half" | "full";
 
 const SNAP_HEIGHTS: Record<SnapPosition, string> = {
   collapsed: "64px",
@@ -17,13 +21,30 @@ const SNAP_HEIGHTS: Record<SnapPosition, string> = {
 
 const SNAP_ORDER: SnapPosition[] = ["collapsed", "half", "full"];
 
-export function MobileBottomSheet({ children, summary }: MobileBottomSheetProps) {
-  const [snap, setSnap] = useState<SnapPosition>("collapsed");
+export function MobileBottomSheet({ children, summary, snap: controlledSnap, onSnapChange }: MobileBottomSheetProps) {
+  const [internalSnap, setInternalSnap] = useState<SnapPosition>("collapsed");
   const [dragging, setDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<number | null>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
   const startYRef = useRef(0);
   const startHeightRef = useRef(0);
+
+  const snap = controlledSnap ?? internalSnap;
+
+  const updateSnap = useCallback(
+    (next: SnapPosition) => {
+      setInternalSnap(next);
+      onSnapChange?.(next);
+    },
+    [onSnapChange],
+  );
+
+  // Sync when controlled prop changes
+  useEffect(() => {
+    if (controlledSnap !== undefined) {
+      setInternalSnap(controlledSnap);
+    }
+  }, [controlledSnap]);
 
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
@@ -75,16 +96,15 @@ export function MobileBottomSheet({ children, summary }: MobileBottomSheetProps)
 
     // Velocity-based: if user was in half and dragged down a bit, collapse
     const currentIdx = SNAP_ORDER.indexOf(snap);
-    const closestIdx = SNAP_ORDER.indexOf(closest);
     if (currentIdx === 1 && dragOffset < snapValues.half - 40) {
       closest = "collapsed";
     } else if (currentIdx === 1 && dragOffset > snapValues.half + 40) {
       closest = "full";
     }
 
-    setSnap(closest);
+    updateSnap(closest);
     setDragOffset(null);
-  }, [dragOffset, snap]);
+  }, [dragOffset, snap, updateSnap]);
 
   const isCollapsed = snap === "collapsed" && dragOffset === null;
 
@@ -111,7 +131,7 @@ export function MobileBottomSheet({ children, summary }: MobileBottomSheetProps)
       <div
         className="flex shrink-0 items-center px-4 pb-2"
         onClick={() => {
-          if (isCollapsed) setSnap("half");
+          if (isCollapsed) updateSnap("half");
         }}
       >
         {summary}
