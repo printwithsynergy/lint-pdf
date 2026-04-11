@@ -203,6 +203,16 @@ async function handleRequest(
       return new NextResponse(null, { status: 204, headers: result.headers });
     }
 
+    // Binary responses (Buffer/Uint8Array) must be sent as raw bytes,
+    // not JSON-serialized. Detect by checking the body type or the
+    // Content-Type header from the handler.
+    if (Buffer.isBuffer(result.body) || result.body instanceof Uint8Array) {
+      return new NextResponse(result.body, {
+        status: result.status,
+        headers: result.headers,
+      });
+    }
+
     return NextResponse.json(result.body ?? null, {
       status: result.status,
       headers: result.headers,
