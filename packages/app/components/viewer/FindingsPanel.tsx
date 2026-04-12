@@ -151,50 +151,92 @@ export function FindingsPanel({
         </span>
       </div>
 
-      {/* Findings list */}
+      {/* Findings list - split into document and page sections */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="p-4 text-center text-sm text-slate-500">
             No findings match the current filter.
           </div>
         ) : (
-          filtered.map((f, i) => {
-            const isSelected =
-              selectedFinding?.inspection_id === f.inspection_id &&
-              selectedFinding?.page_num === f.page_num &&
-              selectedFinding?.message === f.message;
-            return (
-              <button
-                key={`${f.inspection_id}-${f.page_num}-${i}`}
-                onClick={() => onSelectFinding(f)}
-                className={`w-full border-b border-slate-800 px-3 py-2.5 text-left transition-colors hover:bg-slate-800/80 ${
-                  isSelected
-                    ? `border-l-[3px] ${SEVERITY_BORDER[f.severity]} ${SEVERITY_SELECTED_BG[f.severity]}`
-                    : "border-l-[3px] border-l-transparent"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {/* Severity dot */}
-                  <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${SEVERITY_DOT[f.severity]}`}
-                  />
-                  {/* Check ID */}
-                  <code className="text-[10px] font-mono text-slate-500">
-                    {f.inspection_id}
-                  </code>
-                  {/* Page badge */}
-                  {f.page_num ? (
-                    <span className="ml-auto shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
-                      p.{f.page_num}
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-1 line-clamp-2 text-xs leading-snug text-slate-300">
-                  {f.message}
-                </p>
-              </button>
-            );
-          })
+          <>
+            {/* Document & Compliance Issues */}
+            {(() => {
+              const docFindings = filtered.filter((f) => !f.page_num && !f.bbox);
+              const pageFindings = filtered.filter((f) => f.page_num || f.bbox);
+              return (
+                <>
+                  {docFindings.length > 0 && (
+                    <>
+                      <div className="flex items-center justify-between border-b border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                          Document &amp; Compliance ({docFindings.length})
+                        </span>
+                      </div>
+                      {docFindings.map((f, i) => {
+                        const isSelected =
+                          selectedFinding?.inspection_id === f.inspection_id &&
+                          selectedFinding?.message === f.message;
+                        return (
+                          <button
+                            key={`doc-${f.inspection_id}-${i}`}
+                            onClick={() => onSelectFinding(f)}
+                            className={`flex w-full items-center gap-2 border-b border-slate-800/50 px-3 py-1.5 text-left transition-colors hover:bg-slate-800/80 ${
+                              isSelected ? SEVERITY_SELECTED_BG[f.severity] : ""
+                            }`}
+                          >
+                            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[f.severity]}`} />
+                            <code className="shrink-0 text-[10px] font-mono text-slate-500">{f.inspection_id}</code>
+                            <span className="flex-1 truncate text-[11px] text-slate-400">{f.message}</span>
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {/* Page Issues */}
+                  {pageFindings.length > 0 && (
+                    <>
+                      {docFindings.length > 0 && (
+                        <div className="flex items-center justify-between border-b border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                            Page Issues ({pageFindings.length})
+                          </span>
+                        </div>
+                      )}
+                      {pageFindings.map((f, i) => {
+                        const isSelected =
+                          selectedFinding?.inspection_id === f.inspection_id &&
+                          selectedFinding?.page_num === f.page_num &&
+                          selectedFinding?.message === f.message;
+                        return (
+                          <button
+                            key={`page-${f.inspection_id}-${f.page_num}-${i}`}
+                            onClick={() => onSelectFinding(f)}
+                            className={`w-full border-b border-slate-800 px-3 py-2.5 text-left transition-colors hover:bg-slate-800/80 ${
+                              isSelected
+                                ? `border-l-[3px] ${SEVERITY_BORDER[f.severity]} ${SEVERITY_SELECTED_BG[f.severity]}`
+                                : "border-l-[3px] border-l-transparent"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className={`h-2 w-2 shrink-0 rounded-full ${SEVERITY_DOT[f.severity]}`} />
+                              <code className="text-[10px] font-mono text-slate-500">{f.inspection_id}</code>
+                              {f.page_num ? (
+                                <span className="ml-auto shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
+                                  p.{f.page_num}
+                                </span>
+                              ) : null}
+                            </div>
+                            <p className="mt-1 line-clamp-2 text-xs leading-snug text-slate-300">{f.message}</p>
+                          </button>
+                        );
+                      })}
+                    </>
+                  )}
+                </>
+              );
+            })()}
+          </>
         )}
       </div>
     </div>

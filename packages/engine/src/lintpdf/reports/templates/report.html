@@ -130,6 +130,14 @@
         .sev-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body { background: white; }
       }
+      /* Compact finding row (doc-level, no thumbnail) */
+      .finding-compact {
+        display: flex; align-items: center; gap: 10px; padding: 8px 14px;
+        border-bottom: 1px solid var(--border); font-size: 12px;
+      }
+      .finding-compact:hover { background: #f8fafc; }
+      .finding-compact .finding-message { flex: 1; color: var(--text-muted); line-height: 1.3; }
+      .section-divider { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); padding: 16px 14px 6px; border-bottom: 1px solid var(--border); }
       /* Responsive */
       @media (max-width: 640px) {
         .content { padding: 0 12px; }
@@ -141,6 +149,10 @@
         .toolbar { padding: 8px 12px; gap: 4px; }
         .toolbar button, .toolbar a { font-size: 11px; padding: 4px 8px; }
         .search-box { margin: 0 12px 12px; width: calc(100% - 24px); }
+        .summary-cover .cover-stats { flex-direction: column !important; gap: 16px !important; }
+        .summary-cover .color-box { width: 100% !important; min-width: 0 !important; }
+        .summary-cover .cover-header { flex-direction: column !important; text-align: center !important; }
+        .finding-compact { font-size: 11px; gap: 6px; padding: 6px 10px; }
       }
     </style>
   </head>
@@ -150,7 +162,7 @@
     {% if summary_page in ("prepend", "only") %}
     <div class="summary-cover" style="page-break-after: always; padding: 32px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
       {# Cover header #}
-      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 3px solid {{ brand.primary_color if brand else '#1e3a8a' }}; padding-bottom: 16px;">
+      <div class="cover-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; border-bottom: 3px solid {{ brand.primary_color if brand else '#1e3a8a' }}; padding-bottom: 16px; flex-wrap: wrap; gap: 12px;">
         <div style="display: flex; align-items: center; gap: 12px;">
           {% if brand and brand.logo_url %}
             {% if brand.logo_url.startswith('data:image/svg') %}
@@ -171,7 +183,7 @@
       </div>
 
       {# Health score + verdict row #}
-      <div style="display: flex; gap: 24px; margin-bottom: 24px;">
+      <div class="cover-stats" style="display: flex; gap: 24px; margin-bottom: 24px; flex-wrap: wrap;">
         {# Health gauge #}
         <div style="text-align: center; min-width: 120px;">
           <div style="width: 100px; height: 100px; border-radius: 50%; border: 8px solid {{ health.color }}; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;">
@@ -197,7 +209,7 @@
         </div>
 
         {# Color info #}
-        <div style="min-width: 160px; padding: 8px 12px; background: #f8fafc; border-radius: 8px; font-size: 11px;">
+        <div class="color-box" style="min-width: 140px; padding: 8px 12px; background: #f8fafc; border-radius: 8px; font-size: 11px;">
           <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: #6b7280; margin-bottom: 6px;">Color Profile</div>
           <div style="margin-bottom: 4px;">Spaces: {{ summary_color_info.color_spaces | join(', ') }}</div>
           {% if summary_color_info.spot_colors %}<div style="margin-bottom: 4px;">Spots: {{ summary_color_info.spot_colors | join(', ') }}</div>{% endif %}
@@ -321,10 +333,41 @@
       </div>
       {% endif %}
 
-      {# ===== FINDINGS (card layout, sorted by severity) ===== #}
+      {# ===== DOCUMENT & COMPLIANCE ISSUES (compact rows) ===== #}
+      {% set doc_findings = [] %}
+      {% set page_findings = [] %}
+      {% for f in all_findings_sorted %}
+        {% if (not f.page_num or f.page_num == 0) and not f.thumbnail_base64 and not f.bbox %}
+          {% if doc_findings.append(f) %}{% endif %}
+        {% else %}
+          {% if page_findings.append(f) %}{% endif %}
+        {% endif %}
+      {% endfor %}
+
+      {% if doc_findings %}
+      <div class="section-divider">Document &amp; Compliance Issues ({{ doc_findings | length }})</div>
       {% set counter = {'n': 0} %}
-      {% for finding in all_findings_sorted %}
+      {% for finding in doc_findings %}
       {% if counter.update({'n': counter.n + 1}) %}{% endif %}
+      <div class="finding-compact finding-row"
+           data-severity="{{ finding.severity }}"
+           data-source="{{ finding.source }}"
+           data-search="{{ finding.friendly_name }} {{ finding.inspection_id }} {{ finding.message }}">
+        <div class="sev-badge {{ finding.severity }}">{{ counter.n }}</div>
+        <span class="finding-id">{{ finding.inspection_id }}</span>
+        <span class="finding-message">{{ finding.message }}</span>
+        <span class="sev-label {{ finding.severity }}">{{ finding.severity | upper }}</span>
+        {% if finding.source == 'ai' %}<span class="ai-tag">&#9733; AI</span>{% endif %}
+      </div>
+      {% endfor %}
+      {% endif %}
+
+      {# ===== PAGE ISSUES (card layout with thumbnails) ===== #}
+      {% if page_findings %}
+      <div class="section-divider">Page Issues ({{ page_findings | length }})</div>
+      {% set counter2 = {'n': 0} %}
+      {% for finding in page_findings %}
+      {% if counter2.update({'n': counter2.n + 1}) %}{% endif %}
       <div class="finding-card finding-row"
            data-severity="{{ finding.severity }}"
            data-source="{{ finding.source }}"
@@ -335,7 +378,7 @@
                  alt="Page {{ finding.page_num }} — {{ finding.friendly_name }}" loading="lazy" />
           {% else %}
             <div class="finding-thumb-placeholder">
-              {% if finding.page_num and finding.page_num > 0 %}Page {{ finding.page_num }}{% else %}Document-level{% endif %}
+              {% if finding.page_num and finding.page_num > 0 %}Page {{ finding.page_num }}{% else %}Document{% endif %}
             </div>
           {% endif %}
           {% if finding.page_num and finding.page_num > 0 %}
@@ -344,7 +387,7 @@
         </div>
         <div class="finding-body">
           <div class="finding-header">
-            <div class="sev-badge {{ finding.severity }}">{{ counter.n }}</div>
+            <div class="sev-badge {{ finding.severity }}">{{ counter2.n }}</div>
             <span class="finding-name">{{ finding.friendly_name or finding.inspection_id }}</span>
             <span class="finding-id">{{ finding.inspection_id }}</span>
             <span class="sev-label {{ finding.severity }}">{{ finding.severity | upper }}</span>
@@ -362,6 +405,7 @@
         </div>
       </div>
       {% endfor %}
+      {% endif %}
 
       {# ===== COMPREHENSIVE: INK SEPARATIONS ===== #}
       {% if detail_level == 'comprehensive' and ink_separations %}
