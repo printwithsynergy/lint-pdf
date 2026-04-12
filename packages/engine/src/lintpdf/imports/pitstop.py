@@ -50,10 +50,15 @@ class PitStopXmlParser(ExternalReportParser):
 
         # Document-level metadata commonly emitted by PitStop.
         meta: dict[str, str] = {}
-        for key in ("Profile", "PitStopVersion", "ProfileVersion", "ReportDate", "FileName"):
-            node = root.find(f".//{key}")
-            if node is not None and node.text:
-                meta[key] = node.text.strip()
+        keys = ("Profile", "PitStopVersion", "ProfileVersion", "ReportDate", "FileName")
+        remaining = set(keys)
+        for el in root.iter():
+            if not remaining:
+                break
+            local = self._localname(el.tag)
+            if local in remaining and el.text and el.text.strip():
+                meta[local] = el.text.strip()
+                remaining.discard(local)
         if root.tag:
             meta["RootElement"] = root.tag
         report.source_metadata = {"tool": "Enfocus PitStop", **meta}
@@ -67,19 +72,26 @@ class PitStopXmlParser(ExternalReportParser):
 
     # ------------------------------------------------------------------
     def _iter_result_items(self, root: ET.Element) -> Iterator[ET.Element]:
-        """Yield every element in the tree that represents a single result."""
-        # Fast path: explicit ``<Results>`` or ``<ResultSet>`` container.
-        results_parents = (
-            root.findall(".//Results")
-            or root.findall(".//ResultSet")
-            or root.findall(".//ResultList")
-            or [root]
-        )
+        """Yield every element in the tree that represents a single result.
+
+        Matches tags by localname so namespaced documents
+        (e.g. ``{urn:enfocus}Results``) are handled the same as the plain
+        ``<Results>`` variant.
+        """
+        wrapper_names = {"Results", "ResultSet", "ResultList"}
+        results_parents = [
+            el for el in root.iter() if self._localname(el.tag) in wrapper_names
+        ]
+        if not results_parents:
+            results_parents = [root]
+
         seen: set[int] = set()
         for parent in results_parents:
             for el in parent.iter():
+                if id(el) in seen:
+                    continue
                 tag = self._localname(el.tag)
-                if tag in self._RESULT_TAGS and id(el) not in seen:
+                if tag in self._RESULT_TAGS:
                     seen.add(id(el))
                     yield el
 
@@ -91,7 +103,9 @@ class PitStopXmlParser(ExternalReportParser):
         if tag in {"Error", "Warning", "Info", "Advisory"}:
             severity_raw = tag
         else:
-            sev_node = item.find("Severity") or item.find("severity")
+            sev_node = item.find("Severity")
+            if sev_node is None:
+                sev_node = item.find("severity")
             severity_raw = sev_node.text if (sev_node is not None and sev_node.text) else None
         severity = Severity(normalize_severity(severity_raw))
 
@@ -112,7 +126,7 @@ class PitStopXmlParser(ExternalReportParser):
         category = self._first_text(item, ("Category", "Group")) or "pitstop"
 
         page_num = 0
-        page_node = item.find(".//Page") or item.find(".//PageNumber")
+        page_node = self._find_descendant(item, ("Page", "PageNumber"))
         if page_node is not None and page_node.text:
             try:
                 page_num = int(page_node.text.strip())
@@ -148,12 +162,27 @@ class PitStopXmlParser(ExternalReportParser):
 
     # ------------------------------------------------------------------
     def _first_text(self, item: ET.Element, tags: tuple[str, ...]) -> str | None:
+        """Return the trimmed text of the first descendant whose localname
+        matches one of ``tags``. Walks in caller-specified priority order
+        and is namespace-aware."""
         for tag in tags:
-            node = item.find(f".//{tag}")
+            node = self._find_descendant(item, (tag,))
             if node is not None and node.text:
                 text = node.text.strip()
                 if text:
                     return text
+        return None
+
+    def _find_descendant(
+        self, item: ET.Element, tags: tuple[str, ...]
+    ) -> ET.Element | None:
+        """First descendant (preorder) whose localname matches ``tags``."""
+        wanted = set(tags)
+        for el in item.iter():
+            if el is item:
+                continue
+            if self._localname(el.tag) in wanted:
+                return el
         return None
 
     def _parse_bbox(self, item: ET.Element) -> tuple[float, float, float, float] | None:
@@ -166,7 +195,7 @@ class PitStopXmlParser(ExternalReportParser):
         - Separate ``<X>``/``<Y>``/``<Width>``/``<Height>`` children.
         """
         for tag in ("BBox", "Rect", "BoundingBox"):
-            node = item.find(f".//{tag}")
+            node = self._find_descendant(item, (tag,))
             if node is None:
                 continue
             # Attribute form

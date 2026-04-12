@@ -32,7 +32,7 @@ ACROBAT_XML = b"""<?xml version="1.0" encoding="UTF-8"?>
       <Rule>LEGACY_OK</Rule>
     </Problem>
     <Hit severity="Error">
-      <!-- message missing — should be dropped -->
+      <!-- message missing - should be dropped -->
     </Hit>
   </Hits>
 </Preflight>

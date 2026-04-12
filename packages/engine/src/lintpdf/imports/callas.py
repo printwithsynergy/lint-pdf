@@ -177,7 +177,9 @@ def _build_finding_from_element(hit: ET.Element) -> Finding | None:
     inspection_id = f"EXT-CALLAS-{rule_id or f'{abs(hash(message)) % 100000:05d}'}"
 
     page_num = 0
-    page_node = hit.find("page") or hit.find("pageNumber")
+    page_node = hit.find("page")
+    if page_node is None:
+        page_node = hit.find("pageNumber")
     if page_node is not None and page_node.text:
         try:
             page_num = int(page_node.text.strip())
@@ -185,7 +187,9 @@ def _build_finding_from_element(hit: ET.Element) -> Finding | None:
             page_num = 0
 
     bbox: tuple[float, float, float, float] | None = None
-    bbox_node = hit.find("bbox") or hit.find("geometry/bbox")
+    bbox_node = hit.find("bbox")
+    if bbox_node is None:
+        bbox_node = hit.find("geometry/bbox")
     if bbox_node is not None:
         if bbox_node.text:
             parts = bbox_node.text.split()

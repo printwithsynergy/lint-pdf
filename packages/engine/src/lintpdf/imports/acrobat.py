@@ -94,7 +94,9 @@ class AcrobatXmlParser(ExternalReportParser):
         if page_attr and page_attr.strip().isdigit():
             page_num = int(page_attr.strip())
         else:
-            page_node = hit.find("Page") or hit.find("PageNumber")
+            page_node = hit.find("Page")
+            if page_node is None:
+                page_node = hit.find("PageNumber")
             if page_node is not None and page_node.text and page_node.text.strip().isdigit():
                 page_num = int(page_node.text.strip())
 

@@ -36,7 +36,7 @@ PITSTOP_REPORT_XML = b"""<?xml version="1.0" encoding="UTF-8"?>
       <Description>Profile applied successfully</Description>
     </Info>
     <Error>
-      <!-- Empty/grouping row — must be skipped. -->
+      <!-- Empty/grouping row - must be skipped. -->
     </Error>
   </Results>
 </PitStopReport>
