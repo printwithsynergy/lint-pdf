@@ -56,11 +56,33 @@ export function DensitometerTool({
     [apiBase, pageNum, pageWidthPts, pageHeightPts, canvasWidth, canvasHeight],
   );
 
+  const handleTouch = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      const touch = e.touches[0]!;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickX = touch.clientX - rect.left;
+      const clickY = touch.clientY - rect.top;
+      const pdfX = (clickX / canvasWidth) * pageWidthPts;
+      const pdfY = pageHeightPts - (clickY / canvasHeight) * pageHeightPts;
+      setPosition({ x: clickX, y: clickY });
+      setLoading(true);
+      fetch(`${apiBase}/pages/${pageNum}/sample?x=${pdfX.toFixed(1)}&y=${pdfY.toFixed(1)}&dpi=300`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => { if (data) setSample(data); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    },
+    [apiBase, pageNum, pageWidthPts, pageHeightPts, canvasWidth, canvasHeight],
+  );
+
   return (
     <div
       className="absolute inset-0 cursor-crosshair"
-      style={{ zIndex: 25 }}
+      style={{ zIndex: 25, touchAction: "none" }}
       onClick={handleClick}
+      onTouchStart={handleTouch}
     >
       {position && sample && (
         <div

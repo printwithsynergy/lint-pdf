@@ -529,7 +529,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                   {viewerMode === "separation" ? (
                     <SeparationCanvas jobId={jobId} pageNum={currentPage} enabledChannels={enabledChannels} allChannels={allChannelNames} width={canvasWidth} height={canvasHeight} />
                   ) : (
-                    <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} findings={findings} selectedFinding={selectedFinding} onFindingClick={handleSelectFinding} onZoomChange={setZoom} onPageChange={(d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d)))} />
+                    <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} findings={findings} selectedFinding={selectedFinding} onFindingClick={handleSelectFinding} onZoomChange={measureMode === "none" ? setZoom : undefined} onPageChange={measureMode === "none" ? (d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d))) : undefined} />
                   )}
 
                   {/* Annotation overlay */}

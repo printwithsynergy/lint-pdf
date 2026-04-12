@@ -84,8 +84,8 @@ export function TACHeatmapOverlay({
         className="pointer-events-none absolute left-0 top-0"
         style={{ width, height }}
       />
-      {/* Legend */}
-      <div className="absolute bottom-2 right-2 rounded bg-black/70 p-2 text-xs text-white">
+      {/* Legend - positioned above mobile bottom sheet */}
+      <div className="absolute bottom-20 right-2 rounded bg-black/80 p-2 text-xs text-white shadow-lg sm:bottom-2">
         <p className="mb-1 font-semibold">TAC Coverage</p>
         <div className="flex items-center gap-1">
           <span className="inline-block h-2 w-4 rounded" style={{ backgroundColor: "rgb(0, 180, 0)" }} />
