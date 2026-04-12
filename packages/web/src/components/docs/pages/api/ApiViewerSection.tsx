@@ -18,13 +18,24 @@ export default function ApiViewerSection() {
       <Endpoint
         method="GET"
         path="/api/v1/viewer/jobs/{job_id}/pages"
-        description="List every page in the job with its index and rotation."
+        description="List every page in the job with its geometry and rotation."
         auth
         request={`curl https://api.lintpdf.com/api/v1/viewer/jobs/d4e5f6a7-.../pages \\
   -H "Authorization: Bearer lpdf_live_..."`}
         response={`{
+  "job_id": "d4e5f6a7-...",
+  "page_count": 1,
   "pages": [
-    { "page_num": 1, "rotation": 0, "width_pt": 595.28, "height_pt": 841.89 }
+    {
+      "page_num": 1,
+      "width_pts": 595.28,
+      "height_pts": 841.89,
+      "media_box": { "x0": 0, "y0": 0, "x1": 595.28, "y1": 841.89 },
+      "crop_box":  { "x0": 0, "y0": 0, "x1": 595.28, "y1": 841.89 },
+      "trim_box":  { "x0": 14.17, "y0": 14.17, "x1": 581.10, "y1": 827.72 },
+      "bleed_box": null,
+      "rotation": 0
+    }
   ]
 }`}
       />
@@ -32,29 +43,13 @@ export default function ApiViewerSection() {
       <Endpoint
         method="GET"
         path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/tile?dpi=150"
-        description="Render a single page as a PNG tile. dpi range 72–600."
+        description="Render a single page as a PNG tile. dpi range 36–600."
         auth
         request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/d4e5f6a7-.../pages/1/tile?dpi=200" \\
   -H "Authorization: Bearer lpdf_live_..." \\
   --output page-1.png`}
         response={`200 OK
 Content-Type: image/png`}
-      />
-
-      <Endpoint
-        method="GET"
-        path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/info"
-        description="Page geometry — media/crop/trim/bleed boxes plus rotation."
-        auth
-        request={`curl https://api.lintpdf.com/api/v1/viewer/jobs/d4e5f6a7-.../pages/1/info \\
-  -H "Authorization: Bearer lpdf_live_..."`}
-        response={`{
-  "media_box": [0, 0, 595.28, 841.89],
-  "crop_box":  [0, 0, 595.28, 841.89],
-  "trim_box":  [14.17, 14.17, 581.10, 827.72],
-  "bleed_box": [0, 0, 595.28, 841.89],
-  "rotation": 0
-}`}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Separations &amp; channels</h4>
@@ -66,12 +61,13 @@ Content-Type: image/png`}
         request={`curl https://api.lintpdf.com/api/v1/viewer/jobs/d4e5f6a7-.../separations \\
   -H "Authorization: Bearer lpdf_live_..."`}
         response={`{
-  "separations": [
-    { "name": "Cyan", "kind": "process" },
-    { "name": "Magenta", "kind": "process" },
-    { "name": "Yellow", "kind": "process" },
-    { "name": "Black", "kind": "process" },
-    { "name": "PANTONE 185 C", "kind": "spot", "alt_rgb": [228, 0, 43] }
+  "job_id": "d4e5f6a7-...",
+  "channels": [
+    { "name": "Cyan", "type": "process" },
+    { "name": "Magenta", "type": "process" },
+    { "name": "Yellow", "type": "process" },
+    { "name": "Black", "type": "process" },
+    { "name": "PANTONE 185 C", "type": "spot" }
   ]
 }`}
       />
@@ -91,7 +87,7 @@ Content-Type: image/png`}
       <Endpoint
         method="GET"
         path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/tac-heatmap?dpi=150&tac_limit=300"
-        description="Total Area Coverage heatmap. Pixels above the limit are tinted red."
+        description="Total Area Coverage heatmap. Pixels above the limit (100–500%) are tinted red."
         auth
         request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/.../pages/1/tac-heatmap?tac_limit=300" \\
   -H "Authorization: Bearer lpdf_live_..." \\
@@ -101,24 +97,32 @@ Content-Type: image/png`}
       />
       <Endpoint
         method="GET"
-        path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/sample?x=200&y=300&dpi=150"
-        description="Single-pixel densitometer sample. Returns RGB, hex, and TAC for the point."
+        path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/sample?x=200&y=300&dpi=300"
+        description="Single-pixel densitometer sample. Returns RGB + hex for the point (origin lower-left, PDF points)."
         auth
         request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/.../pages/1/sample?x=200&y=300" \\
   -H "Authorization: Bearer lpdf_live_..."`}
-        response={`{ "rgb": [12, 99, 180], "hex": "#0C63B4", "tac": 278 }`}
+        response={`{ "x": 200, "y": 300, "rgb": [12, 99, 180], "hex": "#0c63b4", "tac": null }`}
       />
 
-      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Layers, verdict, config</h4>
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Layers</h4>
       <Endpoint
         method="GET"
         path="/api/v1/viewer/jobs/{job_id}/layers"
-        description="PDF Optional Content Groups (OCG). Not fillable after job creation."
+        description="PDF Optional Content Groups (OCG). Not fillable after ingest — if layers were absent at parse time, they stay absent."
         auth
         request={`curl https://api.lintpdf.com/api/v1/viewer/jobs/.../layers \\
   -H "Authorization: Bearer lpdf_live_..."`}
-        response={`{ "layers": [ { "name": "Varnish", "visible": true } ] }`}
+        response={`{
+  "job_id": "d4e5f6a7-...",
+  "layers": [
+    { "name": "Varnish", "ocg_index": 0, "default_on": true },
+    { "name": "Dieline", "ocg_index": 1, "default_on": false }
+  ]
+}`}
       />
+
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Viewer config</h4>
       <Endpoint
         method="GET"
         path="/api/v1/viewer/jobs/{job_id}/config?brand=anonymous"
@@ -127,19 +131,72 @@ Content-Type: image/png`}
         request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/.../config?brand=lintpdf" \\
   -H "Authorization: Bearer lpdf_live_..."`}
         response={`{
-  "preflight_source": "engine",
-  "data_capabilities": {
-    "pages": true, "separations": true, "fonts": true, "images": true,
-    "tac": true, "layers": false, "findings": true
-  },
-  "enable_findings_panel": true,
   "enable_separations": true,
-  "enable_tac": true,
-  "enable_densitometer": true,
+  "enable_tac_heatmap": true,
+  "enable_annotations": true,
+  "enable_measurement": true,
+  "enable_comparison": true,
+  "enable_layers": true,
+  "enable_findings_panel": true,
+  "enable_page_thumbnails": true,
+  "enable_zoom": true,
+  "enable_download": true,
+  "enable_html_report_link": true,
+  "verdict_mode": "auto",
+  "default_zoom": 100,
+  "default_dpi": 150,
+  "default_tac_limit": 300.0,
+  "viewer_logo_url": null,
+  "viewer_accent_color": null,
   "toolbar_position": "top",
   "dark_mode": false,
-  "branding": { "mode": "lintpdf", "logo_url": null }
+  "brand_name": "LintPDF",
+  "brand_logo_url": "https://lintpdf.com/logo.svg",
+  "brand_primary_color": "#1a3a7a",
+  "brand_accent_color": "#2563eb",
+  "anonymous": false,
+  "tenant_name": "Acme Print",
+  "support_email": "support@acmeprint.com",
+  "preflight_source": "engine",
+  "capabilities": {
+    "separations": true, "tac": true, "fonts": true,
+    "images": true, "layers": false
+  }
 }`}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Viewer config fields</h4>
+      <FieldTable
+        rows={[
+          { name: "enable_separations", type: "boolean", default: "true", description: "Show the separations / channels panel." },
+          { name: "enable_tac_heatmap", type: "boolean", default: "true", description: "Show the TAC heatmap overlay toggle." },
+          { name: "enable_annotations", type: "boolean", default: "true", description: "Show the annotation/markup tools." },
+          { name: "enable_measurement", type: "boolean", default: "true", description: "Show the ruler / measurement tool." },
+          { name: "enable_comparison", type: "boolean", default: "true", description: "Show the file-comparison entry point." },
+          { name: "enable_layers", type: "boolean", default: "true", description: "Show the OCG layers panel." },
+          { name: "enable_findings_panel", type: "boolean", default: "true", description: "Show the findings sidebar." },
+          { name: "enable_page_thumbnails", type: "boolean", default: "true", description: "Show the page thumbnail strip." },
+          { name: "enable_zoom", type: "boolean", default: "true", description: "Show zoom controls." },
+          { name: "enable_download", type: "boolean", default: "true", description: "Show the download-original button." },
+          { name: "enable_html_report_link", type: "boolean", default: "true", description: "Show the link to the HTML report." },
+          { name: "verdict_mode", type: '"auto" | "manual" | "off"', default: '"auto"', description: "Verdict workflow: auto uses summary.passed, manual requires a reviewer action, off hides the panel." },
+          { name: "default_zoom", type: "integer", default: "100", description: "Initial zoom percentage." },
+          { name: "default_dpi", type: "integer", default: "150", description: "Initial tile render DPI." },
+          { name: "default_tac_limit", type: "float", default: "300.0", description: "Initial TAC threshold for the heatmap." },
+          { name: "viewer_logo_url", type: "string | null", description: "Optional viewer-chrome logo override." },
+          { name: "viewer_accent_color", type: "string | null", description: "Optional viewer-chrome accent override." },
+          { name: "toolbar_position", type: '"top" | "bottom" | "left" | "right"', default: '"top"', description: "Toolbar edge." },
+          { name: "dark_mode", type: "boolean", default: "false", description: "Dark theme." },
+          { name: "brand_name", type: "string | null", description: "Resolved brand name (null when anonymous)." },
+          { name: "brand_logo_url", type: "string | null", description: "Resolved brand logo URL (null when anonymous)." },
+          { name: "brand_primary_color", type: "string | null", description: "Resolved brand primary colour (null when anonymous)." },
+          { name: "brand_accent_color", type: "string | null", description: "Resolved brand accent colour (null when anonymous)." },
+          { name: "anonymous", type: "boolean", description: "True when all tenant + LintPDF chrome is stripped." },
+          { name: "tenant_name", type: "string | null", description: "Tenant display name (null when anonymous)." },
+          { name: "support_email", type: "string | null", description: "Tenant support email (null when anonymous)." },
+          { name: "preflight_source", type: '"engine" | "external" | "minimal"', description: "How findings were produced. Drives the viewer's Load-button affordances." },
+          { name: "capabilities", type: "Record<string, boolean>", description: "Per-capability availability map. Fillable keys: separations, tac, fonts, images. layers is not fillable." },
+        ]}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">On-demand capability fill-in</h4>
@@ -154,57 +211,100 @@ Content-Type: image/png`}
       <Endpoint
         method="POST"
         path="/api/v1/viewer/jobs/{job_id}/capabilities/{capability}"
-        description="Queue an analyzer run for the named capability. Returns immediately; poll config to see it flip true."
+        description="Queue an analyzer run for the named capability. Returns 202; poll config to see it flip true."
         auth
         request={`curl -X POST https://api.lintpdf.com/api/v1/viewer/jobs/.../capabilities/separations \\
   -H "Authorization: Bearer lpdf_live_..."`}
-        response={`{ "status": "queued", "task_id": "tsk_01HXY..." }`}
+        response={`{
+  "job_id": "d4e5f6a7-...",
+  "capability": "separations",
+  "status": "queued",
+  "task_id": "tsk_01HXY..."
+}`}
       />
+      <p className="text-slate-600 text-sm mt-2">
+        When the capability is already populated the response comes back
+        with <code className="bg-slate-100 px-1 rounded">status: "already_filled"</code> and
+        no <code className="bg-slate-100 px-1 rounded">task_id</code>. Non-fillable capabilities return 422.
+      </p>
       <CodeBlock>{`# Python polling pattern
 import time, requests
 r = requests.post(f"{BASE}/viewer/jobs/{jid}/capabilities/tac", headers=H)
 while True:
     cfg = requests.get(f"{BASE}/viewer/jobs/{jid}/config", headers=H).json()
-    if cfg["data_capabilities"]["tac"]:
+    if cfg["capabilities"].get("tac"):
         break
     time.sleep(1.5)`}</CodeBlock>
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Verdict</h4>
       <Endpoint
+        method="GET"
+        path="/api/v1/viewer/jobs/{job_id}/verdict"
+        description="Return the current verdict state for a job."
+        auth
+        request={`curl https://api.lintpdf.com/api/v1/viewer/jobs/.../verdict \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "verdict": "pass",
+  "auto_passed": true,
+  "verdict_by": "reviewer@acmeprint.com",
+  "verdict_at": "2026-04-12T15:22:11Z",
+  "notes": null
+}`}
+      />
+      <Endpoint
         method="POST"
         path="/api/v1/viewer/jobs/{job_id}/verdict"
-        description="Record an approval verdict."
+        description="Record a manual pass/fail verdict. Fail requires notes."
         auth
         request={`curl -X POST https://api.lintpdf.com/api/v1/viewer/jobs/.../verdict \\
   -H "Authorization: Bearer lpdf_live_..." \\
   -H "Content-Type: application/json" \\
-  -d '{ "status": "approved", "comments": "Proceed to print" }'`}
-        response={`{ "status": "approved", "reviewer_name": "Alex Chen", "reviewed_at": "2026-04-12T15:22:11Z" }`}
+  -d '{ "verdict": "fail", "notes": "Low-res image on page 4" }'`}
+        response={`{
+  "verdict": "fail",
+  "auto_passed": false,
+  "verdict_by": "reviewer@acmeprint.com",
+  "verdict_at": "2026-04-12T15:22:11Z",
+  "notes": "Low-res image on page 4"
+}`}
       />
       <FieldTable
         rows={[
-          { name: "status", type: '"approved" | "rejected" | "needs_review"', required: true, description: "Target verdict state." },
-          { name: "comments", type: "string | null", description: "Free-form reviewer notes up to 4096 characters." },
-          { name: "reviewer_name", type: "string", description: "Override the key-derived reviewer name on integration calls." },
+          { name: "verdict", type: '"pass" | "fail"', required: true, description: "Manual verdict. Anything else returns 422." },
+          { name: "notes", type: "string | null", description: "Free-form reviewer notes. Required when verdict=fail." },
         ]}
       />
+      <p className="text-slate-600 text-sm mt-2">
+        <code className="bg-slate-100 px-1 rounded">auto_passed</code> reflects
+        the engine's summary verdict; <code className="bg-slate-100 px-1 rounded">verdict</code> reflects
+        a reviewer's manual call. A job can be auto-passed and manually failed
+        at the same time — clients should render both.
+      </p>
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">File comparison</h4>
       <Endpoint
         method="POST"
         path="/api/v1/viewer/compare"
-        description="Create a comparison between two complete jobs. Must have matching page counts."
+        description="Compare two complete jobs owned by the same tenant. Returns per-page similarity scores."
         auth
         request={`curl -X POST https://api.lintpdf.com/api/v1/viewer/compare \\
   -H "Authorization: Bearer lpdf_live_..." \\
   -H "Content-Type: application/json" \\
-  -d '{ "job_id_1": "d4e5f6a7-...", "job_id_2": "a1b2c3d4-..." }'`}
-        response={`{ "comparison_id": "cmp_8e7d6c5b4a3f", "page_count": 12 }`}
+  -d '{ "job_a": "d4e5f6a7-...", "job_b": "a1b2c3d4-...", "dpi": 150 }'`}
+        response={`{
+  "comparison_id": "cmp_8e7d6c5b4a3f",
+  "page_count_a": 12,
+  "page_count_b": 12,
+  "pages": [
+    { "page_num": 1, "ssim_score": 0.987, "diff_pixel_count": 1842, "total_pixels": 1404000 }
+  ]
+}`}
       />
       <Endpoint
         method="GET"
         path="/api/v1/viewer/compare/{comparison_id}/pages/{page_num}/diff?dpi=150"
-        description="RGBA diff heatmap PNG. Green=ink in job_1 only, red=ink in job_2 only, amber=color delta beyond tolerance."
+        description="RGBA diff heatmap PNG. Green=ink in job_a only, red=ink in job_b only, amber=color delta beyond tolerance."
         auth
         request={`curl "https://api.lintpdf.com/api/v1/viewer/compare/cmp_.../pages/1/diff?dpi=150" \\
   -H "Authorization: Bearer lpdf_live_..." \\

@@ -30,14 +30,8 @@ export default function ApiJobsSection() {
   -F preflight_source=engine`}
         response={`{
   "job_id": "d4e5f6a7-1234-4567-89ab-cdef01234567",
-  "status": "queued",
-  "preflight_source": "engine",
-  "profile_id": "lintpdf-default",
-  "file_name": "brochure.pdf",
-  "created_at": "2026-04-12T10:30:00Z",
-  "reports": {
-    "viewer_url": "https://app.lintpdf.com/viewer/d4e5f6a7-..."
-  }
+  "status": "pending",
+  "message": "Job submitted successfully"
 }`}
       />
 
@@ -75,44 +69,43 @@ export default function ApiJobsSection() {
           {
             name: "mapping_id",
             type: "uuid",
-            description: "Tenant-defined custom import mapping. Mutually exclusive with external_format.",
+            description: "Tenant-defined custom import mapping. Mutually exclusive with external_format — sets the format to custom internally.",
           },
           {
             name: "jdf_file",
             type: "file",
-            description: "Optional JDF job ticket. Findings include jdf_context when supplied.",
+            description: "Optional JDF/XJDF sidecar. Findings include jdf_context when supplied.",
           },
           {
             name: "ai_enabled",
             type: "boolean",
-            default: "false",
-            description: "Run AI inspections in addition to engine checks. Engine mode only.",
+            default: "null (profile decides)",
+            description: "Per-job override: true forces AI on, false forces AI off, unset defers to the profile.",
           },
           {
             name: "ai_categories",
-            type: "string[]",
-            description: "Comma-separated AI category IDs to run. See AI docs.",
+            type: "string",
+            description: "Comma-separated AI category IDs to enable. Applied only when ai_enabled=true.",
           },
           {
             name: "ai_features",
-            type: "string[]",
-            description: "Comma-separated AI inspection IDs. Takes precedence over ai_categories.",
+            type: "string",
+            description: "Comma-separated AI inspection slugs. Takes precedence over ai_categories.",
           },
           {
             name: "ai_preset",
             type: "string",
-            description: "AI preset ID (e.g. fda-food-label). Expanded server-side.",
+            description: "AI preset slug (e.g. brand-compliance, packaging-qc, full-ai-scan). Implicitly enables AI.",
           },
           {
             name: "brand",
             type: '"anonymous" | "lintpdf" | uuid',
-            description: "Per-request brand override. UUID must be a BrandProfile owned by your tenant.",
+            description: "Per-request brand override. UUID must be a BrandProfile owned by your tenant. Absent → tenant default.",
           },
           {
             name: "unbranded",
             type: "boolean",
-            default: "false",
-            description: "Alias for brand=anonymous. Deprecated in favour of the explicit brand field.",
+            description: "Convenience alias: when true, equivalent to brand=anonymous.",
           },
         ]}
       />
@@ -121,13 +114,11 @@ export default function ApiJobsSection() {
       <FieldTable
         rows={[
           { name: "202", type: "Accepted", description: "Job queued; poll GET /jobs/{id} for completion." },
-          { name: "400", type: "Bad Request", description: "Missing file, malformed multipart, or mutually exclusive fields set together." },
           { name: "401", type: "Unauthorized", description: "Missing or invalid bearer token." },
-          { name: "403", type: "Forbidden", description: "Valid key, but you lack permission (e.g. cross-tenant mapping_id)." },
+          { name: "403", type: "Forbidden", description: "Valid key, but you lack permission — e.g. cross-tenant mapping_id, or plan doesn't include the requested feature." },
           { name: "404", type: "Not Found", description: "profile_id or mapping_id does not exist in your tenant." },
-          { name: "409", type: "Conflict", description: "Inactive or soft-deleted mapping referenced." },
           { name: "413", type: "Payload Too Large", description: "File exceeds the per-tenant upload limit." },
-          { name: "422", type: "Unprocessable Entity", description: "ClamAV detected malware, or enum value was invalid." },
+          { name: "422", type: "Unprocessable Entity", description: "Invalid enum value, malformed UUID, unparseable external_report, ClamAV-detected malware, or mutually exclusive fields set together." },
           { name: "429", type: "Too Many Requests", description: "Rate limit exceeded. Back off using the X-RateLimit-* headers." },
         ]}
       />
@@ -142,26 +133,21 @@ export default function ApiJobsSection() {
         response={`{
   "job_id": "d4e5f6a7-...",
   "status": "complete",
-  "preflight_source": "engine",
-  "external_format": null,
   "profile_id": "lintpdf-default",
   "file_name": "brochure.pdf",
+  "file_size": 842139,
   "page_count": 12,
+  "created_at": "2026-04-12T10:30:00Z",
+  "completed_at": "2026-04-12T10:30:04Z",
   "duration_ms": 3480,
-  "data_capabilities": {
-    "pages": true,
-    "separations": true,
-    "fonts": true,
-    "images": true,
-    "tac": true,
-    "layers": false,
-    "findings": true
-  },
   "summary": {
     "total_findings": 7,
-    "error": 1,
-    "warning": 4,
-    "advisory": 2
+    "error_count": 1,
+    "warning_count": 4,
+    "advisory_count": 2,
+    "passed": false,
+    "page_count": 12,
+    "file_size_bytes": 842139
   },
   "findings": [
     {
@@ -171,17 +157,27 @@ export default function ApiJobsSection() {
       "page_num": 1,
       "bbox": [72.0, 720.0, 540.0, 740.0],
       "object_id": "Font12",
-      "object_type": "Font",
-      "category": "Fonts",
-      "source": { "type": "engine", "profile": "lintpdf-default" }
+      "object_type": "font",
+      "category": "fonts",
+      "source": "engine"
     }
   ],
   "reports": {
-    "viewer_url": "https://app.lintpdf.com/viewer/d4e5f6a7-...",
-    "pdf_url": "https://api.lintpdf.com/api/v1/jobs/d4e5f6a7-.../report.pdf"
+    "pdf": "https://reports.lintpdf.com/r/abc123.pdf",
+    "html": "https://reports.lintpdf.com/r/abc123"
   }
 }`}
       />
+
+      <p className="text-slate-600 text-sm mt-2">
+        Capability flags (<code className="bg-slate-100 px-1 rounded">separations</code>,
+        {" "}<code className="bg-slate-100 px-1 rounded">tac</code>,
+        {" "}<code className="bg-slate-100 px-1 rounded">fonts</code>,
+        {" "}<code className="bg-slate-100 px-1 rounded">images</code>,
+        {" "}<code className="bg-slate-100 px-1 rounded">layers</code>) live on
+        the viewer config (<code className="bg-slate-100 px-1 rounded">GET /viewer/jobs/{"{id}"}/config</code>), not
+        on the job payload.
+      </p>
 
       <Endpoint
         method="GET"
@@ -192,20 +188,20 @@ export default function ApiJobsSection() {
   -H "Authorization: Bearer lpdf_live_..."`}
         response={`{
   "jobs": [ { "job_id": "...", "status": "complete", "file_name": "...", "created_at": "..." } ],
+  "total": 418,
   "page": 1,
-  "page_size": 25,
-  "total": 418
+  "page_size": 25
 }`}
       />
 
       <Endpoint
         method="DELETE"
         path="/api/v1/jobs/{job_id}"
-        description="Delete a job and all derived artifacts (reports, tiles, share tokens)."
+        description="Delete a job and all derived artifacts (reports, tiles, share tokens). Returns 204 No Content on success."
         auth
         request={`curl -X DELETE https://api.lintpdf.com/api/v1/jobs/d4e5f6a7-... \\
   -H "Authorization: Bearer lpdf_live_..."`}
-        response={`{ "deleted": true, "job_id": "d4e5f6a7-..." }`}
+        response={`HTTP/1.1 204 No Content`}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Custom submission endpoints</h4>
@@ -221,7 +217,7 @@ export default function ApiJobsSection() {
         request={`curl -X POST https://api.lintpdf.com/api/v1/endpoints/acme-proofs/submit \\
   -H "Authorization: Bearer lpdf_live_..." \\
   -F file=@brochure.pdf`}
-        response={`{ "job_id": "d4e5f6a7-...", "status": "queued" }`}
+        response={`{ "job_id": "d4e5f6a7-...", "status": "pending", "message": "Job submitted successfully" }`}
       />
     </section>
   );

@@ -11,7 +11,7 @@ export default function ApiEnumsSection() {
       <FieldTable
         rows={[
           { name: "engine", type: "string", description: "Run LintPDF's 500+ checks and produce geometry + capability data." },
-          { name: "external", type: "string", description: "Import findings from a third-party preflight (PitStop/callas/Acrobat/native)." },
+          { name: "external", type: "string", description: "Import findings from a third-party preflight (PitStop/callas/Acrobat/native or a custom mapping)." },
           { name: "minimal", type: "string", description: "No preflight — viewer and share surfaces only. Capabilities can be filled on demand." },
         ]}
       />
@@ -24,6 +24,7 @@ export default function ApiEnumsSection() {
           { name: "callas_xml", type: "string", description: "callas pdfToolbox XML report." },
           { name: "acrobat_xml", type: "string", description: "Adobe Acrobat Pro Preflight XML report." },
           { name: "lintpdf_json", type: "string", description: "LintPDF native v1 import JSON. See /schemas/import/v1.json." },
+          { name: "custom", type: "string", description: "Set implicitly when mapping_id is supplied — the tenant's custom mapping parses the report." },
         ]}
       />
 
@@ -32,26 +33,83 @@ export default function ApiEnumsSection() {
         rows={[
           { name: "anonymous", type: "string", description: "Strip tenant branding AND LintPDF branding. Sanitizes PDF metadata; uses neutral filename." },
           { name: "lintpdf", type: "string", description: "Use LintPDF default branding." },
-          { name: "<uuid>", type: "uuid", description: "Apply a tenant-owned BrandProfile by ID. 403 if the profile belongs to another tenant." },
+          { name: "<uuid>", type: "uuid", description: "Apply a tenant-owned BrandProfile by ID. 403/404 if the profile belongs to another tenant or doesn't exist." },
+        ]}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-4 mb-2">branding-defaults mode</h4>
+      <FieldTable
+        rows={[
+          { name: "anonymous", type: "string", description: "Tenant default is no branding at all (broker → distributor use case). Strips logos, headers, PDF metadata, filename slug, viewer chrome, and share-page chrome." },
+          { name: "profile", type: "string", description: "Tenant default is a specific BrandProfile. Requires brand_profile_id." },
+          { name: "lintpdf", type: "string", description: "Tenant default is LintPDF's built-in branding." },
         ]}
       />
 
       <h4 className="font-semibold text-slate-900 mt-4 mb-2">severity</h4>
       <FieldTable
         rows={[
-          { name: "error", type: "string", description: "Blocking issue — job verdict is rejected in verdict_mode=auto." },
-          { name: "warning", type: "string", description: "Non-blocking issue — job verdict is needs_review in verdict_mode=auto." },
-          { name: "advisory", type: "string", description: "Informational — does not affect verdict." },
+          { name: "error", type: "string", description: "Blocking issue — contributes to summary.error_count and makes summary.passed=false." },
+          { name: "warning", type: "string", description: "Non-blocking issue — contributes to summary.warning_count." },
+          { name: "advisory", type: "string", description: "Informational — does not affect summary.passed." },
         ]}
       />
 
-      <h4 className="font-semibold text-slate-900 mt-4 mb-2">profile_type</h4>
+      <h4 className="font-semibold text-slate-900 mt-4 mb-2">verdict</h4>
       <FieldTable
         rows={[
-          { name: "builtin", type: "string", description: "Ships with LintPDF (e.g. lintpdf-default, gwg-sheetfed, pdfx4)." },
-          { name: "tenant", type: "string", description: "Tenant-owned custom profile. Growth tier+." },
+          { name: "pass", type: "string", description: "Reviewer-set or auto-derived approval." },
+          { name: "fail", type: "string", description: "Reviewer-set rejection. Requires notes when set manually." },
         ]}
       />
+      <p className="text-slate-600 text-sm mt-2">
+        The viewer config also carries <code className="bg-slate-100 px-1 rounded">verdict_mode</code>
+        {" "}(<code className="bg-slate-100 px-1 rounded">auto | manual | off</code>) which governs
+        whether a pass/fail comes from the engine's summary or a manual
+        reviewer action.
+      </p>
+
+      <h4 className="font-semibold text-slate-900 mt-4 mb-2">source (finding provenance)</h4>
+      <FieldTable
+        rows={[
+          { name: "engine", type: "string", description: "Produced by LintPDF's native analyzer pipeline." },
+          { name: "ai", type: "string", description: "Produced by an AI inspection." },
+          { name: "external:pitstop", type: "string", description: "Imported from an Enfocus PitStop XML report." },
+          { name: "external:callas", type: "string", description: "Imported from a callas pdfToolbox JSON or XML report." },
+          { name: "external:acrobat", type: "string", description: "Imported from an Adobe Acrobat Preflight XML report." },
+          { name: "external:lintpdf_json", type: "string", description: "Imported from a LintPDF-native v1 import JSON document." },
+          { name: "external:custom:<mapping-id>", type: "string", description: "Imported via a tenant-defined custom mapping; the mapping UUID is appended for audit." },
+        ]}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-4 mb-2">BrandProfile profile_type</h4>
+      <FieldTable
+        rows={[
+          { name: "custom", type: "string", description: "Use this profile's own brand_name / logo_url / colors / footer_text." },
+          { name: "lintpdf", type: "string", description: "Use LintPDF default branding. Useful as a 'reset to defaults' sibling profile." },
+          { name: "none", type: "string", description: "Neutral / blind output — blank brand name, generic greys, no footer." },
+        ]}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-4 mb-2">Finding object_type</h4>
+      <FieldTable
+        rows={[
+          { name: "image", type: "string", description: "Raster XObject." },
+          { name: "text", type: "string", description: "Text run." },
+          { name: "path", type: "string", description: "Vector path." },
+          { name: "font", type: "string", description: "Font resource." },
+          { name: "page", type: "string", description: "Whole-page finding." },
+          { name: "document", type: "string", description: "Document-level finding (no page reference)." },
+        ]}
+      />
+
+      <p className="text-slate-600 text-sm mt-4">
+        Preflight profiles (as opposed to <em>brand</em> profiles) don't use a
+        string enum — the API exposes a boolean
+        {" "}<code className="bg-slate-100 px-1 rounded">is_builtin</code> on
+        {" "}<code className="bg-slate-100 px-1 rounded">ProfileSummaryResponse</code> to distinguish
+        LintPDF-shipped profiles from tenant-owned customs.
+      </p>
     </section>
   );
 }

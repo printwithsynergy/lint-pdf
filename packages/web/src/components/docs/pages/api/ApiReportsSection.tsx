@@ -17,21 +17,27 @@ export default function ApiReportsSection() {
       <Endpoint
         method="POST"
         path="/api/v1/jobs/{job_id}/reports"
-        description="Mint one or more reports for a completed job."
+        description="Mint one or more reports for a completed job. Returns 201 on success, 403 if any requested format or the branding override exceeds the tenant's plan."
         auth
         request={`curl -X POST https://api.lintpdf.com/api/v1/jobs/d4e5f6a7-.../reports \\
   -H "Authorization: Bearer lpdf_live_..." \\
   -H "Content-Type: application/json" \\
   -d '{
-    "formats": ["pdf", "html", "json"],
+    "formats": ["pdf", "html"],
     "expiry_days": 14,
-    "email_to": ["printer@acme.com"],
-    "branding": "anonymous",
+    "email_to": "printer@acme.com",
+    "branding": {
+      "name": "Acme Print",
+      "logo_url": "https://acmeprint.com/logo.svg",
+      "primary_color": "#1a365d",
+      "accent_color": "#2563eb",
+      "hide_footer": false
+    },
     "detail_level": "comprehensive",
     "summary_page": "prepend"
   }'`}
         response={`{
-  "tokens": [
+  "reports": [
     { "format": "pdf",  "token": "rpt_01HXY...", "expires_at": "2026-04-26T10:30:00Z",
       "url": "https://reports.lintpdf.com/r/rpt_01HXY....pdf" },
     { "format": "html", "token": "rpt_01HXZ...", "expires_at": "2026-04-26T10:30:00Z",
@@ -40,16 +46,24 @@ export default function ApiReportsSection() {
 }`}
       />
 
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Generate-reports request fields</h4>
       <FieldTable
         rows={[
-          { name: "formats", type: '("pdf"|"html"|"json"|"xml")[]', required: true, description: "One or more output formats to mint." },
-          { name: "expiry_days", type: "integer", default: "30", description: "Token lifetime in days. Range 1–365." },
-          { name: "email_to", type: "string[]", description: "Deliver the report URLs to these addresses." },
-          { name: "branding", type: '"anonymous" | "lintpdf" | uuid', description: "Freeze branding for this report. Overrides the tenant default at mint time." },
-          { name: "detail_level", type: '"executive"|"standard"|"comprehensive"', default: "standard", description: "Narrative density of the generated PDF/HTML report." },
-          { name: "summary_page", type: '"prepend"|"only"|"off"', default: "prepend", description: "Where the executive summary page lands in the PDF." },
+          { name: "formats", type: '("pdf" | "html")[]', default: '["html","pdf"]', description: "Output formats to mint. Formats not in your plan return 403." },
+          { name: "expiry_days", type: "integer | null", default: "tenant / plan default (typically 7)", description: "Token lifetime in days. Null defers to the tenant setting or plan limit." },
+          { name: "email_to", type: "string | null", description: "Single email address to deliver the report URLs to." },
+          { name: "branding", type: "BrandingOverride | null", description: "Per-call branding override. Object with name/logo_url/primary_color/accent_color/hide_footer fields (each optional). Requires the white-label entitlement." },
+          { name: "detail_level", type: '"executive" | "standard" | "comprehensive"', default: '"standard"', description: "Narrative density of the generated PDF/HTML report." },
+          { name: "summary_page", type: '"prepend" | "only" | "off" | null', default: '"prepend" (or tenant override)', description: "Where the executive summary page lands in the PDF." },
         ]}
       />
+      <p className="text-slate-600 text-sm mt-2">
+        For a job-submit-time brand override using the three-way enum
+        ({`"anonymous" | "lintpdf" | uuid`}) use the <code className="bg-slate-100 px-1 rounded">brand</code> field
+        on <code className="bg-slate-100 px-1 rounded">POST /api/v1/jobs</code>. The reports endpoint takes the
+        richer <code className="bg-slate-100 px-1 rounded">BrandingOverride</code> object form so per-report
+        tweaks (logo URL, hide footer, etc.) survive.
+      </p>
 
       <Endpoint
         method="GET"
@@ -60,7 +74,13 @@ export default function ApiReportsSection() {
   -H "Authorization: Bearer lpdf_live_..."`}
         response={`{
   "reports": [
-    { "token": "rpt_01HXY...", "format": "pdf", "brand_mode": "anonymous", "expires_at": "..." }
+    {
+      "token": "rpt_01HXY...",
+      "format": "pdf",
+      "expires_at": "2026-04-26T10:30:00Z",
+      "created_at": "2026-04-12T10:30:00Z",
+      "accessed_count": 3
+    }
   ]
 }`}
       />
@@ -68,11 +88,11 @@ export default function ApiReportsSection() {
       <Endpoint
         method="DELETE"
         path="/api/v1/jobs/{job_id}/reports/{token}"
-        description="Revoke a specific report token. Public URLs immediately return 410 Gone."
+        description="Revoke a specific report token and delete the stored file. Public URLs immediately return 410 Gone / 404. Returns 204 on success."
         auth
         request={`curl -X DELETE https://api.lintpdf.com/api/v1/jobs/.../reports/rpt_01HXY... \\
   -H "Authorization: Bearer lpdf_live_..."`}
-        response={`{ "revoked": true, "token": "rpt_01HXY..." }`}
+        response={`HTTP/1.1 204 No Content`}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Public (token-gated) surfaces</h4>
@@ -92,34 +112,48 @@ Content-Type: text/html`}
       <Endpoint
         method="GET"
         path="/r/{token}.pdf?download=1"
-        description="Direct download of the PDF report. download=1 sets Content-Disposition: attachment."
+        description='Direct download of the PDF report. download=1 sets Content-Disposition: attachment. Filename is "report.pdf" for normal reports and a neutral "preflight-<short-id>.pdf" for anonymous reports.'
         auth={false}
         request={`curl -o report.pdf https://reports.lintpdf.com/r/rpt_01HXY....pdf?download=1`}
         response={`200 OK
 Content-Type: application/pdf
-Content-Disposition: attachment; filename=preflight-01HXY.pdf`}
+Content-Disposition: attachment; filename="report.pdf"`}
       />
       <Endpoint
         method="GET"
         path="/api/v1/reports/tokens/{token}"
-        description="Token metadata: job reference, brand mode, expiry, revocation state."
+        description="Token metadata used by the plugin proxy to validate public viewer access. Returns 404 on unknown tokens and 410 Gone on expired tokens."
         auth={false}
         request={`curl https://api.lintpdf.com/api/v1/reports/tokens/rpt_01HXY...`}
         response={`{
-  "token": "rpt_01HXY...",
   "job_id": "d4e5f6a7-...",
-  "brand_mode": "anonymous",
-  "expires_at": "2026-04-26T10:30:00Z",
-  "revoked": false
+  "tenant_id": "...",
+  "file_name": "brochure.pdf",
+  "email_required": true
 }`}
       />
       <Endpoint
         method="GET"
         path="/api/v1/reports/tokens/{token}/findings"
-        description="Structured findings payload for a share link. Mirrors GET /jobs/{id} but token-gated."
+        description="Structured findings payload for a share link. Mirrors the findings array on GET /jobs/{id} but authenticated by token."
         auth={false}
         request={`curl https://api.lintpdf.com/api/v1/reports/tokens/rpt_01HXY.../findings`}
-        response={`{ "summary": { ... }, "findings": [ { ... } ] }`}
+        response={`{
+  "findings": [
+    {
+      "inspection_id": "font.not_embedded",
+      "severity": "error",
+      "message": "Font 'Helvetica' is not embedded",
+      "page_num": 1,
+      "details": null,
+      "source": "engine",
+      "category": "fonts",
+      "bbox": [72.0, 720.0, 540.0, 740.0],
+      "object_id": "Font12",
+      "object_type": "font"
+    }
+  ]
+}`}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Public viewer surfaces</h4>
@@ -132,10 +166,14 @@ Content-Disposition: attachment; filename=preflight-01HXY.pdf`}
       <Endpoint
         method="GET"
         path="/api/v1/viewer/public/{token}/pages"
-        description="Public page list for a token-scoped viewer session."
+        description="Public page list for a token-scoped viewer session. Same shape as the authenticated endpoint."
         auth={false}
         request={`curl https://api.lintpdf.com/api/v1/viewer/public/rpt_01HXY.../pages`}
-        response={`{ "pages": [ { "page_num": 1, "width_pt": 595.28, "height_pt": 841.89 } ] }`}
+        response={`{
+  "job_id": "d4e5f6a7-...",
+  "page_count": 1,
+  "pages": [ { "page_num": 1, "width_pts": 595.28, "height_pts": 841.89, ... } ]
+}`}
       />
       <p className="text-slate-500 text-sm mt-4">
         Parallel public routes exist for: <code className="bg-slate-100 px-1 rounded">tile</code>,
@@ -146,7 +184,7 @@ Content-Disposition: attachment; filename=preflight-01HXY.pdf`}
         {" "}<code className="bg-slate-100 px-1 rounded">sample</code>,
         {" "}<code className="bg-slate-100 px-1 rounded">layers</code>,
         {" "}<code className="bg-slate-100 px-1 rounded">config</code>, and
-        {" "}<code className="bg-slate-100 px-1 rounded">verdict</code>.
+        {" "}<code className="bg-slate-100 px-1 rounded">verdict</code> (read-only GET).
       </p>
     </section>
   );

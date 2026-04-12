@@ -24,36 +24,47 @@ export default function ApiImportsSection() {
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Internal QA XML",
+    "description": "Maps our in-house preflight XML to LintPDF findings.",
     "format": "xml",
-    "item_selector": "//Finding",
-    "fields": {
-      "severity": { "selector": "@level" },
-      "message":  { "selector": "Description" },
-      "page_num": { "selector": "Page", "parse": "int" },
-      "bbox":     { "selector": "BBox", "format": "space_xywh" },
-      "inspection_id": { "selector": "@rule" }
+    "config": {
+      "item_selector": "Findings/Finding",
+      "fields": {
+        "severity": { "selector": "@level" },
+        "message":  { "selector": "Description" },
+        "page_num": { "selector": "Page", "parse": "int" },
+        "bbox":     { "selector": "BBox", "format": "space_xywh" },
+        "inspection_id": { "selector": "@rule" }
+      },
+      "severity_map": { "S": "error", "W": "warning", "N": "advisory" },
+      "default_severity": "warning"
     },
-    "severity_map": { "S": "error", "W": "warning", "N": "advisory" },
-    "default_severity": "warning"
+    "sample_payload": "<Findings>...</Findings>",
+    "sample_mime": "application/xml",
+    "is_active": true
   }'`}
         response={`{
-  "id": "mpg_01HXY...",
+  "id": "2f7c1e8a-1b4d-4e1a-9a2b-9c8d7e6f5a4b",
   "name": "Internal QA XML",
+  "description": "Maps our in-house preflight XML to LintPDF findings.",
   "format": "xml",
+  "config": { "item_selector": "Findings/Finding", "fields": { ... } },
+  "sample_payload": "<Findings>...</Findings>",
+  "sample_mime": "application/xml",
   "is_active": true,
-  "created_at": "2026-04-12T10:30:00Z"
+  "created_at": "2026-04-12T10:30:00Z",
+  "updated_at": "2026-04-12T10:30:00Z"
 }`}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Mapping request fields</h4>
       <FieldTable
         rows={[
-          { name: "name", type: "string", required: true, description: "Human-readable label shown in the editor." },
-          { name: "format", type: '"xml" | "json"', required: true, description: "Parser used to load the uploaded report." },
-          { name: "item_selector", type: "string", required: true, description: "XPath (XML) or dotted path (JSON) selecting each finding. JSON supports [*] expansion." },
-          { name: "fields", type: "object", required: true, description: "Per-field selectors. See Custom Import Mappings doc for the full grammar." },
-          { name: "severity_map", type: "Record<string,string>", description: "Maps raw severity strings to error|warning|advisory." },
-          { name: "default_severity", type: '"error"|"warning"|"advisory"', default: "warning", description: "Applied when severity_map misses." },
+          { name: "name", type: "string", required: true, description: "Human-readable label shown in the editor (1–128 chars)." },
+          { name: "description", type: "string | null", description: "Optional description surfaced in the dashboard picker." },
+          { name: "format", type: '"xml" | "json"', default: '"xml"', description: "Parser used to load the uploaded report." },
+          { name: "config", type: "object", required: true, description: "Mapping DSL. Holds item_selector, fields, severity_map, default_severity. See the Custom Import Mappings doc for the full grammar." },
+          { name: "sample_payload", type: "string | null", description: "Verbatim sample report used by the preview endpoint." },
+          { name: "sample_mime", type: "string | null", description: "MIME type hint for the stored sample (e.g. application/xml, application/json). Max 64 chars." },
           { name: "is_active", type: "boolean", default: "true", description: "Inactive mappings are hidden from the submit form and cannot be used on new jobs." },
         ]}
       />
@@ -61,56 +72,102 @@ export default function ApiImportsSection() {
       <Endpoint
         method="GET"
         path="/api/v1/tenant/import-mappings"
-        description="List all mappings owned by the current tenant. Soft-deleted mappings are excluded unless include_deleted=true."
+        description="List all mappings owned by the current tenant. Soft-deleted mappings are flagged with is_active=false but remain visible for audit."
         auth
         request={`curl "https://api.lintpdf.com/api/v1/tenant/import-mappings" \\
   -H "Authorization: Bearer lpdf_live_..."`}
         response={`{
   "mappings": [
-    { "id": "mpg_01HXY...", "name": "Internal QA XML", "format": "xml", "is_active": true }
+    {
+      "id": "2f7c1e8a-...",
+      "name": "Internal QA XML",
+      "description": "Maps our in-house preflight XML to LintPDF findings.",
+      "format": "xml",
+      "config": { ... },
+      "sample_payload": "<Findings>...</Findings>",
+      "sample_mime": "application/xml",
+      "is_active": true,
+      "created_at": "2026-04-12T10:30:00Z",
+      "updated_at": "2026-04-12T10:30:00Z"
+    }
   ]
 }`}
       />
 
       <Endpoint
-        method="PATCH"
-        path="/api/v1/tenant/import-mappings/{id}"
-        description="Update any mapping field except id and tenant_id. Deactivating a mapping stops it being used on new submissions but preserves it for history."
+        method="GET"
+        path="/api/v1/tenant/import-mappings/{mapping_id}"
+        description="Retrieve a single mapping."
         auth
-        request={`curl -X PATCH https://api.lintpdf.com/api/v1/tenant/import-mappings/mpg_01HXY... \\
+        request={`curl https://api.lintpdf.com/api/v1/tenant/import-mappings/2f7c1e8a-... \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{ "id": "2f7c1e8a-...", "name": "Internal QA XML", "format": "xml", "config": {...}, "is_active": true, ... }`}
+      />
+
+      <Endpoint
+        method="PUT"
+        path="/api/v1/tenant/import-mappings/{mapping_id}"
+        description="Replace a mapping. Body takes the same shape as create. Deactivating (is_active=false) stops the mapping being used on new submissions but preserves it for history."
+        auth
+        request={`curl -X PUT https://api.lintpdf.com/api/v1/tenant/import-mappings/2f7c1e8a-... \\
   -H "Authorization: Bearer lpdf_live_..." \\
   -H "Content-Type: application/json" \\
-  -d '{ "is_active": false }'`}
-        response={`{ "id": "mpg_01HXY...", "is_active": false }`}
+  -d '{
+    "name": "Internal QA XML",
+    "format": "xml",
+    "config": { ... },
+    "is_active": false
+  }'`}
+        response={`{ "id": "2f7c1e8a-...", "is_active": false, ... }`}
       />
 
       <Endpoint
         method="DELETE"
-        path="/api/v1/tenant/import-mappings/{id}"
-        description="Soft-delete a mapping. Historical jobs retain their finding provenance."
+        path="/api/v1/tenant/import-mappings/{mapping_id}"
+        description="Soft-delete a mapping by flipping is_active to false. Historical jobs retain their finding provenance. Returns 204."
         auth
-        request={`curl -X DELETE https://api.lintpdf.com/api/v1/tenant/import-mappings/mpg_01HXY... \\
+        request={`curl -X DELETE https://api.lintpdf.com/api/v1/tenant/import-mappings/2f7c1e8a-... \\
   -H "Authorization: Bearer lpdf_live_..."`}
-        response={`{ "deleted": true, "id": "mpg_01HXY..." }`}
+        response={`HTTP/1.1 204 No Content`}
       />
 
       <Endpoint
         method="POST"
-        path="/api/v1/tenant/import-mappings/preview"
-        description="Dry-run a mapping against a sample report. Returns the parsed findings without persisting a job."
+        path="/api/v1/tenant/import-mappings/{mapping_id}/preview"
+        description="Dry-run a mapping against a sample report. Returns the parsed findings without persisting a job. Parser errors surface as ok=false with a human-readable error instead of a 4xx so the editor can render inline feedback."
         auth
-        request={`curl -X POST https://api.lintpdf.com/api/v1/tenant/import-mappings/preview \\
+        request={`curl -X POST https://api.lintpdf.com/api/v1/tenant/import-mappings/2f7c1e8a-.../preview \\
   -H "Authorization: Bearer lpdf_live_..." \\
-  -F mapping_id=mpg_01HXY... \\
-  -F sample=@report.xml`}
+  -H "Content-Type: application/json" \\
+  -d '{
+    "config": { "item_selector": "Findings/Finding", "fields": { ... } },
+    "sample_payload": "<Findings>...</Findings>"
+  }'`}
         response={`{
-  "findings": [
-    { "severity": "error", "message": "...", "page_num": 3, "bbox": [72,720,540,740] }
+  "ok": true,
+  "findings_count": 12,
+  "sample_findings": [
+    {
+      "severity": "error",
+      "message": "Image resolution too low",
+      "page_num": 3,
+      "inspection_id": "IMG_LOWRES",
+      "bbox": [72, 720, 540, 740],
+      "object_id": "Im4",
+      "object_type": "image",
+      "category": "Images"
+    }
   ],
-  "matched": 12,
-  "errors": []
+  "error": null
 }`}
       />
+      <p className="text-slate-600 text-sm mt-2">
+        Both request fields are optional: when omitted, preview uses the
+        mapping's stored <code className="bg-slate-100 px-1 rounded">config</code> and
+        {" "}<code className="bg-slate-100 px-1 rounded">sample_payload</code>. Supply
+        them to iterate on a config in the editor before saving. Returns at
+        most the first 5 findings in <code className="bg-slate-100 px-1 rounded">sample_findings</code>.
+      </p>
     </section>
   );
 }
