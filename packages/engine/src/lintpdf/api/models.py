@@ -48,6 +48,42 @@ class JobStatus(enum.StrEnum):
     FAILED = "failed"
 
 
+class PreflightSource(enum.StrEnum):
+    """How preflight findings are obtained for a job.
+
+    - ``engine``: run the LintPDF preflight pipeline (default).
+    - ``external``: ingest findings from an uploaded third-party preflight
+      report (PitStop, callas, Acrobat, or the LintPDF native JSON schema).
+    - ``minimal``: skip all analyzers and only extract viewer essentials
+      (page count, geometry, document metadata). Viewer tools that require
+      findings or richer data can be filled in on-demand.
+    """
+
+    ENGINE = "engine"
+    EXTERNAL = "external"
+    MINIMAL = "minimal"
+
+
+# Tool → capability mapping. Viewer tools read this to decide whether to
+# render as active, show a "Load" affordance, or hide completely. Entries
+# here must match keys in ``Job.data_capabilities`` JSONB.
+CAPABILITY_KEYS: tuple[str, ...] = (
+    "findings",        # job findings populated (engine or imported)
+    "separations",     # spot color / ink separation data extracted
+    "tac",             # total area coverage / ink coverage data extracted
+    "layers",          # OCG / optional content layer data extracted
+    "fonts",           # font analysis available
+    "images",          # image analysis available
+    "thumbnails",      # page thumbnail tiles rendered
+    "metadata",        # document metadata extracted
+)
+
+
+def default_capabilities(all_true: bool = True) -> dict[str, bool]:
+    """Build a full capabilities map. Default true matches engine preflight."""
+    return {key: all_true for key in CAPABILITY_KEYS}
+
+
 class AIBillingMode(enum.StrEnum):
     """AI credit billing mode."""
 
@@ -100,6 +136,13 @@ class Tenant(Base):
     report_summary_page: Mapped[str] = mapped_column(String(10), nullable=False, default="prepend")
     report_storage_used_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     default_brand_profile_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+    # Default output branding — when true, viewer config + reports default to
+    # the ``none`` brand profile type (stripped LintPDF branding). Per-request
+    # override still applies via ``brand`` query param or ``brand_profile_id``
+    # on submission.
+    unbranded_by_default: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
     entitlement_overrides: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, default=None
     )
@@ -166,11 +209,68 @@ class Job(Base):
     verdict_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     verdict_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # How findings were produced for this job. Drives the Celery pipeline
+    # branch and the viewer's capability-aware rendering.
+    preflight_source: Mapped[PreflightSource] = mapped_column(
+        Enum(PreflightSource, values_callable=lambda e: [m.value for m in e]),
+        nullable=False,
+        default=PreflightSource.ENGINE,
+        server_default=PreflightSource.ENGINE.value,
+    )
+    # Format of the imported preflight report when ``preflight_source == EXTERNAL``.
+    # One of: ``pitstop_xml``, ``callas_json``, ``callas_xml``, ``acrobat_xml``,
+    # ``lintpdf_json`` (populated by the import parser on success).
+    external_format: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # Per-capability availability flags. Viewer tools read this to decide
+    # whether to render, hide, or offer a one-click fill-in.
+    data_capabilities: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Per-job brand override — if set, wins over tenant default.
+    brand_profile_id_override: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, nullable=True
+    )
+    # Per-job unbranded override (request-level flag, orthogonal to
+    # ``brand_profile_id_override``). ``True`` forces rendering with the
+    # ``none`` brand profile type even if a branded profile is otherwise
+    # resolved.
+    unbranded_override: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+
     # Relationships
     tenant: Mapped[Tenant] = relationship(back_populates="jobs")
     findings: Mapped[list[JobFinding]] = relationship(
         back_populates="job", cascade="all, delete-orphan"
     )
+    imported_reports: Mapped[list[JobImportedReport]] = relationship(
+        back_populates="job", cascade="all, delete-orphan"
+    )
+
+
+class JobImportedReport(Base):
+    """Raw third-party preflight report uploaded alongside a PDF.
+
+    Keeping the raw artifact lets us re-parse or audit the import without
+    re-uploading, and supports future parser improvements.
+    """
+
+    __tablename__ = "job_imported_reports"
+    __table_args__ = (Index("ix_job_imported_reports_job", "job_id"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    format: Mapped[str] = mapped_column(String(32), nullable=False)
+    raw_blob_key: Mapped[str] = mapped_column(String(512), nullable=False)
+    raw_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    parser_version: Mapped[str] = mapped_column(String(32), nullable=False, default="1")
+    source_metadata: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    parsed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+    # Relationships
+    job: Mapped[Job] = relationship(back_populates="imported_reports")
 
 
 class JobFinding(Base):
@@ -311,6 +411,12 @@ class ReportToken(Base):
     last_accessed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Branding captured at mint time so downstream viewers/share pages see
+    # the exact branding the minter chose, even if the tenant later flips
+    # defaults. ``brand_mode`` is one of ``anonymous`` / ``lintpdf`` /
+    # ``profile``; the latter pairs with ``brand_profile_id``.
+    brand_mode: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    brand_profile_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
 
 
 # --- AI Feature Models ---
@@ -661,6 +767,68 @@ class ApprovalChain(Base):
     )
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+
+
+class TenantImportMapping(Base):
+    """Tenant-defined mapping that turns a proprietary preflight report into
+    engine findings.
+
+    Teams running in-house or niche preflight tools don't fit the built-in
+    PitStop / callas / Acrobat / LintPDF-native parsers. Rather than ask us
+    to ship a new parser for every vendor, tenants define a **mapping**: a
+    small config that says "in my XML/JSON, each finding lives at this path;
+    the severity comes from this sub-selector; the message lives here; …"
+
+    The mapping's ``config`` column is a JSON document with this shape::
+
+        {
+          "format": "xml" | "json",
+          "item_selector": "//finding" | "results[*].issues[*]",
+          "fields": {
+            "severity":   {"selector": "@level",        "required": false},
+            "message":    {"selector": "description",   "required": true},
+            "page":       {"selector": "@page"},
+            "check_id":   {"selector": "@id"},
+            "bbox":       {"selector": "geom/bbox"},
+            "object_id":  {"selector": "@objRef"},
+            "object_type":{"selector": "@objKind"},
+            "category":   {"selector": "category"},
+            "iso_clause": {"selector": "@iso"}
+          },
+          "severity_map": {"fatal": "error", "info": "advisory", "high": "error"},
+          "default_severity": "warning"
+        }
+
+    ``sample_payload`` is the tenant's uploaded example — persisted so the
+    UI can round-trip a preview and so we can re-validate the mapping if
+    the tenant later reports a regression.
+    """
+
+    __tablename__ = "tenant_import_mappings"
+    __table_args__ = (
+        Index("ix_tenant_import_mappings_tenant", "tenant_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    format: Mapped[str] = mapped_column(String(8), nullable=False, default="xml")
+    config: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    sample_payload: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sample_mime: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )
 
 

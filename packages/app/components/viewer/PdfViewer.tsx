@@ -130,6 +130,95 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     return { score, grade, color };
   }, [findingsSummary]);
 
+  // Merge a config payload from the API onto the default config, preserving
+  // defaults for fields the server omitted or nulled out (e.g., brand_logo_url
+  // must fall back to the default logo when unset) — but letting explicit
+  // anonymous nulls through so anonymization stays visible.
+  const mergeConfig = useCallback((configData: Record<string, unknown>) => {
+    const isAnonymous = configData.anonymous === true;
+    const filtered: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(configData)) {
+      if (v == null) {
+        // When anonymous, keep brand_* / tenant_name / support_email as null
+        // so the UI strips identity instead of falling back to LintPDF defaults.
+        if (
+          isAnonymous &&
+          (k === "brand_name" ||
+            k === "brand_logo_url" ||
+            k === "brand_primary_color" ||
+            k === "brand_accent_color" ||
+            k === "viewer_logo_url" ||
+            k === "viewer_accent_color" ||
+            k === "tenant_name" ||
+            k === "support_email")
+        ) {
+          filtered[k] = null;
+        }
+        continue;
+      }
+      filtered[k] = v;
+    }
+    return { ...DEFAULT_VIEWER_CONFIG, ...filtered } as ViewerConfig;
+  }, []);
+
+  // Refetch just the viewer config — used after a capability-fill kick-off
+  // so the toolbar flips from "Load …" to the live tool once Celery is done.
+  const refetchConfig = useCallback(async () => {
+    try {
+      const resp = await fetch(`${apiBase}/config`);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      setConfig(mergeConfig(data));
+    } catch {
+      /* swallow — polling will retry */
+    }
+  }, [apiBase, mergeConfig]);
+
+  // When a fillable capability is requested, re-fetch both /config and
+  // /findings on a short schedule until the capability flips or we give up.
+  // The endpoint returns 202 immediately, but the Celery task may take a few
+  // seconds depending on the analyzer and PDF size.
+  const handleCapabilityFillStarted = useCallback(
+    (capability: string) => {
+      const maxAttempts = 20; // ~60s @ 3s intervals
+      let attempts = 0;
+      const tick = async () => {
+        attempts += 1;
+        try {
+          const [cfgResp, findingsResp] = await Promise.all([
+            fetch(`${apiBase}/config`),
+            fetch(
+              publicToken
+                ? `${apiBase}/findings`
+                : `/api/lintpdf/jobs/${jobId}`,
+            ),
+          ]);
+          if (cfgResp.ok) {
+            const cfgData = await cfgResp.json();
+            const next = mergeConfig(cfgData);
+            setConfig(next);
+            const caps = (cfgData.capabilities ?? {}) as Record<string, boolean>;
+            if (caps[capability] === true) {
+              if (findingsResp.ok) {
+                const fData = await findingsResp.json();
+                setFindings(fData.findings ?? []);
+              }
+              return; // success — stop polling
+            }
+          }
+        } catch {
+          /* keep polling */
+        }
+        if (attempts < maxAttempts) {
+          setTimeout(tick, 3000);
+        }
+      };
+      // first poll after 1.5s — gives the analyzer task a head start
+      setTimeout(tick, 1500);
+    },
+    [apiBase, jobId, mergeConfig, publicToken],
+  );
+
   // Load pages + findings + config on mount
   useEffect(() => {
     async function load() {
@@ -151,12 +240,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
 
         if (configResp.ok) {
           const configData = await configResp.json();
-          // Filter out null values so API nulls don't override defaults
-          // (e.g., brand_logo_url: null would erase the default logo)
-          const filtered = Object.fromEntries(
-            Object.entries(configData).filter(([, v]) => v != null),
-          );
-          setConfig({ ...DEFAULT_VIEWER_CONFIG, ...filtered });
+          setConfig(mergeConfig(configData));
 
           // Auto-fit zoom on mobile: fit page width to screen
           const firstPage = (pagesData.pages ?? [])[0];
@@ -166,7 +250,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             const fitZoom = Math.round(((window.innerWidth - 16) / pagePixelWidth) * 100);
             setZoom(Math.max(25, Math.min(200, fitZoom)));
           } else {
-            setZoom(configData.default_zoom ?? 100);
+            setZoom((configData.default_zoom as number | undefined) ?? 100);
           }
         }
       } catch (e) {
@@ -176,7 +260,12 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
       }
     }
     load();
-  }, [jobId, apiBase, publicToken]);
+  }, [jobId, apiBase, publicToken, mergeConfig]);
+
+  // Silence unused-var lint when refetchConfig isn't wired (reserved for
+  // future verdict / comparison flows). Referenced via void to keep the
+  // callback stable without forcing callers.
+  void refetchConfig;
 
   // Navigate to a finding
   const handleSelectFinding = useCallback(
@@ -467,6 +556,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             selectedFinding={selectedFinding}
             onSelectFinding={handleSelectFinding}
             currentPage={currentPage}
+            preflightSource={config.preflight_source}
           />
         </>
       );
@@ -494,7 +584,11 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
           {/* Compact top bar */}
           <div
             className="flex h-11 shrink-0 items-center justify-between gap-1 px-2 text-white"
-            style={{ backgroundColor: config.brand_primary_color || "#1e293b" }}
+            style={{
+              backgroundColor: config.anonymous
+                ? "#1e293b"
+                : config.brand_primary_color || "#1e293b",
+            }}
           >
             <button onClick={() => setDrawerOpen(true)} className="shrink-0 rounded p-1.5 hover:bg-white/10">
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -686,6 +780,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         onToggleBoxOverlay={() => setShowBoxOverlay((v) => !v)}
         onOpenShare={publicToken ? () => setShareOpen(true) : undefined}
         hasChain={hasChain}
+        onCapabilityFillStarted={handleCapabilityFillStarted}
       />
 
       {/* Annotation toolbar (hidden in read-only / public mode) */}

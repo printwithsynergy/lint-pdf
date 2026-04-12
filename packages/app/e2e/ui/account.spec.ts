@@ -522,6 +522,102 @@ test.describe("Branding Page", () => {
     }
     await context.close();
   });
+
+  // ---- Default Output Branding card ----
+
+  test("default output branding card renders with all three modes", async ({
+    browser,
+  }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "owner");
+    const page = await context.newPage();
+    await page.goto("/dashboard/account/branding");
+
+    // Card header. The heading is an h2 not wrapped by CardTitle here, so
+    // fall back to text if the heading role doesn't match.
+    const heading = page
+      .getByRole("heading", { name: /default output branding/i })
+      .first();
+    const headingVisible = await heading
+      .isVisible({ timeout: 15_000 })
+      .catch(() => false);
+    const textVisible = await page
+      .getByText(/default output branding/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    expect(headingVisible || textVisible).toBeTruthy();
+
+    // Three radio options
+    await expect(
+      page.getByText(/branded \(specific profile\)/i),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/anonymous \(recommended for brokers\)/i),
+    ).toBeVisible();
+    await expect(page.getByText(/^lintpdf default$/i).first()).toBeVisible();
+
+    // All three radios share name="branding-default"
+    const radios = page.locator("input[type='radio'][name='branding-default']");
+    expect(await radios.count()).toBe(3);
+
+    // Save button
+    await expect(
+      page.getByRole("button", { name: /save default/i }),
+    ).toBeVisible();
+    await context.close();
+  });
+
+  test("anonymous mode explanation references distributors", async ({
+    browser,
+  }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "owner");
+    const page = await context.newPage();
+    await page.goto("/dashboard/account/branding");
+    await expect(
+      page.getByText(/anonymous \(recommended for brokers\)/i),
+    ).toBeVisible({ timeout: 15_000 });
+    await expect(
+      page.getByText(/strips your brand, lintpdf.?s brand/i),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        /distributors who shouldn.?t know you generated them/i,
+      ),
+    ).toBeVisible();
+    await context.close();
+  });
+
+  test("selecting Branded mode reveals the profile picker", async ({
+    browser,
+  }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "owner");
+    const page = await context.newPage();
+    await page.goto("/dashboard/account/branding");
+    await expect(
+      page.getByText(/default output branding/i).first(),
+    ).toBeVisible({ timeout: 15_000 });
+
+    // Click the "Branded (specific profile)" radio
+    const brandedRadio = page
+      .locator("input[type='radio'][name='branding-default']")
+      .nth(0);
+    await brandedRadio.check();
+
+    // Placeholder option "Choose a brand profile…" appears in a nested select
+    const hasPicker = await page
+      .getByText(/choose a brand profile/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    const hasEmptyHint = await page
+      .getByText(/create a custom brand profile below/i)
+      .first()
+      .isVisible()
+      .catch(() => false);
+    // At least one of them should appear (picker if profiles exist, hint if not)
+    expect(hasPicker || hasEmptyHint).toBeTruthy();
+    await context.close();
+  });
 });
 
 test.describe("Color Management Page", () => {

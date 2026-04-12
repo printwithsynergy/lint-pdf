@@ -19,6 +19,7 @@ import { aiConfigRoutes } from "./routes/ai-config";
 import { colorConfigRoutes } from "./routes/color-config";
 import { viewerRoutes } from "./routes/viewer";
 import { brandingRoutes } from "./routes/branding";
+import { importMappingsRoutes } from "./routes/import-mappings";
 import { approvalRoutes } from "./routes/approvals";
 import { annotationRoutes } from "./routes/annotations";
 
@@ -202,6 +203,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       ...colorConfigRoutes(),
       ...viewerRoutes(ctx.services.db as Parameters<typeof viewerRoutes>[0]),
       ...brandingRoutes(),
+      ...importMappingsRoutes(),
       ...annotationRoutes(ctx.services.db as Parameters<typeof annotationRoutes>[0]),
       ...approvalRoutes(),
     ]);

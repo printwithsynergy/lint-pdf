@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { ZoomControls } from "./ZoomControls";
-import type { ViewerConfig } from "./types";
-import { DEFAULT_VIEWER_CONFIG, useViewerApi } from "./types";
+import type { ViewerCapabilityKey, ViewerConfig } from "./types";
+import { DEFAULT_VIEWER_CONFIG, FILLABLE_CAPABILITIES, useViewerApi } from "./types";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "densitometer" | "ruler";
@@ -26,6 +27,12 @@ interface ViewerToolbarProps {
   onToggleBoxOverlay?: () => void;
   onOpenShare?: () => void;
   hasChain?: boolean;
+  /**
+   * Called when the user kicks off a capability-fill request. The parent
+   * component uses this to start polling /config + /findings so the tool
+   * flips from "Load …" to live once Celery completes.
+   */
+  onCapabilityFillStarted?: (capability: ViewerCapabilityKey) => void;
   // Legacy props for backward compat
   separationMode?: boolean;
   onToggleSeparationMode?: () => void;
@@ -40,24 +47,73 @@ function ToolButton({
   active,
   onClick,
   activeClass = "bg-white/20 text-white",
+  disabled = false,
+  loading = false,
+  loadLabel,
 }: {
   label: string;
   icon: string;
   active: boolean;
   onClick: () => void;
   activeClass?: string;
+  disabled?: boolean;
+  loading?: boolean;
+  loadLabel?: string;
 }) {
+  const title = loadLabel ?? label;
   return (
     <button
       onClick={onClick}
-      className={`rounded p-1.5 text-sm transition-colors ${
-        active ? activeClass : "text-slate-300 hover:bg-white/10 hover:text-white"
+      disabled={disabled || loading}
+      className={`relative rounded p-1.5 text-sm transition-colors ${
+        active
+          ? activeClass
+          : "text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40 disabled:hover:bg-transparent"
       }`}
-      title={label}
+      title={title}
     >
       {icon}
+      {loading && (
+        <span
+          aria-label="Loading"
+          className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
+        />
+      )}
     </button>
   );
+}
+
+/** Hook: trigger the on-demand capability-fill endpoint and track in-flight state. */
+function useCapabilityFill(
+  apiBase: string,
+  onFillStarted?: (capability: ViewerCapabilityKey) => void,
+) {
+  const [inflight, setInflight] = useState<Record<string, boolean>>({});
+
+  async function fill(capability: ViewerCapabilityKey): Promise<void> {
+    if (inflight[capability]) return;
+    setInflight((prev) => ({ ...prev, [capability]: true }));
+    try {
+      const resp = await fetch(
+        `${apiBase.replace(/\/$/, "")}/capabilities/${encodeURIComponent(capability)}`,
+        { method: "POST" },
+      );
+      if (resp.ok || resp.status === 202) {
+        onFillStarted?.(capability);
+      }
+      // Capability refresh happens when the parent re-fetches /config
+      // after the Celery task writes the data. The toolbar just kicks
+      // off the request — polling is the parent's concern.
+    } finally {
+      setInflight((prev) => {
+        const next = { ...prev };
+        delete next[capability];
+        return next;
+      });
+    }
+  }
+
+  return { inflight, fill };
 }
 
 function Divider() {
@@ -83,23 +139,42 @@ export function ViewerToolbar({
   onToggleBoxOverlay,
   onOpenShare,
   hasChain,
+  onCapabilityFillStarted,
 }: ViewerToolbarProps) {
   const { apiBase, readOnly } = useViewerApi();
+  const { inflight, fill } = useCapabilityFill(apiBase, onCapabilityFillStarted);
 
-  const bgColor = config.brand_primary_color || "#1e293b";
+  const bgColor = config.anonymous
+    ? "#1e293b"
+    : config.brand_primary_color || "#1e293b";
+
+  const caps = config.capabilities || {};
+  const capAvailable = (key: ViewerCapabilityKey): boolean =>
+    caps[key] !== false; // undefined means "assume present" (engine jobs)
+  // Public / read-only viewers never see the "Load" affordance — kicking
+  // off analyzer runs is reserved to authenticated users on their own jobs.
+  const capFillable = (key: ViewerCapabilityKey): boolean =>
+    !readOnly && FILLABLE_CAPABILITIES.includes(key);
 
   return (
     <div
       className="flex items-center gap-2 overflow-x-auto px-3 py-1.5 text-white scrollbar-none"
       style={{ backgroundColor: bgColor, WebkitOverflowScrolling: "touch" }}
     >
-      {/* Logo */}
-      {(config.viewer_logo_url || config.brand_logo_url) && (
-        <img
-          src={config.viewer_logo_url ?? config.brand_logo_url ?? undefined}
-          alt={config.brand_name}
-          className="h-6 w-auto shrink-0"
-        />
+      {/* Logo — suppressed entirely in anonymous mode so the viewer
+          frame leaks no broker OR LintPDF identity. */}
+      {!config.anonymous &&
+        (config.viewer_logo_url || config.brand_logo_url) && (
+          <img
+            src={config.viewer_logo_url ?? config.brand_logo_url ?? undefined}
+            alt={config.brand_name ?? "Brand"}
+            className="h-6 w-auto shrink-0"
+          />
+        )}
+      {config.anonymous && (
+        <span className="text-xs font-medium text-slate-200 shrink-0">
+          Preflight Report
+        </span>
       )}
 
       {/* File name */}
@@ -180,15 +255,26 @@ export function ViewerToolbar({
         )}
 
         {config.enable_separations && onToggleMode && (
-          <ToolButton
-            label="Separations"
-            icon="CMYK"
-            active={viewerMode === "separation"}
-            onClick={() => onToggleMode("separation")}
-          />
+          capAvailable("separations") ? (
+            <ToolButton
+              label="Separations"
+              icon="CMYK"
+              active={viewerMode === "separation"}
+              onClick={() => onToggleMode("separation")}
+            />
+          ) : capFillable("separations") ? (
+            <ToolButton
+              label="Load Separations"
+              loadLabel="Load separations data (runs spot-color analyzer)"
+              icon="CMYK+"
+              active={false}
+              loading={Boolean(inflight["separations"])}
+              onClick={() => void fill("separations")}
+            />
+          ) : null
         )}
 
-        {config.enable_layers && onToggleMode && (
+        {config.enable_layers && onToggleMode && capAvailable("layers") && (
           <ToolButton
             label="Layers"
             icon="Layers"
@@ -198,12 +284,23 @@ export function ViewerToolbar({
         )}
 
         {config.enable_tac_heatmap && onToggleTacHeatmap && (
-          <ToolButton
-            label="TAC Heatmap"
-            icon="TAC"
-            active={showTacHeatmap}
-            onClick={onToggleTacHeatmap}
-          />
+          capAvailable("tac") ? (
+            <ToolButton
+              label="TAC Heatmap"
+              icon="TAC"
+              active={showTacHeatmap}
+              onClick={onToggleTacHeatmap}
+            />
+          ) : capFillable("tac") ? (
+            <ToolButton
+              label="Load TAC Heatmap"
+              loadLabel="Load total-area-coverage data (runs ink-coverage analyzer)"
+              icon="TAC+"
+              active={false}
+              loading={Boolean(inflight["tac"])}
+              onClick={() => void fill("tac")}
+            />
+          ) : null
         )}
 
         {onToggleBoxOverlay && (

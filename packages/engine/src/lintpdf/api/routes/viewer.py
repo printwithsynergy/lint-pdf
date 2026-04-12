@@ -476,16 +476,126 @@ class ViewerConfigResponse(BaseModel):
     viewer_accent_color: str | None = None
     toolbar_position: str = "top"
     dark_mode: bool = False
-    # Resolved branding from brand profile (defaults to LintPDF branding)
-    brand_name: str = "LintPDF"
+    # Resolved branding (stripped entirely when ``anonymous=True``)
+    brand_name: str | None = "LintPDF"
     brand_logo_url: str | None = _LINTPDF_DEFAULT_LOGO
-    brand_primary_color: str = "#1a3a7a"
-    brand_accent_color: str = "#2563eb"
+    brand_primary_color: str | None = "#1a3a7a"
+    brand_accent_color: str | None = "#2563eb"
+    # Surface metadata — clients use these to show or hide tenant chrome.
+    anonymous: bool = False
+    tenant_name: str | None = None
+    support_email: str | None = None
+    # How findings were produced for this job — drives the viewer's
+    # "Load" affordances and empty-state copy.
+    preflight_source: str = "engine"
+    # Per-capability availability map. ``True`` means the tool is
+    # backed by data; ``False`` means unavailable (the UI may offer a
+    # one-click fill-in for supported capabilities).
+    capabilities: dict[str, bool] = {}
+
+
+def _apply_branding_to_config(
+    config: ViewerConfigResponse, branding: Any, tenant: Tenant
+) -> None:
+    """Project a :class:`BrandingContext` onto a :class:`ViewerConfigResponse`.
+
+    ``branding.anonymous`` wipes every identifying field so the viewer
+    frame shows no broker OR LintPDF chrome.
+    """
+    if getattr(branding, "anonymous", False):
+        config.anonymous = True
+        config.brand_name = None
+        config.brand_logo_url = None
+        config.brand_primary_color = None
+        config.brand_accent_color = None
+        config.tenant_name = None
+        config.support_email = None
+        return
+
+    config.anonymous = False
+    config.brand_name = branding.name or "LintPDF"
+    config.brand_logo_url = branding.logo_url
+    config.brand_primary_color = branding.primary_color or config.brand_primary_color
+    config.brand_accent_color = branding.accent_color or config.brand_accent_color
+    config.tenant_name = tenant.name
+    config.support_email = getattr(tenant, "contact_email", None)
+
+
+def _build_viewer_config(
+    *, job: Job, tenant: Tenant, db: Session, brand_param: str | None
+) -> ViewerConfigResponse:
+    """Shared builder for authenticated + public viewer config endpoints."""
+    from lintpdf.reports.service import BrandingContext, resolve_branding
+
+    config = ViewerConfigResponse(
+        preflight_source=(
+            job.preflight_source.value
+            if hasattr(job.preflight_source, "value")
+            else str(job.preflight_source or "engine")
+        ),
+        capabilities=dict(job.data_capabilities or {}),
+    )
+
+    def _lookup_profile(profile_id: str) -> BrandProfile | None:
+        try:
+            pid = uuid_mod.UUID(profile_id)
+        except ValueError:
+            return None
+        return (
+            db.query(BrandProfile)
+            .filter(BrandProfile.id == pid, BrandProfile.tenant_id == tenant.id)
+            .first()
+        )
+
+    branding = resolve_branding(
+        tenant=tenant,
+        job=job,
+        brand_param=brand_param,
+        default_lintpdf=BrandingContext(),
+        lookup_profile=_lookup_profile,
+    )
+    _apply_branding_to_config(config, branding, tenant)
+
+    # Merge the tenant's default brand profile viewer_config (toolbar
+    # layout, zoom defaults, etc.) — but only when not anonymous.
+    if not config.anonymous and tenant.default_brand_profile_id:
+        profile = (
+            db.query(BrandProfile)
+            .filter(
+                BrandProfile.id == tenant.default_brand_profile_id,
+                BrandProfile.tenant_id == tenant.id,
+            )
+            .first()
+        )
+        if profile and profile.viewer_config:
+            vc = profile.viewer_config
+            for field_name in ViewerConfigResponse.model_fields:
+                if field_name.startswith("brand_"):
+                    continue
+                if field_name in {
+                    "anonymous",
+                    "tenant_name",
+                    "support_email",
+                    "preflight_source",
+                    "capabilities",
+                }:
+                    continue
+                if field_name in vc:
+                    setattr(config, field_name, vc[field_name])
+
+    return config
 
 
 @router.get("/jobs/{job_id}/config", response_model=ViewerConfigResponse)
 async def get_viewer_config(
     job_id: str,
+    brand: str | None = Query(
+        default=None,
+        description=(
+            "Branding override: 'anonymous' (strip all branding), "
+            "'lintpdf' (LintPDF default), or a BrandProfile UUID."
+        ),
+    ),
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> ViewerConfigResponse:
@@ -499,39 +609,81 @@ async def get_viewer_config(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    # Start with defaults — fall back to LintPDF branding when tenant has none
-    config = ViewerConfigResponse(
-        brand_name=tenant.brand_name or "LintPDF",
-        brand_logo_url=tenant.brand_logo_url or _LINTPDF_DEFAULT_LOGO,
-        brand_primary_color=tenant.brand_primary_color or "#1a3a7a",
-        brand_accent_color=tenant.brand_accent_color or "#2563eb",
-    )
+    return _build_viewer_config(job=job, tenant=tenant, db=db, brand_param=brand)
 
-    # Merge brand profile viewer_config if available
-    if tenant.default_brand_profile_id:
-        profile = (
-            db.query(BrandProfile)
-            .filter(
-                BrandProfile.id == tenant.default_brand_profile_id,
-                BrandProfile.tenant_id == tenant.id,
-            )
-            .first()
+
+# ---------------------------------------------------------------------------
+# Capability fill-in (on-demand analyzer runs for minimal / external jobs)
+# ---------------------------------------------------------------------------
+
+
+#: Capabilities the viewer can request on-demand. Keep in sync with
+#: ``lintpdf.queue.tasks._CAPABILITY_ANALYZERS``.
+_FILLABLE_CAPABILITIES: frozenset[str] = frozenset(
+    {"separations", "tac", "fonts", "images"}
+)
+
+
+class CapabilityFillResponse(BaseModel):
+    job_id: str
+    capability: str
+    status: str  # "queued" | "already_filled"
+    task_id: str | None = None
+
+
+@router.post(
+    "/jobs/{job_id}/capabilities/{capability}",
+    response_model=CapabilityFillResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def fill_job_capability(
+    job_id: str,
+    capability: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> CapabilityFillResponse:
+    """Queue a one-off analyzer run to populate a missing viewer capability.
+
+    Only applies to jobs whose ``data_capabilities[capability]`` is false —
+    typically minimal or external-import jobs where the imported report
+    didn't cover this tool.
+    """
+    try:
+        uid = uuid_mod.UUID(job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Job not found") from exc
+
+    if capability not in _FILLABLE_CAPABILITIES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Capability {capability!r} cannot be filled on demand. "
+                f"Supported: {sorted(_FILLABLE_CAPABILITIES)}"
+            ),
         )
-        if profile:
-            config.brand_name = profile.brand_name or config.brand_name
-            config.brand_logo_url = profile.logo_url or config.brand_logo_url
-            config.brand_primary_color = profile.primary_color or config.brand_primary_color
-            config.brand_accent_color = profile.accent_color or config.brand_accent_color
 
-            if profile.viewer_config:
-                vc = profile.viewer_config
-                for field_name in ViewerConfigResponse.model_fields:
-                    if field_name.startswith("brand_"):
-                        continue  # Don't overwrite resolved branding
-                    if field_name in vc:
-                        setattr(config, field_name, vc[field_name])
+    job = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
+    if job is None:
+        raise HTTPException(status_code=404, detail="Job not found")
 
-    return config
+    caps = dict(job.data_capabilities or {})
+    if caps.get(capability) is True:
+        return CapabilityFillResponse(
+            job_id=job_id, capability=capability, status="already_filled"
+        )
+
+    from lintpdf.queue.tasks import fill_capability
+
+    task = fill_capability.apply_async(
+        args=[str(uid), capability],
+        queue="default",
+    )
+    return CapabilityFillResponse(
+        job_id=job_id,
+        capability=capability,
+        status="queued",
+        task_id=getattr(task, "id", None),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1069,13 +1221,40 @@ async def public_tac_heatmap(
 
 @router.get("/public/{token}/config")
 async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
-    """Public: get viewer configuration."""
+    """Public: get viewer configuration for a share-link viewer.
+
+    Branding is read from the :class:`ReportToken` snapshot captured at
+    mint time — so the shared viewer keeps the brand the broker chose
+    regardless of later tenant setting changes.
+    """
     from lintpdf.api.models import ReportToken
-    from lintpdf.profiles.schema import ViewerConfig
+
     record = db.query(ReportToken).filter(ReportToken.token == token).first()
     if not record:
         raise HTTPException(status_code=404, detail="Token not found")
-    return ViewerConfig().model_dump()
+
+    job = db.query(Job).filter(Job.id == record.job_id).first()
+    if job is None:
+        raise HTTPException(status_code=404, detail="Token not found")
+
+    tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+    if tenant is None:
+        raise HTTPException(status_code=404, detail="Token not found")
+
+    # Translate the token's captured brand_mode into the same query-param
+    # shape ``_build_viewer_config`` expects.
+    brand_param: str | None = None
+    if record.brand_mode == "anonymous":
+        brand_param = "anonymous"
+    elif record.brand_mode == "lintpdf":
+        brand_param = "lintpdf"
+    elif record.brand_mode == "profile" and record.brand_profile_id:
+        brand_param = str(record.brand_profile_id)
+
+    config = _build_viewer_config(
+        job=job, tenant=tenant, db=db, brand_param=brand_param
+    )
+    return config.model_dump()
 
 
 @router.get("/public/{token}/pages/{page_num}/sample")

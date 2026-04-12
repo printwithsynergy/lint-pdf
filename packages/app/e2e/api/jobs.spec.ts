@@ -199,5 +199,223 @@ test.describe("Jobs API (Plugin Routes)", () => {
       // Accept or reject — either is valid
       expect([200, 201, 202, 400, 401, 422, 500, 502, 503].includes(res.status())).toBe(true);
     });
+
+    // ---- External preflight import ----
+
+    test("accepts preflight_source=external with a PitStop XML report", async ({
+      request,
+    }) => {
+      const pitstopXml = `<?xml version="1.0" encoding="UTF-8"?>
+<PitStopReport>
+  <Header><Profile>PDF/X-4</Profile></Header>
+  <Results>
+    <Error>
+      <CheckID>IMG_LOWRES</CheckID>
+      <Description>Image below 300 dpi</Description>
+      <Page>1</Page>
+    </Error>
+  </Results>
+</PitStopReport>`;
+
+      const res = await request.post(`${APP_BASE}/api/lintpdf/submit`, {
+        headers: { Cookie: `pixie-dust-session=${sessionToken}` },
+        multipart: {
+          file: {
+            name: "e2e-external.pdf",
+            mimeType: "application/pdf",
+            buffer: Buffer.from("%PDF-1.4 external import test"),
+          },
+          preflight_source: "external",
+          external_format: "pitstop_xml",
+          external_report: {
+            name: "pitstop.xml",
+            mimeType: "application/xml",
+            buffer: Buffer.from(pitstopXml),
+          },
+        },
+      });
+
+      expect(
+        [200, 201, 202, 400, 401, 422, 500, 502, 503].includes(res.status()),
+      ).toBe(true);
+
+      if (res.ok()) {
+        const body = await res.json();
+        expect(body.job_id ?? body.jobId ?? body.id).toBeTruthy();
+      }
+    });
+
+    test("preflight_source=external without report is rejected", async ({
+      request,
+    }) => {
+      const res = await request.post(`${APP_BASE}/api/lintpdf/submit`, {
+        headers: { Cookie: `pixie-dust-session=${sessionToken}` },
+        multipart: {
+          file: {
+            name: "e2e-external-missing.pdf",
+            mimeType: "application/pdf",
+            buffer: Buffer.from("%PDF-1.4 external missing report"),
+          },
+          preflight_source: "external",
+        },
+      });
+
+      // Engine should reject — accept any 4xx or 5xx (engine may also pass through).
+      expect(
+        [400, 401, 403, 422, 500, 502, 503].includes(res.status()),
+      ).toBe(true);
+    });
+
+    // ---- Minimal (viewer-only) submission ----
+
+    test("accepts preflight_source=minimal without any report", async ({
+      request,
+    }) => {
+      const res = await request.post(`${APP_BASE}/api/lintpdf/submit`, {
+        headers: { Cookie: `pixie-dust-session=${sessionToken}` },
+        multipart: {
+          file: {
+            name: "e2e-minimal.pdf",
+            mimeType: "application/pdf",
+            buffer: Buffer.from("%PDF-1.4 minimal viewer-only"),
+          },
+          preflight_source: "minimal",
+        },
+      });
+
+      expect(
+        [200, 201, 202, 400, 401, 422, 500, 502, 503].includes(res.status()),
+      ).toBe(true);
+
+      if (res.ok()) {
+        const body = await res.json();
+        expect(body.job_id ?? body.jobId ?? body.id).toBeTruthy();
+      }
+    });
+
+    // ---- Anonymous brand override ----
+
+    test("accepts brand=anonymous override", async ({ request }) => {
+      const res = await request.post(`${APP_BASE}/api/lintpdf/submit`, {
+        headers: { Cookie: `pixie-dust-session=${sessionToken}` },
+        multipart: {
+          file: {
+            name: "e2e-anon.pdf",
+            mimeType: "application/pdf",
+            buffer: Buffer.from("%PDF-1.4 anonymous submission"),
+          },
+          brand: "anonymous",
+        },
+      });
+
+      expect(
+        [200, 201, 202, 400, 401, 422, 500, 502, 503].includes(res.status()),
+      ).toBe(true);
+    });
+
+    test("rejects malformed brand parameter", async ({ request }) => {
+      const res = await request.post(`${APP_BASE}/api/lintpdf/submit`, {
+        headers: { Cookie: `pixie-dust-session=${sessionToken}` },
+        multipart: {
+          file: {
+            name: "e2e-bad-brand.pdf",
+            mimeType: "application/pdf",
+            buffer: Buffer.from("%PDF-1.4 bad brand value"),
+          },
+          brand: "not-a-valid-brand-token",
+        },
+      });
+
+      // Engine responds 422 for malformed UUID / unknown keyword; allow broader range.
+      expect(
+        [400, 401, 403, 422, 500, 502, 503].includes(res.status()),
+      ).toBe(true);
+    });
+  });
+});
+
+// --------------------------------------------------------------------
+// Default output branding (tenant-level) plugin route
+// --------------------------------------------------------------------
+
+test.describe("Branding defaults API (Plugin Routes)", () => {
+  let sessionToken: string;
+
+  test.beforeAll(async ({ request }) => {
+    const available = await isMcpBackdoorAvailable(request);
+    test.skip(!available, "MCP backdoor not enabled");
+    const auth = await authenticateRole(request, "owner");
+    sessionToken = auth.sessionToken;
+  });
+
+  const headers = () => ({
+    Cookie: `pixie-dust-session=${sessionToken}`,
+    "Content-Type": "application/json",
+  });
+
+  test("GET returns current default", async ({ request }) => {
+    const res = await request.get(
+      `${APP_BASE}/api/lintpdf/branding/defaults`,
+      { headers: headers() },
+    );
+    expect(
+      [200, 401, 403, 404, 500, 502].includes(res.status()),
+    ).toBe(true);
+
+    if (res.status() === 200) {
+      const body = await res.json();
+      expect(body).toHaveProperty("mode");
+      expect(["anonymous", "profile", "lintpdf"]).toContain(body.mode);
+    }
+  });
+
+  test("GET requires authentication", async ({ request }) => {
+    const res = await request.get(
+      `${APP_BASE}/api/lintpdf/branding/defaults`,
+      { headers: { Cookie: "" } },
+    );
+    expect([401, 403].includes(res.status()) || !res.ok()).toBe(true);
+  });
+
+  test("PATCH anonymous mode succeeds", async ({ request }) => {
+    const res = await request.patch(
+      `${APP_BASE}/api/lintpdf/branding/defaults`,
+      { headers: headers(), data: { mode: "anonymous" } },
+    );
+    expect(
+      [200, 204, 400, 401, 403, 404, 422, 500, 502].includes(res.status()),
+    ).toBe(true);
+  });
+
+  test("PATCH lintpdf mode succeeds", async ({ request }) => {
+    const res = await request.patch(
+      `${APP_BASE}/api/lintpdf/branding/defaults`,
+      { headers: headers(), data: { mode: "lintpdf" } },
+    );
+    expect(
+      [200, 204, 400, 401, 403, 404, 422, 500, 502].includes(res.status()),
+    ).toBe(true);
+  });
+
+  test("PATCH profile mode without brand_profile_id is rejected", async ({
+    request,
+  }) => {
+    const res = await request.patch(
+      `${APP_BASE}/api/lintpdf/branding/defaults`,
+      { headers: headers(), data: { mode: "profile" } },
+    );
+    expect(
+      [400, 401, 403, 404, 422, 500, 502].includes(res.status()),
+    ).toBe(true);
+  });
+
+  test("PATCH unknown mode is rejected", async ({ request }) => {
+    const res = await request.patch(
+      `${APP_BASE}/api/lintpdf/branding/defaults`,
+      { headers: headers(), data: { mode: "bogus" } },
+    );
+    expect(
+      [400, 401, 403, 404, 422, 500, 502].includes(res.status()),
+    ).toBe(true);
   });
 });

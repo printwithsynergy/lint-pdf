@@ -425,10 +425,16 @@ async def serve_pdf_report(
     db.commit()
 
     disposition = "attachment" if download else "inline"
+    if record.brand_mode == "anonymous":
+        from lintpdf.reports.service import build_anonymous_filename
+
+        filename = build_anonymous_filename(str(record.job_id), extension="pdf")
+    else:
+        filename = "report.pdf"
     return Response(
         content=content,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'{disposition}; filename="report.pdf"'},
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
     )
 
 

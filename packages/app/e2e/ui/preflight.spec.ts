@@ -170,4 +170,147 @@ test.describe("Preflight Jobs Page", () => {
     }
     await context.close();
   });
+
+  // ---- Preflight source segmented control + anonymize surface ----
+
+  test("source segmented control exposes all three tabs", async ({ browser }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "owner");
+    const page = await context.newPage();
+    await page.goto("/dashboard/preflight");
+
+    const tablist = page.getByRole("tablist", { name: /preflight source/i });
+    await expect(tablist).toBeVisible({ timeout: 15_000 });
+
+    await expect(
+      tablist.getByRole("tab", { name: "Run Preflight" }),
+    ).toBeVisible();
+    await expect(
+      tablist.getByRole("tab", { name: "Import External Results" }),
+    ).toBeVisible();
+    await expect(
+      tablist.getByRole("tab", { name: "Viewer Only" }),
+    ).toBeVisible();
+
+    // "Run Preflight" is the default
+    await expect(
+      tablist.getByRole("tab", { name: "Run Preflight" }),
+    ).toHaveAttribute("aria-selected", "true");
+    await context.close();
+  });
+
+  test("selecting Import External Results reveals report upload and format dropdown", async ({
+    browser,
+  }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "owner");
+    const page = await context.newPage();
+    await page.goto("/dashboard/preflight");
+
+    const importTab = page.getByRole("tab", { name: "Import External Results" });
+    await expect(importTab).toBeVisible({ timeout: 15_000 });
+    await importTab.click();
+
+    // Secondary preflight report FileUpload becomes visible
+    await expect(
+      page.getByText(
+        /preflight report \(pitstop \/ callas \/ acrobat \/ lintpdf json\)/i,
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/upload the raw report your existing tool produced/i),
+    ).toBeVisible();
+
+    // Format dropdown with all six options
+    const formatSelect = page.locator("select#external-format");
+    await expect(formatSelect).toBeVisible();
+    for (const label of [
+      "Auto-detect",
+      "Enfocus PitStop (XML)",
+      "callas pdfToolbox (JSON)",
+      "callas pdfToolbox (XML)",
+      "Acrobat Preflight (XML)",
+      "LintPDF native (JSON)",
+    ]) {
+      await expect(
+        formatSelect.locator("option", { hasText: label }),
+      ).toBeAttached();
+    }
+
+    // Submit button relabels to "Import Results"
+    await expect(
+      page.getByRole("button", { name: /^import results$/i }),
+    ).toBeVisible();
+    await context.close();
+  });
+
+  test("Viewer Only mode hides profile selector and shows viewer-only alert", async ({
+    browser,
+  }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "owner");
+    const page = await context.newPage();
+    await page.goto("/dashboard/preflight");
+
+    const viewerTab = page.getByRole("tab", { name: "Viewer Only" });
+    await expect(viewerTab).toBeVisible({ timeout: 15_000 });
+    await viewerTab.click();
+
+    // Profile dropdown is only rendered when source=engine
+    await expect(page.locator("select#profile")).toHaveCount(0);
+
+    // Informational alert copy
+    await expect(
+      page.getByText(/viewer-only mode skips analyzers entirely/i),
+    ).toBeVisible();
+
+    // Submit button relabels to "Open Viewer"
+    await expect(
+      page.getByRole("button", { name: /^open viewer$/i }),
+    ).toBeVisible();
+    await context.close();
+  });
+
+  test("anonymize output checkbox and help text are present", async ({
+    browser,
+  }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "owner");
+    const page = await context.newPage();
+    await page.goto("/dashboard/preflight");
+
+    const anonymize = page.locator("input#anonymize");
+    await expect(anonymize).toBeVisible({ timeout: 15_000 });
+    await expect(anonymize).toHaveAttribute("type", "checkbox");
+
+    await expect(page.getByText(/anonymize output/i)).toBeVisible();
+    await expect(
+      page.getByText(
+        /hide all branding and strip identifying pdf metadata/i,
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByText(
+        /use when sending reports to distributors who shouldn.?t know you generated them/i,
+      ),
+    ).toBeVisible();
+
+    // Toggling it should flip the checkbox state
+    const initial = await anonymize.isChecked();
+    await anonymize.click();
+    expect(await anonymize.isChecked()).toBe(!initial);
+    await context.close();
+  });
+
+  test("submit button disables when external mode has PDF but no report", async ({
+    browser,
+  }) => {
+    const { context } = await createRoleContext(browser, APP_BASE, "owner");
+    const page = await context.newPage();
+    await page.goto("/dashboard/preflight");
+
+    await page.getByRole("tab", { name: "Import External Results" }).click();
+
+    const submit = page.getByRole("button", { name: /^import results$/i });
+    await expect(submit).toBeVisible({ timeout: 15_000 });
+    // Both PDF and external report are missing -> disabled
+    await expect(submit).toBeDisabled();
+    await context.close();
+  });
 });

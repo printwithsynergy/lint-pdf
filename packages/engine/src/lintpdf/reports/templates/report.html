@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>
-      {% if brand and brand.name %}{{ brand.name }} Preflight Report{% else %}Preflight Report{% endif %}
+      {% if brand and brand.anonymous %}Preflight Report{% elif brand and brand.name %}{{ brand.name }} Preflight Report{% else %}Preflight Report{% endif %}
     </title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -172,7 +172,7 @@
             {% endif %}
           {% endif %}
           <div>
-            <div style="font-size: 20px; font-weight: 700; color: {{ brand.primary_color if brand else '#1e3a8a' }};">{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %}</div>
+            <div style="font-size: 20px; font-weight: 700; color: {{ brand.primary_color if brand else '#1e3a8a' }};">{% if brand and brand.anonymous %}Preflight Report{% elif brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %}</div>
             <div style="font-size: 11px; color: #6b7280;">Preflight Summary</div>
           </div>
         </div>
@@ -273,7 +273,7 @@
           {% endif %}
         {% endif %}
         <div>
-          <h1>{% if brand and brand.name %}{{ brand.name }}{% else %}LintPDF{% endif %} Preflight Report</h1>
+          <h1>{% if brand and brand.anonymous %}Preflight Report{% elif brand and brand.name %}{{ brand.name }} Preflight Report{% else %}LintPDF Preflight Report{% endif %}</h1>
           <div class="subtitle">{{ file_name }}{% if summary %} &middot; {{ summary.page_count }} page{{ 's' if summary.page_count != 1 else '' }}{% endif %} &middot; {{ generated_at }}</div>
         </div>
       </div>
@@ -476,8 +476,12 @@
 
     {# ===== FOOTER ===== #}
     <div class="footer">
-      {% if brand and brand.footer_text %}{{ brand.footer_text }}{% else %}Powered by <a href="https://lintpdf.com">LintPDF</a>{% endif %}
-      &middot; Profile: {{ result.profile_id }} &middot; {{ generated_at }}
+      {% if brand and brand.anonymous %}
+        {{ generated_at }}
+      {% else %}
+        {% if brand and brand.footer_text %}{{ brand.footer_text }}{% else %}Powered by <a href="https://lintpdf.com">LintPDF</a>{% endif %}
+        &middot; Profile: {{ result.profile_id }} &middot; {{ generated_at }}
+      {% endif %}
     </div>
 
     <script>

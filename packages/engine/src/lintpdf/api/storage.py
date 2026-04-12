@@ -286,3 +286,12 @@ class InMemoryStorage(StorageBackend):
 
     def delete_file(self, file_key: str) -> None:
         self._files.pop(file_key, None)
+
+    def upload_raw(
+        self, key: str, data: bytes, content_type: str = "application/octet-stream"
+    ) -> str:
+        self._files[key] = data
+        return key
+
+    def download_raw(self, key: str) -> bytes | None:
+        return self._files.get(key)

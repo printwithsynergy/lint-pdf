@@ -66,6 +66,23 @@ export interface ViewerState {
   severityFilter: Set<string>;
 }
 
+/**
+ * Capabilities keys the viewer reads from ``ViewerConfig.capabilities``.
+ * Kept as a union so TS surfaces typos, but the server may add new keys
+ * — the viewer treats unknown keys as present-but-unknown.
+ */
+export type ViewerCapabilityKey =
+  | "findings"
+  | "separations"
+  | "tac"
+  | "layers"
+  | "fonts"
+  | "images"
+  | "thumbnails"
+  | "metadata";
+
+export type PreflightSourceMode = "engine" | "external" | "minimal";
+
 export interface ViewerConfig {
   enable_separations: boolean;
   enable_tac_heatmap: boolean;
@@ -86,10 +103,19 @@ export interface ViewerConfig {
   viewer_accent_color: string | null;
   toolbar_position: "top" | "bottom";
   dark_mode: boolean;
-  brand_name: string;
+  /** Resolved branding — null fields when ``anonymous`` is true. */
+  brand_name: string | null;
   brand_logo_url: string | null;
-  brand_primary_color: string;
-  brand_accent_color: string;
+  brand_primary_color: string | null;
+  brand_accent_color: string | null;
+  /** True when the viewer must hide all tenant + LintPDF chrome. */
+  anonymous: boolean;
+  tenant_name: string | null;
+  support_email: string | null;
+  /** How findings were produced for this job. */
+  preflight_source: PreflightSourceMode;
+  /** Per-capability availability map (true = backed by data). */
+  capabilities: Partial<Record<ViewerCapabilityKey, boolean>>;
 }
 
 export interface LayerInfo {
@@ -192,4 +218,30 @@ export const DEFAULT_VIEWER_CONFIG: ViewerConfig = {
   brand_logo_url: LINTPDF_DEFAULT_LOGO,
   brand_primary_color: "#1a3a7a",
   brand_accent_color: "#2563eb",
+  anonymous: false,
+  tenant_name: null,
+  support_email: null,
+  preflight_source: "engine",
+  capabilities: {
+    findings: true,
+    separations: true,
+    tac: true,
+    layers: true,
+    fonts: true,
+    images: true,
+    thumbnails: true,
+    metadata: true,
+  },
 };
+
+/**
+ * Capabilities the viewer can request a one-off analyzer run for via
+ * ``POST /api/lintpdf/viewer/{jobId}/capabilities/{capability}``. Kept
+ * in sync with the engine's ``_FILLABLE_CAPABILITIES`` set.
+ */
+export const FILLABLE_CAPABILITIES: readonly ViewerCapabilityKey[] = [
+  "separations",
+  "tac",
+  "fonts",
+  "images",
+] as const;
