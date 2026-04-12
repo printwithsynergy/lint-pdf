@@ -23,6 +23,7 @@ from lintpdf.api.routes import (
     color_config,
     endpoints,
     health,
+    import_mappings,
     jobs,
     profiles,
     reports,
@@ -133,6 +134,7 @@ def create_app() -> FastAPI:
     app.include_router(viewer.router)
     app.include_router(branding.router)
     app.include_router(approvals.router)
+    app.include_router(import_mappings.router)
 
     # AI feature routers
     app.include_router(ai_config.router)

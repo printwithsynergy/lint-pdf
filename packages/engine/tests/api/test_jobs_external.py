@@ -18,6 +18,8 @@ from lintpdf.api.models import (
     Job,
     JobImportedReport,
     PreflightSource,
+    Tenant,
+    TenantImportMapping,
 )
 
 if TYPE_CHECKING:
@@ -311,5 +313,167 @@ class TestBrandOverrideOnSubmit:
             "/api/v1/jobs",
             files={"file": ("input.pdf", BytesIO(minimal_pdf_bytes), "application/pdf")},
             data={"profile_id": "lintpdf-default", "brand": "not-a-uuid-or-keyword"},
+        )
+        assert resp.status_code == 422
+
+
+# ---------------------------------------------------------------------------
+# mapping_id (tenant-defined custom mapping)
+# ---------------------------------------------------------------------------
+
+
+CUSTOM_XML = b"""<?xml version="1.0"?>
+<PreflightLog><Issues>
+  <Issue level="HIGH" page="2"><Description>Custom finding</Description></Issue>
+</Issues></PreflightLog>
+"""
+
+
+def _seed_mapping(db_session: Session, *, tenant_id=None, is_active: bool = True):
+    mapping = TenantImportMapping(
+        id=uuid.uuid4(),
+        tenant_id=tenant_id or PLACEHOLDER_TENANT_ID,
+        name="Acme PitStop-lite",
+        format="xml",
+        config={
+            "format": "xml",
+            "item_selector": "Issues/Issue",
+            "fields": {
+                "severity": "@level",
+                "message": "Description",
+                "page": "@page",
+            },
+            "severity_map": {"high": "error"},
+        },
+        is_active=is_active,
+    )
+    db_session.add(mapping)
+    db_session.commit()
+    return mapping
+
+
+class TestMappingIdSubmission:
+    """Uploading a PDF + custom XML parsed by a tenant-owned mapping."""
+
+    @staticmethod
+    def test_custom_mapping_marks_job_external_custom(
+        client: TestClient, minimal_pdf_bytes: bytes, db_session: Session
+    ) -> None:
+        mapping = _seed_mapping(db_session)
+        resp = client.post(
+            "/api/v1/jobs",
+            files={
+                "file": ("input.pdf", BytesIO(minimal_pdf_bytes), "application/pdf"),
+                "external_report": (
+                    "r.xml",
+                    BytesIO(CUSTOM_XML),
+                    "application/xml",
+                ),
+            },
+            data={
+                "profile_id": "lintpdf-default",
+                "preflight_source": "external",
+                "mapping_id": str(mapping.id),
+            },
+        )
+        assert resp.status_code == 202, resp.text
+        job_id = uuid.UUID(resp.json()["job_id"])
+
+        job = db_session.query(Job).filter(Job.id == job_id).first()
+        assert job is not None
+        assert job.preflight_source == PreflightSource.EXTERNAL
+        assert job.external_format == "custom"
+
+        imported = (
+            db_session.query(JobImportedReport)
+            .filter(JobImportedReport.job_id == job_id)
+            .first()
+        )
+        assert imported is not None
+        assert imported.format == "custom"
+        assert (imported.source_metadata or {}).get("mapping_id") == str(mapping.id)
+
+    @staticmethod
+    def test_unknown_mapping_id_rejected_403(
+        client: TestClient, minimal_pdf_bytes: bytes
+    ) -> None:
+        resp = client.post(
+            "/api/v1/jobs",
+            files={
+                "file": ("input.pdf", BytesIO(minimal_pdf_bytes), "application/pdf"),
+                "external_report": ("r.xml", BytesIO(CUSTOM_XML), "application/xml"),
+            },
+            data={
+                "profile_id": "lintpdf-default",
+                "preflight_source": "external",
+                "mapping_id": str(uuid.uuid4()),
+            },
+        )
+        assert resp.status_code == 403
+
+    @staticmethod
+    def test_foreign_tenant_mapping_rejected_403(
+        client: TestClient, minimal_pdf_bytes: bytes, db_session: Session
+    ) -> None:
+        foreign_tenant_id = uuid.uuid4()
+        db_session.add(
+            Tenant(
+                id=foreign_tenant_id,
+                name="Other",
+                api_key_hash="foreign",
+            )
+        )
+        db_session.commit()
+        mapping = _seed_mapping(db_session, tenant_id=foreign_tenant_id)
+
+        resp = client.post(
+            "/api/v1/jobs",
+            files={
+                "file": ("input.pdf", BytesIO(minimal_pdf_bytes), "application/pdf"),
+                "external_report": ("r.xml", BytesIO(CUSTOM_XML), "application/xml"),
+            },
+            data={
+                "profile_id": "lintpdf-default",
+                "preflight_source": "external",
+                "mapping_id": str(mapping.id),
+            },
+        )
+        assert resp.status_code == 403
+
+    @staticmethod
+    def test_inactive_mapping_rejected_422(
+        client: TestClient, minimal_pdf_bytes: bytes, db_session: Session
+    ) -> None:
+        mapping = _seed_mapping(db_session, is_active=False)
+        resp = client.post(
+            "/api/v1/jobs",
+            files={
+                "file": ("input.pdf", BytesIO(minimal_pdf_bytes), "application/pdf"),
+                "external_report": ("r.xml", BytesIO(CUSTOM_XML), "application/xml"),
+            },
+            data={
+                "profile_id": "lintpdf-default",
+                "preflight_source": "external",
+                "mapping_id": str(mapping.id),
+            },
+        )
+        assert resp.status_code == 422
+        assert "inactive" in resp.json()["detail"].lower()
+
+    @staticmethod
+    def test_malformed_mapping_id_rejected_422(
+        client: TestClient, minimal_pdf_bytes: bytes
+    ) -> None:
+        resp = client.post(
+            "/api/v1/jobs",
+            files={
+                "file": ("input.pdf", BytesIO(minimal_pdf_bytes), "application/pdf"),
+                "external_report": ("r.xml", BytesIO(CUSTOM_XML), "application/xml"),
+            },
+            data={
+                "profile_id": "lintpdf-default",
+                "preflight_source": "external",
+                "mapping_id": "not-a-uuid",
+            },
         )
         assert resp.status_code == 422

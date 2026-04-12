@@ -1145,9 +1145,36 @@ def _run_external_preflight(
             f"Imported preflight report blob missing: {imported_row.raw_blob_key}"
         )
 
-    imported, resolved_format = parse_external_report(
-        report_bytes, fmt=job.external_format
-    )
+    # ``custom`` means a tenant-defined mapping parsed the payload. The
+    # mapping id is stashed on ``imported_row.source_metadata`` at submit
+    # time so we can round-trip the config without duplicating it here.
+    if job.external_format == "custom":
+        from lintpdf.api.models import TenantImportMapping
+        from lintpdf.imports.custom import CustomMappingParser
+
+        mapping_id = (imported_row.source_metadata or {}).get("mapping_id")
+        if not mapping_id:
+            raise RuntimeError(
+                "external_format='custom' requires mapping_id in source_metadata"
+            )
+        mapping_row = (
+            db.query(TenantImportMapping)
+            .filter(TenantImportMapping.id == mapping_id)
+            .first()
+        )
+        if mapping_row is None:
+            raise RuntimeError(
+                f"TenantImportMapping {mapping_id} not found — cannot parse"
+            )
+        parser = CustomMappingParser(
+            mapping_row.config, mapping_id=str(mapping_row.id)
+        )
+        imported = parser.parse(report_bytes)
+        resolved_format = "custom"
+    else:
+        imported, resolved_format = parse_external_report(
+            report_bytes, fmt=job.external_format
+        )
 
     # --- Persist findings --------------------------------------------------
     _persist_imported_findings(db, job, imported.findings)

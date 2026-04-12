@@ -97,6 +97,15 @@ _external_report_param = File(
         "``preflight_source=external``)."
     ),
 )
+_mapping_id_param = Form(
+    default=None,
+    description=(
+        "UUID of a tenant-defined import mapping to parse the "
+        "``external_report`` with. When provided the mapping must be "
+        "owned by the authenticated tenant, and ``external_format`` is "
+        "implicitly set to ``custom`` — built-in parsers are bypassed."
+    ),
+)
 _brand_param = Form(
     default=None,
     description=(
@@ -189,6 +198,7 @@ async def submit_job(  # skipcq: PY-R1000
     preflight_source: str = _preflight_source_param,
     external_format: str | None = _external_format_param,
     external_report: UploadFile | None = _external_report_param,
+    mapping_id: str | None = _mapping_id_param,
     brand: str | None = _brand_param,
     unbranded: bool | None = _unbranded_param,
     db: Session = Depends(get_db),
@@ -245,12 +255,15 @@ async def submit_job(  # skipcq: PY-R1000
 
     resolved_external_format: str | None = None
     external_report_bytes: bytes | None = None
+    resolved_mapping_id: uuid_mod.UUID | None = None
     if source_enum is PreflightSource.EXTERNAL and external_report is not None:
         from lintpdf.imports.detect import (
             detect_format,
             parser_for_format,
         )
         from lintpdf.imports.base import ParserError
+        from lintpdf.imports.custom import CustomMappingParser
+        from lintpdf.api.models import TenantImportMapping
 
         # Hard cap imported reports at 50 MB — PitStop/callas XML for huge
         # jobs rarely exceed a few MB; anything larger is almost certainly
@@ -271,9 +284,50 @@ async def submit_job(  # skipcq: PY-R1000
                 ),
             )
 
+        # ``mapping_id`` bypasses built-in parser selection: the tenant's
+        # own mapping drives parsing. We still materialise the parser here
+        # (without calling .parse()) to fail fast on mapping misconfig.
+        if mapping_id:
+            try:
+                candidate_mapping_uuid = uuid_mod.UUID(mapping_id)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="mapping_id must be a valid UUID.",
+                ) from exc
+            mapping_row = (
+                db.query(TenantImportMapping)
+                .filter(
+                    TenantImportMapping.id == candidate_mapping_uuid,
+                    TenantImportMapping.tenant_id == tenant.id,
+                )
+                .first()
+            )
+            if mapping_row is None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "Import mapping not found or not owned by the "
+                        "authenticated tenant."
+                    ),
+                )
+            if not mapping_row.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Import mapping is inactive.",
+                )
+            try:
+                CustomMappingParser(mapping_row.config, mapping_id=str(mapping_row.id))
+            except ParserError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Import mapping config invalid: {exc}",
+                ) from exc
+            resolved_mapping_id = candidate_mapping_uuid
+            resolved_external_format = "custom"
         # Fail-fast format validation — either the caller specified a
         # format we support, or the payload sniffs to one we support.
-        if external_format:
+        elif external_format:
             try:
                 parser_for_format(external_format)
             except ParserError as exc:
@@ -291,8 +345,8 @@ async def submit_job(  # skipcq: PY-R1000
                     detail=(
                         "Could not auto-detect external_format. Pass an "
                         "explicit external_format field (pitstop_xml, "
-                        f"callas_json, callas_xml, acrobat_xml, lintpdf_json). "
-                        f"Detector said: {exc}"
+                        f"callas_json, callas_xml, acrobat_xml, lintpdf_json), "
+                        f"or a mapping_id. Detector said: {exc}"
                     ),
                 ) from exc
 
@@ -420,6 +474,9 @@ async def submit_job(  # skipcq: PY-R1000
                 report_key, external_report_bytes, report_content_type
             ),
         )
+        imported_source_metadata: dict[str, Any] | None = None
+        if resolved_mapping_id is not None:
+            imported_source_metadata = {"mapping_id": str(resolved_mapping_id)}
         db.add(
             JobImportedReport(
                 id=uuid_mod.uuid4(),
@@ -428,6 +485,7 @@ async def submit_job(  # skipcq: PY-R1000
                 raw_blob_key=report_key,
                 raw_size_bytes=len(external_report_bytes),
                 parser_version="1",
+                source_metadata=imported_source_metadata,
             )
         )
 
