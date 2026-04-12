@@ -238,7 +238,12 @@ async def list_pages(
 async def get_page_tile(
     job_id: str,
     page_num: int,
-    dpi: int = Query(default=150, ge=36, le=600),
+    dpi: int = Query(
+        default=150,
+        ge=36,
+        le=600,
+        description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
+    ),
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> Response:
@@ -338,7 +343,12 @@ async def get_separation_channel(
     job_id: str,
     page_num: int,
     channel_name: str,
-    dpi: int = Query(default=150, ge=36, le=600),
+    dpi: int = Query(
+        default=150,
+        ge=36,
+        le=600,
+        description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
+    ),
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> Response:
@@ -384,8 +394,22 @@ async def get_separation_channel(
 async def get_tac_heatmap(
     job_id: str,
     page_num: int,
-    dpi: int = Query(default=150, ge=36, le=600),
-    tac_limit: int = Query(default=300, ge=100, le=500),
+    dpi: int = Query(
+        default=150,
+        ge=36,
+        le=600,
+        description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
+    ),
+    tac_limit: int = Query(
+        default=300,
+        ge=100,
+        le=500,
+        description=(
+            "Total area coverage threshold as a percentage (100-500). "
+            "Pixels at or above this value are highlighted in the heatmap. "
+            "Defaults to 300% (typical for sheetfed offset)."
+        ),
+    ),
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> Response:
@@ -529,7 +553,15 @@ async def sample_color(
     page_num: int,
     x: float = Query(..., description="X coordinate in PDF points"),
     y: float = Query(..., description="Y coordinate in PDF points"),
-    dpi: int = Query(default=300, ge=72, le=600),
+    dpi: int = Query(
+        default=300,
+        ge=72,
+        le=600,
+        description=(
+            "Render DPI at which the point was sampled. Higher values resolve "
+            "finer geometry. 72-600, defaults to 300."
+        ),
+    ),
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> ColorSampleResponse:
@@ -989,7 +1021,12 @@ async def public_separations(token: str, db: Session = Depends(get_db)) -> dict:
 @router.get("/public/{token}/pages/{page_num}/channel/{channel_name}")
 async def public_channel(
     token: str, page_num: int, channel_name: str,
-    dpi: int = Query(default=150, ge=36, le=600),
+    dpi: int = Query(
+        default=150,
+        ge=36,
+        le=600,
+        description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
+    ),
     db: Session = Depends(get_db),
 ) -> Response:
     """Public: render a separation channel as grayscale PNG."""
@@ -1004,8 +1041,21 @@ async def public_channel(
 @router.get("/public/{token}/pages/{page_num}/tac-heatmap")
 async def public_tac_heatmap(
     token: str, page_num: int,
-    dpi: int = Query(default=150, ge=36, le=600),
-    tac_limit: float = Query(default=300, ge=100, le=500),
+    dpi: int = Query(
+        default=150,
+        ge=36,
+        le=600,
+        description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
+    ),
+    tac_limit: float = Query(
+        default=300,
+        ge=100,
+        le=500,
+        description=(
+            "Total area coverage threshold as a percentage (100-500). "
+            "Pixels at or above this value are highlighted in the heatmap."
+        ),
+    ),
     db: Session = Depends(get_db),
 ) -> Response:
     """Public: render TAC heatmap overlay as RGBA PNG."""
@@ -1031,8 +1081,17 @@ async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
 @router.get("/public/{token}/pages/{page_num}/sample")
 async def public_sample(
     token: str, page_num: int,
-    x: float = Query(default=0), y: float = Query(default=0),
-    dpi: int = Query(default=300, ge=72, le=600),
+    x: float = Query(default=0, description="X coordinate in PDF points."),
+    y: float = Query(default=0, description="Y coordinate in PDF points."),
+    dpi: int = Query(
+        default=300,
+        ge=72,
+        le=600,
+        description=(
+            "Render DPI at which the point was sampled. Higher values resolve "
+            "finer geometry. 72-600, defaults to 300."
+        ),
+    ),
     db: Session = Depends(get_db),
 ) -> dict:
     """Public: densitometer color sample."""
