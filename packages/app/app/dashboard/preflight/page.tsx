@@ -86,6 +86,10 @@ export default function PreflightPage() {
   const [tenantAnonymousDefault, setTenantAnonymousDefault] = useState<boolean>(
     false,
   );
+  const [customMappings, setCustomMappings] = useState<
+    { id: string; name: string; format: string }[]
+  >([]);
+  const [selectedMappingId, setSelectedMappingId] = useState<string>("");
 
   // Confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -118,6 +122,20 @@ export default function PreflightPage() {
     fetch("/api/lintpdf/profiles")
       .then((r) => (r.ok ? r.json() : { profiles: [] }))
       .then((data) => setProfiles(data.profiles ?? []))
+      .catch(() => {});
+  }, []);
+
+  // Tenant-defined custom import mappings. Only shown when the user picks
+  // "Import External Results" so the default flow stays uncluttered.
+  useEffect(() => {
+    fetch("/api/lintpdf/import-mappings")
+      .then((r) => (r.ok ? r.json() : { mappings: [] }))
+      .then((data) => {
+        const active = (data.mappings ?? []).filter(
+          (m: { is_active?: boolean }) => m.is_active !== false,
+        );
+        setCustomMappings(active);
+      })
       .catch(() => {});
   }, []);
 
@@ -165,7 +183,11 @@ export default function PreflightPage() {
         const extRes = await fetch(externalReportDataUrl);
         const extBlob = await extRes.blob();
         formData.append("external_report", extBlob, externalReportName);
-        if (externalFormat && externalFormat !== "auto") {
+        if (selectedMappingId) {
+          // Custom mapping takes precedence over built-in parser selection;
+          // the engine ignores ``external_format`` when mapping_id is set.
+          formData.append("mapping_id", selectedMappingId);
+        } else if (externalFormat && externalFormat !== "auto") {
           formData.append("external_format", externalFormat);
         }
       }
@@ -320,6 +342,7 @@ export default function PreflightPage() {
                       id="external-format"
                       value={externalFormat}
                       onChange={(e) => setExternalFormat(e.target.value)}
+                      disabled={Boolean(selectedMappingId)}
                     >
                       <option value="auto">Auto-detect</option>
                       <option value="pitstop_xml">Enfocus PitStop (XML)</option>
@@ -330,6 +353,39 @@ export default function PreflightPage() {
                     </Select>
                   </FormField>
                 </div>
+                {customMappings.length > 0 && (
+                  <div className="min-w-[220px]">
+                    <FormField
+                      label="Use custom mapping"
+                      htmlFor="mapping-id"
+                    >
+                      <Select
+                        id="mapping-id"
+                        value={selectedMappingId}
+                        onChange={(e) => setSelectedMappingId(e.target.value)}
+                      >
+                        <option value="">— None (use built-in parser)</option>
+                        {customMappings.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name} ({m.format})
+                          </option>
+                        ))}
+                      </Select>
+                    </FormField>
+                  </div>
+                )}
+              </div>
+            )}
+            {preflightSource === "external" && customMappings.length === 0 && (
+              <div className="mt-2 text-xs text-muted-foreground">
+                Need a proprietary format we don’t ship? Define one at{" "}
+                <Link
+                  href="/dashboard/account/import-mappings"
+                  className="underline"
+                >
+                  Custom import mappings
+                </Link>
+                .
               </div>
             )}
 
