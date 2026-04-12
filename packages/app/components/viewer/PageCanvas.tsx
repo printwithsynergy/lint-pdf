@@ -140,8 +140,7 @@ export function PageCanvas({
       y = 40;
     }
     setTooltip({ finding: selectedFinding, x, y });
-    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
-    tooltipTimerRef.current = setTimeout(() => setTooltip(null), 6000);
+    // No auto-dismiss: tooltip stays until user clicks elsewhere or changes selection
   }, [selectedFinding, page.page_num, page.height_pts, ptsToPixels, scale, canvasWidth]);
 
   // Render canvas
@@ -336,10 +335,13 @@ export function PageCanvas({
             </span>
             <code className="ml-auto text-[10px] text-gray-400">{tooltip.finding.inspection_id}</code>
           </div>
-          <p className="leading-snug text-gray-200">{tooltip.finding.message.length > 120 ? tooltip.finding.message.slice(0, 120) + "..." : tooltip.finding.message}</p>
-          {tooltip.finding.category && (
-            <span className="mt-1 inline-block rounded bg-white/10 px-1.5 py-0.5 text-[10px] text-gray-400">{tooltip.finding.category}</span>
-          )}
+          <p className="break-words leading-snug text-gray-200">
+            {(() => {
+              // Strip long object references like 'FormXob.6b8351906a...' for cleaner display
+              const msg = tooltip.finding.message.replace(/'[A-Za-z]+\.[a-f0-9]{16,}'/g, '').replace(/\s+/g, ' ').trim();
+              return msg.length > 160 ? msg.slice(0, 160) + "..." : msg;
+            })()}
+          </p>
         </div>
       )}
     </div>

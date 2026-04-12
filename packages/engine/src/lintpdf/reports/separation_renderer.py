@@ -319,21 +319,24 @@ def render_tac_heatmap(
         # Build RGBA heatmap
         heatmap = np.zeros((height, width, 4), dtype=np.uint8)
 
-        # Green zone: TAC < 250%
-        green_mask = tac < 250
-        heatmap[green_mask] = [0, 180, 0, 80]
+        # Every element with ink gets a color. Only true paper-white
+        # (TAC essentially zero) stays transparent so the PDF page remains visible.
+
+        # Green zone: TAC < 250% (includes text and light coverage areas)
+        green_mask = (tac >= 1) & (tac < 250)
+        heatmap[green_mask] = [0, 180, 0, 100]
 
         # Yellow zone: 250% <= TAC < tac_limit
         yellow_mask = (tac >= 250) & (tac < tac_limit)
-        heatmap[yellow_mask] = [255, 200, 0, 140]
+        heatmap[yellow_mask] = [255, 200, 0, 150]
 
         # Red zone: TAC >= tac_limit
         red_mask = tac >= tac_limit
-        heatmap[red_mask] = [255, 0, 0, 180]
+        heatmap[red_mask] = [255, 0, 0, 190]
 
-        # Areas with very low TAC (< 10%) → fully transparent (paper white)
-        low_mask = tac < 10
-        heatmap[low_mask] = [0, 0, 0, 0]
+        # True paper-white (TAC < 1%) stays transparent so page content shows through
+        paper_mask = tac < 1
+        heatmap[paper_mask] = [0, 0, 0, 0]
 
         heatmap_img = Image.fromarray(heatmap, mode="RGBA")
         buf = io.BytesIO()
