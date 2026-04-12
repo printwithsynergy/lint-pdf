@@ -4,11 +4,36 @@ export default function ChecksPage() {
       <h2 className="text-2xl font-bold text-slate-900 mb-6">
         Checks Reference
       </h2>
-      <p className="text-slate-600 mb-6">
+      <p className="text-slate-600 mb-4">
         LintPDF runs 500+ individual Checks across these categories. Each
         finding in a Report references a Check ID, severity level, and affected
         page.
       </p>
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 mb-6 text-sm text-slate-600">
+        <p className="mb-2">
+          <strong className="text-slate-900">Engine mode only.</strong> The 500+
+          checks below only run when{" "}
+          <code className="bg-white px-1 rounded">preflight_source=engine</code>.
+          Jobs submitted with{" "}
+          <code className="bg-white px-1 rounded">preflight_source=external</code>{" "}
+          import their findings verbatim from PitStop / callas / Acrobat /
+          native payloads — LintPDF does not re-check them. See{" "}
+          <a
+            href="/docs/preflight-modes"
+            className="text-brand-700 hover:underline"
+          >
+            Preflight Modes
+          </a>{" "}
+          for the full matrix.
+        </p>
+        <p>
+          Programmatic consumers should fetch the full registry from{" "}
+          <code className="bg-white px-1 rounded">GET /api/v1/check-names</code>
+          {" "}(unauthenticated, cache-friendly) — it returns the canonical{" "}
+          <code className="bg-white px-1 rounded">inspection_id → {`{ name, description }`}</code>
+          {" "}mapping for every shipping check.
+        </p>
+      </div>
 
       {[
         {

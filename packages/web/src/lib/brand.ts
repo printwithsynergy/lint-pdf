@@ -47,6 +47,81 @@ export const glossary = [
     usage: "Status, API",
   },
   { concept: "Processing complete", term: "Complete", usage: "Status, API" },
+  {
+    concept: "How a job is analyzed",
+    term: "Preflight Mode",
+    usage: "Docs, submit API",
+  },
+  {
+    concept: "Bring-your-own preflight report",
+    term: "External Import",
+    usage: "Docs, submit API",
+  },
+  {
+    concept: "Viewer-only submission, no analyzer run",
+    term: "Minimal Mode",
+    usage: "Docs, submit API",
+  },
+  {
+    concept: "Tenant-scoped report parser",
+    term: "Import Mapping",
+    usage: "Dashboard, API",
+  },
+  {
+    concept: "Lazily fillable analyzer output",
+    term: "Capability",
+    usage: "Viewer, docs",
+  },
+  {
+    concept: "No brand at all (tenant or LintPDF)",
+    term: "Anonymous Output",
+    usage: "Reports, viewer, API",
+  },
+  {
+    concept: "Named tenant branding config",
+    term: "Brand Profile",
+    usage: "Dashboard, API",
+  },
+  {
+    concept: "Immutable tokenized report URL",
+    term: "Share Link",
+    usage: "Reports, API",
+  },
+  {
+    concept: "Tenant-owned reports/viewer hostname",
+    term: "Custom Domain",
+    usage: "Dashboard, API",
+  },
+  {
+    concept: "Branded submission slug",
+    term: "Vanity Endpoint",
+    usage: "API",
+  },
+  {
+    concept: "Human approval state for a job",
+    term: "Verdict",
+    usage: "Viewer, API",
+  },
+  {
+    concept: "Ink plate (process or spot)",
+    term: "Channel / Separation",
+    usage: "Viewer, docs",
+  },
+  {
+    concept: "Total Area Coverage (sum of ink %)",
+    term: "TAC",
+    usage: "Viewer, docs",
+  },
+  {
+    concept: "Single-pixel color probe",
+    term: "Densitometer",
+    usage: "Viewer, API",
+  },
+  {
+    concept: "Tokenized report handle",
+    term: "Report Token",
+    usage: "Reports, API",
+  },
 ] as const;
 
 // ── API Endpoints ───────────────────────────────────────────
