@@ -1,70 +1,47 @@
 {
-  "_comment": "callas pdfToolbox report (JSON variant). Auto-detects as callas_json.",
-  "tool": "callas pdfToolbox",
-  "version": "14.1.573",
+  "_comment": "callas pdfToolbox report (JSON variant). Auto-detects as callas_json. The parser reads hits[] with rule_id, severity, comment|message, page, geometry.bbox (or bbox), object_id, object_type. Presence of separations[] flips the separations capability flag.",
+  "pdfToolboxVersion": "14.1.573",
   "profile": "PDF/X-4 (Ghent Workgroup 2022)",
-  "file": {
-    "name": "brochure.pdf",
-    "pages": 4,
-    "pdf_version": "1.6"
-  },
-  "timestamp": "2026-03-14T09:12:44Z",
+  "report_date": "2026-03-14T09:12:44Z",
   "hits": [
     {
-      "id": "img_lowres_cmyk",
-      "level": "error",
+      "rule_id": "CALLAS_IMG_LOWRES",
+      "severity": "error",
       "comment": "Image resolution 144 dpi is below the 300 dpi threshold",
       "page": 2,
-      "rect": [72, 72, 216, 216],
-      "object": {
-        "type": "image",
-        "name": "Im42",
-        "color_space": "DeviceCMYK"
-      },
-      "category": "images"
+      "geometry": { "bbox": [72, 72, 216, 216] },
+      "object_id": "Im42",
+      "object_type": "image"
     },
     {
-      "id": "font_not_embedded",
-      "level": "warning",
+      "rule_id": "CALLAS_FONT_NOEMBED",
+      "severity": "warning",
       "comment": "Font Helvetica-Bold is not embedded",
       "page": 1,
-      "object": {
-        "type": "font",
-        "name": "Helvetica-Bold"
-      },
-      "category": "fonts"
+      "object_id": "Helvetica-Bold",
+      "object_type": "font"
     },
     {
-      "id": "rgb_in_cmyk_job",
-      "level": "warning",
+      "rule_id": "CALLAS_COLOR_RGB_IN_CMYK",
+      "severity": "warning",
       "comment": "RGB color object used in a CMYK-intent job",
       "page": 3,
-      "rect": [144, 300, 468, 360],
-      "category": "color",
-      "iso_clause": "PDF/X-4:2010 6.2.2"
+      "geometry": { "bbox": [144, 300, 468, 360] }
     },
     {
-      "id": "page_no_trimbox",
-      "level": "error",
+      "rule_id": "CALLAS_GEOM_NO_TRIMBOX",
+      "severity": "error",
       "comment": "Page 4 is missing a TrimBox",
       "page": 4,
-      "object": {
-        "type": "page"
-      },
-      "category": "geometry"
+      "object_type": "page"
     },
     {
-      "id": "overprint_white_text",
-      "level": "info",
+      "rule_id": "CALLAS_COLOR_OVERPRINT_WHITE",
+      "severity": "info",
       "comment": "White text set to overprint — will disappear on press",
       "page": 2,
-      "rect": [96, 540, 300, 560],
-      "category": "color"
+      "geometry": { "bbox": [96, 540, 300, 560] }
     }
   ],
-  "summary": {
-    "errors": 2,
-    "warnings": 2,
-    "infos": 1
-  }
+  "separations": ["Cyan", "Magenta", "Yellow", "Black"]
 }

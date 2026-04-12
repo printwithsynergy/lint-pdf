@@ -2,39 +2,54 @@
 <!--
   callas pdfToolbox preflight report (XML variant). Auto-detects as callas_xml.
   Export from pdfToolbox: "Save report as XML" on any Profile run.
+
+  The parser reads <hit> children with:
+    <rule_id>  → inspection_id
+    <severity> → severity
+    <comment>  → message (or <message>)
+    <page>     → page_num
+    <geometry><bbox>x0 y0 x1 y1</bbox></geometry>
 -->
-<Report tool="callas pdfToolbox" version="14.1.573">
-  <Profile>PDF/X-4 (Ghent Workgroup 2022)</Profile>
-  <File name="brochure.pdf" pages="4" pdf_version="1.6"/>
-  <Timestamp>2026-03-14T09:12:44Z</Timestamp>
-  <Hits>
-    <Hit id="img_lowres_cmyk" level="error" page="2">
-      <Comment>Image resolution 144 dpi is below the 300 dpi threshold</Comment>
-      <Rect left="72" bottom="72" right="216" top="216"/>
-      <Object type="image" name="Im42" colorSpace="DeviceCMYK"/>
-      <Category>images</Category>
-    </Hit>
-    <Hit id="font_not_embedded" level="warning" page="1">
-      <Comment>Font Helvetica-Bold is not embedded</Comment>
-      <Object type="font" name="Helvetica-Bold"/>
-      <Category>fonts</Category>
-    </Hit>
-    <Hit id="rgb_in_cmyk_job" level="warning" page="3">
-      <Comment>RGB color object used in a CMYK-intent job</Comment>
-      <Rect left="144" bottom="300" right="468" top="360"/>
-      <Category>color</Category>
-      <IsoClause>PDF/X-4:2010 6.2.2</IsoClause>
-    </Hit>
-    <Hit id="page_no_trimbox" level="error" page="4">
-      <Comment>Page 4 is missing a TrimBox</Comment>
-      <Object type="page"/>
-      <Category>geometry</Category>
-    </Hit>
-    <Hit id="overprint_white_text" level="info" page="2">
-      <Comment>White text set to overprint — will disappear on press</Comment>
-      <Rect left="96" bottom="540" right="300" top="560"/>
-      <Category>color</Category>
-    </Hit>
-  </Hits>
-  <Summary errors="2" warnings="2" infos="1"/>
-</Report>
+<preflight_report>
+  <profile>PDF/X-4 (Ghent Workgroup 2022)</profile>
+  <pdfToolboxVersion>14.1.573</pdfToolboxVersion>
+  <hit>
+    <rule_id>CALLAS_IMG_LOWRES</rule_id>
+    <severity>error</severity>
+    <comment>Image resolution 144 dpi is below the 300 dpi threshold</comment>
+    <page>2</page>
+    <geometry>
+      <bbox>72 72 216 216</bbox>
+    </geometry>
+  </hit>
+  <hit>
+    <rule_id>CALLAS_FONT_NOEMBED</rule_id>
+    <severity>warning</severity>
+    <comment>Font Helvetica-Bold is not embedded</comment>
+    <page>1</page>
+  </hit>
+  <hit>
+    <rule_id>CALLAS_COLOR_RGB_IN_CMYK</rule_id>
+    <severity>warning</severity>
+    <comment>RGB color object used in a CMYK-intent job</comment>
+    <page>3</page>
+    <geometry>
+      <bbox>144 300 468 360</bbox>
+    </geometry>
+  </hit>
+  <hit>
+    <rule_id>CALLAS_GEOM_NO_TRIMBOX</rule_id>
+    <severity>error</severity>
+    <comment>Page 4 is missing a TrimBox</comment>
+    <page>4</page>
+  </hit>
+  <hit>
+    <rule_id>CALLAS_COLOR_OVERPRINT_WHITE</rule_id>
+    <severity>info</severity>
+    <comment>White text set to overprint — will disappear on press</comment>
+    <page>2</page>
+    <geometry>
+      <bbox>96 540 300 560</bbox>
+    </geometry>
+  </hit>
+</preflight_report>

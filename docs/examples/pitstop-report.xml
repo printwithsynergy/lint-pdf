@@ -4,68 +4,64 @@
   Export from PitStop Server: File > Preferences > Reports > XML.
   LintPDF auto-detects this as `pitstop_xml`; setting external_format=pitstop_xml
   makes the classification explicit.
+
+  The parser reads severity from the wrapper tag (<Error> / <Warning> /
+  <Info> / <Advisory>) and picks up these child elements:
+    <CheckID>     → inspection_id
+    <Description> → message
+    <Category>    → category
+    <Page>        → page_num
+    <BBox>        → bbox (space-separated x0 y0 x1 y1, or llx/lly/urx/ury attrs)
+    <ObjectID>    → object_id
+    <ObjectType>  → object_type
+    <ISO>         → iso_clause
 -->
-<PitStopReport version="2024.1">
-  <DocumentInfo>
-    <FileName>brochure.pdf</FileName>
-    <Pages>4</Pages>
+<PitStopReport>
+  <Header>
     <Profile>PDF/X-4 Sheetfed</Profile>
-    <Timestamp>2026-03-14T09:12:44Z</Timestamp>
-  </DocumentInfo>
+    <PitStopVersion>2024.1</PitStopVersion>
+    <FileName>brochure.pdf</FileName>
+  </Header>
   <Results>
-    <Hit type="Error" id="img.lowres">
-      <Message>Image resolution 144 dpi is below the 300 dpi threshold</Message>
+    <Error>
+      <CheckID>IMG_LOWRES</CheckID>
+      <Description>Image resolution 144 dpi is below the 300 dpi threshold</Description>
+      <Category>Images</Category>
       <Page>2</Page>
-      <BoundingBox>
-        <Left>72</Left>
-        <Bottom>72</Bottom>
-        <Right>216</Right>
-        <Top>216</Top>
-      </BoundingBox>
+      <BBox>72 72 216 216</BBox>
+      <ObjectID>Im42</ObjectID>
       <ObjectType>image</ObjectType>
-      <ObjectName>Im42</ObjectName>
-      <Category>images</Category>
-    </Hit>
-    <Hit type="Warning" id="font.noembed">
-      <Message>Font Helvetica-Bold is not embedded</Message>
+      <ISO>PDF/X-4 6.2.3</ISO>
+    </Error>
+    <Warning>
+      <CheckID>FONT_NOEMBED</CheckID>
+      <Description>Font Helvetica-Bold is not embedded</Description>
+      <Category>Fonts</Category>
       <Page>1</Page>
+      <ObjectID>Helvetica-Bold</ObjectID>
       <ObjectType>font</ObjectType>
-      <ObjectName>Helvetica-Bold</ObjectName>
-      <Category>fonts</Category>
-    </Hit>
-    <Hit type="Warning" id="color.rgb_in_cmyk">
-      <Message>RGB color object used in a CMYK-intent job</Message>
+    </Warning>
+    <Warning>
+      <CheckID>COLOR_RGB_IN_CMYK</CheckID>
+      <Description>RGB color object used in a CMYK-intent job</Description>
+      <Category>Color</Category>
       <Page>3</Page>
-      <BoundingBox>
-        <Left>144</Left>
-        <Bottom>300</Bottom>
-        <Right>468</Right>
-        <Top>360</Top>
-      </BoundingBox>
-      <Category>color</Category>
-      <IsoClause>PDF/X-4:2010 6.2.2</IsoClause>
-    </Hit>
-    <Hit type="Error" id="geom.no_trimbox">
-      <Message>Page 4 is missing a TrimBox</Message>
+      <BBox>144 300 468 360</BBox>
+      <ISO>PDF/X-4:2010 6.2.2</ISO>
+    </Warning>
+    <Error>
+      <CheckID>GEOM_NO_TRIMBOX</CheckID>
+      <Description>Page 4 is missing a TrimBox</Description>
+      <Category>Geometry</Category>
       <Page>4</Page>
       <ObjectType>page</ObjectType>
-      <Category>geometry</Category>
-    </Hit>
-    <Hit type="Info" id="color.overprint_white">
-      <Message>White text set to overprint — will disappear on press</Message>
+    </Error>
+    <Info>
+      <CheckID>COLOR_OVERPRINT_WHITE</CheckID>
+      <Description>White text set to overprint — will disappear on press</Description>
+      <Category>Color</Category>
       <Page>2</Page>
-      <BoundingBox>
-        <Left>96</Left>
-        <Bottom>540</Bottom>
-        <Right>300</Right>
-        <Top>560</Top>
-      </BoundingBox>
-      <Category>color</Category>
-    </Hit>
+      <BBox>96 540 300 560</BBox>
+    </Info>
   </Results>
-  <Summary>
-    <Errors>2</Errors>
-    <Warnings>2</Warnings>
-    <Infos>1</Infos>
-  </Summary>
 </PitStopReport>
