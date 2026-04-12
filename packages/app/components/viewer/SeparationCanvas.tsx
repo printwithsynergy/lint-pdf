@@ -69,6 +69,12 @@ export function SeparationCanvas({
     new Set(),
   );
 
+  // Clear cached channel images when page changes
+  useEffect(() => {
+    setChannelImages(new Map());
+    setLoadingChannels(new Set());
+  }, [pageNum]);
+
   // Load channel images lazily
   const loadChannel = useCallback(
     async (channelName: string) => {
