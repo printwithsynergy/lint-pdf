@@ -1,68 +1,122 @@
 import { CodeBlock } from "@/components/docs/CodeBlock";
-import { Endpoint } from "@/components/docs/Endpoint";
+import { FieldTable } from "@/components/docs/FieldTable";
 
 export default function ReportFormatsPage() {
   return (
     <>
       <h2 className="text-2xl font-bold text-slate-900 mb-6">Report Formats</h2>
       <p className="text-slate-600 mb-6">
-        Reports can be retrieved in three formats. Use the{" "}
-        <code className="bg-slate-100 px-1 rounded text-sm font-mono">
-          format
-        </code>{" "}
-        query parameter on the report endpoint.
+        LintPDF mints reports as immutable tokens. Each token binds a format
+        (PDF, HTML, JSON, XML) and a frozen branding state. Consume reports via
+        public share URLs or the authenticated list endpoint. See the{" "}
+        <a href="/docs/share-links" className="text-brand-700 hover:underline">
+          Share Links
+        </a>
+        {" "}and{" "}
+        <a href="/docs/branding-and-anonymous" className="text-brand-700 hover:underline">
+          Branding &amp; Anonymous Output
+        </a>{" "}
+        pages for the full workflow.
       </p>
 
-      <h3 className="font-semibold text-slate-900 mb-3">
-        JSON Response Schema
-      </h3>
+      <h3 className="font-semibold text-slate-900 mb-3">Minting knobs</h3>
+      <p className="text-slate-600 mb-3">
+        Call <code className="bg-slate-100 px-1 rounded">POST /api/v1/jobs/{`{job_id}`}/reports</code>{" "}
+        with the fields below. Every knob has a sensible default, so the
+        minimum request is <code className="bg-slate-100 px-1 rounded">{`{ "formats": ["pdf"] }`}</code>.
+      </p>
+      <FieldTable
+        rows={[
+          { name: "formats", type: '("pdf"|"html"|"json"|"xml")[]', required: true, description: "Output formats to mint. Each gets its own token." },
+          { name: "expiry_days", type: "integer", default: "30", description: "Token lifetime. Range 1–365. After expiry the public URLs return 410 Gone." },
+          { name: "email_to", type: "string[]", description: "If provided, LintPDF emails the share URLs to these addresses (tenant-branded unless branding=anonymous)." },
+          { name: "branding", type: '"anonymous" | "lintpdf" | uuid', description: "Freezes the brand state at mint time. Overrides the tenant default." },
+          { name: "detail_level", type: '"executive"|"standard"|"comprehensive"', default: "standard", description: "Narrative density in PDF/HTML — executive is summary-only, comprehensive walks every finding." },
+          { name: "summary_page", type: '"prepend"|"only"|"off"', default: "prepend", description: "Controls the PDF summary page placement." },
+        ]}
+      />
+
+      <h3 className="font-semibold text-slate-900 mt-8 mb-3">JSON schema</h3>
+      <p className="text-slate-600 mb-3">
+        The <code className="bg-slate-100 px-1 rounded">json</code> format returns the full job payload plus
+        frozen source metadata. Import this shape directly using the native{" "}
+        <a href="/docs/import-schema" className="text-brand-700 hover:underline">
+          LintPDF v1 import schema
+        </a>.
+      </p>
       <CodeBlock>{`{
-  "id": "string",
+  "job_id": "d4e5f6a7-...",
   "status": "complete",
-  "verdict": "pass | error",
-  "ruleset": "string",
-  "file_name": "string",
-  "page_count": "number",
-  "duration_ms": "number",
-  "summary": {
-    "total_findings": "number",
-    "error": "number",
-    "warning": "number",
-    "info": "number"
-  },
+  "verdict": "rejected",
+  "preflight_source": "external",
+  "external_format": "pitstop_xml",
+  "profile_id": "lintpdf-default",
+  "file_name": "brochure.pdf",
+  "page_count": 12,
+  "summary": { "total_findings": 7, "error": 1, "warning": 4, "advisory": 2 },
   "findings": [
     {
-      "inspection_id": "string",
-      "severity": "error | warning | info",
-      "message": "string",
-      "page": "number"
+      "inspection_id": "pitstop:font.not_embedded",
+      "severity": "error",
+      "message": "Font 'Helvetica' is not embedded",
+      "page_num": 1,
+      "bbox": [72, 720, 540, 740],
+      "source": { "type": "external", "format": "pitstop_xml", "profile": "Sheetfed" }
     }
   ]
 }`}</CodeBlock>
 
       <h3 className="font-semibold text-slate-900 mt-8 mb-3">
-        PDF Reports &amp; White Label
+        PDF &amp; HTML reports — branding resolution
       </h3>
-      <p className="text-slate-600 mb-4">
-        PDF reports are white-labeled using your White Label configuration.
-        Scale and Enterprise plans can upload a logo, set brand colors, and
-        customize footer text. Reports include a summary page, detailed findings
-        grouped by severity, and page-level annotations.
+      <p className="text-slate-600 mb-3">
+        The PDF and HTML formats honour <code className="bg-slate-100 px-1 rounded">branding</code> at mint
+        time. Anonymous mode is the strongest — it strips tenant branding,
+        LintPDF branding, PDF document metadata (Author/Producer/Creator), and
+        uses a neutral filename:
       </p>
+      <FieldTable
+        rows={[
+          { name: "Filename (anonymous)", type: "string", description: "preflight-<short-id>.pdf — no tenant slug, no brand reference." },
+          { name: "Filename (tenant)", type: "string", description: "{tenant-slug}-<short-id>.pdf — derived from the BrandProfile." },
+          { name: "Filename (lintpdf)", type: "string", description: "lintpdf-<short-id>.pdf." },
+          { name: "PDF Author", type: "metadata", description: "Anonymous: empty. Tenant: BrandProfile.company_name. LintPDF: 'LintPDF'." },
+          { name: "PDF Producer", type: "metadata", description: "Anonymous: generic 'Preflight Report'. Otherwise: 'LintPDF <version>'." },
+          { name: "PDF Creator", type: "metadata", description: "Anonymous: generic 'Preflight Report'. Otherwise: tenant or LintPDF brand string." },
+          { name: "Footer / header", type: "render", description: "Anonymous: empty. Tenant: BrandProfile.footer_text + logo. LintPDF: product mark." },
+        ]}
+      />
 
-      <h3 className="font-semibold text-slate-900 mt-8 mb-3">XML Format</h3>
+      <h3 className="font-semibold text-slate-900 mt-8 mb-3">
+        Consuming a report URL
+      </h3>
+      <CodeBlock>{`# HTML landing (share with anyone)
+GET  https://reports.lintpdf.com/r/rpt_01HXY...
+
+# PDF download
+GET  https://reports.lintpdf.com/r/rpt_01HXY....pdf?download=1
+
+# Structured findings for the token (unauthenticated)
+GET  https://api.lintpdf.com/api/v1/reports/tokens/rpt_01HXY.../findings
+
+# Revoke (authenticated)
+DELETE https://api.lintpdf.com/api/v1/jobs/{job_id}/reports/rpt_01HXY...`}</CodeBlock>
+
+      <h3 className="font-semibold text-slate-900 mt-8 mb-3">XML format</h3>
       <p className="text-slate-600 mb-4">
-        XML reports follow the same structure as JSON but use XML elements.
-        Useful for legacy integrations and enterprise systems that consume XML.
+        XML reports follow the same field taxonomy as JSON. Use them for
+        integrations that already consume XML preflight output (Switch, legacy
+        MIS).
       </p>
       <CodeBlock>{`<?xml version="1.0" encoding="UTF-8"?>
-<report id="f47ac10b-..." status="complete" verdict="error">
-  <ruleset>gwg-sheetfed</ruleset>
-  <file-name>document.pdf</file-name>
-  <summary total="3" error="1" warning="1" info="1" />
+<report job-id="d4e5f6a7-..." status="complete" verdict="rejected">
+  <preflight-source>external</preflight-source>
+  <external-format>pitstop_xml</external-format>
+  <summary total="7" error="1" warning="4" advisory="2" />
   <findings>
-    <finding inspection="font.not_embedded" severity="error" page="1">
-      Font 'Helvetica' is not embedded
+    <finding inspection="pitstop:font.not_embedded" severity="error" page="1">
+      <message>Font 'Helvetica' is not embedded</message>
+      <bbox>72 720 540 740</bbox>
     </finding>
   </findings>
 </report>`}</CodeBlock>

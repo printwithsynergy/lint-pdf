@@ -81,10 +81,21 @@ export default function AboutPage() {
             production print run far exceeds the cost of detecting the issue and
             letting a human decide how to resolve it.
           </p>
-          <p className="text-slate-600 leading-relaxed">
+          <p className="text-slate-600 mb-4 leading-relaxed">
             LintPDF gives you the information. You make the decisions. Your
             files stay exactly as they were — byte for byte, every time. Zero
             risk of file damage, zero surprises on press.
+          </p>
+          <p className="text-slate-600 leading-relaxed">
+            The same philosophy extends to the findings themselves. When you
+            bring your own preflight report — from PitStop, callas pdfToolbox,
+            Acrobat, or a tool we have never heard of — LintPDF parses it,
+            renders it in the viewer, and mints share links without
+            re-interpreting, re-grading, or second-guessing a single finding.
+            We will not doctor your findings, we will not doctor your PDF
+            metadata, and when you ask us to render anonymously we will strip
+            both tenant and LintPDF branding completely. What you upload is
+            what your customer sees.
           </p>
         </div>
       </section>

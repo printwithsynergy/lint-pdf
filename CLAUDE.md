@@ -128,6 +128,26 @@ The app (Prisma) and engine (SQLAlchemy/Alembic) share the same PostgreSQL datab
 
 ---
 
+## Docs parity
+
+Customer-reachable surface area has three places to land — forget any one and we ship a feature that nobody can find:
+
+1. **Markdown docs** — `packages/web/src/content/docs/<slug>.md`, registered in `packages/web/src/lib/doc-sections.ts` and surfaced on `packages/web/src/app/docs/page.tsx`.
+2. **JSX doc pages** — `packages/web/src/components/docs/pages/ApiReferencePage.tsx` (composed of the section components in `components/docs/pages/api/`), plus `ReportFormatsPage.tsx`, `WebhooksPage.tsx`, `GlossaryPage.tsx`, `ChecksPage.tsx`.
+3. **Example payloads** — `docs/examples/` at repo root. Every `external_format` parser and every tenant-editable shape (custom mappings, branding defaults) has a runnable sample here plus a matching curl script.
+
+Rules:
+
+- **Any new submit-form field** (new `preflight_source` value, new `external_format` enum, new `brand` resolution mode, new `unbranded` / `mapping_id` / `ai_*` knob) lands in both the markdown docs **and** the `ApiReferencePage` section components **in the same commit**. Don't split them — the marketing site and the JSX API reference drift immediately otherwise.
+- **Any new viewer-config field** (new `enable_*` toggle, new `data_capabilities` flag, new toolbar/branding knob) lands in `viewer-capabilities.md` **and** the `ApiViewerSection.tsx` config FieldTable.
+- **Any new branding column** (tenant defaults, BrandProfile, share-link immutability capture) lands in `branding-and-anonymous.md` / `share-links.md` **and** the `ApiBrandingSection.tsx` component.
+- **New engine parsers** for an external preflight format must ship a fresh `docs/examples/<vendor>-report.{xml,json}` sample + update `external-imports.md` + update the enum appendix in `ApiEnumsSection.tsx`.
+- **New Pydantic fields** on any `Request`/`Response` schema need `Field(..., description=...)` so FastAPI surfaces them in `/openapi.json` and `/redoc`.
+
+When in doubt, grep the docs for the concept name before merging — if there's a mention anywhere, at least two other mentions probably need to change too.
+
+---
+
 ## Git & Deploy
 
 - Push to `main` for deployment

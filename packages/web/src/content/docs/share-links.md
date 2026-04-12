@@ -1,0 +1,171 @@
+---
+title: "Share Links"
+description: "Mint tokenized share links for viewer and PDF reports with per-link branding and expiry."
+section: "branding"
+order: 31
+---
+
+# Share Links
+
+Share links let you hand a preflight report or interactive viewer to a stakeholder who doesn't have a LintPDF account. Every link is a tokenized, unauthenticated URL that resolves to a specific job with its branding, detail level, and summary configuration frozen at mint time.
+
+## What you can share
+
+| Surface | URL shape | Access |
+|---|---|---|
+| HTML report | `https://reports.lintpdf.com/r/{token}` | Unauthenticated; token-gated. |
+| PDF report | `https://reports.lintpdf.com/r/{token}.pdf[?download=1]` | Same. `download=1` forces attachment disposition. |
+| Public viewer | `https://app.lintpdf.com/share/{token}` (proxies to `/api/v1/viewer/public/{token}/*`) | Same. Interactive viewer with separations, TAC, layers, verdict — all gated by the job's captured capabilities. |
+
+## Mint a share link
+
+```bash
+curl -X POST https://api.lintpdf.com/api/v1/jobs/{job_id}/reports \
+  -H "Authorization: Bearer lpdf_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{
+    "formats": ["html", "pdf"],
+    "expiry_days": 30,
+    "email_to": null,
+    "branding": null,
+    "detail_level": "standard",
+    "summary_page": "prepend"
+  }'
+```
+
+### Request fields
+
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `formats` | `["html"]` \| `["pdf"]` \| `["html", "pdf"]` | `["html", "pdf"]` | Which formats to mint. Each returns its own token. |
+| `expiry_days` | int \| `null` | Plan default (7 for Free, 30 for Starter, 90 for Growth+, `null`/never for Enterprise) | Token lifetime. `null` = no expiry. |
+| `email_to` | string \| `null` | `null` | When set, the share link is emailed to this address on mint. The email envelope honors the job's brand resolution (anonymous sends from `no-reply@reports.lintpdf.com`). |
+| `branding` | object \| `null` | Job/tenant default | Inline branding override. Accepts `name`, `logo_url`, `primary_color`, `accent_color`, `hide_footer`. Use with care — prefer BrandProfile references. |
+| `detail_level` | `"executive"` \| `"standard"` \| `"comprehensive"` | `"standard"` | Summary density. Executive = 1-page overview, Standard = per-category, Comprehensive = every finding with detail. |
+| `summary_page` | `"prepend"` \| `"only"` \| `"off"` | `"prepend"` | `prepend`: summary page + full findings. `only`: summary page, no detailed findings. `off`: findings only. |
+
+### Response
+
+```json
+{
+  "reports": [
+    {
+      "format": "html",
+      "url": "https://reports.lintpdf.com/r/tok_9a8b7c6d5e4f",
+      "token": "tok_9a8b7c6d5e4f",
+      "expires_at": "2026-05-12T14:30:00Z"
+    },
+    {
+      "format": "pdf",
+      "url": "https://reports.lintpdf.com/r/tok_9a8b7c6d5e4f.pdf",
+      "token": "tok_9a8b7c6d5e4f",
+      "expires_at": "2026-05-12T14:30:00Z"
+    }
+  ]
+}
+```
+
+## Branding immutability
+
+The brand resolution at mint time is **frozen for the life of the token**. The `ReportToken` row records:
+
+- `brand_mode` — `anonymous` / `lintpdf` / `profile`
+- `brand_profile_id` — non-null only for `profile`
+
+If your tenant later flips its default branding, previously-minted links are unaffected. This is deliberate: distributors on the receiving end of anonymous broker links need the guarantee.
+
+To re-brand an existing share link, revoke the old token and mint a new one.
+
+## List existing share links
+
+```bash
+curl https://api.lintpdf.com/api/v1/jobs/{job_id}/reports \
+  -H "Authorization: Bearer lpdf_live_..."
+```
+
+Response:
+
+```json
+{
+  "reports": [
+    {
+      "token": "tok_9a8b7c6d5e4f",
+      "format": "html",
+      "expires_at": "2026-05-12T14:30:00Z",
+      "created_at": "2026-04-12T14:30:00Z",
+      "accessed_count": 3
+    }
+  ]
+}
+```
+
+`accessed_count` increments on every token resolution (including bots and link previews — treat as approximate).
+
+## Revoke
+
+```bash
+curl -X DELETE https://api.lintpdf.com/api/v1/jobs/{job_id}/reports/{token} \
+  -H "Authorization: Bearer lpdf_live_..."
+```
+
+Revocation is immediate. Any subsequent token resolution returns `410 Gone`. The token string is permanently retired — re-generating the same token is not possible.
+
+## Programmatic token lookup
+
+For integrations that want to resolve a token without needing an API key (e.g., a receiving system that only has the token):
+
+```bash
+# Job metadata for the token
+curl https://api.lintpdf.com/api/v1/reports/tokens/{token}
+```
+
+Response:
+
+```json
+{
+  "job_id": "d4e5f6a7-...",
+  "tenant_id": "7c9a4b0e-...",
+  "file_name": "brochure.pdf",
+  "email_required": false
+}
+```
+
+```bash
+# Findings for the token (shape identical to authenticated /jobs/{id}.findings)
+curl https://api.lintpdf.com/api/v1/reports/tokens/{token}/findings
+```
+
+`404` on unknown token, `410` on expired. No authentication header on either.
+
+## Public viewer surface
+
+The public viewer exposes the same endpoints as the authenticated viewer, with `/api/v1/viewer/public/{token}/` replacing `/api/v1/viewer/jobs/{job_id}/`:
+
+- `GET /pages`
+- `GET /pages/{n}/tile?dpi=`
+- `GET /pages/{n}/info`
+- `GET /separations`
+- `GET /pages/{n}/channel/{name}?dpi=`
+- `GET /pages/{n}/tac-heatmap?dpi=&tac_limit=`
+- `GET /config` (returns branding captured at mint time)
+- `GET /pages/{n}/sample?x=&y=&dpi=`
+- `GET /layers`
+- `GET /verdict`
+
+None of these require authentication. The token itself is the authorization.
+
+## Expiry semantics
+
+- Expired tokens return `410 Gone` with no retry hint.
+- There's no auto-renewal. Mint a fresh token when you need continued access.
+- Plan default expiry is applied when `expiry_days` is omitted; pass an explicit value to override (up to your plan's cap; `null` works only on Enterprise).
+
+## Access counting and auditing
+
+Each token resolution increments `accessed_count` and writes an audit row with timestamp, IP hash, and user agent. The row is accessible via the dashboard at `Account → Share Links → Audit`.
+
+## Related
+
+- [Branded, LintPDF-Default, and Anonymous Outputs](/docs/branding-and-anonymous)
+- [Custom Domains](/docs/custom-domains)
+- [Report Formats](/docs/report-formats)

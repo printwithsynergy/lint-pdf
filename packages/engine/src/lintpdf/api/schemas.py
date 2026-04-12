@@ -21,16 +21,71 @@ class JobCreateResponse(BaseModel):
 class FindingResponse(BaseModel):
     """A single preflight finding."""
 
-    inspection_id: str
-    severity: str
-    message: str
-    page_num: int | None = None
-    details: dict[str, object] | None = None
-    source: str = "engine"
-    category: str | None = None
-    bbox: list[float] | None = None  # [x0, y0, x1, y1] in PDF points
-    object_id: str | None = None  # PDF resource name (e.g. "Im42", "F1")
-    object_type: str | None = None  # "image", "text", "path", "font"
+    inspection_id: str = Field(
+        ...,
+        description=(
+            "Stable identifier for the check that produced this finding. "
+            "Collates repeated findings across jobs. For imported findings "
+            "the upstream check ID is passed through when available."
+        ),
+    )
+    severity: str = Field(
+        ...,
+        description="Canonical severity. One of: `error`, `warning`, `advisory`.",
+    )
+    message: str = Field(
+        ...,
+        description="Human-readable description rendered in the viewer and reports.",
+    )
+    page_num: int | None = Field(
+        default=None,
+        description=(
+            "1-indexed page number. `null` for document-level findings."
+        ),
+    )
+    details: dict[str, object] | None = Field(
+        default=None,
+        description=(
+            "Free-form key/value metadata surfaced in the finding detail panel. "
+            "Typical keys: `resolution_dpi`, `threshold_dpi`, `color_space`."
+        ),
+    )
+    source: str = Field(
+        default="engine",
+        description=(
+            "Where the finding originated. Values: `engine`, `ai`, "
+            "`external:pitstop`, `external:callas`, `external:acrobat`, "
+            "`external:lintpdf_json`, `external:custom:<mapping-id>`."
+        ),
+    )
+    category: str | None = Field(
+        default=None,
+        description=(
+            "Grouping key. Typical values: `color`, `fonts`, `images`, "
+            "`geometry`, `transparency`, `overprint`, `text`, `metadata`."
+        ),
+    )
+    bbox: list[float] | None = Field(
+        default=None,
+        description=(
+            "Bounding box `[x0, y0, x1, y1]` in PDF points (lower-left "
+            "origin). Used by the viewer to draw highlight boxes."
+        ),
+    )
+    object_id: str | None = Field(
+        default=None,
+        description=(
+            "Resource name of the target object. Examples: `Im42` for an "
+            "image XObject, `Helvetica-Bold` for a font."
+        ),
+    )
+    object_type: str | None = Field(
+        default=None,
+        description=(
+            "Target object classifier. One of: `image`, `text`, `path`, "
+            "`font`, `page`, `document`."
+        ),
+    )
 
 
 class JobSummaryResponse(BaseModel):

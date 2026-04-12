@@ -64,6 +64,96 @@ const sections = [
     ],
   },
   {
+    heading: "Preflight Modes & Imports",
+    items: [
+      {
+        slug: "preflight-modes",
+        title: "Preflight Modes",
+        desc: "Engine, external, or minimal — pick how LintPDF processes each job.",
+      },
+      {
+        slug: "external-imports",
+        title: "External Preflight Imports",
+        desc: "Submit a PDF with a PitStop, callas, Acrobat, or native report.",
+      },
+      {
+        slug: "import-schema",
+        title: "LintPDF Native Import Schema",
+        desc: "Field-by-field walkthrough of the v1 import JSON schema.",
+      },
+      {
+        slug: "custom-mappings",
+        title: "Custom Import Mappings",
+        desc: "Parse any tenant-specific XML/JSON preflight report.",
+      },
+      {
+        slug: "viewer-only-mode",
+        title: "Viewer-Only Submissions",
+        desc: "Skip preflight and use LintPDF purely as a render/share surface.",
+      },
+      {
+        slug: "viewer-capabilities",
+        title: "Viewer Capabilities",
+        desc: "On-demand fill-in of separations, TAC, fonts, and images.",
+      },
+      {
+        slug: "importing-from-pitstop",
+        title: "Enfocus PitStop",
+        desc: "Export PitStop XML and feed it straight to LintPDF.",
+      },
+      {
+        slug: "importing-from-callas",
+        title: "callas pdfToolbox",
+        desc: "JSON and XML reports from pdfToolbox Server or Desktop.",
+      },
+      {
+        slug: "importing-from-acrobat",
+        title: "Adobe Acrobat Preflight",
+        desc: "Acrobat Pro Preflight XML reports, parsed natively.",
+      },
+    ],
+  },
+  {
+    heading: "Branding & Sharing",
+    items: [
+      {
+        slug: "branding-and-anonymous",
+        title: "Branded, LintPDF, and Anonymous",
+        desc: "Three-way brand resolution for reports, viewer, and shares.",
+      },
+      {
+        slug: "share-links",
+        title: "Share Links",
+        desc: "Mint tokens, gate expiry, and freeze branding at mint time.",
+      },
+      {
+        slug: "custom-domains",
+        title: "Custom Domains",
+        desc: "White-label reports.yourbrand.com and viewer.yourbrand.com.",
+      },
+    ],
+  },
+  {
+    heading: "Viewer & Workflow",
+    items: [
+      {
+        slug: "viewer-comparison",
+        title: "File Comparison",
+        desc: "Side-by-side diff heatmaps between two LintPDF jobs.",
+      },
+      {
+        slug: "viewer-verdict",
+        title: "Approval Verdicts",
+        desc: "Approve, reject, or escalate jobs from the viewer or API.",
+      },
+      {
+        slug: "vanity-endpoints",
+        title: "Vanity Submission Endpoints",
+        desc: "Give customers a branded slug instead of /api/v1/jobs.",
+      },
+    ],
+  },
+  {
     heading: "Color",
     items: [
       {

@@ -429,6 +429,119 @@ export default function FeaturesPage() {
         </div>
       </section>
 
+      {/* Three ways to run */}
+      <section className="py-16">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Three ways to run
+            </h2>
+            <p className="text-slate-500 max-w-3xl">
+              LintPDF processes jobs in one of three modes. Pick per-request —
+              mix and match across your workflow.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            <div className="rounded-2xl border border-brand-200 bg-white p-6 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wider text-brand-700 mb-2">
+                Engine
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                Run our 500+ checks
+              </h3>
+              <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                Full analyzer pipeline — fonts, color, images, transparency,
+                packaging geometry, barcode grading, PDF/X + PDF/A compliance.
+                Separations, TAC, font and image catalogues all shipped in the
+                viewer.
+              </p>
+              <Link
+                href="/docs/preflight-modes"
+                className="text-xs font-semibold text-brand-700 hover:underline"
+              >
+                Read the mode guide →
+              </Link>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                External Import
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                Bring your own preflight
+              </h3>
+              <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                Already running PitStop, callas pdfToolbox, or Adobe Acrobat
+                Preflight? Submit the PDF plus the XML/JSON report. LintPDF
+                parses the findings and renders them in the viewer with full
+                geometry — no re-checking cost.
+              </p>
+              <Link
+                href="/docs/external-imports"
+                className="text-xs font-semibold text-brand-700 hover:underline"
+              >
+                See supported formats →
+              </Link>
+            </div>
+            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                Viewer Only
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                Just render &amp; share
+              </h3>
+              <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                Submit in minimal mode for pure viewer + share-link use cases —
+                no analyzers run. Separations, TAC, fonts, and images can still
+                be filled on demand when you need them.
+              </p>
+              <Link
+                href="/docs/viewer-only-mode"
+                className="text-xs font-semibold text-brand-700 hover:underline"
+              >
+                Minimal mode docs →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Anonymous output */}
+      <section className="py-8">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="rounded-2xl border border-slate-100 bg-gradient-to-br from-brand-50/80 to-white p-8">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="max-w-3xl">
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                  Anonymous output for brokers &amp; distributors
+                </h2>
+                <p className="text-slate-600 leading-relaxed">
+                  Flip a tenant default or pass{" "}
+                  <code className="bg-white px-1 rounded text-sm font-mono">
+                    brand=anonymous
+                  </code>{" "}
+                  per submission to strip every trace of LintPDF{" "}
+                  <em>and</em> tenant branding from reports, viewers, and
+                  share links. PDF metadata is sanitized, the filename becomes{" "}
+                  <code className="bg-white px-1 rounded text-sm font-mono">
+                    preflight-&lt;id&gt;.pdf
+                  </code>
+                  , and share links freeze that anonymity at mint time — flipping
+                  the setting later won't retroactively rebrand already-sent
+                  links. Ideal for agencies and brokers who hand reports to
+                  end-distributors without exposing their supply chain.
+                </p>
+              </div>
+              <Link
+                href="/docs/branding-and-anonymous"
+                className="shrink-0 rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-800"
+              >
+                How anonymous mode works →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Core Engine */}
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-6">

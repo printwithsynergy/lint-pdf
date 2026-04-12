@@ -1,5 +1,11 @@
-import { CodeBlock } from "@/components/docs/CodeBlock";
-import { Endpoint } from "@/components/docs/Endpoint";
+import ApiAuthSection from "./api/ApiAuthSection";
+import ApiJobsSection from "./api/ApiJobsSection";
+import ApiImportsSection from "./api/ApiImportsSection";
+import ApiBrandingSection from "./api/ApiBrandingSection";
+import ApiViewerSection from "./api/ApiViewerSection";
+import ApiReportsSection from "./api/ApiReportsSection";
+import ApiWebhooksSection from "./api/ApiWebhooksSection";
+import ApiEnumsSection from "./api/ApiEnumsSection";
 
 export default function ApiReferencePage() {
   return (
@@ -12,185 +18,37 @@ export default function ApiReferencePage() {
         </code>
       </p>
       <p className="text-slate-500 text-sm mb-8">
-        All endpoints return JSON. Authenticated endpoints require a valid API
-        Key.
+        All endpoints return JSON (or PNG for render endpoints). Authenticated
+        endpoints require a Bearer token. Every route supports the three
+        submission modes: <code className="bg-slate-100 px-1 rounded">engine</code>,
+        {" "}<code className="bg-slate-100 px-1 rounded">external</code>, and
+        {" "}<code className="bg-slate-100 px-1 rounded">minimal</code>.
       </p>
 
-      <Endpoint
-        method="POST"
-        path="/api/v1/submit"
-        description="Submit a file for preflight analysis. Accepts PDF, EPS, PostScript, TIFF, JPEG, PNG, and PDF-compatible AI files. Non-PDF files are converted internally before checking."
-        auth
-        request={`curl -X POST https://api.lintpdf.com/api/v1/submit \\
-  -H "Authorization: Bearer lpdf_..." \\
-  -F file=@document.pdf \\
-  -F ruleset=gwg-sheetfed`}
-        response={`{
-  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "status": "processing",
-  "ruleset": "gwg-sheetfed",
-  "file_name": "document.pdf",
-  "created_at": "2026-03-15T10:30:00Z"
-}`}
-      />
+      <nav className="mb-8 rounded-xl border border-slate-200 p-4 bg-slate-50">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+          On this page
+        </p>
+        <ul className="grid grid-cols-2 gap-1 text-sm">
+          <li><a href="#auth" className="text-brand-700 hover:underline">Authentication &amp; rate limits</a></li>
+          <li><a href="#jobs" className="text-brand-700 hover:underline">Jobs</a></li>
+          <li><a href="#imports" className="text-brand-700 hover:underline">External imports &amp; mappings</a></li>
+          <li><a href="#branding" className="text-brand-700 hover:underline">Branding &amp; domains</a></li>
+          <li><a href="#viewer" className="text-brand-700 hover:underline">Viewer</a></li>
+          <li><a href="#reports" className="text-brand-700 hover:underline">Reports &amp; share links</a></li>
+          <li><a href="#webhooks" className="text-brand-700 hover:underline">Webhooks &amp; check names</a></li>
+          <li><a href="#enums" className="text-brand-700 hover:underline">Enum appendix</a></li>
+        </ul>
+      </nav>
 
-      <Endpoint
-        method="GET"
-        path="/api/v1/reports/{id}"
-        description="Retrieve the Report for a completed preflight job. Includes summary, findings with severity levels (Error, Warning, Info), and page locations."
-        auth
-        request={`curl https://api.lintpdf.com/api/v1/reports/f47ac10b-... \\
-  -H "Authorization: Bearer lpdf_..."`}
-        response={`{
-  "id": "f47ac10b-...",
-  "status": "complete",
-  "verdict": "error",
-  "ruleset": "gwg-sheetfed",
-  "file_name": "document.pdf",
-  "page_count": 4,
-  "duration_ms": 1240,
-  "summary": {
-    "total_findings": 3,
-    "error": 1,
-    "warning": 1,
-    "info": 1
-  },
-  "findings": [
-    {
-      "inspection_id": "font.not_embedded",
-      "severity": "error",
-      "message": "Font 'Helvetica' is not embedded",
-      "page": 1
-    },
-    {
-      "inspection_id": "color.spot_color_usage",
-      "severity": "warning",
-      "message": "Spot color 'PANTONE 185 C' found on page 2",
-      "page": 2
-    },
-    {
-      "inspection_id": "image.low_resolution",
-      "severity": "info",
-      "message": "Image at 150 DPI (minimum 300 DPI recommended)",
-      "page": 3
-    }
-  ]
-}`}
-      />
-
-      <Endpoint
-        method="GET"
-        path="/api/v1/reports/{id}/report?format=pdf|json|xml"
-        description="Download the Report as a formatted report. PDF reports include tenant White Label (logo, colors, footer) when configured. JSON and XML are machine-readable."
-        auth
-        request={`# PDF report (white-labeled)
-curl -o report.pdf \\
-  "https://api.lintpdf.com/api/v1/reports/f47ac10b-.../report?format=pdf" \\
-  -H "Authorization: Bearer lpdf_..."
-
-# JSON report
-curl "https://api.lintpdf.com/api/v1/reports/f47ac10b-.../report?format=json" \\
-  -H "Authorization: Bearer lpdf_..."`}
-        response={`200 OK
-Content-Type: application/pdf (or application/json, application/xml)
-
-# JSON format returns the same structure as GET /api/v1/reports/{id}
-# PDF format returns a branded, downloadable report
-# XML format returns a structured XML document`}
-      />
-
-      <Endpoint
-        method="PUT"
-        path="/api/v1/white-label"
-        description="Configure white-label branding for PDF reports. Upload your logo, set brand colors, and customize the footer text. Available on Scale and Enterprise plans."
-        auth
-        request={`curl -X PUT https://api.lintpdf.com/api/v1/white-label \\
-  -H "Authorization: Bearer lpdf_..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "logo_url": "https://yourcompany.com/logo.png",
-    "primary_color": "#1a365d",
-    "company_name": "Acme Print Co.",
-    "footer_text": "Preflight report generated by Acme Print Co."
-  }'`}
-        response={`{
-  "white_label": {
-    "logo_url": "https://yourcompany.com/logo.png",
-    "primary_color": "#1a365d",
-    "company_name": "Acme Print Co.",
-    "footer_text": "Preflight report generated by Acme Print Co.",
-    "updated_at": "2026-03-15T10:30:00Z"
-  }
-}`}
-      />
-
-      <Endpoint
-        method="GET"
-        path="/api/v1/rulesets"
-        description="List available Rulesets (preflight profiles). Includes built-in profiles and any custom profiles created by your account."
-        auth={false}
-        request={"curl https://api.lintpdf.com/api/v1/rulesets"}
-        response={`{
-  "rulesets": [
-    {
-      "id": "gwg-sheetfed",
-      "name": "GWG Sheetfed",
-      "description": "Ghent Workgroup sheetfed offset standard",
-      "checks": 196,
-      "is_builtin": true
-    },
-    {
-      "id": "gwg-digital",
-      "name": "GWG Digital",
-      "description": "Ghent Workgroup digital printing standard",
-      "checks": 180,
-      "is_builtin": true
-    },
-    {
-      "id": "pdfx4",
-      "name": "PDF/X-4",
-      "description": "ISO 15930-7 PDF/X-4 conformance",
-      "checks": 120,
-      "is_builtin": true
-    },
-    {
-      "id": "packaging",
-      "name": "Packaging",
-      "description": "Packaging-specific checks including barcode grading",
-      "checks": 210,
-      "is_builtin": true
-    }
-  ]
-}`}
-      />
-
-      <Endpoint
-        method="POST"
-        path="/api/v1/rulesets"
-        description="Create a custom Ruleset. Select which Checks to include and configure thresholds. Available on Growth plans and above."
-        auth
-        request={`curl -X POST https://api.lintpdf.com/api/v1/rulesets \\
-  -H "Authorization: Bearer lpdf_..." \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "name": "My Custom Plan",
-    "description": "Custom checks for magazine production",
-    "base": "gwg-sheetfed",
-    "overrides": {
-      "image.min_dpi": 300,
-      "barcode.min_grade": "C",
-      "color.allow_spot": true
-    }
-  }'`}
-        response={`{
-  "id": "fp_custom_abc123",
-  "name": "My Custom Plan",
-  "description": "Custom checks for magazine production",
-  "checks": 196,
-  "is_builtin": false,
-  "created_at": "2026-03-15T10:30:00Z"
-}`}
-      />
+      <ApiAuthSection />
+      <ApiJobsSection />
+      <ApiImportsSection />
+      <ApiBrandingSection />
+      <ApiViewerSection />
+      <ApiReportsSection />
+      <ApiWebhooksSection />
+      <ApiEnumsSection />
     </>
   );
 }

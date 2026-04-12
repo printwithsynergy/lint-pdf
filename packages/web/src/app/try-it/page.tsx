@@ -19,6 +19,8 @@ export default function TryItPage() {
   const [company, setCompany] = useState("");
   const [phone, setPhone] = useState("");
   const [honeypot, setHoneypot] = useState("");
+  const [includeExternalReport, setIncludeExternalReport] = useState(false);
+  const [anonymizeOutput, setAnonymizeOutput] = useState(false);
   const [files, setFiles] = useState<SelectedFile[]>([]);
   const [state, setState] = useState<FormState>("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -97,6 +99,11 @@ export default function TryItPage() {
       formData.append("company", company.trim());
       formData.append("phone", phone.trim());
       formData.append("_hp_field", honeypot);
+      formData.append(
+        "include_external_report",
+        includeExternalReport ? "1" : "0",
+      );
+      formData.append("anonymize_output", anonymizeOutput ? "1" : "0");
       for (const { file } of files) {
         formData.append("files", file);
       }
@@ -125,7 +132,16 @@ export default function TryItPage() {
         setState("error");
       }
     },
-    [name, email, company, phone, honeypot, files],
+    [
+      name,
+      email,
+      company,
+      phone,
+      honeypot,
+      includeExternalReport,
+      anonymizeOutput,
+      files,
+    ],
   );
 
   const formatSize = (bytes: number) => {
@@ -380,6 +396,61 @@ export default function TryItPage() {
                       ))}
                     </ul>
                   )}
+                </div>
+
+                {/* Options */}
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    Options
+                  </p>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={includeExternalReport}
+                      onChange={(e) =>
+                        setIncludeExternalReport(e.target.checked)
+                      }
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span className="text-sm text-slate-600 leading-snug">
+                      <span className="font-medium text-slate-800">
+                        Include my existing preflight report
+                      </span>
+                      <span className="block text-xs text-slate-500 mt-0.5">
+                        Attach a PitStop, callas pdfToolbox, or Adobe Acrobat
+                        Preflight export (XML or JSON) — or a LintPDF-native{" "}
+                        <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[11px] text-slate-600">
+                          .json
+                        </code>{" "}
+                        report. We will parse your findings, render them in the
+                        viewer, and mint share links without re-checking the
+                        file. Drop the report alongside your PDFs above.
+                      </span>
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={anonymizeOutput}
+                      onChange={(e) => setAnonymizeOutput(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+                    />
+                    <span className="text-sm text-slate-600 leading-snug">
+                      <span className="font-medium text-slate-800">
+                        Anonymize output
+                      </span>
+                      <span className="block text-xs text-slate-500 mt-0.5">
+                        Your PDF report will ship with{" "}
+                        <span className="font-medium text-slate-700">
+                          zero LintPDF branding
+                        </span>
+                        , sanitized PDF metadata (Author/Producer/Creator
+                        stripped), and a neutral filename. Perfect for showing
+                        a distributor or a customer without revealing which
+                        preflight tool you used.
+                      </span>
+                    </span>
+                  </label>
                 </div>
 
                 {state === "error" && errorMsg && (

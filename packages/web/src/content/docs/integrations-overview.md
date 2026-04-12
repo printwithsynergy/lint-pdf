@@ -9,6 +9,20 @@ order: 1
 
 LintPDF is a REST API. Any system that can make HTTP calls can integrate with it. This section covers documented integration paths for common print industry systems.
 
+## Bringing Your Own Preflight
+
+Many of the systems below — Enfocus Switch, Esko Automation Engine, Hybrid CLOUDFLOW — already run preflight upstream (PitStop, callas, or custom rules). Rather than double-processing, submit the PDF alongside the upstream report in **external import** mode:
+
+```bash
+curl -X POST https://api.lintpdf.com/api/v1/jobs \
+  -H "Authorization: Bearer lpdf_live_..." \
+  -F file=@artwork.pdf \
+  -F external_report=@pitstop-report.xml \
+  -F preflight_source=external
+```
+
+LintPDF parses the findings, renders them in the viewer, mints share links, and powers approval verdicts — without re-checking the PDF. See [External Preflight Imports](/docs/external-imports) for the full format matrix and [Custom Import Mappings](/docs/custom-mappings) if your internal report shape isn't built in.
+
 ## Integration Approaches
 
 ### Direct API Integration

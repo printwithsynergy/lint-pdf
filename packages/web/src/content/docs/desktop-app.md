@@ -117,6 +117,21 @@ The app lives in your system tray (menu bar on macOS, taskbar on Windows, system
 
 Closing the main window hides the app to the tray — it keeps running in the background. Use **Quit** from the tray menu to fully exit.
 
+## Branding & anonymous output
+
+The desktop app honours the **tenant-level branding default** configured in the Dashboard ([Branding & Anonymous Output](/docs/branding-and-anonymous)). If your tenant default is `anonymous`, every sidecar report and viewer-link emitted by the desktop app is branded-free out of the box.
+
+For one-off overrides, each folder card exposes a **Brand** dropdown:
+
+| Option | Effect |
+|---|---|
+| *Use tenant default* | Resolves per your Dashboard setting (BrandProfile, LintPDF, or anonymous). |
+| *Anonymous* | Forces `brand=anonymous` on every submission from that folder. |
+| *LintPDF* | Forces `brand=lintpdf`. |
+| *BrandProfile: {name}* | Picks a specific tenant BrandProfile by ID. |
+
+Folder-level overrides win over the tenant default. Share links minted from the Results tab freeze their branding at mint time — exactly like the API behaviour described in [Share Links](/docs/share-links).
+
 ## Advanced Settings Per Folder
 
 | Setting         | Default       | Description                                                                                                          |

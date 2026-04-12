@@ -7,6 +7,8 @@ order: 2
 
 # Enfocus Switch Integration
 
+> **Already running PitStop in Switch?** Send the PitStop XML report alongside the PDF in `preflight_source=external` mode — LintPDF consumes the findings, renders them in the viewer, and mints share/approval surfaces without re-checking. See [Importing from Enfocus PitStop](/docs/importing-from-pitstop) and [External Preflight Imports](/docs/external-imports).
+
 Enfocus Switch can call LintPDF as a preflight step in any flow. There are three integration methods:
 
 1. **Switch Scripter** — Full control via JavaScript (recommended)

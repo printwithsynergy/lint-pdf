@@ -306,7 +306,14 @@ async def delete_brand_profile(
 async def upload_brand_logo(
     tenant_id: str,
     profile_id: str,
-    file: UploadFile = File(...),
+    file: UploadFile = File(
+        ...,
+        description=(
+            "Logo image (PNG, JPEG, SVG, or WebP). Maximum 2 MB. Stored in "
+            "the tenant's custom-domain bucket when verified, otherwise in "
+            "the global reports host."
+        ),
+    ),
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> BrandProfileResponse:
