@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Button,
@@ -167,6 +167,94 @@ export default function ImportMappingsPage() {
   const [isActive, setIsActive] = useState(true);
 
   const { toast } = useToast();
+
+  // ── Drag-and-drop ────────────────────────────────────────────────
+  // Two DnD surfaces:
+  //   1. Drop a sample report file onto the payload textarea to auto-fill
+  //      both the textarea content and the MIME field.
+  //   2. Reorder field rows via native HTML5 drag-and-drop.
+  const [isDropping, setIsDropping] = useState(false);
+  const [dragFieldIndex, setDragFieldIndex] = useState<number | null>(null);
+  const payloadRef = useRef<HTMLDivElement | null>(null);
+
+  const onPayloadDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      if (!e.dataTransfer?.types?.includes("Files")) return;
+      e.preventDefault();
+      setIsDropping(true);
+    },
+    [],
+  );
+
+  const onPayloadDragLeave = useCallback(() => {
+    setIsDropping(false);
+  }, []);
+
+  const onPayloadDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setIsDropping(false);
+      const file = e.dataTransfer?.files?.[0];
+      if (!file) return;
+      // Guard against oversized files — the engine caps at 50 MB but we
+      // stop far sooner in the editor because the textarea isn't built
+      // for huge payloads.
+      const maxBytes = 5 * 1024 * 1024;
+      if (file.size > maxBytes) {
+        toast({
+          title: "File too large",
+          description: `Sample files in the editor must be under ${maxBytes / 1024 / 1024} MB. Use a smaller sample.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      try {
+        const text = await file.text();
+        setSamplePayload(text);
+        // Infer MIME + format from the file extension.
+        const lower = file.name.toLowerCase();
+        if (lower.endsWith(".json")) {
+          setSampleMime(file.type || "application/json");
+          setFormat("json");
+        } else if (lower.endsWith(".xml")) {
+          setSampleMime(file.type || "application/xml");
+          setFormat("xml");
+        } else if (file.type) {
+          setSampleMime(file.type);
+        }
+        toast({
+          title: "Sample loaded",
+          description: `${file.name} (${(file.size / 1024).toFixed(1)} KB)`,
+        });
+      } catch {
+        toast({ title: "Could not read file", variant: "destructive" });
+      }
+    },
+    [toast],
+  );
+
+  function onFieldDragStart(idx: number) {
+    setDragFieldIndex(idx);
+  }
+
+  function onFieldDragOver(e: React.DragEvent<HTMLTableRowElement>) {
+    if (dragFieldIndex === null) return;
+    e.preventDefault();
+  }
+
+  function onFieldDrop(targetIdx: number) {
+    if (dragFieldIndex === null || dragFieldIndex === targetIdx) {
+      setDragFieldIndex(null);
+      return;
+    }
+    setFieldRows((rows) => {
+      const next = rows.slice();
+      const [moved] = next.splice(dragFieldIndex, 1);
+      next.splice(targetIdx, 0, moved);
+      return next;
+    });
+    setDragFieldIndex(null);
+  }
 
   const resetForm = useCallback(() => {
     setName("");
@@ -527,6 +615,7 @@ export default function ImportMappingsPage() {
             <table className="mt-3 w-full text-sm">
               <thead className="text-left text-xs uppercase text-muted-foreground">
                 <tr>
+                  <th className="py-1 w-8" aria-label="Drag handle"></th>
                   <th className="py-1 w-40">Field</th>
                   <th className="py-1">Selector</th>
                   <th className="py-1 w-16"></th>
@@ -534,7 +623,23 @@ export default function ImportMappingsPage() {
               </thead>
               <tbody>
                 {fieldRows.map((row, idx) => (
-                  <tr key={idx} className="border-b last:border-0">
+                  <tr
+                    key={idx}
+                    draggable
+                    onDragStart={() => onFieldDragStart(idx)}
+                    onDragOver={onFieldDragOver}
+                    onDrop={() => onFieldDrop(idx)}
+                    className={`border-b last:border-0 ${
+                      dragFieldIndex === idx ? "opacity-50" : ""
+                    }`}
+                    aria-grabbed={dragFieldIndex === idx}
+                  >
+                    <td
+                      className="py-2 pr-2 cursor-move text-muted-foreground"
+                      title="Drag to reorder"
+                    >
+                      <span aria-hidden>☰</span>
+                    </td>
                     <td className="py-2 pr-2">
                       <Select
                         value={row.field}
@@ -720,25 +825,41 @@ export default function ImportMappingsPage() {
           </div>
 
           {/* ── Sample payload + preview ── */}
-          <FormField
-            label="Sample payload"
-            htmlFor="mapping-sample-payload"
-            className="mt-6"
-            description="Paste a real report (no PDF — just the XML/JSON). We’ll use this to preview mapping output without running a full job."
+          <div
+            ref={payloadRef}
+            onDragOver={onPayloadDragOver}
+            onDragLeave={onPayloadDragLeave}
+            onDrop={onPayloadDrop}
+            className={`relative mt-6 rounded transition ${
+              isDropping
+                ? "ring-2 ring-primary ring-offset-2 ring-offset-background"
+                : ""
+            }`}
           >
-            <textarea
-              id="mapping-sample-payload"
-              value={samplePayload}
-              onChange={(e) => setSamplePayload(e.target.value)}
-              rows={8}
-              className="w-full rounded border bg-background p-2 font-mono text-xs"
-              placeholder={
-                format === "xml"
-                  ? "<PreflightLog>…</PreflightLog>"
-                  : "{ \"results\": [ … ] }"
-              }
-            />
-          </FormField>
+            <FormField
+              label="Sample payload"
+              htmlFor="mapping-sample-payload"
+              description="Paste a real report (no PDF — just the XML/JSON), or drop a .xml / .json file here. We’ll use this to preview mapping output without running a full job."
+            >
+              <textarea
+                id="mapping-sample-payload"
+                value={samplePayload}
+                onChange={(e) => setSamplePayload(e.target.value)}
+                rows={8}
+                className="w-full rounded border bg-background p-2 font-mono text-xs"
+                placeholder={
+                  format === "xml"
+                    ? "<PreflightLog>…</PreflightLog>"
+                    : "{ \"results\": [ … ] }"
+                }
+              />
+            </FormField>
+            {isDropping ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded bg-primary/10 text-sm font-medium text-primary">
+                Drop XML or JSON sample to load
+              </div>
+            ) : null}
+          </div>
 
           <div className="mt-2 flex items-center gap-3">
             <FormField label="Active" htmlFor="mapping-is-active">
