@@ -364,6 +364,23 @@ export default function AIPage() {
             </code>{" "}
             field so you always know what detected them.
           </p>
+          <p className="text-sm text-slate-400 max-w-2xl mx-auto mt-6 leading-relaxed">
+            AI inspections run only when a job is submitted in{" "}
+            <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-slate-600">
+              preflight_source=engine
+            </code>{" "}
+            mode. External imports (PitStop, callas, Acrobat, LintPDF-native)
+            pass through upstream findings verbatim — AI does not re-analyse
+            them. Minimal-mode (viewer-only) submissions can opt into AI by
+            first running{" "}
+            <a
+              href="/docs/viewer-capabilities"
+              className="text-brand-600 hover:text-brand-700 underline"
+            >
+              on-demand capability fill-in
+            </a>{" "}
+            to extract the content AI needs (fonts, images, text runs).
+          </p>
         </div>
       </section>
 

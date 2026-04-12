@@ -60,9 +60,29 @@ const features = [
     ),
   },
   {
-    title: "White Label",
+    title: "Bring Your Own Preflight",
     description:
-      "Your logo, your colors, your brand on every PDF report. Hand Reports directly to your customers with nothing but a small footer linking back.",
+      "Already running PitStop, callas pdfToolbox, or Adobe Acrobat Preflight? Send the PDF plus the upstream XML/JSON report. LintPDF parses the findings, renders them in the viewer, and mints share links — no double-checking.",
+    icon: (
+      <svg
+        className="h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={1.5}
+          d="M7.5 7.5h-.75A2.25 2.25 0 004.5 9.75v7.5a2.25 2.25 0 002.25 2.25h7.5a2.25 2.25 0 002.25-2.25v-7.5a2.25 2.25 0 00-2.25-2.25h-.75m-6 3.75l3 3m0 0l3-3m-3 3V1.5m6 9h.75a2.25 2.25 0 012.25 2.25v7.5a2.25 2.25 0 01-2.25 2.25h-7.5a2.25 2.25 0 01-2.25-2.25v-.75"
+        />
+      </svg>
+    ),
+  },
+  {
+    title: "White Label + Anonymous Output",
+    description:
+      "Your logo, your colors, your brand on every PDF report — or strip all branding with one flag. Anonymous mode sanitizes PDF metadata, uses a neutral filename, and renders zero LintPDF marks. Perfect for brokers handing reports to distributors.",
     icon: (
       <svg
         className="h-6 w-6"

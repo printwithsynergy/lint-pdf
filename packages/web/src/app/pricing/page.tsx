@@ -392,6 +392,57 @@ export default function PricingPage() {
               </tbody>
             </table>
           </div>
+
+          <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-5 text-xs text-slate-500 leading-relaxed">
+            <p className="font-semibold text-slate-700 mb-2">
+              How submissions are counted
+            </p>
+            <ul className="space-y-1.5">
+              <li>
+                <span className="font-medium text-slate-600">Engine mode</span>{" "}
+                submissions (the full 500+ check pipeline) count as{" "}
+                <span className="font-medium text-slate-700">one file</span>{" "}
+                against your monthly limit.
+              </li>
+              <li>
+                <span className="font-medium text-slate-600">
+                  External imports
+                </span>{" "}
+                (PitStop, callas, Acrobat, or LintPDF-native reports) also count
+                as <span className="font-medium text-slate-700">one file</span>.
+                You are not billed for checks you ran upstream — only for
+                storage, viewer rendering, and share-link infrastructure.
+              </li>
+              <li>
+                <span className="font-medium text-slate-600">
+                  Viewer-only (minimal) submissions
+                </span>{" "}
+                count as{" "}
+                <span className="font-medium text-slate-700">one file</span>.
+                Page geometry is computed on ingest; deeper analyzers only run
+                if you invoke on-demand capability fill-in.
+              </li>
+              <li>
+                <span className="font-medium text-slate-600">
+                  Capability fill-in
+                </span>{" "}
+                invocations (separations, TAC, fonts, images) are counted{" "}
+                <span className="font-medium text-slate-700">
+                  one per analyzer run
+                </span>{" "}
+                in addition to the original submission. A job with all four
+                fill-ins runs as 1 submission + 4 capability runs = 5 billable
+                units.
+              </li>
+              <li>
+                <span className="font-medium text-slate-600">
+                  AI inspections
+                </span>{" "}
+                are metered separately as AI credits (see above) and never draw
+                from your file-per-month allocation.
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
