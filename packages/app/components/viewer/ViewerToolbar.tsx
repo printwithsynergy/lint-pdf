@@ -4,7 +4,7 @@ import { ZoomControls } from "./ZoomControls";
 import type { ViewerConfig } from "./types";
 import { DEFAULT_VIEWER_CONFIG, useViewerApi } from "./types";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface ViewerToolbarProps {
@@ -25,6 +25,7 @@ interface ViewerToolbarProps {
   showBoxOverlay?: boolean;
   onToggleBoxOverlay?: () => void;
   onOpenShare?: () => void;
+  hasChain?: boolean;
   // Legacy props for backward compat
   separationMode?: boolean;
   onToggleSeparationMode?: () => void;
@@ -81,6 +82,7 @@ export function ViewerToolbar({
   showBoxOverlay = false,
   onToggleBoxOverlay,
   onOpenShare,
+  hasChain,
 }: ViewerToolbarProps) {
   const { apiBase, readOnly } = useViewerApi();
 
@@ -165,6 +167,15 @@ export function ViewerToolbar({
             icon="Health"
             active={viewerMode === "health"}
             onClick={() => onToggleMode("health")}
+          />
+        )}
+
+        {hasChain && onToggleMode && (
+          <ToolButton
+            label="Approval Chain"
+            icon="Chain"
+            active={viewerMode === "chain"}
+            onClick={() => onToggleMode("chain")}
           />
         )}
 

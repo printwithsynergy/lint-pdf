@@ -605,3 +605,91 @@ class BrandProfile(Base):
 
     # Relationships
     tenant: Mapped[Tenant] = relationship(back_populates="brand_profiles")
+
+
+# --- Approval Chain Models ---
+
+
+class ApprovalChainTemplate(Base):
+    """Reusable multi-step approval chain preset for a tenant."""
+
+    __tablename__ = "approval_chain_templates"
+    __table_args__ = (
+        Index("ix_approval_templates_tenant", "tenant_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    steps: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class ApprovalChain(Base):
+    """An instance of an approval chain attached to a specific job."""
+
+    __tablename__ = "approval_chains"
+    __table_args__ = (
+        Index("ix_approval_chains_tenant_status", "tenant_id", "status"),
+        Index("ix_approval_chains_job", "job_id", unique=True),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    template_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid, ForeignKey("approval_chain_templates.id", ondelete="SET NULL"), nullable=True
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    current_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    steps: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class ApprovalStep(Base):
+    """Individual step decision on an approval chain."""
+
+    __tablename__ = "approval_steps"
+    __table_args__ = (
+        Index("ix_approval_steps_chain", "chain_id", "step_index"),
+        Index("ix_approval_steps_token", "access_token", unique=True),
+        Index("ix_approval_steps_pending_expiry", "decision", "expires_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    chain_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("approval_chains.id", ondelete="CASCADE"), nullable=False
+    )
+    step_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    step_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    approver_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    decision: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    decided_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    access_token: Mapped[str] = mapped_column(String(64), nullable=False)
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

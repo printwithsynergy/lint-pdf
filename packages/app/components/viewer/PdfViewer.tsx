@@ -24,8 +24,9 @@ import { MobileBottomSheet } from "./MobileBottomSheet";
 import type { SnapPosition } from "./MobileBottomSheet";
 import { MobileDrawer } from "./MobileDrawer";
 import { ShareDialog } from "./ShareDialog";
+import { ApprovalChainPanel } from "./ApprovalChainPanel";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface PdfViewerProps {
@@ -58,6 +59,16 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [bottomSheetSnap, setBottomSheetSnap] = useState<SnapPosition>("collapsed");
+  const [hasChain, setHasChain] = useState(false);
+  useEffect(() => {
+    // Check if this job has an approval chain attached
+    fetch(`${apiBase}/approval-chain`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data && data.id) setHasChain(true);
+      })
+      .catch(() => {});
+  }, [apiBase]);
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", check);
@@ -322,6 +333,9 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
 
   // Determine what to render in the left panel
   const renderLeftPanel = () => {
+    if (viewerMode === "chain") {
+      return <ApprovalChainPanel />;
+    }
     if (viewerMode === "health") {
       return (
         <div className="flex flex-col gap-4 p-4 text-slate-200">
@@ -491,7 +505,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             {/* Active mode badge */}
             {viewerMode !== "normal" && (
               <span className="shrink-0 rounded-full bg-blue-500/30 px-1.5 py-0.5 text-[10px] font-bold text-blue-300">
-                {viewerMode === "separation" ? "CMYK" : viewerMode === "layers" ? "LAYERS" : viewerMode === "annotation" ? "ANNOTATE" : viewerMode === "health" ? "HEALTH" : "COMPARE"}
+                {viewerMode === "separation" ? "CMYK" : viewerMode === "layers" ? "LAYERS" : viewerMode === "annotation" ? "ANNOTATE" : viewerMode === "health" ? "HEALTH" : viewerMode === "chain" ? "CHAIN" : "COMPARE"}
               </span>
             )}
             {(showTacHeatmap || measureMode !== "none") && (
@@ -647,6 +661,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             jobId={jobId}
             onExpandSheet={handleExpandSheet}
             onOpenShare={publicToken ? () => setShareOpen(true) : undefined}
+            hasChain={hasChain}
           />
         </>
       ) : (
@@ -670,6 +685,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         showBoxOverlay={showBoxOverlay}
         onToggleBoxOverlay={() => setShowBoxOverlay((v) => !v)}
         onOpenShare={publicToken ? () => setShareOpen(true) : undefined}
+        hasChain={hasChain}
       />
 
       {/* Annotation toolbar (hidden in read-only / public mode) */}

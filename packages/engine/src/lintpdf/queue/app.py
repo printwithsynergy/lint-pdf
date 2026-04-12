@@ -42,6 +42,10 @@ def create_celery_app(broker_url: str) -> Celery:
                 "task": "lintpdf.queue.tasks.probe_pending_custom_domains",
                 "schedule": 300.0,  # Every 5 minutes
             },
+            "process-approval-timeouts": {
+                "task": "lintpdf.queue.tasks.process_approval_timeouts",
+                "schedule": 600.0,  # Every 10 minutes
+            },
         },
     )
 

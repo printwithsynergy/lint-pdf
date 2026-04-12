@@ -5,7 +5,7 @@ import type { ViewerConfig } from "./types";
 import { useViewerApi } from "./types";
 import { ZoomControls } from "./ZoomControls";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "densitometer" | "ruler";
 
 interface MobileDrawerProps {
@@ -27,6 +27,7 @@ interface MobileDrawerProps {
   jobId: string;
   onExpandSheet: () => void;
   onOpenShare?: () => void;
+  hasChain?: boolean;
 }
 
 /* ── Section with collapsible header ── */
@@ -200,6 +201,7 @@ export function MobileDrawer({
   jobId,
   onExpandSheet,
   onOpenShare,
+  hasChain,
 }: MobileDrawerProps) {
   const { apiBase, readOnly } = useViewerApi();
 
@@ -268,6 +270,18 @@ export function MobileDrawer({
               active={viewerMode === "health"}
               onClick={() => handlePanelMode(() => onToggleMode("health"))}
             />
+            {hasChain && (
+              <DrawerItem
+                label="Approval Chain"
+                icon={(
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                active={viewerMode === "chain"}
+                onClick={() => handlePanelMode(() => onToggleMode("chain"))}
+              />
+            )}
             <DrawerItem
               label="Findings"
               icon={Icons.findings}

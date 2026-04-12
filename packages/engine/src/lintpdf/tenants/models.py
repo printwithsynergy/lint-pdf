@@ -33,6 +33,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "custom_integrations": False,
         "custom_profiles": False,
         "max_webhooks": 0,
+        "approval_chains_enabled": False,
+        "max_approval_templates": 0,
     },
     TenantPlan.STARTER: {
         "rate_limit_daily": 500,
@@ -48,6 +50,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "custom_integrations": False,
         "custom_profiles": False,
         "max_webhooks": 0,
+        "approval_chains_enabled": False,
+        "max_approval_templates": 0,
     },
     TenantPlan.GROWTH: {
         "rate_limit_daily": 5000,
@@ -63,6 +67,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "custom_integrations": False,
         "custom_profiles": True,
         "max_webhooks": 5,
+        "approval_chains_enabled": True,
+        "max_approval_templates": 3,
     },
     TenantPlan.SCALE: {
         "rate_limit_daily": 25000,
@@ -78,6 +84,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "custom_integrations": False,
         "custom_profiles": True,
         "max_webhooks": 20,
+        "approval_chains_enabled": True,
+        "max_approval_templates": None,
     },
     TenantPlan.ENTERPRISE: {
         "rate_limit_daily": 100000,
@@ -93,6 +101,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "custom_integrations": True,
         "custom_profiles": True,
         "max_webhooks": 100,
+        "approval_chains_enabled": True,
+        "max_approval_templates": None,
     },
 }
 

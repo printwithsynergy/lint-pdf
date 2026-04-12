@@ -9,9 +9,16 @@ interface VerdictBarProps {
   config: ViewerConfig;
 }
 
+interface ChainSummary {
+  status: string;
+  current_step: number;
+  steps: Array<{ name: string }>;
+}
+
 export function VerdictBar({ jobId, config }: VerdictBarProps) {
   const { apiBase, readOnly } = useViewerApi();
   const [verdict, setVerdict] = useState<VerdictState | null>(null);
+  const [chain, setChain] = useState<ChainSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFailForm, setShowFailForm] = useState(false);
   const [failNotes, setFailNotes] = useState("");
@@ -19,9 +26,18 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
 
   const fetchVerdict = useCallback(async () => {
     try {
-      const resp = await fetch(`${apiBase}/verdict`);
-      if (resp.ok) {
-        setVerdict(await resp.json());
+      const [verdictResp, chainResp] = await Promise.all([
+        fetch(`${apiBase}/verdict`),
+        fetch(`${apiBase}/approval-chain`).catch(() => null),
+      ]);
+      if (verdictResp.ok) {
+        setVerdict(await verdictResp.json());
+      }
+      if (chainResp?.ok) {
+        const data = await chainResp.json();
+        if (data && data.id) {
+          setChain({ status: data.status, current_step: data.current_step, steps: data.steps });
+        }
       }
     } catch {
       // ignore
@@ -95,7 +111,21 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
               : "PENDING REVIEW"}
         </span>
 
-        {isAuto && (
+        {/* Approval chain status (when chain is attached) */}
+        {chain && (
+          <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+            Approval Chain: {chain.status === "pending"
+              ? `Step ${chain.current_step + 1} of ${chain.steps.length}`
+              : chain.status.toUpperCase()}
+            {chain.status === "pending" && chain.steps[chain.current_step] && (
+              <span className="ml-1 font-normal">
+                — {chain.steps[chain.current_step]!.name}
+              </span>
+            )}
+          </span>
+        )}
+
+        {isAuto && !chain && (
           <span className="text-xs text-muted-foreground">
             Auto verdict from preflight results
           </span>

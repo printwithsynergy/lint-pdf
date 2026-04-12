@@ -314,3 +314,115 @@ def _send(*, to: str, subject: str, html: str) -> EmailResult:
     except Exception:
         logger.exception("Failed to send email to %s", to)
         return EmailResult(success=False, error="Send failed")
+
+
+def send_approval_request(
+    *,
+    to: str,
+    approver_name: str | None,
+    step_name: str,
+    step_number: int,
+    total_steps: int,
+    approve_url: str,
+    viewer_url: str,
+    brand_name: str = "LintPDF",
+    brand_primary_color: str = "#1e3a8a",
+    chain_id: str = "",
+) -> EmailResult:
+    """Ask an approver to review and approve/reject a preflight report."""
+    salutation = f"Hi {approver_name}," if approver_name else "Hello,"
+    subject = f"{brand_name}: Approval needed — {step_name} ({step_number}/{total_steps})"
+
+    # Progress bar
+    pct = int(((step_number - 1) / max(total_steps, 1)) * 100)
+    html = f"""\
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1f2937;">
+  <h2 style="color: {brand_primary_color}; margin: 0 0 16px;">{brand_name} Approval Request</h2>
+  <p>{salutation}</p>
+  <p>A preflight report is awaiting your review as <strong>{step_name}</strong> (step {step_number} of {total_steps}).</p>
+
+  <div style="background: #f1f5f9; border-radius: 8px; padding: 16px; margin: 20px 0;">
+    <div style="font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Progress</div>
+    <div style="background: #e2e8f0; border-radius: 999px; height: 8px; overflow: hidden;">
+      <div style="background: {brand_primary_color}; height: 100%; width: {pct}%;"></div>
+    </div>
+    <div style="font-size: 11px; color: #64748b; margin-top: 6px;">Step {step_number} of {total_steps}: <strong>{step_name}</strong></div>
+  </div>
+
+  <div style="margin: 28px 0; text-align: center;">
+    <a href="{approve_url}" style="display: inline-block; padding: 14px 32px; background: {brand_primary_color}; color: white; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 15px;">
+      Review &amp; Approve
+    </a>
+  </div>
+
+  <p style="font-size: 13px; color: #6b7280; text-align: center;">
+    Or view the full interactive report: <a href="{viewer_url}" style="color: {brand_primary_color};">{viewer_url}</a>
+  </p>
+
+  <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+  <p style="font-size: 11px; color: #9ca3af;">
+    This approval link is specific to you. If you did not expect this email, please ignore it.
+    <br />Reference: <code>{chain_id}</code>
+  </p>
+</div>"""
+    return _send(to=to, subject=subject, html=html)
+
+
+def send_approval_step_decided(
+    *,
+    to: str,
+    step_name: str,
+    decision: str,
+    approver_email: str,
+    notes: str | None,
+    viewer_url: str,
+    brand_name: str = "LintPDF",
+    brand_primary_color: str = "#1e3a8a",
+) -> EmailResult:
+    """Notify the chain initiator/tenant that an approver made a decision."""
+    subject = f"{brand_name}: {step_name} {decision}"
+    color = "#22c55e" if decision == "approved" else "#ef4444"
+    notes_html = (
+        f'<p style="background: #f1f5f9; border-left: 3px solid {color}; padding: 12px 16px; margin: 12px 0; border-radius: 4px; font-size: 13px;"><em>Notes:</em> {notes}</p>'
+        if notes else ""
+    )
+    html = f"""\
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1f2937;">
+  <h2 style="color: {brand_primary_color}; margin: 0 0 16px;">{brand_name} — Step Update</h2>
+  <p><strong>{step_name}</strong> was <span style="color: {color}; font-weight: 700; text-transform: uppercase;">{decision}</span> by {approver_email}.</p>
+  {notes_html}
+  <div style="margin: 24px 0;">
+    <a href="{viewer_url}" style="display: inline-block; padding: 10px 24px; background: {brand_primary_color}; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+      View Report
+    </a>
+  </div>
+</div>"""
+    return _send(to=to, subject=subject, html=html)
+
+
+def send_approval_chain_completed(
+    *,
+    to: str,
+    final_status: str,
+    file_name: str,
+    viewer_url: str,
+    brand_name: str = "LintPDF",
+    brand_primary_color: str = "#1e3a8a",
+) -> EmailResult:
+    """Notify the chain initiator that the full chain completed."""
+    color = "#22c55e" if final_status == "approved" else "#ef4444"
+    subject = f"{brand_name}: Approval chain {final_status} — {file_name}"
+    html = f"""\
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1f2937;">
+  <h2 style="color: {brand_primary_color}; margin: 0 0 16px;">{brand_name} — Chain Complete</h2>
+  <div style="background: {color}; color: white; padding: 16px; border-radius: 8px; font-size: 18px; font-weight: 700; text-align: center; text-transform: uppercase;">
+    {final_status}
+  </div>
+  <p>The approval chain for <strong>{file_name}</strong> has completed with status <strong>{final_status}</strong>.</p>
+  <div style="margin: 24px 0;">
+    <a href="{viewer_url}" style="display: inline-block; padding: 10px 24px; background: {brand_primary_color}; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+      View Full Report
+    </a>
+  </div>
+</div>"""
+    return _send(to=to, subject=subject, html=html)

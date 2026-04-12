@@ -868,3 +868,24 @@ def dispatch_webhook(
             "event": event,
             "error": str(exc),
         }
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    name="lintpdf.queue.tasks.process_approval_timeouts",
+)
+def process_approval_timeouts() -> dict[str, Any]:
+    """Celery Beat: handle approval steps whose expires_at has passed.
+
+    Each step's on_timeout setting determines behavior:
+    - "reject": mark chain rejected
+    - "advance": treat as approved
+    - "notify": re-notify approvers, reset expiry
+    """
+    from lintpdf.api.database import get_db_session
+    from lintpdf.approvals.service import process_timeouts
+
+    db = get_db_session()
+    try:
+        return process_timeouts(db)
+    finally:
+        db.close()
