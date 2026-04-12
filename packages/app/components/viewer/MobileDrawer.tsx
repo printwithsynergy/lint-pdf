@@ -26,6 +26,7 @@ interface MobileDrawerProps {
   onZoomChange: (zoom: number) => void;
   jobId: string;
   onExpandSheet: () => void;
+  onOpenShare?: () => void;
 }
 
 /* ── Section with collapsible header ── */
@@ -198,6 +199,7 @@ export function MobileDrawer({
   onZoomChange,
   jobId,
   onExpandSheet,
+  onOpenShare,
 }: MobileDrawerProps) {
   const { apiBase, readOnly } = useViewerApi();
 
@@ -353,9 +355,21 @@ export function MobileDrawer({
             </div>
           </DrawerSection>
 
-          {/* ── Export ── */}
-          {(config.enable_html_report_link || config.enable_download) && (
-            <DrawerSection title="Export" defaultOpen={false}>
+          {/* ── Share & Export ── */}
+          {(onOpenShare || config.enable_html_report_link || config.enable_download) && (
+            <DrawerSection title="Share &amp; Export" defaultOpen={false}>
+              {onOpenShare && (
+                <DrawerItem
+                  label="Email Share"
+                  icon={(
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                  active={false}
+                  onClick={() => handleTool(onOpenShare)}
+                />
+              )}
               {config.enable_html_report_link && (
                 <DrawerLink
                   label="View HTML Report"

@@ -23,6 +23,7 @@ import { ComparisonPanel } from "./ComparisonPanel";
 import { MobileBottomSheet } from "./MobileBottomSheet";
 import type { SnapPosition } from "./MobileBottomSheet";
 import { MobileDrawer } from "./MobileDrawer";
+import { ShareDialog } from "./ShareDialog";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health";
 type MeasureMode = "none" | "densitometer" | "ruler";
@@ -55,6 +56,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     typeof window !== "undefined" ? window.innerWidth < 768 : false,
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [bottomSheetSnap, setBottomSheetSnap] = useState<SnapPosition>("collapsed");
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -644,6 +646,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             onZoomChange={setZoom}
             jobId={jobId}
             onExpandSheet={handleExpandSheet}
+            onOpenShare={publicToken ? () => setShareOpen(true) : undefined}
           />
         </>
       ) : (
@@ -666,6 +669,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         onToggleTacHeatmap={() => setShowTacHeatmap((v) => !v)}
         showBoxOverlay={showBoxOverlay}
         onToggleBoxOverlay={() => setShowBoxOverlay((v) => !v)}
+        onOpenShare={publicToken ? () => setShareOpen(true) : undefined}
       />
 
       {/* Annotation toolbar (hidden in read-only / public mode) */}
@@ -793,6 +797,14 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
       </>
       )}
     </div>
+    {publicToken && (
+      <ShareDialog
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        token={publicToken}
+        viewerUrl={typeof window !== "undefined" ? window.location.href.split("?")[0] ?? "" : ""}
+      />
+    )}
     </ViewerApiContext.Provider>
   );
 }

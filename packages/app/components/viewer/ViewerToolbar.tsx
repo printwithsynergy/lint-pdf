@@ -24,6 +24,7 @@ interface ViewerToolbarProps {
   onToggleTacHeatmap?: () => void;
   showBoxOverlay?: boolean;
   onToggleBoxOverlay?: () => void;
+  onOpenShare?: () => void;
   // Legacy props for backward compat
   separationMode?: boolean;
   onToggleSeparationMode?: () => void;
@@ -79,6 +80,7 @@ export function ViewerToolbar({
   onToggleTacHeatmap,
   showBoxOverlay = false,
   onToggleBoxOverlay,
+  onOpenShare,
 }: ViewerToolbarProps) {
   const { apiBase, readOnly } = useViewerApi();
 
@@ -240,6 +242,23 @@ export function ViewerToolbar({
             active={viewerMode === "comparison"}
             onClick={() => onToggleMode("comparison")}
           />
+        )}
+
+        {/* Share button */}
+        {onOpenShare && (
+          <>
+            <Divider />
+            <button
+              onClick={onOpenShare}
+              className="flex items-center gap-1 rounded p-1.5 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
+              title="Share via Email"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+              Share
+            </button>
+          </>
         )}
 
         {/* Export links */}

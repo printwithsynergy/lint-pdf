@@ -471,6 +471,24 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
         };
       }) as RouteHandler,
     },
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/public/:token/share",
+      auth: false,
+      description: "Email the viewer link to one or more recipients",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/public/${req.params.token}/share`),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        const data = await resp.json().catch(() => ({ error: "Invalid response" }));
+        return { status: resp.status, body: data };
+      }) as RouteHandler,
+    },
 
     // ── Public viewer proxy routes (token auth, read-only) ──
     //

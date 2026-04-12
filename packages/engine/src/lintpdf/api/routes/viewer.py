@@ -1083,3 +1083,82 @@ async def public_verdict(token: str, db: Session = Depends(get_db)) -> dict:
         "verdict_at": job.verdict_at.isoformat() if job.verdict_at else None,
         "notes": job.verdict_notes,
     }
+
+
+class ShareRequest(BaseModel):
+    emails: list[str]
+    from_name: str | None = None
+    from_email: str | None = None
+    message: str | None = None
+
+
+@router.post("/public/{token}/share")
+async def public_share(
+    token: str,
+    body: ShareRequest,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Public: email the interactive viewer link to one or more recipients.
+
+    Anyone with the token can forward the report. Rate-limited implicitly
+    by the viewer page's email gate.
+    """
+    import re as _re
+    from lintpdf.api.config import get_settings
+    from lintpdf.api.models import BrandProfile, Tenant
+    from lintpdf.email.service import send_report
+
+    # Validate emails
+    email_re = _re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+    emails = [e.strip() for e in body.emails if e and e.strip()]
+    emails = [e for e in emails if email_re.match(e)]
+    if not emails:
+        raise HTTPException(status_code=400, detail="At least one valid email required.")
+    if len(emails) > 20:
+        raise HTTPException(status_code=400, detail="Maximum 20 recipients per share.")
+
+    job, _ = _get_job_pdf_by_token(token, db)
+
+    # Resolve branding
+    tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+    profile = None
+    if tenant and tenant.default_brand_profile_id:
+        profile = db.query(BrandProfile).filter(
+            BrandProfile.id == tenant.default_brand_profile_id
+        ).first()
+
+    settings = get_settings()
+    app_base = settings.app_base_url.rstrip("/")
+    if tenant and getattr(tenant, "app_custom_domain", None) and tenant.app_custom_domain_verified:
+        app_base = f"https://{tenant.app_custom_domain}"
+
+    viewer_url = f"{app_base}/view/{token}"
+    brand_name = (profile.brand_name if profile else None) or (tenant.brand_name if tenant else None) or "LintPDF"
+    brand_color = (profile.primary_color if profile else None) or (tenant.brand_primary_color if tenant else None) or "#1e3a8a"
+
+    summary = (job.result_json or {}).get("summary", {})
+    finding_count = summary.get("total_findings", 0)
+    passed = summary.get("passed", True)
+
+    sent = 0
+    errors = []
+    for email in emails:
+        try:
+            res = send_report(
+                to=email,
+                tenant_name=tenant.name if tenant else brand_name,
+                job_id=str(job.id),
+                report_url=viewer_url,
+                finding_count=finding_count,
+                passed=passed,
+                brand_name=brand_name,
+                brand_primary_color=brand_color,
+            )
+            if res.success:
+                sent += 1
+            else:
+                errors.append(f"{email}: {res.error or 'failed'}")
+        except Exception as e:  # noqa: BLE001
+            errors.append(f"{email}: {e}")
+
+    return {"sent": sent, "total": len(emails), "errors": errors}
