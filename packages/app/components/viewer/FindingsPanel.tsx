@@ -1,13 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { ViewerFinding } from "./types";
+import type { PreflightSourceMode, ViewerFinding } from "./types";
 
 interface FindingsPanelProps {
   findings: ViewerFinding[];
   selectedFinding: ViewerFinding | null;
   onSelectFinding: (finding: ViewerFinding) => void;
   currentPage: number;
+  /**
+   * Source the findings were produced from. Controls empty-state copy so
+   * imported reports don't claim "no findings were produced" when the real
+   * meaning is "the third-party tool reported nothing".
+   */
+  preflightSource?: PreflightSourceMode;
+  /** Human-readable label for the import source, e.g. "Enfocus PitStop". */
+  externalSourceLabel?: string | null;
 }
 
 type SeverityTab = "all" | "error" | "warning" | "advisory";
@@ -35,6 +43,8 @@ export function FindingsPanel({
   selectedFinding,
   onSelectFinding,
   currentPage,
+  preflightSource,
+  externalSourceLabel,
 }: FindingsPanelProps) {
   const [activeTab, setActiveTab] = useState<SeverityTab>("all");
   const [filterScope, setFilterScope] = useState<"all" | "page">("all");
@@ -174,7 +184,15 @@ export function FindingsPanel({
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
           <div className="p-4 text-center text-sm text-slate-500">
-            No findings match the current filter.
+            {deduped.length === 0 && preflightSource === "external"
+              ? externalSourceLabel
+                ? `No findings reported by ${externalSourceLabel}.`
+                : "No findings reported by the imported preflight tool."
+              : deduped.length === 0 && preflightSource === "minimal"
+                ? "Viewer-only mode — no preflight was run. Load a tool above to analyze this PDF."
+                : deduped.length === 0
+                  ? "This document is clean — no findings were produced."
+                  : "No findings match the current filter."}
           </div>
         ) : (
           <>

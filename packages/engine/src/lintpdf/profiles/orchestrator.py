@@ -63,6 +63,81 @@ def _mm_to_pts(mm: float) -> float:
     return mm * 2.834645669
 
 
+@dataclass(frozen=True)
+class ViewerEssentials:
+    """Minimal document info the viewer needs, without running analyzers.
+
+    Populated by :func:`extract_viewer_essentials` for the ``minimal`` and
+    ``external`` preflight sources. Enough to render the PDF, draw page
+    outlines and box overlays, and show metadata without executing the
+    27+ analyzer preflight pipeline.
+    """
+
+    pdf_version: str
+    page_count: int
+    is_encrypted: bool
+    pages: list[dict[str, Any]]
+    info_dict: dict[str, Any]
+
+
+def extract_viewer_essentials(pdf_bytes: bytes) -> ViewerEssentials:
+    """Parse a PDF just enough for viewer use.
+
+    Shares the parser/semantic-builder chain with
+    :meth:`PreflightOrchestrator._parse_and_interpret` but skips content
+    stream interpretation, analyzer execution, conformance validation, and
+    AI analyzers. Returns page geometry (media/crop/trim/bleed boxes,
+    rotation, user unit), page count, encryption flag, and the Info dict.
+    """
+    from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
+    from lintpdf.semantic.builder import SemanticModelBuilder
+
+    adapter = PikePDFAdapter()
+    pdf_doc = adapter.open(pdf_bytes)
+    builder = SemanticModelBuilder(adapter)
+    document = builder.build(pdf_doc)
+
+    pages: list[dict[str, Any]] = []
+    for page in document.pages:
+        pages.append(
+            {
+                "page_num": page.page_num,
+                "rotate": page.rotate,
+                "user_unit": page.user_unit,
+                "media_box": _box_to_list(page.media_box),
+                "crop_box": _box_to_list(page.crop_box),
+                "bleed_box": _box_to_list(page.bleed_box),
+                "trim_box": _box_to_list(page.trim_box),
+                "art_box": _box_to_list(page.art_box),
+                "width_pts": page.effective_width,
+                "height_pts": page.effective_height,
+            }
+        )
+
+    return ViewerEssentials(
+        pdf_version=document.version,
+        page_count=document.page_count,
+        is_encrypted=document.is_encrypted,
+        pages=pages,
+        info_dict={k: str(v) for k, v in (document.info_dict or {}).items()},
+    )
+
+
+def _box_to_list(box: Any) -> list[float] | None:
+    """Convert a :class:`PdfBox` to a ``[x0, y0, x1, y1]`` list."""
+    if box is None:
+        return None
+    # PdfBox exposes either ``x0/y0/x1/y1`` attributes or tuple unpacking.
+    try:
+        return [float(box.x0), float(box.y0), float(box.x1), float(box.y1)]
+    except AttributeError:
+        try:
+            x0, y0, x1, y1 = box
+            return [float(x0), float(y0), float(x1), float(y1)]
+        except (TypeError, ValueError):
+            return None
+
+
 class PreflightOrchestrator:
     """Executes the full preflight pipeline for a given profile.
 

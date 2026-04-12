@@ -42,7 +42,15 @@ function authHeaders(): Record<string, string> {
  */
 async function validateToken(
   token: string,
-): Promise<{ jobId: string; tenantId: string; fileName: string; emailRequired: boolean; brandName?: string; logoUrl?: string } | null> {
+): Promise<{
+  jobId: string;
+  tenantId: string;
+  fileName: string;
+  emailRequired: boolean;
+  brandName?: string;
+  logoUrl?: string;
+  anonymous: boolean;
+} | null> {
   try {
     const [tokenResp, configResp] = await Promise.all([
       fetch(engineUrl(`/api/v1/reports/tokens/${token}`), { headers: authHeaders() }),
@@ -52,18 +60,26 @@ async function validateToken(
     const data = await tokenResp.json() as Record<string, unknown>;
     let brandName: string | undefined;
     let logoUrl: string | undefined;
+    let anonymous = false;
     if (configResp?.ok) {
       const cfg = await configResp.json() as Record<string, unknown>;
-      brandName = (cfg.brand_name as string) || undefined;
-      logoUrl = (cfg.brand_logo_url as string) || undefined;
+      anonymous = cfg.anonymous === true;
+      // In anonymous mode the viewer strips all tenant/LintPDF chrome — the
+      // share-page header must follow suit so brokers can forward links to
+      // distributors without leaking their identity.
+      brandName = anonymous ? undefined : ((cfg.brand_name as string) || undefined);
+      logoUrl = anonymous ? undefined : ((cfg.brand_logo_url as string) || undefined);
     }
     return {
       jobId: (data.job_id ?? data.jobId) as string,
       tenantId: (data.tenant_id ?? data.tenantId ?? "") as string,
-      fileName: (data.file_name ?? data.fileName ?? "Untitled") as string,
+      fileName: anonymous
+        ? "Preflight Report"
+        : ((data.file_name ?? data.fileName ?? "Untitled") as string),
       emailRequired: (data.email_required ?? data.emailRequired ?? true) as boolean,
       brandName,
       logoUrl,
+      anonymous,
     };
   } catch {
     return null;
@@ -258,14 +274,43 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       permission: "preflight:view",
       description: "Get resolved viewer configuration for a job",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const brand = req.query.brand ? String(req.query.brand) : undefined;
+        const qs = brand ? `?brand=${encodeURIComponent(brand)}` : "";
         const resp = await fetch(
-          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/config`),
+          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/config${qs}`),
           { headers: authHeaders() },
         );
         if (!resp.ok) {
           return { status: resp.status, body: { error: await resp.text() } };
         }
         return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+
+    // ── On-demand capability fill-in ───────────────────────
+    // Used by the viewer when a tool (e.g. separations, TAC) has no data
+    // because the job is ``minimal`` or an imported preflight didn't
+    // cover it. Enqueues a single-analyzer Celery task.
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/:jobId/capabilities/:capability",
+      auth: true,
+      permission: "preflight:view",
+      description: "Queue an on-demand analyzer run for a missing viewer capability",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/capabilities/${encodeURIComponent(req.params.capability)}`,
+          ),
+          {
+            method: "POST",
+            headers: authHeaders(),
+          },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: resp.status, body: await resp.json() };
       }) as RouteHandler,
     },
 
@@ -423,6 +468,7 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
             emailRequired: tokenData.emailRequired,
             brandName: tokenData.brandName,
             logoUrl: tokenData.logoUrl,
+            anonymous: tokenData.anonymous,
           },
         };
       }) as RouteHandler,

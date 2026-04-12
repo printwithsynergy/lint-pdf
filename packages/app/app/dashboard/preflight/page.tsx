@@ -71,6 +71,22 @@ export default function PreflightPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadDataUrl, setUploadDataUrl] = useState<string | null>(null);
 
+  // New: preflight source + imported report + branding override
+  const [preflightSource, setPreflightSource] = useState<
+    "engine" | "external" | "minimal"
+  >("engine");
+  const [externalFormat, setExternalFormat] = useState<string>("auto");
+  const [externalReportDataUrl, setExternalReportDataUrl] = useState<
+    string | null
+  >(null);
+  const [externalReportName, setExternalReportName] = useState<string>(
+    "external-report.xml",
+  );
+  const [anonymize, setAnonymize] = useState<boolean>(false);
+  const [tenantAnonymousDefault, setTenantAnonymousDefault] = useState<boolean>(
+    false,
+  );
+
   // Confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
@@ -105,9 +121,33 @@ export default function PreflightPage() {
       .catch(() => {});
   }, []);
 
+  // Load the tenant's default output branding so the Anonymize toggle
+  // starts pre-checked when the tenant has opted into "broker" mode.
+  useEffect(() => {
+    fetch("/api/lintpdf/branding/defaults")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data && typeof data === "object") {
+          const anon = Boolean(
+            data.unbranded_by_default ?? data.mode === "anonymous",
+          );
+          setTenantAnonymousDefault(anon);
+          setAnonymize(anon);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
     if (!uploadDataUrl) return;
+    if (preflightSource === "external" && !externalReportDataUrl) {
+      toast(
+        "Upload the third-party preflight report or switch off Import External Results.",
+        "error",
+      );
+      return;
+    }
 
     setUploading(true);
 
@@ -119,6 +159,20 @@ export default function PreflightPage() {
       const formData = new FormData();
       formData.append("file", blob, "upload.pdf");
       formData.append("profile_id", selectedProfile);
+      formData.append("preflight_source", preflightSource);
+
+      if (preflightSource === "external" && externalReportDataUrl) {
+        const extRes = await fetch(externalReportDataUrl);
+        const extBlob = await extRes.blob();
+        formData.append("external_report", extBlob, externalReportName);
+        if (externalFormat && externalFormat !== "auto") {
+          formData.append("external_format", externalFormat);
+        }
+      }
+
+      if (anonymize) {
+        formData.append("brand", "anonymous");
+      }
 
       const resp = await fetch("/api/lintpdf/submit", {
         method: "POST",
@@ -130,6 +184,7 @@ export default function PreflightPage() {
       }
       toast(`Job submitted: ${data.job_id ?? "processing"}`, "success");
       setUploadDataUrl(null);
+      setExternalReportDataUrl(null);
       // Refresh job list after a short delay
       setTimeout(() => fetchJobs(), 1500);
     } catch (err) {
@@ -164,6 +219,36 @@ export default function PreflightPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleUpload}>
+            {/* Source mode selector */}
+            <div
+              role="tablist"
+              aria-label="Preflight source"
+              className="mb-4 inline-flex rounded-md border border-border p-0.5"
+            >
+              {(
+                [
+                  ["engine", "Run Preflight"],
+                  ["external", "Import External Results"],
+                  ["minimal", "Viewer Only"],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="tab"
+                  aria-selected={preflightSource === value}
+                  onClick={() => setPreflightSource(value)}
+                  className={`px-3 py-1.5 text-sm rounded ${
+                    preflightSource === value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <div className="flex flex-wrap items-end gap-3">
               <div className="flex-1 min-w-[200px]">
                 <FormField label="PDF File" htmlFor="pdf-file">
@@ -177,29 +262,113 @@ export default function PreflightPage() {
                   />
                 </FormField>
               </div>
-              <div className="min-w-[180px]">
-                <FormField label="Profile" htmlFor="profile">
-                  <Select
-                    id="profile"
-                    value={selectedProfile}
-                    onChange={(e) => setSelectedProfile(e.target.value)}
-                  >
-                    <option value="lintpdf-default">Default</option>
-                    {profiles.map((p) => (
-                      <option key={p.profile_id} value={p.profile_id}>
-                        {p.display_name}
-                      </option>
-                    ))}
-                  </Select>
-                </FormField>
-              </div>
+              {preflightSource === "engine" && (
+                <div className="min-w-[180px]">
+                  <FormField label="Profile" htmlFor="profile">
+                    <Select
+                      id="profile"
+                      value={selectedProfile}
+                      onChange={(e) => setSelectedProfile(e.target.value)}
+                    >
+                      <option value="lintpdf-default">Default</option>
+                      {profiles.map((p) => (
+                        <option key={p.profile_id} value={p.profile_id}>
+                          {p.display_name}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormField>
+                </div>
+              )}
               <Button
                 type="submit"
                 loading={uploading}
-                disabled={!uploadDataUrl}
+                disabled={
+                  !uploadDataUrl ||
+                  (preflightSource === "external" && !externalReportDataUrl)
+                }
               >
-                Run Preflight
+                {preflightSource === "engine"
+                  ? "Run Preflight"
+                  : preflightSource === "external"
+                  ? "Import Results"
+                  : "Open Viewer"}
               </Button>
+            </div>
+
+            {preflightSource === "external" && (
+              <div className="mt-4 flex flex-wrap items-end gap-3 border-t pt-4">
+                <div className="flex-1 min-w-[220px]">
+                  <FormField
+                    label="Preflight Report (PitStop / callas / Acrobat / LintPDF JSON)"
+                    htmlFor="external-report"
+                  >
+                    <FileUpload
+                      accept=".xml,.json,application/xml,application/json,text/xml"
+                      maxSize={50 * 1024 * 1024}
+                      value={externalReportDataUrl}
+                      onChange={(v) => {
+                        setExternalReportDataUrl(v);
+                      }}
+                      helpText="Upload the raw report your existing tool produced"
+                    />
+                  </FormField>
+                </div>
+                <div className="min-w-[200px]">
+                  <FormField label="Format" htmlFor="external-format">
+                    <Select
+                      id="external-format"
+                      value={externalFormat}
+                      onChange={(e) => setExternalFormat(e.target.value)}
+                    >
+                      <option value="auto">Auto-detect</option>
+                      <option value="pitstop_xml">Enfocus PitStop (XML)</option>
+                      <option value="callas_json">callas pdfToolbox (JSON)</option>
+                      <option value="callas_xml">callas pdfToolbox (XML)</option>
+                      <option value="acrobat_xml">Acrobat Preflight (XML)</option>
+                      <option value="lintpdf_json">LintPDF native (JSON)</option>
+                    </Select>
+                  </FormField>
+                </div>
+              </div>
+            )}
+
+            {preflightSource === "minimal" && (
+              <Alert className="mt-4" variant="default">
+                <AlertDescription>
+                  Viewer-only mode skips analyzers entirely. You&apos;ll get the
+                  interactive viewer with page navigation, download, and
+                  metadata. Tools like separations or TAC can be loaded on
+                  demand inside the viewer.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Anonymize output */}
+            <div className="mt-4 flex items-start gap-2 border-t pt-4">
+              <input
+                id="anonymize"
+                type="checkbox"
+                className="mt-1"
+                checked={anonymize}
+                onChange={(e) => setAnonymize(e.target.checked)}
+              />
+              <label htmlFor="anonymize" className="text-sm">
+                <span className="font-medium">Anonymize output</span> — hide
+                all branding and strip identifying PDF metadata.
+                <span
+                  className="block text-xs text-muted-foreground mt-0.5"
+                  title="Strips your brand, LintPDF's brand, and identifying PDF metadata. Use when sending reports to distributors who shouldn't know you generated them."
+                >
+                  Use when sending reports to distributors who shouldn&apos;t
+                  know you generated them.
+                  {tenantAnonymousDefault && (
+                    <span className="ml-1 text-muted-foreground">
+                      (Tenant default)
+                    </span>
+                  )}
+                </span>
+              </label>
             </div>
           </form>
         </CardContent>

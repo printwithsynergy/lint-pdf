@@ -11,6 +11,8 @@ interface JobData {
   emailRequired: boolean;
   brandName?: string;
   logoUrl?: string;
+  /** True when the report was minted in anonymous mode — hide all chrome. */
+  anonymous?: boolean;
 }
 
 function IdentifyScreen({
@@ -222,6 +224,25 @@ export default function PublicViewerPage() {
         onIdentify={handleIdentify}
         loading={identifyLoading}
       />
+    );
+  }
+
+  // Anonymous share links hide all tenant + LintPDF chrome. The viewer
+  // itself also honors `anonymous` from its config (see ViewerToolbar /
+  // MobileDrawer), so all we need here is to suppress the header wrapper
+  // and use neutral copy for anything the share page contributes.
+  if (jobData.anonymous) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <header className="flex h-10 items-center justify-between border-b bg-background px-4">
+          <span className="text-sm font-medium text-muted-foreground">
+            Preflight Report
+          </span>
+        </header>
+        <main className="flex-1">
+          <PdfViewer jobId={jobData.jobId} publicToken={token} />
+        </main>
+      </div>
     );
   }
 

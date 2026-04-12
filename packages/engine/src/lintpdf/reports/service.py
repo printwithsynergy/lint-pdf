@@ -147,7 +147,16 @@ def deduplicate_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]
 
 @dataclass
 class BrandingContext:
-    """White-label branding for report rendering."""
+    """White-label branding for report rendering.
+
+    When ``anonymous`` is ``True`` the template MUST NOT emit any logo,
+    tenant name, footer text, or identifying copy. This mode is used
+    when a broker forwards a preflight report to a downstream distributor
+    who shouldn't know which broker ran it. The pipeline additionally
+    sanitises the rendered PDF's Author / Producer / Creator metadata
+    (see :func:`sanitize_pdf_metadata_for_anonymous`) and emits a neutral
+    filename (``preflight-<short-job-id>.pdf``).
+    """
 
     name: str = "LintPDF"
     logo_url: str | None = _LINTPDF_DEFAULT_LOGO
@@ -157,6 +166,209 @@ class BrandingContext:
     pdf_download_url: str | None = None
     report_url: str | None = None
     viewer_url: str | None = None
+    anonymous: bool = False
+
+    @classmethod
+    def anonymous_context(cls) -> "BrandingContext":
+        """Return a fully-anonymised branding context.
+
+        No logo, no tenant name, neutral footer, neutral title. Reports
+        rendered with this context are untraceable to the tenant or to
+        LintPDF.
+        """
+        return cls(
+            name="Preflight Report",
+            logo_url=None,
+            primary_color="#334155",
+            accent_color="#64748b",
+            footer_text=None,
+            anonymous=True,
+        )
+
+
+class BrandMode(StrEnum):
+    """Caller-supplied branding intent.
+
+    * ``anonymous`` — strip all branding (tenant and LintPDF) and
+      sanitise PDF metadata (broker → distributor use case).
+    * ``lintpdf`` — render with LintPDF's default branding.
+    * ``profile`` — render with a specific :class:`BrandProfile`; the
+      concrete profile is resolved separately by the caller.
+    """
+
+    ANONYMOUS = "anonymous"
+    LINTPDF = "lintpdf"
+    PROFILE = "profile"
+
+
+def parse_brand_param(raw: str | None) -> tuple[BrandMode | None, str | None]:
+    """Decode a ``brand`` query/form parameter.
+
+    Returns ``(mode, profile_id)`` where ``profile_id`` is populated
+    only for :attr:`BrandMode.PROFILE`. ``None``/empty input returns
+    ``(None, None)`` so callers can fall back to the tenant/job default.
+
+    Accepted values:
+
+    * ``"anonymous"`` / ``"none"`` / ``"unbranded"`` → anonymous mode
+    * ``"lintpdf"`` / ``"default"`` → LintPDF default branding
+    * a UUID string → a specific :class:`BrandProfile`
+    """
+    if raw is None:
+        return None, None
+    token = raw.strip().lower()
+    if not token:
+        return None, None
+    if token in {"anonymous", "none", "unbranded"}:
+        return BrandMode.ANONYMOUS, None
+    if token in {"lintpdf", "default"}:
+        return BrandMode.LINTPDF, None
+    # Any other value is treated as a brand profile ID (UUID);
+    # the caller is responsible for validating/parsing it.
+    return BrandMode.PROFILE, raw.strip()
+
+
+def sanitize_pdf_metadata_for_anonymous(pdf_bytes: bytes) -> bytes:
+    """Rewrite a PDF's identifying metadata so nothing points back to the
+    generator.
+
+    Called after WeasyPrint renders the report PDF when ``branding.anonymous``
+    is true. Falls back to returning the input bytes unchanged if pikepdf
+    isn't importable at runtime — broken metadata is preferable to a 500.
+    """
+    try:
+        import pikepdf  # type: ignore
+    except ImportError:  # pragma: no cover — pikepdf is a hard dep in prod
+        logger.warning("pikepdf missing — skipping anonymous metadata sanitation")
+        return pdf_bytes
+
+    try:
+        with pikepdf.open(pikepdf.util.io.BytesIO(pdf_bytes)) if hasattr(
+            pikepdf, "util"
+        ) else pikepdf.open(_bytes_stream(pdf_bytes)) as pdf:
+            info = pdf.docinfo
+            info["/Author"] = ""
+            info["/Creator"] = "Preflight"
+            info["/Producer"] = "Preflight"
+            info["/Title"] = "Preflight Report"
+            # Strip the XMP metadata stream — WeasyPrint embeds a signature
+            # that leaks the generator. Dropping it entirely is safer than
+            # editing fields piecemeal.
+            if "/Metadata" in pdf.Root:
+                del pdf.Root["/Metadata"]
+            out = _bytes_stream()
+            pdf.save(out)
+            return out.getvalue()
+    except Exception:
+        logger.exception("Failed to sanitise PDF metadata for anonymous render")
+        return pdf_bytes
+
+
+def _bytes_stream(initial: bytes | None = None):
+    """Return a BytesIO — factored out so pikepdf's varying versions can
+    be called uniformly even when its bundled ``pikepdf.util.io`` is
+    missing."""
+    from io import BytesIO
+
+    return BytesIO(initial) if initial is not None else BytesIO()
+
+
+def build_anonymous_filename(job_id: str, extension: str = "pdf") -> str:
+    """Filename used for anonymised report downloads.
+
+    Picks a short job-id suffix rather than a tenant slug so the
+    recipient can't trace the file back to the generating tenant via
+    filename alone.
+    """
+    short = str(job_id).split("-", 1)[0][:8] if job_id else "report"
+    return f"preflight-{short}.{extension}"
+
+
+def resolve_branding(
+    *,
+    tenant: "Tenant",
+    job: Any | None,
+    brand_param: str | None,
+    default_lintpdf: BrandingContext,
+    lookup_profile: Any,
+    entitlements: "TenantEntitlements | None" = None,
+) -> BrandingContext:
+    """Resolve the effective :class:`BrandingContext` for a report surface.
+
+    Resolution order (highest priority first):
+
+    1. Explicit ``brand`` query/form parameter:
+       ``anonymous`` / ``lintpdf`` / ``<profile_id>``.
+    2. ``Job.unbranded_override`` → anonymous; else ``Job.brand_profile_id_override``.
+    3. ``Tenant.unbranded_by_default`` → anonymous; else
+       ``Tenant.default_brand_profile_id``.
+    4. LintPDF default (``default_lintpdf``).
+
+    ``lookup_profile`` is a callable ``(profile_id_str) -> BrandProfile | None``
+    scoped to the calling session so we don't import DB machinery here.
+    Profile ownership/tenant-scoping is the caller's responsibility.
+    """
+    # 1. Explicit parameter
+    mode, profile_id = parse_brand_param(brand_param)
+    if mode is BrandMode.ANONYMOUS:
+        return BrandingContext.anonymous_context()
+    if mode is BrandMode.LINTPDF:
+        return default_lintpdf
+    if mode is BrandMode.PROFILE and profile_id:
+        profile = lookup_profile(profile_id)
+        if profile is not None:
+            return _branding_from_profile(profile, default_lintpdf)
+
+    # 2. Per-job override
+    if job is not None:
+        if getattr(job, "unbranded_override", False):
+            return BrandingContext.anonymous_context()
+        job_override = getattr(job, "brand_profile_id_override", None)
+        if job_override is not None:
+            profile = lookup_profile(str(job_override))
+            if profile is not None:
+                return _branding_from_profile(profile, default_lintpdf)
+
+    # 3. Tenant default
+    if getattr(tenant, "unbranded_by_default", False):
+        return BrandingContext.anonymous_context()
+    tenant_default = getattr(tenant, "default_brand_profile_id", None)
+    if tenant_default is not None:
+        profile = lookup_profile(str(tenant_default))
+        if profile is not None:
+            return _branding_from_profile(profile, default_lintpdf)
+
+    # 4. LintPDF default
+    return default_lintpdf
+
+
+def _branding_from_profile(
+    profile: Any, default_lintpdf: BrandingContext
+) -> BrandingContext:
+    """Build a :class:`BrandingContext` from a :class:`BrandProfile` row.
+
+    ``profile_type == 'none'`` with an anonymous tenant intent is already
+    handled upstream; here ``profile_type == 'none'`` means "LintPDF
+    default" (legacy behaviour — use the explicit anonymous branch for
+    the broker use case).
+    """
+    profile_type = getattr(profile, "profile_type", None)
+    if profile_type in (None, "none", "lintpdf"):
+        return default_lintpdf
+    name = getattr(profile, "name", None) or default_lintpdf.name
+    logo = getattr(profile, "logo_url", None) or default_lintpdf.logo_url
+    primary = getattr(profile, "primary_color", None) or default_lintpdf.primary_color
+    accent = getattr(profile, "accent_color", None) or default_lintpdf.accent_color
+    footer = getattr(profile, "footer_text", None)
+    if footer is None:
+        footer = default_lintpdf.footer_text
+    return BrandingContext(
+        name=name,
+        logo_url=logo,
+        primary_color=primary,
+        accent_color=accent,
+        footer_text=footer,
+    )
 
 
 @dataclass
@@ -636,7 +848,12 @@ class ReportService:
         detail_level: str = "standard",
         summary_page: str = "prepend",
     ) -> bytes:
-        """Generate PDF from branded HTML."""
+        """Generate PDF from branded HTML.
+
+        When ``branding.anonymous`` is true the rendered PDF is post-processed
+        by :func:`sanitize_pdf_metadata_for_anonymous` so the broker's
+        identity doesn't leak via Author / Producer / Creator / XMP.
+        """
         from weasyprint import HTML
 
         html_bytes = self._generate_html(
@@ -644,6 +861,8 @@ class ReportService:
             detail_level=detail_level, summary_page=summary_page,
         )
         pdf_bytes_out: bytes = HTML(string=html_bytes.decode("utf-8")).write_pdf()
+        if branding.anonymous:
+            pdf_bytes_out = sanitize_pdf_metadata_for_anonymous(pdf_bytes_out)
         return pdf_bytes_out
 
     def _generate_annotated_pdf(

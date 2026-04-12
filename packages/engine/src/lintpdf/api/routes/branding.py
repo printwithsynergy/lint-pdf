@@ -656,3 +656,132 @@ async def set_tenant_app_custom_domain(
         requested_at=tenant.app_custom_domain_requested_at.isoformat() if tenant.app_custom_domain_requested_at else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
     )
+
+
+# --- Default output branding (anonymous / profile / LintPDF) -------------
+
+
+class BrandingDefaultsRequest(_BaseModel):
+    """Payload for PATCH /api/v1/tenant/branding-defaults.
+
+    Exactly one of ``mode`` values controls the default: when ``mode`` is
+    ``anonymous`` the tenant's ``unbranded_by_default`` flag flips on and
+    ``default_brand_profile_id`` is cleared. When ``mode`` is ``profile``
+    a ``brand_profile_id`` must be provided. ``lintpdf`` clears both.
+    """
+
+    mode: str  # "anonymous" | "profile" | "lintpdf"
+    brand_profile_id: str | None = None
+
+
+class BrandingDefaultsResponse(_BaseModel):
+    mode: str
+    unbranded_by_default: bool
+    default_brand_profile_id: str | None = None
+
+
+@router.get(
+    "/api/v1/tenant/branding-defaults",
+    response_model=BrandingDefaultsResponse,
+)
+async def get_tenant_branding_defaults(
+    tenant: Tenant = Depends(get_current_tenant),
+) -> BrandingDefaultsResponse:
+    """Return the tenant's default-output-branding mode."""
+    if tenant.unbranded_by_default:
+        mode = "anonymous"
+    elif tenant.default_brand_profile_id is not None:
+        mode = "profile"
+    else:
+        mode = "lintpdf"
+    return BrandingDefaultsResponse(
+        mode=mode,
+        unbranded_by_default=tenant.unbranded_by_default,
+        default_brand_profile_id=(
+            str(tenant.default_brand_profile_id)
+            if tenant.default_brand_profile_id
+            else None
+        ),
+    )
+
+
+@router.patch(
+    "/api/v1/tenant/branding-defaults",
+    response_model=BrandingDefaultsResponse,
+)
+async def set_tenant_branding_defaults(
+    request: BrandingDefaultsRequest,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> BrandingDefaultsResponse:
+    """Update the tenant's default output branding.
+
+    Modes:
+    * ``anonymous`` — strip all branding + sanitise PDF metadata by default
+      (broker → distributor use case). Sets ``unbranded_by_default = True``
+      and clears ``default_brand_profile_id``.
+    * ``profile`` — use a specific BrandProfile by default. Requires a
+      valid ``brand_profile_id`` owned by the tenant.
+    * ``lintpdf`` — fall back to LintPDF's built-in branding (clears both).
+    """
+    mode = (request.mode or "").strip().lower()
+    if mode not in {"anonymous", "profile", "lintpdf"}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="mode must be one of: anonymous, profile, lintpdf.",
+        )
+
+    if mode == "anonymous":
+        tenant.unbranded_by_default = True
+        tenant.default_brand_profile_id = None
+    elif mode == "lintpdf":
+        tenant.unbranded_by_default = False
+        tenant.default_brand_profile_id = None
+    else:  # profile
+        if not request.brand_profile_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="brand_profile_id is required when mode='profile'.",
+            )
+        try:
+            profile_uuid = uuid_mod.UUID(request.brand_profile_id)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="brand_profile_id must be a valid UUID.",
+            ) from exc
+        profile = (
+            db.query(BrandProfile)
+            .filter(
+                BrandProfile.id == profile_uuid,
+                BrandProfile.tenant_id == tenant.id,
+            )
+            .first()
+        )
+        if profile is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Brand profile not found.",
+            )
+        tenant.unbranded_by_default = False
+        tenant.default_brand_profile_id = profile_uuid
+
+    db.commit()
+    db.refresh(tenant)
+
+    if tenant.unbranded_by_default:
+        resolved_mode = "anonymous"
+    elif tenant.default_brand_profile_id is not None:
+        resolved_mode = "profile"
+    else:
+        resolved_mode = "lintpdf"
+
+    return BrandingDefaultsResponse(
+        mode=resolved_mode,
+        unbranded_by_default=tenant.unbranded_by_default,
+        default_brand_profile_id=(
+            str(tenant.default_brand_profile_id)
+            if tenant.default_brand_profile_id
+            else None
+        ),
+    )

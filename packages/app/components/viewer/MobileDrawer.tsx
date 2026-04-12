@@ -237,7 +237,9 @@ export function MobileDrawer({
         {/* Header */}
         <div className="flex h-12 items-center justify-between border-b border-slate-700 px-4">
           <span className="text-sm font-bold text-white">
-            {config.brand_name || "LintPDF"}
+            {config.anonymous
+              ? "Preflight Report"
+              : config.brand_name || "LintPDF"}
           </span>
           <button
             onClick={onClose}

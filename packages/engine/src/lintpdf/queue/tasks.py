@@ -30,8 +30,14 @@ def _auto_generate_reports(
     from datetime import datetime, timedelta, timezone
 
     from lintpdf.api.config import get_settings
-    from lintpdf.api.models import JobFinding, ReportToken, Tenant
-    from lintpdf.reports.service import BrandingContext, ReportDetailLevel, ReportService
+    from lintpdf.api.models import BrandProfile, JobFinding, ReportToken, Tenant
+    from lintpdf.reports.service import (
+        BrandingContext,
+        BrandMode,
+        ReportDetailLevel,
+        ReportService,
+        resolve_branding,
+    )
 
     settings = get_settings()
     service = ReportService(storage, db)
@@ -64,7 +70,46 @@ def _auto_generate_reports(
         enriched["metadata"] = {}
     enriched["metadata"]["file_key"] = job.file_key
 
-    branding = BrandingContext()
+    # Resolve the effective branding from tenant defaults + per-job
+    # overrides. Brokers rely on the anonymous path stripping both tenant
+    # and LintPDF identity + sanitising PDF metadata.
+    tenant_obj = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+
+    def _lookup_profile(profile_id: str) -> Any | None:
+        try:
+            import uuid as _uuid_mod
+            pid = _uuid_mod.UUID(profile_id)
+        except ValueError:
+            return None
+        return (
+            db.query(BrandProfile)
+            .filter(BrandProfile.id == pid, BrandProfile.tenant_id == job.tenant_id)
+            .first()
+        )
+
+    branding = resolve_branding(
+        tenant=tenant_obj,
+        job=job,
+        brand_param=None,
+        default_lintpdf=BrandingContext(),
+        lookup_profile=_lookup_profile,
+    )
+
+    # Capture the resolved branding on each ReportToken so share links
+    # keep the broker's chosen brand even if tenant defaults change later.
+    if branding.anonymous:
+        token_brand_mode = "anonymous"
+        token_brand_profile_id = None
+    elif job.brand_profile_id_override is not None:
+        token_brand_mode = "profile"
+        token_brand_profile_id = job.brand_profile_id_override
+    elif tenant_obj and tenant_obj.default_brand_profile_id is not None:
+        token_brand_mode = "profile"
+        token_brand_profile_id = tenant_obj.default_brand_profile_id
+    else:
+        token_brand_mode = "lintpdf"
+        token_brand_profile_id = None
+
     report_base_url = settings.report_base_url
     app_base = settings.app_base_url.rstrip("/")
     tokens: dict[str, str] = {}
@@ -77,10 +122,13 @@ def _auto_generate_reports(
     # Set cross-links and viewer URL
     branding.pdf_download_url = f"{report_base_url}/r/{tokens['pdf']}.pdf"
     branding.report_url = f"{report_base_url}/r/{tokens['html']}"
-    # Use tenant's app custom domain if verified, otherwise default
-    tenant_obj = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
     viewer_base = app_base
-    if tenant_obj and getattr(tenant_obj, "app_custom_domain", None) and tenant_obj.app_custom_domain_verified:
+    if (
+        not branding.anonymous
+        and tenant_obj
+        and getattr(tenant_obj, "app_custom_domain", None)
+        and tenant_obj.app_custom_domain_verified
+    ):
         viewer_base = f"https://{tenant_obj.app_custom_domain}"
     branding.viewer_url = f"{viewer_base.rstrip('/')}/view/{tokens['html']}"
 
@@ -101,6 +149,8 @@ def _auto_generate_reports(
             token=tokens[fmt],
             format=fmt,
             expires_at=expires_at,
+            brand_mode=token_brand_mode,
+            brand_profile_id=token_brand_profile_id,
         ))
 
     db.commit()
@@ -171,6 +221,22 @@ def run_preflight(
             # Mark as processing
             job.status = JobStatus.PROCESSING
             db.commit()
+
+            # ------------------------------------------------------------------
+            # Branch on preflight_source: external imports and minimal (viewer
+            # only) jobs skip the full analyzer pipeline and finish in a
+            # single pass. The engine path continues below.
+            # ------------------------------------------------------------------
+            from lintpdf.api.models import PreflightSource
+
+            if job.preflight_source == PreflightSource.EXTERNAL:
+                return _run_external_preflight(
+                    self=self, db=db, job=job, job_id=job_id, start=start
+                )
+            if job.preflight_source == PreflightSource.MINIMAL:
+                return _run_minimal_preflight(
+                    self=self, db=db, job=job, job_id=job_id, start=start
+                )
 
             # Download PDF from storage (try R2, fall back to Redis cache)
             from lintpdf.api.storage import get_storage
@@ -889,3 +955,391 @@ def process_approval_timeouts() -> dict[str, Any]:
         return process_timeouts(db)
     finally:
         db.close()
+
+
+# ---------------------------------------------------------------------------
+# External import + minimal preflight branches
+# ---------------------------------------------------------------------------
+
+
+def _extract_essentials_dict(pdf_bytes: bytes) -> dict[str, Any]:
+    """Run :func:`extract_viewer_essentials` and return a JSON-safe dict.
+
+    Used by both the external-import and minimal preflight branches to
+    populate ``Job.result_json.metadata`` without invoking the full
+    analyzer pipeline.
+    """
+    from lintpdf.profiles.orchestrator import extract_viewer_essentials
+
+    essentials = extract_viewer_essentials(pdf_bytes)
+    return {
+        "pdf_version": essentials.pdf_version,
+        "page_count": essentials.page_count,
+        "is_encrypted": essentials.is_encrypted,
+        "pages": essentials.pages,
+        "info_dict": essentials.info_dict,
+    }
+
+
+def _download_pdf_with_fallback(storage: Any, file_key: str, job_id: str) -> bytes:
+    """PDF download helper shared by the import / minimal paths.
+
+    Mirrors the engine path's R2→Redis fallback logic so a transient R2
+    outage doesn't block import / minimal jobs either.
+    """
+    try:
+        pdf_bytes = storage.download_pdf(file_key)
+    except Exception as r2_err:
+        logger.warning(
+            "R2 download failed for %s: %s — trying Redis cache",
+            job_id, r2_err,
+        )
+        pdf_bytes = None
+    if pdf_bytes is None:
+        try:
+            from lintpdf.api.middleware import get_redis_client
+
+            redis = get_redis_client()
+            if redis is not None:
+                pdf_bytes = redis.get(f"pdf_cache:{file_key}")
+        except Exception:
+            logger.debug("Redis cache fallback failed for job %s", job_id, exc_info=True)
+    if pdf_bytes is None:
+        raise RuntimeError(
+            f"Cannot retrieve PDF: R2 unreachable and no Redis cache for {file_key}"
+        )
+    return pdf_bytes
+
+
+def _persist_imported_findings(
+    db: Any,
+    job: Any,
+    findings: list[Any],
+) -> None:
+    """Write a list of :class:`Finding` to the ``job_findings`` table."""
+    from lintpdf.api.models import JobFinding
+
+    for finding in findings:
+        bbox = finding.bbox
+        db.add(
+            JobFinding(
+                job_id=job.id,
+                inspection_id=finding.inspection_id,
+                severity=finding.severity.value,
+                message=finding.message,
+                page_num=finding.page_num,
+                details=finding.details if finding.details else None,
+                source=finding.source,
+                category=finding.category if finding.category else None,
+                bbox_x0=bbox[0] if bbox else None,
+                bbox_y0=bbox[1] if bbox else None,
+                bbox_x1=bbox[2] if bbox else None,
+                bbox_y1=bbox[3] if bbox else None,
+                object_id=finding.object_id,
+                object_type=finding.object_type,
+            )
+        )
+
+
+def _finalize_non_engine_job(
+    db: Any,
+    job: Any,
+    job_id: str,
+    start: float,
+    result_dict: dict[str, Any],
+    pdf_bytes: bytes,
+    storage: Any,
+) -> dict[str, Any]:
+    """Shared finalisation for external-import and minimal runs.
+
+    Commits the job row, dispatches webhooks, auto-generates reports,
+    and kicks off tile pre-rendering — matching engine-path semantics so
+    downstream viewer / report behaviour is uniform.
+    """
+    import datetime as _dt
+
+    from lintpdf.api.models import JobStatus
+
+    duration_ms = int((time.monotonic() - start) * 1000)
+
+    job.status = JobStatus.COMPLETE
+    job.result_json = result_dict
+    job.page_count = result_dict.get("summary", {}).get("page_count", job.page_count or 0)
+    job.duration_ms = duration_ms
+    job.completed_at = _dt.datetime.now(_dt.UTC)
+    db.commit()
+
+    _dispatch_tenant_webhooks(
+        db,
+        job.tenant_id,
+        "job.completed",
+        {
+            "job_id": job_id,
+            "status": "complete",
+            "profile_id": job.profile_id,
+            "duration_ms": duration_ms,
+            "summary": result_dict["summary"],
+            "preflight_source": str(job.preflight_source),
+        },
+    )
+
+    try:
+        _auto_generate_reports(db, job, result_dict, pdf_bytes, storage)
+    except Exception:
+        logger.exception("Auto report generation failed for job %s (non-fatal)", job_id)
+
+    try:
+        prerender_viewer_tiles.delay(job_id, str(job.tenant_id), job.file_key)
+    except Exception:
+        logger.warning("Failed to queue tile pre-render for job %s", job_id)
+
+    return {
+        "job_id": job_id,
+        "profile_id": job.profile_id,
+        "status": "complete",
+        "duration_ms": duration_ms,
+        "preflight_source": str(job.preflight_source),
+    }
+
+
+def _run_external_preflight(
+    *, self: Any, db: Any, job: Any, job_id: str, start: float
+) -> dict[str, Any]:
+    """Ingest a third-party preflight report and persist its findings.
+
+    Pipeline:
+
+    1. Download the PDF (for viewer essentials + later capability fill-in).
+    2. Download the imported report blob stored by the submission route.
+    3. Parse it via :func:`parse_external_report` (format auto-detect or
+       explicit ``job.external_format``).
+    4. Write findings to ``job_findings`` with ``source = external:<parser>``.
+    5. Merge parser-reported capabilities onto ``job.data_capabilities``.
+    6. Finalise (status, reports, webhooks) like the engine path does.
+    """
+    from lintpdf.api.models import JobImportedReport, JobStatus
+    from lintpdf.api.storage import get_storage
+    from lintpdf.api.models import default_capabilities
+    from lintpdf.imports import parse_external_report
+
+    storage = get_storage()
+
+    # --- PDF ---------------------------------------------------------------
+    pdf_bytes = _download_pdf_with_fallback(storage, job.file_key, job_id)
+
+    # --- Imported report ---------------------------------------------------
+    imported_row: JobImportedReport | None = (
+        db.query(JobImportedReport)
+        .filter(JobImportedReport.job_id == job.id)
+        .order_by(JobImportedReport.parsed_at.desc())
+        .first()
+    )
+    if imported_row is None:
+        raise RuntimeError(
+            "External preflight requested but no imported report found for job"
+        )
+
+    report_bytes = storage.download_raw(imported_row.raw_blob_key)
+    if report_bytes is None:
+        raise RuntimeError(
+            f"Imported preflight report blob missing: {imported_row.raw_blob_key}"
+        )
+
+    imported, resolved_format = parse_external_report(
+        report_bytes, fmt=job.external_format
+    )
+
+    # --- Persist findings --------------------------------------------------
+    _persist_imported_findings(db, job, imported.findings)
+
+    # --- Essentials + capabilities ----------------------------------------
+    essentials = _extract_essentials_dict(pdf_bytes)
+
+    caps = default_capabilities(False)
+    caps["metadata"] = True
+    caps["thumbnails"] = True
+    for key, value in (imported.capabilities or {}).items():
+        caps[key] = bool(value)
+    job.data_capabilities = caps
+    job.external_format = resolved_format
+    imported_row.format = resolved_format
+    imported_row.source_metadata = imported.source_metadata or imported_row.source_metadata
+    imported_row.parser_version = imported.parser_version
+
+    # --- Summary -----------------------------------------------------------
+    errors = sum(1 for f in imported.findings if f.severity.value == "error")
+    warnings = sum(1 for f in imported.findings if f.severity.value == "warning")
+    advisory = sum(1 for f in imported.findings if f.severity.value == "advisory")
+    summary = {
+        "total_findings": len(imported.findings),
+        "error_count": errors,
+        "warning_count": warnings,
+        "advisory_count": advisory,
+        "passed": errors == 0,
+        "page_count": essentials["page_count"],
+        "file_size_bytes": len(pdf_bytes),
+    }
+    result_dict = {
+        "summary": summary,
+        "metadata": {
+            **essentials,
+            "preflight_source": "external",
+            "external_format": resolved_format,
+            "external_tool": (imported.source_metadata or {}).get("tool"),
+        },
+    }
+
+    return _finalize_non_engine_job(
+        db, job, job_id, start, result_dict, pdf_bytes, storage
+    )
+
+
+def _run_minimal_preflight(
+    *, self: Any, db: Any, job: Any, job_id: str, start: float
+) -> dict[str, Any]:
+    """Extract viewer essentials only — no analyzers, no findings.
+
+    Every finding-driven viewer tool is marked unavailable and can be
+    filled in on demand via :func:`fill_capability`.
+    """
+    from lintpdf.api.models import default_capabilities
+    from lintpdf.api.storage import get_storage
+
+    storage = get_storage()
+    pdf_bytes = _download_pdf_with_fallback(storage, job.file_key, job_id)
+    essentials = _extract_essentials_dict(pdf_bytes)
+
+    caps = default_capabilities(False)
+    caps["metadata"] = True
+    caps["thumbnails"] = True
+    job.data_capabilities = caps
+
+    summary = {
+        "total_findings": 0,
+        "error_count": 0,
+        "warning_count": 0,
+        "advisory_count": 0,
+        "passed": True,
+        "page_count": essentials["page_count"],
+        "file_size_bytes": len(pdf_bytes),
+    }
+    result_dict = {
+        "summary": summary,
+        "metadata": {
+            **essentials,
+            "preflight_source": "minimal",
+        },
+    }
+
+    return _finalize_non_engine_job(
+        db, job, job_id, start, result_dict, pdf_bytes, storage
+    )
+
+
+# ---------------------------------------------------------------------------
+# Capability fill-in (on-demand single-analyzer runs)
+# ---------------------------------------------------------------------------
+
+#: Capability name → (analyzer factory callable, capability key). Keeping this
+#: dict small and explicit means the viewer can only trigger analyzers we've
+#: deliberately wired for on-demand use. New entries should be vetted for
+#: runtime cost — fill-in runs inline on the Celery worker.
+_CAPABILITY_ANALYZERS: dict[str, str] = {
+    "separations": "SpotColorAnalyzer",
+    "tac": "InkCoverageAnalyzer",
+    "fonts": "FontAnalyzer",
+    "images": "ImageAnalyzer",
+}
+
+
+def capability_supports_fillin(name: str) -> bool:
+    """Whether the viewer may call fill-in for this capability."""
+    return name in _CAPABILITY_ANALYZERS
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    name="lintpdf.viewer.fill_capability",
+    max_retries=1,
+    default_retry_delay=5,
+    time_limit=120,
+    soft_time_limit=90,
+)
+def fill_capability(job_id: str, capability: str) -> dict[str, Any]:
+    """Run the single analyzer responsible for ``capability`` on a job's PDF.
+
+    Called from the viewer when a user clicks "Load" on a tool whose
+    backing data wasn't provided (typical for imported PitStop / callas
+    reports that lack TAC / separations data, and for minimal jobs).
+
+    On success:
+
+    * Appends new :class:`Finding` rows if the analyzer produced any.
+    * Flips ``job.data_capabilities[capability] = True``.
+    """
+    import uuid as uuid_mod
+
+    from lintpdf.api.database import get_db_session
+    from lintpdf.api.models import Job
+    from lintpdf.api.storage import get_storage
+
+    if not capability_supports_fillin(capability):
+        return {"status": "unsupported", "capability": capability}
+
+    db = get_db_session()
+    try:
+        job = db.query(Job).filter(Job.id == uuid_mod.UUID(job_id)).first()
+        if job is None:
+            return {"status": "not_found", "job_id": job_id}
+
+        storage = get_storage()
+        pdf_bytes = _download_pdf_with_fallback(storage, job.file_key, job_id)
+
+        analyzer = _build_fillin_analyzer(capability)
+        if analyzer is None:
+            return {"status": "unsupported", "capability": capability}
+
+        from lintpdf.profiles.orchestrator import PreflightOrchestrator
+
+        document, events = PreflightOrchestrator._parse_and_interpret(pdf_bytes)
+        findings = list(analyzer.analyze(document, events))
+        _persist_imported_findings(db, job, findings)
+
+        caps = dict(job.data_capabilities or {})
+        caps[capability] = True
+        job.data_capabilities = caps
+        db.commit()
+
+        return {
+            "status": "complete",
+            "job_id": job_id,
+            "capability": capability,
+            "new_findings": len(findings),
+        }
+    except Exception:
+        logger.exception("fill_capability failed for job %s / %s", job_id, capability)
+        raise
+    finally:
+        db.close()
+
+
+def _build_fillin_analyzer(capability: str) -> Any | None:
+    """Instantiate the analyzer registered for a capability, or None."""
+    from lintpdf.analyzers import (
+        FontAnalyzer,
+        ImageAnalyzer,
+        InkCoverageAnalyzer,
+        SpotColorAnalyzer,
+    )
+
+    # Layers / OCG — analyzer exists as part of DocumentAnalyzer today; when
+    # a dedicated OCGAnalyzer lands we can wire it here. Until then we flag
+    # the capability unsupported so the viewer hides the control.
+    if capability == "separations":
+        return SpotColorAnalyzer()
+    if capability == "tac":
+        return InkCoverageAnalyzer()
+    if capability == "fonts":
+        return FontAnalyzer()
+    if capability == "images":
+        return ImageAnalyzer()
+    return None

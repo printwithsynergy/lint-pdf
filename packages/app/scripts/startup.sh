@@ -182,6 +182,45 @@ UPDATE brand_profiles
 UPDATE tenants
    SET brand_logo_url = REPLACE(brand_logo_url, 'https://reports.lintpdf.com/', 'https://api.lintpdf.com/')
  WHERE brand_logo_url LIKE 'https://reports.lintpdf.com/%';
+
+-- Engine: preflight_source enum + Job columns + JobImportedReport table (Alembic 019).
+-- Mirrored here so the app can boot against a DB where Alembic hasn't run yet.
+DO $$ BEGIN
+  CREATE TYPE preflightsource AS ENUM ('engine', 'external', 'minimal');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS preflight_source preflightsource NOT NULL DEFAULT 'engine';
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS external_format VARCHAR(32);
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS data_capabilities JSON;
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS brand_profile_id_override UUID;
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS unbranded_override BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS unbranded_by_default BOOLEAN NOT NULL DEFAULT false;
+
+CREATE TABLE IF NOT EXISTS job_imported_reports (
+  id UUID PRIMARY KEY,
+  job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  format VARCHAR(32) NOT NULL,
+  raw_blob_key VARCHAR(512) NOT NULL,
+  raw_size_bytes INTEGER NOT NULL DEFAULT 0,
+  parser_version VARCHAR(32) NOT NULL DEFAULT '1',
+  source_metadata JSON,
+  parsed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_job_imported_reports_job ON job_imported_reports(job_id);
+
+-- ReportToken: persist brand choice at mint time so downstream viewers see
+-- consistent (possibly anonymous) branding regardless of later tenant changes.
+ALTER TABLE report_tokens
+  ADD COLUMN IF NOT EXISTS brand_mode VARCHAR(16);
+ALTER TABLE report_tokens
+  ADD COLUMN IF NOT EXISTS brand_profile_id UUID;
 SQL
 
 echo "Step 1 complete (exit code: $?)"

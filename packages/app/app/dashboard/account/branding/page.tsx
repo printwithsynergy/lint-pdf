@@ -174,6 +174,10 @@ export default function BrandingPage() {
   return (
     <main className="max-w-4xl p-8">
       <CustomReportDomainCard />
+      <DefaultOutputBrandingCard
+        profiles={profiles}
+        onError={setError}
+      />
       <div className="mt-8 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Brand Profiles</h1>
@@ -624,6 +628,193 @@ function CustomReportDomainCard() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+// ----------------------------------------------------------------------
+// Default output branding card — controls the tenant-wide default
+// (anonymous / specific profile / LintPDF). Brokers flip this to
+// "Anonymous" when they routinely forward reports to distributors who
+// shouldn't know which broker ran the preflight.
+// ----------------------------------------------------------------------
+
+interface BrandingDefaults {
+  mode: "anonymous" | "profile" | "lintpdf";
+  unbranded_by_default: boolean;
+  default_brand_profile_id: string | null;
+}
+
+function DefaultOutputBrandingCard({
+  profiles,
+  onError,
+}: {
+  profiles: BrandProfile[];
+  onError: (msg: string) => void;
+}) {
+  const { toast } = useToast();
+  const [defaults, setDefaults] = useState<BrandingDefaults | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [pendingMode, setPendingMode] = useState<BrandingDefaults["mode"]>(
+    "lintpdf",
+  );
+  const [pendingProfileId, setPendingProfileId] = useState<string>("");
+
+  const fetchDefaults = useCallback(async () => {
+    try {
+      const resp = await fetch("/api/lintpdf/branding/defaults");
+      if (!resp.ok) return;
+      const data = (await resp.json()) as BrandingDefaults;
+      setDefaults(data);
+      setPendingMode(data.mode);
+      setPendingProfileId(data.default_brand_profile_id ?? "");
+    } catch {
+      // silent — card just stays hidden
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchDefaults();
+  }, [fetchDefaults]);
+
+  async function save() {
+    setSaving(true);
+    try {
+      const body: { mode: string; brand_profile_id?: string } = {
+        mode: pendingMode,
+      };
+      if (pendingMode === "profile") {
+        if (!pendingProfileId) {
+          throw new Error("Choose a brand profile to use as the default.");
+        }
+        body.brand_profile_id = pendingProfileId;
+      }
+      const resp = await fetch("/api/lintpdf/branding/defaults", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const err = (await resp.json().catch(() => ({}))) as {
+          detail?: string;
+          error?: string;
+        };
+        throw new Error(err.detail ?? err.error ?? "Failed to save");
+      }
+      const data = (await resp.json()) as BrandingDefaults;
+      setDefaults(data);
+      toast("Default output branding updated", "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to save";
+      onError(msg);
+      toast(msg, "error");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!defaults) return null;
+
+  const customProfiles = profiles.filter((p) => p.profile_type === "custom");
+
+  return (
+    <div className="mt-6 rounded-lg border p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold">Default Output Branding</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            What brand appears on reports, viewer chrome, and share links by
+            default? Per-job overrides are always available at submit time.
+          </p>
+        </div>
+        {defaults.mode === "anonymous" && (
+          <Badge variant="outline">Anonymous</Badge>
+        )}
+        {defaults.mode === "profile" && <Badge>Branded</Badge>}
+        {defaults.mode === "lintpdf" && (
+          <Badge variant="secondary">LintPDF default</Badge>
+        )}
+      </div>
+
+      <div className="mt-4 space-y-3">
+        <label className="flex gap-3">
+          <input
+            type="radio"
+            name="branding-default"
+            className="mt-1"
+            checked={pendingMode === "profile"}
+            onChange={() => setPendingMode("profile")}
+          />
+          <div className="flex-1">
+            <div className="text-sm font-medium">Branded (specific profile)</div>
+            <p className="text-xs text-muted-foreground">
+              Use one of your configured brand profiles.
+            </p>
+            {pendingMode === "profile" && (
+              <div className="mt-2">
+                <Select
+                  value={pendingProfileId}
+                  onChange={(e) => setPendingProfileId(e.target.value)}
+                  disabled={customProfiles.length === 0}
+                >
+                  <option value="">Choose a brand profile…</option>
+                  {customProfiles.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </Select>
+                {customProfiles.length === 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Create a custom brand profile below to enable this option.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </label>
+
+        <label className="flex gap-3">
+          <input
+            type="radio"
+            name="branding-default"
+            className="mt-1"
+            checked={pendingMode === "anonymous"}
+            onChange={() => setPendingMode("anonymous")}
+          />
+          <div>
+            <div className="text-sm font-medium">Anonymous (recommended for brokers)</div>
+            <p className="text-xs text-muted-foreground">
+              Strips your brand, LintPDF&apos;s brand, and identifying PDF
+              metadata from every output. Use when forwarding reports to
+              distributors who shouldn&apos;t know you generated them.
+            </p>
+          </div>
+        </label>
+
+        <label className="flex gap-3">
+          <input
+            type="radio"
+            name="branding-default"
+            className="mt-1"
+            checked={pendingMode === "lintpdf"}
+            onChange={() => setPendingMode("lintpdf")}
+          />
+          <div>
+            <div className="text-sm font-medium">LintPDF default</div>
+            <p className="text-xs text-muted-foreground">
+              Use LintPDF&apos;s own branding on reports and the viewer.
+            </p>
+          </div>
+        </label>
+      </div>
+
+      <div className="mt-4 flex gap-2">
+        <Button onClick={save} disabled={saving}>
+          {saving ? "Saving..." : "Save default"}
+        </Button>
+      </div>
     </div>
   );
 }

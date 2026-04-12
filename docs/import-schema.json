@@ -1,0 +1,193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lintpdf.com/schemas/import/v1.json",
+  "title": "LintPDF External Preflight Import (v1)",
+  "description": "Canonical JSON schema that third-party preflight tools can emit to import findings into LintPDF with no parser tweaks on our side. Submit alongside a PDF to POST /api/v1/jobs with `preflight_source=external` and `external_format=lintpdf_json`. Tools that prefer their native format can instead submit PitStop XML, callas JSON/XML, or Acrobat XML and let LintPDF's auto-detect map to this shape internally.",
+  "type": "object",
+  "required": ["findings"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "description": "Import schema version. Currently always \"1\".",
+      "type": "string",
+      "enum": ["1"]
+    },
+    "source": {
+      "description": "Provenance of the report. Stored verbatim on the LintPDF job for audit, and surfaced in the findings panel empty-state (\"No findings reported by <tool>\").",
+      "type": "object",
+      "additionalProperties": {
+        "type": ["string", "number", "boolean"]
+      },
+      "properties": {
+        "tool": {
+          "description": "Human-readable producer name, e.g. \"Enfocus PitStop\" or \"callas pdfToolbox\".",
+          "type": "string"
+        },
+        "version": {
+          "description": "Producing tool's version string.",
+          "type": "string"
+        },
+        "profile": {
+          "description": "Preflight profile the producing tool ran, e.g. \"PDF/X-4\" or \"Sheetfed CMYK\".",
+          "type": "string"
+        }
+      }
+    },
+    "capabilities": {
+      "description": "Per-capability availability flags. Drives the viewer's tool gating: capabilities set to false render a \"Load\" affordance when a one-off analyzer can fill the gap (separations / TAC / fonts / images), or are hidden when fill-in isn't supported (layers). Unknown keys are ignored.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "boolean"
+      },
+      "properties": {
+        "findings": {
+          "description": "True when the report authoritatively enumerates preflight findings. Usually true.",
+          "type": "boolean"
+        },
+        "separations": {
+          "description": "True when the report carries spot-color / separations data. If false, LintPDF's on-demand spot-color analyzer can fill the gap.",
+          "type": "boolean"
+        },
+        "tac": {
+          "description": "True when the report carries total-area-coverage / ink-coverage data. If false, LintPDF's on-demand ink-coverage analyzer can fill the gap.",
+          "type": "boolean"
+        },
+        "layers": {
+          "description": "True when the report enumerates PDF optional-content groups. Not fillable on-demand.",
+          "type": "boolean"
+        },
+        "fonts": {
+          "description": "True when the report enumerates embedded fonts / subsetting state.",
+          "type": "boolean"
+        },
+        "images": {
+          "description": "True when the report enumerates image objects with resolution / compression data.",
+          "type": "boolean"
+        },
+        "thumbnails": {
+          "description": "True when the report includes page thumbnails. LintPDF regenerates thumbnails from the PDF so this is informational only.",
+          "type": "boolean"
+        },
+        "metadata": {
+          "description": "True when the report includes document metadata (Author / Title / Producer / Creator / XMP). LintPDF extracts metadata directly from the PDF regardless.",
+          "type": "boolean"
+        }
+      }
+    },
+    "findings": {
+      "description": "List of findings. Each entry maps onto LintPDF's internal `Finding` dataclass. Ordering is preserved.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Finding"
+      }
+    }
+  },
+  "$defs": {
+    "Finding": {
+      "type": "object",
+      "required": ["severity", "message"],
+      "additionalProperties": false,
+      "properties": {
+        "inspection_id": {
+          "description": "Stable identifier for the check that produced this finding. If omitted, LintPDF synthesizes one from a hash of the message. Imported IDs are prefixed with `EXT-LPDF-` internally to keep them distinct from engine-produced IDs.",
+          "type": "string"
+        },
+        "severity": {
+          "description": "Severity bucket. Anything outside the enum is coerced to `warning` (rather than being dropped) so no data is lost.",
+          "type": "string",
+          "enum": ["error", "warning", "advisory", "info"]
+        },
+        "message": {
+          "description": "Required. Human-readable description of the issue. Shown in the findings panel and rendered PDF report.",
+          "type": "string",
+          "minLength": 1
+        },
+        "page_num": {
+          "description": "1-based page number. Use 0 (or omit) for document-level findings such as metadata / font / compliance issues that have no single page.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "page": {
+          "description": "Alias for `page_num`. Accepted for compatibility with tools that emit `page` instead.",
+          "type": "integer",
+          "minimum": 0
+        },
+        "bbox": {
+          "description": "Optional bounding box in PDF user-space coordinates (origin bottom-left, points). `[x0, y0, x1, y1]`. When present, the viewer draws the severity-colored overlay at this box.",
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "object_id": {
+          "description": "Optional PDF object identifier the finding refers to (e.g. `Im7` for an image XObject).",
+          "type": ["string", "null"]
+        },
+        "object_type": {
+          "description": "Optional type of the referenced object, e.g. `image`, `font`, `annotation`, `color_space`.",
+          "type": ["string", "null"]
+        },
+        "iso_clause": {
+          "description": "Optional ISO / compliance clause reference, e.g. `ISO 15930-7:2010 6.4.1`.",
+          "type": "string"
+        },
+        "category": {
+          "description": "Optional thematic grouping used by the findings panel: `image`, `color`, `font`, `structure`, `metadata`, `compliance`, `output_intent`, etc. Free-form.",
+          "type": "string"
+        },
+        "details": {
+          "description": "Arbitrary key/value payload specific to the check. Rendered in the expanded finding detail view. Keep values JSON-serializable.",
+          "type": "object"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "schema_version": "1",
+      "source": {
+        "tool": "Acme Preflight Pro",
+        "version": "12.4.1",
+        "profile": "PDF/X-4 Sheetfed CMYK"
+      },
+      "capabilities": {
+        "findings": true,
+        "separations": true,
+        "tac": false,
+        "fonts": true,
+        "images": true,
+        "layers": false
+      },
+      "findings": [
+        {
+          "inspection_id": "ACME-IMG-LOWRES",
+          "severity": "error",
+          "message": "Image resolution below 300 dpi threshold",
+          "page_num": 3,
+          "bbox": [72.0, 72.0, 216.0, 216.0],
+          "object_id": "Im7",
+          "object_type": "image",
+          "iso_clause": "PDF/X-4 §6.2.3",
+          "category": "image",
+          "details": {
+            "effective_resolution_dpi": 144,
+            "minimum_resolution_dpi": 300
+          }
+        },
+        {
+          "inspection_id": "ACME-FONT-NOTEMBED",
+          "severity": "error",
+          "message": "Font 'Helvetica' is not embedded",
+          "page_num": 0,
+          "category": "font",
+          "details": {
+            "font_name": "Helvetica",
+            "subset": false
+          }
+        }
+      ]
+    }
+  ]
+}

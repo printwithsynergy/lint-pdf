@@ -15,7 +15,15 @@ from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.config import get_settings
 from lintpdf.api.database import get_db
 from lintpdf.api.middleware import check_rate_limit
-from lintpdf.api.models import Job, JobFinding, JobStatus, Tenant
+from lintpdf.api.models import (
+    BrandProfile,
+    Job,
+    JobFinding,
+    JobImportedReport,
+    JobStatus,
+    PreflightSource,
+    Tenant,
+)
 from lintpdf.api.schemas import (
     FindingResponse,
     JobCreateResponse,
@@ -63,6 +71,46 @@ _ai_preset_param = Form(
         "its feature list and implicitly enables AI for this job. Mutually "
         "compatible with ``ai_features``/``ai_categories`` — explicit lists "
         "override the preset's defaults."
+    ),
+)
+_preflight_source_param = Form(
+    default="engine",
+    description=(
+        "Preflight source mode. ``engine`` (default) runs LintPDF's full "
+        "analyzer pipeline; ``external`` ingests a third-party preflight "
+        "report supplied in the ``external_report`` field; ``minimal`` "
+        "extracts only viewer essentials without running analyzers."
+    ),
+)
+_external_format_param = Form(
+    default=None,
+    description=(
+        "Format of the imported preflight report (one of "
+        "``pitstop_xml``, ``callas_json``, ``callas_xml``, ``acrobat_xml``, "
+        "``lintpdf_json``). Omit to auto-detect from the file content."
+    ),
+)
+_external_report_param = File(
+    default=None,
+    description=(
+        "Optional third-party preflight report file (required when "
+        "``preflight_source=external``)."
+    ),
+)
+_brand_param = Form(
+    default=None,
+    description=(
+        "Branding override for this job's outputs. Values: ``anonymous`` "
+        "(strip all branding and sanitise PDF metadata — for brokers "
+        "forwarding reports to distributors), ``lintpdf`` (LintPDF default), "
+        "or a BrandProfile UUID owned by the tenant. Absent → tenant default."
+    ),
+)
+_unbranded_param = Form(
+    default=None,
+    description=(
+        "Convenience alias: when true, submits the job with anonymous "
+        "branding (equivalent to ``brand=anonymous``)."
     ),
 )
 
@@ -138,6 +186,11 @@ async def submit_job(  # skipcq: PY-R1000
     ai_categories: str | None = _ai_categories_param,
     ai_features: str | None = _ai_features_param,
     ai_preset: str | None = _ai_preset_param,
+    preflight_source: str = _preflight_source_param,
+    external_format: str | None = _external_format_param,
+    external_report: UploadFile | None = _external_report_param,
+    brand: str | None = _brand_param,
+    unbranded: bool | None = _unbranded_param,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> JSONResponse:
@@ -159,6 +212,153 @@ async def submit_job(  # skipcq: PY-R1000
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Profile '{profile_id}' not found",
         )
+
+    # ------------------------------------------------------------------
+    # Resolve the preflight source + external import parameters.
+    # ------------------------------------------------------------------
+    try:
+        source_enum = PreflightSource(preflight_source.lower().strip())
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Invalid preflight_source {preflight_source!r}. "
+                "Expected one of: engine, external, minimal."
+            ),
+        ) from exc
+
+    if source_enum is PreflightSource.EXTERNAL and external_report is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "preflight_source='external' requires an external_report file "
+                "containing the third-party preflight output."
+            ),
+        )
+    if source_enum is not PreflightSource.EXTERNAL and external_report is not None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                "external_report is only valid when preflight_source='external'."
+            ),
+        )
+
+    resolved_external_format: str | None = None
+    external_report_bytes: bytes | None = None
+    if source_enum is PreflightSource.EXTERNAL and external_report is not None:
+        from lintpdf.imports.detect import (
+            detect_format,
+            parser_for_format,
+        )
+        from lintpdf.imports.base import ParserError
+
+        # Hard cap imported reports at 50 MB — PitStop/callas XML for huge
+        # jobs rarely exceed a few MB; anything larger is almost certainly
+        # a mistake or abuse.
+        max_report_bytes = 50 * 1024 * 1024
+        external_report_bytes = await external_report.read()
+        if not external_report_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="external_report is empty.",
+            )
+        if len(external_report_bytes) > max_report_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=(
+                    f"external_report exceeds maximum size of "
+                    f"{max_report_bytes // (1024 * 1024)} MB."
+                ),
+            )
+
+        # Fail-fast format validation — either the caller specified a
+        # format we support, or the payload sniffs to one we support.
+        if external_format:
+            try:
+                parser_for_format(external_format)
+            except ParserError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=str(exc),
+                ) from exc
+            resolved_external_format = external_format
+        else:
+            try:
+                resolved_external_format = detect_format(external_report_bytes)
+            except ParserError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        "Could not auto-detect external_format. Pass an "
+                        "explicit external_format field (pitstop_xml, "
+                        f"callas_json, callas_xml, acrobat_xml, lintpdf_json). "
+                        f"Detector said: {exc}"
+                    ),
+                ) from exc
+
+    # ------------------------------------------------------------------
+    # Resolve brand override. ``unbranded=true`` is an ergonomic alias
+    # for ``brand=anonymous``; explicit ``brand`` wins if both supplied.
+    # ------------------------------------------------------------------
+    from lintpdf.reports.service import BrandMode, parse_brand_param
+
+    brand_mode_resolved: BrandMode | None = None
+    brand_profile_override_id: uuid_mod.UUID | None = None
+    unbranded_override_flag = False
+
+    effective_brand = brand
+    if effective_brand is None and unbranded:
+        effective_brand = "anonymous"
+
+    if effective_brand is not None:
+        brand_mode_resolved, raw_profile_id = parse_brand_param(effective_brand)
+        if brand_mode_resolved is BrandMode.ANONYMOUS:
+            unbranded_override_flag = True
+        elif brand_mode_resolved is BrandMode.PROFILE:
+            if raw_profile_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="brand parameter missing a profile id.",
+                )
+            try:
+                candidate_uuid = uuid_mod.UUID(raw_profile_id)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Invalid brand value {effective_brand!r}. Expected "
+                        "'anonymous', 'lintpdf', or a BrandProfile UUID."
+                    ),
+                ) from exc
+            profile_row = (
+                db.query(BrandProfile)
+                .filter(
+                    BrandProfile.id == candidate_uuid,
+                    BrandProfile.tenant_id == tenant.id,
+                )
+                .first()
+            )
+            if profile_row is None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        "BrandProfile not found or not owned by the "
+                        "authenticated tenant."
+                    ),
+                )
+            brand_profile_override_id = candidate_uuid
+        # BrandMode.LINTPDF is represented by leaving both overrides unset —
+        # the resolver falls through to the LintPDF default when neither
+        # ``unbranded_override`` nor ``brand_profile_id_override`` is set
+        # and the tenant's own default isn't anonymous. To force LintPDF
+        # over a tenant "anonymous default", we still need a signal: wipe
+        # tenant anonymous intent by setting ``unbranded_override=False``
+        # and leaving the profile override empty — because nothing below
+        # Job overrides looks further down, the resolver will correctly
+        # return LintPDF default only when ``tenant.unbranded_by_default``
+        # is False. For the "tenant default is anonymous but job wants
+        # LintPDF" edge case we surface the explicit param as a query
+        # string on the report URL, so persisting it is unnecessary.
 
     content = await validate_upload(
         file,
@@ -201,8 +401,36 @@ async def submit_job(  # skipcq: PY-R1000
         file_name=file.filename,
         file_size=len(content),
         jdf_overrides=jdf_overrides,
+        preflight_source=source_enum,
+        external_format=resolved_external_format,
+        brand_profile_id_override=brand_profile_override_id,
+        unbranded_override=unbranded_override_flag,
     )
     db.add(job)
+
+    # Persist the imported preflight artifact so the worker can re-read
+    # it without the caller needing to re-upload, and so we can re-parse
+    # on parser upgrades / audit.
+    if source_enum is PreflightSource.EXTERNAL and external_report_bytes is not None:
+        report_key = f"{tenant.id}/{job_id}/external-report.dat"
+        report_content_type = external_report.content_type or "application/octet-stream"
+        await loop.run_in_executor(
+            None,
+            lambda: storage.upload_raw(
+                report_key, external_report_bytes, report_content_type
+            ),
+        )
+        db.add(
+            JobImportedReport(
+                id=uuid_mod.uuid4(),
+                job_id=job_id,
+                format=resolved_external_format or "unknown",
+                raw_blob_key=report_key,
+                raw_size_bytes=len(external_report_bytes),
+                parser_version="1",
+            )
+        )
+
     db.commit()
 
     # Queue the job for async processing

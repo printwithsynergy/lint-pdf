@@ -204,5 +204,39 @@ export function brandingRoutes(): RouteDefinition[] {
         return { status: 200, body: await resp.json() };
       }) as RouteHandler,
     },
+
+    // ── Default output branding (anonymous / profile / LintPDF) ──────
+    {
+      method: "GET" as HttpMethod,
+      path: "/branding/defaults",
+      auth: true,
+      permission: "branding:manage",
+      description: "Get the tenant's default output branding mode",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch(`/api/v1/tenant/branding-defaults`);
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "PATCH" as HttpMethod,
+      path: "/branding/defaults",
+      auth: true,
+      permission: "branding:manage",
+      description:
+        "Update the tenant's default output branding (anonymous / profile / LintPDF)",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch(`/api/v1/tenant/branding-defaults`, {
+          method: "PATCH",
+          body: JSON.stringify(req.body),
+        });
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
   ];
 }
