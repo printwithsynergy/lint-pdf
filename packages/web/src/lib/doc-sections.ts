@@ -20,6 +20,36 @@ export const docSections = [
     ],
   },
   {
+    heading: "Preflight Modes & Imports",
+    items: [
+      { slug: "preflight-modes", label: "Preflight Modes" },
+      { slug: "external-imports", label: "External Preflight Imports" },
+      { slug: "import-schema", label: "LintPDF Native Import Schema" },
+      { slug: "custom-mappings", label: "Custom Import Mappings" },
+      { slug: "viewer-only-mode", label: "Viewer-Only Submissions" },
+      { slug: "viewer-capabilities", label: "Viewer Capabilities" },
+      { slug: "importing-from-pitstop", label: "Importing from Enfocus PitStop" },
+      { slug: "importing-from-callas", label: "Importing from callas pdfToolbox" },
+      { slug: "importing-from-acrobat", label: "Importing from Adobe Acrobat" },
+    ],
+  },
+  {
+    heading: "Branding & Sharing",
+    items: [
+      { slug: "branding-and-anonymous", label: "Branded, LintPDF, and Anonymous" },
+      { slug: "share-links", label: "Share Links" },
+      { slug: "custom-domains", label: "Custom Domains" },
+    ],
+  },
+  {
+    heading: "Viewer & Workflow",
+    items: [
+      { slug: "viewer-comparison", label: "File Comparison" },
+      { slug: "viewer-verdict", label: "Approval Verdicts" },
+      { slug: "vanity-endpoints", label: "Vanity Submission Endpoints" },
+    ],
+  },
+  {
     heading: "Color",
     items: [
       { slug: "color-management", label: "Color Management" },
