@@ -7,6 +7,8 @@ order: 3
 
 # Esko Automation Engine Integration
 
+> **Already preflighting in Esko?** If AE's preflight task produces a structured report (XML or JSON), feed it into LintPDF in `preflight_source=external` mode. Use a built-in parser (callas, PitStop) or define a [Custom Import Mapping](/docs/custom-mappings) for Esko's internal schema. The PDF and its findings end up in LintPDF's viewer with no re-check cost.
+
 Esko Automation Engine (AE) can call LintPDF as a preflight step using the **Interact with Web Service** task. Results are captured into SmartNames for downstream routing.
 
 ## Integration Architecture

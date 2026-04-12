@@ -7,6 +7,8 @@ order: 4
 
 # Hybrid CLOUDFLOW Integration
 
+> **Already running preflight in CLOUDFLOW?** Submit the PDF to LintPDF in `preflight_source=external` mode with your CLOUDFLOW preflight report attached. Use a built-in parser where possible or wire up a [Custom Import Mapping](/docs/custom-mappings). See [External Preflight Imports](/docs/external-imports) for the full flow.
+
 Hybrid Software CLOUDFLOW is a browser-based prepress workflow platform with a full REST API. LintPDF can be integrated as a preflight step in CLOUDFLOW workflows.
 
 ## Integration Architecture
