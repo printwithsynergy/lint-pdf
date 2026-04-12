@@ -524,7 +524,7 @@ def _crop_finding_thumbnail(
             cropped = cropped.convert("RGBA")
         composited = Image.alpha_composite(cropped, overlay).convert("RGB")
     else:
-        # No bbox — crop center of page
+        # No bbox — crop center of page with severity-colored border
         cw = min(page_img.width, THUMB_MAX_W * 2)
         ch = min(page_img.height, THUMB_MAX_H * 2)
         cx = page_img.width // 2
@@ -536,6 +536,14 @@ def _crop_finding_thumbnail(
         composited = page_img.crop((crop_x0, crop_y0, crop_x1, crop_y1)).copy()
         if composited.mode != "RGB":
             composited = composited.convert("RGB")
+        # Draw severity-colored border around the thumbnail
+        stroke = SEVERITY_STROKE.get(severity, SEVERITY_STROKE["advisory"])
+        draw = ImageDraw.Draw(composited)
+        for i in range(3):
+            draw.rectangle(
+                [i, i, composited.width - 1 - i, composited.height - 1 - i],
+                outline=stroke, width=1,
+            )
 
     # Resize to thumbnail
     composited.thumbnail((THUMB_MAX_W, THUMB_MAX_H), Image.LANCZOS)

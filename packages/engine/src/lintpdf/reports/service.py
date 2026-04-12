@@ -116,6 +116,35 @@ _LINTPDF_DEFAULT_LOGO = (
 )
 
 
+def deduplicate_findings(findings: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Group findings by (inspection_id, page_num) and merge duplicates.
+
+    When the same check fires multiple times on the same page (e.g., AI font
+    checks per text element), merge them into one finding with an occurrence
+    count and aggregated details.
+    """
+    from collections import OrderedDict
+
+    groups: OrderedDict[tuple[str, int | None], dict[str, Any]] = OrderedDict()
+    for f in findings:
+        key = (f.get("inspection_id", ""), f.get("page_num"))
+        if key not in groups:
+            merged = dict(f)
+            merged["_occurrence_count"] = 1
+            groups[key] = merged
+        else:
+            groups[key]["_occurrence_count"] += 1
+            # Keep the first finding's message but note the count
+    # Update messages for grouped findings
+    result = []
+    for f in groups.values():
+        count = f.pop("_occurrence_count", 1)
+        if count > 1:
+            f["message"] = f["message"] + f" (+{count - 1} similar on this page)"
+        result.append(f)
+    return result
+
+
 @dataclass
 class BrandingContext:
     """White-label branding for report rendering."""
@@ -512,9 +541,10 @@ class ReportService:
 
             color_score_breakdown = metadata.get("color_score_breakdown", {})
 
-        # Build sorted flat list (errors first, then warnings, advisory)
+        # Deduplicate same-check same-page findings, then sort
+        deduped = deduplicate_findings(findings)
         all_findings_sorted = sorted(
-            findings,
+            deduped,
             key=lambda f: (severity_order.get(f.get("severity", "advisory"), 3), f.get("page_num") or 0),
         )
 

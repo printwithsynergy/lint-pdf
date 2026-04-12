@@ -40,17 +40,36 @@ export function FindingsPanel({
   const [filterScope, setFilterScope] = useState<"all" | "page">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Deduplicate: group by (inspection_id, page_num) and merge
+  const deduped = useMemo(() => {
+    const groups = new Map<string, ViewerFinding & { _count?: number }>();
+    for (const f of findings) {
+      const key = `${f.inspection_id}|${f.page_num ?? "doc"}`;
+      if (!groups.has(key)) {
+        groups.set(key, { ...f, _count: 1 });
+      } else {
+        groups.get(key)!._count! += 1;
+      }
+    }
+    return Array.from(groups.values()).map((f) => {
+      if (f._count && f._count > 1) {
+        return { ...f, message: `${f.message} (+${f._count - 1} similar)` };
+      }
+      return f;
+    });
+  }, [findings]);
+
   const counts = useMemo(() => {
     const c = { all: 0, error: 0, warning: 0, advisory: 0 };
-    for (const f of findings) {
+    for (const f of deduped) {
       c[f.severity]++;
       c.all++;
     }
     return c;
-  }, [findings]);
+  }, [deduped]);
 
   const filtered = useMemo(() => {
-    let items = findings;
+    let items = deduped;
     if (activeTab !== "all") {
       items = items.filter((f) => f.severity === activeTab);
     }
@@ -66,7 +85,7 @@ export function FindingsPanel({
       );
     }
     return items;
-  }, [findings, activeTab, filterScope, currentPage, searchQuery]);
+  }, [deduped, activeTab, filterScope, currentPage, searchQuery]);
 
   const tabs: { key: SeverityTab; label: string; color: string }[] = [
     { key: "all", label: "All", color: "text-slate-300" },
