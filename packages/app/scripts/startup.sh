@@ -221,6 +221,25 @@ ALTER TABLE report_tokens
   ADD COLUMN IF NOT EXISTS brand_mode VARCHAR(16);
 ALTER TABLE report_tokens
   ADD COLUMN IF NOT EXISTS brand_profile_id UUID;
+
+-- Engine: tenant_import_mappings (Alembic 020). Tenant-defined custom
+-- parsers so teams with proprietary preflight formats can map their
+-- XML/JSON onto engine findings without us shipping a new parser.
+CREATE TABLE IF NOT EXISTS tenant_import_mappings (
+  id UUID PRIMARY KEY,
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  name VARCHAR(128) NOT NULL,
+  description TEXT,
+  format VARCHAR(8) NOT NULL DEFAULT 'xml',
+  config JSON NOT NULL,
+  sample_payload TEXT,
+  sample_mime VARCHAR(64),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_tenant_import_mappings_tenant
+  ON tenant_import_mappings(tenant_id);
 SQL
 
 echo "Step 1 complete (exit code: $?)"

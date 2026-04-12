@@ -14,6 +14,7 @@ from .base import ExternalReportParser, ImportedReport, ParserError
 from .detect import detect_format, parse_external_report
 from .acrobat import AcrobatXmlParser
 from .callas import CallasJsonParser, CallasXmlParser
+from .custom import CustomMappingParser
 from .lintpdf_native import LintpdfNativeParser
 from .pitstop import PitStopXmlParser
 
@@ -21,6 +22,7 @@ __all__ = [
     "AcrobatXmlParser",
     "CallasJsonParser",
     "CallasXmlParser",
+    "CustomMappingParser",
     "ExternalReportParser",
     "ImportedReport",
     "LintpdfNativeParser",

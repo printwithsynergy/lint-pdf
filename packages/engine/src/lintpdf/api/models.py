@@ -770,6 +770,68 @@ class ApprovalChain(Base):
     )
 
 
+class TenantImportMapping(Base):
+    """Tenant-defined mapping that turns a proprietary preflight report into
+    engine findings.
+
+    Teams running in-house or niche preflight tools don't fit the built-in
+    PitStop / callas / Acrobat / LintPDF-native parsers. Rather than ask us
+    to ship a new parser for every vendor, tenants define a **mapping**: a
+    small config that says "in my XML/JSON, each finding lives at this path;
+    the severity comes from this sub-selector; the message lives here; …"
+
+    The mapping's ``config`` column is a JSON document with this shape::
+
+        {
+          "format": "xml" | "json",
+          "item_selector": "//finding" | "results[*].issues[*]",
+          "fields": {
+            "severity":   {"selector": "@level",        "required": false},
+            "message":    {"selector": "description",   "required": true},
+            "page":       {"selector": "@page"},
+            "check_id":   {"selector": "@id"},
+            "bbox":       {"selector": "geom/bbox"},
+            "object_id":  {"selector": "@objRef"},
+            "object_type":{"selector": "@objKind"},
+            "category":   {"selector": "category"},
+            "iso_clause": {"selector": "@iso"}
+          },
+          "severity_map": {"fatal": "error", "info": "advisory", "high": "error"},
+          "default_severity": "warning"
+        }
+
+    ``sample_payload`` is the tenant's uploaded example — persisted so the
+    UI can round-trip a preview and so we can re-validate the mapping if
+    the tenant later reports a regression.
+    """
+
+    __tablename__ = "tenant_import_mappings"
+    __table_args__ = (
+        Index("ix_tenant_import_mappings_tenant", "tenant_id"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(128), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    format: Mapped[str] = mapped_column(String(8), nullable=False, default="xml")
+    config: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    sample_payload: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sample_mime: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class ApprovalStep(Base):
     """Individual step decision on an approval chain."""
 
