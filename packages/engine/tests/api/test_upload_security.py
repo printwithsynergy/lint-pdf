@@ -506,16 +506,26 @@ class TestSizeLimits:
 
 
 class TestClamAVScanning:
+    """ClamAV scanning is intentionally best-effort / fail-open.
+
+    See ``CLAUDE.md`` (the "ClamAV scanning" section under "Trial / Try-It
+    Page") for the rationale: the ``thinkneverland/railway-clamav`` sidecar
+    has a Dockerfile bug that causes clamd to ignore TCP env vars in
+    production. Until that's fixed, turning every production upload into a
+    503 whenever the scanner is unreachable is worse than skipping the
+    scan. Positive malware detection is the only condition that rejects.
+    """
+
     @pytest.mark.asyncio
-    async def test_scan_fails_closed_when_no_url(self) -> None:
-        """When settings.clamav_url is unset, upload is REFUSED (fail-closed)."""
+    async def test_scan_skipped_when_clamav_url_unset(self) -> None:
+        """Unset ``clamav_url`` → scan is skipped, upload proceeds."""
         settings = MagicMock()
         settings.clamav_url = None
         upload = _make_upload(MINIMAL_PDF, "clean.pdf")
-        with pytest.raises(HTTPException) as exc_info:
-            await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
-        assert exc_info.value.status_code == 503
-        assert "not configured" in exc_info.value.detail.lower()
+        content = await validate_upload(
+            upload, allowed_types=PDF_TYPES, settings=settings
+        )
+        assert content == MINIMAL_PDF
 
     @pytest.mark.asyncio
     async def test_scan_rejects_malware(self) -> None:
@@ -550,18 +560,35 @@ class TestClamAVScanning:
             assert content == MINIMAL_PDF
 
     @pytest.mark.asyncio
-    async def test_scan_fails_closed_on_unreachable(self) -> None:
-        """When ClamAV is unreachable, the upload is REFUSED (fail-closed)."""
+    async def test_scan_skipped_when_clamd_unreachable(self) -> None:
+        """ClamAV unreachable → log + skip, upload proceeds (fail-open)."""
         settings = MagicMock()
         settings.clamav_url = "unreachable:3310"
 
         with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
             mock_clamd.ClamdNetworkSocket.side_effect = ConnectionError("unreachable")
             upload = _make_upload(MINIMAL_PDF, "file.pdf")
-            with pytest.raises(HTTPException) as exc_info:
-                await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
-            assert exc_info.value.status_code == 503
-            assert "unavailable" in exc_info.value.detail.lower()
+            content = await validate_upload(
+                upload, allowed_types=PDF_TYPES, settings=settings
+            )
+            assert content == MINIMAL_PDF
+
+    @pytest.mark.asyncio
+    async def test_scan_skipped_when_instream_raises(self) -> None:
+        """Unexpected errors from ``instream`` are swallowed (fail-open)."""
+        settings = MagicMock()
+        settings.clamav_url = "localhost:3310"
+
+        mock_scanner = MagicMock()
+        mock_scanner.instream.side_effect = TimeoutError("clamd hung")
+
+        with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
+            mock_clamd.ClamdNetworkSocket.return_value = mock_scanner
+            upload = _make_upload(MINIMAL_PDF, "file.pdf")
+            content = await validate_upload(
+                upload, allowed_types=PDF_TYPES, settings=settings
+            )
+            assert content == MINIMAL_PDF
 
     @pytest.mark.asyncio
     async def test_scan_skipped_when_no_settings(self) -> None:
