@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import type { ComparisonState, PageInfo, ViewerConfig, ViewerFinding } from "./types";
-import { DEFAULT_VIEWER_CONFIG, ViewerApiContext } from "./types";
+import { DEFAULT_VIEWER_CONFIG, DEFAULT_DPI, ViewerApiContext } from "./types";
 import { PageCanvas } from "./PageCanvas";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./PageNavigator";
@@ -312,8 +312,9 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   }
 
   const currentPageInfo = pages.find((p) => p.page_num === currentPage);
-  const canvasWidth = currentPageInfo ? Math.round(currentPageInfo.width_pts * (zoom / 100)) : 0;
-  const canvasHeight = currentPageInfo ? Math.round(currentPageInfo.height_pts * (zoom / 100)) : 0;
+  const ptsToPixels = DEFAULT_DPI / 72;
+  const canvasWidth = currentPageInfo ? Math.round(currentPageInfo.width_pts * ptsToPixels * (zoom / 100)) : 0;
+  const canvasHeight = currentPageInfo ? Math.round(currentPageInfo.height_pts * ptsToPixels * (zoom / 100)) : 0;
 
   const ctxValue = { apiBase, jobApiBase, readOnly };
 

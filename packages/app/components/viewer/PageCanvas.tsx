@@ -122,6 +122,20 @@ export function PageCanvas({
     return () => cancelAnimationFrame(raf);
   }, [selectedFinding, page.page_num]);
 
+  // Show tooltip when selectedFinding changes (from panel click or canvas click)
+  useEffect(() => {
+    if (!selectedFinding?.bbox || selectedFinding.page_num !== page.page_num) {
+      setTooltip(null);
+      return;
+    }
+    const [x0, , x1, y1] = selectedFinding.bbox;
+    const centerX = ((x0 + x1) / 2) * ptsToPixels * scale;
+    const topY = (page.height_pts - y1) * ptsToPixels * scale;
+    setTooltip({ finding: selectedFinding, x: centerX, y: topY });
+    if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+    tooltipTimerRef.current = setTimeout(() => setTooltip(null), 5000);
+  }, [selectedFinding, page.page_num, page.height_pts, ptsToPixels, scale]);
+
   // Render canvas
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -254,15 +268,7 @@ export function PageCanvas({
       const [x0, y0, x1, y1] = finding.bbox;
       if (pdfX >= x0 && pdfX <= x1 && pdfY >= y0 && pdfY <= y1) {
         onFindingClick(finding);
-
-        // Position tooltip near the bbox center (in CSS pixels relative to canvas)
-        const bboxCenterX = ((x0 + x1) / 2) * ptsToPixels * scale * (rect.width / canvas.width);
-        const bboxTopY = (page.height_pts - y1) * ptsToPixels * scale * (rect.height / canvas.height);
-        setTooltip({ finding, x: bboxCenterX, y: bboxTopY });
-
-        // Auto-dismiss after 5 seconds
-        if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
-        tooltipTimerRef.current = setTimeout(() => setTooltip(null), 5000);
+        // Tooltip shown by the selectedFinding useEffect
         return;
       }
     }
