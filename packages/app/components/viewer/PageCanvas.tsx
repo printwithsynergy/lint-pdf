@@ -124,17 +124,25 @@ export function PageCanvas({
 
   // Show tooltip when selectedFinding changes (from panel click or canvas click)
   useEffect(() => {
-    if (!selectedFinding?.bbox || selectedFinding.page_num !== page.page_num) {
+    if (!selectedFinding || selectedFinding.page_num !== page.page_num) {
       setTooltip(null);
       return;
     }
-    const [x0, , x1, y1] = selectedFinding.bbox;
-    const centerX = ((x0 + x1) / 2) * ptsToPixels * scale;
-    const topY = (page.height_pts - y1) * ptsToPixels * scale;
-    setTooltip({ finding: selectedFinding, x: centerX, y: topY });
+    let x: number;
+    let y: number;
+    if (selectedFinding.bbox) {
+      const [x0, , x1, y1] = selectedFinding.bbox;
+      x = ((x0 + x1) / 2) * ptsToPixels * scale;
+      y = (page.height_pts - y1) * ptsToPixels * scale;
+    } else {
+      // No bbox: show tooltip centered at top of page
+      x = canvasWidth / 2;
+      y = 40;
+    }
+    setTooltip({ finding: selectedFinding, x, y });
     if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
-    tooltipTimerRef.current = setTimeout(() => setTooltip(null), 5000);
-  }, [selectedFinding, page.page_num, page.height_pts, ptsToPixels, scale]);
+    tooltipTimerRef.current = setTimeout(() => setTooltip(null), 6000);
+  }, [selectedFinding, page.page_num, page.height_pts, ptsToPixels, scale, canvasWidth]);
 
   // Render canvas
   const draw = useCallback(() => {
@@ -301,6 +309,13 @@ export function PageCanvas({
         className={`cursor-crosshair ${loading ? "hidden" : ""}`}
         style={{ width: canvasWidth, height: canvasHeight }}
       />
+      {/* Page-level indicator for findings without bbox */}
+      {selectedFinding && !selectedFinding.bbox && selectedFinding.page_num === page.page_num && (
+        <div
+          className="pointer-events-none absolute inset-0 animate-pulse rounded border-2"
+          style={{ borderColor: SEVERITY_HEX[selectedFinding.severity], boxShadow: `inset 0 0 30px ${SEVERITY_HEX[selectedFinding.severity]}30` }}
+        />
+      )}
       {/* Finding tooltip */}
       {tooltip && (
         <div
