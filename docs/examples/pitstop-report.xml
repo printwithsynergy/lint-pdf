@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Enfocus PitStop Server preflight report (trimmed).
+  Export from PitStop Server: File > Preferences > Reports > XML.
+  LintPDF auto-detects this as `pitstop_xml`; setting external_format=pitstop_xml
+  makes the classification explicit.
+-->
+<PitStopReport version="2024.1">
+  <DocumentInfo>
+    <FileName>brochure.pdf</FileName>
+    <Pages>4</Pages>
+    <Profile>PDF/X-4 Sheetfed</Profile>
+    <Timestamp>2026-03-14T09:12:44Z</Timestamp>
+  </DocumentInfo>
+  <Results>
+    <Hit type="Error" id="img.lowres">
+      <Message>Image resolution 144 dpi is below the 300 dpi threshold</Message>
+      <Page>2</Page>
+      <BoundingBox>
+        <Left>72</Left>
+        <Bottom>72</Bottom>
+        <Right>216</Right>
+        <Top>216</Top>
+      </BoundingBox>
+      <ObjectType>image</ObjectType>
+      <ObjectName>Im42</ObjectName>
+      <Category>images</Category>
+    </Hit>
+    <Hit type="Warning" id="font.noembed">
+      <Message>Font Helvetica-Bold is not embedded</Message>
+      <Page>1</Page>
+      <ObjectType>font</ObjectType>
+      <ObjectName>Helvetica-Bold</ObjectName>
+      <Category>fonts</Category>
+    </Hit>
+    <Hit type="Warning" id="color.rgb_in_cmyk">
+      <Message>RGB color object used in a CMYK-intent job</Message>
+      <Page>3</Page>
+      <BoundingBox>
+        <Left>144</Left>
+        <Bottom>300</Bottom>
+        <Right>468</Right>
+        <Top>360</Top>
+      </BoundingBox>
+      <Category>color</Category>
+      <IsoClause>PDF/X-4:2010 6.2.2</IsoClause>
+    </Hit>
+    <Hit type="Error" id="geom.no_trimbox">
+      <Message>Page 4 is missing a TrimBox</Message>
+      <Page>4</Page>
+      <ObjectType>page</ObjectType>
+      <Category>geometry</Category>
+    </Hit>
+    <Hit type="Info" id="color.overprint_white">
+      <Message>White text set to overprint — will disappear on press</Message>
+      <Page>2</Page>
+      <BoundingBox>
+        <Left>96</Left>
+        <Bottom>540</Bottom>
+        <Right>300</Right>
+        <Top>560</Top>
+      </BoundingBox>
+      <Category>color</Category>
+    </Hit>
+  </Results>
+  <Summary>
+    <Errors>2</Errors>
+    <Warnings>2</Warnings>
+    <Infos>1</Infos>
+  </Summary>
+</PitStopReport>

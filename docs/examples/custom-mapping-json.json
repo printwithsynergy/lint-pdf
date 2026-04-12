@@ -1,0 +1,31 @@
+{
+  "_comment": "Custom JSON mapping ready for POST /api/v1/tenant/import-mappings. Handles a nested array shape emitted by a proprietary in-house QA microservice.",
+  "name": "Internal QA Microservice",
+  "description": "Nested array JSON from the in-house preflight microservice (packaging-qa v4).",
+  "format": "json",
+  "config": {
+    "format": "json",
+    "item_selector": "results[*].issues[*]",
+    "fields": {
+      "severity": "sev",
+      "message": "text",
+      "page": "loc.page",
+      "bbox": "loc.rect",
+      "check_id": "code",
+      "object_id": "target.id",
+      "object_type": "target.kind",
+      "category": "tags[0]"
+    },
+    "severity_map": {
+      "SEV1": "error",
+      "SEV2": "warning",
+      "SEV3": "advisory",
+      "INFO": "advisory"
+    },
+    "default_severity": "warning",
+    "source_tool": "Internal QA microservice v4"
+  },
+  "sample_payload": "{\n  \"tool\": \"packaging-qa\",\n  \"version\": \"4.0.2\",\n  \"results\": [\n    {\n      \"document\": \"brochure.pdf\",\n      \"issues\": [\n        {\n          \"code\": \"img.lowres\",\n          \"sev\": \"SEV1\",\n          \"text\": \"Image resolution 144 dpi is below the 300 dpi threshold\",\n          \"loc\": { \"page\": 2, \"rect\": [72, 72, 216, 216] },\n          \"target\": { \"id\": \"Im42\", \"kind\": \"image\" },\n          \"tags\": [\"images\", \"resolution\"]\n        },\n        {\n          \"code\": \"font.noembed\",\n          \"sev\": \"SEV2\",\n          \"text\": \"Font Helvetica-Bold is not embedded\",\n          \"loc\": { \"page\": 1 },\n          \"target\": { \"id\": \"Helvetica-Bold\", \"kind\": \"font\" },\n          \"tags\": [\"fonts\"]\n        },\n        {\n          \"code\": \"color.rgb_in_cmyk\",\n          \"sev\": \"SEV2\",\n          \"text\": \"RGB color object used in a CMYK-intent job\",\n          \"loc\": { \"page\": 3, \"rect\": [144, 300, 468, 360] },\n          \"tags\": [\"color\"]\n        }\n      ]\n    }\n  ]\n}\n",
+  "sample_mime": "application/json",
+  "is_active": true
+}

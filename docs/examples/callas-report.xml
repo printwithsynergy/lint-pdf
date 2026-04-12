@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  callas pdfToolbox preflight report (XML variant). Auto-detects as callas_xml.
+  Export from pdfToolbox: "Save report as XML" on any Profile run.
+-->
+<Report tool="callas pdfToolbox" version="14.1.573">
+  <Profile>PDF/X-4 (Ghent Workgroup 2022)</Profile>
+  <File name="brochure.pdf" pages="4" pdf_version="1.6"/>
+  <Timestamp>2026-03-14T09:12:44Z</Timestamp>
+  <Hits>
+    <Hit id="img_lowres_cmyk" level="error" page="2">
+      <Comment>Image resolution 144 dpi is below the 300 dpi threshold</Comment>
+      <Rect left="72" bottom="72" right="216" top="216"/>
+      <Object type="image" name="Im42" colorSpace="DeviceCMYK"/>
+      <Category>images</Category>
+    </Hit>
+    <Hit id="font_not_embedded" level="warning" page="1">
+      <Comment>Font Helvetica-Bold is not embedded</Comment>
+      <Object type="font" name="Helvetica-Bold"/>
+      <Category>fonts</Category>
+    </Hit>
+    <Hit id="rgb_in_cmyk_job" level="warning" page="3">
+      <Comment>RGB color object used in a CMYK-intent job</Comment>
+      <Rect left="144" bottom="300" right="468" top="360"/>
+      <Category>color</Category>
+      <IsoClause>PDF/X-4:2010 6.2.2</IsoClause>
+    </Hit>
+    <Hit id="page_no_trimbox" level="error" page="4">
+      <Comment>Page 4 is missing a TrimBox</Comment>
+      <Object type="page"/>
+      <Category>geometry</Category>
+    </Hit>
+    <Hit id="overprint_white_text" level="info" page="2">
+      <Comment>White text set to overprint — will disappear on press</Comment>
+      <Rect left="96" bottom="540" right="300" top="560"/>
+      <Category>color</Category>
+    </Hit>
+  </Hits>
+  <Summary errors="2" warnings="2" infos="1"/>
+</Report>

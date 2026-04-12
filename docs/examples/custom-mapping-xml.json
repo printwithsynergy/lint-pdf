@@ -1,0 +1,33 @@
+{
+  "_comment": "Custom XML mapping ready for POST /api/v1/tenant/import-mappings. Handles a PitStop-lite export shape that ships with Acme Preflight 2.1.",
+  "name": "Acme PitStop-lite",
+  "description": "Proprietary XML export from Acme Preflight 2.1 (the OEM rebranded older PitStop engine).",
+  "format": "xml",
+  "config": {
+    "format": "xml",
+    "item_selector": "Issues/Issue",
+    "fields": {
+      "severity": "@level",
+      "message": "Description",
+      "page": "@page",
+      "bbox": "Location/Box",
+      "check_id": "@id",
+      "object_id": "Target/@name",
+      "object_type": "Target/@type",
+      "category": "Category",
+      "iso_clause": "Standard/@ref"
+    },
+    "severity_map": {
+      "high": "error",
+      "critical": "error",
+      "medium": "warning",
+      "low": "advisory",
+      "info": "advisory"
+    },
+    "default_severity": "warning",
+    "source_tool": "Acme Preflight 2.1"
+  },
+  "sample_payload": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<PreflightLog>\n  <Issues>\n    <Issue id=\"acme.img.lowres\" level=\"HIGH\" page=\"2\">\n      <Description>Image resolution 144 dpi is below the 300 dpi threshold</Description>\n      <Location><Box>72 72 216 216</Box></Location>\n      <Target type=\"image\" name=\"Im42\"/>\n      <Category>images</Category>\n    </Issue>\n    <Issue id=\"acme.font.noembed\" level=\"MEDIUM\" page=\"1\">\n      <Description>Font Helvetica-Bold is not embedded</Description>\n      <Target type=\"font\" name=\"Helvetica-Bold\"/>\n      <Category>fonts</Category>\n    </Issue>\n    <Issue id=\"acme.color.rgb_in_cmyk\" level=\"MEDIUM\" page=\"3\">\n      <Description>RGB color object used in a CMYK-intent job</Description>\n      <Location><Box>144,300,468,360</Box></Location>\n      <Category>color</Category>\n      <Standard ref=\"PDF/X-4:2010 6.2.2\"/>\n    </Issue>\n  </Issues>\n</PreflightLog>\n",
+  "sample_mime": "application/xml",
+  "is_active": true
+}

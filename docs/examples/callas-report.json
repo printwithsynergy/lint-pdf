@@ -1,0 +1,70 @@
+{
+  "_comment": "callas pdfToolbox report (JSON variant). Auto-detects as callas_json.",
+  "tool": "callas pdfToolbox",
+  "version": "14.1.573",
+  "profile": "PDF/X-4 (Ghent Workgroup 2022)",
+  "file": {
+    "name": "brochure.pdf",
+    "pages": 4,
+    "pdf_version": "1.6"
+  },
+  "timestamp": "2026-03-14T09:12:44Z",
+  "hits": [
+    {
+      "id": "img_lowres_cmyk",
+      "level": "error",
+      "comment": "Image resolution 144 dpi is below the 300 dpi threshold",
+      "page": 2,
+      "rect": [72, 72, 216, 216],
+      "object": {
+        "type": "image",
+        "name": "Im42",
+        "color_space": "DeviceCMYK"
+      },
+      "category": "images"
+    },
+    {
+      "id": "font_not_embedded",
+      "level": "warning",
+      "comment": "Font Helvetica-Bold is not embedded",
+      "page": 1,
+      "object": {
+        "type": "font",
+        "name": "Helvetica-Bold"
+      },
+      "category": "fonts"
+    },
+    {
+      "id": "rgb_in_cmyk_job",
+      "level": "warning",
+      "comment": "RGB color object used in a CMYK-intent job",
+      "page": 3,
+      "rect": [144, 300, 468, 360],
+      "category": "color",
+      "iso_clause": "PDF/X-4:2010 6.2.2"
+    },
+    {
+      "id": "page_no_trimbox",
+      "level": "error",
+      "comment": "Page 4 is missing a TrimBox",
+      "page": 4,
+      "object": {
+        "type": "page"
+      },
+      "category": "geometry"
+    },
+    {
+      "id": "overprint_white_text",
+      "level": "info",
+      "comment": "White text set to overprint — will disappear on press",
+      "page": 2,
+      "rect": [96, 540, 300, 560],
+      "category": "color"
+    }
+  ],
+  "summary": {
+    "errors": 2,
+    "warnings": 2,
+    "infos": 1
+  }
+}

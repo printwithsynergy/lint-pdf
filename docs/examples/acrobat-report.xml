@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Adobe Acrobat Preflight report (XML). Auto-detects as acrobat_xml.
+  Export from Acrobat Pro: Preflight panel > hamburger menu > "Create Report" > XML.
+-->
+<preflight:Report
+  xmlns:preflight="http://ns.adobe.com/acrobat/preflight/"
+  version="2024.001">
+  <preflight:Document>
+    <preflight:FileName>brochure.pdf</preflight:FileName>
+    <preflight:Pages>4</preflight:Pages>
+    <preflight:PDFVersion>1.6</preflight:PDFVersion>
+    <preflight:Profile>PDF/X-4 compliance</preflight:Profile>
+    <preflight:Timestamp>2026-03-14T09:12:44Z</preflight:Timestamp>
+  </preflight:Document>
+  <preflight:Results>
+    <preflight:Issue id="acr.image.resolution_low" severity="Error">
+      <preflight:Message>Image resolution 144 dpi is below the 300 dpi threshold</preflight:Message>
+      <preflight:Page>2</preflight:Page>
+      <preflight:BoundingBox left="72" bottom="72" right="216" top="216"/>
+      <preflight:ObjectType>image</preflight:ObjectType>
+      <preflight:ObjectName>Im42</preflight:ObjectName>
+      <preflight:Category>images</preflight:Category>
+    </preflight:Issue>
+    <preflight:Issue id="acr.font.not_embedded" severity="Warning">
+      <preflight:Message>Font Helvetica-Bold is not embedded</preflight:Message>
+      <preflight:Page>1</preflight:Page>
+      <preflight:ObjectType>font</preflight:ObjectType>
+      <preflight:ObjectName>Helvetica-Bold</preflight:ObjectName>
+      <preflight:Category>fonts</preflight:Category>
+    </preflight:Issue>
+    <preflight:Issue id="acr.color.rgb_in_cmyk" severity="Warning">
+      <preflight:Message>RGB color object used in a CMYK-intent job</preflight:Message>
+      <preflight:Page>3</preflight:Page>
+      <preflight:BoundingBox left="144" bottom="300" right="468" top="360"/>
+      <preflight:Category>color</preflight:Category>
+      <preflight:Reference>PDF/X-4:2010 6.2.2</preflight:Reference>
+    </preflight:Issue>
+    <preflight:Issue id="acr.geometry.no_trimbox" severity="Error">
+      <preflight:Message>Page 4 is missing a TrimBox</preflight:Message>
+      <preflight:Page>4</preflight:Page>
+      <preflight:ObjectType>page</preflight:ObjectType>
+      <preflight:Category>geometry</preflight:Category>
+    </preflight:Issue>
+    <preflight:Issue id="acr.color.overprint_white" severity="Info">
+      <preflight:Message>White text set to overprint — will disappear on press</preflight:Message>
+      <preflight:Page>2</preflight:Page>
+      <preflight:BoundingBox left="96" bottom="540" right="300" top="560"/>
+      <preflight:Category>color</preflight:Category>
+    </preflight:Issue>
+  </preflight:Results>
+  <preflight:Summary errors="2" warnings="2" infos="1"/>
+</preflight:Report>
