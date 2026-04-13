@@ -1,1 +1,39 @@
 @import "@thinkneverland/pixie-dust-theme-default/globals.css";
+
+/*
+ * Desktop-width fallback for DashboardShell from
+ * @thinkneverland/pixie-dust-dashboard@1.12.35: on that version the
+ * hamburger / mobile drawer is rendered even on wide browser windows,
+ * hiding the persistent sidebar. Until the package is upgraded past the
+ * regression, force the sidebar visible and hide the mobile trigger on
+ * viewports >= Tailwind's lg breakpoint.
+ *
+ * Selectors are intentionally defensive — they cover the common conventions
+ * a compiled dashboard shell tends to use (aria labels, data attributes,
+ * and class-name substrings) so we hit the right element regardless of the
+ * exact markup Pixie Dust shipped in this release.
+ */
+@media (min-width: 1024px) {
+  button[aria-label="Open menu" i],
+  button[aria-label="Toggle menu" i],
+  button[aria-label*="mobile menu" i],
+  button[data-mobile-menu-trigger],
+  [data-mobile-menu-toggle],
+  [data-pd-mobile-menu-button],
+  .pd-mobile-menu-button,
+  [class*="MobileMenuButton" i],
+  [class*="mobile-menu-button" i],
+  [class*="HamburgerButton" i],
+  [class*="hamburger-button" i] {
+    display: none !important;
+  }
+
+  aside[aria-label*="sidebar" i],
+  aside[data-sidebar],
+  [data-pd-sidebar],
+  .pd-sidebar,
+  [class*="DashboardSidebar" i],
+  [class*="dashboard-sidebar" i] {
+    display: flex !important;
+  }
+}
