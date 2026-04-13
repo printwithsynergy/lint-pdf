@@ -65,7 +65,7 @@ export default function ApiEnumsSection() {
       <p className="text-slate-600 text-sm mt-2">
         The viewer config also carries <code className="bg-slate-100 px-1 rounded">verdict_mode</code>
         {" "}(<code className="bg-slate-100 px-1 rounded">auto | manual | off</code>) which governs
-        whether a pass/fail comes from the engine's summary or a manual
+        whether a pass/fail comes from the engine&apos;s summary or a manual
         reviewer action.
       </p>
 
@@ -104,7 +104,7 @@ export default function ApiEnumsSection() {
       />
 
       <p className="text-slate-600 text-sm mt-4">
-        Preflight profiles (as opposed to <em>brand</em> profiles) don't use a
+        Preflight profiles (as opposed to <em>brand</em> profiles) don&apos;t use a
         string enum — the API exposes a boolean
         {" "}<code className="bg-slate-100 px-1 rounded">is_builtin</code> on
         {" "}<code className="bg-slate-100 px-1 rounded">ProfileSummaryResponse</code> to distinguish

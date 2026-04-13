@@ -163,7 +163,7 @@ export default function ApiImportsSection() {
       />
       <p className="text-slate-600 text-sm mt-2">
         Both request fields are optional: when omitted, preview uses the
-        mapping's stored <code className="bg-slate-100 px-1 rounded">config</code> and
+        mapping&apos;s stored <code className="bg-slate-100 px-1 rounded">config</code> and
         {" "}<code className="bg-slate-100 px-1 rounded">sample_payload</code>. Supply
         them to iterate on a config in the editor before saving. Returns at
         most the first 5 findings in <code className="bg-slate-100 px-1 rounded">sample_findings</code>.

@@ -198,7 +198,7 @@ export function ApprovalChainPanel({ onRefresh }: { onRefresh?: () => void }) {
                     )}
                   </div>
                   {h.notes && (
-                    <div className="mt-1 italic text-slate-400">"{h.notes}"</div>
+                    <div className="mt-1 italic text-slate-400">&ldquo;{h.notes}&rdquo;</div>
                   )}
                 </div>
               ))}

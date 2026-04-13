@@ -224,7 +224,7 @@ Content-Type: image/png`}
       />
       <p className="text-slate-600 text-sm mt-2">
         When the capability is already populated the response comes back
-        with <code className="bg-slate-100 px-1 rounded">status: "already_filled"</code> and
+        with <code className="bg-slate-100 px-1 rounded">status: &quot;already_filled&quot;</code> and
         no <code className="bg-slate-100 px-1 rounded">task_id</code>. Non-fillable capabilities return 422.
       </p>
       <CodeBlock>{`# Python polling pattern
@@ -277,8 +277,8 @@ while True:
       />
       <p className="text-slate-600 text-sm mt-2">
         <code className="bg-slate-100 px-1 rounded">auto_passed</code> reflects
-        the engine's summary verdict; <code className="bg-slate-100 px-1 rounded">verdict</code> reflects
-        a reviewer's manual call. A job can be auto-passed and manually failed
+        the engine&apos;s summary verdict; <code className="bg-slate-100 px-1 rounded">verdict</code> reflects
+        a reviewer&apos;s manual call. A job can be auto-passed and manually failed
         at the same time — clients should render both.
       </p>
 

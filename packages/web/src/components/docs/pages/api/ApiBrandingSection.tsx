@@ -174,7 +174,7 @@ export default function ApiBrandingSection() {
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Custom report domain</h4>
       <p className="text-slate-600 mb-3">
         White-label reports on <code className="bg-slate-100 px-1 rounded">reports.yourbrand.com</code>. Point
-        a CNAME at the engine's returned <code className="bg-slate-100 px-1 rounded">dns_target</code> and
+        a CNAME at the engine&apos;s returned <code className="bg-slate-100 px-1 rounded">dns_target</code> and
         register the hostname. Scale/Enterprise only — the engine returns 403
         on lower tiers.
       </p>

@@ -8,7 +8,7 @@ import pytest
 
 from lintpdf.analyzers.finding import Finding, Severity
 from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
-from lintpdf.reports.xml_report import generate_xml_report
+from lintpdf.reports.xml_report import generate_xml_from_dict, generate_xml_report
 
 
 @pytest.fixture
@@ -370,3 +370,81 @@ class TestXmlReportSeverityValues:
         root = _parse_xml(generate_xml_report(result))
         sev = root.find("Findings/Finding/Severity")
         assert sev.text == expected
+
+
+class TestXmlFromDict:
+    """Tests for the dict-based XML renderer used by the report mint service."""
+
+    @staticmethod
+    def _sample_dict() -> dict:
+        return {
+            "job_id": "abc-123",
+            "profile_id": "lintpdf-default",
+            "duration_ms": 4321,
+            "preflight_source": "engine",
+            "summary": {
+                "passed": False,
+                "total_findings": 2,
+                "error_count": 1,
+                "warning_count": 1,
+                "advisory_count": 0,
+                "page_count": 3,
+                "file_size_bytes": 9999,
+            },
+            "metadata": {
+                "pdf_version": "1.7",
+                "is_encrypted": False,
+                "conformance": "PDF/X-4",
+            },
+            "findings": [
+                {
+                    "inspection_id": "LPDF_FONT_001",
+                    "severity": "error",
+                    "message": "Font not embedded",
+                    "page_num": 1,
+                    "object_id": "F1",
+                    "object_type": "font",
+                    "iso_clause": "ISO 32000-2:2020 9.6",
+                    "category": "fonts",
+                    "source": "engine",
+                    "bbox": [10.0, 20.0, 30.0, 40.0],
+                    "details": {"font_name": "Arial"},
+                },
+                {
+                    "inspection_id": "LPDF_IMG_001",
+                    "severity": "warning",
+                    "message": "Image below 150 DPI",
+                    "page_num": 2,
+                },
+            ],
+        }
+
+    def test_dict_input_roundtrips(self) -> None:
+        root = _parse_xml(generate_xml_from_dict(self._sample_dict()))
+        assert root.tag == "PreflightReport"
+        assert root.get("schemaVersion") == "1"
+        assert root.findtext("JobId") == "abc-123"
+        assert root.findtext("PreflightSource") == "engine"
+        assert root.findtext("Summary/ErrorCount") == "1"
+        assert root.findtext("Document/Conformance") == "PDF/X-4"
+        findings = root.findall("Findings/Finding")
+        assert len(findings) == 2
+        assert findings[0].findtext("InspectionId") == "LPDF_FONT_001"
+        assert findings[0].findtext("BBox") == "10.0 20.0 30.0 40.0"
+        assert findings[0].find("Details/Detail").get("key") == "font_name"
+
+    def test_dict_input_tolerates_missing_keys(self) -> None:
+        root = _parse_xml(generate_xml_from_dict({"job_id": "x"}))
+        assert root.findtext("JobId") == "x"
+        assert root.findall("Findings/Finding") == []
+
+    def test_dict_input_skips_non_dict_findings(self) -> None:
+        root = _parse_xml(
+            generate_xml_from_dict(
+                {
+                    "job_id": "x",
+                    "findings": [{"inspection_id": "a", "severity": "error", "message": "m"}, "junk", None],
+                }
+            )
+        )
+        assert len(root.findall("Findings/Finding")) == 1

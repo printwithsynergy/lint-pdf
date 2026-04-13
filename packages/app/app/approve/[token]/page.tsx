@@ -253,7 +253,7 @@ export default function ApprovePage() {
                     <div className="flex-1">
                       <div className="font-semibold text-slate-800">{s.step_name}</div>
                       <div className="text-slate-600">{s.approver_email}</div>
-                      {s.notes && <div className="mt-1 italic text-slate-500">"{s.notes}"</div>}
+                      {s.notes && <div className="mt-1 italic text-slate-500">&ldquo;{s.notes}&rdquo;</div>}
                     </div>
                   </div>
                 ))}

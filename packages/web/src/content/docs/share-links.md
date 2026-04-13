@@ -15,7 +15,9 @@ Share links let you hand a preflight report or interactive viewer to a stakehold
 |---|---|---|
 | HTML report | `https://reports.lintpdf.com/r/{token}` | Unauthenticated; token-gated. |
 | PDF report | `https://reports.lintpdf.com/r/{token}.pdf[?download=1]` | Same. `download=1` forces attachment disposition. |
-| Public viewer | `https://app.lintpdf.com/share/{token}` (proxies to `/api/v1/viewer/public/{token}/*`) | Same. Interactive viewer with separations, TAC, layers, verdict — all gated by the job's captured capabilities. |
+| JSON report | `https://reports.lintpdf.com/r/{token}.json` | Same. LintPDF v1 schema; re-importable as `external_format=lintpdf_json`. |
+| XML report | `https://reports.lintpdf.com/r/{token}.xml` | Same. Same field taxonomy as JSON, in the `urn:lintpdf:preflight:1.0` namespace. |
+| Public viewer | `https://app.lintpdf.com/view/{token}` (proxies to `/api/v1/viewer/public/{token}/*`) | Same. Interactive viewer with separations, TAC, layers, verdict — all gated by the job's captured capabilities. |
 
 ## Mint a share link
 
@@ -37,7 +39,7 @@ curl -X POST https://api.lintpdf.com/api/v1/jobs/{job_id}/reports \
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `formats` | `["html"]` \| `["pdf"]` \| `["html", "pdf"]` | `["html", "pdf"]` | Which formats to mint. Each returns its own token. |
+| `formats` | array of `"html"` \| `"pdf"` \| `"json"` \| `"xml"` \| `"annotated_pdf"` | `["html", "pdf"]` | Which formats to mint. Each returns its own token. `annotated_pdf` is silently skipped if the original PDF can't be re-fetched from object storage; the other formats in the same request still mint. |
 | `expiry_days` | int \| `null` | Plan default (7 for Free, 30 for Starter, 90 for Growth+, `null`/never for Enterprise) | Token lifetime. `null` = no expiry. |
 | `email_to` | string \| `null` | `null` | When set, the share link is emailed to this address on mint. The email envelope honors the job's brand resolution (anonymous sends from `no-reply@reports.lintpdf.com`). |
 | `branding` | object \| `null` | Job/tenant default | Inline branding override. Accepts `name`, `logo_url`, `primary_color`, `accent_color`, `hide_footer`. Use with care — prefer BrandProfile references. |
