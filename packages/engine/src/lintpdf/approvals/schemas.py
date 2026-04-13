@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Literal
+from typing import TYPE_CHECKING, Any, Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 class ApproverConfig(BaseModel):
@@ -43,7 +45,7 @@ class TemplateResponse(BaseModel):
     name: str
     description: str | None
     is_default: bool
-    steps: list[dict]
+    steps: list[dict[str, Any]]
     created_at: datetime
     updated_at: datetime
 
@@ -69,7 +71,7 @@ class ChainResponse(BaseModel):
     template_id: str | None
     status: str
     current_step: int
-    steps: list[dict]
+    steps: list[dict[str, Any]]
     step_history: list[StepResponse]
     created_at: datetime
     completed_at: datetime | None

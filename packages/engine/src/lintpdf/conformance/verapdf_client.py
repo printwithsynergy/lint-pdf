@@ -144,32 +144,37 @@ def _parse_verapdf_response(data: dict[str, Any]) -> list[dict[str, Any]]:
 
         # Build a finding
         finding_id = f"VERA_{clause.replace('.', '_')}_{test_number}"
-        findings.append({
-            "inspection_id": finding_id,
-            "severity": "error",
-            "message": description or f"{profile_name} rule {clause}-{test_number} failed ({check_count} occurrence(s))",
-            "page_num": 0,  # veraPDF doesn't always give page-level detail
-            "source": "verapdf",
-            "category": "conformance",
-            "details": {
-                "clause": clause,
-                "test_number": test_number,
-                "profile": profile_name,
-                "failed_checks": check_count,
-                "validator": "veraPDF",
-            },
-        })
+        findings.append(
+            {
+                "inspection_id": finding_id,
+                "severity": "error",
+                "message": description
+                or f"{profile_name} rule {clause}-{test_number} failed ({check_count} occurrence(s))",
+                "page_num": 0,  # veraPDF doesn't always give page-level detail
+                "source": "verapdf",
+                "category": "conformance",
+                "details": {
+                    "clause": clause,
+                    "test_number": test_number,
+                    "profile": profile_name,
+                    "failed_checks": check_count,
+                    "validator": "veraPDF",
+                },
+            }
+        )
 
     # Add a summary finding if non-compliant
     if not is_compliant and not findings:
-        findings.append({
-            "inspection_id": "VERA_NONCOMPLIANT",
-            "severity": "error",
-            "message": f"Document is not {profile_name} compliant (veraPDF)",
-            "page_num": 0,
-            "source": "verapdf",
-            "category": "conformance",
-            "details": {"profile": profile_name, "validator": "veraPDF"},
-        })
+        findings.append(
+            {
+                "inspection_id": "VERA_NONCOMPLIANT",
+                "severity": "error",
+                "message": f"Document is not {profile_name} compliant (veraPDF)",
+                "page_num": 0,
+                "source": "verapdf",
+                "category": "conformance",
+                "details": {"profile": profile_name, "validator": "veraPDF"},
+            }
+        )
 
     return findings

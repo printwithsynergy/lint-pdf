@@ -4,10 +4,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from ..analyzers.finding import Finding
 from ..api.models import CAPABILITY_KEYS, default_capabilities
+
+if TYPE_CHECKING:
+    from ..analyzers.finding import Finding
 
 
 class ParserError(Exception):
@@ -51,9 +53,7 @@ class ImportedReport:
         at parse time rather than silently producing dead UI.
         """
         if name not in CAPABILITY_KEYS:
-            raise ValueError(
-                f"Unknown capability {name!r}; expected one of {CAPABILITY_KEYS}"
-            )
+            raise ValueError(f"Unknown capability {name!r}; expected one of {CAPABILITY_KEYS}")
         self.capabilities[name] = value
 
 

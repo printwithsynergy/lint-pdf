@@ -27,7 +27,6 @@ if TYPE_CHECKING:
 
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
-
 # ---------------------------------------------------------------------------
 # parse_brand_param
 # ---------------------------------------------------------------------------
@@ -80,9 +79,7 @@ class TestAnonymousHelpers:
     def test_build_anonymous_filename_uses_short_id() -> None:
         job_id = "a1b2c3d4-e5f6-7890-abcd-ef0123456789"
         assert build_anonymous_filename(job_id) == "preflight-a1b2c3d4.pdf"
-        assert build_anonymous_filename(job_id, extension="html") == (
-            "preflight-a1b2c3d4.html"
-        )
+        assert build_anonymous_filename(job_id, extension="html") == ("preflight-a1b2c3d4.html")
 
     @staticmethod
     def test_build_anonymous_filename_handles_short_input() -> None:

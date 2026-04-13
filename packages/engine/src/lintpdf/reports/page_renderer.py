@@ -26,7 +26,7 @@ _poppler_available = False
 
 def _check_poppler() -> bool:
     """Verify that Poppler's pdftoppm is installed (required by pdf2image)."""
-    global _poppler_checked, _poppler_available  # noqa: PLW0603
+    global _poppler_checked, _poppler_available
     if _poppler_checked:
         return _poppler_available
     _poppler_checked = True
@@ -37,6 +37,7 @@ def _check_poppler() -> bool:
             "Page screenshots will NOT be rendered. Install poppler-utils."
         )
     return _poppler_available
+
 
 # ---------------------------------------------------------------------------
 # Severity colours (matching annotated_pdf_report.py)
@@ -163,7 +164,7 @@ _cached_font: ImageFont.FreeTypeFont | ImageFont.ImageFont | None = None
 
 def _get_badge_font(size: int = BADGE_FONT_SIZE) -> ImageFont.FreeTypeFont | ImageFont.ImageFont:
     """Load a suitable font for callout badges, with fallback."""
-    global _cached_font  # noqa: PLW0603
+    global _cached_font
     if _cached_font is not None:
         return _cached_font
 
@@ -177,7 +178,7 @@ def _get_badge_font(size: int = BADGE_FONT_SIZE) -> ImageFont.FreeTypeFont | Ima
         try:
             _cached_font = ImageFont.truetype(path, size)
             return _cached_font
-        except (OSError, IOError):
+        except OSError:
             continue
 
     _cached_font = ImageFont.load_default()
@@ -258,10 +259,7 @@ def _draw_annotations(
         _draw_badge(draw, font, callout_num, badge_x, badge_y, badge_bg, img.size)
 
     # Composite the overlay onto the original image
-    if img.mode != "RGBA":
-        img_rgba = img.convert("RGBA")
-    else:
-        img_rgba = img
+    img_rgba = img.convert("RGBA") if img.mode != "RGBA" else img
     composited = Image.alpha_composite(img_rgba, overlay)
     # Copy result back to original image object
     final = composited.convert("RGB")
@@ -288,7 +286,12 @@ def _draw_badge(
     # Draw circle with slight shadow
     shadow_offset = 2
     draw.ellipse(
-        [cx - r + shadow_offset, cy - r + shadow_offset, cx + r + shadow_offset, cy + r + shadow_offset],
+        [
+            cx - r + shadow_offset,
+            cy - r + shadow_offset,
+            cx + r + shadow_offset,
+            cy + r + shadow_offset,
+        ],
         fill=(0, 0, 0, 80),
     )
     # Main circle
@@ -403,7 +406,9 @@ def render_annotated_pages(
         if page_num < 1:
             continue  # skip document-level findings
         if page_num > total_pages:
-            logger.warning("Finding references page %d but PDF only has %d pages", page_num, total_pages)
+            logger.warning(
+                "Finding references page %d but PDF only has %d pages", page_num, total_pages
+            )
             continue
         if rendered >= max_pages:
             logger.info("Reached max_pages=%d limit for annotated rendering", max_pages)
@@ -542,7 +547,8 @@ def _crop_finding_thumbnail(
         for i in range(3):
             draw.rectangle(
                 [i, i, composited.width - 1 - i, composited.height - 1 - i],
-                outline=stroke, width=1,
+                outline=stroke,
+                width=1,
             )
 
     # Resize to thumbnail

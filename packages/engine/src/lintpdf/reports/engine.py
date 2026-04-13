@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from lintpdf.profiles.orchestrator import PreflightResult
@@ -70,7 +70,10 @@ class ReportEngine:
         from lintpdf.reports.html_report import generate_html_report
 
         return generate_html_report(
-            result, branding=branding, pdf_bytes=pdf_bytes, detail_level=detail_level,
+            result,
+            branding=branding,
+            pdf_bytes=pdf_bytes,
+            detail_level=detail_level,
         )
 
     @staticmethod
@@ -85,7 +88,10 @@ class ReportEngine:
         from lintpdf.reports.pdf_report import generate_pdf_report
 
         return generate_pdf_report(
-            result, branding=branding, pdf_bytes=pdf_bytes, detail_level=detail_level,
+            result,
+            branding=branding,
+            pdf_bytes=pdf_bytes,
+            detail_level=detail_level,
         )
 
     @staticmethod

@@ -27,10 +27,13 @@ instead of ``<Hit>``). This parser tolerates both.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import Iterator
+from typing import TYPE_CHECKING, ClassVar
 
 from ..analyzers.finding import Finding, Severity
 from .base import ExternalReportParser, ImportedReport, ParserError, normalize_severity
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class AcrobatXmlParser(ExternalReportParser):
@@ -39,9 +42,9 @@ class AcrobatXmlParser(ExternalReportParser):
     format = "acrobat_xml"
     version = "1"
 
-    _HIT_TAGS = {"Hit", "Problem", "Issue", "Result"}
+    _HIT_TAGS: ClassVar[set[str]] = {"Hit", "Problem", "Issue", "Result"}
 
-    def parse(self, payload: bytes) -> ImportedReport:  # noqa: D401
+    def parse(self, payload: bytes) -> ImportedReport:
         try:
             root = ET.fromstring(payload)
         except ET.ParseError as exc:

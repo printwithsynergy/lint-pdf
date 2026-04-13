@@ -14,10 +14,13 @@ missing page/bbox are allowed, and the severity word is normalised via
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import Iterator
+from typing import TYPE_CHECKING, ClassVar
 
 from ..analyzers.finding import Finding, Severity
 from .base import ExternalReportParser, ImportedReport, ParserError, normalize_severity
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 class PitStopXmlParser(ExternalReportParser):
@@ -27,7 +30,7 @@ class PitStopXmlParser(ExternalReportParser):
     version = "1"
 
     # Elements that we treat as "result" rows regardless of wrapper.
-    _RESULT_TAGS = {
+    _RESULT_TAGS: ClassVar[set[str]] = {
         "Error",
         "Warning",
         "Info",
@@ -38,7 +41,7 @@ class PitStopXmlParser(ExternalReportParser):
         "Fix",
     }
 
-    def parse(self, payload: bytes) -> ImportedReport:  # noqa: D401
+    def parse(self, payload: bytes) -> ImportedReport:
         try:
             root = ET.fromstring(payload)
         except ET.ParseError as exc:
@@ -79,9 +82,7 @@ class PitStopXmlParser(ExternalReportParser):
         ``<Results>`` variant.
         """
         wrapper_names = {"Results", "ResultSet", "ResultList"}
-        results_parents = [
-            el for el in root.iter() if self._localname(el.tag) in wrapper_names
-        ]
+        results_parents = [el for el in root.iter() if self._localname(el.tag) in wrapper_names]
         if not results_parents:
             results_parents = [root]
 
@@ -118,10 +119,13 @@ class PitStopXmlParser(ExternalReportParser):
             # grouping; skip silently rather than produce blank findings.
             return None
 
-        inspection_id = self._first_text(
-            item,
-            ("CheckID", "Check", "Code", "Id", "ID", "RuleID"),
-        ) or f"PITSTOP_{abs(hash(message)) % 100000:05d}"
+        inspection_id = (
+            self._first_text(
+                item,
+                ("CheckID", "Check", "Code", "Id", "ID", "RuleID"),
+            )
+            or f"PITSTOP_{abs(hash(message)) % 100000:05d}"
+        )
 
         category = self._first_text(item, ("Category", "Group")) or "pitstop"
 
@@ -173,9 +177,7 @@ class PitStopXmlParser(ExternalReportParser):
                     return text
         return None
 
-    def _find_descendant(
-        self, item: ET.Element, tags: tuple[str, ...]
-    ) -> ET.Element | None:
+    def _find_descendant(self, item: ET.Element, tags: tuple[str, ...]) -> ET.Element | None:
         """First descendant (preorder) whose localname matches ``tags``."""
         wanted = set(tags)
         for el in item.iter():

@@ -16,15 +16,14 @@ from .callas import CallasJsonParser, CallasXmlParser
 from .lintpdf_native import LintpdfNativeParser
 from .pitstop import PitStopXmlParser
 
-
 _XML_SIGNATURES = {
-    "preflight": AcrobatXmlParser,          # <Preflight>
+    "preflight": AcrobatXmlParser,  # <Preflight>
     "acrobatreport": AcrobatXmlParser,
-    "enfocusreport": PitStopXmlParser,      # <EnfocusReport>
-    "pitstopreport": PitStopXmlParser,      # <PitStopReport>
+    "enfocusreport": PitStopXmlParser,  # <EnfocusReport>
+    "pitstopreport": PitStopXmlParser,  # <PitStopReport>
     "pitstopprofile": PitStopXmlParser,
-    "reports": PitStopXmlParser,            # PitStop often nests under <Reports>
-    "preflight_report": CallasXmlParser,    # callas <preflight_report>
+    "reports": PitStopXmlParser,  # PitStop often nests under <Reports>
+    "preflight_report": CallasXmlParser,  # callas <preflight_report>
     "callasreport": CallasXmlParser,
     "callas": CallasXmlParser,
 }
@@ -97,9 +96,7 @@ def parser_for_format(fmt: str) -> ExternalReportParser:
         raise ParserError(f"Unsupported external_format {fmt!r}") from exc
 
 
-def parse_external_report(
-    payload: bytes, fmt: str | None = None
-) -> tuple[ImportedReport, str]:
+def parse_external_report(payload: bytes, fmt: str | None = None) -> tuple[ImportedReport, str]:
     """Parse a third-party preflight report, auto-detecting format if needed.
 
     Returns ``(imported_report, resolved_format)``. ``resolved_format`` is

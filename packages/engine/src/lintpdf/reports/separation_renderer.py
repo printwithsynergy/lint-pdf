@@ -248,7 +248,7 @@ def render_tac_heatmap(
     pdf_bytes: bytes,
     page_num: int,
     dpi: int = 150,
-    tac_limit: int = 300,
+    tac_limit: float = 300,
 ) -> bytes:
     """Generate a TAC (Total Area Coverage) heatmap PNG overlay.
 

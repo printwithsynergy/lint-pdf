@@ -132,11 +132,7 @@ def generate_annotated_pdf(
                     "/Subtype": pikepdf.Name("/Form"),
                     "/BBox": media_box,
                     "/Resources": pikepdf.Dictionary(
-                        {
-                            "/Font": pikepdf.Dictionary(
-                                {"/LPDFBadge": helvetica}
-                            )
-                        }
+                        {"/Font": pikepdf.Dictionary({"/LPDFBadge": helvetica})}
                     ),
                 }
             )
@@ -236,10 +232,18 @@ def _build_overlay_stream(
         k = 0.5523  # magic number for circle approximation
         cx, cy = badge_x, badge_y
         lines.append(f"{cx + r:.2f} {cy:.2f} m")
-        lines.append(f"{cx + r:.2f} {cy + r * k:.2f} {cx + r * k:.2f} {cy + r:.2f} {cx:.2f} {cy + r:.2f} c")
-        lines.append(f"{cx - r * k:.2f} {cy + r:.2f} {cx - r:.2f} {cy + r * k:.2f} {cx - r:.2f} {cy:.2f} c")
-        lines.append(f"{cx - r:.2f} {cy - r * k:.2f} {cx - r * k:.2f} {cy - r:.2f} {cx:.2f} {cy - r:.2f} c")
-        lines.append(f"{cx + r * k:.2f} {cy - r:.2f} {cx + r:.2f} {cy - r * k:.2f} {cx + r:.2f} {cy:.2f} c")
+        lines.append(
+            f"{cx + r:.2f} {cy + r * k:.2f} {cx + r * k:.2f} {cy + r:.2f} {cx:.2f} {cy + r:.2f} c"
+        )
+        lines.append(
+            f"{cx - r * k:.2f} {cy + r:.2f} {cx - r:.2f} {cy + r * k:.2f} {cx - r:.2f} {cy:.2f} c"
+        )
+        lines.append(
+            f"{cx - r:.2f} {cy - r * k:.2f} {cx - r * k:.2f} {cy - r:.2f} {cx:.2f} {cy - r:.2f} c"
+        )
+        lines.append(
+            f"{cx + r * k:.2f} {cy - r:.2f} {cx + r:.2f} {cy - r * k:.2f} {cx + r:.2f} {cy:.2f} c"
+        )
         lines.append("B")  # Fill and stroke
 
         # Badge number (white text)
@@ -273,7 +277,9 @@ def _add_legend_page(
     lines: list[str] = []
 
     # Title
-    lines.append(f"BT /F1 16 Tf {margin} {y} Td ({branding_name} Preflight Report \u2014 Findings Legend) Tj ET")
+    lines.append(
+        f"BT /F1 16 Tf {margin} {y} Td ({branding_name} Preflight Report \u2014 Findings Legend) Tj ET"
+    )
     y -= 28
 
     # Color legend
@@ -292,16 +298,16 @@ def _add_legend_page(
     entry_count = 0
     for page_num in sorted(findings_by_page.keys()):
         if entry_count >= LEGEND_MAX_ENTRIES:
-            lines.append(f"BT /F1 9 Tf {margin} {y} Td (... and more findings \\(see full report\\)) Tj ET")
+            lines.append(
+                f"BT /F1 9 Tf {margin} {y} Td (... and more findings \\(see full report\\)) Tj ET"
+            )
             break
 
         page_findings = findings_by_page[page_num]
         lines.append(f"BT /F1 11 Tf {margin} {y} Td (Page {page_num}) Tj ET")
         y -= 16
 
-        callout_num = 0
-        for f in page_findings:
-            callout_num += 1
+        for callout_num, f in enumerate(page_findings, start=1):
             entry_count += 1
             if entry_count > LEGEND_MAX_ENTRIES:
                 break
@@ -320,14 +326,24 @@ def _add_legend_page(
             r = 5
             k = 0.5523
             lines.append(f"{cx + r:.2f} {cy_badge:.2f} m")
-            lines.append(f"{cx + r:.2f} {cy_badge + r * k:.2f} {cx + r * k:.2f} {cy_badge + r:.2f} {cx:.2f} {cy_badge + r:.2f} c")
-            lines.append(f"{cx - r * k:.2f} {cy_badge + r:.2f} {cx - r:.2f} {cy_badge + r * k:.2f} {cx - r:.2f} {cy_badge:.2f} c")
-            lines.append(f"{cx - r:.2f} {cy_badge - r * k:.2f} {cx - r * k:.2f} {cy_badge - r:.2f} {cx:.2f} {cy_badge - r:.2f} c")
-            lines.append(f"{cx + r * k:.2f} {cy_badge - r:.2f} {cx + r:.2f} {cy_badge - r * k:.2f} {cx + r:.2f} {cy_badge:.2f} c")
+            lines.append(
+                f"{cx + r:.2f} {cy_badge + r * k:.2f} {cx + r * k:.2f} {cy_badge + r:.2f} {cx:.2f} {cy_badge + r:.2f} c"
+            )
+            lines.append(
+                f"{cx - r * k:.2f} {cy_badge + r:.2f} {cx - r:.2f} {cy_badge + r * k:.2f} {cx - r:.2f} {cy_badge:.2f} c"
+            )
+            lines.append(
+                f"{cx - r:.2f} {cy_badge - r * k:.2f} {cx - r * k:.2f} {cy_badge - r:.2f} {cx:.2f} {cy_badge - r:.2f} c"
+            )
+            lines.append(
+                f"{cx + r * k:.2f} {cy_badge - r:.2f} {cx + r:.2f} {cy_badge - r * k:.2f} {cx + r:.2f} {cy_badge:.2f} c"
+            )
             lines.append("f")
 
             # Number in badge
-            lines.append(f"BT /F1 {LEGEND_FONT_SIZE} Tf 1 1 1 rg {cx - 2:.2f} {cy_badge - 3:.2f} Td ({callout_num}) Tj ET")
+            lines.append(
+                f"BT /F1 {LEGEND_FONT_SIZE} Tf 1 1 1 rg {cx - 2:.2f} {cy_badge - 3:.2f} Td ({callout_num}) Tj ET"
+            )
             lines.append("Q")
 
             # Check ID + message
@@ -397,7 +413,9 @@ def _add_summary_page(
     y -= 28
     lines.append(f"BT /F1 11 Tf {margin} {y} Td (Total findings: {total}) Tj ET")
     y -= 16
-    lines.append(f"BT /F1 11 Tf {margin} {y} Td (Errors: {error_count}  |  Warnings: {warning_count}  |  Info: {advisory_count}) Tj ET")
+    lines.append(
+        f"BT /F1 11 Tf {margin} {y} Td (Errors: {error_count}  |  Warnings: {warning_count}  |  Info: {advisory_count}) Tj ET"
+    )
     y -= 24
 
     # List individual findings
@@ -409,11 +427,15 @@ def _add_summary_page(
         message = f.get("message", "")[:70].replace("(", "\\(").replace(")", "\\)")
         page_text = f"p.{page}" if page > 0 else "doc"
 
-        lines.append(f"BT /F1 8 Tf {margin} {y} Td ([{sev_label}] {check_id} \\({page_text}\\): {message}) Tj ET")
+        lines.append(
+            f"BT /F1 8 Tf {margin} {y} Td ([{sev_label}] {check_id} \\({page_text}\\): {message}) Tj ET"
+        )
         y -= LEGEND_LINE_HEIGHT
 
         if y < 60:
-            lines.append(f"BT /F1 8 Tf {margin} {y} Td (... and {total - findings.index(f) - 1} more findings) Tj ET")
+            lines.append(
+                f"BT /F1 8 Tf {margin} {y} Td (... and {total - findings.index(f) - 1} more findings) Tj ET"
+            )
             break
 
     # Create the summary page

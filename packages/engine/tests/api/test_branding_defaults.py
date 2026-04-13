@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
-
 ROUTE = "/api/v1/tenant/branding-defaults"
 
 
@@ -43,9 +42,7 @@ class TestGetBrandingDefaults:
 
 class TestPatchBrandingDefaults:
     @staticmethod
-    def test_switch_to_anonymous_flips_tenant_flag(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_switch_to_anonymous_flips_tenant_flag(client: TestClient, db_session: Session) -> None:
         resp = client.patch(ROUTE, json={"mode": "anonymous"})
         assert resp.status_code == 200, resp.text
         body = resp.json()
@@ -60,9 +57,7 @@ class TestPatchBrandingDefaults:
         assert t.default_brand_profile_id is None
 
     @staticmethod
-    def test_switch_to_lintpdf_clears_both(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_switch_to_lintpdf_clears_both(client: TestClient, db_session: Session) -> None:
         # Seed an anonymous default first.
         t = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         assert t is not None
@@ -114,9 +109,7 @@ class TestPatchBrandingDefaults:
 
     @staticmethod
     def test_profile_mode_with_bad_uuid_rejected(client: TestClient) -> None:
-        resp = client.patch(
-            ROUTE, json={"mode": "profile", "brand_profile_id": "nope"}
-        )
+        resp = client.patch(ROUTE, json={"mode": "profile", "brand_profile_id": "nope"})
         assert resp.status_code == 422
 
     @staticmethod

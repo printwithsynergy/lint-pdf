@@ -101,11 +101,7 @@ class TestAddCustomDomain:
     def test_already_exists_detected_from_graphql_error() -> None:
         response = _FakeResponse(
             200,
-            {
-                "errors": [
-                    {"message": "Custom domain already exists on this service"}
-                ]
-            },
+            {"errors": [{"message": "Custom domain already exists on this service"}]},
         )
         with _patch_httpx(response):
             result = _make_client().add_custom_domain("reports.acme.example")
@@ -129,11 +125,7 @@ class TestAddCustomDomain:
     def test_unauthorized_from_graphql_permission_error() -> None:
         response = _FakeResponse(
             200,
-            {
-                "errors": [
-                    {"message": "Unauthorized: missing permission for custom_domains"}
-                ]
-            },
+            {"errors": [{"message": "Unauthorized: missing permission for custom_domains"}]},
         )
         with _patch_httpx(response):
             result = _make_client().add_custom_domain("reports.acme.example")
@@ -141,9 +133,7 @@ class TestAddCustomDomain:
 
     @staticmethod
     def test_generic_graphql_error_becomes_error() -> None:
-        response = _FakeResponse(
-            200, {"errors": [{"message": "something broke"}]}
-        )
+        response = _FakeResponse(200, {"errors": [{"message": "something broke"}]})
         with _patch_httpx(response):
             result = _make_client().add_custom_domain("reports.acme.example")
         assert result.status == "error"

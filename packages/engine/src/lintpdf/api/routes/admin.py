@@ -374,26 +374,30 @@ async def admin_list_custom_domains(
     _key: str = Depends(_verify_admin_key),
 ) -> AdminCustomDomainListResponse:
     """List all tenant + brand-profile custom domains, split by verified status."""
+    from sqlalchemy import or_
+
     from lintpdf.api.models import BrandProfile
     from lintpdf.api.schemas import AdminCustomDomainRow
 
-    from sqlalchemy import or_
-
     tenant_rows = (
         db.query(Tenant)
-        .filter(or_(
-            Tenant.brand_custom_domain.isnot(None),
-            Tenant.app_custom_domain.isnot(None),
-        ))
+        .filter(
+            or_(
+                Tenant.brand_custom_domain.isnot(None),
+                Tenant.app_custom_domain.isnot(None),
+            )
+        )
         .all()
     )
     profile_rows = (
         db.query(BrandProfile, Tenant)
         .join(Tenant, BrandProfile.tenant_id == Tenant.id)
-        .filter(or_(
-            BrandProfile.custom_domain.isnot(None),
-            BrandProfile.app_custom_domain.isnot(None),
-        ))
+        .filter(
+            or_(
+                BrandProfile.custom_domain.isnot(None),
+                BrandProfile.app_custom_domain.isnot(None),
+            )
+        )
         .all()
     )
 
@@ -492,9 +496,7 @@ async def admin_update_tenant_custom_domain(
             detail="That domain is already claimed by another tenant.",
         ) from exc
 
-    return AdminTenantResponse(
-        id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True
-    )
+    return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
 
 
 @router.patch(
@@ -1116,4 +1118,3 @@ async def update_site_branding(
     db.commit()
 
     return {"updated": True, "fields": list(updates.keys())}
-

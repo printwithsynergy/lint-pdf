@@ -601,8 +601,6 @@ async def validate_report_token(
     """
     from datetime import datetime, timezone
 
-    from lintpdf.api.auth import get_current_tenant as _get_tenant  # noqa: F811
-
     record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
     if record is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Token not found.")
@@ -614,7 +612,7 @@ async def validate_report_token(
     file_name = job.file_name if job else "Untitled"
 
     # Check if the tenant requires email identification for public views
-    tenant: Tenant | None = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+    db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
     email_required = True  # default to requiring email
 
     return {

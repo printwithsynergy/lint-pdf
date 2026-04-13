@@ -7,7 +7,6 @@ import pytest
 from lintpdf.imports.base import ParserError
 from lintpdf.imports.custom import CustomMappingParser
 
-
 # ----------------------------------------------------------------------
 # XML mappings
 # ----------------------------------------------------------------------
@@ -128,9 +127,9 @@ def test_xml_mapping_unknown_severity_falls_through_normalize() -> None:
     parser = CustomMappingParser(_xml_mapping())
     report = parser.parse(xml)
     assert [f.severity.value for f in report.findings] == [
-        "error",     # "fatal" -> normalize_severity -> error
+        "error",  # "fatal" -> normalize_severity -> error
         "advisory",  # "note"  -> normalize_severity -> advisory
-        "warning",   # unknown -> normalize_severity fallback
+        "warning",  # unknown -> normalize_severity fallback
     ]
 
 
@@ -247,13 +246,9 @@ def test_mapping_requires_item_selector() -> None:
 
 def test_mapping_rejects_unknown_format() -> None:
     with pytest.raises(ParserError):
-        CustomMappingParser(
-            {"format": "yaml", "item_selector": "a", "fields": {"message": "m"}}
-        )
+        CustomMappingParser({"format": "yaml", "item_selector": "a", "fields": {"message": "m"}})
 
 
 def test_mapping_rejects_bad_fields_type() -> None:
     with pytest.raises(ParserError):
-        CustomMappingParser(
-            {"format": "xml", "item_selector": "x", "fields": "bogus"}
-        )
+        CustomMappingParser({"format": "xml", "item_selector": "x", "fields": "bogus"})

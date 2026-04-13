@@ -10,11 +10,11 @@ engine-produced findings.
 
 from __future__ import annotations
 
-from .base import ExternalReportParser, ImportedReport, ParserError
-from .detect import detect_format, parse_external_report
 from .acrobat import AcrobatXmlParser
+from .base import ExternalReportParser, ImportedReport, ParserError
 from .callas import CallasJsonParser, CallasXmlParser
 from .custom import CustomMappingParser
+from .detect import detect_format, parse_external_report
 from .lintpdf_native import LintpdfNativeParser
 from .pitstop import PitStopXmlParser
 

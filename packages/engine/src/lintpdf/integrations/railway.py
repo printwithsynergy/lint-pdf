@@ -52,9 +52,7 @@ class RailwayClient:
         # values and production reads from Railway-provided service env.
         self.token = token or os.environ.get("RAILWAY_API_TOKEN") or ""
         self.project_id = project_id or os.environ.get("RAILWAY_PROJECT_ID") or ""
-        self.environment_id = (
-            environment_id or os.environ.get("RAILWAY_ENVIRONMENT_ID") or ""
-        )
+        self.environment_id = environment_id or os.environ.get("RAILWAY_ENVIRONMENT_ID") or ""
         self.service_id = service_id or os.environ.get("RAILWAY_API_SERVICE_ID") or ""
         self.app_service_id = os.environ.get("RAILWAY_APP_SERVICE_ID") or ""
         self.timeout = timeout
@@ -66,12 +64,7 @@ class RailwayClient:
         When False, ``add_custom_domain`` short-circuits to a 'disabled'
         result and the probe task falls through to the manual ops path.
         """
-        return bool(
-            self.token
-            and self.project_id
-            and self.environment_id
-            and self.service_id
-        )
+        return bool(self.token and self.project_id and self.environment_id and self.service_id)
 
     def _post(self, query: str, variables: dict[str, Any]) -> dict[str, Any]:
         headers = {
@@ -85,7 +78,8 @@ class RailwayClient:
                 json={"query": query, "variables": variables},
             )
             response.raise_for_status()
-            return response.json()
+            payload: dict[str, Any] = response.json()
+            return payload
 
     def add_custom_domain(
         self, domain: str, *, service_id: str | None = None
@@ -161,17 +155,11 @@ class RailwayClient:
                     status="unauthorized",
                     message=first.get("message"),
                 )
-            logger.warning(
-                "Railway GraphQL error for domain %s: %s", domain, first.get("message")
-            )
-            return RailwayDomainResult(
-                status="error", message=first.get("message")
-            )
+            logger.warning("Railway GraphQL error for domain %s: %s", domain, first.get("message"))
+            return RailwayDomainResult(status="error", message=first.get("message"))
 
         data = (payload.get("data") or {}).get("customDomainCreate") or {}
         if not data:
-            return RailwayDomainResult(
-                status="error", message="Empty response from Railway"
-            )
+            return RailwayDomainResult(status="error", message="Empty response from Railway")
 
         return RailwayDomainResult(status="created", message=data.get("status"))

@@ -5,10 +5,8 @@ from __future__ import annotations
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
-
-from sqlalchemy.orm import Session
 
 from lintpdf.api.models import (
     ApprovalChain,
@@ -18,6 +16,9 @@ from lintpdf.api.models import (
     Job,
     Tenant,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -141,8 +142,9 @@ def _start_step(
         # Send email (non-blocking best-effort)
         approve_url = _resolve_viewer_url_for_chain(tenant, brand_profile, token)
         viewer_base = _resolve_viewer_base(tenant, brand_profile)
-        viewer_url = _resolve_viewer_url_for_chain(tenant, brand_profile, token).replace(
-            f"/approve/{token}", f"/view/{token}"  # fallback; approver page links to viewer separately
+        _resolve_viewer_url_for_chain(tenant, brand_profile, token).replace(
+            f"/approve/{token}",
+            f"/view/{token}",  # fallback; approver page links to viewer separately
         )
         try:
             from lintpdf.email.service import send_approval_request
@@ -169,7 +171,7 @@ def _start_step(
                 brand_primary_color=brand_color,
                 chain_id=str(chain.id),
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Failed to send approval request email to %s", email)
 
     return created_steps
@@ -185,11 +187,7 @@ def decide_step(
     if decision not in ("approved", "rejected"):
         raise ValueError("decision must be 'approved' or 'rejected'")
 
-    step = (
-        db.query(ApprovalStep)
-        .filter(ApprovalStep.access_token == access_token)
-        .first()
-    )
+    step = db.query(ApprovalStep).filter(ApprovalStep.access_token == access_token).first()
     if step is None:
         return {"error": "not_found", "status": 404}
     if step.decision != "pending":
@@ -199,7 +197,11 @@ def decide_step(
 
     chain = db.query(ApprovalChain).filter(ApprovalChain.id == step.chain_id).first()
     if chain is None or chain.status != "pending":
-        return {"error": "chain_inactive", "status": 410, "chain_status": chain.status if chain else None}
+        return {
+            "error": "chain_inactive",
+            "status": 410,
+            "chain_status": chain.status if chain else None,
+        }
 
     tenant = db.query(Tenant).filter(Tenant.id == chain.tenant_id).first()
     if not tenant:
@@ -218,7 +220,9 @@ def decide_step(
         chain.completed_at = now
         _update_job_verdict(db, chain, "fail")
         db.commit()
-        _fire_webhook(db, tenant, chain, "approval.chain.rejected", step_index=step.step_index, step=step)
+        _fire_webhook(
+            db, tenant, chain, "approval.chain.rejected", step_index=step.step_index, step=step
+        )
         return {"ok": True, "chain_status": "rejected", "step_index": step.step_index}
 
     # Approved — check if step is complete
@@ -237,7 +241,12 @@ def decide_step(
 
     if require_all and pending > 0:
         db.commit()
-        return {"ok": True, "chain_status": "pending", "awaiting": pending, "step_index": step.step_index}
+        return {
+            "ok": True,
+            "chain_status": "pending",
+            "awaiting": pending,
+            "step_index": step.step_index,
+        }
 
     # Advance to next step
     next_index = step.step_index + 1
@@ -248,7 +257,9 @@ def decide_step(
         chain.current_step = next_index
         _update_job_verdict(db, chain, "pass")
         db.commit()
-        _fire_webhook(db, tenant, chain, "approval.chain.completed", step_index=step.step_index, step=step)
+        _fire_webhook(
+            db, tenant, chain, "approval.chain.completed", step_index=step.step_index, step=step
+        )
         return {"ok": True, "chain_status": "approved", "step_index": step.step_index}
 
     chain.current_step = next_index
@@ -323,8 +334,12 @@ def process_timeouts(db: Session) -> dict[str, int]:
             chain.completed_at = now
             _update_job_verdict(db, chain, "fail")
             db.commit()
-            _fire_webhook(db, tenant, chain, "approval.chain.timeout", step_index=step.step_index, step=step)
-            _fire_webhook(db, tenant, chain, "approval.chain.rejected", step_index=step.step_index, step=step)
+            _fire_webhook(
+                db, tenant, chain, "approval.chain.timeout", step_index=step.step_index, step=step
+            )
+            _fire_webhook(
+                db, tenant, chain, "approval.chain.rejected", step_index=step.step_index, step=step
+            )
             rejected += 1
         elif on_timeout == "advance":
             step.decision = "approved"
@@ -337,13 +352,34 @@ def process_timeouts(db: Session) -> dict[str, int]:
                 chain.current_step = next_index
                 _update_job_verdict(db, chain, "pass")
                 db.commit()
-                _fire_webhook(db, tenant, chain, "approval.chain.timeout", step_index=step.step_index, step=step)
-                _fire_webhook(db, tenant, chain, "approval.chain.completed", step_index=step.step_index, step=step)
+                _fire_webhook(
+                    db,
+                    tenant,
+                    chain,
+                    "approval.chain.timeout",
+                    step_index=step.step_index,
+                    step=step,
+                )
+                _fire_webhook(
+                    db,
+                    tenant,
+                    chain,
+                    "approval.chain.completed",
+                    step_index=step.step_index,
+                    step=step,
+                )
             else:
                 chain.current_step = next_index
                 _start_step(db, chain, next_index, tenant)
                 db.commit()
-                _fire_webhook(db, tenant, chain, "approval.chain.timeout", step_index=step.step_index, step=step)
+                _fire_webhook(
+                    db,
+                    tenant,
+                    chain,
+                    "approval.chain.timeout",
+                    step_index=step.step_index,
+                    step=step,
+                )
                 _fire_webhook(db, tenant, chain, "approval.step.started", step_index=next_index)
             advanced += 1
         else:  # notify — re-send emails, keep pending, reset expires_at
@@ -351,7 +387,9 @@ def process_timeouts(db: Session) -> dict[str, int]:
             if timeout_hours:
                 step.expires_at = now + timedelta(hours=timeout_hours)
             db.commit()
-            _fire_webhook(db, tenant, chain, "approval.chain.timeout", step_index=step.step_index, step=step)
+            _fire_webhook(
+                db, tenant, chain, "approval.chain.timeout", step_index=step.step_index, step=step
+            )
             notified += 1
 
     return {"rejected": rejected, "advanced": advanced, "notified": notified}
@@ -402,8 +440,8 @@ def _fire_webhook(
     step: ApprovalStep | None = None,
 ) -> None:
     """Dispatch an approval webhook event to tenant endpoints + any step-level webhook_url."""
-    from lintpdf.queue.tasks import dispatch_webhook
     from lintpdf.api.models import WebhookEndpoint
+    from lintpdf.queue.tasks import dispatch_webhook
 
     step_config = chain.steps[step_index] if step_index < len(chain.steps) else {}
 
@@ -428,7 +466,7 @@ def _fire_webhook(
         )
         if token_row:
             viewer_url = f"{viewer_base}/view/{token_row.token}"
-    except Exception:  # noqa: BLE001
+    except Exception:
         viewer_url = ""
 
     payload = {
@@ -456,7 +494,7 @@ def _fire_webhook(
                 event=event,
                 payload=payload,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Failed to queue step-level webhook for %s", step_webhook)
 
     # Fire to tenant-level webhook endpoints subscribing to this event
@@ -478,5 +516,5 @@ def _fire_webhook(
                 event=event,
                 payload=payload,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Failed to queue webhook for %s", ep.url)

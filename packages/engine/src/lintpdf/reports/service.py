@@ -170,7 +170,7 @@ class BrandingContext:
     anonymous: bool = False
 
     @classmethod
-    def anonymous_context(cls) -> "BrandingContext":
+    def anonymous_context(cls) -> BrandingContext:
         """Return a fully-anonymised branding context.
 
         No logo, no tenant name, neutral footer, neutral title. Reports
@@ -267,7 +267,7 @@ def sanitize_pdf_metadata_for_anonymous(pdf_bytes: bytes) -> bytes:
         return pdf_bytes
 
 
-def _bytes_stream(initial: bytes | None = None):
+def _bytes_stream(initial: bytes | None = None) -> Any:
     """Return a BytesIO — factored out so pikepdf's varying versions can
     be called uniformly even when its bundled ``pikepdf.util.io`` is
     missing."""
@@ -289,12 +289,12 @@ def build_anonymous_filename(job_id: str, extension: str = "pdf") -> str:
 
 def resolve_branding(
     *,
-    tenant: "Tenant",
+    tenant: Tenant,
     job: Any | None,
     brand_param: str | None,
     default_lintpdf: BrandingContext,
     lookup_profile: Any,
-    entitlements: "TenantEntitlements | None" = None,
+    entitlements: TenantEntitlements | None = None,
 ) -> BrandingContext:
     """Resolve the effective :class:`BrandingContext` for a report surface.
 
@@ -676,6 +676,7 @@ class ReportService:
         def _decode_svg_data_uri(data_uri: str) -> str:
             """Decode a base64 SVG data URI to inline <svg> markup for WeasyPrint."""
             import base64
+
             from markupsafe import Markup
 
             try:

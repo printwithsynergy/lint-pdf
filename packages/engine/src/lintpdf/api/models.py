@@ -68,14 +68,14 @@ class PreflightSource(enum.StrEnum):
 # render as active, show a "Load" affordance, or hide completely. Entries
 # here must match keys in ``Job.data_capabilities`` JSONB.
 CAPABILITY_KEYS: tuple[str, ...] = (
-    "findings",        # job findings populated (engine or imported)
-    "separations",     # spot color / ink separation data extracted
-    "tac",             # total area coverage / ink coverage data extracted
-    "layers",          # OCG / optional content layer data extracted
-    "fonts",           # font analysis available
-    "images",          # image analysis available
-    "thumbnails",      # page thumbnail tiles rendered
-    "metadata",        # document metadata extracted
+    "findings",  # job findings populated (engine or imported)
+    "separations",  # spot color / ink separation data extracted
+    "tac",  # total area coverage / ink coverage data extracted
+    "layers",  # OCG / optional content layer data extracted
+    "fonts",  # font analysis available
+    "images",  # image analysis available
+    "thumbnails",  # page thumbnail tiles rendered
+    "metadata",  # document metadata extracted
 )
 
 
@@ -124,9 +124,7 @@ class Tenant(Base):
         DateTime(timezone=True), nullable=True
     )
     app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
-    app_custom_domain_verified: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    app_custom_domain_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     app_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -140,9 +138,7 @@ class Tenant(Base):
     # the ``none`` brand profile type (stripped LintPDF branding). Per-request
     # override still applies via ``brand`` query param or ``brand_profile_id``
     # on submission.
-    unbranded_by_default: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    unbranded_by_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     entitlement_overrides: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, default=None
     )
@@ -225,9 +221,7 @@ class Job(Base):
     # whether to render, hide, or offer a one-click fill-in.
     data_capabilities: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     # Per-job brand override — if set, wins over tenant default.
-    brand_profile_id_override: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid, nullable=True
-    )
+    brand_profile_id_override: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
     # Per-job unbranded override (request-level flag, orthogonal to
     # ``brand_profile_id_override``). ``True`` forces rendering with the
     # ``none`` brand profile type even if a branded profile is otherwise
@@ -688,16 +682,12 @@ class BrandProfile(Base):
     footer_text: Mapped[str | None] = mapped_column(String(500), nullable=True)
     hide_footer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    custom_domain_verified: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    custom_domain_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
-    app_custom_domain_verified: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    app_custom_domain_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     app_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
@@ -720,9 +710,7 @@ class ApprovalChainTemplate(Base):
     """Reusable multi-step approval chain preset for a tenant."""
 
     __tablename__ = "approval_chain_templates"
-    __table_args__ = (
-        Index("ix_approval_templates_tenant", "tenant_id"),
-    )
+    __table_args__ = (Index("ix_approval_templates_tenant", "tenant_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
@@ -765,9 +753,7 @@ class ApprovalChain(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class TenantImportMapping(Base):
@@ -806,9 +792,7 @@ class TenantImportMapping(Base):
     """
 
     __tablename__ = "tenant_import_mappings"
-    __table_args__ = (
-        Index("ix_tenant_import_mappings_tenant", "tenant_id"),
-    )
+    __table_args__ = (Index("ix_tenant_import_mappings_tenant", "tenant_id"),)
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
@@ -851,13 +835,9 @@ class ApprovalStep(Base):
     approver_email: Mapped[str] = mapped_column(String(255), nullable=False)
     decision: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    decided_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     access_token: Mapped[str] = mapped_column(String(64), nullable=False)
-    expires_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

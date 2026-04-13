@@ -9,7 +9,6 @@ import pytest
 from lintpdf.imports.base import ParserError
 from lintpdf.imports.callas import CallasJsonParser, CallasXmlParser
 
-
 CALLAS_JSON = json.dumps(
     {
         "pdfToolboxVersion": "13.2",

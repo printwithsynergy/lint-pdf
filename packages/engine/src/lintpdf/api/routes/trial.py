@@ -324,9 +324,7 @@ async def submit_trial(
                 )
                 queued_any = True
             except Exception:
-                logger.exception(
-                    "Auto-submit preflight failed for trial file %s", tf.id
-                )
+                logger.exception("Auto-submit preflight failed for trial file %s", tf.id)
         if queued_any:
             db.commit()
             auto_submitted = True

@@ -33,7 +33,6 @@ def _auto_generate_reports(
     from lintpdf.api.models import BrandProfile, JobFinding, ReportToken, Tenant
     from lintpdf.reports.service import (
         BrandingContext,
-        BrandMode,
         ReportDetailLevel,
         ReportService,
         resolve_branding,
@@ -60,9 +59,7 @@ def _auto_generate_reports(
             "source": f.source or "engine",
             "category": f.category,
             "details": f.details,
-            "bbox": [f.bbox_x0, f.bbox_y0, f.bbox_x1, f.bbox_y1]
-            if f.bbox_x0 is not None
-            else None,
+            "bbox": [f.bbox_x0, f.bbox_y0, f.bbox_x1, f.bbox_y1] if f.bbox_x0 is not None else None,
         }
         for f in findings
     ]
@@ -78,6 +75,7 @@ def _auto_generate_reports(
     def _lookup_profile(profile_id: str) -> Any | None:
         try:
             import uuid as _uuid_mod
+
             pid = _uuid_mod.UUID(profile_id)
         except ValueError:
             return None
@@ -134,7 +132,9 @@ def _auto_generate_reports(
 
     for fmt in ["html", "pdf"]:
         content = service._generate_format(
-            enriched, fmt, branding,
+            enriched,
+            fmt,
+            branding,
             pdf_bytes=pdf_bytes,
             detail_level=ReportDetailLevel.COMPREHENSIVE,
             summary_page="prepend",
@@ -142,21 +142,25 @@ def _auto_generate_reports(
         if content is None:
             continue
         storage.upload_report(str(job.tenant_id), str(job.id), fmt, content)
-        db.add(ReportToken(
-            id=uuid_mod.uuid4(),
-            job_id=job.id,
-            tenant_id=job.tenant_id,
-            token=tokens[fmt],
-            format=fmt,
-            expires_at=expires_at,
-            brand_mode=token_brand_mode,
-            brand_profile_id=token_brand_profile_id,
-        ))
+        db.add(
+            ReportToken(
+                id=uuid_mod.uuid4(),
+                job_id=job.id,
+                tenant_id=job.tenant_id,
+                token=tokens[fmt],
+                format=fmt,
+                expires_at=expires_at,
+                brand_mode=token_brand_mode,
+                brand_profile_id=token_brand_profile_id,
+            )
+        )
 
     db.commit()
     logger.info(
         "Auto-generated HTML + PDF reports for job %s: %s/r/%s",
-        job.id, report_base_url, tokens.get("html", "?"),
+        job.id,
+        report_base_url,
+        tokens.get("html", "?"),
     )
 
 
@@ -234,9 +238,7 @@ def run_preflight(
                     self=self, db=db, job=job, job_id=job_id, start=start
                 )
             if job.preflight_source == PreflightSource.MINIMAL:
-                return _run_minimal_preflight(
-                    self=self, db=db, job=job, job_id=job_id, start=start
-                )
+                return _run_minimal_preflight(self=self, db=db, job=job, job_id=job_id, start=start)
 
             # Download PDF from storage (try R2, fall back to Redis cache)
             from lintpdf.api.storage import get_storage
@@ -751,9 +753,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             if not _cname_is_acceptable(cname):
                 result["cname_mismatch"] += 1
                 continue
-            outcome = client.add_custom_domain(
-                domain, service_id=client.app_service_id
-            )
+            outcome = client.add_custom_domain(domain, service_id=client.app_service_id)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
                 tenant.app_custom_domain_verified = True
@@ -782,9 +782,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             if not _cname_is_acceptable(cname):
                 result["cname_mismatch"] += 1
                 continue
-            outcome = client.add_custom_domain(
-                domain, service_id=client.app_service_id
-            )
+            outcome = client.add_custom_domain(domain, service_id=client.app_service_id)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
                 profile.app_custom_domain_verified = True
@@ -992,7 +990,8 @@ def _download_pdf_with_fallback(storage: Any, file_key: str, job_id: str) -> byt
     except Exception as r2_err:
         logger.warning(
             "R2 download failed for %s: %s — trying Redis cache",
-            job_id, r2_err,
+            job_id,
+            r2_err,
         )
         pdf_bytes = None
     if pdf_bytes is None:
@@ -1005,9 +1004,7 @@ def _download_pdf_with_fallback(storage: Any, file_key: str, job_id: str) -> byt
         except Exception:
             logger.debug("Redis cache fallback failed for job %s", job_id, exc_info=True)
     if pdf_bytes is None:
-        raise RuntimeError(
-            f"Cannot retrieve PDF: R2 unreachable and no Redis cache for {file_key}"
-        )
+        raise RuntimeError(f"Cannot retrieve PDF: R2 unreachable and no Redis cache for {file_key}")
     return pdf_bytes
 
 
@@ -1117,9 +1114,8 @@ def _run_external_preflight(
     5. Merge parser-reported capabilities onto ``job.data_capabilities``.
     6. Finalise (status, reports, webhooks) like the engine path does.
     """
-    from lintpdf.api.models import JobImportedReport, JobStatus
+    from lintpdf.api.models import JobImportedReport, default_capabilities
     from lintpdf.api.storage import get_storage
-    from lintpdf.api.models import default_capabilities
     from lintpdf.imports import parse_external_report
 
     storage = get_storage()
@@ -1135,15 +1131,11 @@ def _run_external_preflight(
         .first()
     )
     if imported_row is None:
-        raise RuntimeError(
-            "External preflight requested but no imported report found for job"
-        )
+        raise RuntimeError("External preflight requested but no imported report found for job")
 
     report_bytes = storage.download_raw(imported_row.raw_blob_key)
     if report_bytes is None:
-        raise RuntimeError(
-            f"Imported preflight report blob missing: {imported_row.raw_blob_key}"
-        )
+        raise RuntimeError(f"Imported preflight report blob missing: {imported_row.raw_blob_key}")
 
     # ``custom`` means a tenant-defined mapping parsed the payload. The
     # mapping id is stashed on ``imported_row.source_metadata`` at submit
@@ -1154,27 +1146,17 @@ def _run_external_preflight(
 
         mapping_id = (imported_row.source_metadata or {}).get("mapping_id")
         if not mapping_id:
-            raise RuntimeError(
-                "external_format='custom' requires mapping_id in source_metadata"
-            )
+            raise RuntimeError("external_format='custom' requires mapping_id in source_metadata")
         mapping_row = (
-            db.query(TenantImportMapping)
-            .filter(TenantImportMapping.id == mapping_id)
-            .first()
+            db.query(TenantImportMapping).filter(TenantImportMapping.id == mapping_id).first()
         )
         if mapping_row is None:
-            raise RuntimeError(
-                f"TenantImportMapping {mapping_id} not found — cannot parse"
-            )
-        parser = CustomMappingParser(
-            mapping_row.config, mapping_id=str(mapping_row.id)
-        )
+            raise RuntimeError(f"TenantImportMapping {mapping_id} not found — cannot parse")
+        parser = CustomMappingParser(mapping_row.config, mapping_id=str(mapping_row.id))
         imported = parser.parse(report_bytes)
         resolved_format = "custom"
     else:
-        imported, resolved_format = parse_external_report(
-            report_bytes, fmt=job.external_format
-        )
+        imported, resolved_format = parse_external_report(report_bytes, fmt=job.external_format)
 
     # --- Persist findings --------------------------------------------------
     _persist_imported_findings(db, job, imported.findings)
@@ -1216,9 +1198,7 @@ def _run_external_preflight(
         },
     }
 
-    return _finalize_non_engine_job(
-        db, job, job_id, start, result_dict, pdf_bytes, storage
-    )
+    return _finalize_non_engine_job(db, job, job_id, start, result_dict, pdf_bytes, storage)
 
 
 def _run_minimal_preflight(
@@ -1258,9 +1238,7 @@ def _run_minimal_preflight(
         },
     }
 
-    return _finalize_non_engine_job(
-        db, job, job_id, start, result_dict, pdf_bytes, storage
-    )
+    return _finalize_non_engine_job(db, job, job_id, start, result_dict, pdf_bytes, storage)
 
 
 # ---------------------------------------------------------------------------

@@ -30,7 +30,7 @@ class CallasJsonParser(ExternalReportParser):
     format = "callas_json"
     version = "1"
 
-    def parse(self, payload: bytes) -> ImportedReport:  # noqa: D401
+    def parse(self, payload: bytes) -> ImportedReport:
         try:
             data = json.loads(payload.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -48,12 +48,7 @@ class CallasJsonParser(ExternalReportParser):
             "report_date": _as_str(data.get("report_date") or data.get("date")),
         }
 
-        hits: list[Any] = (
-            data.get("hits")
-            or data.get("results")
-            or data.get("findings")
-            or []
-        )
+        hits: list[Any] = data.get("hits") or data.get("results") or data.get("findings") or []
         if not isinstance(hits, list):
             raise ParserError("callas JSON: 'hits' must be an array")
 
@@ -77,7 +72,7 @@ class CallasXmlParser(ExternalReportParser):
     format = "callas_xml"
     version = "1"
 
-    def parse(self, payload: bytes) -> ImportedReport:  # noqa: D401
+    def parse(self, payload: bytes) -> ImportedReport:
         try:
             root = ET.fromstring(payload)
         except ET.ParseError as exc:
@@ -114,10 +109,7 @@ def _build_finding_from_dict(hit: dict[str, Any]) -> Finding | None:
     severity = Severity(normalize_severity(severity_raw))
 
     message = _as_str(
-        hit.get("comment")
-        or hit.get("message")
-        or hit.get("description")
-        or hit.get("text")
+        hit.get("comment") or hit.get("message") or hit.get("description") or hit.get("text")
     )
     if not message:
         return None

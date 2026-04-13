@@ -653,9 +653,7 @@ class PreflightOrchestrator:
         return result
 
     @staticmethod
-    def _enrich_bboxes(
-        findings: list[Finding], events: list[Any]
-    ) -> list[Finding]:
+    def _enrich_bboxes(findings: list[Finding], events: list[Any]) -> list[Finding]:
         """Enrich findings with bounding boxes from content stream events.
 
         Matches findings to events by page_num + object_id. For images,
@@ -724,19 +722,21 @@ class PreflightOrchestrator:
                     bbox = event_bboxes.get((f.page_num, font))
 
             if bbox is not None:
-                enriched.append(Finding(
-                    inspection_id=f.inspection_id,
-                    severity=f.severity,
-                    message=f.message,
-                    page_num=f.page_num,
-                    details=f.details,
-                    iso_clause=f.iso_clause,
-                    object_id=f.object_id,
-                    object_type=f.object_type,
-                    bbox=bbox,
-                    source=f.source,
-                    category=f.category,
-                ))
+                enriched.append(
+                    Finding(
+                        inspection_id=f.inspection_id,
+                        severity=f.severity,
+                        message=f.message,
+                        page_num=f.page_num,
+                        details=f.details,
+                        iso_clause=f.iso_clause,
+                        object_id=f.object_id,
+                        object_type=f.object_type,
+                        bbox=bbox,
+                        source=f.source,
+                        category=f.category,
+                    )
+                )
             else:
                 enriched.append(f)
 

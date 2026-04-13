@@ -4,6 +4,7 @@ measurement tools, PDF layers, comparison, and verdict.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import io
 import logging
@@ -13,7 +14,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import pikepdf
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session  # noqa: TC002
@@ -494,9 +495,7 @@ class ViewerConfigResponse(BaseModel):
     capabilities: dict[str, bool] = {}
 
 
-def _apply_branding_to_config(
-    config: ViewerConfigResponse, branding: Any, tenant: Tenant
-) -> None:
+def _apply_branding_to_config(config: ViewerConfigResponse, branding: Any, tenant: Tenant) -> None:
     """Project a :class:`BrandingContext` onto a :class:`ViewerConfigResponse`.
 
     ``branding.anonymous`` wipes every identifying field so the viewer
@@ -619,9 +618,7 @@ async def get_viewer_config(
 
 #: Capabilities the viewer can request on-demand. Keep in sync with
 #: ``lintpdf.queue.tasks._CAPABILITY_ANALYZERS``.
-_FILLABLE_CAPABILITIES: frozenset[str] = frozenset(
-    {"separations", "tac", "fonts", "images"}
-)
+_FILLABLE_CAPABILITIES: frozenset[str] = frozenset({"separations", "tac", "fonts", "images"})
 
 
 class CapabilityFillResponse(BaseModel):
@@ -668,9 +665,7 @@ async def fill_job_capability(
 
     caps = dict(job.data_capabilities or {})
     if caps.get(capability) is True:
-        return CapabilityFillResponse(
-            job_id=job_id, capability=capability, status="already_filled"
-        )
+        return CapabilityFillResponse(job_id=job_id, capability=capability, status="already_filled")
 
     from lintpdf.queue.tasks import fill_capability
 
@@ -829,7 +824,11 @@ async def list_layers(
             try:
                 ocg = ocg_ref
                 if hasattr(ocg, "resolve"):
-                    ocg = ocg_ref.resolve() if callable(getattr(ocg_ref, "resolve", None)) else ocg_ref
+                    ocg = (
+                        ocg_ref.resolve()
+                        if callable(getattr(ocg_ref, "resolve", None))
+                        else ocg_ref
+                    )
                 name = str(ocg.get("/Name", f"Layer {idx + 1}"))
                 default_on = id(ocg_ref) not in off_set
                 layers.append(LayerInfo(name=name, ocg_index=idx, default_on=default_on))
@@ -1050,22 +1049,27 @@ async def create_comparison(
             diff_buf = io.BytesIO()
             diff_img.save(diff_buf, format="PNG")
             diff_cache_key = f"comparisons/{comparison_id}/p{pg}_diff.png"
-            try:
+            with contextlib.suppress(Exception):
                 storage.upload_raw(diff_cache_key, diff_buf.getvalue(), content_type="image/png")
-            except Exception:
-                pass
 
-            page_summaries.append(ComparisonPageSummary(
-                page_num=pg,
-                ssim_score=round(score, 4),
-                diff_pixel_count=diff_count,
-                total_pixels=total,
-            ))
+            page_summaries.append(
+                ComparisonPageSummary(
+                    page_num=pg,
+                    ssim_score=round(score, 4),
+                    diff_pixel_count=diff_count,
+                    total_pixels=total,
+                )
+            )
         except Exception:
             logger.exception("Failed to compare page %d", pg)
-            page_summaries.append(ComparisonPageSummary(
-                page_num=pg, ssim_score=0.0, diff_pixel_count=0, total_pixels=0,
-            ))
+            page_summaries.append(
+                ComparisonPageSummary(
+                    page_num=pg,
+                    ssim_score=0.0,
+                    diff_pixel_count=0,
+                    total_pixels=0,
+                )
+            )
 
     return ComparisonResponse(
         comparison_id=comparison_id,
@@ -1113,39 +1117,47 @@ async def public_list_pages(token: str, db: Session = Depends(get_db)) -> PagesR
             media = _extract_box(page, "/MediaBox")
             if media is None:
                 media = PageBox(x0=0, y0=0, x1=612, y1=792)
-            pages.append(PageInfo(
-                page_num=i,
-                width_pts=media.x1 - media.x0,
-                height_pts=media.y1 - media.y0,
-                media_box=media,
-                crop_box=_extract_box(page, "/CropBox"),
-                trim_box=_extract_box(page, "/TrimBox"),
-                bleed_box=_extract_box(page, "/BleedBox"),
-                rotation=int(page.get("/Rotate", 0)),
-            ))
+            pages.append(
+                PageInfo(
+                    page_num=i,
+                    width_pts=media.x1 - media.x0,
+                    height_pts=media.y1 - media.y0,
+                    media_box=media,
+                    crop_box=_extract_box(page, "/CropBox"),
+                    trim_box=_extract_box(page, "/TrimBox"),
+                    bleed_box=_extract_box(page, "/BleedBox"),
+                    rotation=int(page.get("/Rotate", 0)),
+                )
+            )
     return PagesResponse(job_id=str(job.id), page_count=len(pages), pages=pages)
 
 
 @router.get("/public/{token}/pages/{page_num}/tile")
 async def public_get_tile(
-    token: str, page_num: int, dpi: int = Query(default=150, ge=36, le=600),
+    token: str,
+    page_num: int,
+    dpi: int = Query(default=150, ge=36, le=600),
     db: Session = Depends(get_db),
 ) -> Response:
     """Public: render a page tile as PNG."""
-    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
     from lintpdf.ai.rendering import render_page_to_image
+
     png = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
-    return Response(content=png, media_type="image/png",
-                    headers={"Cache-Control": "public, max-age=86400"})
+    return Response(
+        content=png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
+    )
 
 
 @router.get("/public/{token}/pages/{page_num}/info")
 async def public_page_info(
-    token: str, page_num: int, db: Session = Depends(get_db),
+    token: str,
+    page_num: int,
+    db: Session = Depends(get_db),
 ) -> dict:
     """Public: get page dimensions and box info."""
-    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
     with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
         page = pdf.pages[page_num - 1]
@@ -1166,13 +1178,16 @@ async def public_separations(token: str, db: Session = Depends(get_db)) -> dict:
     """Public: list ink separation channels."""
     job, pdf_bytes = _get_job_pdf_by_token(token, db)
     from lintpdf.reports.separation_renderer import list_separations
+
     channels = list_separations(pdf_bytes)
     return {"job_id": str(job.id), "channels": channels}
 
 
 @router.get("/public/{token}/pages/{page_num}/channel/{channel_name}")
 async def public_channel(
-    token: str, page_num: int, channel_name: str,
+    token: str,
+    page_num: int,
+    channel_name: str,
     dpi: int = Query(
         default=150,
         ge=36,
@@ -1182,17 +1197,20 @@ async def public_channel(
     db: Session = Depends(get_db),
 ) -> Response:
     """Public: render a separation channel as grayscale PNG."""
-    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
     from lintpdf.reports.separation_renderer import render_separation_channel
+
     png = render_separation_channel(pdf_bytes, page_num, channel_name, dpi=dpi)
-    return Response(content=png, media_type="image/png",
-                    headers={"Cache-Control": "public, max-age=86400"})
+    return Response(
+        content=png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
+    )
 
 
 @router.get("/public/{token}/pages/{page_num}/tac-heatmap")
 async def public_tac_heatmap(
-    token: str, page_num: int,
+    token: str,
+    page_num: int,
     dpi: int = Query(
         default=150,
         ge=36,
@@ -1211,12 +1229,14 @@ async def public_tac_heatmap(
     db: Session = Depends(get_db),
 ) -> Response:
     """Public: render TAC heatmap overlay as RGBA PNG."""
-    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
     from lintpdf.reports.separation_renderer import render_tac_heatmap
+
     png = render_tac_heatmap(pdf_bytes, page_num, dpi=dpi, tac_limit=tac_limit)
-    return Response(content=png, media_type="image/png",
-                    headers={"Cache-Control": "public, max-age=86400"})
+    return Response(
+        content=png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
+    )
 
 
 @router.get("/public/{token}/config")
@@ -1251,15 +1271,14 @@ async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
     elif record.brand_mode == "profile" and record.brand_profile_id:
         brand_param = str(record.brand_profile_id)
 
-    config = _build_viewer_config(
-        job=job, tenant=tenant, db=db, brand_param=brand_param
-    )
+    config = _build_viewer_config(job=job, tenant=tenant, db=db, brand_param=brand_param)
     return config.model_dump()
 
 
 @router.get("/public/{token}/pages/{page_num}/sample")
 async def public_sample(
-    token: str, page_num: int,
+    token: str,
+    page_num: int,
     x: float = Query(default=0, description="X coordinate in PDF points."),
     y: float = Query(default=0, description="Y coordinate in PDF points."),
     dpi: int = Query(
@@ -1274,10 +1293,12 @@ async def public_sample(
     db: Session = Depends(get_db),
 ) -> dict:
     """Public: densitometer color sample."""
-    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
-    from lintpdf.ai.rendering import render_page_to_image
     from PIL import Image
+
+    from lintpdf.ai.rendering import render_page_to_image
+
     png = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
     img = Image.open(io.BytesIO(png)).convert("RGB")
     with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
@@ -1295,7 +1316,7 @@ async def public_sample(
 @router.get("/public/{token}/layers")
 async def public_layers(token: str, db: Session = Depends(get_db)) -> dict:
     """Public: list PDF layers (OCGs)."""
-    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
     layers = []
     with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
         ocprops = pdf.Root.get("/OCProperties")
@@ -1342,6 +1363,7 @@ async def public_share(
     by the viewer page's email gate.
     """
     import re as _re
+
     from lintpdf.api.config import get_settings
     from lintpdf.api.models import BrandProfile, Tenant
     from lintpdf.email.service import send_report
@@ -1361,9 +1383,11 @@ async def public_share(
     tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
     profile = None
     if tenant and tenant.default_brand_profile_id:
-        profile = db.query(BrandProfile).filter(
-            BrandProfile.id == tenant.default_brand_profile_id
-        ).first()
+        profile = (
+            db.query(BrandProfile)
+            .filter(BrandProfile.id == tenant.default_brand_profile_id)
+            .first()
+        )
 
     settings = get_settings()
     app_base = settings.app_base_url.rstrip("/")
@@ -1371,8 +1395,16 @@ async def public_share(
         app_base = f"https://{tenant.app_custom_domain}"
 
     viewer_url = f"{app_base}/view/{token}"
-    brand_name = (profile.brand_name if profile else None) or (tenant.brand_name if tenant else None) or "LintPDF"
-    brand_color = (profile.primary_color if profile else None) or (tenant.brand_primary_color if tenant else None) or "#1e3a8a"
+    brand_name = (
+        (profile.brand_name if profile else None)
+        or (tenant.brand_name if tenant else None)
+        or "LintPDF"
+    )
+    brand_color = (
+        (profile.primary_color if profile else None)
+        or (tenant.brand_primary_color if tenant else None)
+        or "#1e3a8a"
+    )
 
     summary = (job.result_json or {}).get("summary", {})
     finding_count = summary.get("total_findings", 0)
@@ -1396,7 +1428,7 @@ async def public_share(
                 sent += 1
             else:
                 errors.append(f"{email}: {res.error or 'failed'}")
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             errors.append(f"{email}: {e}")
 
     return {"sent": sent, "total": len(emails), "errors": errors}

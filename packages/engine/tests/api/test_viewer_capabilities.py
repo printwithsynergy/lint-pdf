@@ -83,9 +83,7 @@ class TestViewerConfigProjection:
         assert data["capabilities"]["thumbnails"] is True
 
     @staticmethod
-    def test_brand_anonymous_query_strips_chrome(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_brand_anonymous_query_strips_chrome(client: TestClient, db_session: Session) -> None:
         job = _seed_job(db_session)
         resp = client.get(f"/api/v1/viewer/jobs/{job.id}/config?brand=anonymous")
         assert resp.status_code == 200, resp.text
@@ -179,9 +177,7 @@ class TestCapabilityFillEndpoint:
         assert body["task_id"] == "task-abc-123"
 
     @staticmethod
-    def test_short_circuits_when_already_filled(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_short_circuits_when_already_filled(client: TestClient, db_session: Session) -> None:
         job = _seed_job(
             db_session,
             data_capabilities={"findings": True, "separations": True},
@@ -191,9 +187,7 @@ class TestCapabilityFillEndpoint:
         assert resp.json()["status"] == "already_filled"
 
     @staticmethod
-    def test_non_fillable_capability_returns_422(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_non_fillable_capability_returns_422(client: TestClient, db_session: Session) -> None:
         job = _seed_job(db_session, data_capabilities={"findings": False})
         # ``findings`` itself isn't an on-demand fillable capability —
         # the fill-in registry only covers separations/tac/fonts/images.
@@ -203,9 +197,7 @@ class TestCapabilityFillEndpoint:
 
     @staticmethod
     def test_unknown_job_returns_404(client: TestClient) -> None:
-        resp = client.post(
-            f"/api/v1/viewer/jobs/{uuid.uuid4()}/capabilities/separations"
-        )
+        resp = client.post(f"/api/v1/viewer/jobs/{uuid.uuid4()}/capabilities/separations")
         assert resp.status_code == 404
 
     @staticmethod

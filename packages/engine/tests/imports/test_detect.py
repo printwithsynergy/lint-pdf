@@ -11,9 +11,7 @@ from lintpdf.imports.detect import detect_format, parse_external_report, parser_
 
 
 def test_detect_lintpdf_native() -> None:
-    payload = json.dumps(
-        {"schema_version": "1", "findings": []}
-    ).encode("utf-8")
+    payload = json.dumps({"schema_version": "1", "findings": []}).encode("utf-8")
     assert detect_format(payload) == "lintpdf_json"
 
 
@@ -30,36 +28,27 @@ def test_detect_callas_json() -> None:
 
 def test_detect_pitstop_by_root() -> None:
     assert (
-        detect_format(
-            b"<?xml version=\"1.0\"?>\n<PitStopReport><Results/></PitStopReport>"
-        )
+        detect_format(b'<?xml version="1.0"?>\n<PitStopReport><Results/></PitStopReport>')
         == "pitstop_xml"
     )
 
 
 def test_detect_pitstop_by_hit_fallback() -> None:
     assert (
-        detect_format(
-            b"<?xml version=\"1.0\"?>\n<Root><Results><Hit/></Results></Root>"
-        )
+        detect_format(b'<?xml version="1.0"?>\n<Root><Results><Hit/></Results></Root>')
         == "pitstop_xml"
     )
 
 
 def test_detect_callas_xml() -> None:
     assert (
-        detect_format(
-            b"<?xml version=\"1.0\"?>\n<preflight_report><hit/></preflight_report>"
-        )
+        detect_format(b'<?xml version="1.0"?>\n<preflight_report><hit/></preflight_report>')
         == "callas_xml"
     )
 
 
 def test_detect_acrobat() -> None:
-    assert (
-        detect_format(b"<?xml version=\"1.0\"?>\n<Preflight><Hits/></Preflight>")
-        == "acrobat_xml"
-    )
+    assert detect_format(b'<?xml version="1.0"?>\n<Preflight><Hits/></Preflight>') == "acrobat_xml"
 
 
 def test_detect_empty_payload_rejected() -> None:
@@ -74,7 +63,7 @@ def test_detect_unrecognised_json() -> None:
 
 def test_detect_unrecognised_xml() -> None:
     with pytest.raises(ParserError):
-        detect_format(b"<?xml version=\"1.0\"?>\n<Mystery><Node/></Mystery>")
+        detect_format(b'<?xml version="1.0"?>\n<Mystery><Node/></Mystery>')
 
 
 def test_parser_for_format_unknown() -> None:

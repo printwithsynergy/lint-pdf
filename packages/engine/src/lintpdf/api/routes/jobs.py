@@ -93,8 +93,7 @@ _external_format_param = Form(
 _external_report_param = File(
     default=None,
     description=(
-        "Optional third-party preflight report file (required when "
-        "``preflight_source=external``)."
+        "Optional third-party preflight report file (required when ``preflight_source=external``)."
     ),
 )
 _mapping_id_param = Form(
@@ -248,22 +247,20 @@ async def submit_job(  # skipcq: PY-R1000
     if source_enum is not PreflightSource.EXTERNAL and external_report is not None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=(
-                "external_report is only valid when preflight_source='external'."
-            ),
+            detail=("external_report is only valid when preflight_source='external'."),
         )
 
     resolved_external_format: str | None = None
     external_report_bytes: bytes | None = None
     resolved_mapping_id: uuid_mod.UUID | None = None
     if source_enum is PreflightSource.EXTERNAL and external_report is not None:
+        from lintpdf.api.models import TenantImportMapping
+        from lintpdf.imports.base import ParserError
+        from lintpdf.imports.custom import CustomMappingParser
         from lintpdf.imports.detect import (
             detect_format,
             parser_for_format,
         )
-        from lintpdf.imports.base import ParserError
-        from lintpdf.imports.custom import CustomMappingParser
-        from lintpdf.api.models import TenantImportMapping
 
         # Hard cap imported reports at 50 MB — PitStop/callas XML for huge
         # jobs rarely exceed a few MB; anything larger is almost certainly
@@ -306,10 +303,7 @@ async def submit_job(  # skipcq: PY-R1000
             if mapping_row is None:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "Import mapping not found or not owned by the "
-                        "authenticated tenant."
-                    ),
+                    detail=("Import mapping not found or not owned by the authenticated tenant."),
                 )
             if not mapping_row.is_active:
                 raise HTTPException(
@@ -395,10 +389,7 @@ async def submit_job(  # skipcq: PY-R1000
             if profile_row is None:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail=(
-                        "BrandProfile not found or not owned by the "
-                        "authenticated tenant."
-                    ),
+                    detail=("BrandProfile not found or not owned by the authenticated tenant."),
                 )
             brand_profile_override_id = candidate_uuid
         # BrandMode.LINTPDF is represented by leaving both overrides unset —
@@ -467,12 +458,12 @@ async def submit_job(  # skipcq: PY-R1000
     # on parser upgrades / audit.
     if source_enum is PreflightSource.EXTERNAL and external_report_bytes is not None:
         report_key = f"{tenant.id}/{job_id}/external-report.dat"
-        report_content_type = external_report.content_type or "application/octet-stream"
+        report_content_type = (
+            external_report.content_type if external_report is not None else None
+        ) or "application/octet-stream"
         await loop.run_in_executor(
             None,
-            lambda: storage.upload_raw(
-                report_key, external_report_bytes, report_content_type
-            ),
+            lambda: storage.upload_raw(report_key, external_report_bytes, report_content_type),
         )
         imported_source_metadata: dict[str, Any] | None = None
         if resolved_mapping_id is not None:

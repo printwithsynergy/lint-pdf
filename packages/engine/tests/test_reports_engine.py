@@ -108,13 +108,17 @@ class TestGenerateDispatch:
     def test_dispatches_to_html(engine: ReportEngine, sample_result) -> None:
         with patch.object(engine, "to_html", return_value=b"<html>") as mock:
             engine.generate(sample_result, "html")
-            mock.assert_called_once_with(sample_result)
+            mock.assert_called_once_with(
+                sample_result, branding=None, pdf_bytes=None, detail_level="standard"
+            )
 
     @staticmethod
     def test_dispatches_to_pdf(engine: ReportEngine, sample_result) -> None:
         with patch.object(engine, "to_pdf", return_value=b"%PDF") as mock:
             engine.generate(sample_result, "pdf")
-            mock.assert_called_once_with(sample_result)
+            mock.assert_called_once_with(
+                sample_result, branding=None, pdf_bytes=None, detail_level="standard"
+            )
 
     @staticmethod
     def test_dispatches_to_xml(engine: ReportEngine, sample_result) -> None:
@@ -189,7 +193,9 @@ class TestToHtml:
             "lintpdf.reports.html_report.generate_html_report", return_value=b"<html>test</html>"
         ) as mock:
             result = engine.to_html(sample_result)
-            mock.assert_called_once_with(sample_result)
+            mock.assert_called_once_with(
+                sample_result, branding=None, pdf_bytes=None, detail_level="standard"
+            )
             assert result == b"<html>test</html>"
 
 
@@ -202,5 +208,7 @@ class TestToPdf:
             "lintpdf.reports.pdf_report.generate_pdf_report", return_value=b"%PDF-mock"
         ) as mock:
             result = engine.to_pdf(sample_result)
-            mock.assert_called_once_with(sample_result)
+            mock.assert_called_once_with(
+                sample_result, branding=None, pdf_bytes=None, detail_level="standard"
+            )
             assert result == b"%PDF-mock"

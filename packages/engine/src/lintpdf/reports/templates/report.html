@@ -407,6 +407,12 @@
       {% endfor %}
       {% endif %}
 
+      {% if not doc_findings and not page_findings %}
+      <div class="empty-state" style="padding: 24px; text-align: center; color: #475569; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc;">
+        <strong>No findings detected.</strong> This document passed every check in the selected profile.
+      </div>
+      {% endif %}
+
       {# ===== COMPREHENSIVE: INK SEPARATIONS ===== #}
       {% if detail_level == 'comprehensive' and ink_separations %}
       <h2 class="section-title">Ink Separations</h2>

@@ -137,9 +137,7 @@ class TestAdminTrialsConfigEndpoint:
     """The config endpoint that exposes the auto-submit flag to the admin UI."""
 
     @staticmethod
-    def test_returns_flag_when_off(
-        client: TestClient, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_flag_when_off(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("LINTPDF_TRIAL_AUTO_SUBMIT", "false")
         resp = client.get(
             "/api/v1/admin/trials/config",
@@ -151,13 +149,9 @@ class TestAdminTrialsConfigEndpoint:
         assert data["auto_submit_profile_id"] == "lintpdf-default"
 
     @staticmethod
-    def test_returns_flag_when_on(
-        client: TestClient, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_returns_flag_when_on(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("LINTPDF_TRIAL_AUTO_SUBMIT", "true")
-        monkeypatch.setenv(
-            "LINTPDF_TRIAL_AUTO_SUBMIT_PROFILE_ID", "lintpdf-print-ready"
-        )
+        monkeypatch.setenv("LINTPDF_TRIAL_AUTO_SUBMIT_PROFILE_ID", "lintpdf-print-ready")
         resp = client.get(
             "/api/v1/admin/trials/config",
             headers={"X-Admin-Key": ADMIN_KEY},
@@ -285,9 +279,7 @@ class TestSubmitTrialAutoSubmitGate:
 
         # The trial file should now point at a Job row
         trial_file = (
-            db_session.query(TrialFile)
-            .filter(TrialFile.submission_id == submission.id)
-            .first()
+            db_session.query(TrialFile).filter(TrialFile.submission_id == submission.id).first()
         )
         assert trial_file is not None
         assert trial_file.job_id is not None

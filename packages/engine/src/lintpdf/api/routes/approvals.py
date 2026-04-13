@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
@@ -31,6 +30,9 @@ from lintpdf.approvals.schemas import (
     TemplateResponse,
     TemplateUpdateRequest,
 )
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -169,7 +171,7 @@ async def update_template(
     try:
         tid = UUID(template_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Template not found.")
+        raise HTTPException(status_code=404, detail="Template not found.") from None
 
     template = (
         db.query(ApprovalChainTemplate)
@@ -213,7 +215,7 @@ async def delete_template(
     try:
         tid = UUID(template_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Template not found.")
+        raise HTTPException(status_code=404, detail="Template not found.") from None
     template = (
         db.query(ApprovalChainTemplate)
         .filter(
@@ -243,13 +245,15 @@ async def attach_chain(
     try:
         jid = UUID(job_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Job not found.")
+        raise HTTPException(status_code=404, detail="Job not found.") from None
 
     job = db.query(Job).filter(Job.id == jid, Job.tenant_id == tenant.id).first()
     if not job:
         raise HTTPException(status_code=404, detail="Job not found.")
     if job.status != JobStatus.COMPLETE:
-        raise HTTPException(status_code=409, detail="Job must be complete to attach an approval chain.")
+        raise HTTPException(
+            status_code=409, detail="Job must be complete to attach an approval chain."
+        )
 
     # Check no existing chain
     existing = db.query(ApprovalChain).filter(ApprovalChain.job_id == job.id).first()
@@ -264,7 +268,7 @@ async def attach_chain(
         try:
             tid = UUID(body.template_id)
         except ValueError:
-            raise HTTPException(status_code=404, detail="Template not found.")
+            raise HTTPException(status_code=404, detail="Template not found.") from None
         template = (
             db.query(ApprovalChainTemplate)
             .filter(
@@ -279,7 +283,10 @@ async def attach_chain(
         template_uuid = template.id
     elif body.steps:
         # Validate ad-hoc steps
-        validated = [StepConfig(**s.model_dump()) if isinstance(s, StepConfig) else StepConfig(**s) for s in body.steps]
+        validated = [
+            StepConfig(**s.model_dump()) if isinstance(s, StepConfig) else StepConfig(**s)
+            for s in body.steps
+        ]
         steps = [s.model_dump() for s in validated]
         template_uuid = None
     else:
@@ -300,7 +307,7 @@ async def get_chain(
     try:
         jid = UUID(job_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Chain not found.")
+        raise HTTPException(status_code=404, detail="Chain not found.") from None
     chain = (
         db.query(ApprovalChain)
         .filter(ApprovalChain.job_id == jid, ApprovalChain.tenant_id == tenant.id)
@@ -320,7 +327,7 @@ async def cancel_chain_endpoint(
     try:
         jid = UUID(job_id)
     except ValueError:
-        raise HTTPException(status_code=404, detail="Chain not found.")
+        raise HTTPException(status_code=404, detail="Chain not found.") from None
     chain = (
         db.query(ApprovalChain)
         .filter(ApprovalChain.job_id == jid, ApprovalChain.tenant_id == tenant.id)
@@ -355,11 +362,7 @@ async def public_chain_info(
     db: Session = Depends(get_db),
 ) -> PublicChainResponse:
     """Public info endpoint for the approver landing page."""
-    step = (
-        db.query(ApprovalStep)
-        .filter(ApprovalStep.access_token == access_token)
-        .first()
-    )
+    step = db.query(ApprovalStep).filter(ApprovalStep.access_token == access_token).first()
     if not step:
         raise HTTPException(status_code=404, detail="Approval link not found.")
 

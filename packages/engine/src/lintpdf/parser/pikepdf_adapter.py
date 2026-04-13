@@ -114,10 +114,7 @@ def _pikepdf_to_python(
                 for k, v in obj.items()
             }
         if isinstance(obj, Array):
-            return [
-                _pikepdf_to_python(item, _depth=_depth + 1, _seen=_seen)
-                for item in iter(obj)
-            ]
+            return [_pikepdf_to_python(item, _depth=_depth + 1, _seen=_seen) for item in iter(obj)]
         if isinstance(obj, Name):
             return str(obj)
         if isinstance(obj, Stream):

@@ -13,7 +13,6 @@ if TYPE_CHECKING:
 
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
-
 BASE = "/api/v1/tenant/import-mappings"
 
 
@@ -28,8 +27,7 @@ _SAMPLE_XML = (
 )
 
 _SAMPLE_JSON = (
-    '{"results":[{"issues":[{"sev":"blocker","text":"Bleed box missing",'
-    '"loc":{"page":2}}]}]}'
+    '{"results":[{"issues":[{"sev":"blocker","text":"Bleed box missing","loc":{"page":2}}]}]}'
 )
 
 
@@ -83,9 +81,7 @@ def _json_payload() -> dict:
 
 class TestCreate:
     @staticmethod
-    def test_create_xml_mapping_round_trips(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_create_xml_mapping_round_trips(client: TestClient, db_session: Session) -> None:
         resp = client.post(BASE, json=_xml_payload())
         assert resp.status_code == 201, resp.text
         body = resp.json()
@@ -125,9 +121,7 @@ class TestCreate:
 
 class TestList:
     @staticmethod
-    def test_list_returns_tenant_mappings_only(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_list_returns_tenant_mappings_only(client: TestClient, db_session: Session) -> None:
         # Tenant's own mapping.
         client.post(BASE, json=_xml_payload())
 
@@ -204,9 +198,7 @@ class TestUpdate:
 
 class TestDelete:
     @staticmethod
-    def test_delete_soft_deletes(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_delete_soft_deletes(client: TestClient, db_session: Session) -> None:
         created = client.post(BASE, json=_xml_payload()).json()
         resp = client.delete(f"{BASE}/{created['id']}")
         assert resp.status_code == 204

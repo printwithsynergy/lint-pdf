@@ -36,9 +36,7 @@ router = APIRouter(tags=["branding"])
 _HOSTNAME_RE = re.compile(
     r"^(?=.{1,253}$)(?!-)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$"
 )
-_BLOCKED_EXACT: frozenset[str] = frozenset(
-    {"lintpdf.com", "localhost", "example.com", "invalid"}
-)
+_BLOCKED_EXACT: frozenset[str] = frozenset({"lintpdf.com", "localhost", "example.com", "invalid"})
 _BLOCKED_SUFFIXES: tuple[str, ...] = (
     ".lintpdf.com",
     ".railway.app",
@@ -476,10 +474,7 @@ async def set_tenant_custom_domain(
     if not entitlements.whitelabel_enabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "White-label custom report domains require the Scale or "
-                "Enterprise plan."
-            ),
+            detail=("White-label custom report domains require the Scale or Enterprise plan."),
         )
 
     if request.domain is None or request.domain.strip() == "":
@@ -531,10 +526,7 @@ async def set_brand_profile_custom_domain(
     if not entitlements.whitelabel_enabled:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                "White-label custom report domains require the Scale or "
-                "Enterprise plan."
-            ),
+            detail=("White-label custom report domains require the Scale or Enterprise plan."),
         )
 
     try:
@@ -608,7 +600,9 @@ async def get_tenant_app_custom_domain(
         tenant_id=str(tenant.id),
         domain=tenant.app_custom_domain,
         verified=tenant.app_custom_domain_verified,
-        requested_at=tenant.app_custom_domain_requested_at.isoformat() if tenant.app_custom_domain_requested_at else None,
+        requested_at=tenant.app_custom_domain_requested_at.isoformat()
+        if tenant.app_custom_domain_requested_at
+        else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
     )
 
@@ -660,7 +654,9 @@ async def set_tenant_app_custom_domain(
         tenant_id=str(tenant.id),
         domain=tenant.app_custom_domain,
         verified=tenant.app_custom_domain_verified,
-        requested_at=tenant.app_custom_domain_requested_at.isoformat() if tenant.app_custom_domain_requested_at else None,
+        requested_at=tenant.app_custom_domain_requested_at.isoformat()
+        if tenant.app_custom_domain_requested_at
+        else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
     )
 
@@ -705,9 +701,7 @@ async def get_tenant_branding_defaults(
         mode=mode,
         unbranded_by_default=tenant.unbranded_by_default,
         default_brand_profile_id=(
-            str(tenant.default_brand_profile_id)
-            if tenant.default_brand_profile_id
-            else None
+            str(tenant.default_brand_profile_id) if tenant.default_brand_profile_id else None
         ),
     )
 
@@ -787,8 +781,6 @@ async def set_tenant_branding_defaults(
         mode=resolved_mode,
         unbranded_by_default=tenant.unbranded_by_default,
         default_brand_profile_id=(
-            str(tenant.default_brand_profile_id)
-            if tenant.default_brand_profile_id
-            else None
+            str(tenant.default_brand_profile_id) if tenant.default_brand_profile_id else None
         ),
     )

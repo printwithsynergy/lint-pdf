@@ -28,7 +28,6 @@ if TYPE_CHECKING:
 
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
-
 # ---------------------------------------------------------------------------
 # Fixtures — raw import payloads
 # ---------------------------------------------------------------------------
@@ -94,9 +93,7 @@ class TestExternalImportSubmission:
         assert job.external_format == "pitstop_xml"
 
         imported = (
-            db_session.query(JobImportedReport)
-            .filter(JobImportedReport.job_id == job_id)
-            .first()
+            db_session.query(JobImportedReport).filter(JobImportedReport.job_id == job_id).first()
         )
         assert imported is not None
         assert imported.format == "pitstop_xml"
@@ -104,9 +101,7 @@ class TestExternalImportSubmission:
         assert imported.raw_blob_key.endswith("external-report.dat")
 
     @staticmethod
-    def test_external_requires_report_file(
-        client: TestClient, minimal_pdf_bytes: bytes
-    ) -> None:
+    def test_external_requires_report_file(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         resp = client.post(
             "/api/v1/jobs",
             files={"file": ("input.pdf", BytesIO(minimal_pdf_bytes), "application/pdf")},
@@ -137,9 +132,7 @@ class TestExternalImportSubmission:
         assert "external_report" in resp.json()["detail"].lower()
 
     @staticmethod
-    def test_empty_report_rejected(
-        client: TestClient, minimal_pdf_bytes: bytes
-    ) -> None:
+    def test_empty_report_rejected(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         resp = client.post(
             "/api/v1/jobs",
             files={
@@ -217,9 +210,7 @@ class TestMinimalSubmission:
         assert job.external_format is None
         # No JobImportedReport row for minimal jobs.
         reports = (
-            db_session.query(JobImportedReport)
-            .filter(JobImportedReport.job_id == job_id)
-            .all()
+            db_session.query(JobImportedReport).filter(JobImportedReport.job_id == job_id).all()
         )
         assert reports == []
 
@@ -385,18 +376,14 @@ class TestMappingIdSubmission:
         assert job.external_format == "custom"
 
         imported = (
-            db_session.query(JobImportedReport)
-            .filter(JobImportedReport.job_id == job_id)
-            .first()
+            db_session.query(JobImportedReport).filter(JobImportedReport.job_id == job_id).first()
         )
         assert imported is not None
         assert imported.format == "custom"
         assert (imported.source_metadata or {}).get("mapping_id") == str(mapping.id)
 
     @staticmethod
-    def test_unknown_mapping_id_rejected_403(
-        client: TestClient, minimal_pdf_bytes: bytes
-    ) -> None:
+    def test_unknown_mapping_id_rejected_403(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         resp = client.post(
             "/api/v1/jobs",
             files={

@@ -443,7 +443,11 @@ class TestXmlFromDict:
             generate_xml_from_dict(
                 {
                     "job_id": "x",
-                    "findings": [{"inspection_id": "a", "severity": "error", "message": "m"}, "junk", None],
+                    "findings": [
+                        {"inspection_id": "a", "severity": "error", "message": "m"},
+                        "junk",
+                        None,
+                    ],
                 }
             )
         )

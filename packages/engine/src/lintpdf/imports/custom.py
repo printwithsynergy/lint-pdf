@@ -49,14 +49,17 @@ to :func:`normalize_severity`.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import xml.etree.ElementTree as ET
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 from ..analyzers.finding import Finding, Severity
 from .base import ExternalReportParser, ImportedReport, ParserError, normalize_severity
 
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 _CANONICAL_FIELDS: frozenset[str] = frozenset(
     {
@@ -104,16 +107,11 @@ class CustomMappingParser(ExternalReportParser):
             elif isinstance(spec, dict):
                 self.fields[key] = {"selector": str(spec.get("selector", "")).strip(), **spec}
             else:
-                raise ParserError(
-                    f"Custom mapping field {key!r} must be a string or object"
-                )
+                raise ParserError(f"Custom mapping field {key!r} must be a string or object")
         self.severity_map: dict[str, str] = {
-            str(k).lower(): str(v).lower()
-            for k, v in (mapping.get("severity_map") or {}).items()
+            str(k).lower(): str(v).lower() for k, v in (mapping.get("severity_map") or {}).items()
         }
-        self.default_severity = str(
-            mapping.get("default_severity", "warning")
-        ).lower()
+        self.default_severity = str(mapping.get("default_severity", "warning")).lower()
 
     # ------------------------------------------------------------------
     # Entry point
@@ -123,9 +121,7 @@ class CustomMappingParser(ExternalReportParser):
         report = self._new_report()
         report.mark_capability("findings", True)
         report.mark_capability("metadata", True)
-        report.source_metadata["tool"] = str(
-            self.mapping.get("source_tool") or "Custom Mapping"
-        )
+        report.source_metadata["tool"] = str(self.mapping.get("source_tool") or "Custom Mapping")
         report.source_metadata["mapping_id"] = self.mapping_id
 
         if self.payload_format == "xml":
@@ -219,7 +215,11 @@ class CustomMappingParser(ExternalReportParser):
         bbox = _parse_bbox(self._pick(item, "bbox"))
 
         check_id = self._pick(item, "check_id") or ""
-        inspection_id = f"EXT-CUSTOM-{check_id[:40]}" if check_id else f"EXT-CUSTOM-{abs(hash(message)) % 100000:05d}"
+        inspection_id = (
+            f"EXT-CUSTOM-{check_id[:40]}"
+            if check_id
+            else f"EXT-CUSTOM-{abs(hash(message)) % 100000:05d}"
+        )
 
         return Finding(
             inspection_id=inspection_id,
@@ -308,7 +308,7 @@ def _xml_select_text(node: ET.Element, selector: str) -> str | None:
     segments = _split_xml_path(s)
     current: list[ET.Element] = [node]
     attr: str | None = None
-    for i, seg in enumerate(segments):
+    for _i, seg in enumerate(segments):
         if seg == "":
             # Descendant sentinel.
             descendant: list[ET.Element] = []
@@ -407,10 +407,8 @@ def _json_select(data: Any, selector: str) -> list[Any]:
             elif kind == "index":
                 if isinstance(node, list):
                     i = int(val)
-                    try:
+                    with contextlib.suppress(IndexError):
                         nxt.append(node[i])
-                    except IndexError:
-                        pass
             elif kind == "wildcard":
                 if isinstance(node, list):
                     nxt.extend(node)

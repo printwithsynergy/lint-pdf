@@ -327,8 +327,7 @@ def scan_for_malware(content: bytes, settings: Settings) -> None:
         raise
     except Exception:
         logger.warning(
-            "ClamAV scan failed — service unreachable at %s; "
-            "allowing upload (fail-open)",
+            "ClamAV scan failed — service unreachable at %s; allowing upload (fail-open)",
             settings.clamav_url,
             exc_info=True,
         )

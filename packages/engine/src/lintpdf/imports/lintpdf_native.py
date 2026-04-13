@@ -47,7 +47,7 @@ class LintpdfNativeParser(ExternalReportParser):
     format = "lintpdf_json"
     version = "1"
 
-    def parse(self, payload: bytes) -> ImportedReport:  # noqa: D401
+    def parse(self, payload: bytes) -> ImportedReport:
         try:
             data = json.loads(payload.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -99,7 +99,9 @@ class LintpdfNativeParser(ExternalReportParser):
         if not message:
             return None
 
-        inspection_id = _as_str(item.get("inspection_id")) or f"EXT-LPDF-{abs(hash(message)) % 100000:05d}"
+        inspection_id = (
+            _as_str(item.get("inspection_id")) or f"EXT-LPDF-{abs(hash(message)) % 100000:05d}"
+        )
         if not inspection_id.startswith("EXT-"):
             inspection_id = f"EXT-LPDF-{inspection_id}"
 

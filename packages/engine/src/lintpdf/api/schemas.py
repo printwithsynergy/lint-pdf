@@ -39,9 +39,7 @@ class FindingResponse(BaseModel):
     )
     page_num: int | None = Field(
         default=None,
-        description=(
-            "1-indexed page number. `null` for document-level findings."
-        ),
+        description=("1-indexed page number. `null` for document-level findings."),
     )
     details: dict[str, object] | None = Field(
         default=None,
@@ -82,8 +80,7 @@ class FindingResponse(BaseModel):
     object_type: str | None = Field(
         default=None,
         description=(
-            "Target object classifier. One of: `image`, `text`, `path`, "
-            "`font`, `page`, `document`."
+            "Target object classifier. One of: `image`, `text`, `path`, `font`, `page`, `document`."
         ),
     )
 

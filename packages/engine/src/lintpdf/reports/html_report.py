@@ -101,9 +101,7 @@ def _build_template_context(  # skipcq: PY-R1000
     annotated_pages: dict[int, Any] = {}
     render_failed = False
     if pdf_bytes is not None and detail_level != ReportDetailLevel.EXECUTIVE:
-        annotated_pages = _render_annotated_pages(
-            pdf_bytes, findings_by_page, dpi=annotation_dpi
-        )
+        annotated_pages = _render_annotated_pages(pdf_bytes, findings_by_page, dpi=annotation_dpi)
         if not annotated_pages and findings_by_page:
             render_failed = True
             logger.error(
@@ -113,7 +111,9 @@ def _build_template_context(  # skipcq: PY-R1000
             )
     elif pdf_bytes is None and detail_level != ReportDetailLevel.EXECUTIVE:
         render_failed = True
-        logger.error("pdf_bytes is None — report will render in text-only mode (no page screenshots)")
+        logger.error(
+            "pdf_bytes is None — report will render in text-only mode (no page screenshots)"
+        )
 
     # Generate per-finding cropped thumbnails (standard + comprehensive)
     if pdf_bytes is not None and detail_level != ReportDetailLevel.EXECUTIVE:
@@ -141,12 +141,14 @@ def _build_template_context(  # skipcq: PY-R1000
             iid = fd.get("inspection_id", "")
             details = fd.get("details") or {}
             if iid == "LPDF_INK_002":
-                ink_separations.append({
-                    "name": details.get("separation_name", ""),
-                    "pages_used": details.get("pages_used", []),
-                    "max_value": details.get("max_value", 0),
-                    "event_count": details.get("event_count", 0),
-                })
+                ink_separations.append(
+                    {
+                        "name": details.get("separation_name", ""),
+                        "pages_used": details.get("pages_used", []),
+                        "max_value": details.get("max_value", 0),
+                        "event_count": details.get("event_count", 0),
+                    }
+                )
             elif iid == "LPDF_INK_001":
                 page = fd.get("page_num", 0)
                 if page and page > 0:

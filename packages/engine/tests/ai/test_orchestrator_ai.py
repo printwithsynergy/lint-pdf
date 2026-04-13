@@ -85,7 +85,9 @@ class TestOrchestratorWithAI:
                 result = orch.run(b"fake")
 
         assert result.metadata["ai_enabled"] is True
-        assert result.metadata["ai_findings_count"] == 1
+        # 1 finding from the analyzer + 1 AI_SCAN_001 audit-trail marker the
+        # orchestrator appends whenever at least one analyzer ran.
+        assert result.metadata["ai_findings_count"] == 2
         mock_analyzer.analyze.assert_called_once()
 
     @staticmethod
@@ -114,15 +116,16 @@ class TestOrchestratorWithAI:
             with patch.object(orch, "_parse_and_interpret", return_value=(doc, [])):
                 result = orch.run(b"fake")
 
-        # Should have both engine and AI findings
-        ai_results = [f for f in result.findings if f.source == "ai"]
+        # Should have both engine and AI findings. Ignore the AI_SCAN_001
+        # audit marker the orchestrator appends for observability.
+        ai_results = [f for f in result.findings if f.source == "ai" and f.category != "ai_scan"]
         assert len(ai_results) == 1
         assert ai_results[0].inspection_id == "AI_BC_001"
         assert ai_results[0].category == "barcode"
 
-        # Metadata should report AI info
+        # Metadata should report AI info: 1 real + 1 audit marker.
         assert result.metadata["ai_enabled"] is True
-        assert result.metadata["ai_findings_count"] == 1
+        assert result.metadata["ai_findings_count"] == 2
 
     @staticmethod
     def test_ai_analyzer_exception_caught() -> None:
@@ -183,7 +186,7 @@ class TestOrchestratorWithAI:
             with patch.object(orch, "_parse_and_interpret", return_value=(doc, [])):
                 result = orch.run(b"fake")
 
-        ai_findings = [f for f in result.findings if f.source == "ai"]
+        ai_findings = [f for f in result.findings if f.source == "ai" and f.category != "ai_scan"]
         assert len(ai_findings) == 1
         assert ai_findings[0].source == "ai"
         assert ai_findings[0].category == "content_quality"

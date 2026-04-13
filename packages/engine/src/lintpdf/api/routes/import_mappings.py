@@ -115,9 +115,7 @@ def _parse_uuid(value: str) -> uuid_mod.UUID:
         ) from exc
 
 
-def _load_owned_mapping(
-    db: Session, tenant: Tenant, mapping_id: str
-) -> TenantImportMapping:
+def _load_owned_mapping(db: Session, tenant: Tenant, mapping_id: str) -> TenantImportMapping:
     uid = _parse_uuid(mapping_id)
     mapping = (
         db.query(TenantImportMapping)
@@ -292,9 +290,7 @@ async def preview_import_mapping(
     raw_config = overrides.config if overrides.config is not None else mapping.config
     cfg = _merged_config(raw_config or {}, mapping.format)
     payload_str = (
-        overrides.sample_payload
-        if overrides.sample_payload is not None
-        else mapping.sample_payload
+        overrides.sample_payload if overrides.sample_payload is not None else mapping.sample_payload
     )
     if not payload_str:
         return ImportMappingPreviewResponse(

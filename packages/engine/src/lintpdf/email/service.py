@@ -384,7 +384,8 @@ def send_approval_step_decided(
     color = "#22c55e" if decision == "approved" else "#ef4444"
     notes_html = (
         f'<p style="background: #f1f5f9; border-left: 3px solid {color}; padding: 12px 16px; margin: 12px 0; border-radius: 4px; font-size: 13px;"><em>Notes:</em> {notes}</p>'
-        if notes else ""
+        if notes
+        else ""
     )
     html = f"""\
 <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1f2937;">

@@ -522,9 +522,7 @@ class TestClamAVScanning:
         settings = MagicMock()
         settings.clamav_url = None
         upload = _make_upload(MINIMAL_PDF, "clean.pdf")
-        content = await validate_upload(
-            upload, allowed_types=PDF_TYPES, settings=settings
-        )
+        content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
         assert content == MINIMAL_PDF
 
     @pytest.mark.asyncio
@@ -568,9 +566,7 @@ class TestClamAVScanning:
         with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
             mock_clamd.ClamdNetworkSocket.side_effect = ConnectionError("unreachable")
             upload = _make_upload(MINIMAL_PDF, "file.pdf")
-            content = await validate_upload(
-                upload, allowed_types=PDF_TYPES, settings=settings
-            )
+            content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
             assert content == MINIMAL_PDF
 
     @pytest.mark.asyncio
@@ -585,9 +581,7 @@ class TestClamAVScanning:
         with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
             mock_clamd.ClamdNetworkSocket.return_value = mock_scanner
             upload = _make_upload(MINIMAL_PDF, "file.pdf")
-            content = await validate_upload(
-                upload, allowed_types=PDF_TYPES, settings=settings
-            )
+            content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
             assert content == MINIMAL_PDF
 
     @pytest.mark.asyncio

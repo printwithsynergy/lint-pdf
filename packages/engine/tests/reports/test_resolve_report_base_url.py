@@ -92,9 +92,7 @@ def test_brand_profile_custom_domain_wins_over_tenant() -> None:
         custom_domain="reports.client.example",
         custom_domain_verified=True,
     )
-    url = resolve_report_base_url(
-        tenant, profile, _FakeEntitlements(), _FakeSettings()
-    )
+    url = resolve_report_base_url(tenant, profile, _FakeEntitlements(), _FakeSettings())
     assert url == "https://reports.client.example"
 
 
@@ -107,9 +105,7 @@ def test_brand_profile_unverified_falls_back_to_tenant() -> None:
         custom_domain="reports.client.example",
         custom_domain_verified=False,
     )
-    url = resolve_report_base_url(
-        tenant, profile, _FakeEntitlements(), _FakeSettings()
-    )
+    url = resolve_report_base_url(tenant, profile, _FakeEntitlements(), _FakeSettings())
     assert url == "https://reports.acme.example"
 
 
@@ -119,9 +115,7 @@ def test_brand_profile_without_domain_falls_back_to_tenant() -> None:
         brand_custom_domain_verified=True,
     )
     profile = _FakeProfile(custom_domain=None)
-    url = resolve_report_base_url(
-        tenant, profile, _FakeEntitlements(), _FakeSettings()
-    )
+    url = resolve_report_base_url(tenant, profile, _FakeEntitlements(), _FakeSettings())
     assert url == "https://reports.acme.example"
 
 
