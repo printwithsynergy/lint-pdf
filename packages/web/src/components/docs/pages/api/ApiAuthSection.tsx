@@ -31,12 +31,12 @@ X-RateLimit-Overage-Rate-Cents: 10     # Per-file overage cost in cents
 X-RateLimit-Overage-Cost-Cents: 120    # Accrued overage cost this cycle`}</CodeBlock>
       <p className="text-slate-600 text-sm mt-2">
         The overage headers are omitted entirely while you are inside your
-        plan's included allowance — treat their absence as "no overage".
+        plan&apos;s included allowance — treat their absence as &ldquo;no overage&rdquo;.
       </p>
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Error envelope</h4>
       <p className="text-slate-600 mb-3">
-        Errors use FastAPI's default JSON shape. Status codes follow HTTP
+        Errors use FastAPI&apos;s default JSON shape. Status codes follow HTTP
         semantics; the <code className="bg-slate-100 px-1 rounded">detail</code> field carries the
         human-readable message.
       </p>
@@ -48,7 +48,7 @@ Content-Type: application/json
 }`}</CodeBlock>
       <p className="text-slate-600 text-sm mt-2">
         Request-validation errors (malformed body, missing required fields)
-        follow FastAPI's structured form with
+        follow FastAPI&apos;s structured form with
         {" "}<code className="bg-slate-100 px-1 rounded">detail</code> as an array of
         {" "}<code className="bg-slate-100 px-1 rounded">{`{ loc, msg, type }`}</code> entries.
       </p>

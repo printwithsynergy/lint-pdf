@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "AI-Powered Preflight — LintPDF",
@@ -373,12 +374,12 @@ export default function AIPage() {
             pass through upstream findings verbatim — AI does not re-analyse
             them. Minimal-mode (viewer-only) submissions can opt into AI by
             first running{" "}
-            <a
+            <Link
               href="/docs/viewer-capabilities"
               className="text-brand-600 hover:text-brand-700 underline"
             >
               on-demand capability fill-in
-            </a>{" "}
+            </Link>{" "}
             to extract the content AI needs (fonts, images, text runs).
           </p>
         </div>

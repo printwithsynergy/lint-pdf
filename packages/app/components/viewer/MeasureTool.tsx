@@ -177,7 +177,7 @@ export function MeasureTool({
           className="pointer-events-none absolute z-30 rounded bg-green-900/90 px-2 py-1 text-xs font-mono text-green-100 shadow-lg"
           style={{ left: midX + 8, top: midY - 24 }}
         >
-          {measurement.distanceMm} mm &middot; {measurement.distanceIn}" &middot; {measurement.distancePts} pt
+          {measurement.distanceMm} mm &middot; {measurement.distanceIn}&quot; &middot; {measurement.distancePts} pt
         </div>
       )}
 

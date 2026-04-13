@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { FieldTable } from "@/components/docs/FieldTable";
 
@@ -9,13 +10,13 @@ export default function ReportFormatsPage() {
         LintPDF mints reports as immutable tokens. Each token binds a format
         (PDF, HTML, JSON, XML) and a frozen branding state. Consume reports via
         public share URLs or the authenticated list endpoint. See the{" "}
-        <a href="/docs/share-links" className="text-brand-700 hover:underline">
+        <Link href="/docs/share-links" className="text-brand-700 hover:underline">
           Share Links
-        </a>
+        </Link>
         {" "}and{" "}
-        <a href="/docs/branding-and-anonymous" className="text-brand-700 hover:underline">
+        <Link href="/docs/branding-and-anonymous" className="text-brand-700 hover:underline">
           Branding &amp; Anonymous Output
-        </a>{" "}
+        </Link>{" "}
         pages for the full workflow.
       </p>
 
@@ -40,9 +41,9 @@ export default function ReportFormatsPage() {
       <p className="text-slate-600 mb-3">
         The <code className="bg-slate-100 px-1 rounded">json</code> format returns the full job payload plus
         frozen source metadata. Import this shape directly using the native{" "}
-        <a href="/docs/import-schema" className="text-brand-700 hover:underline">
+        <Link href="/docs/import-schema" className="text-brand-700 hover:underline">
           LintPDF v1 import schema
-        </a>.
+        </Link>.
       </p>
       <CodeBlock>{`{
   "job_id": "d4e5f6a7-...",

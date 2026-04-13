@@ -106,8 +106,7 @@ export async function handlePatch(req: Request): Promise<NextResponse> {
   try {
     // `updateBranding()` from pixie-dust-auth/server upserts the singleton
     // AppSettings row — safe to call with a partial field set.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updated = await updateBranding(prisma, data as any);
+    const updated = await updateBranding(prisma, data as Parameters<typeof updateBranding>[1]);
     return NextResponse.json(updated);
   } catch (e) {
     return NextResponse.json(

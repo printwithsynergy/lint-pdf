@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function ChecksPage() {
   return (
     <>
@@ -18,12 +20,12 @@ export default function ChecksPage() {
           <code className="bg-white px-1 rounded">preflight_source=external</code>{" "}
           import their findings verbatim from PitStop / callas / Acrobat /
           native payloads — LintPDF does not re-check them. See{" "}
-          <a
+          <Link
             href="/docs/preflight-modes"
             className="text-brand-700 hover:underline"
           >
             Preflight Modes
-          </a>{" "}
+          </Link>{" "}
           for the full matrix.
         </p>
         <p>

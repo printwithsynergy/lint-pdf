@@ -526,7 +526,7 @@ export default function FeaturesPage() {
                     preflight-&lt;id&gt;.pdf
                   </code>
                   , and share links freeze that anonymity at mint time — flipping
-                  the setting later won't retroactively rebrand already-sent
+                  the setting later won&apos;t retroactively rebrand already-sent
                   links. Ideal for agencies and brokers who hand reports to
                   end-distributors without exposing their supply chain.
                 </p>

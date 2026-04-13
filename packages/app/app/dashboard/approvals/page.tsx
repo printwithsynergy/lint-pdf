@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 
 interface Approver {
   email: string;
@@ -244,12 +245,12 @@ export default function ApprovalsPage() {
             Build reusable approval templates and let your team sign off on preflight reports
             with email notifications and external webhooks at each step.
           </p>
-          <a
+          <Link
             href="/dashboard/billing"
             className="inline-block rounded-md bg-amber-600 px-5 py-2 text-sm font-medium text-white hover:bg-amber-700"
           >
             View Plans
-          </a>
+          </Link>
         </div>
       </div>
     );

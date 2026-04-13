@@ -159,7 +159,7 @@ Content-Disposition: attachment; filename="report.pdf"`}
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Public viewer surfaces</h4>
       <p className="text-slate-600 mb-3">
         Every authenticated viewer route has an unauthenticated parallel
-        rooted at <code className="bg-slate-100 px-1 rounded">/api/v1/viewer/public/{`{token}`}/*</code>. The token
+        rooted at <code className="bg-slate-100 px-1 rounded">{`/api/v1/viewer/public/{token}/*`}</code>. The token
         carries the frozen brand, so <code className="bg-slate-100 px-1 rounded">GET .../config</code> emits
         the same branding block regardless of later tenant setting changes.
       </p>
