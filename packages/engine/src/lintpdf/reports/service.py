@@ -17,6 +17,7 @@ class ReportDetailLevel(StrEnum):
     STANDARD = "standard"  # Production report: screenshots, full findings
     COMPREHENSIVE = "comprehensive"  # Deep analysis: score breakdown, ink data, details
 
+
 if TYPE_CHECKING:
     from lintpdf.api.config import Settings
     from lintpdf.api.models import BrandProfile, Tenant
@@ -243,9 +244,11 @@ def sanitize_pdf_metadata_for_anonymous(pdf_bytes: bytes) -> bytes:
         return pdf_bytes
 
     try:
-        with pikepdf.open(pikepdf.util.io.BytesIO(pdf_bytes)) if hasattr(
-            pikepdf, "util"
-        ) else pikepdf.open(_bytes_stream(pdf_bytes)) as pdf:
+        with (
+            pikepdf.open(pikepdf.util.io.BytesIO(pdf_bytes))
+            if hasattr(pikepdf, "util")
+            else pikepdf.open(_bytes_stream(pdf_bytes)) as pdf
+        ):
             info = pdf.docinfo
             info["/Author"] = ""
             info["/Creator"] = "Preflight"
@@ -342,9 +345,7 @@ def resolve_branding(
     return default_lintpdf
 
 
-def _branding_from_profile(
-    profile: Any, default_lintpdf: BrandingContext
-) -> BrandingContext:
+def _branding_from_profile(profile: Any, default_lintpdf: BrandingContext) -> BrandingContext:
     """Build a :class:`BrandingContext` from a :class:`BrandProfile` row.
 
     ``profile_type == 'none'`` with an anonymous tenant intent is already
@@ -473,8 +474,12 @@ class ReportService:
 
         for fmt in formats:
             content = self._generate_format(
-                result_json, fmt, branding, pdf_bytes=pdf_bytes,
-                detail_level=detail_level, summary_page=summary_page,
+                result_json,
+                fmt,
+                branding,
+                pdf_bytes=pdf_bytes,
+                detail_level=detail_level,
+                summary_page=summary_page,
             )
             if content is None:
                 continue
@@ -493,8 +498,17 @@ class ReportService:
             )
             self._db.add(token_record)
 
-            # Build URL
-            suffix = ".pdf" if fmt == "pdf" else ""
+            # Build URL — each non-HTML format gets its own extension so the
+            # public reports.lintpdf.com router knows which content-type to
+            # serve. HTML stays extensionless because /r/{token} is the
+            # canonical landing page.
+            _suffix_by_format = {
+                "pdf": ".pdf",
+                "annotated_pdf": ".pdf",
+                "json": ".json",
+                "xml": ".xml",
+            }
+            suffix = _suffix_by_format.get(fmt, "")
             url = f"{report_base_url}/r/{tokens[fmt]}{suffix}"
 
             report_result.reports.append(
@@ -594,8 +608,7 @@ class ReportService:
             return self._storage.download_pdf(file_key)
         except Exception:
             logger.error(
-                "Failed to download original PDF for report screenshots "
-                "(job_id=%s, file_key=%s)",
+                "Failed to download original PDF for report screenshots (job_id=%s, file_key=%s)",
                 job_id,
                 file_key,
                 exc_info=True,
@@ -615,16 +628,30 @@ class ReportService:
         """Generate report content in the requested format."""
         if fmt == "html":
             return self._generate_html(
-                result_json, branding, pdf_bytes=pdf_bytes,
-                detail_level=detail_level, summary_page=summary_page,
+                result_json,
+                branding,
+                pdf_bytes=pdf_bytes,
+                detail_level=detail_level,
+                summary_page=summary_page,
             )
         if fmt == "pdf":
             return self._generate_pdf(
-                result_json, branding, pdf_bytes=pdf_bytes,
-                detail_level=detail_level, summary_page=summary_page,
+                result_json,
+                branding,
+                pdf_bytes=pdf_bytes,
+                detail_level=detail_level,
+                summary_page=summary_page,
             )
         if fmt == "annotated_pdf":
             return self._generate_annotated_pdf(result_json, branding)
+        if fmt == "json":
+            from lintpdf.reports.json_report import generate_json_from_dict
+
+            return generate_json_from_dict(result_json)
+        if fmt == "xml":
+            from lintpdf.reports.xml_report import generate_xml_from_dict
+
+            return generate_xml_from_dict(result_json)
         return None
 
     @staticmethod
@@ -696,9 +723,7 @@ class ReportService:
             try:
                 from lintpdf.reports.page_renderer import render_annotated_pages
 
-                annotated_pages = render_annotated_pages(
-                    pdf_bytes, findings_by_page, dpi=150
-                )
+                annotated_pages = render_annotated_pages(pdf_bytes, findings_by_page, dpi=150)
             except Exception:
                 logger.exception("Failed to render annotated pages for service report")
 
@@ -734,12 +759,14 @@ class ReportService:
                 iid = f.get("inspection_id", "")
                 details = f.get("details") or {}
                 if iid == "LPDF_INK_002":
-                    ink_separations.append({
-                        "name": details.get("separation_name", ""),
-                        "pages_used": details.get("pages_used", []),
-                        "max_value": details.get("max_value", 0),
-                        "event_count": details.get("event_count", 0),
-                    })
+                    ink_separations.append(
+                        {
+                            "name": details.get("separation_name", ""),
+                            "pages_used": details.get("pages_used", []),
+                            "max_value": details.get("max_value", 0),
+                            "event_count": details.get("event_count", 0),
+                        }
+                    )
                 elif iid == "LPDF_INK_001":
                     page = f.get("page_num", 0)
                     if page > 0:
@@ -757,7 +784,10 @@ class ReportService:
         deduped = deduplicate_findings(findings)
         all_findings_sorted = sorted(
             deduped,
-            key=lambda f: (severity_order.get(f.get("severity", "advisory"), 3), f.get("page_num") or 0),
+            key=lambda f: (
+                severity_order.get(f.get("severity", "advisory"), 3),
+                f.get("page_num") or 0,
+            ),
         )
 
         # Summary page data (thumbnails + health score)
@@ -766,6 +796,7 @@ class ReportService:
         if summary_page != "off" and pdf_bytes is not None:
             try:
                 from lintpdf.reports.page_renderer import render_page_thumbnail_grid
+
                 page_thumbnails = render_page_thumbnail_grid(pdf_bytes, max_pages=12, dpi=72)
             except Exception:
                 logger.exception("Failed to render page thumbnails for summary page")
@@ -857,8 +888,11 @@ class ReportService:
         from weasyprint import HTML
 
         html_bytes = self._generate_html(
-            result_json, branding, pdf_bytes=pdf_bytes,
-            detail_level=detail_level, summary_page=summary_page,
+            result_json,
+            branding,
+            pdf_bytes=pdf_bytes,
+            detail_level=detail_level,
+            summary_page=summary_page,
         )
         pdf_bytes_out: bytes = HTML(string=html_bytes.decode("utf-8")).write_pdf()
         if branding.anonymous:
@@ -873,7 +907,11 @@ class ReportService:
         """Generate annotated PDF with finding overlays on original pages.
 
         Requires the original PDF bytes to be available in storage.
-        Falls back to None if the original PDF cannot be retrieved.
+        Falls back to None if the original PDF cannot be retrieved or if
+        the overlay rendering throws (pikepdf import errors, malformed
+        source PDFs, etc.) — never propagate to a 500. The mint endpoint
+        treats a None return as "skip this format" and the rest of the
+        formats in the request still mint successfully.
         """
         from lintpdf.reports.annotated_pdf_report import generate_annotated_pdf
 
@@ -886,12 +924,23 @@ class ReportService:
         try:
             pdf_bytes = self._storage.download_pdf(file_key)
         except Exception:
-            logger.warning("Cannot generate annotated PDF: failed to download original PDF")
+            logger.warning(
+                "Cannot generate annotated PDF: failed to download original PDF (file_key=%s)",
+                file_key,
+                exc_info=True,
+            )
             return None
 
         findings = result_json.get("findings", [])
-        return generate_annotated_pdf(
-            pdf_bytes,
-            findings,
-            branding_name=branding.name,
-        )
+        try:
+            return generate_annotated_pdf(
+                pdf_bytes,
+                findings,
+                branding_name=branding.name,
+            )
+        except Exception:
+            logger.exception(
+                "Annotated PDF render failed for job %s; skipping format",
+                result_json.get("job_id"),
+            )
+            return None

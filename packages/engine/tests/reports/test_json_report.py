@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from lintpdf.profiles.orchestrator import PreflightResult
 
-from lintpdf.reports.json_report import generate_json_report
+from lintpdf.reports.json_report import generate_json_from_dict, generate_json_report
 
 
 class TestJsonReport:
@@ -64,3 +64,84 @@ class TestJsonReport:
         report_bytes = generate_json_report(sample_result)
         assert isinstance(report_bytes, bytes)
         report_bytes.decode("utf-8")  # Should not raise
+
+
+class TestJsonFromDict:
+    """Tests for the dict-based renderer used by the report mint service."""
+
+    @staticmethod
+    def _sample_dict() -> dict[str, object]:
+        return {
+            "job_id": "abc-123",
+            "profile_id": "lintpdf-default",
+            "duration_ms": 4321,
+            "preflight_source": "engine",
+            "summary": {
+                "passed": False,
+                "total_findings": 2,
+                "error_count": 1,
+                "warning_count": 1,
+                "advisory_count": 0,
+                "page_count": 3,
+                "file_size_bytes": 9999,
+            },
+            "metadata": {
+                "pdf_version": "1.7",
+                "page_count": 3,
+                "is_encrypted": False,
+                "conformance": "PDF/X-4",
+            },
+            "findings": [
+                {
+                    "inspection_id": "LPDF_FONT_001",
+                    "severity": "error",
+                    "message": "Font not embedded",
+                    "page_num": 1,
+                    "object_id": "F1",
+                    "object_type": "font",
+                    "iso_clause": "ISO 32000-2:2020 9.6",
+                    "category": "fonts",
+                    "source": "engine",
+                    "bbox": [10.0, 20.0, 30.0, 40.0],
+                    "details": {"font_name": "Arial"},
+                },
+                {
+                    "inspection_id": "LPDF_IMG_001",
+                    "severity": "warning",
+                    "message": "Image below 150 DPI",
+                    "page_num": 2,
+                },
+            ],
+        }
+
+    def test_dict_input_roundtrips(self) -> None:
+        data = json.loads(generate_json_from_dict(self._sample_dict()))
+        assert data["schema_version"] == "1"
+        assert data["job_id"] == "abc-123"
+        assert data["profile_id"] == "lintpdf-default"
+        assert data["preflight_source"] == "engine"
+        assert data["summary"]["error_count"] == 1
+        assert data["document"]["pdf_version"] == "1.7"
+        assert data["document"]["conformance"] == "PDF/X-4"
+        assert len(data["findings"]) == 2
+        assert data["findings"][0]["bbox"] == [10.0, 20.0, 30.0, 40.0]
+        assert data["findings"][0]["details"]["font_name"] == "Arial"
+
+    def test_dict_input_tolerates_missing_keys(self) -> None:
+        data = json.loads(generate_json_from_dict({"job_id": "x"}))
+        assert data["job_id"] == "x"
+        assert data["findings"] == []
+        assert data["summary"]["error_count"] == 0
+        assert data["document"]["pdf_version"] == ""
+
+    def test_dict_input_skips_non_dict_findings(self) -> None:
+        data = json.loads(
+            generate_json_from_dict(
+                {
+                    "job_id": "x",
+                    "findings": [{"inspection_id": "a", "severity": "error"}, "junk", None],
+                }
+            )
+        )
+        assert len(data["findings"]) == 1
+        assert data["findings"][0]["inspection_id"] == "a"

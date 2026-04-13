@@ -254,9 +254,7 @@ async def generate_reports(  # skipcq: PY-R1000
             "source": f.source or "engine",
             "category": f.category,
             "details": f.details,
-            "bbox": [f.bbox_x0, f.bbox_y0, f.bbox_x1, f.bbox_y1]
-            if f.bbox_x0 is not None
-            else None,
+            "bbox": [f.bbox_x0, f.bbox_y0, f.bbox_x1, f.bbox_y1] if f.bbox_x0 is not None else None,
         }
         for f in findings
     ]
@@ -285,11 +283,11 @@ async def generate_reports(  # skipcq: PY-R1000
             formats=body.formats,
             expiry_days=expiry_days,
             branding=branding,
-            report_base_url=resolve_report_base_url(
-                tenant, active_profile, entitlements, settings
-            ),
+            report_base_url=resolve_report_base_url(tenant, active_profile, entitlements, settings),
             detail_level=detail_level,
-            summary_page=body.summary_page or getattr(tenant, "report_summary_page", None) or "prepend",
+            summary_page=body.summary_page
+            or getattr(tenant, "report_summary_page", None)
+            or "prepend",
         ),
     )
 
@@ -378,6 +376,110 @@ async def revoke_report(
 # ``token='abc.pdf'`` and 404s because the DB stores ``abc``. Declaring the
 # ``.pdf``-suffixed route first lets Starlette try the specific pattern
 # before falling back to the catch-all.
+
+
+async def _serve_report_by_extension(
+    token: str,
+    expected_format: str,
+    media_type: str,
+    download: bool,
+    db: Session,
+) -> Response:
+    """Shared lookup + storage fetch for the public ``/r/{token}.{ext}`` routes.
+
+    Centralises the token expiry check, the format-mismatch 404, and the
+    storage 404 so JSON, XML, PDF, and (future) annotated PDF token routes
+    behave identically.
+    """
+    from datetime import datetime, timezone
+
+    record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
+    if record is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report not found.")
+
+    if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
+        raise HTTPException(status_code=status.HTTP_410_GONE, detail="Report has expired.")
+
+    if record.format != expected_format:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{expected_format.upper()} report not found for this token.",
+        )
+
+    from lintpdf.api.storage import get_storage
+
+    storage = get_storage()
+    loop = asyncio.get_running_loop()
+    try:
+        content = await loop.run_in_executor(
+            None,
+            storage.download_report,
+            str(record.tenant_id),
+            str(record.job_id),
+            expected_format,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{expected_format.upper()} report not found for this token.",
+        ) from exc
+
+    record.accessed_count += 1
+    record.last_accessed_at = datetime.now(timezone.utc)
+    db.commit()
+
+    headers: dict[str, str] = {}
+    if download:
+        ext = "pdf" if expected_format == "pdf" else expected_format
+        if record.brand_mode == "anonymous":
+            from lintpdf.reports.service import build_anonymous_filename
+
+            filename = build_anonymous_filename(str(record.job_id), extension=ext)
+        else:
+            filename = f"report.{ext}"
+        headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    return Response(content=content, media_type=media_type, headers=headers)
+
+
+@router.get("/r/{token}.json")
+async def serve_json_report(
+    token: str,
+    download: int = 0,
+    db: Session = Depends(get_db),
+) -> Response:
+    """Serve a JSON report by token (public, no auth).
+
+    Same shape as the LintPDF v1 import schema — re-importable via
+    ``preflight_source=external``, ``external_format=lintpdf_json``.
+    """
+    return await _serve_report_by_extension(
+        token=token,
+        expected_format="json",
+        media_type="application/json",
+        download=bool(download),
+        db=db,
+    )
+
+
+@router.get("/r/{token}.xml")
+async def serve_xml_report(
+    token: str,
+    download: int = 0,
+    db: Session = Depends(get_db),
+) -> Response:
+    """Serve an XML report by token (public, no auth).
+
+    Same field taxonomy as the JSON report — for Switch / MIS / other
+    XML-only consumers.
+    """
+    return await _serve_report_by_extension(
+        token=token,
+        expected_format="xml",
+        media_type="application/xml",
+        download=bool(download),
+        db=db,
+    )
 
 
 @router.get("/r/{token}.pdf")
@@ -542,11 +644,7 @@ async def get_token_findings(
     if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Token has expired.")
 
-    findings = (
-        db.query(JobFinding)
-        .filter(JobFinding.job_id == record.job_id)
-        .all()
-    )
+    findings = db.query(JobFinding).filter(JobFinding.job_id == record.job_id).all()
 
     return {
         "findings": [
