@@ -128,17 +128,18 @@ class RegulatorySymbolDetectionAnalyzer(BaseAIAnalyzer):
             try:
                 result = gpu.detect_symbols(png_bytes)
             except GPUServiceUnavailableError as exc:
-                findings.append(
-                    self._make_finding(
-                        inspection_id="AI_RSYM_001",
-                        severity=Severity.ADVISORY,
-                        message=(
-                            "GPU inference service unavailable for regulatory "
-                            f"symbol detection: {exc}"
-                        ),
-                        page_num=page_num,
-                        details={"reason": "gpu_unavailable"},
-                    )
+                # GPU inference is an infrastructure dependency, not a PDF
+                # quality signal. When it's rate-limited (429) or down, we
+                # silently bail out of this analyzer — the orchestrator's
+                # AI_SCAN_001 audit marker still records that the scan ran,
+                # and a separate ops signal will surface the GPU outage.
+                # Emitting a per-page finding just pollutes the reviewer's
+                # queue with noise they can't act on.
+                logger.warning(
+                    "GPU service unavailable for regulatory symbol detection "
+                    "on page %d: %s — skipping analyzer",
+                    page_num,
+                    exc,
                 )
                 return findings
 

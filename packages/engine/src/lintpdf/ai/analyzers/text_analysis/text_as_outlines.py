@@ -126,17 +126,15 @@ class TextAsOutlinesAnalyzer(BaseAIAnalyzer):
             try:
                 result = gpu.detect_outlines(png_bytes)
             except GPUServiceUnavailableError as exc:
-                findings.append(
-                    self._make_finding(
-                        inspection_id="AI_TAO_001",
-                        severity=Severity.ADVISORY,
-                        message=(
-                            "GPU inference service unavailable for text-as-outlines "
-                            f"verification: {exc}"
-                        ),
-                        page_num=page_num,
-                        details={"reason": "gpu_unavailable"},
-                    )
+                # Same rationale as AI_RSYM_001 — GPU outage is infra noise,
+                # not a PDF quality signal. Bail silently; AI_SCAN_001 audit
+                # marker on the orchestrator will still record that the AI
+                # pipeline ran (or attempted to).
+                logger.warning(
+                    "GPU service unavailable for text-as-outlines on page %d: %s "
+                    "— skipping analyzer",
+                    page_num,
+                    exc,
                 )
                 return findings
 
