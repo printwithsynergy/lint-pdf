@@ -1346,6 +1346,17 @@ _WARM_THUMBNAIL_DPI = 72
 _WARM_STATUS_TTL_S = 24 * 60 * 60
 _WARM_LOCK_TTL_S = 600  # matches soft_time_limit
 
+# Per-tenant concurrency cap for tile warming. Prevents a bulk-upload
+# tenant (100 jobs submitted in 10 seconds) from spawning 100
+# simultaneous ``warm_tiles`` workers and starving the Celery pool.
+# Overrides per-tenant via the ``LINTPDF_TILE_WARMING_PER_TENANT_MAX``
+# env var. A value of 0 disables the cap entirely.
+_WARM_TENANT_SEMAPHORE_TTL_S = 900  # conservative: 15 min, > hard time_limit
+# How long a blocked enqueue should wait (via countdown) before retry.
+# Short enough that a brief burst clears quickly; long enough that we
+# don't busy-loop against the semaphore.
+_WARM_TENANT_RETRY_DELAY_S = 20
+
 
 def _tile_warm_status_key(job_id: str) -> str:
     """Redis hash tracking warming progress for a job."""
@@ -1355,6 +1366,22 @@ def _tile_warm_status_key(job_id: str) -> str:
 def _tile_warm_lock_key(job_id: str) -> str:
     """Redis string holding the active warming lock for a job."""
     return f"lintpdf:tile-warm-lock:{job_id}"
+
+
+def _tile_warm_tenant_semaphore_key(tenant_id: str) -> str:
+    """Redis counter of currently-running warming jobs for a tenant."""
+    return f"lintpdf:tile-warm-sem:{tenant_id}"
+
+
+def _tile_warm_tenant_cap() -> int:
+    """Configured per-tenant concurrency cap. 0 means no cap."""
+    import os as _os
+
+    raw = _os.getenv("LINTPDF_TILE_WARMING_PER_TENANT_MAX", "3")
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 3
 
 
 def _tile_s3_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
@@ -1438,6 +1465,7 @@ def warm_viewer_tiles(
     warmed, etc.) — only on unexpected exceptions after the in-progress
     state has been published, so retries don't wedge.
     """
+    import contextlib
     import datetime as _dt
     import uuid as uuid_mod
 
@@ -1468,6 +1496,8 @@ def warm_viewer_tiles(
 
     status_key = _tile_warm_status_key(job_id)
     started_at = _dt.datetime.now(_dt.UTC).isoformat()
+    semaphore_held = False
+    tenant_id_for_semaphore: str | None = None
 
     db = get_db_session()
     try:
@@ -1493,6 +1523,57 @@ def warm_viewer_tiles(
 
         tenant_id = str(job.tenant_id)
         storage = get_storage()
+
+        # Per-tenant concurrency gate. We've already claimed the
+        # per-job lock above, so release it if the semaphore is full —
+        # the retry re-acquires both locks cleanly. ``cap = 0`` means
+        # the cap is disabled (useful for integration tests).
+        cap = _tile_warm_tenant_cap()
+        if cap > 0:
+            sem_key = _tile_warm_tenant_semaphore_key(tenant_id)
+            try:
+                current = redis.incr(sem_key)
+                # First incrementer sets the TTL so orphaned counters
+                # can't lock a tenant out forever if a worker crashes
+                # before the decrement.
+                if current == 1:
+                    redis.expire(sem_key, _WARM_TENANT_SEMAPHORE_TTL_S)
+                if current > cap:
+                    # Over cap — roll back and retry.
+                    redis.decr(sem_key)
+                    with contextlib.suppress(Exception):
+                        redis.delete(lock_key)
+                    logger.info(
+                        "warm_viewer_tiles: tenant %s over cap (%d/%d); retrying job %s in %ds",
+                        tenant_id,
+                        current - 1,
+                        cap,
+                        job_id,
+                        _WARM_TENANT_RETRY_DELAY_S,
+                    )
+                    # Re-enqueue ourselves with a countdown so Celery
+                    # defers the work instead of busy-retrying.
+                    warm_viewer_tiles.apply_async(
+                        args=[job_id, dpi],
+                        kwargs={"include_thumbnails": include_thumbnails},
+                        countdown=_WARM_TENANT_RETRY_DELAY_S,
+                        queue="default",
+                    )
+                    return {
+                        "status": "deferred",
+                        "job_id": job_id,
+                        "tenant_id": tenant_id,
+                        "cap": cap,
+                    }
+            except Exception:
+                logger.warning(
+                    "warm_viewer_tiles: tenant semaphore failed for %s — proceeding without cap",
+                    tenant_id,
+                    exc_info=True,
+                )
+            else:
+                semaphore_held = True
+                tenant_id_for_semaphore = tenant_id
 
         # Publish initial in-progress state so pollers see a non-zero
         # total immediately.
@@ -1535,7 +1616,79 @@ def warm_viewer_tiles(
                 )
                 # Don't re-raise — one page's failure shouldn't block the rest.
 
-        import contextlib
+        # Pre-warm CMYK + spot channel rasters too, so the first click
+        # on the Separations panel / Densitometer doesn't pay the
+        # ~2s Ghostscript cost. get_cmyk_channels owns the cache
+        # keys and the render; calling it with the storage context
+        # populates the S3 cache as a side effect. Spot channels are
+        # enumerated via list_separations so tenants printing with
+        # Pantone / metallic inks benefit too.
+        def _warm_separations() -> None:
+            try:
+                from lintpdf.reports.separation_renderer import (
+                    channel_cache_key,
+                    get_cmyk_channels,
+                    list_separations,
+                    render_separation_channel,
+                )
+            except Exception:
+                logger.warning(
+                    "warm_viewer_tiles: separation renderer unavailable — skipping spot warm",
+                    exc_info=True,
+                )
+                return
+
+            try:
+                spots = [
+                    ch["name"] for ch in list_separations(pdf_bytes) if ch.get("type") == "spot"
+                ]
+            except Exception:
+                spots = []
+
+            for page_num in range(1, page_count + 1):
+                try:
+                    # CMYK: get_cmyk_channels writes all four PNGs to
+                    # S3 when the caching context is supplied.
+                    get_cmyk_channels(
+                        pdf_bytes,
+                        page_num,
+                        dpi,
+                        tenant_id=tenant_id,
+                        job_id=job_id,
+                        storage=storage,
+                    )
+                except Exception:
+                    logger.warning(
+                        "warm_viewer_tiles: CMYK warm failed p%d for %s",
+                        page_num,
+                        job_id,
+                        exc_info=True,
+                    )
+                for spot in spots:
+                    key = channel_cache_key(tenant_id, job_id, page_num, dpi, spot)
+                    try:
+                        if storage.download_raw(key) is not None:
+                            continue  # already cached
+                    except Exception:
+                        pass
+                    try:
+                        render_separation_channel(
+                            pdf_bytes,
+                            page_num,
+                            spot,
+                            dpi=dpi,
+                            tenant_id=tenant_id,
+                            job_id=job_id,
+                            storage=storage,
+                        )
+                    except Exception:
+                        logger.warning(
+                            "warm_viewer_tiles: spot %s warm failed p%d for %s",
+                            spot,
+                            page_num,
+                            job_id,
+                            exc_info=True,
+                        )
 
         for page_num in range(1, page_count + 1):
             _warm_one(page_num, dpi)
@@ -1550,6 +1703,15 @@ def warm_viewer_tiles(
                         "updated_at": _dt.datetime.now(_dt.UTC).isoformat(),
                     },
                 )
+
+        # Separation warming runs after page tiles so a reviewer who
+        # opens the viewer mid-warm always sees composite tiles first.
+        # Gated behind an env var so tenants without Ghostscript
+        # workloads can opt out of the extra minutes per large job.
+        import os as _os_sep
+
+        if _os_sep.getenv("LINTPDF_TILE_WARMING_INCLUDE_SEPARATIONS", "true").lower() != "false":
+            _warm_separations()
 
         completed_at = _dt.datetime.now(_dt.UTC).isoformat()
         try:
@@ -1568,22 +1730,44 @@ def warm_viewer_tiles(
         except Exception:
             logger.warning("warm_viewer_tiles: final status publish failed", exc_info=True)
 
+        # Structured completion log so ops/alerting can parse by key.
+        # Duration is the wallclock between the initial publish and
+        # now — a proxy for "time from job-complete to viewer-ready".
+        try:
+            started_dt = _dt.datetime.fromisoformat(started_at)
+            duration_s = (_dt.datetime.now(_dt.UTC) - started_dt).total_seconds()
+        except Exception:
+            duration_s = -1.0
         logger.info(
-            "warm_viewer_tiles: completed %s (%d pages @ %d dpi, thumbnails=%s)",
-            job_id,
-            page_count,
-            dpi,
-            include_thumbnails,
+            "tile_warm.complete",
+            extra={
+                "event": "tile_warm.complete",
+                "job_id": job_id,
+                "tenant_id": tenant_id,
+                "page_count": page_count,
+                "dpi": dpi,
+                "thumbnails": include_thumbnails,
+                "duration_s": round(duration_s, 2),
+            },
         )
         return {
             "status": "complete",
             "job_id": job_id,
             "rendered": page_count,
             "total": page_count,
+            "duration_s": round(duration_s, 2),
         }
 
     except Exception as exc:
-        logger.exception("warm_viewer_tiles: unexpected failure for %s", job_id)
+        logger.exception(
+            "tile_warm.failure",
+            extra={
+                "event": "tile_warm.failure",
+                "job_id": job_id,
+                "tenant_id": tenant_id_for_semaphore,
+                "error": str(exc)[:500],
+            },
+        )
         # Publish the failure state (best-effort) before re-raising so
         # the viewer's progress badge can render the error chip.
         with contextlib.suppress(Exception):
@@ -1597,6 +1781,9 @@ def warm_viewer_tiles(
             )
         raise
     finally:
+        if semaphore_held and tenant_id_for_semaphore:
+            with contextlib.suppress(Exception):
+                redis.decr(_tile_warm_tenant_semaphore_key(tenant_id_for_semaphore))
         with contextlib.suppress(Exception):
             redis.delete(lock_key)
         db.close()

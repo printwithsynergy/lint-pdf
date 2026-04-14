@@ -250,6 +250,31 @@ async def list_pages(
     return PagesResponse(job_id=job_id, page_count=len(pages), pages=pages)
 
 
+# ---------------------------------------------------------------------------
+# Optional Redis hot byte-cache for tiles (Phase 2 of the warming plan)
+# ---------------------------------------------------------------------------
+#
+# When ``LINTPDF_TILE_HOT_CACHE_ENABLED=true`` we stash tile bytes in
+# Redis for 15 min after any request. The next request for the same
+# tile returns from RAM in ~1–3 ms instead of a ~100–200 ms S3 GET.
+# Gated off by default because PNG tiles at 150 DPI average 50–500 KB
+# and Redis memory is precious on smaller plans — the feature flag
+# means ops can turn it on per-environment without a code change.
+
+
+def _tile_hot_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
+    return f"lintpdf:tile-hot:{tenant_id}:{job_id}:{page_num}:{dpi}"
+
+
+def _hot_cache_enabled() -> bool:
+    import os as _os
+
+    return _os.getenv("LINTPDF_TILE_HOT_CACHE_ENABLED", "false").lower() == "true"
+
+
+_HOT_CACHE_TTL_S = 15 * 60  # 15 minutes — matches a typical review session
+
+
 @router.get("/jobs/{job_id}/pages/{page_num}/tile")
 async def get_page_tile(
     job_id: str,
@@ -265,27 +290,73 @@ async def get_page_tile(
 ) -> Response:
     """Render a single page as a PNG tile at the requested DPI.
 
-    Tiles are cached in S3 — subsequent requests serve the cached version.
+    Tile read path (fastest first):
+    1. Redis hot byte-cache (opt-in, ~1-3 ms).
+    2. S3 tile cache (pre-warmed by ``warm_viewer_tiles`` after
+       preflight completion - this is where the bytes live durably).
+    3. Render on demand via ``render_page_to_image`` and populate
+       both caches for the next reader.
     """
+    import contextlib as _contextlib
+
+    from lintpdf.api.middleware import get_redis_client
+
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
     cache_key = _tile_cache_key(str(tenant.id), str(job.id), page_num, dpi)
 
-    # Try serving from S3 cache
+    hot_enabled = _hot_cache_enabled()
+    redis = get_redis_client() if hot_enabled else None
+    hot_key = (
+        _tile_hot_cache_key(str(tenant.id), str(job.id), page_num, dpi)
+        if redis is not None and dpi == 150
+        else None
+    )
+
+    # 1. Redis hot byte-cache (only when the env flag is on and only
+    #    for the default viewer DPI — high-DPI print tiles stay
+    #    S3-only).
+    if hot_key is not None and redis is not None:
+        try:
+            hot_bytes = redis.get(hot_key)
+        except Exception:
+            hot_bytes = None
+        if hot_bytes:
+            etag = hashlib.md5(hot_bytes[:1024]).hexdigest()
+            return Response(
+                content=hot_bytes,
+                media_type="image/png",
+                headers={
+                    "Cache-Control": "public, max-age=86400",
+                    "ETag": etag,
+                    "X-Tile-Source": "redis-hot",
+                },
+            )
+
+    # 2. S3 tile cache
     try:
         cached = storage.download_raw(cache_key)
         if cached:
             etag = hashlib.md5(cached[:1024]).hexdigest()
+            # Populate the hot cache opportunistically — the next
+            # click on this page now skips S3 entirely.
+            if hot_key is not None and redis is not None:
+                with _contextlib.suppress(Exception):
+                    redis.setex(hot_key, _HOT_CACHE_TTL_S, cached)
             return Response(
                 content=cached,
                 media_type="image/png",
-                headers={"Cache-Control": "public, max-age=86400", "ETag": etag},
+                headers={
+                    "Cache-Control": "public, max-age=86400",
+                    "ETag": etag,
+                    "X-Tile-Source": "s3",
+                },
             )
     except Exception:
         pass  # Cache miss — render on demand
 
-    # Render the tile
+    # 3. Render on demand
     from lintpdf.ai.rendering import render_page_to_image
 
     try:
@@ -296,17 +367,24 @@ async def get_page_tile(
             detail=str(exc),
         ) from exc
 
-    # Cache to S3 (fire-and-forget)
+    # Populate both caches (fire-and-forget).
     try:
         storage.upload_raw(cache_key, tile_bytes, content_type="image/png")
     except Exception:
         logger.warning("Failed to cache tile to S3: %s", cache_key)
+    if hot_key is not None and redis is not None:
+        with _contextlib.suppress(Exception):
+            redis.setex(hot_key, _HOT_CACHE_TTL_S, tile_bytes)
 
     etag = hashlib.md5(tile_bytes[:1024]).hexdigest()
     return Response(
         content=tile_bytes,
         media_type="image/png",
-        headers={"Cache-Control": "public, max-age=86400", "ETag": etag},
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "ETag": etag,
+            "X-Tile-Source": "render",
+        },
     )
 
 

@@ -63,8 +63,17 @@ def _hex_to_rgb(hex_color: str) -> tuple[float, float, float]:
 
 
 def _pdf_string(s: str) -> str:
-    """Escape a Python string for use inside a PDF ``(...)`` literal."""
-    return s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)").replace("\r", " ")
+    """Escape a Python string for use inside a PDF ``(...)`` literal.
+
+    Also replaces any character that isn't representable in latin-1
+    with ``"?"`` so the final ``.encode("latin-1")`` in the content
+    stream can't blow up on a surrogate emoji or a CJK glyph that
+    slipped into a comment body. A custom font subset would be the
+    "right" fix for multilingual markup; until that lands, a sanitised
+    ASCII rendering is better than a 500.
+    """
+    escaped = s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)").replace("\r", " ")
+    return escaped.encode("latin-1", errors="replace").decode("latin-1")
 
 
 def _build_bezier_circle(cx: float, cy: float, r: float) -> list[str]:
@@ -409,7 +418,10 @@ def _append_markup_appendix(
     # Header on the first page.
     current.append(
         f"BT /F1 {_APPENDIX_HEADER_FONT_SIZE} Tf {margin} {y} Td "
-        f"({_pdf_string(branding_name)} \u2014 Markup Notes) Tj ET"
+        # ASCII-only header so the latin-1 content-stream encoding is
+        # safe regardless of branding_name contents. An em-dash would
+        # need a custom font encoding table to render predictably.
+        f"({_pdf_string(branding_name)} -- Markup Notes) Tj ET"
     )
     y -= _APPENDIX_HEADER_FONT_SIZE + 8
     current.append(
@@ -453,9 +465,13 @@ def _append_markup_appendix(
             for c in thread:
                 c_author = str(c.get("author_email", ""))
                 c_body = str(c.get("body", ""))
+                # Use ASCII arrow "-> " instead of U+21B3 so the
+                # content stream round-trips through latin-1 (required
+                # by pikepdf's make_stream) without relying on a custom
+                # font encoding.
                 head = (
                     f"BT /F1 {_APPENDIX_FONT_SIZE} Tf {margin + 14} {y} Td "
-                    f"(\u21b3 {_pdf_string(c_author)}) Tj ET"
+                    f"(-> {_pdf_string(c_author)}) Tj ET"
                 )
                 _emit([head], _APPENDIX_LINE_HEIGHT)
                 for wline in _wrap_text(c_body, wrap_chars - 4):
