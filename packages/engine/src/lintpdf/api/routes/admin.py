@@ -6,7 +6,7 @@ import uuid as uuid_mod
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import desc
 from sqlalchemy.orm import Session  # noqa: TC002
 
@@ -136,6 +136,10 @@ class AdminJobSummary(BaseModel):
     profile_id: str
     file_name: str
     created_at: str
+    completed_at: str | None = None
+    duration_ms: int | None = None
+    page_count: int | None = None
+    error_message: str | None = None
 
 
 class AdminJobListResponse(BaseModel):
@@ -143,6 +147,63 @@ class AdminJobListResponse(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class AdminJobDetail(AdminJobSummary):
+    file_size: int
+    result_summary: dict[str, Any] | None = None
+    report_token: str | None = None
+    report_format: str | None = None
+    verdict: str | None = None
+    verdict_by: str | None = None
+    verdict_at: str | None = None
+    verdict_notes: str | None = None
+    preflight_source: str | None = None
+    external_format: str | None = None
+
+
+class AdminProfileSummary(BaseModel):
+    profile_id: str
+    name: str
+    description: str = ""
+    conformance: str | None = None
+    workflow: str = "CMYK"
+    is_builtin: bool = True
+
+
+class AdminTenantProfiles(BaseModel):
+    tenant_id: str
+    tenant_name: str | None
+    profiles: list[AdminProfileSummary]
+
+
+class AdminProfileListResponse(BaseModel):
+    system: list[AdminProfileSummary]
+    tenants: list[AdminTenantProfiles]
+
+
+class AdminProfileDetailResponse(BaseModel):
+    profile_id: str
+    tenant_id: str | None
+    tenant_name: str | None
+    name: str
+    description: str = ""
+    version: str = "1.0"
+    conformance: str | None = None
+    workflow: str = "CMYK"
+    checks: dict[str, Any]
+    thresholds: dict[str, Any]
+    is_builtin: bool = True
+
+
+class AdminProfileUpsertRequest(BaseModel):
+    tenant_id: str
+    profile_id: str = Field(
+        min_length=1,
+        max_length=255,
+        pattern=r"^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+    )
+    preflight_profile: dict[str, Any]
 
 
 # ── Tenant plan management ───────────────────────────────────
@@ -725,10 +786,14 @@ async def list_all_jobs(
                 id=str(j.id),
                 tenant_id=str(j.tenant_id),
                 tenant_name=tenant_names.get(j.tenant_id),
-                status=j.status,
+                status=j.status.value if hasattr(j.status, "value") else str(j.status),
                 profile_id=j.profile_id,
                 file_name=j.file_name,
                 created_at=j.created_at.isoformat(),
+                completed_at=j.completed_at.isoformat() if j.completed_at else None,
+                duration_ms=j.duration_ms,
+                page_count=j.page_count,
+                error_message=j.error_message,
             )
             for j in jobs
         ],
@@ -736,6 +801,320 @@ async def list_all_jobs(
         page=page,
         page_size=page_size,
     )
+
+
+@router.get("/jobs/{job_id}", response_model=AdminJobDetail)
+async def get_job_detail(
+    job_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminJobDetail:
+    """Get full job detail (cross-tenant) for the site-admin Jobs drawer."""
+    from lintpdf.api.models import ReportToken
+
+    try:
+        uid = uuid_mod.UUID(job_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid job id: {job_id}",
+        ) from exc
+
+    job: Job | None = db.query(Job).filter(Job.id == uid).first()
+    if job is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found.")
+
+    tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+
+    # Pick the most recent report token (any format) for the Links tab.
+    report: ReportToken | None = (
+        db.query(ReportToken)
+        .filter(ReportToken.job_id == uid)
+        .order_by(desc(ReportToken.created_at))
+        .first()
+    )
+
+    result_summary: dict[str, Any] | None = None
+    if isinstance(job.result_json, dict):
+        # Surface only the top-level summary block when present; otherwise
+        # pass through a trimmed view to keep the response small.
+        raw_summary = job.result_json.get("summary")
+        if isinstance(raw_summary, dict):
+            result_summary = raw_summary
+        else:
+            result_summary = {
+                k: v
+                for k, v in job.result_json.items()
+                if k in ("total_checks", "passed", "failed", "warnings", "errors")
+            } or None
+
+    status_str = job.status.value if hasattr(job.status, "value") else str(job.status)
+    source_str = (
+        job.preflight_source.value
+        if hasattr(job.preflight_source, "value")
+        else str(job.preflight_source)
+        if job.preflight_source
+        else None
+    )
+
+    return AdminJobDetail(
+        id=str(job.id),
+        tenant_id=str(job.tenant_id),
+        tenant_name=tenant.name if tenant else None,
+        status=status_str,
+        profile_id=job.profile_id,
+        file_name=job.file_name,
+        file_size=job.file_size,
+        created_at=job.created_at.isoformat(),
+        completed_at=job.completed_at.isoformat() if job.completed_at else None,
+        duration_ms=job.duration_ms,
+        page_count=job.page_count,
+        error_message=job.error_message,
+        result_summary=result_summary,
+        report_token=report.token if report else None,
+        report_format=report.format if report else None,
+        verdict=job.verdict,
+        verdict_by=job.verdict_by,
+        verdict_at=job.verdict_at.isoformat() if job.verdict_at else None,
+        verdict_notes=job.verdict_notes,
+        preflight_source=source_str,
+        external_format=job.external_format,
+    )
+
+
+# ── Cross-tenant profile (ruleset) management ────────────────
+
+
+def _profile_summary_from_builtin(profile_id: str, fp: Any) -> AdminProfileSummary:
+    return AdminProfileSummary(
+        profile_id=profile_id,
+        name=fp.name,
+        description=fp.description,
+        conformance=fp.conformance,
+        workflow=fp.workflow,
+        is_builtin=True,
+    )
+
+
+def _profile_summary_from_custom(row: Any, fp: Any) -> AdminProfileSummary:
+    return AdminProfileSummary(
+        profile_id=row.profile_id,
+        name=fp.name,
+        description=fp.description,
+        conformance=fp.conformance,
+        workflow=fp.workflow,
+        is_builtin=False,
+    )
+
+
+@router.get("/profiles", response_model=AdminProfileListResponse)
+async def list_all_profiles(
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminProfileListResponse:
+    """List all preflight profiles (system + per-tenant custom) for the
+    site-admin Rulesets page."""
+    from lintpdf.api.models import CustomProfile
+    from lintpdf.profiles.registry import ProfileRegistry
+    from lintpdf.profiles.schema import PreflightProfile
+
+    registry = ProfileRegistry()
+    system: list[AdminProfileSummary] = [
+        _profile_summary_from_builtin(pid, registry.get(pid)) for pid in registry.list_profiles()
+    ]
+
+    custom_rows = db.query(CustomProfile).all()
+    tenants = {
+        t.id: t
+        for t in db.query(Tenant).filter(Tenant.id.in_({r.tenant_id for r in custom_rows})).all()
+    }
+
+    by_tenant: dict[Any, list[AdminProfileSummary]] = {}
+    for row in custom_rows:
+        try:
+            fp = PreflightProfile.model_validate(row.preflight_profile_json)
+            by_tenant.setdefault(row.tenant_id, []).append(_profile_summary_from_custom(row, fp))
+        except Exception:
+            continue
+
+    tenant_blocks: list[AdminTenantProfiles] = [
+        AdminTenantProfiles(
+            tenant_id=str(tid),
+            tenant_name=tenants[tid].name if tid in tenants else None,
+            profiles=sorted(profs, key=lambda p: p.profile_id),
+        )
+        for tid, profs in sorted(
+            by_tenant.items(),
+            key=lambda kv: (tenants.get(kv[0]).name if kv[0] in tenants else "").lower(),
+        )
+    ]
+
+    return AdminProfileListResponse(system=system, tenants=tenant_blocks)
+
+
+@router.get(
+    "/tenants/{tenant_id}/profiles/{profile_id}",
+    response_model=AdminProfileDetailResponse,
+)
+async def get_tenant_profile(
+    tenant_id: str,
+    profile_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminProfileDetailResponse:
+    """Get a tenant's custom profile detail (admin, any tenant)."""
+    from lintpdf.api.models import CustomProfile
+    from lintpdf.profiles.registry import ProfileRegistry
+    from lintpdf.profiles.schema import PreflightProfile
+
+    registry = ProfileRegistry()
+    if tenant_id == "system":
+        if not registry.has(profile_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"System profile '{profile_id}' not found.",
+            )
+        fp = registry.get(profile_id)
+        return AdminProfileDetailResponse(
+            profile_id=profile_id,
+            tenant_id=None,
+            tenant_name=None,
+            name=fp.name,
+            description=fp.description,
+            version=fp.version,
+            conformance=fp.conformance,
+            workflow=fp.workflow,
+            checks=fp.checks.model_dump(),
+            thresholds=fp.thresholds.model_dump(),
+            is_builtin=True,
+        )
+
+    tid = _parse_uuid(tenant_id)
+    row: CustomProfile | None = (
+        db.query(CustomProfile)
+        .filter(CustomProfile.tenant_id == tid, CustomProfile.profile_id == profile_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Profile '{profile_id}' not found for tenant {tenant_id}.",
+        )
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    fp = PreflightProfile.model_validate(row.preflight_profile_json)
+    return AdminProfileDetailResponse(
+        profile_id=profile_id,
+        tenant_id=str(tid),
+        tenant_name=tenant.name if tenant else None,
+        name=fp.name,
+        description=fp.description,
+        version=fp.version,
+        conformance=fp.conformance,
+        workflow=fp.workflow,
+        checks=fp.checks.model_dump(),
+        thresholds=fp.thresholds.model_dump(),
+        is_builtin=False,
+    )
+
+
+@router.put(
+    "/tenants/{tenant_id}/profiles/{profile_id}",
+    response_model=AdminProfileDetailResponse,
+)
+async def upsert_tenant_profile(
+    tenant_id: str,
+    profile_id: str,
+    body: AdminProfileUpsertRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminProfileDetailResponse:
+    """Create or update a tenant's custom profile (admin, any tenant)."""
+    from lintpdf.api.models import CustomProfile
+    from lintpdf.profiles.registry import ProfileRegistry
+    from lintpdf.profiles.schema import PreflightProfile
+
+    registry = ProfileRegistry()
+    if registry.has(profile_id):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Profile '{profile_id}' is a built-in profile and cannot be overwritten.",
+        )
+
+    try:
+        fp = PreflightProfile.model_validate(body.preflight_profile)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid Preflight Profile: {exc}",
+        ) from exc
+
+    tid = _parse_uuid(tenant_id)
+    tenant = db.query(Tenant).filter(Tenant.id == tid).first()
+    if tenant is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tenant '{tenant_id}' not found.",
+        )
+
+    existing: CustomProfile | None = (
+        db.query(CustomProfile)
+        .filter(CustomProfile.tenant_id == tid, CustomProfile.profile_id == profile_id)
+        .first()
+    )
+    if existing:
+        existing.preflight_profile_json = fp.model_dump(mode="json")
+    else:
+        db.add(
+            CustomProfile(
+                id=uuid_mod.uuid4(),
+                tenant_id=tid,
+                profile_id=profile_id,
+                preflight_profile_json=fp.model_dump(mode="json"),
+            )
+        )
+    db.commit()
+
+    return AdminProfileDetailResponse(
+        profile_id=profile_id,
+        tenant_id=str(tid),
+        tenant_name=tenant.name,
+        name=fp.name,
+        description=fp.description,
+        version=fp.version,
+        conformance=fp.conformance,
+        workflow=fp.workflow,
+        checks=fp.checks.model_dump(),
+        thresholds=fp.thresholds.model_dump(),
+        is_builtin=False,
+    )
+
+
+@router.delete(
+    "/tenants/{tenant_id}/profiles/{profile_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_tenant_profile(
+    tenant_id: str,
+    profile_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> None:
+    """Delete a tenant's custom profile (admin, any tenant)."""
+    from lintpdf.api.models import CustomProfile
+
+    tid = _parse_uuid(tenant_id)
+    row: CustomProfile | None = (
+        db.query(CustomProfile)
+        .filter(CustomProfile.tenant_id == tid, CustomProfile.profile_id == profile_id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Profile '{profile_id}' not found for tenant {tenant_id}.",
+        )
+    db.delete(row)
+    db.commit()
 
 
 # ── Tenant entitlement overrides ──────────────────────────────

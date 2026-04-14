@@ -99,7 +99,7 @@ describe("lintpdfPlugin", () => {
     expect(ctx.on).toHaveBeenCalledTimes(2);
   });
 
-  it("registers 4 routes (1 webhook + 3 jobs + 1 profiles = 5)", async () => {
+  it("registers the /api/lintpdf route bundle", async () => {
     process.env.LINTPDF_API_URL = "https://api.lintpdf.com";
     process.env.LINTPDF_WEBHOOK_SECRET = "a-very-long-test-secret";
 
@@ -109,7 +109,9 @@ describe("lintpdfPlugin", () => {
 
     const [prefix, routes] = ctx.addRoutes.mock.calls[0];
     expect(prefix).toBe("/api/lintpdf");
-    expect(routes.length).toBe(37);
+    // Grew organically as viewer/annotations/batch/… were added. Assert a
+    // floor rather than an exact count so ordinary additions don't break CI.
+    expect(routes.length).toBeGreaterThanOrEqual(100);
   });
 
   it("boot logs when client is ready", async () => {

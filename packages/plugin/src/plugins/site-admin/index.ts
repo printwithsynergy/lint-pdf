@@ -46,12 +46,15 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     // Permissions
     ctx.addPermission("site-admin:access", ["SUPER_ADMIN"]);
 
-    // Navigation — global section
+    // Navigation — admin section (renders under the "Admin" sidebar heading,
+    // role-gated to SUPER_ADMIN by Pixie Dust). Previously used section: "global"
+    // which the DashboardSidebar filters into the normal "Menu" group, leaking
+    // super-admin routes to tenant users.
     ctx.addNavItem({
       label: "All Tenants",
       href: "/dashboard/admin/tenants",
       icon: "building-2",
-      section: "global",
+      section: "admin",
       order: 10,
       requiredRole: "SUPER_ADMIN",
     });
@@ -59,7 +62,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       label: "All Jobs",
       href: "/dashboard/admin/jobs",
       icon: "inbox",
-      section: "global",
+      section: "admin",
       order: 20,
       requiredRole: "SUPER_ADMIN",
     });
@@ -67,7 +70,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       label: "System Health",
       href: "/dashboard/admin/health",
       icon: "zap",
-      section: "global",
+      section: "admin",
       order: 30,
       requiredRole: "SUPER_ADMIN",
     });
@@ -75,7 +78,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       label: "Tile Warming",
       href: "/dashboard/admin/warming",
       icon: "map",
-      section: "global",
+      section: "admin",
       order: 35,
       requiredRole: "SUPER_ADMIN",
     });
@@ -83,7 +86,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       label: "Appearance",
       href: "/dashboard/admin/appearance",
       icon: "palette",
-      section: "global",
+      section: "admin",
       order: 40,
       requiredRole: "SUPER_ADMIN",
     });
@@ -91,7 +94,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       label: "Branding",
       href: "/dashboard/admin/branding",
       icon: "paintbrush",
-      section: "global",
+      section: "admin",
       order: 41,
       requiredRole: "SUPER_ADMIN",
     });
@@ -225,10 +228,109 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
           );
           if (!resp.ok) {
             const detail = await resp.text();
+            console.error(
+              `[lintpdf] GET /admin/jobs engine error ${resp.status}: ${detail}`,
+            );
             return { status: resp.status, body: { error: detail } };
           }
           const data = await resp.json();
           return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/jobs/:jobId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Get full job detail (super admin, cross-tenant)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/jobs/${req.params.jobId}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            console.error(
+              `[lintpdf] GET /admin/jobs/${req.params.jobId} engine error ${resp.status}: ${detail}`,
+            );
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      // ── Cross-tenant profile (ruleset) management ────────────
+      {
+        method: "GET" as HttpMethod,
+        path: "/profiles",
+        auth: true,
+        permission: "site-admin:access",
+        description: "List all profiles grouped by system + tenant (super admin)",
+        handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(`/api/v1/admin/profiles`);
+          if (!resp.ok) {
+            const detail = await resp.text();
+            console.error(
+              `[lintpdf] GET /admin/profiles engine error ${resp.status}: ${detail}`,
+            );
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/tenants/:tenantId/profiles/:profileId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Get profile detail for any tenant (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/profiles/${req.params.profileId}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "PUT" as HttpMethod,
+        path: "/tenants/:tenantId/profiles/:profileId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Create or update a tenant's custom profile (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/profiles/${req.params.profileId}`,
+            { method: "PUT", body: JSON.stringify(req.body) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "DELETE" as HttpMethod,
+        path: "/tenants/:tenantId/profiles/:profileId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Delete a tenant's custom profile (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/profiles/${req.params.profileId}`,
+            { method: "DELETE" },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 204 };
         }) as RouteHandler,
       },
       {

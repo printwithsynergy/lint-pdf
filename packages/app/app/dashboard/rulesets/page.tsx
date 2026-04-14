@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
@@ -21,16 +21,71 @@ interface ProfileDetail extends ProfileSummary {
   thresholds: Record<string, unknown>;
 }
 
+interface AdminTenantProfiles {
+  tenant_id: string;
+  tenant_name: string | null;
+  profiles: ProfileSummary[];
+}
+
+interface AdminProfileList {
+  system: ProfileSummary[];
+  tenants: AdminTenantProfiles[];
+}
+
+type Mode = "tenant" | "admin";
+
+/**
+ * Group-owner key used when CRUD-ing a profile:
+ * - "self"       → tenant-scoped endpoint (own customs)
+ * - "system"     → built-in (read-only / clone only)
+ * - "<tenantId>" → admin writes against that specific tenant
+ */
+type OwnerKey = "self" | "system" | string;
+
+async function fetchDetailRaw(owner: OwnerKey, profileId: string): Promise<Response> {
+  if (owner === "self") {
+    return fetch(`/api/lintpdf/profiles/${profileId}`);
+  }
+  if (owner === "system") {
+    return fetch(`/api/lintpdf/profiles/${profileId}`);
+  }
+  return fetch(
+    `/api/lintpdf/admin/tenants/${owner}/profiles/${profileId}`,
+  );
+}
+
+async function readErrorDetail(resp: Response, fallback: string): Promise<string> {
+  const text = await resp.text();
+  try {
+    const data = JSON.parse(text);
+    const detail = data?.error ?? data?.detail ?? text;
+    return typeof detail === "string" ? detail : JSON.stringify(detail);
+  } catch {
+    return text || fallback;
+  }
+}
+
 export default function RulesetsPage() {
-  const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
+  const [mode, setMode] = useState<Mode>("tenant");
+  const [tenantProfiles, setTenantProfiles] = useState<ProfileSummary[]>([]);
+  const [adminData, setAdminData] = useState<AdminProfileList | null>(null);
+  const [expandedTenants, setExpandedTenants] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [expandSystem, setExpandSystem] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // Selected profile detail (viewer panel)
+  const [selectedOwner, setSelectedOwner] = useState<OwnerKey | null>(null);
   const [selectedProfile, setSelectedProfile] = useState<ProfileDetail | null>(
     null,
   );
 
-  // Create/clone form
+  // Create/edit form
   const [showCreate, setShowCreate] = useState(false);
+  const [editingOwner, setEditingOwner] = useState<OwnerKey>("self");
   const [newProfileId, setNewProfileId] = useState("");
   const [newName, setNewName] = useState("");
   const [newDescription, setNewDescription] = useState("");
@@ -47,18 +102,57 @@ export default function RulesetsPage() {
   });
   const [creating, setCreating] = useState(false);
 
-  // Confirm dialog state
+  // Confirm dialog
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
+  const [confirmTarget, setConfirmTarget] = useState<{
+    owner: OwnerKey;
+    profileId: string;
+  } | null>(null);
 
   const { toast } = useToast();
 
   const fetchProfiles = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    // Try the admin endpoint first — if it 200s, we're super-admin and get
+    // the cross-tenant grouped view. On 401/403, fall back to the tenant
+    // endpoint so regular members still see their own + defaults.
+    try {
+      const adminResp = await fetch("/api/lintpdf/admin/profiles");
+      if (adminResp.ok) {
+        const data: AdminProfileList = await adminResp.json();
+        setMode("admin");
+        setAdminData(data);
+        setLoading(false);
+        return;
+      }
+      if (adminResp.status !== 401 && adminResp.status !== 403) {
+        const detail = await readErrorDetail(
+          adminResp,
+          `Failed to load admin profiles (${adminResp.status})`,
+        );
+        // Admin endpoint reachable but errored — surface and fall through to
+        // tenant scope so the user still has something.
+        console.warn(
+          `[rulesets] admin endpoint ${adminResp.status}: ${detail}`,
+        );
+      }
+    } catch (e) {
+      console.warn("[rulesets] admin endpoint fetch threw", e);
+    }
+
     try {
       const resp = await fetch("/api/lintpdf/profiles");
-      if (!resp.ok) throw new Error("Failed to load profiles");
+      if (!resp.ok) {
+        const detail = await readErrorDetail(
+          resp,
+          `Failed to load profiles (${resp.status})`,
+        );
+        throw new Error(`Failed to load profiles (${resp.status}): ${detail}`);
+      }
       const data = await resp.json();
-      setProfiles(data.profiles ?? []);
+      setMode("tenant");
+      setTenantProfiles(data.profiles ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load profiles");
     } finally {
@@ -70,99 +164,142 @@ export default function RulesetsPage() {
     fetchProfiles();
   }, [fetchProfiles]);
 
-  async function viewProfile(profileId: string) {
-    try {
-      const resp = await fetch(`/api/lintpdf/profiles/${profileId}`);
-      if (!resp.ok) throw new Error("Failed to load profile");
-      const data = await resp.json();
-      setSelectedProfile(data);
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Failed to load profile", "error");
-    }
-  }
+  const viewProfile = useCallback(
+    async (owner: OwnerKey, profileId: string) => {
+      try {
+        const resp = await fetchDetailRaw(owner, profileId);
+        if (!resp.ok) {
+          const detail = await readErrorDetail(resp, "Failed to load profile");
+          throw new Error(`(${resp.status}) ${detail}`);
+        }
+        const data: ProfileDetail = await resp.json();
+        setSelectedOwner(owner);
+        setSelectedProfile(data);
+      } catch (e) {
+        toast(
+          e instanceof Error ? e.message : "Failed to load profile",
+          "error",
+        );
+      }
+    },
+    [toast],
+  );
 
-  async function cloneProfile(profile: ProfileSummary) {
-    const detail = await fetch(`/api/lintpdf/profiles/${profile.profile_id}`);
-    if (!detail.ok) {
-      toast("Failed to load profile for cloning", "error");
-      return;
-    }
-    const data: ProfileDetail = await detail.json();
-    setNewProfileId(`${profile.profile_id}-custom`);
-    setNewName(`${data.name} (Copy)`);
-    setNewDescription(data.description);
-    setNewWorkflow(data.workflow);
-    setNewConformance(data.conformance ?? "");
-    if (data.thresholds && typeof data.thresholds === "object") {
-      setNewThresholds((prev) => ({
-        ...prev,
-        ...(data.thresholds as Record<string, number>),
-      }));
-    }
+  const openCreate = useCallback((owner: OwnerKey) => {
+    setEditingOwner(owner);
+    setNewProfileId("");
+    setNewName("");
+    setNewDescription("");
+    setNewWorkflow("CMYK");
+    setNewConformance("");
     setShowCreate(true);
-  }
+  }, []);
+
+  const cloneProfile = useCallback(
+    async (owner: OwnerKey, profile: ProfileSummary, targetOwner: OwnerKey) => {
+      const resp = await fetchDetailRaw(owner, profile.profile_id);
+      if (!resp.ok) {
+        toast("Failed to load profile for cloning", "error");
+        return;
+      }
+      const data: ProfileDetail = await resp.json();
+      setEditingOwner(targetOwner);
+      setNewProfileId(`${profile.profile_id}-custom`);
+      setNewName(`${data.name} (Copy)`);
+      setNewDescription(data.description);
+      setNewWorkflow(data.workflow);
+      setNewConformance(data.conformance ?? "");
+      if (data.thresholds && typeof data.thresholds === "object") {
+        setNewThresholds((prev) => ({
+          ...prev,
+          ...(data.thresholds as Record<string, number>),
+        }));
+      }
+      setShowCreate(true);
+    },
+    [toast],
+  );
 
   async function handleCreate() {
     setCreating(true);
+    const body = {
+      profile_id: newProfileId,
+      preflight_profile: {
+        name: newName,
+        description: newDescription,
+        version: "1.0",
+        conformance: newConformance || null,
+        workflow: newWorkflow,
+        checks: { enabled: ["GRD_*"], disabled: [] },
+        thresholds: newThresholds,
+      },
+    };
+
     try {
-      const resp = await fetch("/api/lintpdf/profiles", {
-        method: "POST",
+      const url =
+        editingOwner === "self" || editingOwner === "system"
+          ? "/api/lintpdf/profiles"
+          : `/api/lintpdf/admin/tenants/${editingOwner}/profiles/${newProfileId}`;
+      const method =
+        editingOwner === "self" || editingOwner === "system" ? "POST" : "PUT";
+
+      const resp = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profile_id: newProfileId,
-          preflight_profile: {
-            name: newName,
-            description: newDescription,
-            version: "1.0",
-            conformance: newConformance || null,
-            workflow: newWorkflow,
-            checks: { enabled: ["GRD_*"], disabled: [] },
-            thresholds: newThresholds,
-          },
-        }),
+        body: JSON.stringify({ ...body, tenant_id: editingOwner }),
       });
       if (!resp.ok) {
-        const data = await resp.json();
-        throw new Error(data.error ?? "Failed to create profile");
+        const detail = await readErrorDetail(resp, "Failed to save profile");
+        throw new Error(`(${resp.status}) ${detail}`);
       }
       setShowCreate(false);
       setNewProfileId("");
       setNewName("");
       setNewDescription("");
-      toast("Ruleset created successfully", "success");
+      toast("Ruleset saved", "success");
       await fetchProfiles();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Failed to create profile", "error");
+      toast(e instanceof Error ? e.message : "Failed to save profile", "error");
     } finally {
       setCreating(false);
     }
   }
 
-  async function handleDelete(profileId: string) {
+  async function handleDelete(owner: OwnerKey, profileId: string) {
     try {
-      const resp = await fetch(`/api/lintpdf/profiles/${profileId}`, {
-        method: "DELETE",
-      });
+      const url =
+        owner === "self"
+          ? `/api/lintpdf/profiles/${profileId}`
+          : `/api/lintpdf/admin/tenants/${owner}/profiles/${profileId}`;
+      const resp = await fetch(url, { method: "DELETE" });
       if (!resp.ok) {
-        const data = await resp.json();
-        throw new Error(data.error ?? "Failed to delete profile");
+        const detail = await readErrorDetail(resp, "Failed to delete profile");
+        throw new Error(`(${resp.status}) ${detail}`);
       }
       if (selectedProfile?.profile_id === profileId) {
         setSelectedProfile(null);
+        setSelectedOwner(null);
       }
       toast("Ruleset deleted", "success");
       await fetchProfiles();
     } catch (e) {
-      toast(e instanceof Error ? e.message : "Failed to delete profile", "error");
+      toast(
+        e instanceof Error ? e.message : "Failed to delete profile",
+        "error",
+      );
     }
   }
 
-  if (loading) {
-    return <SkeletonDashboard type="cards" />;
-  }
+  const tenantBuiltins = useMemo(
+    () => tenantProfiles.filter((p) => p.is_builtin),
+    [tenantProfiles],
+  );
+  const tenantCustoms = useMemo(
+    () => tenantProfiles.filter((p) => !p.is_builtin),
+    [tenantProfiles],
+  );
 
-  const builtins = profiles.filter((p) => p.is_builtin);
-  const custom = profiles.filter((p) => !p.is_builtin);
+  if (loading) return <SkeletonDashboard type="cards" />;
 
   return (
     <>
@@ -170,344 +307,223 @@ export default function RulesetsPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">Rulesets</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Preflight profiles that define which checks run and with what
-            thresholds.
+            {mode === "admin"
+              ? "System rulesets plus every tenant's custom rulesets."
+              : "Preflight profiles that define which checks run and with what thresholds."}
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setShowCreate(!showCreate);
-            if (!showCreate) {
-              setNewProfileId("");
-              setNewName("");
-              setNewDescription("");
-            }
-          }}
-        >
-          {showCreate ? "Cancel" : "New Ruleset"}
-        </Button>
+        {mode === "tenant" && (
+          <Button
+            onClick={() => {
+              if (showCreate) setShowCreate(false);
+              else openCreate("self");
+            }}
+          >
+            {showCreate ? "Cancel" : "New Ruleset"}
+          </Button>
+        )}
       </div>
 
       {error && (
         <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
           {error}
-          <button onClick={() => setError("")} className="ml-2 underline">
+          <button
+            onClick={() => setError("")}
+            className="ml-2 underline"
+            type="button"
+          >
             dismiss
           </button>
         </div>
       )}
 
-      {/* Create/edit form */}
       {showCreate && (
-        <div className="mt-6 rounded-lg border p-4">
-          <h2 className="text-lg font-semibold">
-            {newProfileId.endsWith("-custom")
-              ? "Clone Profile"
-              : "New Ruleset"}
-          </h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            <FormField label="Profile ID" htmlFor="profile-id" helpText="Lowercase kebab-case (e.g. my-magazine-ads)">
-              <Input
-                id="profile-id"
-                value={newProfileId}
-                onChange={(e) => setNewProfileId(e.target.value)}
-                placeholder="my-custom-profile"
-              />
-            </FormField>
-            <FormField label="Name" htmlFor="profile-name">
-              <Input
-                id="profile-name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="My Custom Profile"
-              />
-            </FormField>
-            <div className="sm:col-span-2">
-              <FormField label="Description" htmlFor="profile-desc">
-                <Input
-                  id="profile-desc"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Custom profile for..."
-                />
-              </FormField>
-            </div>
-            <FormField label="Workflow" htmlFor="workflow">
-              <Select
-                id="workflow"
-                value={newWorkflow}
-                onChange={(e) => setNewWorkflow(e.target.value)}
-              >
-                <option value="CMYK">CMYK</option>
-                <option value="RGB">RGB</option>
-                <option value="auto">Auto</option>
-              </Select>
-            </FormField>
-            <FormField label="Conformance" htmlFor="conformance">
-              <Select
-                id="conformance"
-                value={newConformance}
-                onChange={(e) => setNewConformance(e.target.value)}
-              >
-                <option value="">None</option>
-                <option value="pdfx4">PDF/X-4</option>
-                <option value="pdfx1a">PDF/X-1a</option>
-                <option value="pdfa">PDF/A</option>
-              </Select>
-            </FormField>
-          </div>
-
-          {/* Thresholds */}
-          <h3 className="mt-4 text-sm font-semibold">Thresholds</h3>
-          <div className="mt-2 grid gap-3 sm:grid-cols-3">
-            <FormField label="Min DPI" htmlFor="min-dpi">
-              <Input
-                id="min-dpi"
-                type="number"
-                value={newThresholds.min_dpi}
-                onChange={(e) =>
-                  setNewThresholds((t) => ({
-                    ...t,
-                    min_dpi: Number(e.target.value),
-                  }))
-                }
-              />
-            </FormField>
-            <FormField label="Max DPI" htmlFor="max-dpi">
-              <Input
-                id="max-dpi"
-                type="number"
-                value={newThresholds.max_dpi}
-                onChange={(e) =>
-                  setNewThresholds((t) => ({
-                    ...t,
-                    max_dpi: Number(e.target.value),
-                  }))
-                }
-              />
-            </FormField>
-            <FormField label="TAC Limit (%)" htmlFor="tac-limit">
-              <Input
-                id="tac-limit"
-                type="number"
-                value={newThresholds.tac_limit}
-                onChange={(e) =>
-                  setNewThresholds((t) => ({
-                    ...t,
-                    tac_limit: Number(e.target.value),
-                  }))
-                }
-              />
-            </FormField>
-            <FormField label="Min Bleed (mm)" htmlFor="min-bleed">
-              <Input
-                id="min-bleed"
-                type="number"
-                step="0.5"
-                value={newThresholds.min_bleed_mm}
-                onChange={(e) =>
-                  setNewThresholds((t) => ({
-                    ...t,
-                    min_bleed_mm: Number(e.target.value),
-                  }))
-                }
-              />
-            </FormField>
-            <FormField label="Hairline (pt)" htmlFor="hairline">
-              <Input
-                id="hairline"
-                type="number"
-                step="0.05"
-                value={newThresholds.hairline_threshold}
-                onChange={(e) =>
-                  setNewThresholds((t) => ({
-                    ...t,
-                    hairline_threshold: Number(e.target.value),
-                  }))
-                }
-              />
-            </FormField>
-            <FormField label="Small Text (pt)" htmlFor="small-text">
-              <Input
-                id="small-text"
-                type="number"
-                step="0.5"
-                value={newThresholds.small_text_threshold}
-                onChange={(e) =>
-                  setNewThresholds((t) => ({
-                    ...t,
-                    small_text_threshold: Number(e.target.value),
-                  }))
-                }
-              />
-            </FormField>
-          </div>
-
-          <Button
-            onClick={handleCreate}
-            disabled={!newProfileId || !newName}
-            loading={creating}
-            className="mt-4"
-          >
-            Create Ruleset
-          </Button>
-        </div>
+        <CreateForm
+          editingOwner={editingOwner}
+          newProfileId={newProfileId}
+          setNewProfileId={setNewProfileId}
+          newName={newName}
+          setNewName={setNewName}
+          newDescription={newDescription}
+          setNewDescription={setNewDescription}
+          newWorkflow={newWorkflow}
+          setNewWorkflow={setNewWorkflow}
+          newConformance={newConformance}
+          setNewConformance={setNewConformance}
+          newThresholds={newThresholds}
+          setNewThresholds={setNewThresholds}
+          creating={creating}
+          onSave={handleCreate}
+          onCancel={() => setShowCreate(false)}
+          tenants={adminData?.tenants ?? []}
+        />
       )}
 
-      {/* Profile detail panel */}
       {selectedProfile && !showCreate && (
-        <div className="mt-6 rounded-lg border p-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">{selectedProfile.name}</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedProfile(null)}
+        <ProfileDetailPanel
+          profile={selectedProfile}
+          owner={selectedOwner ?? "self"}
+          onClose={() => {
+            setSelectedProfile(null);
+            setSelectedOwner(null);
+          }}
+        />
+      )}
+
+      {mode === "admin" && adminData ? (
+        <>
+          <section className="mt-6 rounded-lg border">
+            <button
+              type="button"
+              onClick={() => setExpandSystem((v) => !v)}
+              className="flex w-full items-center justify-between p-3 text-left hover:bg-muted/40"
             >
-              Close
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {selectedProfile.description}
-          </p>
-          <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
-            <div>
-              <span className="font-medium">ID:</span>{" "}
-              <code>{selectedProfile.profile_id}</code>
-            </div>
-            <div>
-              <span className="font-medium">Workflow:</span>{" "}
-              {selectedProfile.workflow}
-            </div>
-            <div>
-              <span className="font-medium">Conformance:</span>{" "}
-              {selectedProfile.conformance ?? "None"}
-            </div>
-          </div>
-          {selectedProfile.thresholds &&
-            Object.keys(selectedProfile.thresholds).length > 0 && (
-              <div className="mt-3">
-                <h3 className="text-sm font-semibold">Thresholds</h3>
-                <div className="mt-1 grid gap-1 text-xs sm:grid-cols-3">
-                  {Object.entries(
-                    selectedProfile.thresholds as Record<string, unknown>,
-                  ).map(([key, val]) => (
-                    <div key={key}>
-                      <span className="font-medium">
-                        {key.replace(/_/g, " ")}:
-                      </span>{" "}
-                      {String(val)}
-                    </div>
-                  ))}
-                </div>
+              <span className="text-lg font-semibold">
+                System Rulesets{" "}
+                <span className="text-xs text-muted-foreground">
+                  ({adminData.system.length})
+                </span>
+              </span>
+              <span>{expandSystem ? "−" : "+"}</span>
+            </button>
+            {expandSystem && (
+              <div className="space-y-2 border-t p-3">
+                {adminData.system.map((p) => (
+                  <ProfileRow
+                    key={p.profile_id}
+                    profile={p}
+                    owner="system"
+                    onView={() => viewProfile("system", p.profile_id)}
+                    onClone={() => cloneProfile("system", p, "self")}
+                    canDelete={false}
+                    canEdit={false}
+                  />
+                ))}
               </div>
             )}
-        </div>
-      )}
+          </section>
 
-      {/* Custom profiles */}
-      {custom.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold">Custom Rulesets</h2>
-          <div className="mt-2 space-y-2">
-            {custom.map((p) => (
-              <div
-                key={p.profile_id}
-                className="flex items-center justify-between rounded-lg border p-3"
-              >
-                <div
-                  className="min-w-0 flex-1 cursor-pointer"
-                  onClick={() => viewProfile(p.profile_id)}
+          {adminData.tenants.map((t) => {
+            const open = expandedTenants.has(t.tenant_id);
+            return (
+              <section key={t.tenant_id} className="mt-4 rounded-lg border">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedTenants((s) => {
+                      const n = new Set(s);
+                      if (n.has(t.tenant_id)) n.delete(t.tenant_id);
+                      else n.add(t.tenant_id);
+                      return n;
+                    })
+                  }
+                  className="flex w-full items-center justify-between p-3 text-left hover:bg-muted/40"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{p.name}</span>
-                    <code className="text-xs text-muted-foreground">
-                      {p.profile_id}
-                    </code>
+                  <span className="font-semibold">
+                    {t.tenant_name ?? t.tenant_id.slice(0, 8)}{" "}
+                    <span className="text-xs text-muted-foreground">
+                      ({t.profiles.length})
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e: React.MouseEvent) => {
+                        e.stopPropagation();
+                        openCreate(t.tenant_id);
+                      }}
+                    >
+                      New
+                    </Button>
+                    <span>{open ? "−" : "+"}</span>
+                  </span>
+                </button>
+                {open && (
+                  <div className="space-y-2 border-t p-3">
+                    {t.profiles.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        No custom rulesets.
+                      </p>
+                    ) : (
+                      t.profiles.map((p) => (
+                        <ProfileRow
+                          key={p.profile_id}
+                          profile={p}
+                          owner={t.tenant_id}
+                          onView={() =>
+                            viewProfile(t.tenant_id, p.profile_id)
+                          }
+                          onClone={() =>
+                            cloneProfile(t.tenant_id, p, t.tenant_id)
+                          }
+                          onDelete={() => {
+                            setConfirmTarget({
+                              owner: t.tenant_id,
+                              profileId: p.profile_id,
+                            });
+                            setConfirmOpen(true);
+                          }}
+                          canDelete={true}
+                          canEdit={true}
+                        />
+                      ))
+                    )}
                   </div>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {p.description}
-                  </p>
-                  <div className="mt-1 flex gap-2 text-xs text-muted-foreground">
-                    <span>{p.workflow}</span>
-                    {p.conformance && <span>{p.conformance}</span>}
-                  </div>
-                </div>
-                <div className="ml-4 flex shrink-0 gap-1">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => viewProfile(p.profile_id)}
-                  >
-                    View
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => {
-                      setConfirmTarget(p.profile_id);
+                )}
+              </section>
+            );
+          })}
+        </>
+      ) : (
+        <>
+          {tenantCustoms.length > 0 && (
+            <div className="mt-6">
+              <h2 className="text-lg font-semibold">Custom Rulesets</h2>
+              <div className="mt-2 space-y-2">
+                {tenantCustoms.map((p) => (
+                  <ProfileRow
+                    key={p.profile_id}
+                    profile={p}
+                    owner="self"
+                    onView={() => viewProfile("self", p.profile_id)}
+                    onClone={() => cloneProfile("self", p, "self")}
+                    onDelete={() => {
+                      setConfirmTarget({
+                        owner: "self",
+                        profileId: p.profile_id,
+                      });
                       setConfirmOpen(true);
                     }}
-                  >
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Built-in profiles */}
-      <div className="mt-6">
-        <h2 className="text-lg font-semibold">Built-in Rulesets</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Pre-configured profiles provided by LintPDF. Clone to customize.
-        </p>
-        <div className="mt-2 space-y-2">
-          {builtins.map((p) => (
-            <div
-              key={p.profile_id}
-              className="flex items-center justify-between rounded-lg border p-3"
-            >
-              <div
-                className="min-w-0 flex-1 cursor-pointer"
-                onClick={() => viewProfile(p.profile_id)}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{p.name}</span>
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-xs">
-                    built-in
-                  </span>
-                </div>
-                <p className="truncate text-sm text-muted-foreground">
-                  {p.description}
-                </p>
-                <div className="mt-1 flex gap-2 text-xs text-muted-foreground">
-                  <span>{p.workflow}</span>
-                  {p.conformance && <span>{p.conformance}</span>}
-                </div>
-              </div>
-              <div className="ml-4 flex shrink-0 gap-1">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => viewProfile(p.profile_id)}
-                >
-                  View
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => cloneProfile(p)}
-                >
-                  Clone
-                </Button>
+                    canDelete={true}
+                    canEdit={true}
+                  />
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
+          )}
+
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold">Built-in Rulesets</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pre-configured profiles provided by LintPDF. Clone to customize.
+            </p>
+            <div className="mt-2 space-y-2">
+              {tenantBuiltins.map((p) => (
+                <ProfileRow
+                  key={p.profile_id}
+                  profile={p}
+                  owner="system"
+                  onView={() => viewProfile("self", p.profile_id)}
+                  onClone={() => cloneProfile("self", p, "self")}
+                  canDelete={false}
+                  canEdit={false}
+                />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
 
       <ConfirmDialog
         open={confirmOpen}
@@ -516,7 +532,8 @@ export default function RulesetsPage() {
           setConfirmTarget(null);
         }}
         onConfirm={async () => {
-          if (confirmTarget) await handleDelete(confirmTarget);
+          if (confirmTarget)
+            await handleDelete(confirmTarget.owner, confirmTarget.profileId);
           setConfirmOpen(false);
           setConfirmTarget(null);
         }}
@@ -526,5 +543,279 @@ export default function RulesetsPage() {
         confirmLabel="Delete"
       />
     </>
+  );
+}
+
+function ProfileRow({
+  profile,
+  owner,
+  onView,
+  onClone,
+  onDelete,
+  canEdit,
+  canDelete,
+}: {
+  profile: ProfileSummary;
+  owner: OwnerKey;
+  onView: () => void;
+  onClone: () => void;
+  onDelete?: () => void;
+  canEdit: boolean;
+  canDelete: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border p-3">
+      <div className="min-w-0 flex-1 cursor-pointer" onClick={onView}>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{profile.name}</span>
+          <code className="text-xs text-muted-foreground">
+            {profile.profile_id}
+          </code>
+          {profile.is_builtin && (
+            <span className="rounded bg-muted px-1.5 py-0.5 text-xs">
+              built-in
+            </span>
+          )}
+          {!profile.is_builtin && owner !== "self" && (
+            <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+              custom
+            </span>
+          )}
+        </div>
+        <p className="truncate text-sm text-muted-foreground">
+          {profile.description}
+        </p>
+        <div className="mt-1 flex gap-2 text-xs text-muted-foreground">
+          <span>{profile.workflow}</span>
+          {profile.conformance && <span>{profile.conformance}</span>}
+        </div>
+      </div>
+      <div className="ml-4 flex shrink-0 gap-1">
+        <Button variant="secondary" size="sm" onClick={onView}>
+          View
+        </Button>
+        <Button variant="secondary" size="sm" onClick={onClone}>
+          {canEdit ? "Edit" : "Clone"}
+        </Button>
+        {canDelete && onDelete && (
+          <Button variant="destructive" size="sm" onClick={onDelete}>
+            Delete
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProfileDetailPanel({
+  profile,
+  onClose,
+}: {
+  profile: ProfileDetail;
+  owner: OwnerKey;
+  onClose: () => void;
+}) {
+  return (
+    <div className="mt-6 rounded-lg border p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">{profile.name}</h2>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Close
+        </Button>
+      </div>
+      <p className="text-sm text-muted-foreground">{profile.description}</p>
+      <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
+        <div>
+          <span className="font-medium">ID:</span>{" "}
+          <code>{profile.profile_id}</code>
+        </div>
+        <div>
+          <span className="font-medium">Workflow:</span> {profile.workflow}
+        </div>
+        <div>
+          <span className="font-medium">Conformance:</span>{" "}
+          {profile.conformance ?? "None"}
+        </div>
+      </div>
+      {profile.thresholds &&
+        Object.keys(profile.thresholds).length > 0 && (
+          <div className="mt-3">
+            <h3 className="text-sm font-semibold">Thresholds</h3>
+            <div className="mt-1 grid gap-1 text-xs sm:grid-cols-3">
+              {Object.entries(
+                profile.thresholds as Record<string, unknown>,
+              ).map(([key, val]) => (
+                <div key={key}>
+                  <span className="font-medium">
+                    {key.replace(/_/g, " ")}:
+                  </span>{" "}
+                  {String(val)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+    </div>
+  );
+}
+
+function CreateForm(props: {
+  editingOwner: OwnerKey;
+  newProfileId: string;
+  setNewProfileId: (v: string) => void;
+  newName: string;
+  setNewName: (v: string) => void;
+  newDescription: string;
+  setNewDescription: (v: string) => void;
+  newWorkflow: string;
+  setNewWorkflow: (v: string) => void;
+  newConformance: string;
+  setNewConformance: (v: string) => void;
+  newThresholds: Record<string, number>;
+  setNewThresholds: React.Dispatch<
+    React.SetStateAction<{
+      min_dpi: number;
+      max_dpi: number;
+      tac_limit: number;
+      min_bleed_mm: number;
+      hairline_threshold: number;
+      small_text_threshold: number;
+      safety_margin_mm: number;
+    }>
+  >;
+  creating: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+  tenants: AdminTenantProfiles[];
+}) {
+  const {
+    editingOwner,
+    newProfileId,
+    setNewProfileId,
+    newName,
+    setNewName,
+    newDescription,
+    setNewDescription,
+    newWorkflow,
+    setNewWorkflow,
+    newConformance,
+    setNewConformance,
+    newThresholds,
+    setNewThresholds,
+    creating,
+    onSave,
+    onCancel,
+    tenants,
+  } = props;
+  const tenantLabel =
+    tenants.find((t) => t.tenant_id === editingOwner)?.tenant_name ??
+    (editingOwner === "self" ? "Your tenant" : editingOwner);
+  return (
+    <div className="mt-6 rounded-lg border p-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">
+          New Ruleset{" "}
+          <span className="text-sm font-normal text-muted-foreground">
+            — {tenantLabel}
+          </span>
+        </h2>
+        <Button variant="ghost" size="sm" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <FormField
+          label="Profile ID"
+          htmlFor="profile-id"
+          helpText="Lowercase kebab-case (e.g. my-magazine-ads)"
+        >
+          <Input
+            id="profile-id"
+            value={newProfileId}
+            onChange={(e) => setNewProfileId(e.target.value)}
+            placeholder="my-custom-profile"
+          />
+        </FormField>
+        <FormField label="Name" htmlFor="profile-name">
+          <Input
+            id="profile-name"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="My Custom Profile"
+          />
+        </FormField>
+        <div className="sm:col-span-2">
+          <FormField label="Description" htmlFor="profile-desc">
+            <Input
+              id="profile-desc"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Custom profile for..."
+            />
+          </FormField>
+        </div>
+        <FormField label="Workflow" htmlFor="workflow">
+          <Select
+            id="workflow"
+            value={newWorkflow}
+            onChange={(e) => setNewWorkflow(e.target.value)}
+          >
+            <option value="CMYK">CMYK</option>
+            <option value="RGB">RGB</option>
+            <option value="auto">Auto</option>
+          </Select>
+        </FormField>
+        <FormField label="Conformance" htmlFor="conformance">
+          <Select
+            id="conformance"
+            value={newConformance}
+            onChange={(e) => setNewConformance(e.target.value)}
+          >
+            <option value="">None</option>
+            <option value="pdfx4">PDF/X-4</option>
+            <option value="pdfx1a">PDF/X-1a</option>
+            <option value="pdfa">PDF/A</option>
+          </Select>
+        </FormField>
+      </div>
+
+      <h3 className="mt-4 text-sm font-semibold">Thresholds</h3>
+      <div className="mt-2 grid gap-3 sm:grid-cols-3">
+        {(
+          [
+            ["Min DPI", "min_dpi", "1"],
+            ["Max DPI", "max_dpi", "1"],
+            ["TAC Limit (%)", "tac_limit", "1"],
+            ["Min Bleed (mm)", "min_bleed_mm", "0.5"],
+            ["Hairline (pt)", "hairline_threshold", "0.05"],
+            ["Small Text (pt)", "small_text_threshold", "0.5"],
+          ] as const
+        ).map(([label, key, step]) => (
+          <FormField key={key} label={label} htmlFor={key}>
+            <Input
+              id={key}
+              type="number"
+              step={step}
+              value={newThresholds[key]}
+              onChange={(e) =>
+                setNewThresholds((t) => ({
+                  ...t,
+                  [key]: Number(e.target.value),
+                }))
+              }
+            />
+          </FormField>
+        ))}
+      </div>
+
+      <Button
+        onClick={onSave}
+        disabled={!newProfileId || !newName}
+        loading={creating}
+        className="mt-4"
+      >
+        Save Ruleset
+      </Button>
+    </div>
   );
 }

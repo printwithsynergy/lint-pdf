@@ -69,7 +69,22 @@ export default function UsagePage() {
   const fetchUsage = useCallback(async () => {
     try {
       const resp = await fetch("/api/lintpdf/usage");
-      if (!resp.ok) throw new Error("Failed to load usage");
+      if (!resp.ok) {
+        const text = await resp.text();
+        let detail = text;
+        try {
+          const data = JSON.parse(text);
+          detail =
+            typeof data?.error === "string"
+              ? data.error
+              : typeof data?.detail === "string"
+                ? data.detail
+                : text;
+        } catch {
+          /* leave as text */
+        }
+        throw new Error(`Failed to load usage (${resp.status}): ${detail}`);
+      }
       const data = await resp.json();
       setUsage(data);
     } catch (e) {
