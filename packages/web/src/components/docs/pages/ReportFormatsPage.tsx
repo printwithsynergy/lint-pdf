@@ -29,6 +29,7 @@ export default function ReportFormatsPage() {
           { name: "json", type: "format", description: "Structured findings matching the LintPDF v1 import schema — re-importable via preflight_source=external, external_format=lintpdf_json. Served at /r/{token}.json. Plans: Free+." },
           { name: "xml", type: "format", description: "Same field taxonomy as JSON, for Switch / MIS / legacy XML consumers. Served at /r/{token}.xml. Plans: Starter+." },
           { name: "annotated_pdf", type: "format", description: "Original PDF with findings drawn as overlays on the source pages. Served at /r/{token}.pdf. Plans: Scale+ (silently skipped if the original PDF cannot be re-fetched from object storage)." },
+          { name: "annotated_pdf_markup", type: "format", description: "Original PDF stamped with the reviewer's interactive-viewer markup (rects, circles, arrows, freehand strokes, numbered sticky-note pins) plus an appendix page that resolves each note number to its body and full comment thread. Served at /r/{token}.pdf. Plans: Scale+. Silently skipped if no annotations exist." },
         ]}
       />
 
@@ -40,7 +41,7 @@ export default function ReportFormatsPage() {
       </p>
       <FieldTable
         rows={[
-          { name: "formats", type: '("html"|"pdf"|"json"|"xml"|"annotated_pdf")[]', required: true, description: "Output formats to mint. Each gets its own token. Default: [\"html\", \"pdf\"]." },
+          { name: "formats", type: '("html"|"pdf"|"json"|"xml"|"annotated_pdf"|"annotated_pdf_markup")[]', required: true, description: "Output formats to mint. Each gets its own token. Default: [\"html\", \"pdf\"]." },
           { name: "expiry_days", type: "integer", default: "tenant default (typically 7–30)", description: "Token lifetime in days. After expiry the public URLs return 410 Gone." },
           { name: "email_to", type: "string[]", description: "If provided, LintPDF emails the share URLs to these addresses (tenant-branded unless branding=anonymous)." },
           { name: "branding", type: '"anonymous" | "lintpdf" | uuid', description: "Freezes the brand state at mint time. Overrides the tenant default." },

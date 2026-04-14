@@ -12,11 +12,6 @@ const TEST_PDF = resolve(
   "../../../engine/tests/fixtures/test-sample.pdf",
 );
 
-const VIEWER_ENDPOINTS = [
-  "pages",
-  "separations",
-] as const;
-
 test.describe("Preflight: Viewer Integration", () => {
   let engineApiKey: string;
   let engineBase: string;
@@ -167,12 +162,16 @@ test.describe("Preflight: Viewer Integration", () => {
         if (box == null) return;
         expect(typeof box, `${label} should be an object`).toBe("object");
         const b = box as Record<string, number>;
+        const x0 = b.x0 ?? 0;
+        const y0 = b.y0 ?? 0;
+        const x1 = b.x1 ?? 0;
+        const y1 = b.y1 ?? 0;
         expect(typeof b.x0).toBe("number");
         expect(typeof b.y0).toBe("number");
         expect(typeof b.x1).toBe("number");
         expect(typeof b.y1).toBe("number");
-        expect(b.x1).toBeGreaterThan(b.x0);
-        expect(b.y1).toBeGreaterThan(b.y0);
+        expect(x1).toBeGreaterThan(x0);
+        expect(y1).toBeGreaterThan(y0);
       };
       checkBox(info.media_box ?? info.mediaBox, "media_box");
       checkBox(info.trim_box ?? info.trimBox, "trim_box");

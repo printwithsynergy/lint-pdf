@@ -275,8 +275,11 @@ async function globalSetup() {
 
   // Step 2: Promote super-admin
   if (users["super-admin"]) {
-    console.log("👑 Promoting super admin...");
-    await promoteAdmin(ctx, emails["super-admin"]);
+    const superAdminEmail = emails["super-admin"];
+    if (superAdminEmail) {
+      console.log("👑 Promoting super admin...");
+      await promoteAdmin(ctx, superAdminEmail);
+    }
   }
 
   // Step 3: Tenant already created by MCP backdoor in Step 1 — get the ID

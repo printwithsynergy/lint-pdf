@@ -14,7 +14,7 @@ interface ColorPickerToolProps {
 }
 
 export function ColorPickerTool({
-  jobId,
+  jobId: _jobId,
   pageNum,
   pageWidthPts,
   pageHeightPts,

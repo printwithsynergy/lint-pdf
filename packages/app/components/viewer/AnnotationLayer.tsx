@@ -31,6 +31,25 @@ export interface AnnotationLayerProps {
   onDelete: (id: string) => Promise<void>;
   /** Whether the caller has permission to write annotations. */
   canWrite: boolean;
+  /** Email used when posting new comments. Share-link visitors supply
+   *  this through the email-gate modal in ``PdfViewer``; dashboard
+   *  users can leave it null (the API fills it from the session). */
+  visitorEmail?: string | null;
+  /** Deep-link annotation id to auto-select after annotations load. */
+  autoOpenAnnotationId?: string | null;
+  /** Fires once after the deep-link annotation has been opened, so the
+   *  caller can clear the URL fragment. */
+  onAutoOpenConsumed?: () => void;
+}
+
+/** A reply on a markup thread. */
+export interface AnnotationComment {
+  id: string;
+  annotation_id: string;
+  author_email: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
 }
 
 /** Canvas pixel -> PDF-point coordinate (origin lower-left). */
@@ -80,10 +99,13 @@ export function AnnotationLayer({
   activeColor,
   annotations,
   onCreate,
-  onUpdate,
   onDelete,
   canWrite,
+  visitorEmail,
+  autoOpenAnnotationId,
+  onAutoOpenConsumed,
 }: AnnotationLayerProps) {
+  const { apiBase } = useViewerApi();
   const [drawing, setDrawing] = useState<{
     kind: AnnotationKind;
     startPx: { x: number; y: number };
@@ -101,6 +123,24 @@ export function AnnotationLayer({
   const pageAnnotations = useMemo(
     () => annotations.filter((a) => a.page_num === pageNum),
     [annotations, pageNum],
+  );
+
+  // Open the annotation referenced by the URL deep-link fragment
+  // (``#ann=<id>``) once it lands in the list. We do not auto-flip
+  // pages — the caller is responsible for navigating to the correct
+  // page before passing ``autoOpenAnnotationId`` through.
+  useEffect(() => {
+    if (!autoOpenAnnotationId) return;
+    const match = annotations.find((a) => a.id === autoOpenAnnotationId);
+    if (!match) return;
+    if (match.page_num !== pageNum) return;
+    setSelectedId(match.id);
+    onAutoOpenConsumed?.();
+  }, [autoOpenAnnotationId, annotations, pageNum, onAutoOpenConsumed]);
+
+  const selectedAnnotation = useMemo(
+    () => (selectedId ? pageAnnotations.find((a) => a.id === selectedId) ?? null : null),
+    [selectedId, pageAnnotations],
   );
 
   const finishShape = useCallback(
@@ -239,6 +279,10 @@ export function AnnotationLayer({
   // Render a single saved annotation.
   const renderSaved = (a: Annotation) => {
     const g = a.geometry as Record<string, number>;
+    // noUncheckedIndexedAccess makes every ``g["x0"]`` a ``number |
+    // undefined`` lookup. We fall back to 0 so a malformed geometry row
+    // degrades to a zero-size shape instead of a runtime NaN.
+    const n = (k: string): number => g[k] ?? 0;
     const common = {
       stroke: a.color,
       strokeWidth: 2,
@@ -251,8 +295,8 @@ export function AnnotationLayer({
       "data-annotation-id": a.id,
     };
     if (a.kind === "rect") {
-      const p0 = ptToPx(g.x0, g.y0, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
-      const p1 = ptToPx(g.x1, g.y1, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p0 = ptToPx(n("x0"), n("y0"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p1 = ptToPx(n("x1"), n("y1"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
       const x = Math.min(p0.x, p1.x);
       const y = Math.min(p0.y, p1.y);
       const w = Math.abs(p1.x - p0.x);
@@ -260,14 +304,14 @@ export function AnnotationLayer({
       return <rect key={a.id} {...common} x={x} y={y} width={w} height={h} />;
     }
     if (a.kind === "circle") {
-      const c = ptToPx(g.cx, g.cy, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
-      const rx = (g.rx / pageWidthPts) * canvasWidth;
-      const ry = (g.ry / pageHeightPts) * canvasHeight;
+      const c = ptToPx(n("cx"), n("cy"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const rx = (n("rx") / pageWidthPts) * canvasWidth;
+      const ry = (n("ry") / pageHeightPts) * canvasHeight;
       return <ellipse key={a.id} {...common} cx={c.x} cy={c.y} rx={rx} ry={ry} />;
     }
     if (a.kind === "arrow") {
-      const p0 = ptToPx(g.x0, g.y0, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
-      const p1 = ptToPx(g.x1, g.y1, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p0 = ptToPx(n("x0"), n("y0"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p1 = ptToPx(n("x1"), n("y1"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
       const mid = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
       const dx = p1.x - p0.x;
       const dy = p1.y - p0.y;
@@ -299,23 +343,16 @@ export function AnnotationLayer({
       return <path key={a.id} {...common} d={d} strokeLinecap="round" strokeLinejoin="round" />;
     }
     if (a.kind === "note") {
-      const p = ptToPx(g.x, g.y, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p = ptToPx(n("x"), n("y"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      // Thread panel is rendered as a DOM sibling of the SVG (not a
+      // foreignObject) so its textarea, buttons, and scrollable list
+      // play nicely with the surrounding layout and don't fight SVG
+      // event bubbling rules. We still render the marker here.
       return (
         <g key={a.id} data-annotation-id={a.id} onClick={(e) => { e.stopPropagation(); setSelectedId(a.id); }}
            style={{ cursor: canWrite ? "pointer" : "default" }}>
           <circle cx={p.x} cy={p.y} r={10} fill={a.color} stroke="white" strokeWidth={1.5} />
           <text x={p.x} y={p.y + 4} textAnchor="middle" fontSize={11} fontWeight={700} fill="white">!</text>
-          {selectedId === a.id && a.text && (
-            <foreignObject x={p.x + 14} y={p.y - 10} width={220} height={120}>
-              <div
-                className="rounded-md border border-slate-700 bg-black/85 px-2 py-1.5 text-[11px] text-white shadow-lg"
-                style={{ maxWidth: 220 }}
-              >
-                <div className="whitespace-pre-wrap break-words">{a.text}</div>
-                <div className="mt-1 text-[9px] text-slate-400">{a.author_email}</div>
-              </div>
-            </foreignObject>
-          )}
         </g>
       );
     }
@@ -410,6 +447,21 @@ export function AnnotationLayer({
         </div>
       )}
 
+      {/* Comment thread panel for the currently selected note */}
+      {selectedAnnotation && selectedAnnotation.kind === "note" && (
+        <NoteThreadPanel
+          annotation={selectedAnnotation}
+          canvasWidth={canvasWidth}
+          canvasHeight={canvasHeight}
+          pageWidthPts={pageWidthPts}
+          pageHeightPts={pageHeightPts}
+          visitorEmail={visitorEmail ?? null}
+          canWrite={canWrite}
+          apiBase={apiBase}
+          onClose={() => setSelectedId(null)}
+        />
+      )}
+
       {/* Sticky-note composer */}
       {pendingNote && (
         <div
@@ -455,7 +507,7 @@ export function AnnotationLayer({
 }
 
 /** Tiny hook: loads annotations from the engine and exposes CRUD helpers. */
-export function useAnnotations(jobId: string, visitorEmail: string | null) {
+export function useAnnotations(_jobId: string, visitorEmail: string | null) {
   const { apiBase } = useViewerApi();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -535,4 +587,222 @@ export function useAnnotations(jobId: string, visitorEmail: string | null) {
   );
 
   return { annotations, loading, create, update, remove, refresh, isPublic };
+}
+
+/** Hook: loads + mutates the threaded comments on a single annotation.
+ *
+ * Uses ``apiBase`` so both the authenticated (``/jobs/{id}``) and public
+ * (``/public/{token}``) surfaces work without branching in callers. The
+ * ``X-Visitor-Email`` header is only attached when the caller actually
+ * provides one — dashboard writers leave it blank.
+ */
+export function useAnnotationComments(
+  annotationId: string | null,
+  visitorEmail: string | null,
+) {
+  const { apiBase } = useViewerApi();
+  const [comments, setComments] = useState<AnnotationComment[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const base = useMemo(() => apiBase.replace(/\/$/, ""), [apiBase]);
+
+  const headers = useCallback(
+    (extra?: Record<string, string>): HeadersInit => {
+      const h: Record<string, string> = { "Content-Type": "application/json", ...(extra ?? {}) };
+      if (visitorEmail) h["X-Visitor-Email"] = visitorEmail;
+      return h;
+    },
+    [visitorEmail],
+  );
+
+  const refresh = useCallback(async () => {
+    if (!annotationId) {
+      setComments([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const resp = await fetch(`${base}/annotations/${annotationId}/comments`, {
+        headers: headers(),
+      });
+      if (resp.ok) setComments(await resp.json());
+    } finally {
+      setLoading(false);
+    }
+  }, [annotationId, base, headers]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const create = useCallback(
+    async (body: string): Promise<AnnotationComment | null> => {
+      if (!annotationId || !body.trim()) return null;
+      setSaving(true);
+      try {
+        const resp = await fetch(`${base}/annotations/${annotationId}/comments`, {
+          method: "POST",
+          headers: headers(),
+          body: JSON.stringify({ body: body.trim() }),
+        });
+        if (!resp.ok) return null;
+        const row: AnnotationComment = await resp.json();
+        setComments((prev) => [...prev, row]);
+        return row;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [annotationId, base, headers],
+  );
+
+  const remove = useCallback(
+    async (id: string): Promise<boolean> => {
+      if (!annotationId) return false;
+      const resp = await fetch(`${base}/annotations/${annotationId}/comments/${id}`, {
+        method: "DELETE",
+        headers: headers(),
+      });
+      if (resp.ok) {
+        setComments((prev) => prev.filter((c) => c.id !== id));
+        return true;
+      }
+      return false;
+    },
+    [annotationId, base, headers],
+  );
+
+  return { comments, loading, saving, create, remove, refresh };
+}
+
+interface NoteThreadPanelProps {
+  annotation: Annotation;
+  canvasWidth: number;
+  canvasHeight: number;
+  pageWidthPts: number;
+  pageHeightPts: number;
+  visitorEmail: string | null;
+  canWrite: boolean;
+  apiBase: string;
+  onClose: () => void;
+}
+
+function NoteThreadPanel({
+  annotation,
+  canvasWidth,
+  canvasHeight,
+  pageWidthPts,
+  pageHeightPts,
+  visitorEmail,
+  canWrite,
+  onClose,
+}: NoteThreadPanelProps) {
+  const g = annotation.geometry as Record<string, number>;
+  const px = ptToPx(
+    g.x ?? 0,
+    g.y ?? 0,
+    canvasWidth,
+    canvasHeight,
+    pageWidthPts,
+    pageHeightPts,
+  );
+  const { comments, saving, create, remove } = useAnnotationComments(
+    annotation.id,
+    visitorEmail,
+  );
+  const [draft, setDraft] = useState("");
+
+  // Anchor the panel just to the right of the note pin; clamp so it
+  // never overflows the canvas.
+  const panelW = 280;
+  const panelH = 260;
+  const left = Math.min(px.x + 18, canvasWidth - panelW - 4);
+  const top = Math.min(Math.max(px.y - 20, 4), canvasHeight - panelH - 4);
+
+  return (
+    <div
+      className="absolute z-40 flex flex-col gap-2 rounded-lg border border-slate-700 bg-slate-900/95 p-3 text-white shadow-xl"
+      style={{ left, top, width: panelW, maxHeight: panelH }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wider text-slate-400">
+            Note
+          </div>
+          <div className="whitespace-pre-wrap break-words text-xs">
+            {annotation.text ?? ""}
+          </div>
+          <div className="mt-0.5 text-[9px] text-slate-500">
+            {annotation.author_email}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded px-1 text-xs text-slate-400 hover:bg-slate-800 hover:text-white"
+          aria-label="Close"
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto border-t border-slate-800 pt-2">
+        {comments.length === 0 && (
+          <div className="text-[10px] text-slate-500">No replies yet.</div>
+        )}
+        {comments.map((c) => {
+          const canDelete = canWrite && (!visitorEmail || c.author_email === visitorEmail);
+          return (
+            <div
+              key={c.id}
+              className="rounded bg-slate-800/60 px-2 py-1 text-[11px]"
+            >
+              <div className="mb-0.5 flex items-center justify-between text-[9px] text-slate-400">
+                <span className="truncate">{c.author_email}</span>
+                <span>{new Date(c.created_at).toLocaleString()}</span>
+              </div>
+              <div className="whitespace-pre-wrap break-words">{c.body}</div>
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => void remove(c.id)}
+                  className="mt-0.5 text-[9px] text-rose-400 hover:text-rose-300"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {canWrite && (
+        <div className="flex flex-col gap-1 border-t border-slate-800 pt-2">
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder={visitorEmail ? "Reply…" : "Reply (email required)"}
+            rows={2}
+            disabled={saving || !visitorEmail}
+            className="w-full resize-none rounded border border-slate-700 bg-slate-800 p-1.5 text-[11px] text-white focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+          />
+          <div className="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              disabled={!draft.trim() || saving || !visitorEmail}
+              onClick={async () => {
+                const row = await create(draft);
+                if (row) setDraft("");
+              }}
+              className="rounded bg-blue-600 px-2 py-0.5 text-[11px] font-semibold hover:bg-blue-500 disabled:opacity-50"
+            >
+              {saving ? "Posting…" : "Post"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

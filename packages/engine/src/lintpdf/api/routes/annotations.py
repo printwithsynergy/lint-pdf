@@ -9,6 +9,8 @@ record and an ``X-Visitor-Email`` header identifying the writer.
 from __future__ import annotations
 
 import hashlib
+import logging
+import os
 import uuid as uuid_mod
 from datetime import datetime, timezone
 from typing import Any
@@ -25,7 +27,10 @@ from lintpdf.api.models import (
     ShareLinkVisitor,
     Tenant,
     ViewerAnnotation,
+    ViewerAnnotationComment,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -419,5 +424,407 @@ async def delete_annotation_public(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="Annotation not found.")
+    db.delete(row)
+    db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Comment threads — Wave B collaboration
+# ---------------------------------------------------------------------------
+
+
+class CommentCreateRequest(BaseModel):
+    body: str = Field(..., min_length=1, max_length=4000, description="Comment body")
+
+
+class CommentUpdateRequest(BaseModel):
+    body: str = Field(..., min_length=1, max_length=4000)
+
+
+class CommentResponse(BaseModel):
+    id: str
+    annotation_id: str
+    author_email: str
+    body: str
+    created_at: str
+    updated_at: str
+
+
+def _comment_to_response(row: ViewerAnnotationComment) -> CommentResponse:
+    return CommentResponse(
+        id=str(row.id),
+        annotation_id=str(row.annotation_id),
+        author_email=row.author_email,
+        body=row.body,
+        created_at=row.created_at.isoformat(),
+        updated_at=row.updated_at.isoformat(),
+    )
+
+
+def _parse_annotation_id(annotation_id: str) -> uuid_mod.UUID:
+    try:
+        return uuid_mod.UUID(annotation_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Annotation not found.") from None
+
+
+def _parse_comment_id(comment_id: str) -> uuid_mod.UUID:
+    try:
+        return uuid_mod.UUID(comment_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Comment not found.") from None
+
+
+def _deep_link_for_annotation(*, annotation: ViewerAnnotation, share_token: str | None) -> str:
+    """Build a viewer URL that opens the referenced annotation.
+
+    Share-link writers get the public ``/v/{token}`` surface; dashboard
+    writers get the authenticated dashboard viewer. The ``#ann={id}``
+    fragment is read by ``PdfViewer.tsx`` to scroll the reader to the
+    markup and auto-open its popover.
+    """
+    app_base = os.getenv("LINTPDF_APP_URL") or os.getenv("NEXT_PUBLIC_APP_URL", "")
+    share_base = os.getenv("LINTPDF_REPORT_BASE_URL", "")
+    if share_token and share_base:
+        return f"{share_base.rstrip('/')}/v/{share_token}#ann={annotation.id}"
+    if app_base:
+        return (
+            f"{app_base.rstrip('/')}/dashboard/jobs/{annotation.job_id}/viewer#ann={annotation.id}"
+        )
+    # Fall back to a relative fragment — still useful when opened from
+    # an inbox that resolves against the recipient's LintPDF dashboard.
+    return f"/dashboard/jobs/{annotation.job_id}/viewer#ann={annotation.id}"
+
+
+def _fan_out_comment_email(
+    *,
+    db: Session,
+    annotation: ViewerAnnotation,
+    new_comment: ViewerAnnotationComment,
+    job: Job | None,
+) -> None:
+    """Email the annotation author + earlier commenters about a new reply.
+
+    The current commenter is excluded so nobody gets their own echo.
+    Fan-out is synchronous: the reviewer is already waiting on the POST
+    and the email provider latency is comparable to the DB commit.
+    """
+    try:
+        from lintpdf.email.service import send_annotation_comment
+    except Exception:  # pragma: no cover — only on a misconfigured import
+        logger.exception("Failed to import email service for annotation fan-out")
+        return
+
+    participants: set[str] = set()
+    if annotation.author_email:
+        participants.add(annotation.author_email.lower())
+    earlier = (
+        db.query(ViewerAnnotationComment.author_email)
+        .filter(
+            ViewerAnnotationComment.annotation_id == annotation.id,
+            ViewerAnnotationComment.id != new_comment.id,
+        )
+        .all()
+    )
+    for (email,) in earlier:
+        if email:
+            participants.add(email.lower())
+
+    # Don't notify the sender.
+    participants.discard(new_comment.author_email.lower())
+    if not participants:
+        return
+
+    file_name = getattr(job, "filename", None) or "your PDF"
+    deep_link = _deep_link_for_annotation(annotation=annotation, share_token=annotation.share_token)
+    excerpt = new_comment.body.strip()
+    if len(excerpt) > 500:
+        excerpt = excerpt[:497] + "..."
+
+    for recipient in sorted(participants):
+        try:
+            send_annotation_comment(
+                to=recipient,
+                commenter_email=new_comment.author_email,
+                file_name=file_name,
+                body_excerpt=excerpt,
+                deep_link_url=deep_link,
+            )
+        except Exception:
+            logger.exception("Annotation comment notification failed for %s", recipient)
+
+
+# ---- Authenticated dashboard CRUD ----
+
+
+def _get_annotation_for_tenant(
+    *, annotation_id: str, tenant: Tenant, db: Session
+) -> ViewerAnnotation:
+    aid = _parse_annotation_id(annotation_id)
+    row = (
+        db.query(ViewerAnnotation)
+        .filter(ViewerAnnotation.id == aid, ViewerAnnotation.tenant_id == tenant.id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Annotation not found.")
+    return row
+
+
+@router.get(
+    "/jobs/{job_id}/annotations/{annotation_id}/comments",
+    response_model=list[CommentResponse],
+)
+async def list_comments_auth(
+    job_id: str,
+    annotation_id: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> list[CommentResponse]:
+    annotation = _get_annotation_for_tenant(annotation_id=annotation_id, tenant=tenant, db=db)
+    rows = (
+        db.query(ViewerAnnotationComment)
+        .filter(ViewerAnnotationComment.annotation_id == annotation.id)
+        .order_by(ViewerAnnotationComment.created_at.asc())
+        .all()
+    )
+    return [_comment_to_response(r) for r in rows]
+
+
+@router.post(
+    "/jobs/{job_id}/annotations/{annotation_id}/comments",
+    response_model=CommentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_comment_auth(
+    job_id: str,
+    annotation_id: str,
+    body: CommentCreateRequest,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> CommentResponse:
+    annotation = _get_annotation_for_tenant(annotation_id=annotation_id, tenant=tenant, db=db)
+    row = ViewerAnnotationComment(
+        id=uuid_mod.uuid4(),
+        annotation_id=annotation.id,
+        tenant_id=tenant.id,
+        share_token=annotation.share_token,
+        author_email=tenant.contact_email or "dashboard@lintpdf",
+        body=body.body.strip(),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+
+    job = db.query(Job).filter(Job.id == annotation.job_id).first()
+    _fan_out_comment_email(db=db, annotation=annotation, new_comment=row, job=job)
+
+    return _comment_to_response(row)
+
+
+@router.patch(
+    "/jobs/{job_id}/annotations/{annotation_id}/comments/{comment_id}",
+    response_model=CommentResponse,
+)
+async def update_comment_auth(
+    job_id: str,
+    annotation_id: str,
+    comment_id: str,
+    body: CommentUpdateRequest,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> CommentResponse:
+    # Tenant scope inherits from annotation; we only need the comment id
+    # plus the tenant filter to guarantee isolation.
+    cid = _parse_comment_id(comment_id)
+    row = (
+        db.query(ViewerAnnotationComment)
+        .filter(
+            ViewerAnnotationComment.id == cid,
+            ViewerAnnotationComment.tenant_id == tenant.id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+    row.body = body.body.strip()
+    row.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(row)
+    return _comment_to_response(row)
+
+
+@router.delete(
+    "/jobs/{job_id}/annotations/{annotation_id}/comments/{comment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_comment_auth(
+    job_id: str,
+    annotation_id: str,
+    comment_id: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> None:
+    cid = _parse_comment_id(comment_id)
+    row = (
+        db.query(ViewerAnnotationComment)
+        .filter(
+            ViewerAnnotationComment.id == cid,
+            ViewerAnnotationComment.tenant_id == tenant.id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+    db.delete(row)
+    db.commit()
+
+
+# ---- Public share-link CRUD ----
+
+
+def _get_annotation_for_token(
+    *, annotation_id: str, token: str, rec: ReportToken, db: Session
+) -> ViewerAnnotation:
+    aid = _parse_annotation_id(annotation_id)
+    row = (
+        db.query(ViewerAnnotation)
+        .filter(
+            ViewerAnnotation.id == aid,
+            ViewerAnnotation.job_id == rec.job_id,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Annotation not found.")
+    return row
+
+
+@router.get(
+    "/public/{token}/annotations/{annotation_id}/comments",
+    response_model=list[CommentResponse],
+)
+async def list_comments_public(
+    token: str,
+    annotation_id: str,
+    db: Session = Depends(get_db),
+) -> list[CommentResponse]:
+    rec = _resolve_token(token, db)
+    annotation = _get_annotation_for_token(annotation_id=annotation_id, token=token, rec=rec, db=db)
+    rows = (
+        db.query(ViewerAnnotationComment)
+        .filter(ViewerAnnotationComment.annotation_id == annotation.id)
+        .order_by(ViewerAnnotationComment.created_at.asc())
+        .all()
+    )
+    return [_comment_to_response(r) for r in rows]
+
+
+@router.post(
+    "/public/{token}/annotations/{annotation_id}/comments",
+    response_model=CommentResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_comment_public(
+    token: str,
+    annotation_id: str,
+    body: CommentCreateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> CommentResponse:
+    rec = _resolve_token(token, db)
+    if not rec.allow_annotations:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This share link is read-only.",
+        )
+    email = _require_visitor_email(request)
+    _capture_visitor(token, email, request, db)
+
+    annotation = _get_annotation_for_token(annotation_id=annotation_id, token=token, rec=rec, db=db)
+    row = ViewerAnnotationComment(
+        id=uuid_mod.uuid4(),
+        annotation_id=annotation.id,
+        tenant_id=rec.tenant_id,
+        share_token=token,
+        author_email=email,
+        body=body.body.strip(),
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+
+    job = db.query(Job).filter(Job.id == annotation.job_id).first()
+    _fan_out_comment_email(db=db, annotation=annotation, new_comment=row, job=job)
+
+    return _comment_to_response(row)
+
+
+@router.patch(
+    "/public/{token}/annotations/{annotation_id}/comments/{comment_id}",
+    response_model=CommentResponse,
+)
+async def update_comment_public(
+    token: str,
+    annotation_id: str,
+    comment_id: str,
+    body: CommentUpdateRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> CommentResponse:
+    rec = _resolve_token(token, db)
+    if not rec.allow_annotations:
+        raise HTTPException(status_code=403, detail="This share link is read-only.")
+    email = _require_visitor_email(request)
+    _capture_visitor(token, email, request, db)
+
+    cid = _parse_comment_id(comment_id)
+    row = (
+        db.query(ViewerAnnotationComment)
+        .filter(
+            ViewerAnnotationComment.id == cid,
+            ViewerAnnotationComment.share_token == token,
+            ViewerAnnotationComment.author_email == email,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Comment not found.")
+    row.body = body.body.strip()
+    row.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(row)
+    return _comment_to_response(row)
+
+
+@router.delete(
+    "/public/{token}/annotations/{annotation_id}/comments/{comment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_comment_public(
+    token: str,
+    annotation_id: str,
+    comment_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> None:
+    rec = _resolve_token(token, db)
+    if not rec.allow_annotations:
+        raise HTTPException(status_code=403, detail="This share link is read-only.")
+    email = _require_visitor_email(request)
+    _capture_visitor(token, email, request, db)
+
+    cid = _parse_comment_id(comment_id)
+    row = (
+        db.query(ViewerAnnotationComment)
+        .filter(
+            ViewerAnnotationComment.id == cid,
+            ViewerAnnotationComment.share_token == token,
+            ViewerAnnotationComment.author_email == email,
+        )
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Comment not found.")
     db.delete(row)
     db.commit()

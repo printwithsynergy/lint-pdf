@@ -8,7 +8,6 @@ import {
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 
-const APP_BASE = process.env.APP_BASE_URL ?? "https://app.lintpdf.com";
 const TEST_PDF = resolve(
   __dirname,
   "../../../engine/tests/fixtures/test-sample.pdf",
@@ -71,7 +70,6 @@ test.describe.configure({ mode: "serial" });
 test.describe("Preflight: Batch Submit", () => {
   let engineApiKey: string;
   let engineBase: string;
-  let sessionToken: string;
   let batchEndpointAvailable = false;
 
   test.beforeAll(async ({ request }) => {
@@ -83,8 +81,7 @@ test.describe("Preflight: Batch Submit", () => {
     engineBase = getEngineBase();
     test.skip(!engineApiKey, "Engine API key not available");
 
-    const auth = await authenticateRole(request, "owner");
-    sessionToken = auth.sessionToken;
+    await authenticateRole(request, "owner");
 
     // Probe batch endpoint availability
     const probeRes = await request.get(`${engineBase}/api/v1/batch/nonexistent`, {

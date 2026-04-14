@@ -49,7 +49,7 @@ export default function ApiReportsSection() {
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Generate-reports request fields</h4>
       <FieldTable
         rows={[
-          { name: "formats", type: '("pdf" | "html")[]', default: '["html","pdf"]', description: "Output formats to mint. Formats not in your plan return 403." },
+          { name: "formats", type: '("html" | "pdf" | "json" | "xml" | "annotated_pdf" | "annotated_pdf_markup")[]', default: '["html","pdf"]', description: "Output formats to mint. Formats not in your plan return 403. annotated_pdf_markup stamps reviewer markup (annotations + comment threads) and an appendix onto the original PDF; it is silently skipped when the job has no annotations." },
           { name: "expiry_days", type: "integer | null", default: "tenant / plan default (typically 7)", description: "Token lifetime in days. Null defers to the tenant setting or plan limit." },
           { name: "email_to", type: "string | null", description: "Single email address to deliver the report URLs to." },
           { name: "branding", type: "BrandingOverride | null", description: "Per-call branding override. Object with name/logo_url/primary_color/accent_color/hide_footer fields (each optional). Requires the white-label entitlement." },

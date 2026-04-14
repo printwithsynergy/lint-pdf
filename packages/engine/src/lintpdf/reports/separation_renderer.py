@@ -5,11 +5,18 @@ from __future__ import annotations
 import io
 import logging
 import os
+import re
 import subprocess
 import tempfile
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import pikepdf
 from PIL import Image
+
+if TYPE_CHECKING:
+    import numpy as np
+
+    from lintpdf.api.storage import StorageBackend
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +29,180 @@ PROCESS_CHANNEL_COLORS = {
 }
 
 PROCESS_CHANNEL_ORDER = ["Cyan", "Magenta", "Yellow", "Black"]
+
+
+class TacRun(TypedDict):
+    """PDF-point bbox of a text run with its mean TAC%."""
+
+    # Coordinates in PDF points, origin **top-left** of the page (matching
+    # pdftotext's output). Callers that want conventional lower-left must
+    # flip Y themselves.
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+    mean_tac: float  # 0-400, percent
+    limit: float  # the tac_limit in force when sampled
+    exceeds: bool
+
+
+class TacHeatmap(TypedDict):
+    """Result of :func:`render_tac_heatmap` — image + per-run metadata."""
+
+    png: bytes
+    runs: list[TacRun]
+
+
+def _safe_channel_slug(name: str) -> str:
+    """File-safe slug for a channel name (matches the viewer cache keys)."""
+    return re.sub(r"[^a-zA-Z0-9_-]", "_", name)
+
+
+def channel_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int, channel: str) -> str:
+    """S3 key for a cached separation channel PNG.
+
+    Shared with the viewer routes so the densitometer, TAC heatmap, and
+    the ``/channel/{name}`` tile endpoint all read / write the same
+    bytes.
+    """
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_ch_{_safe_channel_slug(channel)}.png"
+
+
+def tac_runs_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int, tac_limit: int) -> str:
+    """S3 key for the per-run TAC metadata JSON sidecar."""
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_tac_l{tac_limit}_runs.json"
+
+
+def _run_tiffsep(pdf_bytes: bytes, page_num: int, dpi: int, tmpdir: str) -> str:
+    """Run Ghostscript ``tiffsep`` into ``tmpdir`` and return the output-base path.
+
+    Centralised so the three consumers (channel tile, TAC heatmap,
+    densitometer) can't drift on args.
+    """
+    pdf_path = os.path.join(tmpdir, "input.pdf")
+    with open(pdf_path, "wb") as f:
+        f.write(pdf_bytes)
+
+    output_base = os.path.join(tmpdir, "sep")
+    cmd = [
+        "gs",
+        "-q",
+        "-sDEVICE=tiffsep",
+        "-dNOPAUSE",
+        "-dBATCH",
+        f"-r{dpi}",
+        f"-dFirstPage={page_num}",
+        f"-dLastPage={page_num}",
+        f"-sOutputFile={output_base}%d.tif",
+        pdf_path,
+    ]
+    result = subprocess.run(cmd, capture_output=True, timeout=120)
+    if result.returncode != 0:
+        stderr = result.stderr.decode(errors="replace")
+        logger.error("Ghostscript tiffsep failed: %s", stderr)
+        raise RuntimeError(f"Ghostscript separation failed: {stderr[:500]}")
+    return output_base
+
+
+def _pct_array_from_tiff(tif_path: str) -> np.ndarray:
+    """Load a tiffsep channel TIFF as a 0-100 percent ink array."""
+    import numpy as np
+
+    img = Image.open(tif_path).convert("L")
+    # tiffsep: 0 = full ink, 255 = no ink → invert to get ink density.
+    arr = 255 - np.array(img, dtype=np.float32)
+    return arr * (100.0 / 255.0)
+
+
+def _pct_array_from_png_bytes(png_bytes: bytes) -> np.ndarray:
+    """Load a cached channel PNG back into the 0-100 percent array.
+
+    The cache stores the same grayscale that tiffsep produced (0 = full
+    ink), so the decode path inverts the same way as :func:`_pct_array_from_tiff`.
+    """
+    import numpy as np
+
+    img = Image.open(io.BytesIO(png_bytes)).convert("L")
+    arr = 255 - np.array(img, dtype=np.float32)
+    return arr * (100.0 / 255.0)
+
+
+def _pct_array_to_png_bytes(arr: np.ndarray) -> bytes:
+    """Encode a 0-100% ink array as the tiffsep-native PNG (0 = full ink)."""
+    import numpy as np
+
+    inked = np.clip(arr, 0.0, 100.0) * (255.0 / 100.0)
+    gray = (255.0 - inked).astype(np.uint8)
+    buf = io.BytesIO()
+    Image.fromarray(gray, mode="L").save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def get_cmyk_channels(
+    pdf_bytes: bytes,
+    page_num: int,
+    dpi: int,
+    *,
+    tenant_id: str | None = None,
+    job_id: str | None = None,
+    storage: StorageBackend | None = None,
+) -> tuple[list[np.ndarray], list[str]]:
+    """Return ``(cmyk_arrays_0_100_percent, channel_names)`` for a page.
+
+    Checks the S3 channel-PNG cache first when ``tenant_id``, ``job_id``
+    and ``storage`` are all supplied; on a full CMYK hit, skips
+    Ghostscript entirely. On a miss (or when called without a tenant
+    scope, e.g. from a batch worker), runs ``tiffsep`` once and writes
+    each CMYK channel back to S3 so the next call is cheap.
+
+    Spot channels are **not** included here — callers that need them
+    (densitometer) should run their own tiffsep discovery because spot
+    channel composition varies by page and doesn't round-trip through
+    the fixed CMYK cache keys.
+    """
+    # Fast path: all four CMYK PNGs already in S3.
+    cache_ok = bool(tenant_id and job_id and storage)
+    if cache_ok and tenant_id and job_id and storage:
+        cached_arrays: list[np.ndarray] = []
+        for ch in PROCESS_CHANNEL_ORDER:
+            key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch)
+            try:
+                raw = storage.download_raw(key)
+            except Exception:
+                raw = None
+            if raw is None:
+                cached_arrays = []
+                break
+            cached_arrays.append(_pct_array_from_png_bytes(raw))
+        if len(cached_arrays) == 4:
+            logger.debug(
+                "get_cmyk_channels: S3 cache hit (tenant=%s job=%s p%d dpi=%d)",
+                tenant_id,
+                job_id,
+                page_num,
+                dpi,
+            )
+            return cached_arrays, list(PROCESS_CHANNEL_ORDER)
+
+    # Miss (or no tenant context): render.
+    with tempfile.TemporaryDirectory(prefix="lintpdf_cmyk_") as tmpdir:
+        output_base = _run_tiffsep(pdf_bytes, page_num, dpi, tmpdir)
+        arrays: list[np.ndarray] = []
+        for ch in PROCESS_CHANNEL_ORDER:
+            tif = _find_channel_tif(tmpdir, ch, output_base)
+            if tif is None:
+                raise RuntimeError(f"CMYK channel '{ch}' not found in GS output")
+            arrays.append(_pct_array_from_tiff(tif))
+
+    if cache_ok and tenant_id and job_id and storage:
+        for ch, arr in zip(PROCESS_CHANNEL_ORDER, arrays, strict=True):
+            key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch)
+            try:
+                storage.upload_raw(key, _pct_array_to_png_bytes(arr), content_type="image/png")
+            except Exception:
+                logger.warning("get_cmyk_channels: failed to cache channel %s key=%s", ch, key)
+
+    return arrays, list(PROCESS_CHANNEL_ORDER)
 
 
 def list_separations(pdf_bytes: bytes) -> list[dict]:
@@ -127,57 +308,55 @@ def render_separation_channel(
     page_num: int,
     channel: str,
     dpi: int = 150,
+    *,
+    tenant_id: str | None = None,
+    job_id: str | None = None,
+    storage: StorageBackend | None = None,
 ) -> bytes:
     """Render a single separation channel as a grayscale PNG.
 
     Uses Ghostscript ``tiffsep`` device to decompose the page into
-    individual channel TIFFs, then extracts the requested channel.
+    individual channel TIFFs, then extracts the requested channel. When
+    the caching context is supplied, a requested CMYK channel is served
+    from S3 if possible, and any CMYK siblings rendered during a miss
+    are warmed into the cache as a side effect.
 
     Args:
         pdf_bytes: Raw PDF bytes.
         page_num: 1-indexed page number.
         channel: Channel name (e.g. ``"Cyan"``, ``"PANTONE 485 C"``).
         dpi: Rendering resolution.
+        tenant_id, job_id, storage: Optional S3 caching context.
 
     Returns:
-        PNG image bytes (grayscale).
+        PNG image bytes (grayscale, tiffsep-native polarity: 0 = full
+        ink, 255 = no ink).
     """
-    with tempfile.TemporaryDirectory(prefix="lintpdf_sep_") as tmpdir:
-        pdf_path = os.path.join(tmpdir, "input.pdf")
-        with open(pdf_path, "wb") as f:
-            f.write(pdf_bytes)
+    cache_ok = bool(tenant_id and job_id and storage)
 
-        output_base = os.path.join(tmpdir, "sep")
+    # Direct hit for this exact channel.
+    if cache_ok and tenant_id and job_id and storage:
+        key = channel_cache_key(tenant_id, job_id, page_num, dpi, channel)
+        try:
+            raw = storage.download_raw(key)
+        except Exception:
+            raw = None
+        if raw is not None:
+            return raw
 
-        # Run Ghostscript tiffsep
-        cmd = [
-            "gs",
-            "-q",
-            "-sDEVICE=tiffsep",
-            "-dNOPAUSE",
-            "-dBATCH",
-            f"-r{dpi}",
-            f"-dFirstPage={page_num}",
-            f"-dLastPage={page_num}",
-            f"-sOutputFile={output_base}%d.tif",
-            pdf_path,
-        ]
-
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            timeout=120,
+    # Fast path for a CMYK channel: piggy-back on the CMYK cache so we
+    # warm all four at once.
+    if channel in PROCESS_CHANNEL_ORDER:
+        arrays, names = get_cmyk_channels(
+            pdf_bytes, page_num, dpi, tenant_id=tenant_id, job_id=job_id, storage=storage
         )
-        if result.returncode != 0:
-            stderr = result.stderr.decode(errors="replace")
-            logger.error("Ghostscript tiffsep failed: %s", stderr)
-            raise RuntimeError(f"Ghostscript separation failed: {stderr[:500]}")
+        idx = names.index(channel)
+        return _pct_array_to_png_bytes(arrays[idx])
 
-        # Determine channel mapping from the generated files
-        # tiffsep outputs: sep1.tif (composite), then per-channel TIFs named
-        # with the channel name: sep1.tif.Cyan.tif, sep1.tif.Magenta.tif, etc.
-        # Or numbered format: sep1.tif is composite, sep1(Cyan).tif, etc.
-        # The actual naming depends on GS version — scan the directory.
+    # Spot channel — we have to shell out and inspect the tmpdir for a
+    # ``(name).tif`` match. Warm CMYK siblings while we're here.
+    with tempfile.TemporaryDirectory(prefix="lintpdf_sep_") as tmpdir:
+        output_base = _run_tiffsep(pdf_bytes, page_num, dpi, tmpdir)
         channel_tif = _find_channel_tif(tmpdir, channel, output_base)
         if channel_tif is None:
             raise RuntimeError(
@@ -185,13 +364,19 @@ def render_separation_channel(
                 f"Available files: {os.listdir(tmpdir)}"
             )
 
-        # Convert TIFF to grayscale PNG
-        img = Image.open(channel_tif).convert("L")
+        if cache_ok and tenant_id and job_id and storage:
+            for ch in PROCESS_CHANNEL_ORDER:
+                tif = _find_channel_tif(tmpdir, ch, output_base)
+                if tif is None:
+                    continue
+                key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch)
+                try:
+                    arr = _pct_array_from_tiff(tif)
+                    storage.upload_raw(key, _pct_array_to_png_bytes(arr), content_type="image/png")
+                except Exception:
+                    logger.warning("render_separation_channel: failed to warm %s", ch)
 
-        # Invert: tiffsep outputs ink density (255 = full ink, 0 = no ink)
-        # but we want 0 = full ink (dark) for display, so we invert
-        # Actually tiffsep already outputs as ink density where 0=full ink
-        # in CMYK space. We keep as-is for compositing.
+        img = Image.open(channel_tif).convert("L")
         buf = io.BytesIO()
         img.save(buf, format="PNG")
         return buf.getvalue()
@@ -370,11 +555,16 @@ def render_tac_heatmap(
     page_num: int,
     dpi: int = 150,
     tac_limit: float = 300,
-) -> bytes:
-    """Generate a TAC (Total Area Coverage) heatmap PNG overlay.
+    *,
+    tenant_id: str | None = None,
+    job_id: str | None = None,
+    storage: StorageBackend | None = None,
+) -> TacHeatmap:
+    """Generate a TAC (Total Area Coverage) heatmap PNG overlay plus per-run metadata.
 
-    Renders CMYK channels via Ghostscript, computes per-pixel TAC, and
-    produces a color-mapped overlay:
+    Renders CMYK channels via Ghostscript (or the S3 channel cache if
+    ``tenant_id`` / ``job_id`` / ``storage`` are supplied), computes
+    per-pixel TAC, and produces a color-mapped overlay:
     - Green: TAC < 250%
     - Yellow: 250% <= TAC < ``tac_limit``
     - Red: TAC >= ``tac_limit``
@@ -391,144 +581,131 @@ def render_tac_heatmap(
         page_num: 1-indexed page number.
         dpi: Rendering resolution.
         tac_limit: TAC threshold for red highlighting (default 300%).
+        tenant_id, job_id, storage: Optional S3 caching context. When all
+            three are supplied, the CMYK channel raster cache is consulted
+            before running tiffsep.
 
     Returns:
-        RGBA PNG image bytes (heatmap overlay with transparency).
+        A ``TacHeatmap`` dict: ``{"png": <rgba bytes>, "runs": [TacRun, ...]}``.
+        The PNG carries the final overlay (including outlines), while the
+        ``runs`` list exposes per-text-run mean TAC in PDF-point space for
+        an interactive tooltip layer.
     """
     import numpy as np
 
-    with tempfile.TemporaryDirectory(prefix="lintpdf_tac_") as tmpdir:
-        pdf_path = os.path.join(tmpdir, "input.pdf")
-        with open(pdf_path, "wb") as f:
-            f.write(pdf_bytes)
+    cmyk_arrays, _ = get_cmyk_channels(
+        pdf_bytes, page_num, dpi, tenant_id=tenant_id, job_id=job_id, storage=storage
+    )
 
-        output_base = os.path.join(tmpdir, "sep")
+    # Compute TAC: sum of CMYK percentages per pixel (0–400%)
+    tac = cmyk_arrays[0] + cmyk_arrays[1] + cmyk_arrays[2] + cmyk_arrays[3]
 
-        # Run Ghostscript tiffsep
-        cmd = [
-            "gs",
-            "-q",
-            "-sDEVICE=tiffsep",
-            "-dNOPAUSE",
-            "-dBATCH",
-            f"-r{dpi}",
-            f"-dFirstPage={page_num}",
-            f"-dLastPage={page_num}",
-            f"-sOutputFile={output_base}%d.tif",
-            pdf_path,
-        ]
+    height, width = tac.shape
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            timeout=120,
-        )
-        if result.returncode != 0:
-            stderr = result.stderr.decode(errors="replace")
-            raise RuntimeError(f"Ghostscript separation failed: {stderr[:500]}")
+    # Build RGBA heatmap
+    heatmap = np.zeros((height, width, 4), dtype=np.uint8)
 
-        # Load CMYK channel images
-        cmyk_arrays = []
-        for ch_name in PROCESS_CHANNEL_ORDER:
-            ch_tif = _find_channel_tif(tmpdir, ch_name, output_base)
-            if ch_tif is None:
-                raise RuntimeError(f"CMYK channel '{ch_name}' not found in GS output")
-            img = Image.open(ch_tif).convert("L")
-            # tiffsep: 0 = full ink, 255 = no ink  →  invert to get ink %
-            arr = 255 - np.array(img, dtype=np.float32)
-            # Normalize to 0–100% range
-            cmyk_arrays.append(arr * (100.0 / 255.0))
+    # Every element with ink gets a color. Only true paper-white
+    # (TAC essentially zero) stays transparent so the PDF page remains visible.
 
-        # Compute TAC: sum of CMYK percentages per pixel (0–400%)
-        tac = cmyk_arrays[0] + cmyk_arrays[1] + cmyk_arrays[2] + cmyk_arrays[3]
+    # Green zone: TAC < 250% (includes text and light coverage areas)
+    green_mask = (tac >= 1) & (tac < 250)
+    heatmap[green_mask] = [0, 180, 0, 100]
 
-        height, width = tac.shape
+    # Yellow zone: 250% <= TAC < tac_limit
+    yellow_mask = (tac >= 250) & (tac < tac_limit)
+    heatmap[yellow_mask] = [255, 200, 0, 150]
 
-        # Build RGBA heatmap
-        heatmap = np.zeros((height, width, 4), dtype=np.uint8)
+    # Red zone: TAC >= tac_limit
+    red_mask = tac >= tac_limit
+    heatmap[red_mask] = [255, 0, 0, 190]
 
-        # Every element with ink gets a color. Only true paper-white
-        # (TAC essentially zero) stays transparent so the PDF page remains visible.
+    # True paper-white (TAC < 1%) stays transparent so page content shows through
+    paper_mask = tac < 1
+    heatmap[paper_mask] = [0, 0, 0, 0]
 
-        # Green zone: TAC < 250% (includes text and light coverage areas)
-        green_mask = (tac >= 1) & (tac < 250)
-        heatmap[green_mask] = [0, 180, 0, 100]
+    heatmap_img = Image.fromarray(heatmap, mode="RGBA")
 
-        # Yellow zone: 250% <= TAC < tac_limit
-        yellow_mask = (tac >= 250) & (tac < tac_limit)
-        heatmap[yellow_mask] = [255, 200, 0, 150]
+    # Text-run outlines: find text bboxes, compute each run's mean TAC
+    # from the heatmap we just built, and draw a red stroke around
+    # runs that exceed the limit. Wrapped so a pdftotext failure or a
+    # PDF with no text never breaks the heatmap itself.
+    try:
+        text_bboxes = _extract_text_bboxes(pdf_bytes, page_num)
+    except Exception:
+        logger.warning("TAC heatmap: text-bbox extraction failed", exc_info=True)
+        text_bboxes = []
 
-        # Red zone: TAC >= tac_limit
-        red_mask = tac >= tac_limit
-        heatmap[red_mask] = [255, 0, 0, 190]
+    runs: list[TacRun] = []
 
-        # True paper-white (TAC < 1%) stays transparent so page content shows through
-        paper_mask = tac < 1
-        heatmap[paper_mask] = [0, 0, 0, 0]
-
-        heatmap_img = Image.fromarray(heatmap, mode="RGBA")
-
-        # Text-run outlines: find text bboxes, compute each run's mean TAC
-        # from the heatmap we just built, and draw a red stroke around
-        # runs that exceed the limit. Wrapped so a pdftotext failure or a
-        # PDF with no text never breaks the heatmap itself.
+    if text_bboxes:
+        # pdftotext uses top-left origin in PDF points. We need pixel
+        # coordinates in the heatmap raster. Read the page MediaBox to
+        # compute the pt -> pixel scale.
         try:
-            text_bboxes = _extract_text_bboxes(pdf_bytes, page_num)
+            with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+                mb = pdf.pages[page_num - 1].get("/MediaBox")
+                mb_vals = [float(v) for v in mb] if mb is not None else [0, 0, 612, 792]
         except Exception:
-            logger.warning("TAC heatmap: text-bbox extraction failed", exc_info=True)
-            text_bboxes = []
+            mb_vals = [0.0, 0.0, float(width), float(height)]
 
-        if text_bboxes:
-            # pdftotext uses top-left origin in PDF points. We need pixel
-            # coordinates in the heatmap raster. Read the page MediaBox to
-            # compute the pt -> pixel scale.
-            try:
-                with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
-                    mb = pdf.pages[page_num - 1].get("/MediaBox")
-                    mb_vals = [float(v) for v in mb] if mb is not None else [0, 0, 612, 792]
-            except Exception:
-                mb_vals = [0.0, 0.0, float(width), float(height)]
+        page_w_pt = mb_vals[2] - mb_vals[0] or 1.0
+        page_h_pt = mb_vals[3] - mb_vals[1] or 1.0
+        sx = width / page_w_pt
+        sy = height / page_h_pt
 
-            page_w_pt = mb_vals[2] - mb_vals[0] or 1.0
-            page_h_pt = mb_vals[3] - mb_vals[1] or 1.0
-            sx = width / page_w_pt
-            sy = height / page_h_pt
+        from PIL import ImageDraw
 
-            from PIL import ImageDraw
+        draw = ImageDraw.Draw(heatmap_img)
+        stroke = (220, 0, 0, 230)
+        stroke_w = max(2, round(dpi / 72))
 
-            draw = ImageDraw.Draw(heatmap_img)
-            stroke = (220, 0, 0, 230)
-            stroke_w = max(2, round(dpi / 72))
+        for x0, y0, x1, y1 in text_bboxes:
+            px_x0 = max(0, round(x0 * sx))
+            px_y0 = max(0, round(y0 * sy))
+            px_x1 = min(width, round(x1 * sx))
+            px_y1 = min(height, round(y1 * sy))
+            if px_x1 - px_x0 < 2 or px_y1 - px_y0 < 2:
+                continue
 
-            for x0, y0, x1, y1 in text_bboxes:
-                px_x0 = max(0, round(x0 * sx))
-                px_y0 = max(0, round(y0 * sy))
-                px_x1 = min(width, round(x1 * sx))
-                px_y1 = min(height, round(y1 * sy))
-                if px_x1 - px_x0 < 2 or px_y1 - px_y0 < 2:
-                    continue
+            # Mean TAC inside the bbox — cheap and good enough.
+            patch = tac[px_y0:px_y1, px_x0:px_x1]
+            if patch.size == 0:
+                continue
+            mean_tac = float(patch.mean())
+            exceeds = mean_tac >= tac_limit
 
-                # Mean TAC inside the bbox — cheap and good enough. Only
-                # outline runs where the mean exceeds the limit; runs with
-                # a single heavy glyph on a light background read as
-                # borderline and don't warrant an alarm outline.
-                patch = tac[px_y0:px_y1, px_x0:px_x1]
-                if patch.size == 0:
-                    continue
-                if float(patch.mean()) < tac_limit:
-                    continue
-
-                # Draw the outline with a 1px inset so the stroke sits just
-                # inside the bbox and doesn't clip at the page edge.
-                draw.rectangle(
-                    (px_x0, px_y0, px_x1 - 1, px_y1 - 1),
-                    outline=stroke,
-                    width=stroke_w,
+            # Always record the run so the tooltip layer can show every
+            # text region's TAC, not just the hot ones.
+            runs.append(
+                TacRun(
+                    x0=float(x0),
+                    y0=float(y0),
+                    x1=float(x1),
+                    y1=float(y1),
+                    mean_tac=round(mean_tac, 2),
+                    limit=float(tac_limit),
+                    exceeds=exceeds,
                 )
+            )
 
-        buf = io.BytesIO()
-        heatmap_img.save(buf, format="PNG")
-        return buf.getvalue()
+            # Only draw the outline for runs that exceed the limit; runs
+            # with a single heavy glyph on a light background read as
+            # borderline and don't warrant an alarm outline.
+            if not exceeds:
+                continue
+
+            # Draw the outline with a 1px inset so the stroke sits just
+            # inside the bbox and doesn't clip at the page edge.
+            draw.rectangle(
+                (px_x0, px_y0, px_x1 - 1, px_y1 - 1),
+                outline=stroke,
+                width=stroke_w,
+            )
+
+    buf = io.BytesIO()
+    heatmap_img.save(buf, format="PNG")
+    return TacHeatmap(png=buf.getvalue(), runs=runs)
 
 
 def sample_densitometer(
@@ -541,13 +718,18 @@ def sample_densitometer(
     page_h: float,
     dpi: int = 300,
     tac_limit: float = 300,
+    tenant_id: str | None = None,
+    job_id: str | None = None,
+    storage: StorageBackend | None = None,
 ) -> dict[str, object]:
     """Sample per-channel ink coverage + TAC at a PDF point.
 
-    Runs Ghostscript ``tiffsep`` once to split the requested page into
-    CMYK (and any spot) channels at ``dpi`` resolution, then averages a
-    3x3 pixel patch around the converted pixel coordinate on each channel
-    grayscale. Returns one entry per channel plus the summed TAC.
+    On the CMYK fast path — when ``tenant_id`` / ``job_id`` / ``storage``
+    are all supplied and the S3 channel cache is populated — no
+    Ghostscript subprocess is run; the cached per-channel rasters are
+    sampled directly. On cache miss the page is rendered via
+    ``tiffsep`` (which both populates the CMYK cache **and** gives us
+    any spot channels that weren't cacheable anyway).
 
     Args:
         pdf_bytes: Raw PDF bytes.
@@ -557,6 +739,7 @@ def sample_densitometer(
         page_w, page_h: MediaBox width / height in points.
         dpi: Rendering resolution.
         tac_limit: TAC limit in percent (for ``limit_exceeded`` flag).
+        tenant_id, job_id, storage: Optional S3 caching context.
 
     Returns:
         ``{"x", "y", "dpi", "channels": [{"name", "percent"}, ...],
@@ -568,61 +751,40 @@ def sample_densitometer(
             surfaces this as a 422 for the UI to render a friendly
             "no separations available" message.
     """
-    import numpy as np
-    from PIL import Image
+    # Try the cache-only path first: if all four CMYK channels are
+    # already in S3 we can avoid shelling out to Ghostscript entirely.
+    # Spot channels are a nice-to-have — when the cache hits we accept
+    # losing them in exchange for the ~2s latency cut.
+    cache_ok = bool(tenant_id and job_id and storage)
+    cmyk_from_cache: list[np.ndarray] | None = None
+    if cache_ok and tenant_id and job_id and storage:
+        candidate: list[np.ndarray] = []
+        for ch in PROCESS_CHANNEL_ORDER:
+            key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch)
+            try:
+                raw = storage.download_raw(key)
+            except Exception:
+                raw = None
+            if raw is None:
+                candidate = []
+                break
+            candidate.append(_pct_array_from_png_bytes(raw))
+        if len(candidate) == 4:
+            cmyk_from_cache = candidate
 
-    with tempfile.TemporaryDirectory(prefix="lintpdf_dens_") as tmpdir:
-        pdf_path = os.path.join(tmpdir, "input.pdf")
-        with open(pdf_path, "wb") as f:
-            f.write(pdf_bytes)
+    def _sample_patch(arr: np.ndarray, px_x: int, px_y: int) -> float:
+        img_h, img_w = arr.shape
+        x0 = max(0, px_x - 1)
+        x1 = min(img_w, px_x + 2)
+        y0 = max(0, px_y - 1)
+        y1 = min(img_h, px_y + 2)
+        patch = arr[y0:y1, x0:x1]
+        if patch.size == 0:
+            return 0.0
+        return max(0.0, min(100.0, float(patch.mean())))
 
-        output_base = os.path.join(tmpdir, "sep")
-        cmd = [
-            "gs",
-            "-q",
-            "-sDEVICE=tiffsep",
-            "-dNOPAUSE",
-            "-dBATCH",
-            f"-r{dpi}",
-            f"-dFirstPage={page_num}",
-            f"-dLastPage={page_num}",
-            f"-sOutputFile={output_base}%d.tif",
-            pdf_path,
-        ]
-        result = subprocess.run(cmd, capture_output=True, timeout=120)
-        if result.returncode != 0:
-            stderr = result.stderr.decode(errors="replace")
-            raise RuntimeError(f"Ghostscript separation failed: {stderr[:500]}")
-
-        # Collect channel TIFFs: CMYK always, plus whatever spots ghostscript
-        # discovered on this page.
-        channel_files: list[tuple[str, str]] = []
-        for ch_name in PROCESS_CHANNEL_ORDER:
-            ch_tif = _find_channel_tif(tmpdir, ch_name, output_base)
-            if ch_tif is not None:
-                channel_files.append((ch_name, ch_tif))
-        # Spot channels appear as filenames outside the process set. Walk
-        # the tmpdir looking for ``(...).tif`` entries that aren't the
-        # composite or one of the CMYK process names we already have.
-        process_lower = {n.lower() for n in PROCESS_CHANNEL_ORDER}
-        already = {ch[0].lower() for ch in channel_files}
-        for name in sorted(os.listdir(tmpdir)):
-            if not name.endswith(".tif"):
-                continue
-            if "(" not in name or ")" not in name:
-                continue  # composite, no parens
-            spot = name[name.index("(") + 1 : name.rindex(")")]
-            if not spot or spot.lower() in process_lower or spot.lower() in already:
-                continue
-            channel_files.append((spot, os.path.join(tmpdir, name)))
-            already.add(spot.lower())
-
-        if not channel_files:
-            raise RuntimeError("No separation channels produced for this page")
-
-        # Load the first channel to get image dimensions for the coord map.
-        first_img = Image.open(channel_files[0][1]).convert("L")
-        img_w, img_h = first_img.size
+    def _pct_to_px(arr: np.ndarray) -> tuple[int, int]:
+        img_h, img_w = arr.shape
         scale_x = img_w / page_w if page_w else 1.0
         scale_y = img_h / page_h if page_h else 1.0
         px_x = round(x * scale_x)
@@ -630,32 +792,80 @@ def sample_densitometer(
         px_y = round(img_h - y * scale_y)
         px_x = max(0, min(px_x, img_w - 1))
         px_y = max(0, min(px_y, img_h - 1))
+        return px_x, px_y
 
-        def _sample(path: str) -> float:
-            img = Image.open(path).convert("L")
-            arr = np.array(img, dtype=np.float32)
-            # tiffsep encodes 0 = full ink, 255 = no ink. Invert to get
-            # ink density, then normalise to 0-100.
-            x0 = max(0, px_x - 1)
-            x1 = min(img_w, px_x + 2)
-            y0 = max(0, px_y - 1)
-            y1 = min(img_h, px_y + 2)
-            patch = arr[y0:y1, x0:x1]
-            mean_ink = (255.0 - float(patch.mean())) * (100.0 / 255.0)
-            # Clamp to [0, 100] to guard against rounding noise.
-            return max(0.0, min(100.0, mean_ink))
+    channel_entries: list[dict[str, Any]] = []
 
-        channels = [
-            {"name": name, "percent": round(_sample(path), 2)} for name, path in channel_files
-        ]
-        tac = round(sum(ch["percent"] for ch in channels), 2)
+    if cmyk_from_cache is not None:
+        px_x, px_y = _pct_to_px(cmyk_from_cache[0])
+        for ch_name, arr in zip(PROCESS_CHANNEL_ORDER, cmyk_from_cache, strict=True):
+            channel_entries.append(
+                {"name": ch_name, "percent": round(_sample_patch(arr, px_x, px_y), 2)}
+            )
+        logger.debug("sample_densitometer: CMYK cache hit (no tiffsep)")
+    else:
+        # Cache miss or no scope — run tiffsep, capture CMYK + any spots,
+        # write CMYK back to the cache for next time.
+        with tempfile.TemporaryDirectory(prefix="lintpdf_dens_") as tmpdir:
+            output_base = _run_tiffsep(pdf_bytes, page_num, dpi, tmpdir)
 
-        return {
-            "x": x,
-            "y": y,
-            "dpi": dpi,
-            "channels": channels,
-            "tac": tac,
-            "tac_limit": tac_limit,
-            "limit_exceeded": tac > tac_limit,
-        }
+            channel_files: list[tuple[str, str]] = []
+            for ch_name in PROCESS_CHANNEL_ORDER:
+                ch_tif = _find_channel_tif(tmpdir, ch_name, output_base)
+                if ch_tif is not None:
+                    channel_files.append((ch_name, ch_tif))
+
+            process_lower = {n.lower() for n in PROCESS_CHANNEL_ORDER}
+            already = {ch[0].lower() for ch in channel_files}
+            for name in sorted(os.listdir(tmpdir)):
+                if not name.endswith(".tif"):
+                    continue
+                if "(" not in name or ")" not in name:
+                    continue  # composite, no parens
+                spot = name[name.index("(") + 1 : name.rindex(")")]
+                if not spot or spot.lower() in process_lower or spot.lower() in already:
+                    continue
+                channel_files.append((spot, os.path.join(tmpdir, name)))
+                already.add(spot.lower())
+
+            if not channel_files:
+                raise RuntimeError("No separation channels produced for this page")
+
+            # Load all arrays, derive pixel coord from the first, sample
+            # each, and opportunistically warm the CMYK cache.
+            first_arr = _pct_array_from_tiff(channel_files[0][1])
+            px_x, px_y = _pct_to_px(first_arr)
+
+            for ch_name, tif_path in channel_files:
+                arr = (
+                    first_arr if tif_path == channel_files[0][1] else _pct_array_from_tiff(tif_path)
+                )
+                channel_entries.append(
+                    {"name": ch_name, "percent": round(_sample_patch(arr, px_x, px_y), 2)}
+                )
+                if (
+                    cache_ok
+                    and ch_name in PROCESS_CHANNEL_ORDER
+                    and tenant_id
+                    and job_id
+                    and storage
+                ):
+                    key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch_name)
+                    try:
+                        storage.upload_raw(
+                            key, _pct_array_to_png_bytes(arr), content_type="image/png"
+                        )
+                    except Exception:
+                        logger.warning("sample_densitometer: failed to cache channel %s", ch_name)
+
+    tac = round(sum(float(ch["percent"]) for ch in channel_entries), 2)
+
+    return {
+        "x": x,
+        "y": y,
+        "dpi": dpi,
+        "channels": channel_entries,
+        "tac": tac,
+        "tac_limit": tac_limit,
+        "limit_exceeded": tac > tac_limit,
+    }

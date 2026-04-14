@@ -97,12 +97,49 @@ Content-Type: image/png`}
       />
       <Endpoint
         method="GET"
+        path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/tac-heatmap/runs?dpi=150&tac_limit=300"
+        description="Per-text-run mean TAC metadata for interactive tooltips. Coordinates are in PDF points with origin top-left (matching poppler pdftotext -bbox). Powers the hover readout on the TAC heatmap overlay."
+        auth
+        request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/.../pages/1/tac-heatmap/runs?tac_limit=300" \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "job_id": "d4e5f6a7-...",
+  "page_num": 1,
+  "dpi": 150,
+  "tac_limit": 300.0,
+  "runs": [
+    { "x0": 102.3, "y0": 88.1, "x1": 440.7, "y1": 112.5, "mean_tac": 342.8, "limit": 300.0, "exceeds": true }
+  ]
+}`}
+      />
+      <Endpoint
+        method="GET"
         path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/sample?x=200&y=300&dpi=300"
-        description="Single-pixel densitometer sample. Returns RGB + hex for the point (origin lower-left, PDF points)."
+        description="Single-pixel color-picker sample. Returns RGB + hex for the point (origin lower-left, PDF points). Not a densitometer — see /densitometer below for per-channel readings."
         auth
         request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/.../pages/1/sample?x=200&y=300" \\
   -H "Authorization: Bearer lpdf_live_..."`}
         response={`{ "x": 200, "y": 300, "rgb": [12, 99, 180], "hex": "#0c63b4", "tac": null }`}
+      />
+      <Endpoint
+        method="GET"
+        path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/densitometer?x=200&y=300&dpi=300&tac_limit=300"
+        description="Per-channel CMYK + spot densitometer reading at the requested point. Runs Ghostscript tiffsep on the page (cached in S3 after the first call) and samples a 3x3 patch on each channel."
+        auth
+        request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/.../pages/1/densitometer?x=200&y=300" \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "x": 200, "y": 300, "dpi": 300,
+  "channels": [
+    { "name": "Cyan", "percent": 62.3 },
+    { "name": "Magenta", "percent": 18.1 },
+    { "name": "Yellow", "percent": 4.7 },
+    { "name": "Black", "percent": 91.5 }
+  ],
+  "tac": 176.6,
+  "tac_limit": 300,
+  "limit_exceeded": false
+}`}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Layers</h4>
@@ -159,7 +196,7 @@ Content-Type: image/png`}
   "support_email": "support@acmeprint.com",
   "preflight_source": "engine",
   "capabilities": {
-    "separations": true, "tac": true, "fonts": true,
+    "separations": true, "tac": true, "tac_runs": true, "fonts": true,
     "images": true, "layers": false
   }
 }`}
@@ -195,7 +232,7 @@ Content-Type: image/png`}
           { name: "tenant_name", type: "string | null", description: "Tenant display name (null when anonymous)." },
           { name: "support_email", type: "string | null", description: "Tenant support email (null when anonymous)." },
           { name: "preflight_source", type: '"engine" | "external" | "minimal"', description: "How findings were produced. Drives the viewer's Load-button affordances." },
-          { name: "capabilities", type: "Record<string, boolean>", description: "Per-capability availability map. Fillable keys: separations, tac, fonts, images. layers is not fillable." },
+          { name: "capabilities", type: "Record<string, boolean>", description: "Per-capability availability map. Fillable keys: separations, tac, fonts, images. layers and tac_runs are not fillable (tac_runs is derived on demand and tracks the tac flag; layers is extracted at ingest only)." },
         ]}
       />
 

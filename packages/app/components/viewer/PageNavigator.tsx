@@ -18,7 +18,7 @@ export function PageNavigator({
   pages,
   currentPage,
   findings,
-  jobId,
+  jobId: _jobId,
   onPageChange,
   horizontal,
 }: PageNavigatorProps) {

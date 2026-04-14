@@ -507,6 +507,7 @@ class ReportService:
             _suffix_by_format = {
                 "pdf": ".pdf",
                 "annotated_pdf": ".pdf",
+                "annotated_pdf_markup": ".pdf",
                 "json": ".json",
                 "xml": ".xml",
             }
@@ -646,6 +647,8 @@ class ReportService:
             )
         if fmt == "annotated_pdf":
             return self._generate_annotated_pdf(result_json, branding)
+        if fmt == "annotated_pdf_markup":
+            return self._generate_annotated_pdf_markup(result_json, branding)
         if fmt == "json":
             from lintpdf.reports.json_report import generate_json_from_dict
 
@@ -946,4 +949,103 @@ class ReportService:
                 "Annotated PDF render failed for job %s; skipping format",
                 result_json.get("job_id"),
             )
+            return None
+
+    def _generate_annotated_pdf_markup(
+        self,
+        result_json: dict[str, Any],
+        branding: BrandingContext,
+    ) -> bytes | None:
+        """Stamp reviewer markup (annotations + comments) onto the original PDF.
+
+        Distinct from ``_generate_annotated_pdf``: that format overlays
+        preflight *findings*, whereas this one overlays user-drawn
+        markup from the interactive viewer. Best-effort — returns None
+        on any failure so sibling formats in the same mint call keep
+        succeeding.
+        """
+        import uuid as uuid_mod
+
+        from lintpdf.api.models import ViewerAnnotation, ViewerAnnotationComment
+        from lintpdf.reports.markup_pdf_report import generate_markup_pdf
+
+        file_key = result_json.get("metadata", {}).get("file_key", "")
+        job_id_raw = result_json.get("job_id", "")
+        if not file_key or not job_id_raw:
+            logger.warning("Cannot generate markup PDF: missing file_key or job_id in result_json")
+            return None
+
+        try:
+            pdf_bytes = self._storage.download_pdf(file_key)
+        except Exception:
+            logger.warning(
+                "Cannot generate markup PDF: failed to download original PDF (file_key=%s)",
+                file_key,
+                exc_info=True,
+            )
+            return None
+
+        try:
+            job_uuid = uuid_mod.UUID(str(job_id_raw))
+        except ValueError:
+            logger.warning("Cannot generate markup PDF: job_id %r is not a UUID", job_id_raw)
+            return None
+
+        ann_rows = (
+            self._db.query(ViewerAnnotation)
+            .filter(ViewerAnnotation.job_id == job_uuid)
+            .order_by(ViewerAnnotation.created_at.asc())
+            .all()
+        )
+        if not ann_rows:
+            # Nothing to stamp — caller may still want the underlying
+            # PDF bytes, but per the format contract we return None so
+            # the mint skips this format rather than re-serving the raw
+            # source PDF under a misleading URL.
+            logger.info(
+                "markup PDF: no annotations for job %s, skipping format",
+                job_uuid,
+            )
+            return None
+
+        ann_dicts = [
+            {
+                "id": str(a.id),
+                "page_num": a.page_num,
+                "kind": a.kind,
+                "geometry": a.geometry_json,
+                "color": a.color,
+                "text": a.text,
+                "author_email": a.author_email,
+                "created_at": a.created_at.isoformat() if a.created_at else "",
+            }
+            for a in ann_rows
+        ]
+
+        ann_ids = [a.id for a in ann_rows]
+        comment_rows = (
+            self._db.query(ViewerAnnotationComment)
+            .filter(ViewerAnnotationComment.annotation_id.in_(ann_ids))
+            .order_by(ViewerAnnotationComment.created_at.asc())
+            .all()
+        )
+        comments_by_annotation: dict[str, list[dict[str, Any]]] = {}
+        for c in comment_rows:
+            comments_by_annotation.setdefault(str(c.annotation_id), []).append(
+                {
+                    "author_email": c.author_email,
+                    "body": c.body,
+                    "created_at": c.created_at.isoformat() if c.created_at else "",
+                }
+            )
+
+        try:
+            return generate_markup_pdf(
+                pdf_bytes,
+                ann_dicts,
+                comments_by_annotation,
+                branding_name=branding.name,
+            )
+        except Exception:
+            logger.exception("Markup PDF render failed for job %s; skipping format", job_uuid)
             return None

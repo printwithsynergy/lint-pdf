@@ -52,7 +52,7 @@ interface SeparationCanvasProps {
 }
 
 export function SeparationCanvas({
-  jobId,
+  jobId: _jobId,
   pageNum,
   enabledChannels,
   allChannels,

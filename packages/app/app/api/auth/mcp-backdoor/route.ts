@@ -14,6 +14,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getClientInfo } from "@/lib/auth-helpers";
 
+// Local Prisma schema adds ``engineTenantId`` on Tenant and
+// ``impersonatingTenantId`` on Session; the Pixie Dust PrismaClient
+// type doesn't expose them. Runtime columns are guaranteed by
+// startup.sh. Cast through ``any`` to bridge the type gap.
+
+const db = prisma as any;
+
 const requestSchema = z.object({
   email: z.string().email(),
   mcpSecretKey: z.string().min(1),
@@ -81,7 +88,7 @@ export async function POST(req: Request) {
           where: { slug: tenantSlug },
         });
         if (!tenant) {
-          tenant = await prisma.tenant.create({
+          tenant = await db.tenant.create({
             data: {
               name: tenantSlug,
               slug: tenantSlug,
@@ -89,12 +96,18 @@ export async function POST(req: Request) {
             },
           });
         }
+        if (!tenant) {
+          // Defensive: create() always resolves to a row, but TS can't
+          // narrow through the earlier findUnique chain without help.
+          throw new Error("Failed to resolve tenant");
+        }
         tenantId = tenant.id;
 
         // Ensure engineTenantId is set on existing tenants
-        if (!tenant.engineTenantId && process.env.ENGINE_ADMIN_TENANT_ID) {
-          await prisma.tenant.update({
-            where: { id: tenant.id },
+        const tenantAny = tenant as { engineTenantId?: string | null; id: string };
+        if (!tenantAny.engineTenantId && process.env.ENGINE_ADMIN_TENANT_ID) {
+          await db.tenant.update({
+            where: { id: tenantAny.id },
             data: { engineTenantId: process.env.ENGINE_ADMIN_TENANT_ID },
           });
         }
@@ -106,13 +119,13 @@ export async function POST(req: Request) {
         });
         if (existing) {
           if (existing.role !== memberRole) {
-            await prisma.tenantUser.update({
+            await db.tenantUser.update({
               where: { id: existing.id },
               data: { role: memberRole },
             });
           }
         } else {
-          await prisma.tenantUser.create({
+          await db.tenantUser.create({
             data: {
               userId: user.id,
               tenantId: tenant.id,
@@ -134,7 +147,7 @@ export async function POST(req: Request) {
 
       // Set impersonatingTenantId on the session so plugin routes have tenant context
       if (tenantId) {
-        await prisma.session.update({
+        await db.session.update({
           where: { token: session.token },
           data: { impersonatingTenantId: tenantId },
         });

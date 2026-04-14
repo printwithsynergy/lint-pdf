@@ -39,7 +39,7 @@ curl -X POST https://api.lintpdf.com/api/v1/jobs/{job_id}/reports \
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `formats` | array of `"html"` \| `"pdf"` \| `"json"` \| `"xml"` \| `"annotated_pdf"` | `["html", "pdf"]` | Which formats to mint. Each returns its own token. `annotated_pdf` is silently skipped if the original PDF can't be re-fetched from object storage; the other formats in the same request still mint. |
+| `formats` | array of `"html"` \| `"pdf"` \| `"json"` \| `"xml"` \| `"annotated_pdf"` \| `"annotated_pdf_markup"` | `["html", "pdf"]` | Which formats to mint. Each returns its own token. `annotated_pdf` and `annotated_pdf_markup` are silently skipped if their inputs are missing (original PDF unreadable, or zero annotations, respectively); the other formats in the same request still mint. |
 | `expiry_days` | int \| `null` | Plan default (7 for Free, 30 for Starter, 90 for Growth+, `null`/never for Enterprise) | Token lifetime. `null` = no expiry. |
 | `email_to` | string \| `null` | `null` | When set, the share link is emailed to this address on mint. The email envelope honors the job's brand resolution (anonymous sends from `no-reply@reports.lintpdf.com`). |
 | `branding` | object \| `null` | Job/tenant default | Inline branding override. Accepts `name`, `logo_url`, `primary_color`, `accent_color`, `hide_footer`. Use with care — prefer BrandProfile references. |
@@ -149,12 +149,30 @@ The public viewer exposes the same endpoints as the authenticated viewer, with `
 - `GET /separations`
 - `GET /pages/{n}/channel/{name}?dpi=`
 - `GET /pages/{n}/tac-heatmap?dpi=&tac_limit=`
+- `GET /pages/{n}/tac-heatmap/runs?dpi=&tac_limit=` (per-text-run mean TAC metadata for tooltip overlays)
 - `GET /config` (returns branding captured at mint time)
-- `GET /pages/{n}/sample?x=&y=&dpi=`
+- `GET /pages/{n}/sample?x=&y=&dpi=` (RGB color picker)
+- `GET /pages/{n}/densitometer?x=&y=&dpi=&tac_limit=` (per-channel CMYK + spot ink readings)
 - `GET /layers`
 - `GET /verdict`
 
 None of these require authentication. The token itself is the authorization.
+
+## Markup, comments, and email fan-out
+
+When the issuing tenant mints a share link with `allow_annotations=true`, the recipient can draw markup (rectangles, circles, arrows, freehand strokes, sticky-note pins) directly on the interactive viewer. Writes require an `X-Visitor-Email` header so every markup row carries an audit trail — the viewer prompts once per session and remembers the answer in `localStorage`.
+
+Threaded comments on a note are enabled under the same `allow_annotations` flag. Each comment post triggers an email fan-out to:
+
+1. The annotation's original author (dashboard writer or earlier share-link visitor).
+2. Every earlier distinct commenter on the same thread.
+3. The commenter themselves is excluded so nobody gets their own echo.
+
+Emails include a deep-link fragment (`#ann=<annotation_id>`) that scrolls the receiving viewer to the referenced markup and auto-opens its thread panel. The deep link points at the share-link URL for public writers and at the authenticated dashboard URL for tenant users.
+
+### Bake-to-PDF
+
+Once the markup phase is done, call the mint endpoint with `formats: ["annotated_pdf_markup"]` to get a PDF copy of the original with the reviewer's markup stamped on each page plus an appendix that resolves numbered note pins to their bodies and full comment threads. This is independent of `annotated_pdf`, which stamps preflight findings (not reviewer markup).
 
 ## Expiry semantics
 
