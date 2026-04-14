@@ -427,3 +427,43 @@ def send_approval_chain_completed(
   </div>
 </div>"""
     return _send(to=to, subject=subject, html=html)
+
+
+def send_annotation_comment(
+    *,
+    to: str,
+    commenter_email: str,
+    file_name: str,
+    body_excerpt: str,
+    deep_link_url: str,
+    brand_name: str = "LintPDF",
+    brand_primary_color: str = "#1e3a8a",
+) -> EmailResult:
+    """Notify an annotation participant that someone posted a new comment.
+
+    Sent to the original annotation author and every earlier distinct
+    commenter on the same markup thread (Wave B collaboration fan-out).
+    The sender is excluded upstream so nobody gets their own echo.
+    """
+    subject = f"{brand_name}: New comment on your markup — {file_name}"
+    # HTML-escape the excerpt defensively so a stray ``<`` in the comment
+    # body can't break out of the rendered paragraph.
+    import html as _html
+
+    safe_excerpt = _html.escape(body_excerpt)
+    safe_commenter = _html.escape(commenter_email)
+    safe_file = _html.escape(file_name)
+
+    html = f"""\
+<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1f2937;">
+  <h2 style="color: {brand_primary_color}; margin: 0 0 16px;">{brand_name} — New comment</h2>
+  <p><strong>{safe_commenter}</strong> replied on a markup thread in <strong>{safe_file}</strong>:</p>
+  <blockquote style="background: #f1f5f9; border-left: 3px solid {brand_primary_color}; padding: 12px 16px; margin: 12px 0; border-radius: 4px; font-size: 14px; white-space: pre-wrap;">{safe_excerpt}</blockquote>
+  <div style="margin: 24px 0; text-align: center;">
+    <a href="{deep_link_url}" style="display: inline-block; padding: 12px 28px; background: {brand_primary_color}; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+      Open markup
+    </a>
+  </div>
+  <p style="font-size: 11px; color: #9ca3af;">You're receiving this because you created the markup or participated in the thread.</p>
+</div>"""
+    return _send(to=to, subject=subject, html=html)

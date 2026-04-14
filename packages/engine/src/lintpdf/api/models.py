@@ -902,6 +902,46 @@ class ViewerAnnotation(Base):
     )
 
 
+class ViewerAnnotationComment(Base):
+    """Thread of follow-up comments on a :class:`ViewerAnnotation`.
+
+    Wave B collaboration: reviewers and share-link visitors can reply
+    to a note, building a conversation thread without cluttering the
+    page with additional markup primitives. The author's email is
+    captured the same way as on the parent annotation (tenant user for
+    dashboard writers, ``X-Visitor-Email`` for share-link visitors).
+    """
+
+    __tablename__ = "viewer_annotation_comments"
+    __table_args__ = (
+        Index("ix_viewer_ann_comments_annotation", "annotation_id", "created_at"),
+        Index("ix_viewer_ann_comments_token", "share_token"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    annotation_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("viewer_annotations.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    # Mirrors the parent annotation's share_token (NULL for dashboard
+    # comments). Kept denormalised so the public-share mirror routes can
+    # filter without joining through viewer_annotations.
+    share_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    author_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class ShareLinkVisitor(Base):
     """Email + IP capture for anonymous annotators on /view/{token} share links.
 

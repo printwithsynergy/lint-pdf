@@ -279,6 +279,24 @@ CREATE INDEX IF NOT EXISTS ix_share_visitors_token_email
 
 ALTER TABLE report_tokens
   ADD COLUMN IF NOT EXISTS allow_annotations BOOLEAN NOT NULL DEFAULT false;
+
+-- Engine: viewer_annotation_comments (Alembic 022). Threaded replies on
+-- a reviewer annotation — the Wave B collaboration surface. Comments
+-- cascade-delete with the parent annotation.
+CREATE TABLE IF NOT EXISTS viewer_annotation_comments (
+  id UUID PRIMARY KEY,
+  annotation_id UUID NOT NULL REFERENCES viewer_annotations(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  share_token VARCHAR(255),
+  author_email VARCHAR(255) NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_viewer_ann_comments_annotation
+  ON viewer_annotation_comments(annotation_id, created_at);
+CREATE INDEX IF NOT EXISTS ix_viewer_ann_comments_token
+  ON viewer_annotation_comments(share_token);
 SQL
 
 echo "Step 1 complete (exit code: $?)"

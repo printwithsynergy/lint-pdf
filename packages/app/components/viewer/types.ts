@@ -75,6 +75,7 @@ export type ViewerCapabilityKey =
   | "findings"
   | "separations"
   | "tac"
+  | "tac_runs"
   | "layers"
   | "fonts"
   | "images"
@@ -244,6 +245,7 @@ export const DEFAULT_VIEWER_CONFIG: ViewerConfig = {
     findings: true,
     separations: true,
     tac: true,
+    tac_runs: true,
     layers: true,
     fonts: true,
     images: true,

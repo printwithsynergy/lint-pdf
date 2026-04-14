@@ -9,7 +9,6 @@ import contextlib
 import hashlib
 import io
 import logging
-import re
 import uuid as uuid_mod
 from datetime import datetime, timezone
 from typing import Any
@@ -186,14 +185,29 @@ def _tile_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str
 def _channel_cache_key(
     tenant_id: str, job_id: str, page_num: int, dpi: int, channel_name: str
 ) -> str:
-    """S3 key for a cached separation channel tile."""
-    safe_name = re.sub(r"[^a-zA-Z0-9_-]", "_", channel_name)
-    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_ch_{safe_name}.png"
+    """S3 key for a cached separation channel tile.
+
+    Kept for backward compatibility with any call site that imports this
+    name directly. The renderer module owns the canonical key format —
+    see ``lintpdf.reports.separation_renderer.channel_cache_key``.
+    """
+    from lintpdf.reports.separation_renderer import channel_cache_key
+
+    return channel_cache_key(tenant_id, job_id, page_num, dpi, channel_name)
 
 
 def _tac_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
-    """S3 key for a cached TAC heatmap."""
+    """S3 key for a cached TAC heatmap PNG."""
     return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_tac.png"
+
+
+def _tac_runs_cache_key(
+    tenant_id: str, job_id: str, page_num: int, dpi: int, tac_limit: int
+) -> str:
+    """S3 key for cached TAC per-run metadata JSON."""
+    from lintpdf.reports.separation_renderer import tac_runs_cache_key
+
+    return tac_runs_cache_key(tenant_id, job_id, page_num, dpi, tac_limit)
 
 
 # ---------------------------------------------------------------------------
@@ -360,36 +374,124 @@ async def get_separation_channel(
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
-    cache_key = _channel_cache_key(str(tenant.id), str(job.id), page_num, dpi, channel_name)
 
-    # Try S3 cache
+    # The renderer owns the S3 cache (direct hit for this channel; warm
+    # all four CMYK siblings on miss) — we just surface the bytes.
     try:
-        cached = storage.download_raw(cache_key)
-        if cached:
-            return Response(
-                content=cached,
-                media_type="image/png",
-                headers={"Cache-Control": "public, max-age=86400"},
-            )
-    except Exception:
-        pass
-
-    try:
-        img_bytes = render_separation_channel(pdf_bytes, page_num, channel_name, dpi=dpi)
+        img_bytes = render_separation_channel(
+            pdf_bytes,
+            page_num,
+            channel_name,
+            dpi=dpi,
+            tenant_id=str(tenant.id),
+            job_id=str(job.id),
+            storage=storage,
+        )
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
-
-    # Cache to S3
-    try:
-        storage.upload_raw(cache_key, img_bytes, content_type="image/png")
-    except Exception:
-        logger.warning("Failed to cache channel tile: %s", cache_key)
 
     return Response(
         content=img_bytes,
         media_type="image/png",
         headers={"Cache-Control": "public, max-age=86400"},
     )
+
+
+class TacRunResponse(BaseModel):
+    """A text-run bbox with its mean TAC%.
+
+    Coordinates are PDF points, origin **top-left** of the page (matching
+    poppler's ``pdftotext -bbox`` output). The frontend overlay places
+    SVG ``<rect>`` hit targets against the page viewport and shows a
+    tooltip with ``mean_tac`` on hover.
+    """
+
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+    mean_tac: float
+    limit: float
+    exceeds: bool
+
+
+class TacRunsResponse(BaseModel):
+    job_id: str
+    page_num: int
+    dpi: int
+    tac_limit: float
+    runs: list[TacRunResponse]
+
+
+def _render_tac_with_runs(
+    *,
+    pdf_bytes: bytes,
+    tenant_id: str,
+    job_id: str,
+    page_num: int,
+    dpi: int,
+    tac_limit: int,
+) -> tuple[bytes, list[TacRunResponse]]:
+    """Render the TAC heatmap + runs, populating both PNG and JSON caches.
+
+    Single source of truth for the authenticated and public TAC
+    endpoints so the two surfaces never drift.
+    """
+    import json as _json
+
+    from lintpdf.reports.separation_renderer import render_tac_heatmap
+
+    storage = get_storage()
+    png_key = _tac_cache_key(tenant_id, job_id, page_num, dpi)
+    runs_key = _tac_runs_cache_key(tenant_id, job_id, page_num, dpi, tac_limit)
+
+    try:
+        cached_png = storage.download_raw(png_key)
+    except Exception:
+        cached_png = None
+    try:
+        cached_runs_raw = storage.download_raw(runs_key)
+    except Exception:
+        cached_runs_raw = None
+
+    if cached_png is not None and cached_runs_raw is not None:
+        try:
+            cached_runs = [TacRunResponse(**r) for r in _json.loads(cached_runs_raw)]
+            return cached_png, cached_runs
+        except Exception:
+            # Corrupt JSON sidecar — fall through to re-render.
+            logger.warning("TAC runs cache corrupt at %s; regenerating", runs_key)
+
+    try:
+        heatmap = render_tac_heatmap(
+            pdf_bytes,
+            page_num,
+            dpi=dpi,
+            tac_limit=tac_limit,
+            tenant_id=tenant_id,
+            job_id=job_id,
+            storage=storage,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    png_bytes = heatmap["png"]
+    runs = [TacRunResponse(**dict(r)) for r in heatmap["runs"]]
+
+    try:
+        storage.upload_raw(png_key, png_bytes, content_type="image/png")
+    except Exception:
+        logger.warning("Failed to cache TAC heatmap PNG at %s", png_key)
+    try:
+        storage.upload_raw(
+            runs_key,
+            _json.dumps([r.model_dump() for r in runs]).encode(),
+            content_type="application/json",
+        )
+    except Exception:
+        logger.warning("Failed to cache TAC runs JSON at %s", runs_key)
+
+    return png_bytes, runs
 
 
 @router.get("/jobs/{job_id}/pages/{page_num}/tac-heatmap")
@@ -416,40 +518,69 @@ async def get_tac_heatmap(
     db: Session = Depends(get_db),
 ) -> Response:
     """Render a TAC heatmap overlay as an RGBA PNG."""
-    from lintpdf.reports.separation_renderer import render_tac_heatmap
-
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)
-    storage = get_storage()
-    cache_key = _tac_cache_key(str(tenant.id), str(job.id), page_num, dpi)
 
-    # Try S3 cache
-    try:
-        cached = storage.download_raw(cache_key)
-        if cached:
-            return Response(
-                content=cached,
-                media_type="image/png",
-                headers={"Cache-Control": "public, max-age=86400"},
-            )
-    except Exception:
-        pass
-
-    try:
-        heatmap_bytes = render_tac_heatmap(pdf_bytes, page_num, dpi=dpi, tac_limit=tac_limit)
-    except RuntimeError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-
-    # Cache to S3
-    try:
-        storage.upload_raw(cache_key, heatmap_bytes, content_type="image/png")
-    except Exception:
-        logger.warning("Failed to cache TAC heatmap: %s", cache_key)
-
+    png_bytes, _runs = _render_tac_with_runs(
+        pdf_bytes=pdf_bytes,
+        tenant_id=str(tenant.id),
+        job_id=str(job.id),
+        page_num=page_num,
+        dpi=dpi,
+        tac_limit=tac_limit,
+    )
     return Response(
-        content=heatmap_bytes,
+        content=png_bytes,
         media_type="image/png",
         headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.get(
+    "/jobs/{job_id}/pages/{page_num}/tac-heatmap/runs",
+    response_model=TacRunsResponse,
+)
+async def get_tac_runs(
+    job_id: str,
+    page_num: int,
+    dpi: int = Query(
+        default=150,
+        ge=36,
+        le=600,
+        description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
+    ),
+    tac_limit: int = Query(
+        default=300,
+        ge=100,
+        le=500,
+        description="Total area coverage threshold in percent (100-500).",
+    ),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> TacRunsResponse:
+    """Return per-text-run mean TAC metadata for tooltip overlays.
+
+    Coordinates are in PDF points with origin at the **top-left** of the
+    page (matching poppler's ``pdftotext -bbox`` output). ``exceeds`` is
+    pre-computed against ``tac_limit`` so the frontend can style the
+    tooltip without re-comparing.
+    """
+    job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    _validate_page_num(pdf_bytes, page_num)
+    _png, runs = _render_tac_with_runs(
+        pdf_bytes=pdf_bytes,
+        tenant_id=str(tenant.id),
+        job_id=str(job.id),
+        page_num=page_num,
+        dpi=dpi,
+        tac_limit=tac_limit,
+    )
+    return TacRunsResponse(
+        job_id=str(job.id),
+        page_num=page_num,
+        dpi=dpi,
+        tac_limit=float(tac_limit),
+        runs=runs,
     )
 
 
@@ -527,13 +658,20 @@ def _build_viewer_config(
     """Shared builder for authenticated + public viewer config endpoints."""
     from lintpdf.reports.service import BrandingContext, resolve_branding
 
+    caps = dict(job.data_capabilities or {})
+    # ``tac_runs`` is derived on demand from the PDF's CMYK channels — it
+    # does not have a dedicated analyzer, so it tracks ``tac``. If TAC
+    # data is available, so is the per-run tooltip metadata. This keeps
+    # the capability registry honest for the viewer frontend.
+    if "tac" in caps:
+        caps.setdefault("tac_runs", bool(caps.get("tac")))
     config = ViewerConfigResponse(
         preflight_source=(
             job.preflight_source.value
             if hasattr(job.preflight_source, "value")
             else str(job.preflight_source or "engine")
         ),
-        capabilities=dict(job.data_capabilities or {}),
+        capabilities=caps,
     )
 
     def _lookup_profile(profile_id: str) -> BrandProfile | None:
@@ -791,13 +929,23 @@ class DensitometerResponse(BaseModel):
 
 
 async def _sample_densitometer(
-    pdf_bytes: bytes, page_num: int, x: float, y: float, dpi: int, tac_limit: float
+    pdf_bytes: bytes,
+    page_num: int,
+    x: float,
+    y: float,
+    dpi: int,
+    tac_limit: float,
+    *,
+    tenant_id: str | None = None,
+    job_id: str | None = None,
 ) -> DensitometerResponse:
     """Shared helper: run ``sample_densitometer`` off-loop and box the result.
 
     Used by both the authenticated and the public token-scoped densitometer
     endpoints. Runs in a thread because Ghostscript shells out and we don't
-    want to block the FastAPI event loop.
+    want to block the FastAPI event loop. When ``tenant_id``/``job_id`` are
+    supplied, the CMYK S3 cache is consulted — second-click reads skip
+    Ghostscript entirely.
     """
     from lintpdf.reports.separation_renderer import sample_densitometer
 
@@ -815,6 +963,8 @@ async def _sample_densitometer(
     local_x = x - mb_vals[0]
     local_y = y - mb_vals[1]
 
+    storage = get_storage() if (tenant_id and job_id) else None
+
     loop = asyncio.get_running_loop()
     try:
         result = await loop.run_in_executor(
@@ -828,6 +978,9 @@ async def _sample_densitometer(
                 page_h=page_h,
                 dpi=dpi,
                 tac_limit=tac_limit,
+                tenant_id=tenant_id,
+                job_id=job_id,
+                storage=storage,
             ),
         )
     except RuntimeError as exc:
@@ -857,9 +1010,18 @@ async def sample_densitometer_auth(
     limit_exceeded}``. Every plan tier has access — this is a free QA
     tool, not a gated premium capability.
     """
-    _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)
-    return await _sample_densitometer(pdf_bytes, page_num, x, y, dpi, tac_limit)
+    return await _sample_densitometer(
+        pdf_bytes,
+        page_num,
+        x,
+        y,
+        dpi,
+        tac_limit,
+        tenant_id=str(tenant.id),
+        job_id=str(job.id),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1285,11 +1447,23 @@ async def public_channel(
     db: Session = Depends(get_db),
 ) -> Response:
     """Public: render a separation channel as grayscale PNG."""
-    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
     from lintpdf.reports.separation_renderer import render_separation_channel
 
-    png = render_separation_channel(pdf_bytes, page_num, channel_name, dpi=dpi)
+    storage = get_storage()
+    try:
+        png = render_separation_channel(
+            pdf_bytes,
+            page_num,
+            channel_name,
+            dpi=dpi,
+            tenant_id=str(job.tenant_id),
+            job_id=str(job.id),
+            storage=storage,
+        )
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     return Response(
         content=png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
     )
@@ -1305,7 +1479,7 @@ async def public_tac_heatmap(
         le=600,
         description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
     ),
-    tac_limit: float = Query(
+    tac_limit: int = Query(
         default=300,
         ge=100,
         le=500,
@@ -1317,13 +1491,52 @@ async def public_tac_heatmap(
     db: Session = Depends(get_db),
 ) -> Response:
     """Public: render TAC heatmap overlay as RGBA PNG."""
-    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
-    from lintpdf.reports.separation_renderer import render_tac_heatmap
 
-    png = render_tac_heatmap(pdf_bytes, page_num, dpi=dpi, tac_limit=tac_limit)
+    png_bytes, _runs = _render_tac_with_runs(
+        pdf_bytes=pdf_bytes,
+        tenant_id=str(job.tenant_id),
+        job_id=str(job.id),
+        page_num=page_num,
+        dpi=dpi,
+        tac_limit=tac_limit,
+    )
     return Response(
-        content=png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
+        content=png_bytes,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.get(
+    "/public/{token}/pages/{page_num}/tac-heatmap/runs",
+    response_model=TacRunsResponse,
+)
+async def public_tac_runs(
+    token: str,
+    page_num: int,
+    dpi: int = Query(default=150, ge=36, le=600),
+    tac_limit: int = Query(default=300, ge=100, le=500),
+    db: Session = Depends(get_db),
+) -> TacRunsResponse:
+    """Public: per-text-run mean TAC metadata for tooltip overlays."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _validate_page_num(pdf_bytes, page_num)
+    _png, runs = _render_tac_with_runs(
+        pdf_bytes=pdf_bytes,
+        tenant_id=str(job.tenant_id),
+        job_id=str(job.id),
+        page_num=page_num,
+        dpi=dpi,
+        tac_limit=tac_limit,
+    )
+    return TacRunsResponse(
+        job_id=str(job.id),
+        page_num=page_num,
+        dpi=dpi,
+        tac_limit=float(tac_limit),
+        runs=runs,
     )
 
 
@@ -1417,9 +1630,18 @@ async def public_densitometer(
     db: Session = Depends(get_db),
 ) -> DensitometerResponse:
     """Public: per-channel CMYK + spot ink densitometer reading."""
-    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
-    return await _sample_densitometer(pdf_bytes, page_num, x, y, dpi, tac_limit)
+    return await _sample_densitometer(
+        pdf_bytes,
+        page_num,
+        x,
+        y,
+        dpi,
+        tac_limit,
+        tenant_id=str(job.tenant_id),
+        job_id=str(job.id),
+    )
 
 
 @router.get("/public/{token}/layers")

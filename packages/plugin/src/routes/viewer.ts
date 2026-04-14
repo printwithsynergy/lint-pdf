@@ -247,6 +247,27 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
         } as RouteResponse;
       }) as RouteHandler,
     },
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/pages/:pageNum/tac-heatmap/runs",
+      auth: true,
+      permission: "preflight:view",
+      description: "TAC per-text-run metadata JSON for tooltip overlays",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const dpi = req.query.dpi ?? "150";
+        const tacLimit = req.query.tac_limit ?? "300";
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/pages/${req.params.pageNum}/tac-heatmap/runs?dpi=${dpi}&tac_limit=${tacLimit}`,
+          ),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
 
     // ── Check name registry ─────────────────────────────────
     {
@@ -314,7 +335,7 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       }) as RouteHandler,
     },
 
-    // ── Densitometer (color sample) ──────────────────────
+    // ── Color picker (RGB sample) ────────────────────────
     {
       method: "GET" as HttpMethod,
       path: "/viewer/:jobId/pages/:pageNum/sample",
@@ -328,6 +349,37 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
         const resp = await fetch(
           engineUrl(
             `/api/v1/viewer/jobs/${req.params.jobId}/pages/${req.params.pageNum}/sample?x=${x}&y=${y}&dpi=${dpi}`,
+          ),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+
+    // ── Densitometer (per-channel CMYK + TAC readout) ────
+    //
+    // Distinct from the ``/sample`` color-picker above: this endpoint
+    // shells out to Ghostscript tiffsep in the engine and returns
+    // ``{channels: [{name, percent}], tac, limit_exceeded}``. The
+    // engine route lives under the ``/densitometer`` suffix; we must
+    // proxy by that exact path or the frontend gets a 404.
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/pages/:pageNum/densitometer",
+      auth: true,
+      permission: "preflight:view",
+      description: "Per-channel CMYK + spot ink densitometer sample",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const x = req.query.x ?? "0";
+        const y = req.query.y ?? "0";
+        const dpi = req.query.dpi ?? "300";
+        const tacLimit = req.query.tac_limit ?? "300";
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/pages/${req.params.pageNum}/densitometer?x=${x}&y=${y}&dpi=${dpi}&tac_limit=${tacLimit}`,
           ),
           { headers: authHeaders() },
         );
@@ -618,10 +670,43 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       method: "GET" as HttpMethod,
       path: "/viewer/public/:token/pages/:pageNum/sample",
       auth: false,
-      description: "Public: densitometer sample",
+      description: "Public: color picker sample",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
         const { x = "0", y = "0", dpi = "300" } = req.query;
         const resp = await fetch(engineUrl(`/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/sample?x=${x}&y=${y}&dpi=${dpi}`));
+        if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/public/:token/pages/:pageNum/densitometer",
+      auth: false,
+      description: "Public: per-channel densitometer sample",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const { x = "0", y = "0", dpi = "300", tac_limit = "300" } = req.query;
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/densitometer?x=${x}&y=${y}&dpi=${dpi}&tac_limit=${tac_limit}`,
+          ),
+        );
+        if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/public/:token/pages/:pageNum/tac-heatmap/runs",
+      auth: false,
+      description: "Public: TAC per-run metadata JSON for tooltip overlays",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const dpi = req.query.dpi ?? "150";
+        const tacLimit = req.query.tac_limit ?? "300";
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/tac-heatmap/runs?dpi=${dpi}&tac_limit=${tacLimit}`,
+          ),
+        );
         if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
         return { status: 200, body: await resp.json() };
       }) as RouteHandler,

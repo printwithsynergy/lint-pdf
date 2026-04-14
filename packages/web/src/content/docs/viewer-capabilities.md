@@ -9,11 +9,11 @@ order: 25
 
 Every LintPDF job carries a `data_capabilities` map — a set of boolean flags that tells the viewer which preflight tools have authoritative data to work with. Capabilities are populated differently in each submission mode:
 
-| Mode | `findings` | `separations` | `tac` | `fonts` | `images` | `layers` |
-|---|---|---|---|---|---|---|
-| Engine (default) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ when present |
-| External | depends on report | usually ✗ | usually ✗ | depends on report | depends on report | ✓ when present |
-| Minimal | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ when present |
+| Mode | `findings` | `separations` | `tac` | `tac_runs` | `fonts` | `images` | `layers` |
+|---|---|---|---|---|---|---|---|
+| Engine (default) | ✓ | ✓ | ✓ | ✓ (tracks `tac`) | ✓ | ✓ | ✓ when present |
+| External | depends on report | usually ✗ | usually ✗ | usually ✗ | depends on report | depends on report | ✓ when present |
+| Minimal | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ when present |
 
 The viewer reads `capabilities` from `GET /api/v1/viewer/jobs/{job_id}/config` and renders each preflight tool accordingly:
 
@@ -28,6 +28,7 @@ The viewer reads `capabilities` from `GET /api/v1/viewer/jobs/{job_id}/config` a
 | `findings` | ✓ | Full engine pipeline (all 500+ checks) | Findings panel |
 | `separations` | ✓ | Spot-color analyzer | Separations viewer + ink channel rasters |
 | `tac` | ✓ | Ink-coverage analyzer | TAC heatmap overlay |
+| `tac_runs` | ✗ (derived on demand) | Same CMYK raster as `tac` plus `pdftotext -bbox` | Per-text-run tooltip on the TAC overlay (hover to read each run's mean TAC%) |
 | `fonts` | ✓ | Font analyzer | Font inspector |
 | `images` | ✓ | Image analyzer | Image inventory |
 | `layers` | ✗ | Extracted from PDF at job creation; not re-derivable | Layers panel |

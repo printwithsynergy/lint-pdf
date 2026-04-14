@@ -111,6 +111,17 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   });
   const [emailPromptOpen, setEmailPromptOpen] = useState(false);
 
+  // Deep-link target annotation — read from the ``#ann=<id>`` URL
+  // fragment (set by the annotation-comment email links). The
+  // AnnotationLayer auto-opens the referenced markup once annotations
+  // load on the matching page, then clears this state so subsequent
+  // navigation isn't pinned to the original link.
+  const [autoOpenAnnotationId, setAutoOpenAnnotationId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const m = /#ann=([a-f0-9-]+)/i.exec(window.location.hash);
+    return m ? (m[1] ?? null) : null;
+  });
+
   // Load existing annotations for the job (both saved drawings + notes).
   // On the public share-link surface, the server gates writes on the
   // token's allow_annotations flag; visitorEmail is forwarded for audit.
@@ -120,6 +131,18 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     update: updateAnnotation,
     remove: deleteAnnotation,
   } = useAnnotations(jobId, visitorEmail);
+
+  // When a deep-linked annotation id is set, flip to its page as soon
+  // as the annotation list loads so the AnnotationLayer can claim the
+  // auto-open request. Does nothing if the id can't be resolved (e.g.
+  // the markup was deleted after the email was sent).
+  useEffect(() => {
+    if (!autoOpenAnnotationId) return;
+    const match = annotations.find((a) => a.id === autoOpenAnnotationId);
+    if (match && match.page_num !== currentPage) {
+      setCurrentPage(match.page_num);
+    }
+  }, [autoOpenAnnotationId, annotations, currentPage]);
 
   // Dashboard reviewers can always annotate. Public share-link viewers
   // can only annotate when the issuing tenant minted the token with
@@ -307,10 +330,22 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   // callback stable without forcing callers.
   void refetchConfig;
 
-  // Navigate to a finding
+  // Navigate to a finding — clicking the currently-selected finding a
+  // second time dismisses the tooltip so reviewers can toggle it off
+  // without having to click somewhere empty.
   const handleSelectFinding = useCallback(
     (finding: ViewerFinding) => {
-      setSelectedFinding(finding);
+      setSelectedFinding((prev) => {
+        if (
+          prev &&
+          prev.inspection_id === finding.inspection_id &&
+          prev.page_num === finding.page_num &&
+          prev.message === finding.message
+        ) {
+          return null;
+        }
+        return finding;
+      });
       if (finding.page_num && finding.page_num !== currentPage) {
         setCurrentPage(finding.page_num);
       }
@@ -703,7 +738,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                   )}
 
                   {showTacHeatmap && currentPageInfo && (
-                    <TACHeatmapOverlay jobId={jobId} pageNum={currentPage} width={canvasWidth} height={canvasHeight} tacLimit={config.default_tac_limit} />
+                    <TACHeatmapOverlay jobId={jobId} pageNum={currentPage} width={canvasWidth} height={canvasHeight} pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} tacLimit={config.default_tac_limit} />
                   )}
                   {showBoxOverlay && currentPageInfo && (
                     <BoxOverlay page={currentPageInfo} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
@@ -738,6 +773,9 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                       onUpdate={updateAnnotation}
                       onDelete={deleteAnnotation}
                       canWrite={canAnnotateHere}
+                      visitorEmail={visitorEmail}
+                      autoOpenAnnotationId={autoOpenAnnotationId}
+                      onAutoOpenConsumed={() => setAutoOpenAnnotationId(null)}
                     />
                   )}
 
@@ -941,6 +979,8 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                     pageNum={currentPage}
                     width={canvasWidth}
                     height={canvasHeight}
+                    pageWidthPts={currentPageInfo.width_pts}
+                    pageHeightPts={currentPageInfo.height_pts}
                     tacLimit={config.default_tac_limit}
                   />
                 )}
