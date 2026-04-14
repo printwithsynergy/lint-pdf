@@ -150,6 +150,41 @@ The same endpoint is mirrored for share-link viewers at `/api/v1/viewer/public/{
 | `LINTPDF_TILE_WARMING_INCLUDE_SEPARATIONS` | `true` | When on, warming also renders CMYK channel + spot-color rasters into S3 so the first click on the Separations panel / Densitometer doesn't pay the ~2 s Ghostscript cost. Turn off for tenants whose workflow never opens the separations UI — halves total warm time on large PDFs. |
 | `LINTPDF_TILE_HOT_CACHE_ENABLED` | `false` | Opt-in Redis byte-cache for the default-DPI tile endpoint. When on, tiles served within 15 minutes skip even the S3 GET (~1–3 ms instead of ~100–200 ms). Off by default because PNG tiles are 50–500 KB and Redis memory is precious on smaller plans. Production tenants with a generously sized Redis can flip this on per-environment. |
 
+### Admin warming dashboard
+
+Every `warm_viewer_tiles` run persists a `tile_warm.complete` or `tile_warm.failure` event into two capped Redis lists so super-admins can inspect warming health without spelunking Railway logs:
+
+- `lintpdf:tile-warm-events:{tenant_id}` — per-tenant list, capped at 500, 7-day TTL.
+- `lintpdf:tile-warm-events:_all` — global list across every tenant, same cap + TTL.
+
+Event payload (identical to the structured log emitted alongside):
+
+```json
+{
+  "event": "tile_warm.complete",
+  "job_id": "…",
+  "tenant_id": "…",
+  "page_count": 20,
+  "dpi": 150,
+  "thumbnails": true,
+  "duration_s": 12.4,
+  "error": null,
+  "recorded_at": "2026-04-14T10:22:25.441Z"
+}
+```
+
+Three super-admin endpoints expose the data (all require the `X-Admin-Key` header):
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/v1/admin/tile-warming/events?tenant_id=&limit=` | Last N events newest-first. Omit `tenant_id` for the global feed; `limit` clamps to 1..500 (default 100). |
+| `GET /api/v1/admin/tile-warming/summary?since_hours=` | Aggregates over the last `since_hours` (1..168, default 24): total completes/failures, p50/p95/p99 duration, per-tenant breakdown, top 5 error messages. |
+| `GET /api/v1/admin/tile-warming/jobs/{job_id}` | Current Redis status hash for the job plus the subset of `_all` events that match. |
+
+When Redis is not configured every endpoint returns `{"events": [], "status": "no_redis"}` (or the per-response equivalent) with HTTP 200 so callers can render an informational banner instead of an error. Structured `tile_warm.*` log lines continue to emit regardless — Redis persistence is additive.
+
+The super-admin dashboard at `/dashboard/admin/warming` polls `/summary` and `/events` every 5 s and surfaces a summary strip, per-tenant health table, top error messages, and a filterable live event feed.
+
 ## Counting and billing
 
 Each capability fill-in counts as one analyzer invocation against your plan. Typical cost is one-fifth to one-tenth of a full engine run, depending on the capability:
