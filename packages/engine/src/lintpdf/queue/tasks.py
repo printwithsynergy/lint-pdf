@@ -1373,6 +1373,56 @@ def _tile_warm_tenant_semaphore_key(tenant_id: str) -> str:
     return f"lintpdf:tile-warm-sem:{tenant_id}"
 
 
+def _tile_warm_events_key(tenant_id: str) -> str:
+    """Per-tenant capped list of recent warming events (for admin dashboard)."""
+    return f"lintpdf:tile-warm-events:{tenant_id}"
+
+
+def _tile_warm_events_all_key() -> str:
+    """Global capped list of recent warming events across every tenant."""
+    return "lintpdf:tile-warm-events:_all"
+
+
+# Keep the last 500 events per list; expire the list after 7 days of silence.
+_TILE_WARM_EVENTS_CAP = 500
+_TILE_WARM_EVENTS_TTL_S = 7 * 24 * 3600
+
+
+def _record_tile_warm_event(
+    redis: Any,
+    tenant_id: str | None,
+    payload: dict[str, Any],
+) -> None:
+    """LPUSH + LTRIM + EXPIRE an event into the tenant list and the global list.
+
+    Swallows every Redis error — observability must never affect warming.
+    The recorder is called inside ``warm_viewer_tiles`` after the existing
+    Redis-availability check, so ``redis`` here is guaranteed non-None at
+    call time; we still defend against ``None`` so future callers can't
+    surprise us.
+    """
+    import contextlib as _contextlib
+    import json as _json
+
+    if redis is None:
+        return
+    try:
+        serialized = _json.dumps(payload, default=str)
+    except Exception:
+        logger.warning("tile_warm event serialize failed", exc_info=True)
+        return
+
+    def _push(key: str) -> None:
+        with _contextlib.suppress(Exception):
+            redis.lpush(key, serialized)
+            redis.ltrim(key, 0, _TILE_WARM_EVENTS_CAP - 1)
+            redis.expire(key, _TILE_WARM_EVENTS_TTL_S)
+
+    if tenant_id:
+        _push(_tile_warm_events_key(tenant_id))
+    _push(_tile_warm_events_all_key())
+
+
 def _tile_warm_tenant_cap() -> int:
     """Configured per-tenant concurrency cap. 0 means no cap."""
     import os as _os
@@ -1750,6 +1800,21 @@ def warm_viewer_tiles(
                 "duration_s": round(duration_s, 2),
             },
         )
+        _record_tile_warm_event(
+            redis,
+            tenant_id,
+            {
+                "event": "tile_warm.complete",
+                "job_id": job_id,
+                "tenant_id": tenant_id,
+                "page_count": page_count,
+                "dpi": dpi,
+                "thumbnails": include_thumbnails,
+                "duration_s": round(duration_s, 2),
+                "error": None,
+                "recorded_at": _dt.datetime.now(_dt.UTC).isoformat(),
+            },
+        )
         return {
             "status": "complete",
             "job_id": job_id,
@@ -1766,6 +1831,21 @@ def warm_viewer_tiles(
                 "job_id": job_id,
                 "tenant_id": tenant_id_for_semaphore,
                 "error": str(exc)[:500],
+            },
+        )
+        _record_tile_warm_event(
+            redis,
+            tenant_id_for_semaphore,
+            {
+                "event": "tile_warm.failure",
+                "job_id": job_id,
+                "tenant_id": tenant_id_for_semaphore,
+                "page_count": None,
+                "dpi": dpi,
+                "thumbnails": include_thumbnails,
+                "duration_s": None,
+                "error": str(exc)[:500],
+                "recorded_at": _dt.datetime.now(_dt.UTC).isoformat(),
             },
         )
         # Publish the failure state (best-effort) before re-raising so
