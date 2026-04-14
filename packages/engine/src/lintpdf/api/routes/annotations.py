@@ -79,6 +79,23 @@ def _to_response(row: ViewerAnnotation) -> AnnotationResponse:
     )
 
 
+def _dashboard_author_email(request: Request, tenant: Tenant) -> str:
+    """Resolve the author email for a dashboard-side annotation/comment.
+
+    The Next.js plugin proxy forwards the authenticated user's email as
+    ``X-Visitor-Email`` (same header name the public share-link surface
+    uses, so the engine handlers share one code path). Falls back to
+    the tenant's contact email for direct API-key callers, and finally
+    to a sentinel so the column is never NULL.
+    """
+    header = (request.headers.get("x-visitor-email") or "").strip().lower()
+    if header and "@" in header and len(header) <= 255:
+        return header
+    if tenant.contact_email:
+        return tenant.contact_email
+    return "dashboard@lintpdf"
+
+
 def _validate_kind(kind: str) -> None:
     if kind not in _ALLOWED_KINDS:
         raise HTTPException(
@@ -125,10 +142,19 @@ async def list_annotations_auth(
 async def create_annotation_auth(
     job_id: str,
     body: AnnotationCreateRequest,
+    request: Request,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> AnnotationResponse:
-    """Create an annotation on a job page (authenticated dashboard writer)."""
+    """Create an annotation on a job page (authenticated dashboard writer).
+
+    Attribution precedence:
+      1. ``X-Visitor-Email`` header (forwarded by the Next.js plugin,
+         carries the authenticated user's email so per-user audit works
+         on tenants with multiple dashboard reviewers).
+      2. ``tenant.contact_email`` — fallback for direct API-key callers.
+      3. ``"dashboard@lintpdf"`` sentinel so the column is never NULL.
+    """
     _validate_kind(body.kind)
     try:
         jid = uuid_mod.UUID(job_id)
@@ -149,7 +175,7 @@ async def create_annotation_auth(
         geometry_json=body.geometry,
         color=body.color,
         text=body.text,
-        author_email=tenant.contact_email or "dashboard@lintpdf",
+        author_email=_dashboard_author_email(request, tenant),
     )
     db.add(row)
     db.commit()
@@ -475,6 +501,14 @@ def _parse_comment_id(comment_id: str) -> uuid_mod.UUID:
         raise HTTPException(status_code=404, detail="Comment not found.") from None
 
 
+# Production defaults for annotation deep-link URLs. These match the
+# current Railway prod deployment (app.lintpdf.com dashboard,
+# reports.lintpdf.com share surface). Overridable via env so a staging
+# or customer-branded tenant can point elsewhere without a code change.
+_DEFAULT_APP_URL = "https://app.lintpdf.com"
+_DEFAULT_REPORT_BASE_URL = "https://reports.lintpdf.com"
+
+
 def _deep_link_for_annotation(*, annotation: ViewerAnnotation, share_token: str | None) -> str:
     """Build a viewer URL that opens the referenced annotation.
 
@@ -482,18 +516,20 @@ def _deep_link_for_annotation(*, annotation: ViewerAnnotation, share_token: str 
     writers get the authenticated dashboard viewer. The ``#ann={id}``
     fragment is read by ``PdfViewer.tsx`` to scroll the reader to the
     markup and auto-open its popover.
+
+    Resolution order:
+    1. Env-provided override (``LINTPDF_APP_URL`` / ``LINTPDF_REPORT_BASE_URL``
+       / ``NEXT_PUBLIC_APP_URL``) — honoured when non-empty so staging
+       and custom-domain tenants can redirect.
+    2. Production defaults (``app.lintpdf.com`` /
+       ``reports.lintpdf.com``) — always produce an absolute URL so
+       recipients in external inboxes can click through.
     """
-    app_base = os.getenv("LINTPDF_APP_URL") or os.getenv("NEXT_PUBLIC_APP_URL", "")
-    share_base = os.getenv("LINTPDF_REPORT_BASE_URL", "")
-    if share_token and share_base:
+    app_base = os.getenv("LINTPDF_APP_URL") or os.getenv("NEXT_PUBLIC_APP_URL") or _DEFAULT_APP_URL
+    share_base = os.getenv("LINTPDF_REPORT_BASE_URL") or _DEFAULT_REPORT_BASE_URL
+    if share_token:
         return f"{share_base.rstrip('/')}/v/{share_token}#ann={annotation.id}"
-    if app_base:
-        return (
-            f"{app_base.rstrip('/')}/dashboard/jobs/{annotation.job_id}/viewer#ann={annotation.id}"
-        )
-    # Fall back to a relative fragment — still useful when opened from
-    # an inbox that resolves against the recipient's LintPDF dashboard.
-    return f"/dashboard/jobs/{annotation.job_id}/viewer#ann={annotation.id}"
+    return f"{app_base.rstrip('/')}/dashboard/jobs/{annotation.job_id}/viewer#ann={annotation.id}"
 
 
 def _fan_out_comment_email(
@@ -600,6 +636,7 @@ async def create_comment_auth(
     job_id: str,
     annotation_id: str,
     body: CommentCreateRequest,
+    request: Request,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> CommentResponse:
@@ -609,7 +646,10 @@ async def create_comment_auth(
         annotation_id=annotation.id,
         tenant_id=tenant.id,
         share_token=annotation.share_token,
-        author_email=tenant.contact_email or "dashboard@lintpdf",
+        # Author precedence: X-Visitor-Email (forwarded by the plugin
+        # proxy) > tenant.contact_email > sentinel. See
+        # :func:`_dashboard_author_email`.
+        author_email=_dashboard_author_email(request, tenant),
         body=body.body.strip(),
     )
     db.add(row)

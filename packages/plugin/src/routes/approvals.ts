@@ -30,7 +30,7 @@ export function approvalRoutes(): RouteDefinition[] {
       auth: true,
       permission: "preflight:view",
       description: "List approval chain templates for the tenant",
-      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
         const resp = await fetch(engineUrl("/api/v1/approval-templates"), {
           headers: authHeaders(),
         });

@@ -8,7 +8,6 @@ import type {
   RouteRequest,
   RouteResponse,
 } from "@thinkneverland/pixie-dust-fairy-ring";
-import { resolveEngineTenantId } from "../index";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
@@ -34,6 +33,359 @@ function authHeaders(): Record<string, string> {
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
   return headers;
+}
+
+/** Auth headers + a forwarded visitor-email so the engine can attribute
+ *  annotation writes to the actual Next.js user, not the tenant's
+ *  generic API-key owner. ``emailOverride`` wins when the app has a
+ *  better signal than ``req.auth?.email`` (e.g. for tests). */
+function authHeadersWithUserEmail(
+  req: RouteRequest,
+  emailOverride?: string,
+): Record<string, string> {
+  const headers = authHeaders();
+  const email = emailOverride || req.auth?.email;
+  if (email) {
+    headers["X-Visitor-Email"] = email;
+  }
+  return headers;
+}
+
+function relayJson(resp: Response): Promise<RouteResponse> {
+  return resp
+    .text()
+    .then(async (text) => {
+      if (!resp.ok) {
+        return { status: resp.status, body: text ? { error: text } : {} };
+      }
+      if (!text) return { status: resp.status, body: null };
+      try {
+        return { status: resp.status, body: JSON.parse(text) };
+      } catch {
+        return { status: resp.status, body: text };
+      }
+    });
+}
+
+/** Build the full auth + public proxy matrix for the engine's
+ *  ``/api/v1/viewer/.../annotations(/.../comments)`` routes.
+ *
+ *  Kept in a helper so the routes block stays scannable — without
+ *  this, the sheer number of proxy stubs (14 endpoints × two handler
+ *  shapes) drowns out the rest of the viewer route declarations. */
+function makeAnnotationProxies(): RouteDefinition[] {
+  const routes: RouteDefinition[] = [];
+
+  // Authenticated (dashboard) surface ----------------------------------
+  routes.push(
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/annotations",
+      auth: true,
+      permission: "preflight:view",
+      description: "List annotations for a job",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/annotations`),
+          { headers: authHeadersWithUserEmail(req) },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/:jobId/annotations",
+      auth: true,
+      permission: "preflight:view",
+      description: "Create an annotation on a job page",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/annotations`),
+          {
+            method: "POST",
+            headers: {
+              ...authHeadersWithUserEmail(req),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "PATCH" as HttpMethod,
+      path: "/viewer/:jobId/annotations/:annotationId",
+      auth: true,
+      permission: "preflight:view",
+      description: "Update an annotation",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/annotations/${req.params.annotationId}`,
+          ),
+          {
+            method: "PATCH",
+            headers: {
+              ...authHeadersWithUserEmail(req),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "DELETE" as HttpMethod,
+      path: "/viewer/:jobId/annotations/:annotationId",
+      auth: true,
+      permission: "preflight:view",
+      description: "Delete an annotation",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/annotations/${req.params.annotationId}`,
+          ),
+          {
+            method: "DELETE",
+            headers: authHeadersWithUserEmail(req),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    // Comment threads on a single annotation
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/annotations/:annotationId/comments",
+      auth: true,
+      permission: "preflight:view",
+      description: "List threaded comments on an annotation",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/annotations/${req.params.annotationId}/comments`,
+          ),
+          { headers: authHeadersWithUserEmail(req) },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/:jobId/annotations/:annotationId/comments",
+      auth: true,
+      permission: "preflight:view",
+      description: "Post a comment on an annotation",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/annotations/${req.params.annotationId}/comments`,
+          ),
+          {
+            method: "POST",
+            headers: {
+              ...authHeadersWithUserEmail(req),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "PATCH" as HttpMethod,
+      path: "/viewer/:jobId/annotations/:annotationId/comments/:commentId",
+      auth: true,
+      permission: "preflight:view",
+      description: "Edit a comment on an annotation",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/annotations/${req.params.annotationId}/comments/${req.params.commentId}`,
+          ),
+          {
+            method: "PATCH",
+            headers: {
+              ...authHeadersWithUserEmail(req),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "DELETE" as HttpMethod,
+      path: "/viewer/:jobId/annotations/:annotationId/comments/:commentId",
+      auth: true,
+      permission: "preflight:view",
+      description: "Delete a comment on an annotation",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/annotations/${req.params.annotationId}/comments/${req.params.commentId}`,
+          ),
+          {
+            method: "DELETE",
+            headers: authHeadersWithUserEmail(req),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+  );
+
+  // Public share-link surface — forwards ``X-Visitor-Email`` verbatim
+  // from the incoming request (the frontend email-gate modal sets it).
+  const forwardVisitor = (req: RouteRequest): Record<string, string> => {
+    const headers: Record<string, string> = {};
+    const visitor =
+      (req.headers?.["x-visitor-email"] as string | undefined) ||
+      (req.headers?.["X-Visitor-Email"] as string | undefined);
+    if (visitor) headers["X-Visitor-Email"] = visitor;
+    return headers;
+  };
+
+  routes.push(
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/public/:token/annotations",
+      auth: false,
+      description: "Public: list annotations on a share-link job",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/public/${req.params.token}/annotations`),
+          { headers: forwardVisitor(req) },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/public/:token/annotations",
+      auth: false,
+      description: "Public: create an annotation via a share-link token",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/public/${req.params.token}/annotations`),
+          {
+            method: "POST",
+            headers: { ...forwardVisitor(req), "Content-Type": "application/json" },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "PATCH" as HttpMethod,
+      path: "/viewer/public/:token/annotations/:annotationId",
+      auth: false,
+      description: "Public: edit an annotation you authored",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/annotations/${req.params.annotationId}`,
+          ),
+          {
+            method: "PATCH",
+            headers: { ...forwardVisitor(req), "Content-Type": "application/json" },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "DELETE" as HttpMethod,
+      path: "/viewer/public/:token/annotations/:annotationId",
+      auth: false,
+      description: "Public: delete an annotation you authored",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/annotations/${req.params.annotationId}`,
+          ),
+          { method: "DELETE", headers: forwardVisitor(req) },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/public/:token/annotations/:annotationId/comments",
+      auth: false,
+      description: "Public: list comments on an annotation",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/annotations/${req.params.annotationId}/comments`,
+          ),
+          { headers: forwardVisitor(req) },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "POST" as HttpMethod,
+      path: "/viewer/public/:token/annotations/:annotationId/comments",
+      auth: false,
+      description: "Public: post a comment via a share-link token",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/annotations/${req.params.annotationId}/comments`,
+          ),
+          {
+            method: "POST",
+            headers: { ...forwardVisitor(req), "Content-Type": "application/json" },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "PATCH" as HttpMethod,
+      path: "/viewer/public/:token/annotations/:annotationId/comments/:commentId",
+      auth: false,
+      description: "Public: edit a comment you authored",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/annotations/${req.params.annotationId}/comments/${req.params.commentId}`,
+          ),
+          {
+            method: "PATCH",
+            headers: { ...forwardVisitor(req), "Content-Type": "application/json" },
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+    {
+      method: "DELETE" as HttpMethod,
+      path: "/viewer/public/:token/annotations/:annotationId/comments/:commentId",
+      auth: false,
+      description: "Public: delete a comment you authored",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/annotations/${req.params.annotationId}/comments/${req.params.commentId}`,
+          ),
+          { method: "DELETE", headers: forwardVisitor(req) },
+        );
+        return relayJson(resp);
+      }) as RouteHandler,
+    },
+  );
+
+  return routes;
 }
 
 /**
@@ -292,6 +644,20 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
         return { status: 200, body: await resp.json() };
       }) as RouteHandler,
     },
+
+    // ── Viewer annotations + comment threads (engine-backed) ──
+    //
+    // The engine owns ``viewer_annotations`` (reviewer markup) and
+    // ``viewer_annotation_comments`` (threaded replies). We proxy the
+    // CRUD surface through the plugin so the Next.js app can call
+    // ``/api/lintpdf/viewer/{jobId}/annotations`` without cross-origin
+    // auth gymnastics. For writes we forward the authenticated user's
+    // email as ``X-Visitor-Email`` so the engine's audit-trail
+    // attribution points at the actual human, not the tenant's
+    // generic contact address. (The header name matches the one the
+    // public share-link surface uses, which lets the engine handler
+    // reuse the same email-gate code path.)
+    ...makeAnnotationProxies(),
 
     // ── Check name registry ─────────────────────────────────
     {

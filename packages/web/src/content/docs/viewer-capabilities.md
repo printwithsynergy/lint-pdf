@@ -141,6 +141,15 @@ Response:
 
 The same endpoint is mirrored for share-link viewers at `/api/v1/viewer/public/{token}/tile-warming` — no auth, token-gated. Once warming settles, the `tiles_warmed` capability on `/config` flips to `true` and the viewer starts prefetching tile bytes into the browser's HTTP cache so page clicks paint in <20 ms.
 
+### Warming configuration
+
+| Env var | Default | Description |
+|---|---|---|
+| `LINTPDF_TILE_WARMING_ENABLED` | `true` | Global kill switch. Set to `false` to disable auto-enqueue on job completion — the `/tile-warming` endpoint then reports `status="disabled"` and the viewer falls back to on-demand rendering. |
+| `LINTPDF_TILE_WARMING_PER_TENANT_MAX` | `3` | Maximum concurrent warming tasks per tenant. Enforced via a Redis semaphore at `lintpdf:tile-warm-sem:{tenant_id}`. Bulk-upload tenants that exceed the cap get their jobs re-queued with a ~20 s delay until a slot frees, so one tenant can't starve the worker pool. `0` disables the cap. |
+| `LINTPDF_TILE_WARMING_INCLUDE_SEPARATIONS` | `true` | When on, warming also renders CMYK channel + spot-color rasters into S3 so the first click on the Separations panel / Densitometer doesn't pay the ~2 s Ghostscript cost. Turn off for tenants whose workflow never opens the separations UI — halves total warm time on large PDFs. |
+| `LINTPDF_TILE_HOT_CACHE_ENABLED` | `false` | Opt-in Redis byte-cache for the default-DPI tile endpoint. When on, tiles served within 15 minutes skip even the S3 GET (~1–3 ms instead of ~100–200 ms). Off by default because PNG tiles are 50–500 KB and Redis memory is precious on smaller plans. Production tenants with a generously sized Redis can flip this on per-environment. |
+
 ## Counting and billing
 
 Each capability fill-in counts as one analyzer invocation against your plan. Typical cost is one-fifth to one-tenth of a full engine run, depending on the capability:

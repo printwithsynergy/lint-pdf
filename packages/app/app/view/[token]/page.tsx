@@ -41,8 +41,10 @@ function IdentifyScreen({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30">
-      <div className="w-full max-w-md rounded-xl border bg-background p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4 sm:p-6">
+      {/* Outer padding keeps the card off the screen edges on mobile;
+          inner padding stays roomy on tablet/desktop. */}
+      <div className="w-full max-w-md rounded-xl border bg-background p-6 shadow-lg sm:p-8">
         <div className="mb-6 text-center">
           <h1 className="font-display text-2xl font-bold">
             Who&apos;s viewing?
