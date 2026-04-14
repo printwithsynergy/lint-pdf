@@ -330,15 +330,26 @@ def _extract_text_bboxes(
     words.sort(key=lambda b: (round(b[1], 1), b[0]))
 
     # Merge words on the "same line" (yMin within 2pt tolerance) whose
-    # horizontal gap to the previous run is less than one character
-    # width (~6pt). Produces one bbox per visually-contiguous text run.
+    # horizontal gap to the previous run is less than one em of the
+    # current word's height. Scaling the gap with font size matters:
+    # a 9pt caption has tight 2-3pt spaces, while a 48pt headline can
+    # carry 14pt tracking and still be a single run. A static 6pt gap
+    # splits big type into word-soup and doesn't tighten captions.
     merged: list[list[float]] = []
     line_tol = 2.0
-    gap_tol = 6.0
     for x0, y0, x1, y1 in words:
+        height = max(1.0, y1 - y0)
+        gap_tol = max(6.0, height * 0.75)
         if merged:
             prev = merged[-1]
-            same_line = abs(y0 - prev[1]) <= line_tol and abs(y1 - prev[3]) <= line_tol * 2
+            prev_height = max(1.0, prev[3] - prev[1])
+            same_line = (
+                abs(y0 - prev[1]) <= line_tol
+                and abs(y1 - prev[3]) <= line_tol * 2
+                # Runs of wildly different heights (caption word next to
+                # a super/subscript glyph) should not glue together.
+                and abs(height - prev_height) <= max(2.0, prev_height * 0.3)
+            )
             gap_ok = x0 - prev[2] <= gap_tol
             if same_line and gap_ok:
                 prev[2] = max(prev[2], x1)
