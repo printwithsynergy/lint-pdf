@@ -14,6 +14,7 @@ import { AnnotationCanvas } from "./AnnotationCanvas";
 import { AnnotationToolbar } from "./AnnotationToolbar";
 import type { AnnotationTool } from "./AnnotationToolbar";
 import { AnnotationThread } from "./AnnotationThread";
+import { ColorPickerTool } from "./ColorPickerTool";
 import { DensitometerTool } from "./DensitometerTool";
 import { MeasureTool } from "./MeasureTool";
 import { BoxOverlay } from "./BoxOverlay";
@@ -27,7 +28,7 @@ import { ShareDialog } from "./ShareDialog";
 import { ApprovalChainPanel } from "./ApprovalChainPanel";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
-type MeasureMode = "none" | "densitometer" | "ruler";
+type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
 
 interface PdfViewerProps {
   jobId: string;
@@ -604,7 +605,13 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             )}
             {(showTacHeatmap || measureMode !== "none") && (
               <span className="shrink-0 rounded-full bg-green-500/30 px-1.5 py-0.5 text-[10px] font-bold text-green-300">
-                {showTacHeatmap ? "TAC" : measureMode === "ruler" ? "RULER" : "DENSITY"}
+                {showTacHeatmap
+                  ? "TAC"
+                  : measureMode === "ruler"
+                    ? "RULER"
+                    : measureMode === "color_picker"
+                      ? "COLOR"
+                      : "DENSITY"}
               </span>
             )}
 
@@ -661,6 +668,9 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                   )}
                   {showBoxOverlay && currentPageInfo && (
                     <BoxOverlay page={currentPageInfo} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
+                  )}
+                  {measureMode === "color_picker" && currentPageInfo && (
+                    <ColorPickerTool jobId={jobId} pageNum={currentPage} pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
                   )}
                   {measureMode === "densitometer" && currentPageInfo && (
                     <DensitometerTool jobId={jobId} pageNum={currentPage} pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { ColorSample } from "./types";
+import type { DensitometerSample } from "./types";
 import { useViewerApi } from "./types";
 
 interface DensitometerToolProps {
@@ -11,8 +11,22 @@ interface DensitometerToolProps {
   pageHeightPts: number;
   canvasWidth: number;
   canvasHeight: number;
+  /** TAC limit in percent (default 300). Matches separations config. */
+  tacLimit?: number;
 }
 
+/**
+ * Real CMYK + spot-channel densitometer. Samples each ink channel at the
+ * clicked point and reports:
+ *
+ *   C  62.3%  M  18.1%
+ *   Y   4.7%  K  91.5%
+ *   ────────────────
+ *   TAC 176.6%   (under 300)
+ *
+ * Falls back to a friendly "no separations" message on RGB/greyscale
+ * source PDFs where the engine can't split CMYK.
+ */
 export function DensitometerTool({
   jobId,
   pageNum,
@@ -20,40 +34,53 @@ export function DensitometerTool({
   pageHeightPts,
   canvasWidth,
   canvasHeight,
+  tacLimit = 300,
 }: DensitometerToolProps) {
   const { apiBase } = useViewerApi();
-  const [sample, setSample] = useState<ColorSample | null>(null);
+  const [sample, setSample] = useState<DensitometerSample | null>(null);
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleClick = useCallback(
-    async (e: React.MouseEvent<HTMLDivElement>) => {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
-
-      // Convert to PDF coordinates (origin lower-left)
+  const pickAt = useCallback(
+    async (clickX: number, clickY: number) => {
       const pdfX = (clickX / canvasWidth) * pageWidthPts;
       const pdfY = pageHeightPts - (clickY / canvasHeight) * pageHeightPts;
 
       setPosition({ x: clickX, y: clickY });
       setLoading(true);
+      setError(null);
+      setSample(null);
 
       try {
         const resp = await fetch(
-          `${apiBase}/pages/${pageNum}/sample?x=${pdfX.toFixed(1)}&y=${pdfY.toFixed(1)}&dpi=300`,
+          `${apiBase}/pages/${pageNum}/densitometer` +
+            `?x=${pdfX.toFixed(1)}&y=${pdfY.toFixed(1)}&dpi=300&tac_limit=${tacLimit}`,
         );
         if (resp.ok) {
-          const data = await resp.json();
+          const data: DensitometerSample = await resp.json();
           setSample(data);
+        } else if (resp.status === 422) {
+          const body = await resp.json().catch(() => ({ detail: "No separations" }));
+          setError(body.detail ?? "No separations available for this page.");
+        } else {
+          setError(`Sampling failed (${resp.status})`);
         }
       } catch {
-        // ignore
+        setError("Network error");
       } finally {
         setLoading(false);
       }
     },
-    [apiBase, pageNum, pageWidthPts, pageHeightPts, canvasWidth, canvasHeight],
+    [apiBase, pageNum, pageWidthPts, pageHeightPts, canvasWidth, canvasHeight, tacLimit],
+  );
+
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      void pickAt(e.clientX - rect.left, e.clientY - rect.top);
+    },
+    [pickAt],
   );
 
   const handleTouch = useCallback(
@@ -62,20 +89,22 @@ export function DensitometerTool({
       e.preventDefault();
       const touch = e.touches[0]!;
       const rect = e.currentTarget.getBoundingClientRect();
-      const clickX = touch.clientX - rect.left;
-      const clickY = touch.clientY - rect.top;
-      const pdfX = (clickX / canvasWidth) * pageWidthPts;
-      const pdfY = pageHeightPts - (clickY / canvasHeight) * pageHeightPts;
-      setPosition({ x: clickX, y: clickY });
-      setLoading(true);
-      fetch(`${apiBase}/pages/${pageNum}/sample?x=${pdfX.toFixed(1)}&y=${pdfY.toFixed(1)}&dpi=300`)
-        .then((r) => r.ok ? r.json() : null)
-        .then((data) => { if (data) setSample(data); })
-        .catch(() => {})
-        .finally(() => setLoading(false));
+      void pickAt(touch.clientX - rect.left, touch.clientY - rect.top);
     },
-    [apiBase, pageNum, pageWidthPts, pageHeightPts, canvasWidth, canvasHeight],
+    [pickAt],
   );
+
+  // Map channel name to a solid swatch colour for the readout. Process
+  // channels use the standard CMYK primaries; any spot channel falls back
+  // to neutral grey.
+  const swatchFor = (name: string): string => {
+    const n = name.toLowerCase();
+    if (n.startsWith("c") && !n.includes("o")) return "#00b7eb";
+    if (n.startsWith("m")) return "#e91e63";
+    if (n.startsWith("y")) return "#fdd835";
+    if (n.startsWith("k") || n.startsWith("b")) return "#111827";
+    return "#94a3b8";
+  };
 
   return (
     <div
@@ -84,38 +113,66 @@ export function DensitometerTool({
       onClick={handleClick}
       onTouchStart={handleTouch}
     >
-      {position && sample && (
+      {position && (sample || loading || error) && (
         <div
-          className="pointer-events-none absolute z-30 rounded-lg border bg-black/90 px-3 py-2 text-xs text-white shadow-lg"
+          className="pointer-events-none absolute z-30 rounded-lg border border-white/20 bg-black/90 px-3 py-2 text-xs text-white shadow-xl"
           style={{
-            left: Math.min(position.x + 16, canvasWidth - 200),
-            top: Math.min(position.y + 16, canvasHeight - 100),
+            left: Math.min(position.x + 16, canvasWidth - 230),
+            top: Math.min(position.y + 16, canvasHeight - 140),
+            minWidth: 200,
           }}
         >
-          <div className="mb-1 flex items-center gap-2">
-            <div
-              className="h-4 w-4 rounded border border-white/30"
-              style={{ backgroundColor: sample.hex }}
-            />
-            <span className="font-mono font-bold">{sample.hex.toUpperCase()}</span>
-          </div>
-          <div className="space-y-0.5 text-[10px] text-gray-300">
-            <div>
-              RGB: {sample.rgb[0]}, {sample.rgb[1]}, {sample.rgb[2]}
+          {loading && <div className="text-[11px] text-slate-300">Sampling separations…</div>}
+          {error && !loading && (
+            <div className="space-y-1">
+              <div className="font-semibold text-amber-300">Densitometer</div>
+              <div className="text-[11px] text-slate-300">{error}</div>
             </div>
-            {sample.tac !== null && <div>TAC: {sample.tac.toFixed(1)}%</div>}
-          </div>
+          )}
+          {sample && !loading && (
+            <>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-300">
+                  Densitometer
+                </span>
+                <span className="text-[10px] text-slate-400">@300dpi</span>
+              </div>
+              <div className="mb-2 grid grid-cols-2 gap-x-3 gap-y-1 font-mono text-[11px]">
+                {sample.channels.map((ch) => (
+                  <div key={ch.name} className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-sm border border-white/30"
+                      style={{ backgroundColor: swatchFor(ch.name) }}
+                    />
+                    <span className="w-6 text-slate-300">{ch.name.slice(0, 1).toUpperCase()}</span>
+                    <span className="flex-1 text-right tabular-nums">
+                      {ch.percent.toFixed(1)}%
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t border-white/15 pt-1.5">
+                <div className="flex items-center justify-between font-mono text-[11px]">
+                  <span className="text-slate-300">TAC</span>
+                  <span
+                    className={`tabular-nums font-bold ${
+                      sample.limit_exceeded ? "text-rose-400" : "text-emerald-300"
+                    }`}
+                  >
+                    {sample.tac.toFixed(1)}%
+                  </span>
+                </div>
+                <div className="text-right text-[10px] text-slate-400">
+                  {sample.limit_exceeded
+                    ? `over ${sample.tac_limit}% limit`
+                    : `under ${sample.tac_limit}% limit`}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
-      {position && loading && (
-        <div
-          className="pointer-events-none absolute z-30 rounded border bg-black/80 px-2 py-1 text-[10px] text-white"
-          style={{ left: position.x + 16, top: position.y + 16 }}
-        >
-          Sampling...
-        </div>
-      )}
-      {/* Crosshair cursor indicator */}
+      {/* Crosshair at last-clicked point */}
       {position && (
         <div
           className="pointer-events-none absolute z-20"

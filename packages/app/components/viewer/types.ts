@@ -132,6 +132,21 @@ export interface ColorSample {
   tac: number | null;
 }
 
+export interface DensitometerChannel {
+  name: string;
+  percent: number;
+}
+
+export interface DensitometerSample {
+  x: number;
+  y: number;
+  dpi: number;
+  channels: DensitometerChannel[];
+  tac: number;
+  tac_limit: number;
+  limit_exceeded: boolean;
+}
+
 export interface VerdictState {
   verdict: "pass" | "fail" | null;
   auto_passed: boolean | null;

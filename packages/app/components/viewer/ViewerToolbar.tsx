@@ -6,7 +6,7 @@ import type { ViewerCapabilityKey, ViewerConfig } from "./types";
 import { DEFAULT_VIEWER_CONFIG, FILLABLE_CAPABILITIES, useViewerApi } from "./types";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
-type MeasureMode = "none" | "densitometer" | "ruler";
+type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
 
 interface ViewerToolbarProps {
   currentPage: number;
@@ -317,8 +317,14 @@ export function ViewerToolbar({
           <>
             <Divider />
             <ToolButton
-              label="Densitometer"
-              icon={"\u{1F50D}"}
+              label="Color Picker"
+              icon={"\u{1F9EA}"}
+              active={measureMode === "color_picker"}
+              onClick={() => onToggleMeasure("color_picker")}
+            />
+            <ToolButton
+              label="Densitometer (C/M/Y/K + TAC)"
+              icon={"\u{1F39A}"}
               active={measureMode === "densitometer"}
               onClick={() => onToggleMeasure("densitometer")}
             />

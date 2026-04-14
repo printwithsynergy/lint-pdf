@@ -4,6 +4,7 @@ measurement tools, PDF layers, comparison, and verdict.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import hashlib
 import io
@@ -774,6 +775,93 @@ async def sample_color(
     )
 
 
+class DensitometerChannelResponse(BaseModel):
+    name: str
+    percent: float
+
+
+class DensitometerResponse(BaseModel):
+    x: float
+    y: float
+    dpi: int
+    channels: list[DensitometerChannelResponse]
+    tac: float
+    tac_limit: float
+    limit_exceeded: bool
+
+
+async def _sample_densitometer(
+    pdf_bytes: bytes, page_num: int, x: float, y: float, dpi: int, tac_limit: float
+) -> DensitometerResponse:
+    """Shared helper: run ``sample_densitometer`` off-loop and box the result.
+
+    Used by both the authenticated and the public token-scoped densitometer
+    endpoints. Runs in a thread because Ghostscript shells out and we don't
+    want to block the FastAPI event loop.
+    """
+    from lintpdf.reports.separation_renderer import sample_densitometer
+
+    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+        page = pdf.pages[page_num - 1]
+        mb = page.get("/MediaBox")
+        if mb is None:
+            raise HTTPException(status_code=500, detail="Page has no MediaBox")
+        mb_vals = [float(v) for v in mb]
+
+    page_w = mb_vals[2] - mb_vals[0]
+    page_h = mb_vals[3] - mb_vals[1]
+    # Translate MediaBox-origin coordinate (bottom-left of the crop) into
+    # a 0-origin sample — consistent with sample_color above.
+    local_x = x - mb_vals[0]
+    local_y = y - mb_vals[1]
+
+    loop = asyncio.get_running_loop()
+    try:
+        result = await loop.run_in_executor(
+            None,
+            lambda: sample_densitometer(
+                pdf_bytes,
+                page_num,
+                x=local_x,
+                y=local_y,
+                page_w=page_w,
+                page_h=page_h,
+                dpi=dpi,
+                tac_limit=tac_limit,
+            ),
+        )
+    except RuntimeError as exc:
+        # No CMYK channels (RGB-only PDF) or Ghostscript failure. Surface as
+        # 422 so the UI can render a "no separations available" hint.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return DensitometerResponse(**result)  # type: ignore[arg-type]
+
+
+@router.get("/jobs/{job_id}/pages/{page_num}/densitometer")
+async def sample_densitometer_auth(
+    job_id: str,
+    page_num: int,
+    x: float = Query(..., description="X coordinate in PDF points"),
+    y: float = Query(..., description="Y coordinate in PDF points"),
+    dpi: int = Query(default=300, ge=72, le=600),
+    tac_limit: float = Query(default=300, ge=100, le=500),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> DensitometerResponse:
+    """Sample per-channel ink coverage and TAC at a point on a PDF page.
+
+    Runs Ghostscript ``tiffsep`` to decompose the page into CMYK + spot
+    channel rasters, then reads a 3x3 patch around the sampled pixel on
+    each channel. Returns ``{channels: [{name, percent}], tac,
+    limit_exceeded}``. Every plan tier has access — this is a free QA
+    tool, not a gated premium capability.
+    """
+    _job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    _validate_page_num(pdf_bytes, page_num)
+    return await _sample_densitometer(pdf_bytes, page_num, x, y, dpi, tac_limit)
+
+
 # ---------------------------------------------------------------------------
 # PDF Layers (OCG / Optional Content Groups)
 # ---------------------------------------------------------------------------
@@ -1311,6 +1399,22 @@ async def public_sample(
     py = max(0, min(py, img.height - 1))
     r, g, b = img.getpixel((px, py))
     return {"x": x, "y": y, "rgb": [r, g, b], "hex": f"#{r:02x}{g:02x}{b:02x}", "tac": None}
+
+
+@router.get("/public/{token}/pages/{page_num}/densitometer")
+async def public_densitometer(
+    token: str,
+    page_num: int,
+    x: float = Query(..., description="X coordinate in PDF points"),
+    y: float = Query(..., description="Y coordinate in PDF points"),
+    dpi: int = Query(default=300, ge=72, le=600),
+    tac_limit: float = Query(default=300, ge=100, le=500),
+    db: Session = Depends(get_db),
+) -> DensitometerResponse:
+    """Public: per-channel CMYK + spot ink densitometer reading."""
+    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _validate_page_num(pdf_bytes, page_num)
+    return await _sample_densitometer(pdf_bytes, page_num, x, y, dpi, tac_limit)
 
 
 @router.get("/public/{token}/layers")

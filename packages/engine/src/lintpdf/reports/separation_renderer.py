@@ -342,3 +342,133 @@ def render_tac_heatmap(
         buf = io.BytesIO()
         heatmap_img.save(buf, format="PNG")
         return buf.getvalue()
+
+
+def sample_densitometer(
+    pdf_bytes: bytes,
+    page_num: int,
+    *,
+    x: float,
+    y: float,
+    page_w: float,
+    page_h: float,
+    dpi: int = 300,
+    tac_limit: float = 300,
+) -> dict[str, object]:
+    """Sample per-channel ink coverage + TAC at a PDF point.
+
+    Runs Ghostscript ``tiffsep`` once to split the requested page into
+    CMYK (and any spot) channels at ``dpi`` resolution, then averages a
+    3x3 pixel patch around the converted pixel coordinate on each channel
+    grayscale. Returns one entry per channel plus the summed TAC.
+
+    Args:
+        pdf_bytes: Raw PDF bytes.
+        page_num: 1-indexed page number.
+        x, y: PDF-space coordinates in points (origin lower-left,
+            matching the sample_color endpoint).
+        page_w, page_h: MediaBox width / height in points.
+        dpi: Rendering resolution.
+        tac_limit: TAC limit in percent (for ``limit_exceeded`` flag).
+
+    Returns:
+        ``{"x", "y", "dpi", "channels": [{"name", "percent"}, ...],
+        "tac", "tac_limit", "limit_exceeded"}``.
+
+    Raises:
+        RuntimeError: If Ghostscript fails or no CMYK channels are produced
+            (e.g. an RGB-only PDF with no separable inks). The caller
+            surfaces this as a 422 for the UI to render a friendly
+            "no separations available" message.
+    """
+    import numpy as np
+    from PIL import Image
+
+    with tempfile.TemporaryDirectory(prefix="lintpdf_dens_") as tmpdir:
+        pdf_path = os.path.join(tmpdir, "input.pdf")
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_bytes)
+
+        output_base = os.path.join(tmpdir, "sep")
+        cmd = [
+            "gs",
+            "-q",
+            "-sDEVICE=tiffsep",
+            "-dNOPAUSE",
+            "-dBATCH",
+            f"-r{dpi}",
+            f"-dFirstPage={page_num}",
+            f"-dLastPage={page_num}",
+            f"-sOutputFile={output_base}%d.tif",
+            pdf_path,
+        ]
+        result = subprocess.run(cmd, capture_output=True, timeout=120)
+        if result.returncode != 0:
+            stderr = result.stderr.decode(errors="replace")
+            raise RuntimeError(f"Ghostscript separation failed: {stderr[:500]}")
+
+        # Collect channel TIFFs: CMYK always, plus whatever spots ghostscript
+        # discovered on this page.
+        channel_files: list[tuple[str, str]] = []
+        for ch_name in PROCESS_CHANNEL_ORDER:
+            ch_tif = _find_channel_tif(tmpdir, ch_name, output_base)
+            if ch_tif is not None:
+                channel_files.append((ch_name, ch_tif))
+        # Spot channels appear as filenames outside the process set. Walk
+        # the tmpdir looking for ``(...).tif`` entries that aren't the
+        # composite or one of the CMYK process names we already have.
+        process_lower = {n.lower() for n in PROCESS_CHANNEL_ORDER}
+        already = {ch[0].lower() for ch in channel_files}
+        for name in sorted(os.listdir(tmpdir)):
+            if not name.endswith(".tif"):
+                continue
+            if "(" not in name or ")" not in name:
+                continue  # composite, no parens
+            spot = name[name.index("(") + 1 : name.rindex(")")]
+            if not spot or spot.lower() in process_lower or spot.lower() in already:
+                continue
+            channel_files.append((spot, os.path.join(tmpdir, name)))
+            already.add(spot.lower())
+
+        if not channel_files:
+            raise RuntimeError("No separation channels produced for this page")
+
+        # Load the first channel to get image dimensions for the coord map.
+        first_img = Image.open(channel_files[0][1]).convert("L")
+        img_w, img_h = first_img.size
+        scale_x = img_w / page_w if page_w else 1.0
+        scale_y = img_h / page_h if page_h else 1.0
+        px_x = round(x * scale_x)
+        # PDF origin is lower-left; image origin is upper-left. Flip Y.
+        px_y = round(img_h - y * scale_y)
+        px_x = max(0, min(px_x, img_w - 1))
+        px_y = max(0, min(px_y, img_h - 1))
+
+        def _sample(path: str) -> float:
+            img = Image.open(path).convert("L")
+            arr = np.array(img, dtype=np.float32)
+            # tiffsep encodes 0 = full ink, 255 = no ink. Invert to get
+            # ink density, then normalise to 0-100.
+            x0 = max(0, px_x - 1)
+            x1 = min(img_w, px_x + 2)
+            y0 = max(0, px_y - 1)
+            y1 = min(img_h, px_y + 2)
+            patch = arr[y0:y1, x0:x1]
+            mean_ink = (255.0 - float(patch.mean())) * (100.0 / 255.0)
+            # Clamp to [0, 100] to guard against rounding noise.
+            return max(0.0, min(100.0, mean_ink))
+
+        channels = [
+            {"name": name, "percent": round(_sample(path), 2)} for name, path in channel_files
+        ]
+        tac = round(sum(ch["percent"] for ch in channels), 2)
+
+        return {
+            "x": x,
+            "y": y,
+            "dpi": dpi,
+            "channels": channels,
+            "tac": tac,
+            "tac_limit": tac_limit,
+            "limit_exceeded": tac > tac_limit,
+        }

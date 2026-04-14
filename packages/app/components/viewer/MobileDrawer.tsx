@@ -6,7 +6,7 @@ import { useViewerApi } from "./types";
 import { ZoomControls } from "./ZoomControls";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
-type MeasureMode = "none" | "densitometer" | "ruler";
+type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
 
 interface MobileDrawerProps {
   isOpen: boolean;
@@ -160,9 +160,17 @@ const Icons = {
       <rect x="7" y="7" width="10" height="10" rx="1" strokeDasharray="3 2" />
     </svg>
   ),
+  color_picker: (
+    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path d="M16.5 3.5l4 4-10 10-4 1 1-4 10-10z" />
+      <path d="M12.5 7.5l4 4" />
+    </svg>
+  ),
   densitometer: (
     <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v18M3 12h18" strokeOpacity="0.4" />
+      <path d="M7 8l10 8" strokeOpacity="0.4" />
     </svg>
   ),
   ruler: (
@@ -349,7 +357,13 @@ export function MobileDrawer({
             {config.enable_measurement && (
               <>
                 <DrawerItem
-                  label="Densitometer"
+                  label="Color Picker"
+                  icon={Icons.color_picker}
+                  active={measureMode === "color_picker"}
+                  onClick={() => handleTool(() => onToggleMeasure("color_picker"))}
+                />
+                <DrawerItem
+                  label="Densitometer (C/M/Y/K + TAC)"
                   icon={Icons.densitometer}
                   active={measureMode === "densitometer"}
                   onClick={() => handleTool(() => onToggleMeasure("densitometer"))}
