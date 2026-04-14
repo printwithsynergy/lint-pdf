@@ -273,7 +273,7 @@ test.describe("Preflight: Report Generation", () => {
       );
 
       if (res.status() === 404) {
-        // eslint-disable-next-line no-console
+         
         console.log("  [INFO] Report listing endpoint not implemented");
         return;
       }
@@ -349,7 +349,7 @@ test.describe("Preflight: Report Generation", () => {
       );
 
       if (res.status() === 404 || res.status() === 501) {
-        // eslint-disable-next-line no-console
+         
         console.log("  [INFO] Report revocation endpoint not implemented");
         return;
       }

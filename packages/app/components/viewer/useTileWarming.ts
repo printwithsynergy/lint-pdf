@@ -147,6 +147,8 @@ export function useTilePrefetch(
       while (!cancelled) {
         const idx = nextIdx++;
         if (idx >= order.length) return;
+        // idx is a local monotonic counter bounded above by order.length — safe index.
+        // eslint-disable-next-line security/detect-object-injection
         const page = order[idx]!;
         try {
           await fetch(`${apiBase}/pages/${page}/tile?dpi=${dpi}`, {

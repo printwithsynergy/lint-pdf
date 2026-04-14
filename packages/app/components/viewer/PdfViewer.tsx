@@ -240,10 +240,14 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             k === "tenant_name" ||
             k === "support_email")
         ) {
+          // k comes from Object.entries of a Record — not attacker-controlled.
+          // eslint-disable-next-line security/detect-object-injection
           filtered[k] = null;
         }
         continue;
       }
+      // k comes from Object.entries of a Record — not attacker-controlled.
+      // eslint-disable-next-line security/detect-object-injection
       filtered[k] = v;
     }
     return { ...DEFAULT_VIEWER_CONFIG, ...filtered } as ViewerConfig;
@@ -286,6 +290,8 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             const next = mergeConfig(cfgData);
             setConfig(next);
             const caps = (cfgData.capabilities ?? {}) as Record<string, boolean>;
+            // capability is a caller-supplied string key for a typed Record lookup.
+            // eslint-disable-next-line security/detect-object-injection
             if (caps[capability] === true) {
               if (findingsResp.ok) {
                 const fData = await findingsResp.json();

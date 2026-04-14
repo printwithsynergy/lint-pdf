@@ -180,6 +180,8 @@ const TEST_TENANT_SLUG = "e2e-test-org";
  * Get email for a specific test role.
  */
 export function getRoleEmail(role: TestRole): string {
+  // role is a TestRole union — typed Record lookup.
+  // eslint-disable-next-line security/detect-object-injection
   return ROLE_EMAILS[role];
 }
 
@@ -191,12 +193,15 @@ export async function createRoleContext(
   baseURL: string,
   role: TestRole,
 ) {
+  // role is a TestRole union — typed Record lookups below are safe.
+  // eslint-disable-next-line security/detect-object-injection
   const email = ROLE_EMAILS[role];
   const context = await browser.newContext({ baseURL });
   const request = context.request;
 
   const auth = await authenticateViaMcpBackdoor(request, email, {
     tenantSlug: TEST_TENANT_SLUG,
+    // eslint-disable-next-line security/detect-object-injection
     role: ROLE_TO_TENANT_ROLE[role],
   });
 
@@ -223,10 +228,17 @@ export async function authenticateRole(
   request: APIRequestContext,
   role: TestRole,
 ): Promise<McpAuthResult> {
-  return authenticateViaMcpBackdoor(request, ROLE_EMAILS[role], {
-    tenantSlug: TEST_TENANT_SLUG,
-    role: ROLE_TO_TENANT_ROLE[role],
-  });
+  // role is a TestRole union — typed Record lookups.
+  return authenticateViaMcpBackdoor(
+    request,
+    // eslint-disable-next-line security/detect-object-injection
+    ROLE_EMAILS[role],
+    {
+      tenantSlug: TEST_TENANT_SLUG,
+      // eslint-disable-next-line security/detect-object-injection
+      role: ROLE_TO_TENANT_ROLE[role],
+    },
+  );
 }
 
 // ---------- Engine helpers ----------

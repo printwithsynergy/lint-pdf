@@ -286,7 +286,10 @@ test.describe("Role: Super Admin", () => {
     const hasAssist = await assistButton.isVisible({ timeout: 5_000 }).catch(() => false);
 
     // Also look for the test tenant's slug or name on the page
-    const hasTenantText = await page.getByText(new RegExp(slug, "i")).first()
+    // slug is a test-generated identifier (test-only), escape defensively.
+    const escapedSlug = slug.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // eslint-disable-next-line security/detect-non-literal-regexp
+    const hasTenantText = await page.getByText(new RegExp(escapedSlug, "i")).first()
       .isVisible({ timeout: 3_000 }).catch(() => false);
 
     // Page should show tenant-related content (table, heading, or assist buttons)

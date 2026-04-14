@@ -98,6 +98,8 @@ function useCapabilityFill(
   const [inflight, setInflight] = useState<Record<string, boolean>>({});
 
   async function fill(capability: ViewerCapabilityKey): Promise<void> {
+    // capability is a compile-time union key of the inflight Record.
+    // eslint-disable-next-line security/detect-object-injection
     if (inflight[capability]) return;
     setInflight((prev) => ({ ...prev, [capability]: true }));
     try {
@@ -114,6 +116,8 @@ function useCapabilityFill(
     } finally {
       setInflight((prev) => {
         const next = { ...prev };
+        // capability is a compile-time union key.
+        // eslint-disable-next-line security/detect-object-injection
         delete next[capability];
         return next;
       });
@@ -162,6 +166,8 @@ export function ViewerToolbar({
 
   const caps = config.capabilities || {};
   const capAvailable = (key: ViewerCapabilityKey): boolean =>
+    // key is a compile-time ViewerCapabilityKey union.
+    // eslint-disable-next-line security/detect-object-injection
     caps[key] !== false; // undefined means "assume present" (engine jobs)
   // Public / read-only viewers never see the "Load" affordance — kicking
   // off analyzer runs is reserved to authenticated users on their own jobs.

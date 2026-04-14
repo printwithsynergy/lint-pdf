@@ -141,6 +141,8 @@ export function SeparationCanvas({
       const img = channelImages.get(channelName);
       if (!img) continue;
 
+      // channelName comes from the allChannels list we own — typed Record lookup.
+      // eslint-disable-next-line security/detect-object-injection
       const rgb = CHANNEL_RGB[channelName] ?? spotColorRgb(channelName);
 
       // Create offscreen canvas for tinting
@@ -159,9 +161,12 @@ export function SeparationCanvas({
       for (let i = 0; i < data.length; i += 4) {
         // Grayscale value: 0 = full ink, 255 = no ink (inverted)
         // Convert to ink density: 0 = no ink, 255 = full ink
+        // data is a Uint8ClampedArray and i is a bounded loop index.
+        // eslint-disable-next-line security/detect-object-injection
         const inkDensity = 255 - (data[i] ?? 0);
         // Tinted color = white * (1 - density/255) + channelColor * (density/255)
         const t = inkDensity / 255;
+        // eslint-disable-next-line security/detect-object-injection
         data[i] = Math.round(255 * (1 - t) + (rgb[0] ?? 0) * t);
         data[i + 1] = Math.round(255 * (1 - t) + (rgb[1] ?? 0) * t);
         data[i + 2] = Math.round(255 * (1 - t) + (rgb[2] ?? 0) * t);

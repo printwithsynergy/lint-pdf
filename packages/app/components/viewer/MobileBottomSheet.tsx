@@ -105,6 +105,8 @@ export function MobileBottomSheet({ children, summary, snap: controlledSnap, onS
     let closest: SnapPosition = "collapsed";
     let minDist = Infinity;
     for (const pos of SNAP_ORDER) {
+      // pos is a SnapPosition union key — safe index.
+      // eslint-disable-next-line security/detect-object-injection
       const dist = Math.abs(dragOffset - snapValues[pos]);
       if (dist < minDist) {
         minDist = dist;
@@ -128,6 +130,8 @@ export function MobileBottomSheet({ children, summary, snap: controlledSnap, onS
   const snapPx = getSnapHeights();
   const heightStr = dragOffset !== null
     ? `${dragOffset}px`
+    // snap is a SnapPosition union key — safe index.
+    // eslint-disable-next-line security/detect-object-injection
     : `${snapPx[snap]}px`;
 
   return (

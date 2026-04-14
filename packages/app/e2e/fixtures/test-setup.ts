@@ -253,8 +253,11 @@ async function globalSetup() {
     try {
       const auth = await mcpAuth(ctx, email, {
         tenantSlug: tenantSlug,
+        // role comes from Object.entries of the local emails record — typed lookup.
+        // eslint-disable-next-line security/detect-object-injection
         role: roleMap[role] ?? "MEMBER",
       });
+      // eslint-disable-next-line security/detect-object-injection
       users[role] = { email, ...auth };
       console.log(`  ✅ ${role}: ${email} (${auth.userId}) tenant=${auth.tenantId ?? "none"}`);
     } catch (err) {

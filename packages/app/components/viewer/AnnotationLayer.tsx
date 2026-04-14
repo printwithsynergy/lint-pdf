@@ -282,6 +282,8 @@ export function AnnotationLayer({
     // noUncheckedIndexedAccess makes every ``g["x0"]`` a ``number |
     // undefined`` lookup. We fall back to 0 so a malformed geometry row
     // degrades to a zero-size shape instead of a runtime NaN.
+    // k is supplied by the renderer below (literal geometry field names).
+    // eslint-disable-next-line security/detect-object-injection
     const n = (k: string): number => g[k] ?? 0;
     const common = {
       stroke: a.color,

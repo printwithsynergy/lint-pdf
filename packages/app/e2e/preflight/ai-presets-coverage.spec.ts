@@ -142,7 +142,7 @@ test.describe("Preflight: AI Presets Coverage", () => {
 
         // Individual preset endpoint may not exist (list-only API)
         if (res.status() === 404) {
-          // eslint-disable-next-line no-console
+           
           console.log(
             `  [INFO] Individual preset endpoint not implemented for ${preset.id}`,
           );
