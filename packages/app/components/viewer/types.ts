@@ -76,6 +76,7 @@ export type ViewerCapabilityKey =
   | "separations"
   | "tac"
   | "tac_runs"
+  | "tiles_warmed"
   | "layers"
   | "fonts"
   | "images"
@@ -246,6 +247,7 @@ export const DEFAULT_VIEWER_CONFIG: ViewerConfig = {
     separations: true,
     tac: true,
     tac_runs: true,
+    tiles_warmed: false,
     layers: true,
     fonts: true,
     images: true,

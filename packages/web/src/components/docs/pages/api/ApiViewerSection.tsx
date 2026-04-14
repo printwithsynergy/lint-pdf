@@ -142,6 +142,27 @@ Content-Type: image/png`}
 }`}
       />
 
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Tile pre-warming progress</h4>
+      <Endpoint
+        method="GET"
+        path="/api/v1/viewer/jobs/{job_id}/tile-warming"
+        description="Progress of the background Celery task (lintpdf.viewer.warm_tiles) that pre-renders every page tile into S3 when a job completes. Poll every ~1.5s to show a readiness badge; once status=complete the frontend kicks off a browser-side prefetch pass so page clicks paint from the browser HTTP cache (<20 ms)."
+        auth
+        request={`curl https://api.lintpdf.com/api/v1/viewer/jobs/.../tile-warming \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "job_id": "d4e5f6a7-...",
+  "status": "in_progress",
+  "rendered": 7,
+  "total": 20,
+  "dpi": 150,
+  "percent": 35,
+  "started_at": "2026-04-14T10:22:13Z",
+  "completed_at": null,
+  "error": null
+}`}
+      />
+
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Layers</h4>
       <Endpoint
         method="GET"
@@ -196,8 +217,8 @@ Content-Type: image/png`}
   "support_email": "support@acmeprint.com",
   "preflight_source": "engine",
   "capabilities": {
-    "separations": true, "tac": true, "tac_runs": true, "fonts": true,
-    "images": true, "layers": false
+    "separations": true, "tac": true, "tac_runs": true, "tiles_warmed": true,
+    "fonts": true, "images": true, "layers": false
   }
 }`}
       />
@@ -232,7 +253,7 @@ Content-Type: image/png`}
           { name: "tenant_name", type: "string | null", description: "Tenant display name (null when anonymous)." },
           { name: "support_email", type: "string | null", description: "Tenant support email (null when anonymous)." },
           { name: "preflight_source", type: '"engine" | "external" | "minimal"', description: "How findings were produced. Drives the viewer's Load-button affordances." },
-          { name: "capabilities", type: "Record<string, boolean>", description: "Per-capability availability map. Fillable keys: separations, tac, fonts, images. layers and tac_runs are not fillable (tac_runs is derived on demand and tracks the tac flag; layers is extracted at ingest only)." },
+          { name: "capabilities", type: "Record<string, boolean>", description: "Per-capability availability map. Fillable keys: separations, tac, fonts, images. Non-fillable: layers (extracted at ingest), tac_runs (derived on demand, tracks the tac flag), and tiles_warmed (flipped by the background warm_tiles task; see /tile-warming endpoint)." },
         ]}
       />
 

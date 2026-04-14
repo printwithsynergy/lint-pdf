@@ -155,6 +155,7 @@ The public viewer exposes the same endpoints as the authenticated viewer, with `
 - `GET /pages/{n}/densitometer?x=&y=&dpi=&tac_limit=` (per-channel CMYK + spot ink readings)
 - `GET /layers`
 - `GET /verdict`
+- `GET /tile-warming` (progress of the background tile pre-render task — share-link viewers see the same warming status as authenticated dashboard viewers)
 
 None of these require authentication. The token itself is the authorization.
 
