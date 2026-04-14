@@ -101,6 +101,8 @@ for (const role of ALL_ROLES) {
     const pages = buildPageRules();
 
     for (const pageRule of pages) {
+      // role is a TestRole union — typed Record lookup.
+      // eslint-disable-next-line security/detect-object-injection
       const expected = pageRule.access[role];
 
       test(`${expected === "allowed" ? "can" : "cannot"} access ${pageRule.label} (${pageRule.path})`, async ({

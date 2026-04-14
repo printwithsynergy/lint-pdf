@@ -71,6 +71,8 @@ function SeverityBadge({ severity }: { severity: string }) {
   };
   return (
     <span
+      // severity is a finding severity string from a typed Record lookup with fallback.
+      // eslint-disable-next-line security/detect-object-injection
       className={`rounded px-1.5 py-0.5 text-xs font-medium ${colors[severity] ?? "bg-muted text-muted-foreground"}`}
     >
       {severity}

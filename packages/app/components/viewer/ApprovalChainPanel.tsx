@@ -121,6 +121,8 @@ export function ApprovalChainPanel({ onRefresh: _onRefresh }: { onRefresh?: () =
         {chain.steps.map((step, i) => {
           const isDone = i < chain.current_step || chain.status !== "pending";
           const isCurrent = i === chain.current_step && chain.status === "pending";
+          // i is the map() index for chain.steps — a bounded array index.
+          // eslint-disable-next-line security/detect-object-injection
           const history = historyByStep[i] || [];
 
           const stepColor =

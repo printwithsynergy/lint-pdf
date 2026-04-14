@@ -52,7 +52,10 @@ function matchPath(
 
   const params: Record<string, string> = {};
   for (let i = 0; i < patternParts.length; i++) {
+    // i is a bounded numeric loop index into arrays we own.
+    // eslint-disable-next-line security/detect-object-injection
     const patternPart = patternParts[i]!;
+    // eslint-disable-next-line security/detect-object-injection
     const requestPart = requestParts[i]!;
     if (patternPart.startsWith(":")) {
       params[patternPart.slice(1)] = requestPart;
@@ -189,6 +192,8 @@ async function handleRequest(
   const { searchParams } = new URL(req.url);
   const query: Record<string, string> = {};
   searchParams.forEach((value, key) => {
+    // key/value are URL query string parts being copied into a plain Record.
+    // eslint-disable-next-line security/detect-object-injection
     query[key] = value;
   });
 

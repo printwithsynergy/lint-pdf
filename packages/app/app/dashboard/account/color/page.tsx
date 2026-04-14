@@ -162,6 +162,8 @@ export default function ColorConfigPage() {
 
   async function handleRemoveOverride(name: string) {
     const existing = { ...(overrides?.overrides ?? {}) };
+    // name is the user's own Pantone override row key; delete on a local copy.
+    // eslint-disable-next-line security/detect-object-injection
     delete existing[name];
     await saveOverrides(existing);
   }
@@ -224,6 +226,8 @@ export default function ColorConfigPage() {
       let imported = 0;
 
       for (let i = 0; i < lines.length; i++) {
+        // i is a bounded numeric loop index.
+        // eslint-disable-next-line security/detect-object-injection
         const line = lines[i]!.trim();
         if (!line || (i === 0 && line.toLowerCase().includes("name"))) continue;
 
@@ -514,9 +518,12 @@ export default function ColorConfigPage() {
                       type="number"
                       step="0.01"
                       placeholder={label}
+                      // i is the map() index over a 3-element literal array.
+                      // eslint-disable-next-line security/detect-object-injection
                       value={newLab[i]}
                       onChange={(e) => {
                         const updated = [...newLab];
+                        // eslint-disable-next-line security/detect-object-injection
                         updated[i] = e.target.value;
                         setNewLab(updated);
                       }}
@@ -536,9 +543,12 @@ export default function ColorConfigPage() {
                       type="number"
                       step="0.1"
                       placeholder={label}
+                      // i is the map() index over a 4-element literal array.
+                      // eslint-disable-next-line security/detect-object-injection
                       value={newCmyk[i]}
                       onChange={(e) => {
                         const updated = [...newCmyk];
+                        // eslint-disable-next-line security/detect-object-injection
                         updated[i] = e.target.value;
                         setNewCmyk(updated);
                       }}

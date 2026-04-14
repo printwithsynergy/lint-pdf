@@ -184,8 +184,11 @@ export default function BillingPage() {
           )}
 
           {/* Plan features */}
+          {/* currentPlan is a PlanKey union, PLAN_FEATURES is a typed Record. */}
+          {/* eslint-disable-next-line security/detect-object-injection */}
           {PLAN_FEATURES[currentPlan] && (
             <ul className="mt-3 grid gap-1 text-sm sm:grid-cols-2">
+              {/* eslint-disable-next-line security/detect-object-injection */}
               {PLAN_FEATURES[currentPlan].map((f) => (
                 <li key={f} className="flex items-center gap-1.5">
                   <span className="text-success">&#10003;</span> {f}

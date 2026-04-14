@@ -72,6 +72,14 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       requiredRole: "SUPER_ADMIN",
     });
     ctx.addNavItem({
+      label: "Tile Warming",
+      href: "/dashboard/admin/warming",
+      icon: "flame",
+      section: "global",
+      order: 35,
+      requiredRole: "SUPER_ADMIN",
+    });
+    ctx.addNavItem({
       label: "Appearance",
       href: "/dashboard/admin/appearance",
       icon: "palette",
@@ -107,6 +115,11 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addPage({
       path: "/dashboard/admin/health",
       title: "System Health",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/warming",
+      title: "Tile Warming",
       layout: "dashboard",
     });
     ctx.addPage({
@@ -231,6 +244,69 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
               status: resp.status,
               body: { status: "unhealthy", error: resp.statusText },
             };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/tile-warming/events",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Recent tile-warming events (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams();
+          if (req.query.tenant_id)
+            qs.set("tenant_id", String(req.query.tenant_id));
+          if (req.query.limit) qs.set("limit", String(req.query.limit));
+          const suffix = qs.toString() ? `?${qs.toString()}` : "";
+          const resp = await adminFetch(
+            `/api/v1/admin/tile-warming/events${suffix}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/tile-warming/summary",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Tile-warming aggregates (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams();
+          if (req.query.since_hours)
+            qs.set("since_hours", String(req.query.since_hours));
+          const suffix = qs.toString() ? `?${qs.toString()}` : "";
+          const resp = await adminFetch(
+            `/api/v1/admin/tile-warming/summary${suffix}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/tile-warming/jobs/:jobId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Tile-warming status for a single job (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tile-warming/jobs/${req.params.jobId}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
           }
           const data = await resp.json();
           return { status: 200, body: data };

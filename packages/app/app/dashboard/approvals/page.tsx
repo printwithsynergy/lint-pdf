@@ -112,31 +112,42 @@ export default function ApprovalsPage() {
     const j = i + dir;
     if (j < 0 || j >= editing.steps.length) return;
     const steps = [...editing.steps];
+    // i/j are numeric indices into a local array we just bounds-checked.
+    // eslint-disable-next-line security/detect-object-injection
     [steps[i], steps[j]] = [steps[j]!, steps[i]!];
     setEditing({ ...editing, steps });
   }
   function updateStep(i: number, patch: Partial<Step>) {
     if (!editing) return;
     const steps = [...editing.steps];
+    // i is a numeric index supplied by our own map() callers.
+    // eslint-disable-next-line security/detect-object-injection
     steps[i] = { ...steps[i]!, ...patch };
     setEditing({ ...editing, steps });
   }
   function addApprover(stepIdx: number) {
     if (!editing) return;
     const steps = [...editing.steps];
+    // stepIdx is a numeric index supplied by our own map() callers.
+    // eslint-disable-next-line security/detect-object-injection
     steps[stepIdx]!.approvers.push({ email: "" });
     setEditing({ ...editing, steps });
   }
   function removeApprover(stepIdx: number, approverIdx: number) {
     if (!editing) return;
     const steps = [...editing.steps];
+    // stepIdx/approverIdx are numeric indices supplied by our own map() callers.
+    // eslint-disable-next-line security/detect-object-injection
     if (steps[stepIdx]!.approvers.length <= 1) return;
+    // eslint-disable-next-line security/detect-object-injection
     steps[stepIdx]!.approvers = steps[stepIdx]!.approvers.filter((_, idx) => idx !== approverIdx);
     setEditing({ ...editing, steps });
   }
   function updateApprover(stepIdx: number, approverIdx: number, patch: Partial<Approver>) {
     if (!editing) return;
     const steps = [...editing.steps];
+    // stepIdx/approverIdx are numeric indices supplied by our own map() callers.
+    // eslint-disable-next-line security/detect-object-injection
     steps[stepIdx]!.approvers[approverIdx] = { ...steps[stepIdx]!.approvers[approverIdx]!, ...patch };
     setEditing({ ...editing, steps });
   }

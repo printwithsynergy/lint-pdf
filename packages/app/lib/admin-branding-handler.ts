@@ -57,6 +57,8 @@ function pickAllowed(
 ): Partial<Record<AllowedField, unknown>> {
   const out: Partial<Record<AllowedField, unknown>> = {};
   for (const key of ALLOWED_FIELDS) {
+    // key is iterated from the ALLOWED_FIELDS literal tuple — not attacker-controlled.
+    // eslint-disable-next-line security/detect-object-injection
     if (key in input) out[key] = input[key];
   }
   return out;

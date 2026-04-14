@@ -110,9 +110,10 @@ function IdentifyScreen({
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
-  const match = document.cookie.match(
-    new RegExp("(^| )" + name + "=([^;]+)"),
-  );
+  // name is a cookie name supplied by app code, not user input; escape regex metachars defensively.
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // eslint-disable-next-line security/detect-non-literal-regexp
+  const match = document.cookie.match(new RegExp("(^| )" + escaped + "=([^;]+)"));
   return match ? decodeURIComponent(match[2]!) : null;
 }
 

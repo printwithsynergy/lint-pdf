@@ -126,12 +126,12 @@ test.describe("Preflight: Analyzer Coverage", () => {
         );
         if (matching.length > 0) {
           // Log for visibility; this is informational, not a hard assertion
-          // eslint-disable-next-line no-console
+           
           console.log(
             `  [INFO] ${category.name} (${category.prefix}*): ${matching.length} finding(s) found`,
           );
         } else {
-          // eslint-disable-next-line no-console
+           
           console.log(
             `  [INFO] ${category.name} (${category.prefix}*): no findings (OK — optional)`,
           );
@@ -154,7 +154,7 @@ test.describe("Preflight: Analyzer Coverage", () => {
       const unknownIds = [
         ...new Set(unknownFindings.map((f) => f.inspection_id)),
       ];
-      // eslint-disable-next-line no-console
+       
       console.log(`  [WARN] Unknown inspection_id prefixes: ${unknownIds.join(", ")}`);
     }
 
@@ -222,12 +222,12 @@ test.describe("Preflight: Analyzer Coverage", () => {
     }
 
     const foundCount = Object.keys(categoryCounts).length;
-    // eslint-disable-next-line no-console
+     
     console.log(
       `  [SUMMARY] ${foundCount}/${ANALYZER_CATEGORIES.length} categories produced findings:`,
     );
     for (const [name, count] of Object.entries(categoryCounts)) {
-      // eslint-disable-next-line no-console
+       
       console.log(`    - ${name}: ${count} finding(s)`);
     }
 

@@ -186,7 +186,7 @@ test.describe("Preflight: Profile Comparison", () => {
         f.inspection_id.startsWith("LPDF_EPM_"),
       );
 
-      // eslint-disable-next-line no-console
+       
       console.log(
         `  [INFO] hp-indigo-epm: ${job!.findings.length} total findings, ${epmFindings.length} LPDF_EPM_* findings`,
       );
@@ -208,7 +208,7 @@ test.describe("Preflight: Profile Comparison", () => {
         f.inspection_id.startsWith("LPDF_ECG_"),
       );
 
-      // eslint-disable-next-line no-console
+       
       console.log(
         `  [INFO] ecg-readiness: ${job!.findings.length} total findings, ${ecgFindings.length} LPDF_ECG_* findings`,
       );
@@ -240,7 +240,7 @@ test.describe("Preflight: Profile Comparison", () => {
           f.message.toLowerCase().includes("pdf/x"),
       );
 
-      // eslint-disable-next-line no-console
+       
       console.log(
         `  [INFO] pdfx1a-magazine-ads: ${job!.findings.length} total findings, ` +
           `${conformanceFindings.length} conformance-related findings`,
@@ -285,7 +285,7 @@ test.describe("Preflight: Profile Comparison", () => {
           f.message.toLowerCase().includes("12647"),
       );
 
-      // eslint-disable-next-line no-console
+       
       console.log(
         `  [INFO] iso-12647-compliance: ${job!.findings.length} total findings, ` +
           `${standardsFindings.length} standards-related findings`,
