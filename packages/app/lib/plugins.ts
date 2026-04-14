@@ -29,6 +29,7 @@ import {
   AdminDashboardPage,
   WorkspaceSettingsPage,
   AccountPage,
+  dashboardCorePlugin as dashboardCoreWidgetsPlugin,
 } from "@thinkneverland/pixie-dust-dashboard";
 import { devtoolsPlugin } from "@thinkneverland/pixie-dust-devtools";
 import {
@@ -128,6 +129,7 @@ const dashboardCorePlugin: PixieDustPlugin = {
  */
 const plugins: PixieDustPlugin[] = [
   dashboardCorePlugin,
+  dashboardCoreWidgetsPlugin,
   ...(env.NODE_ENV !== "production" ? [devtoolsPlugin] : []),
   stripeKitPlugin,
   lintpdfPlugin,
