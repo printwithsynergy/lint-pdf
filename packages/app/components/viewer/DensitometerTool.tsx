@@ -28,7 +28,7 @@ interface DensitometerToolProps {
  * source PDFs where the engine can't split CMYK.
  */
 export function DensitometerTool({
-  jobId,
+  jobId: _jobId,
   pageNum,
   pageWidthPts,
   pageHeightPts,

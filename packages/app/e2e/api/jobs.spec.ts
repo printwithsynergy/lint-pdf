@@ -1,6 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { authenticateRole, isMcpBackdoorAvailable, pollJobViaApp } from "../helpers";
-import { resolve } from "path";
+import { authenticateRole, isMcpBackdoorAvailable } from "../helpers";
 
 const APP_BASE = process.env.APP_BASE_URL ?? "https://app.lintpdf.com";
 

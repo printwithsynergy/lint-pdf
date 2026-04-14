@@ -15,7 +15,7 @@ interface ChainSummary {
   steps: Array<{ name: string }>;
 }
 
-export function VerdictBar({ jobId, config }: VerdictBarProps) {
+export function VerdictBar({ jobId: _jobId, config }: VerdictBarProps) {
   const { apiBase, readOnly } = useViewerApi();
   const [verdict, setVerdict] = useState<VerdictState | null>(null);
   const [chain, setChain] = useState<ChainSummary | null>(null);
@@ -81,7 +81,6 @@ export function VerdictBar({ jobId, config }: VerdictBarProps) {
 
   // Determine display verdict
   const displayVerdict = isAuto ? (passed ? "pass" : "fail") : manualVerdict;
-  const isPending = !isAuto && !manualVerdict;
 
   return (
     <div

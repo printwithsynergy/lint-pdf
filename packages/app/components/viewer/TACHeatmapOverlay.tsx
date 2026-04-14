@@ -44,7 +44,7 @@ interface TACHeatmapOverlayProps {
 }
 
 export function TACHeatmapOverlay({
-  jobId,
+  jobId: _jobId,
   pageNum,
   width,
   height,

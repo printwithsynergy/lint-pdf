@@ -173,7 +173,9 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   // Comparison state
   const [comparison, setComparison] = useState<ComparisonState | null>(null);
   const [comparisonMode, setComparisonMode] = useState<"ab" | "side-by-side" | "overlay">("ab");
-  const [showVersionB, setShowVersionB] = useState(false);
+  // Comparison A/B toggle — UI not yet wired up; state reserved for the
+  // ab-mode switch so the viewer layout props can key off it once the
+  // comparison strip lands.
 
   const scrollRef = useRef<HTMLDivElement>(null);
 

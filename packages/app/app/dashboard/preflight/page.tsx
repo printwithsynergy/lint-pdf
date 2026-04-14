@@ -79,9 +79,7 @@ export default function PreflightPage() {
   const [externalReportDataUrl, setExternalReportDataUrl] = useState<
     string | null
   >(null);
-  const [externalReportName, setExternalReportName] = useState<string>(
-    "external-report.xml",
-  );
+  const [externalReportName] = useState<string>("external-report.xml");
   const [anonymize, setAnonymize] = useState<boolean>(false);
   const [tenantAnonymousDefault, setTenantAnonymousDefault] = useState<boolean>(
     false,

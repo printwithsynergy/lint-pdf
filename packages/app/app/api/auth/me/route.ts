@@ -47,10 +47,17 @@ export async function GET(req: Request) {
     const sessionToken = parseSessionCookie(cookieHeader);
 
     if (sessionToken) {
-      const session = await prisma.session.findUnique({
+      // ``impersonatingTenantId`` lives in the local Prisma schema
+      // (packages/app/prisma/schema/base.prisma) but the Pixie Dust
+      // PrismaClient type we import doesn't know about it. The
+      // startup.sh raw-SQL migration ensures the column exists at
+      // runtime; the ``as any`` cast bridges the type gap.
+      
+      const dbAny = prisma as any;
+      const session = (await dbAny.session.findUnique({
         where: { token: sessionToken },
         select: { impersonatingTenantId: true },
-      });
+      })) as { impersonatingTenantId: string | null } | null;
 
       if (session?.impersonatingTenantId) {
         const targetTenant = await prisma.tenant.findUnique({

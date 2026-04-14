@@ -34,7 +34,7 @@ interface SeparationPanelProps {
 }
 
 export function SeparationPanel({
-  jobId,
+  jobId: _jobId,
   enabledChannels,
   onToggleChannel,
   onSetAllChannels,

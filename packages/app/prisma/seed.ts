@@ -10,7 +10,7 @@
  *   npx prisma db seed
  */
 
-import { PrismaClient } from "../src/generated/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 

@@ -71,6 +71,7 @@ export function MobileBottomSheet({ children, summary, snap: controlledSnap, onS
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       const touch = e.touches[0];
+      if (!touch) return;
       startYRef.current = touch.clientY;
       const el = sheetRef.current;
       if (el) {
@@ -85,6 +86,7 @@ export function MobileBottomSheet({ children, summary, snap: controlledSnap, onS
     (e: React.TouchEvent) => {
       if (!dragging) return;
       const touch = e.touches[0];
+      if (!touch) return;
       const delta = startYRef.current - touch.clientY;
       const newHeight = startHeightRef.current + delta;
       const vh = window.innerHeight;

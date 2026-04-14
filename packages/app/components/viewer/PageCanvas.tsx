@@ -22,7 +22,7 @@ const SEVERITY_HEX: Record<string, string> = {
 };
 
 export function PageCanvas({
-  jobId,
+  jobId: _jobId,
   page,
   zoom,
   findings,
@@ -38,7 +38,6 @@ export function PageCanvas({
 
   // Tooltip state: shows finding info near the clicked bbox
   const [tooltip, setTooltip] = useState<{ finding: ViewerFinding; x: number; y: number } | null>(null);
-  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Touch gesture tracking
   const touchRef = useRef<{ x: number; y: number; dist: number; zoom: number; moved: boolean } | null>(null);
@@ -181,8 +180,11 @@ export function PageCanvas({
       const pw = (x1 - x0) * ptsToPixels * scale;
       const ph = (y1 - y0) * ptsToPixels * scale;
 
-      const colors = SEVERITY_COLORS[finding.severity];
-      const severityHex = SEVERITY_HEX[finding.severity];
+      // Severity is a fixed union ("error" | "warning" | "advisory");
+      // the fallback keeps TS's noUncheckedIndexedAccess happy without
+      // changing runtime behaviour.
+      const colors = SEVERITY_COLORS[finding.severity] ?? SEVERITY_COLORS.advisory;
+      const severityHex = SEVERITY_HEX[finding.severity] ?? "#64748b";
       const isSelected =
         selectedFinding?.inspection_id === finding.inspection_id &&
         selectedFinding?.page_num === finding.page_num &&

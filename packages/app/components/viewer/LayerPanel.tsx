@@ -12,7 +12,7 @@ interface LayerPanelProps {
 }
 
 export function LayerPanel({
-  jobId,
+  jobId: _jobId,
   enabledLayers,
   onToggleLayer,
   onSetAllLayers,

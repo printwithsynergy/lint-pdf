@@ -166,7 +166,26 @@ export default function ImportMappingsPage() {
   const [sampleMime, setSampleMime] = useState("");
   const [isActive, setIsActive] = useState(true);
 
-  const { toast } = useToast();
+  const { toast: _rawToast } = useToast();
+  // Adapter: this file was written against a shadcn-style
+  // ``toast({title, description, variant})`` API, but Pixie Dust UI
+  // exposes ``toast(message, options)``. Wrap once to keep call sites
+  // readable without rewriting every invocation.
+  const toast = useCallback(
+    (opts: { title: string; description?: string; variant?: string }) => {
+      const message = opts.description
+        ? `${opts.title} — ${opts.description}`
+        : opts.title;
+      const variant = (opts.variant === "destructive" ? "error" : opts.variant) as
+        | "error"
+        | "warning"
+        | "info"
+        | "success"
+        | undefined;
+      _rawToast(message, variant);
+    },
+    [_rawToast],
+  );
 
   // ── Drag-and-drop ────────────────────────────────────────────────
   // Two DnD surfaces:
@@ -250,6 +269,7 @@ export default function ImportMappingsPage() {
     setFieldRows((rows) => {
       const next = rows.slice();
       const [moved] = next.splice(dragFieldIndex, 1);
+      if (!moved) return rows;
       next.splice(targetIdx, 0, moved);
       return next;
     });
@@ -571,7 +591,7 @@ export default function ImportMappingsPage() {
             label="Item selector"
             htmlFor="mapping-item-selector"
             className="mt-4"
-            description={
+            helpText={
               format === "xml"
                 ? "Path to each finding element. Examples: Issues/Issue, //Hit. Namespaces handled by localname."
                 : "Dotted path to each finding. Examples: results[*].issues[*], data.findings[*]."
@@ -814,7 +834,7 @@ export default function ImportMappingsPage() {
             <FormField
               label="Source tool label"
               htmlFor="mapping-source-tool"
-              description="Shown on reports; e.g. 'Acme Preflight 2.1'"
+              helpText="Shown on reports; e.g. 'Acme Preflight 2.1'"
             >
               <Input
                 id="mapping-source-tool"
@@ -839,7 +859,7 @@ export default function ImportMappingsPage() {
             <FormField
               label="Sample payload"
               htmlFor="mapping-sample-payload"
-              description="Paste a real report (no PDF — just the XML/JSON), or drop a .xml / .json file here. We’ll use this to preview mapping output without running a full job."
+              helpText="Paste a real report (no PDF — just the XML/JSON), or drop a .xml / .json file here. We’ll use this to preview mapping output without running a full job."
             >
               <textarea
                 id="mapping-sample-payload"

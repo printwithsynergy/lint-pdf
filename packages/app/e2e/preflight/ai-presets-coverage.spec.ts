@@ -240,7 +240,7 @@ test.describe("Preflight: AI Presets Coverage", () => {
           !anyPreset,
           "No preset submission succeeded — cannot validate structure",
         );
-        const findings = submittedFindingsByPreset[anyPreset!];
+        const findings = submittedFindingsByPreset[anyPreset!] ?? [];
         for (const f of findings) {
           expect(typeof f.inspection_id).toBe("string");
           expect(f.inspection_id.length).toBeGreaterThan(0);

@@ -9,7 +9,6 @@ import {
 import { readFileSync, existsSync } from "fs";
 import { resolve } from "path";
 
-const ENGINE_BASE_FALLBACK = "https://engine.lintpdf.com";
 const TEST_PDF = resolve(
   __dirname,
   "../../../engine/tests/fixtures/test-sample.pdf",
@@ -49,7 +48,6 @@ test.describe.configure({ mode: "serial" });
 test.describe("Preflight: Report Generation", () => {
   let engineApiKey: string;
   let engineBase: string;
-  let sessionToken: string;
   let completedJobId: string;
   let reportEndpointAvailable = false;
 
@@ -62,8 +60,7 @@ test.describe("Preflight: Report Generation", () => {
     engineBase = getEngineBase();
     test.skip(!engineApiKey, "Engine API key not available");
 
-    const auth = await authenticateRole(request, "owner");
-    sessionToken = auth.sessionToken;
+    await authenticateRole(request, "owner");
 
     // Submit a job and wait for completion
     const pdfBuffer = readFileSync(TEST_PDF);

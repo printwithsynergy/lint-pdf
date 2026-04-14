@@ -31,7 +31,7 @@ interface Chain {
   completed_at: string | null;
 }
 
-export function ApprovalChainPanel({ onRefresh }: { onRefresh?: () => void }) {
+export function ApprovalChainPanel({ onRefresh: _onRefresh }: { onRefresh?: () => void }) {
   const { apiBase } = useViewerApi();
   const [chain, setChain] = useState<Chain | null>(null);
   const [loading, setLoading] = useState(true);

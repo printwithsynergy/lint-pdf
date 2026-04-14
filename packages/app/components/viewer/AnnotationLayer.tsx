@@ -99,7 +99,6 @@ export function AnnotationLayer({
   activeColor,
   annotations,
   onCreate,
-  onUpdate,
   onDelete,
   canWrite,
   visitorEmail,
@@ -280,6 +279,10 @@ export function AnnotationLayer({
   // Render a single saved annotation.
   const renderSaved = (a: Annotation) => {
     const g = a.geometry as Record<string, number>;
+    // noUncheckedIndexedAccess makes every ``g["x0"]`` a ``number |
+    // undefined`` lookup. We fall back to 0 so a malformed geometry row
+    // degrades to a zero-size shape instead of a runtime NaN.
+    const n = (k: string): number => g[k] ?? 0;
     const common = {
       stroke: a.color,
       strokeWidth: 2,
@@ -292,8 +295,8 @@ export function AnnotationLayer({
       "data-annotation-id": a.id,
     };
     if (a.kind === "rect") {
-      const p0 = ptToPx(g.x0, g.y0, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
-      const p1 = ptToPx(g.x1, g.y1, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p0 = ptToPx(n("x0"), n("y0"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p1 = ptToPx(n("x1"), n("y1"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
       const x = Math.min(p0.x, p1.x);
       const y = Math.min(p0.y, p1.y);
       const w = Math.abs(p1.x - p0.x);
@@ -301,14 +304,14 @@ export function AnnotationLayer({
       return <rect key={a.id} {...common} x={x} y={y} width={w} height={h} />;
     }
     if (a.kind === "circle") {
-      const c = ptToPx(g.cx, g.cy, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
-      const rx = (g.rx / pageWidthPts) * canvasWidth;
-      const ry = (g.ry / pageHeightPts) * canvasHeight;
+      const c = ptToPx(n("cx"), n("cy"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const rx = (n("rx") / pageWidthPts) * canvasWidth;
+      const ry = (n("ry") / pageHeightPts) * canvasHeight;
       return <ellipse key={a.id} {...common} cx={c.x} cy={c.y} rx={rx} ry={ry} />;
     }
     if (a.kind === "arrow") {
-      const p0 = ptToPx(g.x0, g.y0, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
-      const p1 = ptToPx(g.x1, g.y1, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p0 = ptToPx(n("x0"), n("y0"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p1 = ptToPx(n("x1"), n("y1"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
       const mid = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
       const dx = p1.x - p0.x;
       const dy = p1.y - p0.y;
@@ -340,7 +343,7 @@ export function AnnotationLayer({
       return <path key={a.id} {...common} d={d} strokeLinecap="round" strokeLinejoin="round" />;
     }
     if (a.kind === "note") {
-      const p = ptToPx(g.x, g.y, canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
+      const p = ptToPx(n("x"), n("y"), canvasWidth, canvasHeight, pageWidthPts, pageHeightPts);
       // Thread panel is rendered as a DOM sibling of the SVG (not a
       // foreignObject) so its textarea, buttons, and scrollable list
       // play nicely with the surrounding layout and don't fight SVG
@@ -504,7 +507,7 @@ export function AnnotationLayer({
 }
 
 /** Tiny hook: loads annotations from the engine and exposes CRUD helpers. */
-export function useAnnotations(jobId: string, visitorEmail: string | null) {
+export function useAnnotations(_jobId: string, visitorEmail: string | null) {
   const { apiBase } = useViewerApi();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [loading, setLoading] = useState(true);

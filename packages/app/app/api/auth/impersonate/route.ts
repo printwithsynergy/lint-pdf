@@ -5,6 +5,17 @@ import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { NextResponse } from "next/server";
 import { parseSessionCookie } from "@/lib/auth-helpers";
 
+// The Pixie Dust PrismaClient type doesn't know about fields the local
+// LintPDF schema adds (``Tenant.engineTenantId``,
+// ``Session.impersonatingTenantId``, ``AuditLog.impersonatedBy``).
+// Those columns are guaranteed to exist at runtime by
+// packages/app/scripts/startup.sh and the matching local Prisma
+// schema in packages/app/prisma/schema/. We cast through this
+// permissive alias to bridge the type gap without losing the rest of
+// the typed surface.
+
+const db = prisma as any;
+
 /**
  * POST /api/auth/impersonate
  *
@@ -48,7 +59,7 @@ export async function POST(req: Request) {
       select: { id: true, name: true, slug: true },
     });
     if (!tenant) {
-      tenant = await prisma.tenant.findFirst({
+      tenant = await db.tenant.findFirst({
         where: { engineTenantId: targetTenantId },
         select: { id: true, name: true, slug: true },
       });
@@ -63,7 +74,7 @@ export async function POST(req: Request) {
 
     if (sessionCookie) {
       // Store the Prisma tenant ID (not the engine UUID) for session impersonation
-      await prisma.session.updateMany({
+      await db.session.updateMany({
         where: { token: sessionCookie, userId: user.id },
         data: { impersonatingTenantId: tenant.id },
       });
@@ -77,8 +88,7 @@ export async function POST(req: Request) {
         action: "admin.impersonation.started",
         entity: "Tenant",
         entityId: tenant.id,
-        // impersonatedBy: user.id, // TODO: Fix Prisma schema generation
-        metadata: { tenantName: tenant.name },
+        metadata: { tenantName: tenant.name, impersonatedBy: user.id },
       },
     });
 
@@ -93,18 +103,18 @@ export async function POST(req: Request) {
 
   if (sessionCookie) {
     // Get current impersonation target for audit log
-    const session = await prisma.session.findUnique({
+    const session = await db.session.findUnique({
       where: { token: sessionCookie },
       select: { impersonatingTenantId: true },
     });
 
-    await prisma.session.updateMany({
+    await db.session.updateMany({
       where: { token: sessionCookie, userId: user.id },
       data: { impersonatingTenantId: null },
     });
 
     if (session?.impersonatingTenantId) {
-      await prisma.auditLog.create({
+      await db.auditLog.create({
         data: {
           tenantId: session.impersonatingTenantId,
           userId: user.id,
@@ -148,7 +158,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ impersonating: false, tenant: null });
   }
 
-  const session = await prisma.session.findUnique({
+  const session = await db.session.findUnique({
     where: { token: sessionCookie },
     select: { impersonatingTenantId: true },
   });

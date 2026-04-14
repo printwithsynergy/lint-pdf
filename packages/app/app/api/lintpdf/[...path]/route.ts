@@ -138,10 +138,15 @@ async function handleRequest(
         .find((c: string) => c.startsWith(`${cookieName}=`))
         ?.split("=")[1];
       if (sessionToken) {
-        const dbSession = await prisma.session.findUnique({
+        // See app/api/auth/me/route.ts: ``impersonatingTenantId`` is a
+        // local-schema extension the PD PrismaClient doesn't know
+        // about. Runtime column is guaranteed by startup.sh.
+        
+        const dbAny = prisma as any;
+        const dbSession = (await dbAny.session.findUnique({
           where: { token: sessionToken },
           select: { impersonatingTenantId: true },
-        });
+        })) as { impersonatingTenantId: string | null } | null;
         if (dbSession?.impersonatingTenantId) {
           tenantId = dbSession.impersonatingTenantId;
         }
@@ -207,7 +212,12 @@ async function handleRequest(
     // not JSON-serialized. Detect by checking the body type or the
     // Content-Type header from the handler.
     if (Buffer.isBuffer(result.body) || result.body instanceof Uint8Array) {
-      return new NextResponse(result.body, {
+      // Next 15's NextResponse signature narrowed to ``BodyInit``; the
+      // runtime still accepts Uint8Array, but the DOM-lib types have
+      // grown a phantom ``size`` property that trips the check. Cast
+      // through the permissive BlobPart surface to preserve the
+      // raw-bytes path without changing runtime behaviour.
+      return new NextResponse(result.body as unknown as BlobPart, {
         status: result.status,
         headers: result.headers,
       });

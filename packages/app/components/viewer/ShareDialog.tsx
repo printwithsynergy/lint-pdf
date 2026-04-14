@@ -10,7 +10,7 @@ interface ShareDialogProps {
   viewerUrl: string;
 }
 
-export function ShareDialog({ isOpen, onClose, token, viewerUrl }: ShareDialogProps) {
+export function ShareDialog({ isOpen, onClose, token: _token, viewerUrl }: ShareDialogProps) {
   const { apiBase } = useViewerApi();
   const [emailsInput, setEmailsInput] = useState("");
   const [message, setMessage] = useState("");
