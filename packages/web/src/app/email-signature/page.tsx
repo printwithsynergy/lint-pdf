@@ -13,6 +13,8 @@
 
 import { useRef, useState } from "react";
 
+import { LOGO_DATA_URI } from "./logo-data-uri";
+
 const SIGNATURE_OWNER = {
   name: "Quincy Adams",
   title: "Founder & Principal Engineer",
@@ -21,7 +23,11 @@ const SIGNATURE_OWNER = {
   email: "qadams@lintpdf.com",
   website: "lintpdf.com",
   websiteUrl: "https://lintpdf.com",
-  logoUrl: "https://lintpdf.com/logo-marketing.png",
+  // Inline data URI — remote <img> hosts get blocked by most mail clients on
+  // first paste and show a broken-image icon. Base64-embedding a small
+  // optimized PNG (180x180, ~4.7KB raw / ~6.3KB b64) dodges the "load remote
+  // content" prompt entirely and survives Gmail's 8KB inline-image limit.
+  logoSrc: LOGO_DATA_URI,
 } as const;
 
 function buildSignatureHtml() {
@@ -30,7 +36,7 @@ function buildSignatureHtml() {
   return `<table cellpadding="0" cellspacing="0" border="0" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 14px; color: #475569; line-height: 1.5;">
   <tr>
     <td style="padding-right: 16px; vertical-align: top;">
-      <a href="${SIGNATURE_OWNER.websiteUrl}" style="text-decoration: none;"><img src="${SIGNATURE_OWNER.logoUrl}" width="120" height="auto" alt="LintPDF" style="display: block; border: 0; max-width: 120px;"></a>
+      <a href="${SIGNATURE_OWNER.websiteUrl}" style="text-decoration: none;"><img src="${SIGNATURE_OWNER.logoSrc}" width="100" height="100" alt="LintPDF" style="display: block; border: 0; width: 100px; height: 100px;"></a>
     </td>
     <td style="padding-left: 16px; border-left: 3px solid #2563eb; vertical-align: top;">
       <div style="font-size: 16px; font-weight: 700; color: #0F172A;">${SIGNATURE_OWNER.name}</div>
