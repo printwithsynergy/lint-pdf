@@ -665,6 +665,12 @@ def _build_viewer_config(
     # the capability registry honest for the viewer frontend.
     if "tac" in caps:
         caps.setdefault("tac_runs", bool(caps.get("tac")))
+    # ``tiles_warmed`` flips to true when the background warming task
+    # has finished rendering every page tile into S3. The frontend uses
+    # the flag to decide whether to kick the browser-side prefetch pass
+    # (which shouldn't run against still-cold tiles). Resolved lazily
+    # from Redis so no extra schema cost.
+    caps["tiles_warmed"] = _is_warming_complete(str(job.id))
     config = ViewerConfigResponse(
         preflight_source=(
             job.preflight_source.value
@@ -748,6 +754,167 @@ async def get_viewer_config(
         raise HTTPException(status_code=404, detail="Job not found")
 
     return _build_viewer_config(job=job, tenant=tenant, db=db, brand_param=brand)
+
+
+# ---------------------------------------------------------------------------
+# Tile warming status (Redis-backed progress)
+# ---------------------------------------------------------------------------
+
+
+class TileWarmingStatusResponse(BaseModel):
+    """Warming progress for the per-job viewer tile pre-render task.
+
+    The viewer polls this endpoint to show a "Preparing pages N/M..."
+    badge so reviewers know when background pre-caching has finished.
+    ``status`` values:
+
+    - ``pending`` — job isn't COMPLETE yet (nothing to warm).
+    - ``in_progress`` — worker is rendering tiles into S3.
+    - ``complete`` — every page tile at the default DPI (and the
+      thumbnail-DPI variants) is cached.
+    - ``failed`` — the worker crashed; ``error`` carries a message.
+    - ``disabled`` — warming is off (no Redis configured or the
+      ``LINTPDF_TILE_WARMING_ENABLED`` env gate is false). The viewer
+      can still render tiles on-demand; they just won't be pre-warmed.
+    """
+
+    job_id: str
+    status: str
+    rendered: int
+    total: int
+    dpi: int
+    percent: int
+    started_at: str | None = None
+    completed_at: str | None = None
+    error: str | None = None
+
+
+def _is_warming_complete(job_id: str) -> bool:
+    """Cheap Redis probe: has ``warm_viewer_tiles`` finished for this job?
+
+    Used by the viewer-config builder to surface a ``tiles_warmed``
+    capability flag. Reads a single hash field (``HGET``) so it's a
+    ~1 ms lookup; falls back to ``False`` on any error.
+    """
+    from lintpdf.api.middleware import get_redis_client
+    from lintpdf.queue.tasks import _tile_warm_status_key
+
+    redis = get_redis_client()
+    if redis is None:
+        return False
+    try:
+        value = redis.hget(_tile_warm_status_key(job_id), "status")
+    except Exception:
+        return False
+    if value is None:
+        return False
+    decoded = value.decode() if isinstance(value, bytes) else str(value)
+    return decoded == "complete"
+
+
+def _load_tile_warming_status(*, job_id: str, page_count: int) -> TileWarmingStatusResponse:
+    """Read the warming-status hash from Redis and shape it for the client.
+
+    Shared by the authenticated and public surfaces so the two stay in
+    sync. When Redis isn't configured or the key is missing, returns a
+    synthetic ``disabled``/``pending`` response so the frontend can
+    still render a sensible badge without special-casing the null.
+    """
+    from lintpdf.api.middleware import get_redis_client
+    from lintpdf.queue.tasks import _tile_warm_status_key
+
+    redis = get_redis_client()
+    if redis is None:
+        return TileWarmingStatusResponse(
+            job_id=job_id,
+            status="disabled",
+            rendered=0,
+            total=page_count,
+            dpi=150,
+            percent=100 if page_count == 0 else 0,
+        )
+
+    try:
+        raw = redis.hgetall(_tile_warm_status_key(job_id))
+    except Exception:
+        logger.warning("tile-warming: Redis hgetall failed for %s", job_id)
+        raw = None
+
+    if not raw:
+        # No Redis record yet — either warming hasn't started or the
+        # job completed before the warming feature shipped.
+        # Job hasn't started warming (either still processing, or
+        # finished before this feature shipped). Surface ``pending``
+        # regardless — the frontend treats it as "no progress bar yet
+        # but don't panic".
+        return TileWarmingStatusResponse(
+            job_id=job_id,
+            status="pending",
+            rendered=0,
+            total=page_count,
+            dpi=150,
+            percent=0,
+        )
+
+    def _decode(value: Any) -> str:
+        return value.decode() if isinstance(value, bytes) else str(value)
+
+    decoded = {_decode(k): _decode(v) for k, v in raw.items()}
+
+    try:
+        rendered = int(decoded.get("rendered", "0"))
+        total = int(decoded.get("total", page_count))
+        dpi = int(decoded.get("dpi", 150))
+    except ValueError:
+        rendered, total, dpi = 0, page_count, 150
+
+    status_value = decoded.get("status", "pending")
+    percent = 100 if total == 0 else round((rendered / total) * 100)
+    if status_value == "complete":
+        percent = 100
+
+    return TileWarmingStatusResponse(
+        job_id=job_id,
+        status=status_value,
+        rendered=rendered,
+        total=total,
+        dpi=dpi,
+        percent=percent,
+        started_at=decoded.get("started_at"),
+        completed_at=decoded.get("completed_at"),
+        error=decoded.get("error"),
+    )
+
+
+@router.get(
+    "/jobs/{job_id}/tile-warming",
+    response_model=TileWarmingStatusResponse,
+)
+async def get_tile_warming_status(
+    job_id: str,
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> TileWarmingStatusResponse:
+    """Report the current tile-warming progress for a job.
+
+    Reads from the Redis hash written by the
+    ``lintpdf.viewer.warm_tiles`` Celery task. The viewer polls this
+    every 1.5 s until ``status`` settles into ``complete``, ``failed``,
+    or ``disabled``.
+    """
+    try:
+        uid = uuid_mod.UUID(job_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="Job not found") from exc
+
+    job = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    return _load_tile_warming_status(
+        job_id=job_id,
+        page_count=int(job.page_count or 0),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1537,6 +1704,21 @@ async def public_tac_runs(
         dpi=dpi,
         tac_limit=float(tac_limit),
         runs=runs,
+    )
+
+
+@router.get(
+    "/public/{token}/tile-warming",
+    response_model=TileWarmingStatusResponse,
+)
+async def public_tile_warming_status(
+    token: str, db: Session = Depends(get_db)
+) -> TileWarmingStatusResponse:
+    """Public: tile-warming progress for a share-link viewer."""
+    job, _pdf = _get_job_pdf_by_token(token, db)
+    return _load_tile_warming_status(
+        job_id=str(job.id),
+        page_count=int(job.page_count or 0),
     )
 
 

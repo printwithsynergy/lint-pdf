@@ -269,6 +269,30 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       }) as RouteHandler,
     },
 
+    // ── Tile warming status ──────────────────────────────────
+    //
+    // The engine runs a background Celery task (lintpdf.viewer.warm_tiles)
+    // after a job completes, pre-rendering every page tile into S3 so
+    // the viewer opens without per-click cold renders. The viewer polls
+    // this endpoint every ~1.5s to show a readiness progress badge.
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/tile-warming",
+      auth: true,
+      permission: "preflight:view",
+      description: "Progress of the background tile pre-render task",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/jobs/${req.params.jobId}/tile-warming`),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+
     // ── Check name registry ─────────────────────────────────
     {
       method: "GET" as HttpMethod,
@@ -706,6 +730,19 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
           engineUrl(
             `/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/tac-heatmap/runs?dpi=${dpi}&tac_limit=${tacLimit}`,
           ),
+        );
+        if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/public/:token/tile-warming",
+      auth: false,
+      description: "Public: tile pre-render progress for share-link viewers",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/viewer/public/${req.params.token}/tile-warming`),
         );
         if (!resp.ok) return { status: resp.status, body: { error: await resp.text() } };
         return { status: 200, body: await resp.json() };

@@ -25,6 +25,7 @@ import { ComparisonPanel } from "./ComparisonPanel";
 import { MobileBottomSheet } from "./MobileBottomSheet";
 import type { SnapPosition } from "./MobileBottomSheet";
 import { MobileDrawer } from "./MobileDrawer";
+import { useTilePrefetch, useTileWarmingStatus } from "./useTileWarming";
 import { ShareDialog } from "./ShareDialog";
 import { ApprovalChainPanel } from "./ApprovalChainPanel";
 
@@ -76,6 +77,28 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // --- Tile warming + browser prefetch ---------------------------------
+  // The engine pre-renders every page tile into S3 after a job
+  // completes (Celery task: lintpdf.viewer.warm_tiles). We poll the
+  // warming status so the reviewer sees a progress badge, and once
+  // warming settles we kick off a browser-side prefetch pass so the
+  // tile bytes are in the local HTTP cache before they're clicked.
+  const { status: warmingStatus, terminal: warmingTerminal } =
+    useTileWarmingStatus(apiBase);
+  // Only prefetch once warming is done or disabled — we don't want
+  // the browser thundering the engine for still-cold tiles.
+  const prefetchEnabled =
+    warmingTerminal &&
+    (warmingStatus?.status === "complete" ||
+      warmingStatus?.status === "disabled");
+  const { prefetched, total: prefetchTotal } = useTilePrefetch(
+    apiBase,
+    pages.length,
+    prefetchEnabled,
+    currentPage,
+    DEFAULT_DPI,
+  );
 
   // Auto-expand bottom sheet when a panel-mode is selected on mobile
   const handleExpandSheet = useCallback(() => {
@@ -1097,6 +1120,48 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         </form>
       </div>
     )}
+
+    {/* Tile warming + browser prefetch progress badge. Rendered as a
+        fixed bottom-right chip so it doesn't collide with the TAC
+        legend or the mobile bottom sheet.
+
+        Visibility rules:
+          1. Engine still warming → "Preparing pages 4 / 20..."
+          2. Warming done but browser prefetch still running →
+             "Caching locally 12 / 20..."
+          3. Everything settled → hidden.
+          4. Warming failed → small error chip (stays visible so ops
+             see there's a problem). */}
+    {(() => {
+      const warmingActive =
+        warmingStatus?.status === "in_progress" ||
+        warmingStatus?.status === "pending";
+      const warmingFailed = warmingStatus?.status === "failed";
+      const prefetching =
+        prefetchEnabled && prefetchTotal > 0 && prefetched < prefetchTotal;
+      const visible = warmingActive || warmingFailed || prefetching;
+      if (!visible) return null;
+
+      let label: string;
+      let tone = "bg-black/80 text-white";
+      if (warmingFailed) {
+        label = "Tile pre-cache failed — pages will render on demand";
+        tone = "bg-rose-600/90 text-white";
+      } else if (warmingActive && warmingStatus) {
+        label = `Preparing pages ${warmingStatus.rendered} / ${warmingStatus.total}...`;
+      } else {
+        label = `Caching locally ${prefetched} / ${prefetchTotal}...`;
+      }
+
+      return (
+        <div
+          className={`pointer-events-none fixed bottom-3 right-3 z-50 rounded-full px-3 py-1.5 text-xs shadow-lg ${tone}`}
+          aria-live="polite"
+        >
+          {label}
+        </div>
+      );
+    })()}
     </ViewerApiContext.Provider>
   );
 }

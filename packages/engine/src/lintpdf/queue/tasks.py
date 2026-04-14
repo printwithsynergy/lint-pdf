@@ -482,11 +482,10 @@ def run_preflight(
             except Exception:
                 logger.exception("Auto report generation failed for job %s (non-fatal)", job_id)
 
-            # Kick off async tile pre-rendering for the viewer (non-blocking)
-            try:
-                prerender_viewer_tiles.delay(job_id, str(job.tenant_id), file_key)
-            except Exception:
-                logger.warning("Failed to queue tile pre-render for job %s", job_id)
+            # Kick off async tile pre-warming for the viewer (non-blocking).
+            # Uses the Redis-coordinated warm_viewer_tiles task so the
+            # frontend can show progress and poll for completion.
+            enqueue_tile_warming(job_id)
 
             return {
                 "job_id": job_id,
@@ -809,37 +808,17 @@ def prerender_viewer_tiles(
     tenant_id: str,
     file_key: str,
 ) -> dict[str, Any]:
-    """Pre-render page tiles at default DPI for the interactive viewer.
+    """Deprecated: delegates to :func:`warm_viewer_tiles`.
 
-    Runs asynchronously after a preflight job completes. Renders composite
-    page images at 150 DPI (default viewer zoom) and 72 DPI (thumbnail strip),
-    then stores them in S3 for instant loading when the viewer opens.
+    Kept as a stable Celery name so any pre-existing broker-queued
+    messages still route somewhere sensible after the upgrade. New
+    callers should use :func:`enqueue_tile_warming` instead, which
+    pulls ``tenant_id`` and ``file_key`` from the job row and tracks
+    progress in Redis.
     """
-    from lintpdf.ai.rendering import get_page_count, render_page_to_image
-    from lintpdf.api.storage import get_storage
-
-    storage = get_storage()
-    try:
-        pdf_bytes = storage.download_pdf(file_key)
-    except Exception:
-        logger.warning("Pre-render: could not download PDF for job %s", job_id)
-        return {"job_id": job_id, "status": "skipped", "reason": "pdf_not_found"}
-
-    page_count = get_page_count(pdf_bytes)
-    rendered = 0
-
-    for page_num in range(1, min(page_count + 1, 201)):  # Cap at 200 pages
-        for dpi in (150, 72):
-            cache_key = f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}.png"
-            try:
-                tile_bytes = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
-                storage.upload_raw(cache_key, tile_bytes, content_type="image/png")
-                rendered += 1
-            except Exception:
-                logger.debug("Pre-render failed for page %d at %d DPI", page_num, dpi)
-
-    logger.info("Pre-rendered %d tiles for job %s (%d pages)", rendered, job_id, page_count)
-    return {"job_id": job_id, "status": "complete", "tiles_rendered": rendered}
+    _ = (tenant_id, file_key)  # intentionally unused — resolved from DB now
+    logger.info("prerender_viewer_tiles: forwarding to warm_viewer_tiles for %s", job_id)
+    return warm_viewer_tiles.apply(args=[job_id]).get()  # type: ignore[no-any-return]
 
 
 def _dispatch_tenant_webhooks(
@@ -1085,10 +1064,9 @@ def _finalize_non_engine_job(
     except Exception:
         logger.exception("Auto report generation failed for job %s (non-fatal)", job_id)
 
-    try:
-        prerender_viewer_tiles.delay(job_id, str(job.tenant_id), job.file_key)
-    except Exception:
-        logger.warning("Failed to queue tile pre-render for job %s", job_id)
+    # Same warming path as the engine completion branch — keeps the
+    # viewer behaviour uniform across external-import / minimal runs.
+    enqueue_tile_warming(job_id)
 
     return {
         "job_id": job_id,
@@ -1348,3 +1326,277 @@ def _build_fillin_analyzer(capability: str) -> Any | None:
     if capability == "images":
         return ImageAnalyzer()
     return None
+
+
+# ---------------------------------------------------------------------------
+# Viewer tile warming (background pre-render)
+# ---------------------------------------------------------------------------
+
+# DPI variants the viewer actively requests. Page tiles open at 150; the
+# thumbnail strip reuses 72. Keep in lockstep with
+# ``packages/app/components/viewer/types.ts::DEFAULT_DPI`` /
+# ``THUMBNAIL_DPI``.
+_WARM_MAIN_DPI = 150
+_WARM_THUMBNAIL_DPI = 72
+
+# TTL for the warming-status Redis key: long enough that a reviewer
+# who opens the viewer hours after the job finished still sees
+# ``status=complete``, short enough that stale keys don't accumulate
+# indefinitely.
+_WARM_STATUS_TTL_S = 24 * 60 * 60
+_WARM_LOCK_TTL_S = 600  # matches soft_time_limit
+
+
+def _tile_warm_status_key(job_id: str) -> str:
+    """Redis hash tracking warming progress for a job."""
+    return f"lintpdf:tile-warm:{job_id}"
+
+
+def _tile_warm_lock_key(job_id: str) -> str:
+    """Redis string holding the active warming lock for a job."""
+    return f"lintpdf:tile-warm-lock:{job_id}"
+
+
+def _tile_s3_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
+    """S3 key for a rendered page tile (mirrors ``viewer.py::_tile_cache_key``)."""
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}.png"
+
+
+def _warm_status_payload(
+    *,
+    status: str,
+    total: int,
+    rendered: int,
+    dpi: int,
+    started_at: str,
+    updated_at: str | None = None,
+    completed_at: str | None = None,
+    error: str | None = None,
+) -> dict[str, str]:
+    """Shape of the warming-status Redis hash. All values stored as str.
+
+    Kept as a flat string→string mapping so ``HSET`` / ``HGETALL`` round
+    trips cleanly and the frontend can parse without a JSON unmarshal.
+    """
+    payload = {
+        "status": status,
+        "total": str(total),
+        "rendered": str(rendered),
+        "dpi": str(dpi),
+        "started_at": started_at,
+        "updated_at": updated_at or started_at,
+    }
+    if completed_at:
+        payload["completed_at"] = completed_at
+    if error:
+        payload["error"] = error
+    return payload
+
+
+def enqueue_tile_warming(job_id: str, *, dpi: int = _WARM_MAIN_DPI) -> bool:
+    """Fire-and-forget wrapper around :func:`warm_viewer_tiles`.
+
+    Called from the preflight completion paths so cold-path job
+    submission doesn't have to know the task name. Returns False when
+    the warming feature is disabled or Celery isn't available — caller
+    should not treat this as an error.
+    """
+    import os as _os
+
+    if _os.getenv("LINTPDF_TILE_WARMING_ENABLED", "true").lower() == "false":
+        return False
+    try:
+        warm_viewer_tiles.apply_async(args=[job_id, dpi], queue="default")
+        return True
+    except Exception:
+        logger.warning("Failed to enqueue tile warming for %s", job_id, exc_info=True)
+        return False
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    name="lintpdf.viewer.warm_tiles",
+    max_retries=1,
+    default_retry_delay=10,
+    time_limit=600,  # 10 min hard cap — large PDFs can't take longer
+    soft_time_limit=540,
+)
+def warm_viewer_tiles(
+    job_id: str,
+    dpi: int = _WARM_MAIN_DPI,
+    *,
+    include_thumbnails: bool = True,
+) -> dict[str, Any]:
+    """Pre-render every page tile for a completed job into S3.
+
+    Writes progress to Redis under
+    ``lintpdf:tile-warm:{job_id}`` as a hash
+    ``{status, rendered, total, dpi, started_at, updated_at,
+    completed_at, error}`` so the viewer can surface a readiness bar.
+
+    Returns a status dict for observability. Never raises back to
+    Celery on normal operational failures (Redis down, file already
+    warmed, etc.) — only on unexpected exceptions after the in-progress
+    state has been published, so retries don't wedge.
+    """
+    import datetime as _dt
+    import uuid as uuid_mod
+
+    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.api.database import get_db_session
+    from lintpdf.api.middleware import get_redis_client
+    from lintpdf.api.models import Job, JobStatus
+    from lintpdf.api.storage import get_storage
+
+    redis = get_redis_client()
+    if redis is None:
+        # Warming without Redis coordination would risk double-renders
+        # when Celery retries. The viewer silently skips the progress
+        # indicator in this mode.
+        logger.info("warm_viewer_tiles: Redis not configured, skipping %s", job_id)
+        return {"status": "no_redis", "job_id": job_id}
+
+    lock_key = _tile_warm_lock_key(job_id)
+    acquired = False
+    try:
+        acquired = bool(redis.set(lock_key, "1", nx=True, ex=_WARM_LOCK_TTL_S))
+    except Exception:
+        logger.warning("warm_viewer_tiles: lock acquire failed for %s", job_id, exc_info=True)
+        return {"status": "lock_error", "job_id": job_id}
+    if not acquired:
+        logger.info("warm_viewer_tiles: another worker already warming %s", job_id)
+        return {"status": "locked", "job_id": job_id}
+
+    status_key = _tile_warm_status_key(job_id)
+    started_at = _dt.datetime.now(_dt.UTC).isoformat()
+
+    db = get_db_session()
+    try:
+        try:
+            job_uuid = uuid_mod.UUID(job_id)
+        except ValueError:
+            return {"status": "bad_job_id", "job_id": job_id}
+
+        job = db.query(Job).filter(Job.id == job_uuid).first()
+        if job is None:
+            return {"status": "not_found", "job_id": job_id}
+        if job.status != JobStatus.COMPLETE:
+            logger.info(
+                "warm_viewer_tiles: job %s is %s; skipping (only COMPLETE warms)",
+                job_id,
+                job.status,
+            )
+            return {"status": "not_complete", "job_id": job_id}
+
+        page_count = int(job.page_count or 0)
+        if page_count <= 0:
+            return {"status": "no_pages", "job_id": job_id}
+
+        tenant_id = str(job.tenant_id)
+        storage = get_storage()
+
+        # Publish initial in-progress state so pollers see a non-zero
+        # total immediately.
+        try:
+            redis.hset(
+                status_key,
+                mapping=_warm_status_payload(
+                    status="in_progress",
+                    total=page_count,
+                    rendered=0,
+                    dpi=dpi,
+                    started_at=started_at,
+                ),
+            )
+            redis.expire(status_key, _WARM_STATUS_TTL_S)
+        except Exception:
+            logger.warning("warm_viewer_tiles: status publish failed", exc_info=True)
+
+        # Pull the PDF once — we render all pages from the same bytes.
+        pdf_bytes = _download_pdf_with_fallback(storage, job.file_key, job_id)
+
+        def _warm_one(page_num: int, render_dpi: int) -> None:
+            """Render one page to S3 unless already cached."""
+            key = _tile_s3_key(tenant_id, job_id, page_num, render_dpi)
+            try:
+                if storage.download_raw(key) is not None:
+                    return  # Already warmed — idempotent.
+            except Exception:
+                pass  # Probe failure — re-render and upload.
+            try:
+                tile_bytes = render_page_to_image(pdf_bytes, page_num, dpi=render_dpi)
+                storage.upload_raw(key, tile_bytes, content_type="image/png")
+            except Exception:
+                logger.warning(
+                    "warm_viewer_tiles: render p%d @ %dpi failed for %s",
+                    page_num,
+                    render_dpi,
+                    job_id,
+                    exc_info=True,
+                )
+                # Don't re-raise — one page's failure shouldn't block the rest.
+
+        import contextlib
+
+        for page_num in range(1, page_count + 1):
+            _warm_one(page_num, dpi)
+            if include_thumbnails and dpi != _WARM_THUMBNAIL_DPI:
+                _warm_one(page_num, _WARM_THUMBNAIL_DPI)
+            # Progress publish failures are cosmetic; keep rendering.
+            with contextlib.suppress(Exception):
+                redis.hset(
+                    status_key,
+                    mapping={
+                        "rendered": str(page_num),
+                        "updated_at": _dt.datetime.now(_dt.UTC).isoformat(),
+                    },
+                )
+
+        completed_at = _dt.datetime.now(_dt.UTC).isoformat()
+        try:
+            redis.hset(
+                status_key,
+                mapping=_warm_status_payload(
+                    status="complete",
+                    total=page_count,
+                    rendered=page_count,
+                    dpi=dpi,
+                    started_at=started_at,
+                    completed_at=completed_at,
+                ),
+            )
+            redis.expire(status_key, _WARM_STATUS_TTL_S)
+        except Exception:
+            logger.warning("warm_viewer_tiles: final status publish failed", exc_info=True)
+
+        logger.info(
+            "warm_viewer_tiles: completed %s (%d pages @ %d dpi, thumbnails=%s)",
+            job_id,
+            page_count,
+            dpi,
+            include_thumbnails,
+        )
+        return {
+            "status": "complete",
+            "job_id": job_id,
+            "rendered": page_count,
+            "total": page_count,
+        }
+
+    except Exception as exc:
+        logger.exception("warm_viewer_tiles: unexpected failure for %s", job_id)
+        # Publish the failure state (best-effort) before re-raising so
+        # the viewer's progress badge can render the error chip.
+        with contextlib.suppress(Exception):
+            redis.hset(
+                status_key,
+                mapping={
+                    "status": "failed",
+                    "updated_at": _dt.datetime.now(_dt.UTC).isoformat(),
+                    "error": str(exc)[:500],
+                },
+            )
+        raise
+    finally:
+        with contextlib.suppress(Exception):
+            redis.delete(lock_key)
+        db.close()
