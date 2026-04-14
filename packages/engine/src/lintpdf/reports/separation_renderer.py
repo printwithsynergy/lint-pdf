@@ -244,6 +244,116 @@ def _find_channel_tif(tmpdir: str, channel: str, output_base: str) -> str | None
     return None
 
 
+def _extract_text_bboxes(
+    pdf_bytes: bytes, page_num: int
+) -> list[tuple[float, float, float, float]]:
+    """Return merged text-run bboxes for a page in PDF points.
+
+    Uses poppler's ``pdftotext -bbox`` to get per-word positions, then
+    merges adjacent words on the same line into single run bboxes so we
+    emit one outline per headline / caption / paragraph rather than one
+    per word (which would cover the whole page).
+
+    Bboxes are returned in PDF-point space with origin at the **top-left**
+    of the page — matching pdftotext's output — so callers that want the
+    conventional PDF lower-left origin must flip Y themselves.
+
+    Returns an empty list if poppler-utils is not installed or the PDF
+    has no extractable text (e.g. scanned images only). Never raises.
+    """
+    # nosemgrep: use-defused-xml — output of our own pdftotext, not external input
+    from xml.etree.ElementTree import fromstring
+
+    with tempfile.TemporaryDirectory(prefix="lintpdf_txt_") as tmpdir:
+        pdf_path = os.path.join(tmpdir, "input.pdf")
+        html_path = os.path.join(tmpdir, "out.xhtml")
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_bytes)
+
+        cmd = [
+            "pdftotext",
+            "-bbox",
+            "-f",
+            str(page_num),
+            "-l",
+            str(page_num),
+            pdf_path,
+            html_path,
+        ]
+        try:
+            proc = subprocess.run(cmd, capture_output=True, timeout=30)
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return []
+        if proc.returncode != 0 or not os.path.exists(html_path):
+            return []
+
+        try:
+            with open(html_path, encoding="utf-8", errors="replace") as f:
+                xml_body: str = f.read()
+        except OSError:
+            return []
+
+    # pdftotext emits an XHTML doc that contains exactly one <page> for the
+    # slice we requested (-f == -l). Strip the doctype so xml.etree can
+    # parse it, then walk the word nodes.
+    body_idx = xml_body.find("<html")
+    if body_idx == -1:
+        return []
+    cleaned = xml_body[body_idx:]
+    try:
+        root = fromstring(cleaned)
+    except Exception:
+        return []
+
+    # pdftotext emits nodes in the XHTML namespace, so the real tag is
+    # e.g. ``{http://www.w3.org/1999/xhtml}word``. Match on localname.
+    words: list[tuple[float, float, float, float]] = []
+    for el in root.iter():
+        tag = el.tag if isinstance(el.tag, str) else ""
+        if tag.split("}")[-1] != "word":
+            continue
+        try:
+            x0 = float(el.get("xMin") or 0)
+            y0 = float(el.get("yMin") or 0)
+            x1 = float(el.get("xMax") or 0)
+            y1 = float(el.get("yMax") or 0)
+        except (TypeError, ValueError):
+            continue
+        if x1 <= x0 or y1 <= y0:
+            continue
+        words.append((x0, y0, x1, y1))
+
+    if not words:
+        return []
+
+    # Sort top-to-bottom, then left-to-right.
+    words.sort(key=lambda b: (round(b[1], 1), b[0]))
+
+    # Merge words on the "same line" (yMin within 2pt tolerance) whose
+    # horizontal gap to the previous run is less than one character
+    # width (~6pt). Produces one bbox per visually-contiguous text run.
+    merged: list[list[float]] = []
+    line_tol = 2.0
+    gap_tol = 6.0
+    for x0, y0, x1, y1 in words:
+        if merged:
+            prev = merged[-1]
+            same_line = abs(y0 - prev[1]) <= line_tol and abs(y1 - prev[3]) <= line_tol * 2
+            gap_ok = x0 - prev[2] <= gap_tol
+            if same_line and gap_ok:
+                prev[2] = max(prev[2], x1)
+                prev[3] = max(prev[3], y1)
+                prev[1] = min(prev[1], y0)
+                continue
+        merged.append([x0, y0, x1, y1])
+
+    # Cap noise on dense pages so the overlay stays readable.
+    if len(merged) > 400:
+        merged = merged[:400]
+
+    return [(b[0], b[1], b[2], b[3]) for b in merged]
+
+
 def render_tac_heatmap(
     pdf_bytes: bytes,
     page_num: int,
@@ -257,6 +367,13 @@ def render_tac_heatmap(
     - Green: TAC < 250%
     - Yellow: 250% <= TAC < ``tac_limit``
     - Red: TAC >= ``tac_limit``
+
+    Also draws **red outline rectangles** around each text run whose
+    interior mean TAC exceeds ``tac_limit``, so reviewers can see at a
+    glance which specific pieces of text are over budget without
+    squinting at a pixel gradient. Text-run detection uses
+    ``pdftotext -bbox``; if poppler is unavailable or the page has no
+    extractable text, the heatmap still renders without outlines.
 
     Args:
         pdf_bytes: Raw PDF bytes.
@@ -339,6 +456,65 @@ def render_tac_heatmap(
         heatmap[paper_mask] = [0, 0, 0, 0]
 
         heatmap_img = Image.fromarray(heatmap, mode="RGBA")
+
+        # Text-run outlines: find text bboxes, compute each run's mean TAC
+        # from the heatmap we just built, and draw a red stroke around
+        # runs that exceed the limit. Wrapped so a pdftotext failure or a
+        # PDF with no text never breaks the heatmap itself.
+        try:
+            text_bboxes = _extract_text_bboxes(pdf_bytes, page_num)
+        except Exception:
+            logger.warning("TAC heatmap: text-bbox extraction failed", exc_info=True)
+            text_bboxes = []
+
+        if text_bboxes:
+            # pdftotext uses top-left origin in PDF points. We need pixel
+            # coordinates in the heatmap raster. Read the page MediaBox to
+            # compute the pt -> pixel scale.
+            try:
+                with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+                    mb = pdf.pages[page_num - 1].get("/MediaBox")
+                    mb_vals = [float(v) for v in mb] if mb is not None else [0, 0, 612, 792]
+            except Exception:
+                mb_vals = [0.0, 0.0, float(width), float(height)]
+
+            page_w_pt = mb_vals[2] - mb_vals[0] or 1.0
+            page_h_pt = mb_vals[3] - mb_vals[1] or 1.0
+            sx = width / page_w_pt
+            sy = height / page_h_pt
+
+            from PIL import ImageDraw
+
+            draw = ImageDraw.Draw(heatmap_img)
+            stroke = (220, 0, 0, 230)
+            stroke_w = max(2, round(dpi / 72))
+
+            for x0, y0, x1, y1 in text_bboxes:
+                px_x0 = max(0, round(x0 * sx))
+                px_y0 = max(0, round(y0 * sy))
+                px_x1 = min(width, round(x1 * sx))
+                px_y1 = min(height, round(y1 * sy))
+                if px_x1 - px_x0 < 2 or px_y1 - px_y0 < 2:
+                    continue
+
+                # Mean TAC inside the bbox — cheap and good enough. Only
+                # outline runs where the mean exceeds the limit; runs with
+                # a single heavy glyph on a light background read as
+                # borderline and don't warrant an alarm outline.
+                patch = tac[px_y0:px_y1, px_x0:px_x1]
+                if patch.size == 0:
+                    continue
+                if float(patch.mean()) < tac_limit:
+                    continue
+
+                # Draw the outline with a 1px inset so the stroke sits just
+                # inside the bbox and doesn't clip at the page edge.
+                draw.rectangle(
+                    (px_x0, px_y0, px_x1 - 1, px_y1 - 1),
+                    outline=stroke,
+                    width=stroke_w,
+                )
+
         buf = io.BytesIO()
         heatmap_img.save(buf, format="PNG")
         return buf.getvalue()
