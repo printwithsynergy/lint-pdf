@@ -101,10 +101,31 @@ export default function PreflightPage() {
       const resp = await fetch(
         `/api/lintpdf/jobs?page=${page}&page_size=${pageSize}`,
       );
-      if (!resp.ok) throw new Error("Failed to load jobs");
+      if (!resp.ok) {
+        // Preserve the engine/proxy error detail so operators can tell
+        // "missing API key" from "engine unreachable" without server logs.
+        let detail = "";
+        try {
+          const errBody = (await resp.json()) as { error?: unknown };
+          if (errBody && typeof errBody.error === "string") {
+            detail = errBody.error;
+          } else if (errBody?.error) {
+            detail = JSON.stringify(errBody.error);
+          }
+        } catch {
+          try {
+            detail = await resp.text();
+          } catch {
+            detail = "";
+          }
+        }
+        const suffix = detail ? `: ${detail}` : "";
+        throw new Error(`Failed to load jobs (${resp.status})${suffix}`);
+      }
       const data = await resp.json();
       setJobs(data.jobs ?? []);
       setTotal(data.total ?? 0);
+      setError("");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load jobs");
     } finally {

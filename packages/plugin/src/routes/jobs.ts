@@ -43,6 +43,9 @@ export function jobRoutes(): RouteDefinition[] {
         );
         if (!resp.ok) {
           const detail = await resp.text();
+          console.error(
+            `[lintpdf] GET /jobs engine error ${resp.status}: ${detail}`,
+          );
           return { status: resp.status, body: { error: detail } };
         }
         const data = await resp.json();
@@ -59,6 +62,9 @@ export function jobRoutes(): RouteDefinition[] {
         const resp = await engineFetch(`/api/v1/jobs/${req.params.jobId}`);
         if (!resp.ok) {
           const detail = await resp.text();
+          console.error(
+            `[lintpdf] GET /jobs/${req.params.jobId} engine error ${resp.status}: ${detail}`,
+          );
           return { status: resp.status, body: { error: detail } };
         }
         const data = await resp.json();

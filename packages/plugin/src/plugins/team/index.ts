@@ -55,7 +55,7 @@ export const lintpdfTeamPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "Team",
       href: "/dashboard/team",
-      icon: "users-cog",
+      icon: "users",
       section: "admin",
       order: 55,
       requiredPermission: "team:manage",

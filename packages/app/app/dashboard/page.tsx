@@ -1,85 +1,96 @@
-import { authenticateRequest } from "@thinkneverland/pixie-dust-auth";
-import { getCookieName } from "@thinkneverland/pixie-dust-config";
+import { validateSession } from "@thinkneverland/pixie-dust-auth";
+import {
+  getCookieName,
+  getPermissions,
+} from "@thinkneverland/pixie-dust-config";
+import {
+  DashboardOverviewPage,
+  filterNavByUser,
+} from "@thinkneverland/pixie-dust-dashboard";
 import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-export default async function DashboardPage() {
+import { ensureRegistry } from "@/lib/plugins";
+
+const ACTIVE_TENANT_COOKIE = "pd-active-tenant";
+
+export default async function Page() {
   const cookieStore = await cookies();
   const token = cookieStore.get(getCookieName())?.value;
-  const auth = await authenticateRequest(
-    prisma,
-    token ? `${getCookieName()}=${token}` : null,
-  );
+  if (!token) redirect("/auth/login");
 
-  if (!auth) {
-    redirect("/auth/login");
-  }
+  const session = await validateSession(prisma, token);
+  if (!session.valid) redirect("/auth/login");
 
   const user = await prisma.user.findUnique({
-    where: { id: auth.userId },
-    select: { id: true, email: true, name: true },
+    where: { id: session.user.id },
+    select: { id: true, email: true, name: true, isSuperAdmin: true },
   });
+  if (!user) redirect("/auth/login");
 
-  const tenants = await prisma.tenantUser.findMany({
-    where: { userId: auth.userId },
+  const tenantMemberships = await prisma.tenantUser.findMany({
+    where: { userId: session.user.id },
     include: {
-      tenant: { select: { id: true, name: true, slug: true, status: true } },
+      tenant: { select: { id: true, name: true, slug: true } },
     },
     orderBy: { joinedAt: "asc" },
   });
 
-  return (
-    <>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
-              Welcome back, {user?.name ?? user?.email}
-            </p>
-          </div>
-          <a
-            href="/api/auth/logout"
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-secondary transition-colors"
-          >
-            Sign Out
-          </a>
-        </div>
+  let activeTenantId: string | null =
+    cookieStore.get(ACTIVE_TENANT_COOKIE)?.value ?? null;
+  if (
+    activeTenantId &&
+    !tenantMemberships.some((m) => m.tenant.id === activeTenantId)
+  ) {
+    activeTenantId = null;
+  }
+  if (!activeTenantId && tenantMemberships.length === 1) {
+    activeTenantId = tenantMemberships[0]!.tenant.id;
+  }
 
-        <div className="grid gap-6">
-          <section>
-            <h2 className="text-lg font-semibold mb-4">Your Organizations</h2>
-            {tenants.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border p-8 text-center">
-                <p className="text-muted-foreground">
-                  You don&apos;t belong to any organizations yet.
-                </p>
-              </div>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
-                {tenants.map((membership: (typeof tenants)[number]) => (
-                  <a
-                    key={membership.id}
-                    href={`/dashboard/${membership.tenant.slug}`}
-                    className="rounded-lg border border-border p-4 hover:bg-secondary/50 transition-colors"
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold">
-                        {membership.tenant.name}
-                      </h3>
-                      <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                        {membership.role}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      /{membership.tenant.slug}
-                    </p>
-                  </a>
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
-    </>
+  const activeTenant = tenantMemberships.find(
+    (m) => m.tenant.id === activeTenantId,
+  );
+  const tenantRole = activeTenant?.role ?? null;
+
+  // Boot plugins before reading permissions — ctx.addPermission() populates
+  // the registry, so getPermissions() returns {} if called first.
+  const registry = await ensureRegistry();
+
+  const allPermissions = getPermissions();
+  const userPermissions = tenantRole
+    ? Object.entries(allPermissions)
+        .filter(([, roles]) => roles.includes(tenantRole))
+        .map(([p]) => p)
+    : [];
+
+  const accessibleNavItems = filterNavByUser(registry.getNavItems(), {
+    ...user,
+    tenantRole,
+    permissions: userPermissions,
+  }).filter((i) => i.href !== "/dashboard");
+
+  const teamMemberCount = activeTenantId
+    ? await prisma.tenantUser.count({ where: { tenantId: activeTenantId } })
+    : 0;
+  const orgCount = user.isSuperAdmin
+    ? await prisma.tenant.count()
+    : tenantMemberships.length;
+
+  return (
+    <DashboardOverviewPage
+      user={user}
+      activeTenantId={activeTenantId}
+      activeTenantName={activeTenant?.tenant.name ?? null}
+      tenantRole={tenantRole}
+      tenantCount={tenantMemberships.length}
+      orgCount={orgCount}
+      teamMemberCount={teamMemberCount}
+      userPermissions={userPermissions}
+      accessibleNavItems={accessibleNavItems}
+      widgets={registry.getDashboardWidgets()}
+      db={prisma}
+    />
   );
 }

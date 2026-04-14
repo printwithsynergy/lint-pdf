@@ -5,6 +5,7 @@ describe("lintpdfPlugin", () => {
     return {
       addRoutes: vi.fn(),
       addNavItem: vi.fn(),
+      addDashboardWidget: vi.fn(),
       addPage: vi.fn(),
       addPermission: vi.fn(),
       addRole: vi.fn(),
