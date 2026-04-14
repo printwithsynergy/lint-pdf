@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import random
 import time
 from typing import Any
 
@@ -15,6 +16,23 @@ class GPUServiceUnavailableError(Exception):
     """Raised when GPU inference service is unreachable or circuit is open."""
 
 
+class GPUServiceRateLimitedError(GPUServiceUnavailableError):
+    """Raised when the upstream keeps returning 429 after our retry budget.
+
+    Subclass of :class:`GPUServiceUnavailableError` so existing callers
+    that already special-case ``except GPUServiceUnavailableError`` keep
+    working — but we can still tell the two apart in the logs and in
+    operational dashboards.
+    """
+
+
+# Retry budget for upstream 429s. Exponential backoff with full jitter;
+# capped so a request never stalls longer than ~10s of waiting total.
+_RATE_LIMIT_MAX_RETRIES = 3
+_RATE_LIMIT_BASE_DELAY_S = 0.8
+_RATE_LIMIT_MAX_DELAY_S = 5.0
+
+
 class CircuitBreaker:
     """Simple circuit breaker for GPU service calls.
 
@@ -22,6 +40,11 @@ class CircuitBreaker:
     - CLOSED: normal operation, requests pass through
     - OPEN: too many failures, requests fail immediately
     - HALF_OPEN: allow one test request after recovery timeout
+
+    Note: 429 responses are **not** treated as failures because the server
+    is healthy and responsive — it's telling us to slow down. Counting
+    them would open the breaker during normal bursty load and take the
+    whole AI pipeline offline.
     """
 
     def __init__(
@@ -74,11 +97,41 @@ class CircuitBreaker:
             )
 
 
+def _parse_retry_after(value: str | None) -> float | None:
+    """Parse an HTTP ``Retry-After`` header into seconds, or ``None``.
+
+    RFC 9110 allows either a delta-seconds integer or an HTTP-date. We
+    only honour the integer form here — the date form is rare in modern
+    APIs and not worth the parser surface area. Values are clamped to
+    our own max delay so a misbehaving upstream can't wedge a worker
+    waiting 10 minutes.
+    """
+    if not value:
+        return None
+    try:
+        seconds = float(value.strip())
+    except (TypeError, ValueError):
+        return None
+    if seconds < 0:
+        return None
+    return min(seconds, _RATE_LIMIT_MAX_DELAY_S)
+
+
+def _backoff_delay(attempt: int) -> float:
+    """Exponential backoff with full jitter, capped at ``_RATE_LIMIT_MAX_DELAY_S``."""
+    cap = _RATE_LIMIT_MAX_DELAY_S
+    base = min(cap, _RATE_LIMIT_BASE_DELAY_S * (2**attempt))
+    return random.uniform(0, base)
+
+
 class GPUInferenceClient:
     """Client for the GPU inference service.
 
     All methods send images to the inference service and return structured results.
     Circuit breaker prevents cascading failures when the service is down.
+    Transient HTTP 429 responses are retried with exponential backoff +
+    ``Retry-After`` support so normal rate-limit bursts don't escalate
+    into analyzer-level outages.
     """
 
     def __init__(self, base_url: str, timeout: float = 30.0) -> None:
@@ -87,25 +140,100 @@ class GPUInferenceClient:
         self._breaker = CircuitBreaker()
         self._client = httpx.Client(timeout=timeout)
 
-    def _post(self, endpoint: str, image_bytes: bytes, **kwargs: Any) -> dict[str, Any]:
-        """Send image to inference endpoint."""
+    def _send_with_retry(
+        self,
+        method: str,
+        url: str,
+        *,
+        files: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Shared HTTP send path with 429 retry + circuit breaker.
+
+        * Treats 429 as a "retry soon" signal (honours ``Retry-After``
+          when the server provides a delta-seconds value) instead of a
+          hard failure. The breaker is not notified so normal rate
+          limiting doesn't take the whole AI pipeline down.
+        * Genuine connection / timeout / 5xx errors are recorded on the
+          breaker and re-raised as ``GPUServiceUnavailableError`` as
+          before.
+        * A 429 that keeps reappearing after our retry budget is
+          exhausted surfaces as ``GPUServiceRateLimitedError`` so callers
+          can tell it apart from "the upstream is actually down".
+        """
         self._breaker.check()
 
-        url = f"{self._base_url}{endpoint}"
-        try:
-            response = self._client.post(
-                url,
-                files={"image": ("image.png", image_bytes, "image/png")},
-                data=kwargs,
-                timeout=self._timeout,
-            )
-            response.raise_for_status()
+        last_retry_after: str | None = None
+        for attempt in range(_RATE_LIMIT_MAX_RETRIES + 1):
+            try:
+                response = self._client.request(
+                    method,
+                    url,
+                    files=files,
+                    data=data,
+                    json=json,
+                    timeout=self._timeout,
+                )
+            except (httpx.TimeoutException, httpx.TransportError, ConnectionError) as exc:
+                self._breaker.record_failure()
+                raise GPUServiceUnavailableError(f"GPU service error: {exc}") from exc
+
+            if response.status_code == 429:
+                last_retry_after = response.headers.get("Retry-After")
+                if attempt >= _RATE_LIMIT_MAX_RETRIES:
+                    # Budget exhausted. Don't mark the breaker — the
+                    # service is healthy, it's just asking us to slow
+                    # down. The analyzer layer already bails out
+                    # silently on GPUServiceUnavailableError so the
+                    # reviewer's findings list stays clean.
+                    logger.warning(
+                        "GPU service rate-limited after %d retries "
+                        "(Retry-After=%s); giving up on this request",
+                        attempt,
+                        last_retry_after,
+                    )
+                    raise GPUServiceRateLimitedError(
+                        f"GPU service rate-limited (HTTP 429) after {attempt} retries"
+                    )
+                delay = (
+                    _parse_retry_after(last_retry_after) if last_retry_after is not None else None
+                )
+                if delay is None:
+                    delay = _backoff_delay(attempt)
+                logger.info(
+                    "GPU service 429 on attempt %d/%d; sleeping %.2fs before retry",
+                    attempt + 1,
+                    _RATE_LIMIT_MAX_RETRIES,
+                    delay,
+                )
+                time.sleep(delay)
+                continue
+
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                # 4xx other than 429 or 5xx. These are genuine upstream
+                # problems worth counting toward the breaker threshold.
+                self._breaker.record_failure()
+                raise GPUServiceUnavailableError(f"GPU service error: {exc}") from exc
+
             self._breaker.record_success()
-            result: dict[str, Any] = response.json()
-            return result
-        except (httpx.HTTPError, httpx.TimeoutException, ConnectionError) as exc:
-            self._breaker.record_failure()
-            raise GPUServiceUnavailableError(f"GPU service error: {exc}") from exc
+            payload: dict[str, Any] = response.json()
+            return payload
+
+        # The loop only exits via return or raise — this is unreachable.
+        raise GPUServiceUnavailableError("GPU service retry loop exited unexpectedly")
+
+    def _post(self, endpoint: str, image_bytes: bytes, **kwargs: Any) -> dict[str, Any]:
+        """Send image to inference endpoint."""
+        url = f"{self._base_url}{endpoint}"
+        return self._send_with_retry(
+            "POST",
+            url,
+            files={"image": ("image.png", image_bytes, "image/png")},
+            data=kwargs,
+        )
 
     def assess_image_quality(self, image_bytes: bytes) -> dict[str, Any]:
         """Assess perceptual image quality (MUSIQ/TOPIQ)."""
@@ -152,26 +280,16 @@ class GPUInferenceClient:
 
     def translate_text(self, text: str, source_lang: str, target_lang: str) -> dict[str, Any]:
         """Translate text (OPUS-MT)."""
-        self._breaker.check()
-
         url = f"{self._base_url}/inference/translate"
-        try:
-            response = self._client.post(
-                url,
-                json={
-                    "text": text,
-                    "source_lang": source_lang,
-                    "target_lang": target_lang,
-                },
-                timeout=self._timeout,
-            )
-            response.raise_for_status()
-            self._breaker.record_success()
-            result: dict[str, Any] = response.json()
-            return result
-        except (httpx.HTTPError, httpx.TimeoutException, ConnectionError) as exc:
-            self._breaker.record_failure()
-            raise GPUServiceUnavailableError(f"GPU service error: {exc}") from exc
+        return self._send_with_retry(
+            "POST",
+            url,
+            json={
+                "text": text,
+                "source_lang": source_lang,
+                "target_lang": target_lang,
+            },
+        )
 
     def health_check(self) -> bool:
         """Check if GPU service is healthy."""
