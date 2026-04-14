@@ -13,6 +13,7 @@ import { TACHeatmapOverlay } from "./TACHeatmapOverlay";
 import { AnnotationCanvas } from "./AnnotationCanvas";
 import { AnnotationToolbar } from "./AnnotationToolbar";
 import type { AnnotationTool } from "./AnnotationToolbar";
+import { AnnotationLayer, useAnnotations } from "./AnnotationLayer";
 import { AnnotationThread } from "./AnnotationThread";
 import { ColorPickerTool } from "./ColorPickerTool";
 import { DensitometerTool } from "./DensitometerTool";
@@ -89,6 +90,44 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   const [measureMode, setMeasureMode] = useState<MeasureMode>("none");
   const [showTacHeatmap, setShowTacHeatmap] = useState(false);
   const [showBoxOverlay, setShowBoxOverlay] = useState(false);
+
+  // Markup (drawing) state — orthogonal to viewerMode so the reviewer can
+  // draw while the finding panel is open. null = no active draw tool.
+  const [markupKind, setMarkupKind] = useState<
+    "rect" | "circle" | "arrow" | "freehand" | "note" | null
+  >(null);
+  const [markupColor, setMarkupColor] = useState<string>("#dc2626");
+
+  // Email captured once per session on the anonymous share-link viewer, so
+  // the visitor can write annotations when the token allows it. Restored
+  // from localStorage so reviewers don't re-enter it on every refresh.
+  const [visitorEmail, setVisitorEmail] = useState<string | null>(() => {
+    if (typeof window === "undefined" || !publicToken) return null;
+    try {
+      return window.localStorage.getItem(`lintpdf:visitor-email:${publicToken}`);
+    } catch {
+      return null;
+    }
+  });
+  const [emailPromptOpen, setEmailPromptOpen] = useState(false);
+
+  // Load existing annotations for the job (both saved drawings + notes).
+  // On the public share-link surface, the server gates writes on the
+  // token's allow_annotations flag; visitorEmail is forwarded for audit.
+  const {
+    annotations,
+    create: createAnnotation,
+    update: updateAnnotation,
+    remove: deleteAnnotation,
+  } = useAnnotations(jobId, visitorEmail);
+
+  // Dashboard reviewers can always annotate. Public share-link viewers
+  // can only annotate when the issuing tenant minted the token with
+  // allow_annotations=true *and* a visitor email has been captured.
+  const tokenAllowsAnnotations = !!config.allow_annotations;
+  const canAnnotateHere = publicToken
+    ? tokenAllowsAnnotations && !!visitorEmail
+    : !readOnly;
 
   // Separation state
   const [enabledChannels, setEnabledChannels] = useState<Set<string>>(
@@ -679,6 +718,29 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                     <MeasureTool pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
                   )}
 
+                  {/* Mark Up drawing layer — always rendered so saved
+                      annotations show up even without an active draw tool.
+                      Writes are gated by ``canAnnotateHere``; anonymous
+                      share-link viewers trigger the email prompt when
+                      they activate a tool without having provided one. */}
+                  {currentPageInfo && config.enable_annotations && (
+                    <AnnotationLayer
+                      jobId={jobId}
+                      pageNum={currentPage}
+                      pageWidthPts={currentPageInfo.width_pts}
+                      pageHeightPts={currentPageInfo.height_pts}
+                      canvasWidth={canvasWidth}
+                      canvasHeight={canvasHeight}
+                      activeKind={canAnnotateHere ? markupKind : null}
+                      activeColor={markupColor}
+                      annotations={annotations}
+                      onCreate={createAnnotation}
+                      onUpdate={updateAnnotation}
+                      onDelete={deleteAnnotation}
+                      canWrite={canAnnotateHere}
+                    />
+                  )}
+
                   {/* Comparison diff overlay */}
                   {viewerMode === "comparison" && comparison && comparisonMode === "overlay" && (
                     <img
@@ -784,6 +846,20 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         onToggleMode={toggleMode}
         measureMode={measureMode}
         onToggleMeasure={toggleMeasure}
+        markupKind={markupKind}
+        onToggleMarkup={(kind) => {
+          // On the public share link, gate tool activation on having
+          // captured an email. Open the prompt instead of activating —
+          // we'll re-try once the visitor identifies themselves.
+          if (kind && publicToken && tokenAllowsAnnotations && !visitorEmail) {
+            setEmailPromptOpen(true);
+            return;
+          }
+          setMarkupKind(kind);
+        }}
+        markupColor={markupColor}
+        onChangeMarkupColor={setMarkupColor}
+        canAnnotate={config.enable_annotations && canAnnotateHere}
         showTacHeatmap={showTacHeatmap}
         onToggleTacHeatmap={() => setShowTacHeatmap((v) => !v)}
         showBoxOverlay={showBoxOverlay}
@@ -925,6 +1001,59 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         token={publicToken}
         viewerUrl={typeof window !== "undefined" ? window.location.href.split("?")[0] ?? "" : ""}
       />
+    )}
+    {/* Email capture for anonymous annotators. Shown when the visitor
+        tries to activate a markup tool on a public share link that allows
+        annotations but hasn't yet identified itself. */}
+    {emailPromptOpen && publicToken && (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
+        <form
+          className="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-900 p-5 text-white shadow-2xl"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const form = e.currentTarget as HTMLFormElement;
+            const input = form.elements.namedItem("email") as HTMLInputElement | null;
+            const email = (input?.value ?? "").trim().toLowerCase();
+            if (!email || !email.includes("@")) return;
+            setVisitorEmail(email);
+            try {
+              window.localStorage.setItem(`lintpdf:visitor-email:${publicToken}`, email);
+            } catch {
+              // localStorage blocked — proceed with in-memory email only.
+            }
+            setEmailPromptOpen(false);
+          }}
+        >
+          <h3 className="text-sm font-semibold">Identify yourself to annotate</h3>
+          <p className="mt-1 text-xs text-slate-400">
+            Enter your email so the document owner can see who added each
+            comment. We&apos;ll remember it on this device.
+          </p>
+          <input
+            type="email"
+            name="email"
+            required
+            autoFocus
+            placeholder="you@example.com"
+            className="mt-3 w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+          />
+          <div className="mt-3 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setEmailPromptOpen(false)}
+              className="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold hover:bg-blue-500"
+            >
+              Continue
+            </button>
+          </div>
+        </form>
+      </div>
     )}
     </ViewerApiContext.Provider>
   );

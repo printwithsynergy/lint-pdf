@@ -87,6 +87,9 @@ export interface ViewerConfig {
   enable_separations: boolean;
   enable_tac_heatmap: boolean;
   enable_annotations: boolean;
+  /** Public share-link only: whether anonymous visitors may create annotations.
+   *  On the authenticated dashboard this is always implicitly true. */
+  allow_annotations?: boolean;
   enable_measurement: boolean;
   enable_comparison: boolean;
   enable_layers: boolean;

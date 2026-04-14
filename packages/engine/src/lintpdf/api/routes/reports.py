@@ -39,6 +39,11 @@ class GenerateReportsRequest(BaseModel):
     branding: BrandingOverride | None = None
     detail_level: str = "standard"  # "executive", "standard", "comprehensive"
     summary_page: str | None = None  # "prepend" (default ON), "only", "off"
+    # When true, anonymous share-link viewers at /view/{token} can draw
+    # annotations on the interactive viewer after providing an email via
+    # the X-Visitor-Email header. Defaults to read-only (false) so
+    # existing share behaviour is unchanged.
+    allow_annotations: bool = False
 
 
 class ReportInfo(BaseModel):
@@ -288,6 +293,7 @@ async def generate_reports(  # skipcq: PY-R1000
             summary_page=body.summary_page
             or getattr(tenant, "report_summary_page", None)
             or "prepend",
+            allow_annotations=body.allow_annotations,
         ),
     )
 

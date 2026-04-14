@@ -419,6 +419,7 @@ class ReportService:
         report_base_url: str = "https://reports.lintpdf.com",
         detail_level: str = "standard",
         summary_page: str = "prepend",
+        allow_annotations: bool = False,
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 
@@ -495,6 +496,7 @@ class ReportService:
                 token=tokens[fmt],
                 format=fmt,
                 expires_at=expires_at,
+                allow_annotations=allow_annotations,
             )
             self._db.add(token_record)
 

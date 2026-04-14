@@ -411,6 +411,13 @@ class ReportToken(Base):
     # ``profile``; the latter pairs with ``brand_profile_id``.
     brand_mode: Mapped[str | None] = mapped_column(String(16), nullable=True)
     brand_profile_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+    # Permission for anonymous reviewers to create annotations on the
+    # token-scoped public viewer. False = viewer-only (default). True means
+    # anyone with the token can POST annotations as long as they provide an
+    # email identity (captured via X-Visitor-Email header).
+    allow_annotations: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
 
 
 # --- AI Feature Models ---
@@ -840,4 +847,85 @@ class ApprovalStep(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ViewerAnnotation(Base):
+    """Reviewer-drawn markup on a preflight viewer page.
+
+    Supports five geometry kinds (``rect``, ``circle``, ``arrow``,
+    ``freehand``, ``note``). Coordinates are stored in PDF points with
+    the origin at the page's lower-left corner so annotations remain
+    valid regardless of viewer zoom or rendering DPI.
+
+    Public share-link writers are identified by ``author_email`` (captured
+    via the viewer's email gate); authenticated dashboard writers carry
+    the tenant user's email via the auth session.
+    """
+
+    __tablename__ = "viewer_annotations"
+    __table_args__ = (
+        Index("ix_viewer_annotations_job_page", "job_id", "page_num"),
+        Index("ix_viewer_annotations_token", "share_token"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
+    )
+    # Optional link to a share-link token. Populated only for annotations
+    # created via the public /view/{token} surface; NULL for dashboard
+    # writers. Lets a share reader see only annotations made through the
+    # same link (future work) while the authenticated dashboard still
+    # sees everything for the job.
+    share_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    page_num: Mapped[int] = mapped_column(Integer, nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    # Serialised primitive (points list or rect corners). Schema is
+    # intentionally free-form so the client can evolve geometry types
+    # without a migration: callers read/write the same JSON blob.
+    geometry_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    color: Mapped[str] = mapped_column(String(16), nullable=False, default="#dc2626")
+    text: Mapped[str | None] = mapped_column(Text, nullable=True)
+    author_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class ShareLinkVisitor(Base):
+    """Email + IP capture for anonymous annotators on /view/{token} share links.
+
+    Anonymous viewers with the "allow_annotations" flag set on their
+    ReportToken must identify themselves with an email (via the
+    X-Visitor-Email header) before they can create annotations. Each
+    first-time identification inserts a row here so we have an audit
+    trail of who wrote what.
+    """
+
+    __tablename__ = "share_link_visitors"
+    __table_args__ = (Index("ix_share_visitors_token_email", "share_token", "visitor_email"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    share_token: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    visitor_email: Mapped[str] = mapped_column(String(255), nullable=False)
+    ip_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    first_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    last_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
     )

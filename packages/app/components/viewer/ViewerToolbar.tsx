@@ -21,6 +21,13 @@ interface ViewerToolbarProps {
   onToggleMode?: (mode: ViewerMode) => void;
   measureMode?: MeasureMode;
   onToggleMeasure?: (mode: MeasureMode) => void;
+  /** Active markup tool: rect / circle / arrow / freehand / note, or null when no draw tool is selected. */
+  markupKind?: "rect" | "circle" | "arrow" | "freehand" | "note" | null;
+  onToggleMarkup?: (kind: "rect" | "circle" | "arrow" | "freehand" | "note" | null) => void;
+  markupColor?: string;
+  onChangeMarkupColor?: (color: string) => void;
+  /** When writes aren't permitted (anon share link without allow_annotations / read-only role), hide drawing tools. */
+  canAnnotate?: boolean;
   showTacHeatmap?: boolean;
   onToggleTacHeatmap?: () => void;
   showBoxOverlay?: boolean;
@@ -133,6 +140,11 @@ export function ViewerToolbar({
   onToggleMode,
   measureMode = "none",
   onToggleMeasure,
+  markupKind = null,
+  onToggleMarkup,
+  markupColor = "#dc2626",
+  onChangeMarkupColor,
+  canAnnotate = false,
   showTacHeatmap = false,
   onToggleTacHeatmap,
   showBoxOverlay = false,
@@ -334,6 +346,64 @@ export function ViewerToolbar({
               active={measureMode === "ruler"}
               onClick={() => onToggleMeasure("ruler")}
             />
+          </>
+        )}
+
+        {/* Mark Up — drawing + sticky-note tools (live on main toolbar so
+            reviewers can circle issues and leave notes inline). */}
+        {canAnnotate && onToggleMarkup && (
+          <>
+            <Divider />
+            <ToolButton
+              label="Draw Rectangle"
+              icon={"\u25AD"}
+              active={markupKind === "rect"}
+              onClick={() => onToggleMarkup(markupKind === "rect" ? null : "rect")}
+            />
+            <ToolButton
+              label="Draw Circle"
+              icon={"\u25EF"}
+              active={markupKind === "circle"}
+              onClick={() => onToggleMarkup(markupKind === "circle" ? null : "circle")}
+            />
+            <ToolButton
+              label="Draw Arrow"
+              icon={"\u27A4"}
+              active={markupKind === "arrow"}
+              onClick={() => onToggleMarkup(markupKind === "arrow" ? null : "arrow")}
+            />
+            <ToolButton
+              label="Freehand Pencil"
+              icon={"\u270F"}
+              active={markupKind === "freehand"}
+              onClick={() => onToggleMarkup(markupKind === "freehand" ? null : "freehand")}
+            />
+            <ToolButton
+              label="Sticky Note"
+              icon={"\u{1F4CC}"}
+              active={markupKind === "note"}
+              onClick={() => onToggleMarkup(markupKind === "note" ? null : "note")}
+            />
+            {/* 6-swatch color palette for the active markup tool. */}
+            {onChangeMarkupColor && (
+              <div className="ml-1 flex items-center gap-0.5">
+                {["#dc2626", "#f59e0b", "#2563eb", "#16a34a", "#0f172a", "#ffffff"].map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => onChangeMarkupColor(c)}
+                    title={`Color ${c}`}
+                    aria-label={`Markup color ${c}`}
+                    className={`h-4 w-4 rounded-sm border transition ${
+                      markupColor === c
+                        ? "border-white shadow-inner"
+                        : "border-white/30 hover:border-white/70"
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
 

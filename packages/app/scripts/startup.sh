@@ -240,6 +240,45 @@ CREATE TABLE IF NOT EXISTS tenant_import_mappings (
 );
 CREATE INDEX IF NOT EXISTS ix_tenant_import_mappings_tenant
   ON tenant_import_mappings(tenant_id);
+
+-- Engine: viewer_annotations + share_link_visitors (Alembic 021). Reviewer
+-- drawing/markup layer and email-gated capture for anonymous share-link
+-- annotators.
+CREATE TABLE IF NOT EXISTS viewer_annotations (
+  id UUID PRIMARY KEY,
+  job_id UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+  tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+  share_token VARCHAR(255),
+  page_num INTEGER NOT NULL,
+  kind VARCHAR(16) NOT NULL,
+  geometry_json JSON NOT NULL,
+  color VARCHAR(16) NOT NULL DEFAULT '#dc2626',
+  text TEXT,
+  author_email VARCHAR(255) NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_viewer_annotations_job_page
+  ON viewer_annotations(job_id, page_num);
+CREATE INDEX IF NOT EXISTS ix_viewer_annotations_token
+  ON viewer_annotations(share_token);
+
+CREATE TABLE IF NOT EXISTS share_link_visitors (
+  id UUID PRIMARY KEY,
+  share_token VARCHAR(255) NOT NULL,
+  visitor_email VARCHAR(255) NOT NULL,
+  ip_hash VARCHAR(64),
+  user_agent VARCHAR(512),
+  first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_share_visitors_token
+  ON share_link_visitors(share_token);
+CREATE INDEX IF NOT EXISTS ix_share_visitors_token_email
+  ON share_link_visitors(share_token, visitor_email);
+
+ALTER TABLE report_tokens
+  ADD COLUMN IF NOT EXISTS allow_annotations BOOLEAN NOT NULL DEFAULT false;
 SQL
 
 echo "Step 1 complete (exit code: $?)"

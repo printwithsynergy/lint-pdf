@@ -1360,7 +1360,12 @@ async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
         brand_param = str(record.brand_profile_id)
 
     config = _build_viewer_config(job=job, tenant=tenant, db=db, brand_param=brand_param)
-    return config.model_dump()
+    # Surface the token's annotation permission on the public config so the
+    # viewer UI can enable / disable the Mark Up toolbar accordingly. On the
+    # authenticated viewer this is always implicitly true.
+    payload = config.model_dump()
+    payload["allow_annotations"] = bool(record.allow_annotations)
+    return payload
 
 
 @router.get("/public/{token}/pages/{page_num}/sample")
