@@ -29,7 +29,7 @@ export const lintpdfWebhooksPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "Webhooks",
       href: "/dashboard/webhooks",
-      icon: "webhook",
+      icon: "bell",
       section: "admin",
       order: 65,
       requiredPermission: "webhooks:manage",

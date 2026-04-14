@@ -154,7 +154,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "Preflight",
       href: "/dashboard/preflight",
-      icon: "plane",
+      icon: "compass",
       section: "main",
       order: 40,
       requiredPermission: "preflight:view",
@@ -162,7 +162,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "Rulesets",
       href: "/dashboard/rulesets",
-      icon: "clipboard-list",
+      icon: "list",
       section: "main",
       order: 41,
       requiredPermission: "ruleset:manage",

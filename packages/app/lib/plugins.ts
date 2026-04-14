@@ -98,7 +98,7 @@ const dashboardCorePlugin: PixieDustPlugin = {
     ctx.addNavItem({ label: "Users", href: "/dashboard/admin/users", icon: "users", section: "admin", order: 10, requiredRole: "SUPER_ADMIN" });
 
     ctx.addPage({ path: "/dashboard/admin/tenants", title: "Tenants", component: TenantsPage, layout: "dashboard" });
-    ctx.addNavItem({ label: "Tenants", href: "/dashboard/admin/tenants", icon: "building", section: "admin", order: 20, requiredRole: "SUPER_ADMIN" });
+    ctx.addNavItem({ label: "Tenants", href: "/dashboard/admin/tenants", icon: "building-2", section: "admin", order: 20, requiredRole: "SUPER_ADMIN" });
 
     ctx.addPage({ path: "/dashboard/admin/audit-logs", title: "Audit Logs", component: AuditLogPage, layout: "dashboard" });
     ctx.addNavItem({ label: "Audit Logs", href: "/dashboard/admin/audit-logs", icon: "scroll-text", section: "admin", order: 30, requiredRole: "SUPER_ADMIN" });

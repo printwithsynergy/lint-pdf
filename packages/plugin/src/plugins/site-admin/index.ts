@@ -50,7 +50,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "All Tenants",
       href: "/dashboard/admin/tenants",
-      icon: "building",
+      icon: "building-2",
       section: "global",
       order: 10,
       requiredRole: "SUPER_ADMIN",
@@ -58,7 +58,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "All Jobs",
       href: "/dashboard/admin/jobs",
-      icon: "folder-search",
+      icon: "inbox",
       section: "global",
       order: 20,
       requiredRole: "SUPER_ADMIN",
@@ -66,7 +66,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "System Health",
       href: "/dashboard/admin/health",
-      icon: "activity",
+      icon: "zap",
       section: "global",
       order: 30,
       requiredRole: "SUPER_ADMIN",
@@ -74,7 +74,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "Tile Warming",
       href: "/dashboard/admin/warming",
-      icon: "flame",
+      icon: "map",
       section: "global",
       order: 35,
       requiredRole: "SUPER_ADMIN",
@@ -90,7 +90,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "Branding",
       href: "/dashboard/admin/branding",
-      icon: "image",
+      icon: "paintbrush",
       section: "global",
       order: 41,
       requiredRole: "SUPER_ADMIN",

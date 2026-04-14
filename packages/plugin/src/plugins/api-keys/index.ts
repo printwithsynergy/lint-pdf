@@ -51,7 +51,7 @@ export const lintpdfApiKeysPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "API Keys",
       href: "/dashboard/api-keys",
-      icon: "key",
+      icon: "lock",
       section: "admin",
       order: 60,
       requiredPermission: "api-keys:manage",

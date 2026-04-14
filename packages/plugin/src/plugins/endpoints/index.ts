@@ -42,7 +42,7 @@ export const lintpdfEndpointsPlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "API Endpoints",
       href: "/dashboard/endpoints",
-      icon: "link",
+      icon: "globe",
       section: "admin",
       order: 62,
       requiredPermission: "endpoints:manage",

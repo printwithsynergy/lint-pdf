@@ -34,7 +34,7 @@ export const lintpdfUsagePlugin: PixieDustPlugin = {
     ctx.addNavItem({
       label: "Usage",
       href: "/dashboard/usage",
-      icon: "chart-bar",
+      icon: "bar-chart",
       section: "main",
       order: 42,
       requiredPermission: "usage:view",
