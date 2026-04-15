@@ -1,6 +1,8 @@
 mod commands;
 mod config;
+mod connectivity;
 mod db;
+mod drainer;
 mod router;
 mod submitter;
 mod tray;
@@ -30,12 +32,48 @@ pub fn run() {
             let (ready_tx, ready_rx) = std::sync::mpsc::channel();
             let watcher_mgr = Arc::new(WatcherManager::new(ready_tx));
 
-            // Start submitter thread
-            submitter::start_submitter(
+            // Build a multi-threaded tokio runtime that outlives the
+            // setup closure. We leak its Handle via a static OnceLock
+            // pattern through the tasks we spawn — simpler than
+            // threading a runtime handle through every module.
+            let rt = tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .worker_threads(2)
+                .build()
+                .expect("Failed to create tokio runtime");
+            let rt_handle = rt.handle().clone();
+            // Keep the runtime alive for the lifetime of the process.
+            std::mem::forget(rt);
+
+            // Connectivity monitor: probes /health every 15s, emits
+            // `connectivity-change` events, fires the "Back online"
+            // notification when there are queued rows.
+            let connectivity = connectivity::start(
+                &rt_handle,
+                Arc::clone(&config_mgr),
+                Arc::clone(&db),
+                app.handle().clone(),
+            );
+
+            // Drainer: supervises the outbox. Returns the `wake`
+            // handle the intake thread signals after every stabilized
+            // file.
+            let drainer_wake = drainer::start(
+                &rt_handle,
+                Arc::clone(&config_mgr),
+                Arc::clone(&db),
+                connectivity.clone(),
+                app.handle().clone(),
+            );
+
+            // Intake thread: pulls `StabilizedFile`s from the watcher
+            // channel and writes outbox rows, then pokes the drainer.
+            submitter::start_intake(
                 ready_rx,
                 Arc::clone(&config_mgr),
                 Arc::clone(&db),
                 app.handle().clone(),
+                drainer_wake,
             );
 
             // Setup system tray
@@ -56,6 +94,7 @@ pub fn run() {
                 config_mgr,
                 watcher_mgr,
                 db,
+                connectivity,
             });
 
             Ok(())
@@ -78,6 +117,9 @@ pub fn run() {
             commands::list_endpoints,
             commands::list_approval_templates,
             commands::get_ai_interpretation,
+            commands::get_connectivity_status,
+            commands::force_connectivity_check,
+            commands::open_viewer_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

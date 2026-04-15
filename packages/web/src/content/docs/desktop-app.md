@@ -138,6 +138,36 @@ For one-off overrides, each folder card exposes a compact **Brand** dropdown, an
 
 Folder-level overrides win over the tenant default. Share links minted from the Results tab freeze their branding at mint time — exactly like the API behaviour described in [Share Links](/docs/share-links).
 
+## Offline &amp; connectivity
+
+The app is designed to keep working when the network doesn't.
+
+- **Connectivity pill** in the title bar shows one of three states:
+  green `Online`, amber `Online · N queued` (drain in progress), grey
+  or amber `Offline`. Click it to force an immediate `/health` probe.
+- **Outbox**: every stabilized file is written to a local SQLite
+  outbox as soon as it's seen — before any network I/O. Rows appear
+  in Results as `Waiting for connection` (cloud-off icon) when
+  offline, or `Retrying` (rotate icon) with an exponential-backoff
+  countdown when the engine has been returning errors.
+- **Automatic drain**: when the probe transitions back to online,
+  the app fires a desktop notification ("Back online — N files
+  ready to submit") and the drainer flushes the outbox FIFO. No
+  manual re-drag needed.
+- **Cold-start**: quitting the app with queued rows in the local DB
+  is safe — they reload on next launch and drain as soon as the
+  probe succeeds.
+- **Polling resilience**: jobs that were mid-poll when the network
+  dropped are moved to the retry bucket rather than failing
+  permanently. 4xx responses from the engine remain terminal
+  (invalid profile ID, bad tenant, etc.); only 5xx / 429 / transport
+  errors are retried.
+- **Online-only actions**: **Mint share link**, **Open viewer**,
+  **AI interpretation**, and the endpoint / approval-template /
+  brand-profile dropdowns are disabled while offline. They fail
+  fast with a clear message rather than waiting 30s for the HTTP
+  call to time out.
+
 ## Share links
 
 Every row in the **Results** tab has a **Share** section. For any completed job you can mint tokenised report URLs on demand:
@@ -147,6 +177,20 @@ Every row in the **Results** tab has a **Share** section. For any completed job 
 - **JSON** — machine-readable findings (`/r/{token}.json`)
 - **XML** — the same findings in XML (`/r/{token}.xml`)
 - **Annotated PDF** — the source PDF with findings overlaid (Scale / Enterprise plans)
+
+### Open viewer
+
+Above the share-link row, an **Open viewer** button mints an HTML
+share link (if not already cached) and opens it in a new desktop
+window at 1400×900. You get the same interactive viewer the web
+dashboard renders — page tiles, channel toggles, TAC heatmap,
+densitometer, layer panel, annotation sidebar — without a
+context switch out of the app.
+
+The button is disabled while offline unless a viewer URL has already
+been minted for this job (in which case you can still open it — the
+child window shows the browser's offline page if the server is
+genuinely unreachable).
 
 Links persist across app restarts (they're cached alongside the job
 history) and honour the branding mode the folder was set to at the time
@@ -195,6 +239,30 @@ job submitted from this folder. The app calls
 the job is created. A failure here is non-fatal — the preflight still
 runs, and an advisory note is surfaced in the Results panel so you know
 to re-attach manually.
+
+## Batch mode
+
+Under **Batch mode** in the folder editor, toggle on "Group submissions
+into batches" and set a **Batch window** (default 10 seconds). Files
+stabilizing within the same window are grouped and submitted as a
+single `POST /api/v1/batch/submit` request. Each file still shows as
+its own row in Results, tagged with the batch's engine-assigned
+`batch_id`.
+
+Batch mode composes naturally with offline operation: a burst of files
+dropped while offline all get the same `batch_group` key and flush as
+one batch once the network returns.
+
+Batch mode is **mutually exclusive** with three other features because
+the engine's batch endpoint accepts only `profile_id` + files:
+
+- Custom endpoints (it's a different URL, `/api/v1/endpoints/{id}/submit`)
+- External report imports (the batch endpoint ignores `preflight_source`)
+- Brand overrides (the batch endpoint ignores `brand` / `unbranded`)
+
+The folder editor disables the toggle with an explanatory message when
+any of those are set. Saving a conflicting combination via
+`config.json` is rejected with a clear error.
 
 ## Advanced Settings Per Folder
 

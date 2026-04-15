@@ -41,6 +41,7 @@ export function FolderEdit({
 }: FolderEditProps) {
   const [folder, setFolder] = useState<FolderConfig>({ ...initial });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [brandProfiles, setBrandProfiles] = useState<BrandProfileSummary[]>([]);
   const [brandProfilesError, setBrandProfilesError] = useState<string | null>(
     null,
@@ -116,11 +117,30 @@ export function FolderEdit({
 
   async function handleSave() {
     setSaving(true);
+    setSaveError(null);
     try {
       await onSave(folder);
+    } catch (e: unknown) {
+      setSaveError(String(e));
     } finally {
       setSaving(false);
     }
+  }
+
+  /// Mirrors `FolderConfig::validate` in config.rs so the UI
+  /// disables / annotates the batch toggle instead of waiting for
+  /// the save-time error.
+  function batchConflictReason(): string | null {
+    if (folder.endpoint_id && folder.endpoint_id.trim() !== "") {
+      return "disabled because a custom endpoint is selected";
+    }
+    if (folder.external_format && folder.external_format.trim() !== "") {
+      return "disabled because external report import is on";
+    }
+    if (folder.brand_mode !== "default") {
+      return "disabled because a brand override is set";
+    }
+    return null;
   }
 
   async function handleDelete() {
@@ -513,6 +533,72 @@ export function FolderEdit({
             </div>
           </div>
         </div>
+
+        {/* Batch */}
+        <div className="card p-4 space-y-3">
+          <div>
+            <h3 className="text-sm font-medium text-gray-900">Batch mode</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Group files that arrive within a window into a single{" "}
+              <code className="text-xs">/api/v1/batch/submit</code> request.
+              Incompatible with custom endpoints, external imports, and brand
+              overrides — the engine's batch endpoint ignores those.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              id="batch-enabled"
+              type="checkbox"
+              checked={folder.batch_enabled}
+              disabled={batchConflictReason() !== null}
+              onChange={(e) => update({ batch_enabled: e.target.checked })}
+              className="rounded border-gray-300 disabled:opacity-40"
+            />
+            <label
+              htmlFor="batch-enabled"
+              className={`text-sm ${
+                batchConflictReason() ? "text-gray-400" : "text-gray-700"
+              }`}
+            >
+              Group submissions into batches
+            </label>
+          </div>
+          {batchConflictReason() && (
+            <p className="text-xs text-amber-600">
+              Batch mode is {batchConflictReason()}.
+            </p>
+          )}
+
+          {folder.batch_enabled && (
+            <div>
+              <label className="label">Batch window (seconds)</label>
+              <input
+                type="number"
+                className="input"
+                value={folder.batch_window_secs}
+                onChange={(e) =>
+                  update({
+                    batch_window_secs: parseFloat(e.target.value) || 10,
+                  })
+                }
+                min={1}
+                step={1}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                Files that stabilize within the same window submit together
+                as one batch. Files dropped while offline simply accumulate
+                in the outbox and flush once the connection returns.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {saveError && (
+          <div className="rounded-lg bg-red-50 p-3 text-xs text-red-700">
+            {saveError}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex items-center justify-between pt-2">

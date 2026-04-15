@@ -107,6 +107,61 @@ pub struct FolderConfig {
     /// folder. UUID of a row in `GET /api/v1/approval-templates`.
     #[serde(default)]
     pub approval_template_id: Option<String>,
+
+    /// Group stabilized files into batches submitted via
+    /// `POST /api/v1/batch/submit`. The engine's batch endpoint only
+    /// accepts `profile_id` + files, so this is mutually-exclusive
+    /// with custom endpoints, external imports, and any brand
+    /// override — see [`FolderConfig::validate`].
+    #[serde(default)]
+    pub batch_enabled: bool,
+
+    /// Window size in seconds. Files arriving within the same floor-
+    /// bucketed window share a `batch_group` and drain together.
+    #[serde(default = "default_batch_window")]
+    pub batch_window_secs: f64,
+}
+
+fn default_batch_window() -> f64 {
+    10.0
+}
+
+impl FolderConfig {
+    /// Enforce the engine-side constraints that the batch endpoint
+    /// silently drops. Called by `save_config` / `update_folder` so a
+    /// CLI-edited `config.json` can't produce a silently-broken folder.
+    pub fn validate(&self) -> Result<(), String> {
+        if !self.batch_enabled {
+            return Ok(());
+        }
+        if self.endpoint_id.as_ref().is_some_and(|s| !s.trim().is_empty()) {
+            return Err(
+                "Batch mode is incompatible with custom endpoints — the \
+                 engine's /api/v1/batch/submit endpoint doesn't route through \
+                 tenant endpoints."
+                    .to_string(),
+            );
+        }
+        if self
+            .external_format
+            .as_ref()
+            .is_some_and(|s| !s.trim().is_empty())
+        {
+            return Err(
+                "Batch mode is incompatible with external report imports — \
+                 the batch endpoint ignores `preflight_source`."
+                    .to_string(),
+            );
+        }
+        if self.brand_mode != BrandMode::Default {
+            return Err(
+                "Batch mode is incompatible with per-folder brand overrides — \
+                 the batch endpoint ignores `brand` / `unbranded`."
+                    .to_string(),
+            );
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -252,5 +307,86 @@ impl ConfigManager {
 
     pub fn get_folder(&self, id: &str) -> Option<FolderConfig> {
         self.get().folders.iter().find(|f| f.id == id).cloned()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn base_folder() -> FolderConfig {
+        FolderConfig {
+            id: "f1".into(),
+            name: "".into(),
+            enabled: true,
+            watch_dir: "".into(),
+            profile_id: "lintpdf-default".into(),
+            pass_dir: "".into(),
+            fail_dir: "".into(),
+            error_dir: "".into(),
+            write_sidecar: true,
+            stabilization_secs: 2.0,
+            poll_interval_secs: 5.0,
+            file_extensions: vec![],
+            brand_mode: BrandMode::Default,
+            brand_profile_id: None,
+            jdf_companion_timeout_secs: 30.0,
+            endpoint_id: None,
+            external_format: None,
+            approval_template_id: None,
+            batch_enabled: false,
+            batch_window_secs: 10.0,
+        }
+    }
+
+    #[test]
+    fn validate_passes_when_batch_disabled() {
+        let mut f = base_folder();
+        f.brand_mode = BrandMode::Anonymous;
+        f.endpoint_id = Some("ep".into());
+        f.external_format = Some("pitstop_xml".into());
+        // Everything conflicting, but batch is off — valid.
+        assert!(f.validate().is_ok());
+    }
+
+    #[test]
+    fn validate_passes_on_clean_batch() {
+        let mut f = base_folder();
+        f.batch_enabled = true;
+        assert!(f.validate().is_ok());
+    }
+
+    #[test]
+    fn batch_conflicts_with_brand() {
+        let mut f = base_folder();
+        f.batch_enabled = true;
+        f.brand_mode = BrandMode::Anonymous;
+        assert!(f.validate().unwrap_err().contains("brand"));
+    }
+
+    #[test]
+    fn batch_conflicts_with_endpoint() {
+        let mut f = base_folder();
+        f.batch_enabled = true;
+        f.endpoint_id = Some("some-endpoint".into());
+        assert!(f.validate().unwrap_err().contains("custom endpoints"));
+    }
+
+    #[test]
+    fn batch_conflicts_with_external_format() {
+        let mut f = base_folder();
+        f.batch_enabled = true;
+        f.external_format = Some("pitstop_xml".into());
+        assert!(f.validate().unwrap_err().contains("external report"));
+    }
+
+    #[test]
+    fn batch_blank_strings_do_not_conflict() {
+        // Whitespace-only values should be treated as "unset".
+        let mut f = base_folder();
+        f.batch_enabled = true;
+        f.endpoint_id = Some("   ".into());
+        f.external_format = Some("".into());
+        assert!(f.validate().is_ok());
     }
 }

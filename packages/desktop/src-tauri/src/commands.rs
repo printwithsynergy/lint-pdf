@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::State;
+use tauri::{AppHandle, State};
 
 use crate::config::{AppConfig, ConfigManager, FolderConfig};
+use crate::connectivity::{ConnectivitySnapshot, ConnectivityState};
 use crate::db::{Database, JobRecord, ShareLinks};
 use crate::watcher::WatcherManager;
 
@@ -10,6 +11,18 @@ pub struct AppState {
     pub config_mgr: Arc<ConfigManager>,
     pub watcher_mgr: Arc<WatcherManager>,
     pub db: Arc<Database>,
+    pub connectivity: ConnectivityState,
+}
+
+/// Fail fast when a Tauri command that talks to the engine is invoked
+/// while offline. Better than letting the HTTP call time out after
+/// 30s — the UI can surface a clear "offline" message instantly.
+fn require_online(state: &AppState, op: &str) -> Result<(), String> {
+    if state.connectivity.is_online() {
+        Ok(())
+    } else {
+        Err(format!("Offline — {} needs connectivity.", op))
+    }
 }
 
 #[derive(serde::Serialize)]
@@ -30,11 +43,15 @@ pub fn get_config(state: State<'_, AppState>) -> Result<AppConfig, String> {
 
 #[tauri::command]
 pub fn save_config(state: State<'_, AppState>, config: AppConfig) -> Result<(), String> {
+    for folder in &config.folders {
+        folder.validate()?;
+    }
     state.config_mgr.save(config)
 }
 
 #[tauri::command]
 pub fn add_folder(state: State<'_, AppState>, folder: FolderConfig) -> Result<(), String> {
+    folder.validate()?;
     state.config_mgr.update(|config| {
         config.folders.push(folder);
     })
@@ -50,6 +67,7 @@ pub fn remove_folder(state: State<'_, AppState>, folder_id: String) -> Result<()
 
 #[tauri::command]
 pub fn update_folder(state: State<'_, AppState>, folder: FolderConfig) -> Result<(), String> {
+    folder.validate()?;
     state.config_mgr.update(|config| {
         if let Some(existing) = config.folders.iter_mut().find(|f| f.id == folder.id) {
             *existing = folder;
@@ -158,6 +176,7 @@ struct BrandProfileRaw {
 pub async fn list_brand_profiles(
     state: State<'_, AppState>,
 ) -> Result<Vec<BrandProfileSummary>, String> {
+    require_online(&state, "listing brand profiles")?;
     let config = state.config_mgr.get();
     if config.api_key.is_empty() {
         return Err("API key not configured".to_string());
@@ -237,6 +256,7 @@ pub async fn mint_share_link(
     api_job_id: String,
     formats: Vec<String>,
 ) -> Result<ShareLinks, String> {
+    require_online(&state, "minting share links")?;
     let config = state.config_mgr.get();
     if config.api_key.is_empty() {
         return Err("API key not configured".to_string());
@@ -346,6 +366,7 @@ fn yes() -> bool {
 pub async fn list_endpoints(
     state: State<'_, AppState>,
 ) -> Result<Vec<EndpointSummary>, String> {
+    require_online(&state, "listing endpoints")?;
     let config = state.config_mgr.get();
     if config.api_key.is_empty() {
         return Err("API key not configured".to_string());
@@ -420,6 +441,7 @@ struct ApprovalTemplateRaw {
 pub async fn list_approval_templates(
     state: State<'_, AppState>,
 ) -> Result<Vec<ApprovalTemplateSummary>, String> {
+    require_online(&state, "listing approval templates")?;
     let config = state.config_mgr.get();
     if config.api_key.is_empty() {
         return Err("API key not configured".to_string());
@@ -497,6 +519,7 @@ pub async fn get_ai_interpretation(
     state: State<'_, AppState>,
     api_job_id: String,
 ) -> Result<AiInterpretation, String> {
+    require_online(&state, "fetching AI interpretation")?;
     let config = state.config_mgr.get();
     if config.api_key.is_empty() {
         return Err("API key not configured".to_string());
@@ -533,4 +556,56 @@ pub async fn get_ai_interpretation(
     resp.json::<AiInterpretation>()
         .await
         .map_err(|e| format!("Failed to parse interpretation response: {}", e))
+}
+
+// ── Connectivity ──────────────────────────────────────────────
+
+#[derive(serde::Serialize)]
+pub struct ConnectivityStatusResponse {
+    #[serde(flatten)]
+    pub snap: ConnectivitySnapshot,
+    pub queued_count: u32,
+}
+
+#[tauri::command]
+pub fn get_connectivity_status(
+    state: State<'_, AppState>,
+) -> Result<ConnectivityStatusResponse, String> {
+    Ok(ConnectivityStatusResponse {
+        snap: state.connectivity.snapshot(),
+        queued_count: state.db.count_queued().unwrap_or(0),
+    })
+}
+
+/// Force an immediate /health probe regardless of the 15s schedule.
+/// Used by the "Retry now" button in the header pill.
+#[tauri::command]
+pub fn force_connectivity_check(state: State<'_, AppState>) -> Result<(), String> {
+    state.connectivity.force_check();
+    Ok(())
+}
+
+// ── Viewer window ─────────────────────────────────────────────
+
+/// Open the hosted viewer for a job in a new Tauri child window.
+/// Callers pass a pre-minted `/r/{token}` share-link URL.
+#[tauri::command]
+pub async fn open_viewer_window(
+    app: AppHandle,
+    url: String,
+    title: String,
+) -> Result<(), String> {
+    use tauri::{WebviewUrl, WebviewWindowBuilder};
+
+    let parsed = url::Url::parse(&url).map_err(|e| format!("Invalid URL: {}", e))?;
+    // Unique label per invocation so a user can open several viewers
+    // side-by-side.
+    let label = format!("viewer-{}", uuid::Uuid::new_v4().simple());
+    WebviewWindowBuilder::new(&app, label, WebviewUrl::External(parsed))
+        .title(title)
+        .inner_size(1400.0, 900.0)
+        .resizable(true)
+        .build()
+        .map_err(|e| format!("Failed to open viewer window: {}", e))?;
+    Ok(())
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { FolderOpen, ClipboardList, Settings, Activity } from "lucide-react";
 import type { Page } from "../App";
+import { ConnectivityPill } from "./ConnectivityPill";
 
 interface LayoutProps {
   page: Page;
@@ -53,6 +54,7 @@ export function Layout({
           {activeCount === 0 && processingCount === 0 && (
             <span className="text-gray-400">Idle</span>
           )}
+          <ConnectivityPill />
         </div>
       </header>
 

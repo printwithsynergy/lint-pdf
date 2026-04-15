@@ -4,6 +4,8 @@ import {
   AlertTriangle,
   Clock,
   Loader,
+  CloudOff,
+  RotateCw,
 } from "lucide-react";
 import type { FolderConfig, JobResult } from "../lib/types";
 
@@ -24,13 +26,36 @@ function StatusIcon({ status }: { status: JobResult["status"] }) {
       return <AlertTriangle className="h-4 w-4 text-amber-600" />;
     case "processing":
       return <Loader className="h-4 w-4 text-blue-600 animate-spin" />;
+    case "queued_offline":
+      return <CloudOff className="h-4 w-4 text-gray-500" />;
+    case "queued_retry":
+      return <RotateCw className="h-4 w-4 text-amber-500" />;
     case "queued":
       return <Clock className="h-4 w-4 text-gray-400" />;
   }
 }
 
 function statusLabel(status: JobResult["status"]): string {
-  return status.charAt(0).toUpperCase() + status.slice(1);
+  switch (status) {
+    case "queued_offline":
+      return "Waiting for connection";
+    case "queued_retry":
+      return "Retrying";
+    default:
+      return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+}
+
+function retryHint(job: JobResult): string | null {
+  if (job.status !== "queued_retry" || !job.next_retry_at) return null;
+  const secs = Math.max(
+    0,
+    Math.round((new Date(job.next_retry_at).getTime() - Date.now()) / 1000),
+  );
+  if (secs <= 0) return "retrying now";
+  if (secs < 60) return `retry in ${secs}s`;
+  const mins = Math.floor(secs / 60);
+  return `retry in ${mins}m`;
 }
 
 function timeAgo(isoDate: string): string {
@@ -91,13 +116,23 @@ export function ResultsTable({
                     ? "bg-red-50/30"
                     : job.status === "error"
                       ? "bg-amber-50/30"
-                      : ""
+                      : job.status === "queued_offline" ||
+                          job.status === "queued_retry"
+                        ? "bg-gray-50/40"
+                        : ""
                 }`}
               >
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <StatusIcon status={job.status} />
-                    <span className="text-xs">{statusLabel(job.status)}</span>
+                    <div className="flex flex-col">
+                      <span className="text-xs">{statusLabel(job.status)}</span>
+                      {retryHint(job) && (
+                        <span className="text-[10px] text-amber-600">
+                          {retryHint(job)}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="px-3 py-2 font-mono text-xs truncate max-w-[200px]">

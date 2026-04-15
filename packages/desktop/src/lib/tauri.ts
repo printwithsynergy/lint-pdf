@@ -5,6 +5,7 @@ import type {
   AppConfig,
   ApprovalTemplateSummary,
   BrandProfileSummary,
+  ConnectivityStatus,
   EndpointSummary,
   FolderConfig,
   JobResult,
@@ -94,6 +95,31 @@ export async function getAiInterpretation(
   apiJobId: string,
 ): Promise<AiInterpretation> {
   return invoke("get_ai_interpretation", { apiJobId });
+}
+
+// Connectivity
+export async function getConnectivityStatus(): Promise<ConnectivityStatus> {
+  return invoke("get_connectivity_status");
+}
+
+export async function forceConnectivityCheck(): Promise<void> {
+  return invoke("force_connectivity_check");
+}
+
+export function onConnectivityChange(
+  callback: (status: ConnectivityStatus) => void,
+): Promise<UnlistenFn> {
+  return listen<ConnectivityStatus>("connectivity-change", (event) =>
+    callback(event.payload),
+  );
+}
+
+// Viewer
+export async function openViewerWindow(
+  url: string,
+  title: string,
+): Promise<void> {
+  return invoke("open_viewer_window", { url, title });
 }
 
 // Directory picker

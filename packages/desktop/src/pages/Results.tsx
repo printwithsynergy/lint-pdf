@@ -20,12 +20,19 @@ export function Results({ jobs, folders, onClear }: ResultsProps) {
       : jobs.filter((j) => {
           if (filter === "issues")
             return j.status === "failed" || j.status === "error";
+          if (filter === "queued")
+            return (
+              j.status === "queued_offline" || j.status === "queued_retry"
+            );
           return j.status === filter;
         });
 
   const passCount = jobs.filter((j) => j.status === "passed").length;
   const failCount = jobs.filter((j) => j.status === "failed").length;
   const errorCount = jobs.filter((j) => j.status === "error").length;
+  const queuedCount = jobs.filter(
+    (j) => j.status === "queued_offline" || j.status === "queued_retry",
+  ).length;
 
   return (
     <div className="flex flex-col h-full">
@@ -35,6 +42,7 @@ export function Results({ jobs, folders, onClear }: ResultsProps) {
           <p className="text-sm text-gray-500 mt-0.5">
             {jobs.length} total · {passCount} passed · {failCount} failed ·{" "}
             {errorCount} errors
+            {queuedCount > 0 && ` · ${queuedCount} queued`}
           </p>
         </div>
         {jobs.length > 0 && (
@@ -52,6 +60,7 @@ export function Results({ jobs, folders, onClear }: ResultsProps) {
           { key: "failed", label: "Failed" },
           { key: "error", label: "Errors" },
           { key: "issues", label: "Issues" },
+          { key: "queued", label: `Queued${queuedCount ? ` (${queuedCount})` : ""}` },
         ].map((tab) => (
           <button
             key={tab.key}

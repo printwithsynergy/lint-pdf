@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -8,9 +8,21 @@ import {
   Copy,
   Link as LinkIcon,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
-import type { AiInterpretation, JobResult, ShareLinks } from "../lib/types";
-import { getAiInterpretation, mintShareLink } from "../lib/tauri";
+import type {
+  AiInterpretation,
+  ConnectivityStatus,
+  JobResult,
+  ShareLinks,
+} from "../lib/types";
+import {
+  getAiInterpretation,
+  getConnectivityStatus,
+  mintShareLink,
+  onConnectivityChange,
+  openViewerWindow,
+} from "../lib/tauri";
 
 interface ResultDetailProps {
   job: JobResult;
@@ -40,9 +52,59 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
   const [aiBusy, setAiBusy] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
 
+  const [viewerBusy, setViewerBusy] = useState(false);
+  const [viewerError, setViewerError] = useState<string | null>(null);
+
+  const [online, setOnline] = useState(true);
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    let cancelled = false;
+    getConnectivityStatus()
+      .then((s) => {
+        if (!cancelled) setOnline(s.online);
+      })
+      .catch(() => {});
+    onConnectivityChange((s: ConnectivityStatus) => {
+      if (!cancelled) setOnline(s.online);
+    }).then((fn) => {
+      unlisten = fn;
+    });
+    return () => {
+      cancelled = true;
+      unlisten?.();
+    };
+  }, []);
+
   const canShare =
     !!job.job_id && (job.status === "passed" || job.status === "failed");
-  const canInterpret = canShare;
+  const canInterpret = canShare && online;
+  // "Open viewer" needs either a cached HTML link (works offline, browser
+  // will show its offline page) OR online + job.job_id so we can mint one.
+  const hasCachedHtml = !!links.html;
+  const canOpenViewer = canShare && (hasCachedHtml || online);
+
+  async function handleOpenViewer() {
+    if (!job.job_id || viewerBusy) return;
+    setViewerBusy(true);
+    setViewerError(null);
+    try {
+      let url = links.html;
+      if (!url) {
+        const merged = await mintShareLink(job.id, job.job_id, ["html"]);
+        setLinks(merged);
+        url = merged.html;
+        onJobUpdate?.({ ...job, share_links: merged });
+      }
+      if (!url) {
+        throw new Error("No viewer URL available");
+      }
+      await openViewerWindow(url, job.file_name);
+    } catch (e: unknown) {
+      setViewerError(String(e));
+    } finally {
+      setViewerBusy(false);
+    }
+  }
 
   async function handleInterpret() {
     if (!job.job_id || aiBusy) return;
@@ -178,6 +240,26 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
 
       {canShare && (
         <div className="mt-4 border-t border-gray-100 pt-3">
+          <button
+            onClick={() => void handleOpenViewer()}
+            disabled={!canOpenViewer || viewerBusy}
+            className="btn-primary text-xs w-full mb-3"
+            title={
+              online
+                ? "Open the hosted viewer in a new window"
+                : hasCachedHtml
+                  ? "Open the cached viewer link (will show the browser's offline page if still disconnected)"
+                  : "Offline — viewer unavailable. Reconnect to mint a share link."
+            }
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+            {viewerBusy ? "Opening…" : "Open viewer"}
+          </button>
+          {viewerError && (
+            <p className="mb-2 text-xs text-red-600 whitespace-pre-wrap">
+              {viewerError}
+            </p>
+          )}
           <div className="flex items-center gap-1.5">
             <LinkIcon className="h-3.5 w-3.5 text-gray-400" />
             <span className="label !mb-0">Share</span>

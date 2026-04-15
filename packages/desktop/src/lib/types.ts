@@ -35,6 +35,8 @@ export interface FolderConfig {
   endpoint_id: string | null;
   external_format: ExternalFormat | null;
   approval_template_id: string | null;
+  batch_enabled: boolean;
+  batch_window_secs: number;
 }
 
 export interface BrandProfileSummary {
@@ -86,7 +88,24 @@ export interface AppConfig {
   launch_at_login: boolean;
 }
 
-export type JobStatus = "queued" | "processing" | "passed" | "failed" | "error";
+export type JobStatus =
+  | "queued"
+  | "queued_offline"
+  | "queued_retry"
+  | "processing"
+  | "passed"
+  | "failed"
+  | "error";
+
+export interface ConnectivityStatus {
+  online: boolean;
+  /** RFC3339 of the last successful /health probe, or null if never. */
+  last_success_at: string | null;
+  /** RFC3339 of the last attempt (success or failure). */
+  last_checked_at: string | null;
+  /** Count of queued_offline + queued_retry rows right now. */
+  queued_count: number;
+}
 
 export interface JobSummary {
   passed: boolean;
@@ -108,6 +127,11 @@ export interface JobResult {
   completed_at: string | null;
   error_message: string | null;
   share_links: ShareLinks | null;
+  jdf_path: string | null;
+  batch_group: string | null;
+  batch_id: string | null;
+  next_retry_at: string | null;
+  retry_attempts: number;
 }
 
 export interface WatcherStatus {
@@ -157,6 +181,8 @@ export function newFolderConfig(partial?: Partial<FolderConfig>): FolderConfig {
     endpoint_id: null,
     external_format: null,
     approval_template_id: null,
+    batch_enabled: false,
+    batch_window_secs: 10.0,
     ...partial,
   };
 }
