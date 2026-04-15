@@ -38,7 +38,7 @@ function adminFetch(path: string, init?: RequestInit): Promise<Response> {
 
 export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
   name: "lintpdf-site-admin",
-  version: "0.1.0",
+  version: "0.2.0",
   description: "Site-wide administration for LintPDF — super admin only",
   dependencies: ["lintpdf"],
 
@@ -64,6 +64,14 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       icon: "inbox",
       section: "admin",
       order: 20,
+      requiredRole: "SUPER_ADMIN",
+    });
+    ctx.addNavItem({
+      label: "Preflight Audit",
+      href: "/dashboard/admin/audit",
+      icon: "search",
+      section: "admin",
+      order: 25,
       requiredRole: "SUPER_ADMIN",
     });
     ctx.addNavItem({
@@ -113,6 +121,11 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addPage({
       path: "/dashboard/admin/jobs",
       title: "All Jobs",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/audit",
+      title: "Preflight Audit",
       layout: "dashboard",
     });
     ctx.addPage({
@@ -252,6 +265,94 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
             console.error(
               `[lintpdf] GET /admin/jobs/${req.params.jobId} engine error ${resp.status}: ${detail}`,
             );
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      // ── Preflight Audit (full end-to-end visibility) ─────────
+      {
+        method: "GET" as HttpMethod,
+        path: "/audit",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "Cross-tenant preflight audit list with grouping + filters (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams();
+          for (const [k, v] of Object.entries(req.query ?? {})) {
+            if (v !== undefined && v !== null && v !== "") {
+              qs.set(k, String(v));
+            }
+          }
+          const suffix = qs.toString() ? `?${qs.toString()}` : "";
+          const resp = await adminFetch(`/api/v1/admin/audit/jobs${suffix}`);
+          if (!resp.ok) {
+            const detail = await resp.text();
+            console.error(
+              `[lintpdf] GET /admin/audit engine error ${resp.status}: ${detail}`,
+            );
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/audit/:jobId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Full audit detail for one job (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/audit/jobs/${req.params.jobId}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            console.error(
+              `[lintpdf] GET /admin/audit/${req.params.jobId} engine error ${resp.status}: ${detail}`,
+            );
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/audit/:jobId/findings",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Paginated findings for one job (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const page = Number(req.query.page ?? 1);
+          const pageSize = Number(req.query.page_size ?? 200);
+          const resp = await adminFetch(
+            `/api/v1/admin/audit/jobs/${req.params.jobId}/findings?page=${page}&page_size=${pageSize}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = await resp.json();
+          return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/audit/imported-reports/:id",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "Fresh presigned URL for an imported-report raw blob (super admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/audit/imported-reports/${req.params.id}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
             return { status: resp.status, body: { error: detail } };
           }
           const data = await resp.json();

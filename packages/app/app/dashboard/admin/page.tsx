@@ -30,6 +30,16 @@ export default function AdminPage() {
           </p>
         </Link>
         <Link
+          href="/dashboard/admin/audit"
+          className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+        >
+          <h2 className="text-lg font-semibold">Preflight Audit</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Full end-to-end visibility into every tenant&rsquo;s preflight
+            inputs, outputs, and share links.
+          </p>
+        </Link>
+        <Link
           href="/dashboard/admin/trials"
           className="rounded-lg border border-brand-200 bg-brand-50/30 p-4 hover:bg-brand-50/60 transition-colors"
         >
