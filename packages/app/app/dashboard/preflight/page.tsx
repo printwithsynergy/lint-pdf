@@ -290,109 +290,75 @@ export default function PreflightPage() {
               ))}
             </div>
 
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="flex-1 min-w-[200px]">
-                <FormField label="PDF File" htmlFor="pdf-file">
-                  <FileUpload
-                    accept=".pdf"
-                    acceptedTypes={["application/pdf"]}
-                    maxSize={100 * 1024 * 1024}
-                    value={uploadDataUrl}
-                    onChange={setUploadDataUrl}
-                    helpText="Drag and drop a PDF or click to browse"
-                  />
-                </FormField>
-              </div>
-              {preflightSource === "engine" && (
-                <div className="min-w-[180px]">
-                  <FormField label="Profile" htmlFor="profile">
-                    <Select
-                      id="profile"
-                      value={selectedProfile}
-                      onChange={(e) => setSelectedProfile(e.target.value)}
-                    >
-                      <option value="lintpdf-default">Default</option>
-                      {profiles.map((p) => (
-                        <option key={p.profile_id} value={p.profile_id}>
-                          {p.display_name}
-                        </option>
-                      ))}
-                    </Select>
-                  </FormField>
-                </div>
-              )}
-              <Button
-                type="submit"
-                loading={uploading}
-                disabled={
-                  !uploadDataUrl ||
-                  (preflightSource === "external" && !externalReportDataUrl)
-                }
-              >
-                {preflightSource === "engine"
-                  ? "Run Preflight"
-                  : preflightSource === "external"
-                  ? "Import Results"
-                  : "Open Viewer"}
-              </Button>
+            <div>
+              <FormField label="PDF File" htmlFor="pdf-file">
+                <FileUpload
+                  accept=".pdf"
+                  acceptedTypes={["application/pdf"]}
+                  maxSize={100 * 1024 * 1024}
+                  value={uploadDataUrl}
+                  onChange={setUploadDataUrl}
+                  helpText="Drag and drop a PDF or click to browse"
+                />
+              </FormField>
             </div>
 
             {preflightSource === "external" && (
-              <div className="mt-4 flex flex-wrap items-end gap-3 border-t pt-4">
-                <div className="flex-1 min-w-[220px]">
-                  <FormField
-                    label="Preflight Report (PitStop / callas / Acrobat / LintPDF JSON)"
-                    htmlFor="external-report"
-                  >
-                    <FileUpload
-                      accept=".xml,.json,application/xml,application/json,text/xml"
-                      maxSize={50 * 1024 * 1024}
-                      value={externalReportDataUrl}
-                      onChange={(v) => {
-                        setExternalReportDataUrl(v);
-                      }}
-                      helpText="Upload the raw report your existing tool produced"
-                    />
-                  </FormField>
-                </div>
-                <div className="min-w-[200px]">
-                  <FormField label="Format" htmlFor="external-format">
-                    <Select
-                      id="external-format"
-                      value={externalFormat}
-                      onChange={(e) => setExternalFormat(e.target.value)}
-                      disabled={Boolean(selectedMappingId)}
-                    >
-                      <option value="auto">Auto-detect</option>
-                      <option value="pitstop_xml">Enfocus PitStop (XML)</option>
-                      <option value="callas_json">callas pdfToolbox (JSON)</option>
-                      <option value="callas_xml">callas pdfToolbox (XML)</option>
-                      <option value="acrobat_xml">Acrobat Preflight (XML)</option>
-                      <option value="lintpdf_json">LintPDF native (JSON)</option>
-                    </Select>
-                  </FormField>
-                </div>
-                {customMappings.length > 0 && (
-                  <div className="min-w-[220px]">
-                    <FormField
-                      label="Use custom mapping"
-                      htmlFor="mapping-id"
-                    >
+              <div className="mt-4 border-t pt-4">
+                <FormField
+                  label="Preflight Report (PitStop / callas / Acrobat / LintPDF JSON)"
+                  htmlFor="external-report"
+                >
+                  <FileUpload
+                    accept=".xml,.json,application/xml,application/json,text/xml"
+                    maxSize={50 * 1024 * 1024}
+                    value={externalReportDataUrl}
+                    onChange={(v) => {
+                      setExternalReportDataUrl(v);
+                    }}
+                    helpText="Upload the raw report your existing tool produced"
+                  />
+                </FormField>
+                <div className="mt-3 flex flex-wrap items-end gap-3">
+                  <div className="min-w-[200px]">
+                    <FormField label="Format" htmlFor="external-format">
                       <Select
-                        id="mapping-id"
-                        value={selectedMappingId}
-                        onChange={(e) => setSelectedMappingId(e.target.value)}
+                        id="external-format"
+                        value={externalFormat}
+                        onChange={(e) => setExternalFormat(e.target.value)}
+                        disabled={Boolean(selectedMappingId)}
                       >
-                        <option value="">— None (use built-in parser)</option>
-                        {customMappings.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name} ({m.format})
-                          </option>
-                        ))}
+                        <option value="auto">Auto-detect</option>
+                        <option value="pitstop_xml">Enfocus PitStop (XML)</option>
+                        <option value="callas_json">callas pdfToolbox (JSON)</option>
+                        <option value="callas_xml">callas pdfToolbox (XML)</option>
+                        <option value="acrobat_xml">Acrobat Preflight (XML)</option>
+                        <option value="lintpdf_json">LintPDF native (JSON)</option>
                       </Select>
                     </FormField>
                   </div>
-                )}
+                  {customMappings.length > 0 && (
+                    <div className="min-w-[220px]">
+                      <FormField
+                        label="Use custom mapping"
+                        htmlFor="mapping-id"
+                      >
+                        <Select
+                          id="mapping-id"
+                          value={selectedMappingId}
+                          onChange={(e) => setSelectedMappingId(e.target.value)}
+                        >
+                          <option value="">— None (use built-in parser)</option>
+                          {customMappings.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name} ({m.format})
+                            </option>
+                          ))}
+                        </Select>
+                      </FormField>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {preflightSource === "external" && customMappings.length === 0 && (
@@ -444,6 +410,43 @@ export default function PreflightPage() {
                   )}
                 </span>
               </label>
+            </div>
+
+            {/* Action row — Profile + submit button anchored left, below
+                the file inputs so they don't get squeezed into a sidebar. */}
+            <div className="mt-4 flex flex-wrap items-end gap-3 border-t pt-4">
+              {preflightSource === "engine" && (
+                <div className="min-w-[180px]">
+                  <FormField label="Profile" htmlFor="profile">
+                    <Select
+                      id="profile"
+                      value={selectedProfile}
+                      onChange={(e) => setSelectedProfile(e.target.value)}
+                    >
+                      <option value="lintpdf-default">Default</option>
+                      {profiles.map((p) => (
+                        <option key={p.profile_id} value={p.profile_id}>
+                          {p.display_name}
+                        </option>
+                      ))}
+                    </Select>
+                  </FormField>
+                </div>
+              )}
+              <Button
+                type="submit"
+                loading={uploading}
+                disabled={
+                  !uploadDataUrl ||
+                  (preflightSource === "external" && !externalReportDataUrl)
+                }
+              >
+                {preflightSource === "engine"
+                  ? "Run Preflight"
+                  : preflightSource === "external"
+                  ? "Import Results"
+                  : "Open Viewer"}
+              </Button>
             </div>
           </form>
         </CardContent>
