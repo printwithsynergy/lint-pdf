@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "@thinkneverland/pixie-dust-ui";
 import { SkeletonDashboard } from "@/components/skeleton";
 
 interface CustomEndpoint {
@@ -155,12 +156,9 @@ export default function EndpointsPage() {
             integrations.
           </p>
         </div>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
+        <Button onClick={() => setShowCreate(!showCreate)}>
           {showCreate ? "Cancel" : "New Endpoint"}
-        </button>
+        </Button>
       </div>
 
       {error && (
@@ -219,13 +217,13 @@ export default function EndpointsPage() {
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               />
             </div>
-            <button
+            <Button
               onClick={handleCreate}
               disabled={creating || !newSlug || !newProfileId}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              loading={creating}
             >
-              {creating ? "Creating..." : "Create Endpoint"}
-            </button>
+              Create Endpoint
+            </Button>
           </div>
         </div>
       )}

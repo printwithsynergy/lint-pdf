@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Button } from "@thinkneverland/pixie-dust-ui";
 import { PdfViewer } from "@/components/viewer";
 
 interface JobData {
@@ -95,13 +96,14 @@ function IdentifyScreen({
             <p className="text-sm text-destructive">{error}</p>
           )}
 
-          <button
+          <Button
             type="submit"
             disabled={loading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            loading={loading}
+            className="w-full"
           >
-            {loading ? "Verifying..." : "View Report"}
-          </button>
+            View Report
+          </Button>
         </form>
       </div>
     </div>

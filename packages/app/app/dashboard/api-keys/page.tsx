@@ -149,25 +149,20 @@ export default function ApiKeysPage() {
       {showCreate && !newlyCreatedKey && (
         <div className="mt-6 rounded-lg border p-4">
           <h2 className="text-lg font-semibold">New API Key</h2>
-          <div className="mt-3 flex gap-3">
-            <div className="flex-1">
-              <FormField label="Key Label" htmlFor="key-label">
-                <Input
-                  id="key-label"
-                  value={newLabel}
-                  onChange={(e) => setNewLabel(e.target.value)}
-                  placeholder="Key label (e.g. Production)"
-                />
-              </FormField>
-            </div>
-            <div className="flex items-end">
-              <Button
-                onClick={handleCreate}
-                loading={creating}
-              >
-                Create
-              </Button>
-            </div>
+          <div className="mt-3">
+            <FormField label="Key Label" htmlFor="key-label">
+              <Input
+                id="key-label"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder="Key label (e.g. Production)"
+              />
+            </FormField>
+          </div>
+          <div className="mt-3">
+            <Button onClick={handleCreate} loading={creating}>
+              Create
+            </Button>
           </div>
         </div>
       )}
