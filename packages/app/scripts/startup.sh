@@ -41,6 +41,14 @@ ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "disabledPlugins" TEXT;
 ALTER TABLE "MagicLink" ADD COLUMN IF NOT EXISTS "ipAddress" TEXT;
 CREATE INDEX IF NOT EXISTS "MagicLink_ipAddress_idx" ON "MagicLink"("ipAddress");
 
+-- Session.impersonatingTenantId — local-schema extension used by
+-- /api/auth/me and the /api/lintpdf/* dispatcher to let a super admin
+-- view the dashboard "as" a tenant. The PD-shipped Prisma client
+-- doesn't know about this column, so prisma db push won't add it once
+-- engine tables are present in the database. Add it explicitly here
+-- so super-admin auth queries don't 500 on a fresh deploy.
+ALTER TABLE "Session" ADD COLUMN IF NOT EXISTS "impersonatingTenantId" TEXT;
+
 -- ApiKey table (pixie-dust-api-keys plugin)
 CREATE TABLE IF NOT EXISTS "ApiKey" (
   "id" TEXT NOT NULL,
