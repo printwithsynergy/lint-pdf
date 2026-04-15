@@ -1,41 +1,6 @@
 @import "@thinkneverland/pixie-dust-theme-default/globals.css";
 
 /*
- * Button height normalization.
- *
- * PD <Button> at default size renders at ~h-9 (36px). Many older
- * dashboard pages use raw <button className="rounded-md bg-primary
- * px-4 py-2 text-sm ..."> which renders at ~h-10 (40px). Side by side
- * (e.g. the "Run Preflight" PD button next to the raw buttons on
- * /dashboard/endpoints or /dashboard/approvals) the PD one looks
- * noticeably shorter.
- *
- * Rather than editing every <Button /> call site to add a className
- * override (brittle — new call sites forget) or replacing every raw
- * <button> with PD <Button>, we just lift the floor: any non-icon,
- * non-tab, non-small button gets a 40px minimum height with matching
- * vertical padding. Small buttons (size="sm", role="tab",
- * role="switch", tiny icon buttons) opt out via their own explicit
- * height/padding classes which win the cascade because they're more
- * specific in Tailwind's generated CSS ordering.
- */
-button:not([role="tab"]):not([role="switch"]):not([role="menuitem"]):not([role="menuitemradio"]):not([role="menuitemcheckbox"]):not([aria-label*="menu" i]):not([aria-label*="close" i]):not([aria-label*="toggle" i]):not([data-size="sm"]):not([data-size="icon"]) {
-  min-height: 2.5rem; /* h-10 */
-}
-
-/* Don't let the normalization break tiny text-xs/py-1/py-0.5 utility
-   buttons (annotation toolbar, table row actions, pagination chevrons,
-   etc.). These are intentionally small and should stay that way. */
-button[class*="text-xs"],
-button[class*="py-0"],
-button[class*="py-1"],
-button[class*="h-6"],
-button[class*="h-7"],
-button[class*="h-8"] {
-  min-height: 0 !important;
-}
-
-/*
  * Desktop-width fallback for DashboardShell from
  * @thinkneverland/pixie-dust-dashboard@1.12.35: on that version the
  * hamburger / mobile drawer is rendered even on wide browser windows,
