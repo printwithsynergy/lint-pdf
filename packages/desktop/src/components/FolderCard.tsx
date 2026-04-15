@@ -186,7 +186,13 @@ export function FolderCard({
             </span>
           )}
           {status?.files_queued ? (
-            <span className="text-gray-400">{status.files_queued} queued</span>
+            // Files still stabilizing in the watcher — distinct from
+            // the outbox's "queued" count shown in the connectivity
+            // pill. Label as "pending" so the two counters don't
+            // blur together.
+            <span className="text-gray-400">
+              {status.files_queued} pending
+            </span>
           ) : null}
         </div>
       )}

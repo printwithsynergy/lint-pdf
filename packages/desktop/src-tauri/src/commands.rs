@@ -12,6 +12,10 @@ pub struct AppState {
     pub watcher_mgr: Arc<WatcherManager>,
     pub db: Arc<Database>,
     pub connectivity: ConnectivityState,
+    /// Handle to the drainer's wake-up `Notify`. Commands that create
+    /// or revive outbox rows (retry, re-queue, future bulk actions)
+    /// signal this to trigger an immediate drain pass.
+    pub drainer_wake: Arc<tokio::sync::Notify>,
 }
 
 /// Fail fast when a Tauri command that talks to the engine is invoked
@@ -607,5 +611,139 @@ pub async fn open_viewer_window(
         .resizable(true)
         .build()
         .map_err(|e| format!("Failed to open viewer window: {}", e))?;
+    Ok(())
+}
+
+// ── Test connection ──────────────────────────────────────────
+
+#[derive(serde::Serialize)]
+pub struct TestConnectionResult {
+    /// True when `GET {base_url}/health` returned 2xx. This tells us
+    /// the engine is reachable and responding.
+    pub health_ok: bool,
+    /// True when the authenticated probe (a cheap GET against
+    /// `/api/v1/usage`) succeeded. False implies a bad API key or
+    /// a tenant permission problem even if `health_ok` is true.
+    pub auth_ok: bool,
+    /// Round-trip milliseconds of the health probe, for UI display.
+    pub latency_ms: u64,
+    /// Detailed message when something failed (e.g. HTTP status +
+    /// first 200 chars of body). Null on full success.
+    pub error: Option<String>,
+}
+
+/// Settings-page "Test connection" button. Probes `/health` (reachability)
+/// and `/api/v1/usage` (auth) with the **candidate** `base_url` / `api_key`
+/// so users can validate before saving.
+#[tauri::command]
+pub async fn test_connection(
+    base_url: String,
+    api_key: String,
+) -> Result<TestConnectionResult, String> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Build client: {}", e))?;
+
+    let trimmed = base_url.trim_end_matches('/');
+    let health_url = format!("{}/health", trimmed);
+    let auth_url = format!("{}/api/v1/usage", trimmed);
+
+    let start = std::time::Instant::now();
+    let health_resp = client.get(&health_url).send().await;
+    let latency_ms = start.elapsed().as_millis() as u64;
+
+    let (health_ok, health_err) = match health_resp {
+        Ok(r) if r.status().is_success() => (true, None),
+        Ok(r) => (
+            false,
+            Some(format!(
+                "Health check returned {}: {}",
+                r.status(),
+                snippet(r.text().await.unwrap_or_default())
+            )),
+        ),
+        Err(e) => (false, Some(format!("Engine unreachable: {}", e))),
+    };
+
+    // Only probe auth when health passed AND the user provided a key.
+    // Otherwise the auth error would be a confusing consequence of the
+    // prior failure.
+    let (auth_ok, auth_err) = if !health_ok {
+        (false, None)
+    } else if api_key.trim().is_empty() {
+        (false, Some("API key is empty.".to_string()))
+    } else {
+        match client
+            .get(&auth_url)
+            .header("Authorization", format!("Bearer {}", api_key))
+            .send()
+            .await
+        {
+            Ok(r) if r.status().is_success() => (true, None),
+            Ok(r) => {
+                let status = r.status();
+                let body = snippet(r.text().await.unwrap_or_default());
+                if status == 401 || status == 403 {
+                    (false, Some(format!("API key rejected ({}).", status)))
+                } else {
+                    (false, Some(format!("Auth probe {}: {}", status, body)))
+                }
+            }
+            Err(e) => (false, Some(format!("Auth probe failed: {}", e))),
+        }
+    };
+
+    let error = health_err.or(auth_err);
+
+    Ok(TestConnectionResult {
+        health_ok,
+        auth_ok,
+        latency_ms,
+        error,
+    })
+}
+
+fn snippet(s: String) -> String {
+    let max = 200;
+    if s.chars().count() <= max {
+        s
+    } else {
+        let mut t: String = s.chars().take(max).collect();
+        t.push('…');
+        t
+    }
+}
+
+// ── Manual retry ─────────────────────────────────────────────
+
+/// Flip an `error` row back to `queued_retry` and wake the drainer.
+/// Used by the "Retry" button in Results when the user wants to try
+/// a terminal failure again (e.g. after fixing the profile id or
+/// putting the file back into the watch folder).
+#[tauri::command]
+pub fn retry_job(state: State<'_, AppState>, local_id: String) -> Result<(), String> {
+    use crate::db::status;
+    let mut record = state
+        .db
+        .get_by_local_id(&local_id)?
+        .ok_or_else(|| format!("Job not found: {}", local_id))?;
+
+    if !std::path::Path::new(&record.file_path).exists() {
+        return Err(format!(
+            "Source file no longer exists: {}. Drop the file back into the \
+             watch folder to re-queue it.",
+            record.file_path
+        ));
+    }
+
+    record.status = status::QUEUED_RETRY.to_string();
+    record.retry_attempts = 0;
+    record.next_retry_at = None;
+    record.error_message = None;
+    record.completed_at = None;
+    state.db.update_job(&record)?;
+    // Wake the drainer so the retry kicks off immediately.
+    state.drainer_wake.notify_waiters();
     Ok(())
 }

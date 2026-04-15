@@ -1,6 +1,15 @@
 import { useState } from "react";
-import { Save, Eye, EyeOff } from "lucide-react";
-import type { AppConfig } from "../lib/types";
+import {
+  Save,
+  Eye,
+  EyeOff,
+  CheckCircle,
+  XCircle,
+  Loader,
+  Zap,
+} from "lucide-react";
+import type { AppConfig, TestConnectionResult } from "../lib/types";
+import { testConnection } from "../lib/tauri";
 
 interface SettingsProps {
   config: AppConfig;
@@ -12,10 +21,15 @@ export function Settings({ config: initial, onSave }: SettingsProps) {
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<TestConnectionResult | null>(
+    null,
+  );
 
   function update(partial: Partial<AppConfig>) {
     setConfig((prev) => ({ ...prev, ...partial }));
     setSaved(false);
+    setTestResult(null);
   }
 
   async function handleSave() {
@@ -25,6 +39,26 @@ export function Settings({ config: initial, onSave }: SettingsProps) {
       setSaved(true);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleTest() {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const result = await testConnection(config.base_url, config.api_key);
+      setTestResult(result);
+    } catch (e: unknown) {
+      // Invoke-level failure (rare — would usually mean the Rust command
+      // itself panicked). Surface as a synthetic failing result.
+      setTestResult({
+        health_ok: false,
+        auth_ok: false,
+        latency_ms: 0,
+        error: String(e),
+      });
+    } finally {
+      setTesting(false);
     }
   }
 
@@ -75,6 +109,43 @@ export function Settings({ config: initial, onSave }: SettingsProps) {
               onChange={(e) => update({ base_url: e.target.value })}
               placeholder="https://api.lintpdf.com"
             />
+          </div>
+
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={() => void handleTest()}
+              disabled={testing || !config.base_url.trim()}
+              className="btn-secondary text-xs"
+            >
+              {testing ? (
+                <Loader className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Zap className="h-3.5 w-3.5" />
+              )}
+              {testing ? "Testing…" : "Test connection"}
+            </button>
+            {testResult && (
+              <div className="flex-1 text-xs">
+                {testResult.health_ok && testResult.auth_ok ? (
+                  <span className="flex items-center gap-1.5 text-green-700">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Connected ({testResult.latency_ms}ms)
+                  </span>
+                ) : testResult.health_ok && !testResult.auth_ok ? (
+                  <span className="flex items-center gap-1.5 text-amber-700">
+                    <XCircle className="h-3.5 w-3.5" />
+                    {testResult.error ??
+                      "Engine reachable but API key rejected."}
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5 text-red-700">
+                    <XCircle className="h-3.5 w-3.5" />
+                    {testResult.error ?? "Engine unreachable."}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

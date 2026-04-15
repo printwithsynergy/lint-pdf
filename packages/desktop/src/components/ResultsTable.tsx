@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -75,6 +76,24 @@ export function ResultsTable({
   selectedJob,
   onSelect,
 }: ResultsTableProps) {
+  // Tick every second so "retry in Ns" labels count down live. Only
+  // runs when there's actually a retrying row AND the tab is focused,
+  // so we don't burn cycles in the background.
+  const hasRetrying = jobs.some(
+    (j) => j.status === "queued_retry" && !!j.next_retry_at,
+  );
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!hasRetrying) return;
+    const isFocused = () =>
+      typeof document === "undefined" || document.visibilityState === "visible";
+    if (!isFocused()) return;
+    const id = window.setInterval(() => {
+      if (isFocused()) setTick((t) => t + 1);
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [hasRetrying]);
+
   if (jobs.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-400">

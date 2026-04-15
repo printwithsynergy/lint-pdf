@@ -203,10 +203,15 @@ pub async fn attempt_single(
     db.update_job(&record).ok();
     emit_job_update(&app_handle, &record);
 
-    let api_job_id = match submit_single(&client, &base_url, &api_key, &file_path, &folder, &jdf_path).await {
+    let api_job_id = match submit_single(&client, &base_url, &api_key, &file_path, &folder, &jdf_path, &connectivity).await {
         Ok(id) => id,
         Err(e) => return handle_submit_err(&mut record, &folder, e, &db, &app_handle, &jdf_path),
     };
+
+    // Auth probe via /health stays green during an auth outage, so a
+    // successful submit is the only reliable "yes, the key works"
+    // signal. Clear any stale auth-failure flag now.
+    connectivity.record_auth_success();
 
     record.job_id = Some(api_job_id.clone());
     record.retry_attempts = 0;
@@ -260,7 +265,9 @@ pub async fn attempt_batch(
         emit_job_update(&app_handle, record);
     }
 
-    let submit_result = submit_batch(&client, &base_url, &api_key, &records, &folder).await;
+    let submit_result =
+        submit_batch(&client, &base_url, &api_key, &mut records, &folder, &connectivity, &db, &app_handle)
+            .await;
 
     let batch = match submit_result {
         Ok(b) => b,
@@ -291,6 +298,9 @@ pub async fn attempt_batch(
             return Err(e);
         }
     };
+
+    // Batch POST succeeded → the API key works.
+    connectivity.record_auth_success();
 
     // Pair engine-assigned job ids back onto local records by
     // file_name. Engine preserves file names, and watcher guarantees
@@ -413,6 +423,13 @@ fn classify_status(status: reqwest::StatusCode, body: &str) -> SubmitError {
     } else {
         SubmitError::Terminal(format!("API {}: {}", status, body))
     }
+}
+
+/// Check if a status code indicates an auth failure (401 or 403).
+/// Callers use this to flip the connectivity pill to "auth failing".
+fn is_auth_failure(status: reqwest::StatusCode) -> bool {
+    status == reqwest::StatusCode::UNAUTHORIZED
+        || status == reqwest::StatusCode::FORBIDDEN
 }
 
 fn classify_transport(e: reqwest::Error) -> SubmitError {
@@ -553,6 +570,7 @@ async fn submit_single(
     file_path: &Path,
     folder: &FolderConfig,
     jdf_path: &Option<PathBuf>,
+    connectivity: &ConnectivityState,
 ) -> Result<String, SubmitError> {
     let file_bytes = tokio::fs::read(file_path)
         .await
@@ -578,7 +596,7 @@ async fn submit_single(
                 base_url.trim_end_matches('/'),
                 endpoint_id
             );
-            return send_for_job_id(client, &url, api_key, form).await;
+            return send_for_job_id(client, &url, api_key, form, connectivity).await;
         }
     }
 
@@ -601,7 +619,7 @@ async fn submit_single(
             form = form.text("brand", brand);
         }
         let url = format!("{}/api/v1/jobs", base_url.trim_end_matches('/'));
-        return send_for_job_id(client, &url, api_key, form).await;
+        return send_for_job_id(client, &url, api_key, form, connectivity).await;
     }
 
     // Default preflight path.
@@ -633,7 +651,7 @@ async fn submit_single(
         }
     }
     let url = format!("{}/api/v1/jobs", base_url.trim_end_matches('/'));
-    send_for_job_id(client, &url, api_key, form).await
+    send_for_job_id(client, &url, api_key, form, connectivity).await
 }
 
 async fn send_for_job_id(
@@ -641,6 +659,7 @@ async fn send_for_job_id(
     url: &str,
     api_key: &str,
     form: multipart::Form,
+    connectivity: &ConnectivityState,
 ) -> Result<String, SubmitError> {
     let resp = client
         .post(url)
@@ -651,6 +670,9 @@ async fn send_for_job_id(
         .map_err(classify_transport)?;
     if !resp.status().is_success() {
         let status = resp.status();
+        if is_auth_failure(status) {
+            connectivity.record_auth_failure();
+        }
         let body = resp.text().await.unwrap_or_default();
         return Err(classify_status(status, &body));
     }
@@ -663,19 +685,46 @@ async fn send_for_job_id(
 
 // ── Batch submit ──────────────────────────────────────────────
 
+/// Build and post a batch request, skipping (and marking `error`)
+/// any records whose source file is no longer on disk. Returns the
+/// batch response. When zero files survive the disk check, returns
+/// `Terminal("No readable files in batch")`.
 async fn submit_batch(
     client: &reqwest::Client,
     base_url: &str,
     api_key: &str,
-    records: &[JobRecord],
+    records: &mut [JobRecord],
     folder: &FolderConfig,
+    connectivity: &ConnectivityState,
+    db: &Database,
+    app_handle: &AppHandle,
 ) -> Result<BatchSubmitResponse, SubmitError> {
     let mut form = multipart::Form::new().text("profile_id", folder.profile_id.clone());
-    for record in records {
+    let mut any_files = false;
+    for record in records.iter_mut() {
         let path = PathBuf::from(&record.file_path);
-        let bytes = tokio::fs::read(&path)
-            .await
-            .map_err(|e| SubmitError::Terminal(format!("Read {}: {}", path.display(), e)))?;
+        let bytes = match tokio::fs::read(&path).await {
+            Ok(b) => b,
+            Err(e) => {
+                // Don't abort the whole batch because one source
+                // file moved/was deleted. Mark this row `error` and
+                // keep building the form from the rest.
+                log::warn!(
+                    "Batch: skipping {} (read failed: {})",
+                    path.display(),
+                    e
+                );
+                record.status = status::ERROR.to_string();
+                record.error_message = Some(format!(
+                    "Source file no longer readable: {}",
+                    e
+                ));
+                record.completed_at = Some(chrono::Utc::now().to_rfc3339());
+                db.update_job(record).ok();
+                emit_job_update(app_handle, record);
+                continue;
+            }
+        };
         let file_name = path
             .file_name()
             .and_then(|n| n.to_str())
@@ -686,6 +735,13 @@ async fn submit_batch(
             .mime_str("application/octet-stream")
             .map_err(|e| SubmitError::Terminal(format!("MIME: {}", e)))?;
         form = form.part("files", part);
+        any_files = true;
+    }
+
+    if !any_files {
+        return Err(SubmitError::Terminal(
+            "No readable files in batch.".to_string(),
+        ));
     }
 
     let url = format!("{}/api/v1/batch/submit", base_url.trim_end_matches('/'));
@@ -698,6 +754,9 @@ async fn submit_batch(
         .map_err(classify_transport)?;
     if !resp.status().is_success() {
         let status = resp.status();
+        if is_auth_failure(status) {
+            connectivity.record_auth_failure();
+        }
         let body = resp.text().await.unwrap_or_default();
         return Err(classify_status(status, &body));
     }
@@ -767,7 +826,15 @@ async fn poll_until_done(
         if !connectivity.is_online() {
             return Err(SubmitError::Transient("Offline during polling".into()));
         }
-        match fetch_job_status(client, base_url, api_key, job_id).await {
+        match fetch_job_status_with_auth_tracking(
+            client,
+            base_url,
+            api_key,
+            job_id,
+            connectivity,
+        )
+        .await
+        {
             Ok(resp) => match resp.status.as_str() {
                 "complete" | "completed" | "failed" => return Ok(resp),
                 _ => continue,
@@ -790,6 +857,26 @@ async fn fetch_job_status(
     api_key: &str,
     job_id: &str,
 ) -> Result<JobStatusResponse, SubmitError> {
+    fetch_job_status_inner(client, base_url, api_key, job_id, None).await
+}
+
+async fn fetch_job_status_with_auth_tracking(
+    client: &reqwest::Client,
+    base_url: &str,
+    api_key: &str,
+    job_id: &str,
+    connectivity: &ConnectivityState,
+) -> Result<JobStatusResponse, SubmitError> {
+    fetch_job_status_inner(client, base_url, api_key, job_id, Some(connectivity)).await
+}
+
+async fn fetch_job_status_inner(
+    client: &reqwest::Client,
+    base_url: &str,
+    api_key: &str,
+    job_id: &str,
+    connectivity: Option<&ConnectivityState>,
+) -> Result<JobStatusResponse, SubmitError> {
     let url = format!("{}/api/v1/jobs/{}", base_url.trim_end_matches('/'), job_id);
     let resp = client
         .get(&url)
@@ -802,6 +889,11 @@ async fn fetch_job_status(
     }
     if !resp.status().is_success() {
         let status = resp.status();
+        if is_auth_failure(status) {
+            if let Some(c) = connectivity {
+                c.record_auth_failure();
+            }
+        }
         let body = resp.text().await.unwrap_or_default();
         return Err(classify_status(status, &body));
     }

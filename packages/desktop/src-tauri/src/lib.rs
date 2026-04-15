@@ -73,8 +73,30 @@ pub fn run() {
                 Arc::clone(&config_mgr),
                 Arc::clone(&db),
                 app.handle().clone(),
-                drainer_wake,
+                Arc::clone(&drainer_wake),
             );
+
+            // Request OS-level notification permission once on startup.
+            // Fire-and-forget on a tokio task: if the user denies (or
+            // was prompted previously), the "Back online" toast just
+            // silently drops. Better than blocking setup on a user
+            // dialog.
+            {
+                use tauri::plugin::PermissionState;
+                use tauri_plugin_notification::NotificationExt;
+                let handle = app.handle().clone();
+                rt_handle.spawn(async move {
+                    if let Ok(state) = handle.notification().permission_state() {
+                        if matches!(
+                            state,
+                            PermissionState::Prompt
+                                | PermissionState::PromptWithRationale
+                        ) {
+                            let _ = handle.notification().request_permission();
+                        }
+                    }
+                });
+            }
 
             // Setup system tray
             tray::setup_tray(app.handle())
@@ -95,6 +117,7 @@ pub fn run() {
                 watcher_mgr,
                 db,
                 connectivity,
+                drainer_wake,
             });
 
             Ok(())
@@ -120,6 +143,8 @@ pub fn run() {
             commands::get_connectivity_status,
             commands::force_connectivity_check,
             commands::open_viewer_window,
+            commands::test_connection,
+            commands::retry_job,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

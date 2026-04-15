@@ -9,6 +9,7 @@ import {
   Link as LinkIcon,
   Sparkles,
   ExternalLink,
+  RotateCcw,
 } from "lucide-react";
 import type {
   AiInterpretation,
@@ -22,6 +23,7 @@ import {
   mintShareLink,
   onConnectivityChange,
   openViewerWindow,
+  retryJob,
 } from "../lib/tauri";
 
 interface ResultDetailProps {
@@ -55,6 +57,9 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
   const [viewerBusy, setViewerBusy] = useState(false);
   const [viewerError, setViewerError] = useState<string | null>(null);
 
+  const [retryBusy, setRetryBusy] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+
   const [online, setOnline] = useState(true);
   useEffect(() => {
     let unlisten: (() => void) | null = null;
@@ -82,6 +87,27 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
   // will show its offline page) OR online + job.job_id so we can mint one.
   const hasCachedHtml = !!links.html;
   const canOpenViewer = canShare && (hasCachedHtml || online);
+
+  async function handleRetry() {
+    if (retryBusy) return;
+    setRetryBusy(true);
+    setRetryError(null);
+    try {
+      await retryJob(job.id);
+      onJobUpdate?.({
+        ...job,
+        status: "queued_retry",
+        error_message: null,
+        completed_at: null,
+        retry_attempts: 0,
+        next_retry_at: null,
+      });
+    } catch (e: unknown) {
+      setRetryError(String(e));
+    } finally {
+      setRetryBusy(false);
+    }
+  }
 
   async function handleOpenViewer() {
     if (!job.job_id || viewerBusy) return;
@@ -376,7 +402,23 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
       {job.error_message && (
         <div className="mt-4 rounded-lg bg-red-50 p-3 text-xs text-red-700">
           <p className="font-medium">Error</p>
-          <p className="mt-1">{job.error_message}</p>
+          <p className="mt-1 whitespace-pre-wrap">{job.error_message}</p>
+          {job.status === "error" && (
+            <div className="mt-2 flex items-center gap-2">
+              <button
+                onClick={() => void handleRetry()}
+                disabled={retryBusy}
+                className="flex items-center gap-1 rounded border border-red-300 bg-white px-2 py-1 text-xs text-red-700 hover:bg-red-100 disabled:opacity-50"
+                title="Requeue this row for another submit attempt. Useful after fixing the engine config or profile id."
+              >
+                <RotateCcw className="h-3 w-3" />
+                {retryBusy ? "Retrying…" : "Retry"}
+              </button>
+              {retryError && (
+                <span className="text-[11px] text-red-700">{retryError}</span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

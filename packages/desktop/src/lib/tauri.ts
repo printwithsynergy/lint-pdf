@@ -10,6 +10,7 @@ import type {
   FolderConfig,
   JobResult,
   ShareLinks,
+  TestConnectionResult,
   WatcherStatus,
 } from "./types";
 
@@ -120,6 +121,21 @@ export async function openViewerWindow(
   title: string,
 ): Promise<void> {
   return invoke("open_viewer_window", { url, title });
+}
+
+// Test connection — used by the Settings page before the user commits
+// their API key / base URL.
+export async function testConnection(
+  baseUrl: string,
+  apiKey: string,
+): Promise<TestConnectionResult> {
+  return invoke("test_connection", { baseUrl, apiKey });
+}
+
+// Retry a row that went to terminal `error`. The row flips back to
+// `queued_retry` and the drainer picks it up on the next tick.
+export async function retryJob(localId: string): Promise<void> {
+  return invoke("retry_job", { localId });
 }
 
 // Directory picker

@@ -39,6 +39,12 @@ pub fn start(
     let wake = Arc::new(Notify::new());
     let loop_wake = Arc::clone(&wake);
     runtime.spawn(async move {
+        // Wait for the connectivity monitor's first probe to complete
+        // before we do anything else. Otherwise, on cold-boot with an
+        // offline host, we'd start submitting against the optimistic
+        // `online: true` assumption and burn a round-trip per row.
+        connectivity.initial_probe_done.notified().await;
+
         // Startup: resume any rows that were mid-flight when the app
         // last quit. The engine already has these jobs; we just need
         // to poll to completion. Skip if offline — polling is synced

@@ -99,12 +99,21 @@ export type JobStatus =
 
 export interface ConnectivityStatus {
   online: boolean;
+  /** True when an auth failure (401/403) occurred recently. */
+  auth_failure: boolean;
   /** RFC3339 of the last successful /health probe, or null if never. */
   last_success_at: string | null;
   /** RFC3339 of the last attempt (success or failure). */
   last_checked_at: string | null;
   /** Count of queued_offline + queued_retry rows right now. */
   queued_count: number;
+}
+
+export interface TestConnectionResult {
+  health_ok: boolean;
+  auth_ok: boolean;
+  latency_ms: number;
+  error: string | null;
 }
 
 export interface JobSummary {
