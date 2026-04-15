@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Button } from "@thinkneverland/pixie-dust-ui";
 
 interface Approver {
   email: string;
@@ -277,12 +278,7 @@ export default function ApprovalsPage() {
           </p>
         </div>
         {!editing && (
-          <button
-            onClick={openNew}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            + New Template
-          </button>
+          <Button onClick={openNew}>+ New Template</Button>
         )}
       </div>
 
@@ -294,12 +290,7 @@ export default function ApprovalsPage() {
               <p className="mb-4 text-sm text-muted-foreground">
                 Create your first template to enable multi-step approval workflows on preflight reports.
               </p>
-              <button
-                onClick={openNew}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Create Template
-              </button>
+              <Button onClick={openNew}>Create Template</Button>
             </div>
           ) : (
             <div className="space-y-3">
@@ -575,19 +566,12 @@ export default function ApprovalsPage() {
           </div>
 
           <div className="flex justify-end gap-2 border-t pt-4">
-            <button
-              onClick={closeEdit}
-              className="rounded-md border px-4 py-2 text-sm hover:bg-muted"
-            >
+            <Button variant="secondary" onClick={closeEdit}>
               Cancel
-            </button>
-            <button
-              onClick={save}
-              disabled={saving}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
-            >
-              {saving ? "Saving…" : editing.id ? "Save Changes" : "Create Template"}
-            </button>
+            </Button>
+            <Button onClick={save} disabled={saving} loading={saving}>
+              {editing.id ? "Save Changes" : "Create Template"}
+            </Button>
           </div>
         </div>
       )}
