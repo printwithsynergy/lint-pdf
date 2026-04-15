@@ -78,10 +78,11 @@ export function Results({ jobs, folders, onClear }: ResultsProps) {
         </div>
 
         {selectedJob && (
-          <div className="w-72 shrink-0">
+          <div className="w-80 shrink-0 overflow-y-auto">
             <ResultDetail
               job={selectedJob}
               onClose={() => setSelectedJob(null)}
+              onJobUpdate={setSelectedJob}
             />
           </div>
         )}

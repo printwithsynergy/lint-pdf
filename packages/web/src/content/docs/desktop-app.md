@@ -13,11 +13,17 @@ No code, no terminal, no scripting required.
 
 ## Download
 
-| Platform          | Download                         | Requirements        |
-| ----------------- | -------------------------------- | ------------------- |
-| macOS (Universal) | [LintPDF-HotFolders.dmg](#)      | macOS 10.15+        |
-| Windows (64-bit)  | [LintPDF-HotFolders.msi](#)      | Windows 10+         |
-| Linux (AppImage)  | [LintPDF-HotFolders.AppImage](#) | GTK 4 / WebKitGTK 6 |
+Builds are published to [GitHub Releases](https://github.com/thinkneverland/lint-pdf/releases)
+and updated automatically in place via the built-in updater.
+
+| Platform          | Download                                                                                                              | Requirements        |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| macOS (Universal) | [Latest `.dmg`](https://github.com/thinkneverland/lint-pdf/releases/latest)     | macOS 10.15+        |
+| Windows (64-bit)  | [Latest `.msi`](https://github.com/thinkneverland/lint-pdf/releases/latest)     | Windows 10+         |
+| Linux (AppImage)  | [Latest `.AppImage`](https://github.com/thinkneverland/lint-pdf/releases/latest) | GTK 4 / WebKitGTK 6 |
+
+Once installed, the app checks for updates on launch and prompts you
+before downloading — no re-install cycle.
 
 ## How It Works
 
@@ -119,27 +125,45 @@ Closing the main window hides the app to the tray — it keeps running in the ba
 
 ## Branding & anonymous output
 
-The desktop app honours the **tenant-level branding default** configured in the Dashboard ([Branding & Anonymous Output](/docs/branding-and-anonymous)). If your tenant default is `anonymous`, every sidecar report and viewer-link emitted by the desktop app is branded-free out of the box.
+The desktop app honours the **tenant-level branding default** configured in the Dashboard ([Branding & Anonymous Output](/docs/branding-and-anonymous)). If your tenant default is `anonymous`, every sidecar report emitted by the desktop app is branding-free out of the box.
 
-For one-off overrides, each folder card exposes a **Brand** dropdown:
+For one-off overrides, each folder card exposes a compact **Brand** dropdown, and the full folder editor has the same options under the "Branding" section:
 
 | Option | Effect |
 |---|---|
-| *Use tenant default* | Resolves per your Dashboard setting (BrandProfile, LintPDF, or anonymous). |
-| *Anonymous* | Forces `brand=anonymous` on every submission from that folder. |
-| *LintPDF* | Forces `brand=lintpdf`. |
-| *BrandProfile: {name}* | Picks a specific tenant BrandProfile by ID. |
+| *Use tenant default* | No `brand` parameter is sent — the engine resolves per your Dashboard setting. |
+| *Anonymous* | Sends `brand=anonymous` on every submission from that folder. |
+| *LintPDF* | Sends `brand=lintpdf`. |
+| *BrandProfile…* | Sends `brand=profile:<uuid>`. The card fetches your tenant's BrandProfiles from the API and shows them by name. |
 
 Folder-level overrides win over the tenant default. Share links minted from the Results tab freeze their branding at mint time — exactly like the API behaviour described in [Share Links](/docs/share-links).
 
+## Share links
+
+Every row in the **Results** tab has a **Share** section. For any completed job you can mint tokenised report URLs on demand:
+
+- **HTML** — hosted interactive report page (`/r/{token}`)
+- **PDF** — printable report (`/r/{token}.pdf`)
+- **JSON** — machine-readable findings (`/r/{token}.json`)
+- **XML** — the same findings in XML (`/r/{token}.xml`)
+
+Links persist across app restarts (they're cached alongside the job
+history) and honour the branding mode the folder was set to at the time
+of submission. Plan-gated formats (e.g. PDF on Free tier) surface the
+engine's 403 message inline — the other formats still mint fine.
+
+See [Share Links](/docs/share-links) for the full semantics of these
+tokens, including expiry, revocation, and tier gating.
+
 ## Advanced Settings Per Folder
 
-| Setting         | Default       | Description                                                                                                          |
-| --------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Stabilization   | 2 seconds     | How long to wait for file size to stop changing before submitting. Increase this for slow network mounts (NFS, SMB). |
-| Poll Interval   | 5 seconds     | How often to check the API for job completion. Lower values = faster results but more API calls.                     |
-| File Extensions | All supported | Choose which file types to watch. Uncheck types you don't need.                                                      |
-| Write Sidecar   | On            | Write a `.lintpdf.json` report alongside each processed file.                                                        |
+| Setting               | Default       | Description                                                                                                          |
+| --------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Stabilization         | 2 seconds     | How long to wait for file size to stop changing before submitting. Increase this for slow network mounts (NFS, SMB). |
+| Poll Interval         | 5 seconds     | How often to check the API for job completion. Lower values = faster results but more API calls.                     |
+| JDF Companion Timeout | 30 seconds    | How long to wait for a matching `.jdf` / `.xjdf` after a PDF stabilizes. Set to `0` to disable the wait.              |
+| File Extensions       | All supported | Choose which file types to watch. Uncheck types you don't need.                                                      |
+| Write Sidecar         | On            | Write a `.lintpdf.json` report alongside each processed file.                                                        |
 
 ## Supported File Types
 
@@ -164,7 +188,12 @@ The desktop app automatically detects JDF and XJDF companion files placed alongs
 
 ### Configuration
 
-JDF pairing is enabled by default. You can configure the companion file timeout per folder in the folder settings — this controls how long the app waits for a JDF/XJDF file after detecting a new PDF. The default is 30 seconds.
+JDF pairing is enabled by default. Each folder has a **JDF Companion
+Timeout** under Advanced settings — if a PDF stabilizes without a
+matching `.jdf` / `.xjdf` next to it, the app waits this many seconds
+for the companion to arrive before submitting the PDF on its own. The
+default is 30 seconds; set it to `0` to submit PDFs immediately with
+no wait.
 
 When JDF parameters are applied, the Results tab shows which thresholds were overridden and their values.
 

@@ -10,6 +10,7 @@
     "notification:default",
     "notification:allow-notify",
     "notification:allow-request-permission",
-    "store:default"
+    "store:default",
+    "updater:default"
   ]
 }

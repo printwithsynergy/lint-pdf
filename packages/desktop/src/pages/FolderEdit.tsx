@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
-import type { FolderConfig } from "../lib/types";
+import type { BrandMode, BrandProfileSummary, FolderConfig } from "../lib/types";
 import { DEFAULT_EXTENSIONS } from "../lib/types";
 import { DirectoryPicker } from "../components/DirectoryPicker";
+import { listBrandProfiles } from "../lib/tauri";
 
 interface FolderEditProps {
   folder: FolderConfig;
@@ -21,10 +22,30 @@ export function FolderEdit({
 }: FolderEditProps) {
   const [folder, setFolder] = useState<FolderConfig>({ ...initial });
   const [saving, setSaving] = useState(false);
+  const [brandProfiles, setBrandProfiles] = useState<BrandProfileSummary[]>([]);
+  const [brandProfilesError, setBrandProfilesError] = useState<string | null>(
+    null,
+  );
 
   function update(partial: Partial<FolderConfig>) {
     setFolder((prev) => ({ ...prev, ...partial }));
   }
+
+  // Lazily fetch BrandProfiles the first time the user picks "profile" mode.
+  useEffect(() => {
+    if (folder.brand_mode !== "profile" || brandProfiles.length > 0) return;
+    let cancelled = false;
+    listBrandProfiles()
+      .then((profiles) => {
+        if (!cancelled) setBrandProfiles(profiles);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setBrandProfilesError(String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [folder.brand_mode, brandProfiles.length]);
 
   function toggleExtension(ext: string) {
     setFolder((prev) => {
@@ -169,6 +190,72 @@ export function FolderEdit({
           </div>
         </div>
 
+        {/* Branding */}
+        <div className="card p-4 space-y-4">
+          <div>
+            <h3 className="text-sm font-medium text-gray-900">Branding</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Applied to every report and viewer link emitted by this folder.
+              Overrides your tenant default.
+            </p>
+          </div>
+
+          <div>
+            <label className="label">Brand</label>
+            <select
+              className="input"
+              value={folder.brand_mode}
+              onChange={(e) =>
+                update({ brand_mode: e.target.value as BrandMode })
+              }
+            >
+              <option value="default">Use tenant default</option>
+              <option value="anonymous">Anonymous (strip branding)</option>
+              <option value="lintpdf">LintPDF default</option>
+              <option value="profile">BrandProfile…</option>
+            </select>
+          </div>
+
+          {folder.brand_mode === "profile" && (
+            <div>
+              <label className="label">Brand Profile</label>
+              {brandProfiles.length > 0 ? (
+                <select
+                  className="input"
+                  value={folder.brand_profile_id ?? ""}
+                  onChange={(e) =>
+                    update({ brand_profile_id: e.target.value || null })
+                  }
+                >
+                  <option value="">Select a profile…</option>
+                  {brandProfiles.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.is_default ? " (default)" : ""}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  className="input font-mono text-xs"
+                  value={folder.brand_profile_id ?? ""}
+                  onChange={(e) =>
+                    update({ brand_profile_id: e.target.value || null })
+                  }
+                  placeholder="Brand profile UUID"
+                />
+              )}
+              {brandProfilesError && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Could not load profiles ({brandProfilesError}). Paste the
+                  UUID from the dashboard.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* File types */}
         <div className="card p-4 space-y-3">
           <h3 className="text-sm font-medium text-gray-900">File Types</h3>
@@ -231,6 +318,26 @@ export function FolderEdit({
               />
               <p className="text-xs text-gray-400 mt-1">
                 How often to check job status
+              </p>
+            </div>
+            <div>
+              <label className="label">JDF Companion Timeout (seconds)</label>
+              <input
+                type="number"
+                className="input"
+                value={folder.jdf_companion_timeout_secs}
+                onChange={(e) =>
+                  update({
+                    jdf_companion_timeout_secs:
+                      parseFloat(e.target.value) || 0,
+                  })
+                }
+                min={0}
+                step={5}
+              />
+              <p className="text-xs text-gray-400 mt-1">
+                How long to wait for a matching .jdf / .xjdf file after a PDF
+                stabilizes. Set to 0 to submit PDFs immediately.
               </p>
             </div>
           </div>

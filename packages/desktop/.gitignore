@@ -1,0 +1,14 @@
+# Node
+node_modules/
+dist/
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# pnpm — the desktop package is standalone; following the root repo
+# convention of not committing lockfiles (see root CLAUDE.md).
+pnpm-lock.yaml
+
+# Logs
+*.log

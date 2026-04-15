@@ -1,12 +1,66 @@
-import { CheckCircle, XCircle, AlertTriangle, FileText, X } from "lucide-react";
-import type { JobResult } from "../lib/types";
+import { useState } from "react";
+import {
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  FileText,
+  X,
+  Copy,
+  Link as LinkIcon,
+} from "lucide-react";
+import type { JobResult, ShareLinks } from "../lib/types";
+import { mintShareLink } from "../lib/tauri";
 
 interface ResultDetailProps {
   job: JobResult;
   onClose: () => void;
+  onJobUpdate?: (job: JobResult) => void;
 }
 
-export function ResultDetail({ job, onClose }: ResultDetailProps) {
+type ReportFormat = "html" | "pdf" | "json" | "xml";
+
+const FORMAT_LABELS: Record<ReportFormat, string> = {
+  html: "HTML",
+  pdf: "PDF",
+  json: "JSON",
+  xml: "XML",
+};
+
+export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
+  const [links, setLinks] = useState<ShareLinks>(job.share_links ?? {});
+  const [busy, setBusy] = useState<ReportFormat | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState<ReportFormat | null>(null);
+
+  const canShare =
+    !!job.job_id && (job.status === "passed" || job.status === "failed");
+
+  async function handleMint(format: ReportFormat) {
+    if (!job.job_id || busy) return;
+    setBusy(format);
+    setError(null);
+    try {
+      const merged = await mintShareLink(job.id, job.job_id, [format]);
+      setLinks(merged);
+      onJobUpdate?.({ ...job, share_links: merged });
+    } catch (e: unknown) {
+      setError(String(e));
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleCopy(format: ReportFormat, url: string) {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(format);
+      setTimeout(() => setCopied((c) => (c === format ? null : c)), 1500);
+    } catch {
+      // clipboard may be unavailable in some webviews — fall back to prompt.
+      window.prompt("Copy link:", url);
+    }
+  }
+
   return (
     <div className="card p-4">
       <div className="flex items-start justify-between mb-4">
@@ -96,6 +150,67 @@ export function ResultDetail({ job, onClose }: ResultDetailProps) {
               <p className="text-xs text-gray-500">Advisory</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {canShare && (
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          <div className="flex items-center gap-1.5">
+            <LinkIcon className="h-3.5 w-3.5 text-gray-400" />
+            <span className="label !mb-0">Share</span>
+          </div>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Generate tokenised report URLs. Branding is frozen at mint time.
+          </p>
+          <div className="mt-2 space-y-1.5">
+            {(Object.keys(FORMAT_LABELS) as ReportFormat[]).map((format) => {
+              const url = links[format];
+              const isBusy = busy === format;
+              return (
+                <div key={format} className="flex items-center gap-2 text-xs">
+                  <span className="w-10 font-mono text-gray-500">
+                    {FORMAT_LABELS[format]}
+                  </span>
+                  {url ? (
+                    <>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex-1 truncate text-brand-600 hover:underline"
+                        title={url}
+                      >
+                        {url}
+                      </a>
+                      <button
+                        onClick={() => void handleCopy(format, url)}
+                        className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                        title="Copy link"
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                      {copied === format && (
+                        <span className="text-green-600">Copied</span>
+                      )}
+                    </>
+                  ) : (
+                    <button
+                      onClick={() => void handleMint(format)}
+                      disabled={isBusy}
+                      className="btn-secondary text-xs py-1"
+                    >
+                      {isBusy ? "Minting…" : "Mint link"}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {error && (
+            <p className="mt-2 text-xs text-red-600 whitespace-pre-wrap">
+              {error}
+            </p>
+          )}
         </div>
       )}
 

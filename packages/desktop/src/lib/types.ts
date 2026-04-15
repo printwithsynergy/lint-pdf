@@ -1,3 +1,14 @@
+/**
+ * How a folder should brand the reports it submits.
+ *
+ * Maps directly to the `brand` parameter accepted by `POST /api/v1/jobs`:
+ *  - `default`   — send nothing (engine uses tenant default).
+ *  - `anonymous` — strip branding entirely.
+ *  - `lintpdf`   — force LintPDF default branding.
+ *  - `profile`   — use a specific BrandProfile (requires `brand_profile_id`).
+ */
+export type BrandMode = "default" | "anonymous" | "lintpdf" | "profile";
+
 export interface FolderConfig {
   id: string;
   name: string;
@@ -11,6 +22,22 @@ export interface FolderConfig {
   stabilization_secs: number;
   poll_interval_secs: number;
   file_extensions: string[];
+  brand_mode: BrandMode;
+  brand_profile_id: string | null;
+  jdf_companion_timeout_secs: number;
+}
+
+export interface BrandProfileSummary {
+  id: string;
+  name: string;
+  is_default: boolean;
+}
+
+export interface ShareLinks {
+  html?: string;
+  pdf?: string;
+  json?: string;
+  xml?: string;
 }
 
 export interface AppConfig {
@@ -44,6 +71,7 @@ export interface JobResult {
   submitted_at: string;
   completed_at: string | null;
   error_message: string | null;
+  share_links: ShareLinks | null;
 }
 
 export interface WatcherStatus {
@@ -82,6 +110,9 @@ export function newFolderConfig(partial?: Partial<FolderConfig>): FolderConfig {
     stabilization_secs: 2.0,
     poll_interval_secs: 5.0,
     file_extensions: [...DEFAULT_EXTENSIONS],
+    brand_mode: "default",
+    brand_profile_id: null,
+    jdf_companion_timeout_secs: 30.0,
     ...partial,
   };
 }

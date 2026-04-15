@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import {
   FolderOpen,
   Play,
@@ -7,8 +8,30 @@ import {
   XCircle,
   AlertTriangle,
 } from "lucide-react";
-import type { FolderConfig, JobResult, WatcherStatus } from "../lib/types";
+import type {
+  BrandMode,
+  BrandProfileSummary,
+  FolderConfig,
+  JobResult,
+  WatcherStatus,
+} from "../lib/types";
 import * as api from "../lib/tauri";
+
+let brandProfileCache: {
+  profiles: BrandProfileSummary[];
+  fetchedAt: number;
+} | null = null;
+const BRAND_CACHE_TTL_MS = 60_000;
+
+async function getBrandProfilesCached(): Promise<BrandProfileSummary[]> {
+  const now = Date.now();
+  if (brandProfileCache && now - brandProfileCache.fetchedAt < BRAND_CACHE_TTL_MS) {
+    return brandProfileCache.profiles;
+  }
+  const profiles = await api.listBrandProfiles();
+  brandProfileCache = { profiles, fetchedAt: now };
+  return profiles;
+}
 
 interface FolderCardProps {
   folder: FolderConfig;
@@ -30,6 +53,59 @@ export function FolderCard({
   const passCount = folderJobs.filter((j) => j.status === "passed").length;
   const failCount = folderJobs.filter((j) => j.status === "failed").length;
   const errorCount = folderJobs.filter((j) => j.status === "error").length;
+
+  const [brandProfiles, setBrandProfiles] = useState<BrandProfileSummary[]>([]);
+  const loadedRef = useRef(false);
+
+  async function ensureBrandProfilesLoaded() {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    try {
+      const profiles = await getBrandProfilesCached();
+      setBrandProfiles(profiles);
+    } catch {
+      // Silent — the compact dropdown shows the raw "profile:<id>" label as
+      // a fallback; full editing is available in the folder editor.
+    }
+  }
+
+  useEffect(() => {
+    if (folder.brand_mode === "profile") {
+      void ensureBrandProfilesLoaded();
+    }
+  }, [folder.brand_mode]);
+
+  function brandLabelForCurrent(): string {
+    if (folder.brand_mode !== "profile") return "";
+    const match = brandProfiles.find((p) => p.id === folder.brand_profile_id);
+    if (match) return `BrandProfile: ${match.name}`;
+    if (folder.brand_profile_id) return "BrandProfile: (unknown)";
+    return "BrandProfile: (none set)";
+  }
+
+  async function onBrandChange(next: BrandMode) {
+    if (next === "profile") {
+      await ensureBrandProfilesLoaded();
+    }
+    await api.updateFolder({
+      ...folder,
+      brand_mode: next,
+      // Clear profile_id when switching away from "profile" mode so we don't
+      // silently resend a stale UUID next time.
+      brand_profile_id:
+        next === "profile" ? folder.brand_profile_id : null,
+    });
+    onRefreshStatuses();
+  }
+
+  async function onBrandProfileChange(id: string) {
+    await api.updateFolder({
+      ...folder,
+      brand_mode: "profile",
+      brand_profile_id: id || null,
+    });
+    onRefreshStatuses();
+  }
 
   async function toggleWatch() {
     if (isActive) {
@@ -114,6 +190,36 @@ export function FolderCard({
           ) : null}
         </div>
       )}
+
+      {/* Brand row */}
+      <div className="mt-3 flex items-center gap-2 border-t border-gray-100 pt-3">
+        <label className="text-xs text-gray-500">Brand</label>
+        <select
+          className="text-xs rounded border border-gray-200 bg-white px-2 py-1"
+          value={folder.brand_mode}
+          onChange={(e) => void onBrandChange(e.target.value as BrandMode)}
+        >
+          <option value="default">Use tenant default</option>
+          <option value="anonymous">Anonymous</option>
+          <option value="lintpdf">LintPDF</option>
+          <option value="profile">BrandProfile…</option>
+        </select>
+        {folder.brand_mode === "profile" && (
+          <select
+            className="text-xs rounded border border-gray-200 bg-white px-2 py-1 max-w-[160px] truncate"
+            value={folder.brand_profile_id ?? ""}
+            onChange={(e) => void onBrandProfileChange(e.target.value)}
+            title={brandLabelForCurrent()}
+          >
+            <option value="">Select…</option>
+            {brandProfiles.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {!folder.enabled && (
         <p className="mt-2 text-xs text-amber-600">Disabled</p>

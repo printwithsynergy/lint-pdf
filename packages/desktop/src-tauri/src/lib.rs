@@ -20,6 +20,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             let config_mgr = Arc::new(ConfigManager::new());
             let db = Arc::new(
@@ -72,6 +73,8 @@ pub fn run() {
             commands::get_watcher_statuses,
             commands::get_recent_jobs,
             commands::clear_history,
+            commands::list_brand_profiles,
+            commands::mint_share_link,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -2,8 +2,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
   AppConfig,
+  BrandProfileSummary,
   FolderConfig,
   JobResult,
+  ShareLinks,
   WatcherStatus,
 } from "./types";
 
@@ -56,6 +58,23 @@ export async function getRecentJobs(limit: number): Promise<JobResult[]> {
 
 export async function clearHistory(): Promise<void> {
   return invoke("clear_history");
+}
+
+// Engine API helpers
+export async function listBrandProfiles(): Promise<BrandProfileSummary[]> {
+  return invoke("list_brand_profiles");
+}
+
+export async function mintShareLink(
+  localId: string,
+  apiJobId: string,
+  formats: Array<"html" | "pdf" | "json" | "xml">,
+): Promise<ShareLinks> {
+  return invoke("mint_share_link", {
+    localId,
+    apiJobId,
+    formats,
+  });
 }
 
 // Directory picker

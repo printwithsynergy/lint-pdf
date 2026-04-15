@@ -16,6 +16,18 @@ pub struct StabilizedFile {
 struct PendingFile {
     size: u64,
     last_changed: Instant,
+    folder_id: String,
+    /// Captured at insert time from `FolderConfig::jdf_companion_timeout_secs`.
+    /// Zero disables the wait.
+    jdf_timeout: Duration,
+}
+
+/// A PDF that stabilized without a JDF companion and is waiting for one
+/// to arrive.
+struct AwaitingJdf {
+    folder_id: String,
+    awaiting_since: Instant,
+    timeout: Duration,
 }
 
 struct FolderWatcher {
@@ -24,67 +36,127 @@ struct FolderWatcher {
 
 pub struct WatcherManager {
     watchers: Mutex<HashMap<String, FolderWatcher>>,
-    ready_tx: mpsc::Sender<StabilizedFile>,
-    pending: Arc<Mutex<HashMap<PathBuf, (PendingFile, String)>>>,
+    pending: Arc<Mutex<HashMap<PathBuf, PendingFile>>>,
+    awaiting_jdf: Arc<Mutex<HashMap<PathBuf, AwaitingJdf>>>,
 }
 
 impl WatcherManager {
     pub fn new(ready_tx: mpsc::Sender<StabilizedFile>) -> Self {
-        let pending: Arc<Mutex<HashMap<PathBuf, (PendingFile, String)>>> =
+        let pending: Arc<Mutex<HashMap<PathBuf, PendingFile>>> =
+            Arc::new(Mutex::new(HashMap::new()));
+        let awaiting_jdf: Arc<Mutex<HashMap<PathBuf, AwaitingJdf>>> =
             Arc::new(Mutex::new(HashMap::new()));
 
-        // Stabilization checker thread
+        // Stabilization checker thread. Runs two sweeps on every tick:
+        //   1. Move stable entries out of `pending` — emit immediately if
+        //      they already have a JDF companion, otherwise park in
+        //      `awaiting_jdf`.
+        //   2. Sweep `awaiting_jdf` — emit if the companion has since
+        //      arrived, or if the per-folder timeout has expired.
         let pending_clone = Arc::clone(&pending);
+        let awaiting_clone = Arc::clone(&awaiting_jdf);
         let tx_clone = ready_tx.clone();
         std::thread::spawn(move || {
             loop {
                 std::thread::sleep(Duration::from_millis(500));
-                let mut ready = Vec::new();
+                let mut ready: Vec<StabilizedFile> = Vec::new();
+
+                // --- Sweep 1: stabilization -----------------------------
                 {
                     let mut map = pending_clone.lock().unwrap();
+                    let mut awaiting = awaiting_clone.lock().unwrap();
                     let now = Instant::now();
-                    map.retain(|path, (pf, folder_id)| {
-                        if now.duration_since(pf.last_changed) >= Duration::from_secs(2) {
-                            let ext = path
-                                .extension()
-                                .and_then(|e| e.to_str())
-                                .map(|e| e.to_lowercase())
-                                .unwrap_or_default();
+                    map.retain(|path, pf| {
+                        if now.duration_since(pf.last_changed) < Duration::from_secs(2) {
+                            return true;
+                        }
 
-                            if ext == "jdf" || ext == "xjdf" {
-                                // JDF/XJDF files are not submitted alone;
-                                // they will be picked up as companions to a PDF.
-                                // Check if a companion PDF exists; if not, skip.
-                                let stem = path.file_stem();
-                                let parent = path.parent();
-                                if let (Some(stem), Some(parent)) = (stem, parent) {
-                                    let companion_pdf = parent.join(format!("{}.pdf", stem.to_string_lossy()));
-                                    if !companion_pdf.exists() {
-                                        log::info!("Skipping JDF without companion PDF: {}", path.display());
-                                    }
-                                    // Either way, remove from pending — PDF will pick up JDF when it stabilizes
-                                }
-                                return false;
-                            }
+                        let ext = path
+                            .extension()
+                            .and_then(|e| e.to_str())
+                            .map(|e| e.to_lowercase())
+                            .unwrap_or_default();
 
-                            // For PDF files, look for a companion JDF/XJDF sidecar
-                            let jdf_path = if ext == "pdf" {
-                                find_companion_jdf(path)
+                        if ext == "jdf" || ext == "xjdf" {
+                            // JDF/XJDF files are never submitted alone. Sweep 2
+                            // will spot them as they arrive and promote the
+                            // waiting PDF.
+                            return false;
+                        }
+
+                        if ext == "pdf" {
+                            if let Some(jdf) = find_companion_jdf(path) {
+                                ready.push(StabilizedFile {
+                                    path: path.clone(),
+                                    folder_id: pf.folder_id.clone(),
+                                    jdf_path: Some(jdf),
+                                });
+                            } else if pf.jdf_timeout > Duration::ZERO {
+                                // Park — maybe the JDF is still being copied.
+                                awaiting.insert(
+                                    path.clone(),
+                                    AwaitingJdf {
+                                        folder_id: pf.folder_id.clone(),
+                                        awaiting_since: now,
+                                        timeout: pf.jdf_timeout,
+                                    },
+                                );
                             } else {
-                                None
-                            };
-
+                                ready.push(StabilizedFile {
+                                    path: path.clone(),
+                                    folder_id: pf.folder_id.clone(),
+                                    jdf_path: None,
+                                });
+                            }
+                        } else {
+                            // Other supported formats: no companion logic.
                             ready.push(StabilizedFile {
                                 path: path.clone(),
-                                folder_id: folder_id.clone(),
-                                jdf_path,
+                                folder_id: pf.folder_id.clone(),
+                                jdf_path: None,
                             });
-                            false
-                        } else {
-                            true
                         }
+                        false
                     });
                 }
+
+                // --- Sweep 2: JDF companion timeout ---------------------
+                {
+                    let mut awaiting = awaiting_clone.lock().unwrap();
+                    let now = Instant::now();
+                    awaiting.retain(|path, state| {
+                        if !path.exists() {
+                            // PDF was deleted / moved out — give up silently.
+                            return false;
+                        }
+                        if let Some(jdf) = find_companion_jdf(path) {
+                            log::info!(
+                                "JDF companion arrived for {}",
+                                path.display()
+                            );
+                            ready.push(StabilizedFile {
+                                path: path.clone(),
+                                folder_id: state.folder_id.clone(),
+                                jdf_path: Some(jdf),
+                            });
+                            return false;
+                        }
+                        if now.duration_since(state.awaiting_since) >= state.timeout {
+                            log::info!(
+                                "JDF companion timeout expired for {} — submitting without companion",
+                                path.display()
+                            );
+                            ready.push(StabilizedFile {
+                                path: path.clone(),
+                                folder_id: state.folder_id.clone(),
+                                jdf_path: None,
+                            });
+                            return false;
+                        }
+                        true
+                    });
+                }
+
                 for file in ready {
                     tx_clone.send(file).ok();
                 }
@@ -93,8 +165,8 @@ impl WatcherManager {
 
         Self {
             watchers: Mutex::new(HashMap::new()),
-            ready_tx,
             pending,
+            awaiting_jdf,
         }
     }
 
@@ -110,7 +182,9 @@ impl WatcherManager {
         let extensions = folder.file_extensions.clone();
         let folder_id = folder.id.clone();
         let pending = Arc::clone(&self.pending);
+        let jdf_timeout = Duration::from_secs_f64(folder.jdf_companion_timeout_secs.max(0.0));
 
+        let folder_id_inner = folder_id.clone();
         let mut watcher = RecommendedWatcher::new(
             move |result: Result<Event, notify::Error>| {
                 if let Ok(event) = result {
@@ -124,13 +198,12 @@ impl WatcherManager {
                                     let mut map = pending.lock().unwrap();
                                     map.insert(
                                         path.clone(),
-                                        (
-                                            PendingFile {
-                                                size,
-                                                last_changed: Instant::now(),
-                                            },
-                                            folder_id.clone(),
-                                        ),
+                                        PendingFile {
+                                            size,
+                                            last_changed: Instant::now(),
+                                            folder_id: folder_id_inner.clone(),
+                                            jdf_timeout,
+                                        },
                                     );
                                 }
                             }
@@ -147,36 +220,40 @@ impl WatcherManager {
             .watch(watch_dir, RecursiveMode::NonRecursive)
             .map_err(|e| format!("Failed to watch directory: {}", e))?;
 
-        // Scan for existing files
+        // Scan for existing files — funnel them through the same pending/
+        // awaiting-JDF pipeline so timeout / companion logic stays uniform.
         if let Ok(entries) = std::fs::read_dir(watch_dir) {
+            let mut map = self.pending.lock().unwrap();
             for entry in entries.flatten() {
                 let path = entry.path();
-                if is_supported_file(&path, &folder.file_extensions) {
-                    let ext = path
-                        .extension()
-                        .and_then(|e| e.to_str())
-                        .map(|e| e.to_lowercase())
-                        .unwrap_or_default();
-
-                    // Skip standalone JDF/XJDF files — they'll be picked up as companions
-                    if ext == "jdf" || ext == "xjdf" {
-                        continue;
-                    }
-
-                    let jdf_path = if ext == "pdf" {
-                        find_companion_jdf(&path)
-                    } else {
-                        None
-                    };
-
-                    self.ready_tx
-                        .send(StabilizedFile {
-                            path,
-                            folder_id: folder.id.clone(),
-                            jdf_path,
-                        })
-                        .ok();
+                if !is_supported_file(&path, &folder.file_extensions) {
+                    continue;
                 }
+                let ext = path
+                    .extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| e.to_lowercase())
+                    .unwrap_or_default();
+
+                if ext == "jdf" || ext == "xjdf" {
+                    // Standalone JDF — the matching PDF will pick it up
+                    // either immediately (if already present) or via the
+                    // awaiting-JDF sweep.
+                    continue;
+                }
+
+                let size = std::fs::metadata(&path).map(|m| m.len()).unwrap_or(0);
+                map.insert(
+                    path,
+                    PendingFile {
+                        size,
+                        last_changed: Instant::now()
+                            .checked_sub(Duration::from_secs(3))
+                            .unwrap_or_else(Instant::now),
+                        folder_id: folder.id.clone(),
+                        jdf_timeout,
+                    },
+                );
             }
         }
 
@@ -193,7 +270,11 @@ impl WatcherManager {
             self.pending
                 .lock()
                 .unwrap()
-                .retain(|_, (_, fid)| fid != folder_id);
+                .retain(|_, pf| pf.folder_id != folder_id);
+            self.awaiting_jdf
+                .lock()
+                .unwrap()
+                .retain(|_, state| state.folder_id != folder_id);
             log::info!("Stopped watching folder: {}", folder_id);
         }
     }
@@ -207,12 +288,21 @@ impl WatcherManager {
     }
 
     pub fn queued_count(&self, folder_id: &str) -> usize {
-        self.pending
+        let pending = self
+            .pending
             .lock()
             .unwrap()
             .values()
-            .filter(|(_, fid)| fid == folder_id)
-            .count()
+            .filter(|pf| pf.folder_id == folder_id)
+            .count();
+        let awaiting = self
+            .awaiting_jdf
+            .lock()
+            .unwrap()
+            .values()
+            .filter(|s| s.folder_id == folder_id)
+            .count();
+        pending + awaiting
     }
 }
 

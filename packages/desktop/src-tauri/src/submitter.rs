@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
-use crate::config::ConfigManager;
+use crate::config::{BrandMode, ConfigManager, FolderConfig};
 use crate::db::{Database, JobRecord, JobSummary};
 use crate::router;
 use crate::watcher::StabilizedFile;
@@ -83,6 +83,7 @@ async fn process_file(
         submitted_at: chrono::Utc::now().to_rfc3339(),
         completed_at: None,
         error_message: None,
+        share_links: None,
     };
 
     db.insert_job(&record).ok();
@@ -103,7 +104,15 @@ async fn process_file(
 
     // Submit to API
     let client = reqwest::Client::new();
-    let submit_result = submit_file(&client, &config.base_url, &config.api_key, &file.path, &folder.profile_id, &file.jdf_path).await;
+    let submit_result = submit_file(
+        &client,
+        &config.base_url,
+        &config.api_key,
+        &file.path,
+        &folder,
+        &file.jdf_path,
+    )
+    .await;
 
     let api_job_id = match submit_result {
         Ok(id) => id,
@@ -177,7 +186,7 @@ async fn submit_file(
     base_url: &str,
     api_key: &str,
     file_path: &Path,
-    profile_id: &str,
+    folder: &FolderConfig,
     jdf_path: &Option<PathBuf>,
 ) -> Result<String, String> {
     let file_bytes = tokio::fs::read(file_path)
@@ -196,8 +205,15 @@ async fn submit_file(
         .map_err(|e| format!("MIME error: {}", e))?;
 
     let mut form = multipart::Form::new()
-        .text("profile_id", profile_id.to_string())
+        .text("profile_id", folder.profile_id.clone())
         .part("file", part);
+
+    // Branding — forward the folder's configured brand mode so the engine
+    // applies the right report branding. Matches `parse_brand_param` in
+    // `lintpdf/reports/service.py`.
+    if let Some(brand) = resolve_brand_param(folder) {
+        form = form.text("brand", brand);
+    }
 
     // Attach companion JDF/XJDF file if present
     if let Some(jdf) = jdf_path {
@@ -312,4 +328,88 @@ async fn poll_job(
 
 fn emit_job_update(app_handle: &AppHandle, record: &JobRecord) {
     app_handle.emit("job-update", record).ok();
+}
+
+/// Build the `brand=<value>` form field (or `None` to fall back to the tenant
+/// default). Profile mode with a missing / blank UUID is treated as `Default`
+/// rather than sending an obviously invalid value — the engine would 422 it.
+fn resolve_brand_param(folder: &FolderConfig) -> Option<String> {
+    match folder.brand_mode {
+        BrandMode::Default => None,
+        BrandMode::Anonymous => Some("anonymous".to_string()),
+        BrandMode::Lintpdf => Some("lintpdf".to_string()),
+        BrandMode::Profile => folder
+            .brand_profile_id
+            .as_ref()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .map(|id| format!("profile:{}", id)),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::BrandMode;
+
+    fn make_folder(mode: BrandMode, profile: Option<&str>) -> FolderConfig {
+        FolderConfig {
+            id: "test".to_string(),
+            name: "test".to_string(),
+            enabled: true,
+            watch_dir: String::new(),
+            profile_id: "lintpdf-default".to_string(),
+            pass_dir: String::new(),
+            fail_dir: String::new(),
+            error_dir: String::new(),
+            write_sidecar: false,
+            stabilization_secs: 2.0,
+            poll_interval_secs: 5.0,
+            file_extensions: vec![],
+            brand_mode: mode,
+            brand_profile_id: profile.map(String::from),
+            jdf_companion_timeout_secs: 30.0,
+        }
+    }
+
+    #[test]
+    fn brand_default_sends_nothing() {
+        assert_eq!(resolve_brand_param(&make_folder(BrandMode::Default, None)), None);
+    }
+
+    #[test]
+    fn brand_anonymous_serializes() {
+        assert_eq!(
+            resolve_brand_param(&make_folder(BrandMode::Anonymous, None)),
+            Some("anonymous".to_string())
+        );
+    }
+
+    #[test]
+    fn brand_lintpdf_serializes() {
+        assert_eq!(
+            resolve_brand_param(&make_folder(BrandMode::Lintpdf, None)),
+            Some("lintpdf".to_string())
+        );
+    }
+
+    #[test]
+    fn brand_profile_formats_uuid() {
+        assert_eq!(
+            resolve_brand_param(&make_folder(BrandMode::Profile, Some("abc-123"))),
+            Some("profile:abc-123".to_string())
+        );
+    }
+
+    #[test]
+    fn brand_profile_without_id_falls_back() {
+        assert_eq!(
+            resolve_brand_param(&make_folder(BrandMode::Profile, None)),
+            None
+        );
+        assert_eq!(
+            resolve_brand_param(&make_folder(BrandMode::Profile, Some("   "))),
+            None
+        );
+    }
 }
