@@ -75,6 +75,9 @@ pub fn run() {
             commands::clear_history,
             commands::list_brand_profiles,
             commands::mint_share_link,
+            commands::list_endpoints,
+            commands::list_approval_templates,
+            commands::get_ai_interpretation,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

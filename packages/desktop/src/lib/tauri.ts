@@ -1,8 +1,11 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import type {
+  AiInterpretation,
   AppConfig,
+  ApprovalTemplateSummary,
   BrandProfileSummary,
+  EndpointSummary,
   FolderConfig,
   JobResult,
   ShareLinks,
@@ -68,13 +71,29 @@ export async function listBrandProfiles(): Promise<BrandProfileSummary[]> {
 export async function mintShareLink(
   localId: string,
   apiJobId: string,
-  formats: Array<"html" | "pdf" | "json" | "xml">,
+  formats: Array<"html" | "pdf" | "json" | "xml" | "annotated_pdf">,
 ): Promise<ShareLinks> {
   return invoke("mint_share_link", {
     localId,
     apiJobId,
     formats,
   });
+}
+
+export async function listEndpoints(): Promise<EndpointSummary[]> {
+  return invoke("list_endpoints");
+}
+
+export async function listApprovalTemplates(): Promise<
+  ApprovalTemplateSummary[]
+> {
+  return invoke("list_approval_templates");
+}
+
+export async function getAiInterpretation(
+  apiJobId: string,
+): Promise<AiInterpretation> {
+  return invoke("get_ai_interpretation", { apiJobId });
 }
 
 // Directory picker

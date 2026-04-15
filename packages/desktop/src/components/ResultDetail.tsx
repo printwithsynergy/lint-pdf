@@ -7,9 +7,10 @@ import {
   X,
   Copy,
   Link as LinkIcon,
+  Sparkles,
 } from "lucide-react";
-import type { JobResult, ShareLinks } from "../lib/types";
-import { mintShareLink } from "../lib/tauri";
+import type { AiInterpretation, JobResult, ShareLinks } from "../lib/types";
+import { getAiInterpretation, mintShareLink } from "../lib/tauri";
 
 interface ResultDetailProps {
   job: JobResult;
@@ -17,13 +18,14 @@ interface ResultDetailProps {
   onJobUpdate?: (job: JobResult) => void;
 }
 
-type ReportFormat = "html" | "pdf" | "json" | "xml";
+type ReportFormat = "html" | "pdf" | "json" | "xml" | "annotated_pdf";
 
 const FORMAT_LABELS: Record<ReportFormat, string> = {
   html: "HTML",
   pdf: "PDF",
   json: "JSON",
   xml: "XML",
+  annotated_pdf: "Annotated PDF",
 };
 
 export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
@@ -32,8 +34,29 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState<ReportFormat | null>(null);
 
+  const [interpretation, setInterpretation] = useState<AiInterpretation | null>(
+    null,
+  );
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
   const canShare =
     !!job.job_id && (job.status === "passed" || job.status === "failed");
+  const canInterpret = canShare;
+
+  async function handleInterpret() {
+    if (!job.job_id || aiBusy) return;
+    setAiBusy(true);
+    setAiError(null);
+    try {
+      const result = await getAiInterpretation(job.job_id);
+      setInterpretation(result);
+    } catch (e: unknown) {
+      setAiError(String(e));
+    } finally {
+      setAiBusy(false);
+    }
+  }
 
   async function handleMint(format: ReportFormat) {
     if (!job.job_id || busy) return;
@@ -210,6 +233,60 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
             <p className="mt-2 text-xs text-red-600 whitespace-pre-wrap">
               {error}
             </p>
+          )}
+        </div>
+      )}
+
+      {canInterpret && (
+        <div className="mt-4 border-t border-gray-100 pt-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+              <span className="label !mb-0">AI interpretation</span>
+            </div>
+            {!interpretation && (
+              <button
+                onClick={() => void handleInterpret()}
+                disabled={aiBusy}
+                className="btn-secondary text-xs py-1"
+              >
+                {aiBusy ? "Asking…" : "Interpret"}
+              </button>
+            )}
+          </div>
+          {aiError && (
+            <p className="mt-1 text-xs text-amber-600">{aiError}</p>
+          )}
+          {interpretation && (
+            <div className="mt-2 space-y-2">
+              {interpretation.summary && (
+                <p className="text-xs leading-relaxed text-gray-700 whitespace-pre-wrap">
+                  {interpretation.summary}
+                </p>
+              )}
+              {interpretation.interpretations.map((item, idx) => (
+                <div
+                  key={item.inspection_id ?? idx}
+                  className="rounded border border-gray-100 p-2"
+                >
+                  {item.explanation && (
+                    <p className="text-xs text-gray-700">{item.explanation}</p>
+                  )}
+                  {item.why_it_matters && (
+                    <p className="mt-1 text-xs text-gray-500">
+                      <span className="font-medium">Why it matters: </span>
+                      {item.why_it_matters}
+                    </p>
+                  )}
+                  {item.suggestion && (
+                    <p className="mt-1 text-xs text-violet-700">
+                      <span className="font-medium">Suggestion: </span>
+                      {item.suggestion}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

@@ -132,6 +132,36 @@ async fn process_file(
     db.update_job(&record).ok();
     emit_job_update(&app_handle, &record);
 
+    // Attach an approval chain before we start polling, if the folder is
+    // configured to do so. Failures are logged and surfaced on the record
+    // but don't block the preflight result — the job still runs, it just
+    // won't gate on approvals.
+    if let Some(template_id) = folder.approval_template_id.as_deref() {
+        let template_id = template_id.trim();
+        if !template_id.is_empty() {
+            if let Err(e) = attach_approval_chain(
+                &client,
+                &config.base_url,
+                &config.api_key,
+                &api_job_id,
+                template_id,
+            )
+            .await
+            {
+                log::warn!("Approval chain attach failed for {}: {}", file_name, e);
+                // Surface as an advisory note, not a terminal error.
+                let existing = record.error_message.clone().unwrap_or_default();
+                record.error_message = Some(if existing.is_empty() {
+                    format!("Approval chain attach failed: {}", e)
+                } else {
+                    format!("{} | Approval chain attach failed: {}", existing, e)
+                });
+                db.update_job(&record).ok();
+                emit_job_update(&app_handle, &record);
+            }
+        }
+    }
+
     // Poll for results
     let poll_result = poll_job(
         &client,
@@ -181,6 +211,23 @@ async fn process_file(
     }
 }
 
+/// Decide whether a given file should be submitted as an **external
+/// preflight report** (e.g. a PitStop XML that already contains findings)
+/// instead of a fresh preflight.
+fn is_external_report(path: &Path, folder: &FolderConfig) -> bool {
+    if folder.external_format.is_none() {
+        // External submission only happens when the folder explicitly opts in
+        // via `external_format`. Otherwise a stray `.xml` next to PDFs would
+        // get spuriously uploaded.
+        return false;
+    }
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.to_lowercase());
+    matches!(ext.as_deref(), Some("xml") | Some("json"))
+}
+
 async fn submit_file(
     client: &reqwest::Client,
     base_url: &str,
@@ -199,6 +246,80 @@ async fn submit_file(
         .unwrap_or("file")
         .to_string();
 
+    // ── Custom endpoint path ─────────────────────────────────────
+    // The engine's `/api/v1/endpoints/{id}/submit` takes only `file` —
+    // profile/brand/approvals are bound to the endpoint row itself, so we
+    // explicitly drop every other form field that the regular /jobs path
+    // accepts.
+    if let Some(endpoint_id) = folder.endpoint_id.as_deref() {
+        let endpoint_id = endpoint_id.trim();
+        if !endpoint_id.is_empty() {
+            let part = multipart::Part::bytes(file_bytes)
+                .file_name(file_name)
+                .mime_str("application/octet-stream")
+                .map_err(|e| format!("MIME error: {}", e))?;
+            let form = multipart::Form::new().part("file", part);
+
+            let url = format!(
+                "{}/api/v1/endpoints/{}/submit",
+                base_url.trim_end_matches('/'),
+                endpoint_id
+            );
+
+            let resp = client
+                .post(&url)
+                .header("Authorization", format!("Bearer {}", api_key))
+                .multipart(form)
+                .timeout(Duration::from_secs(120))
+                .send()
+                .await
+                .map_err(|e| format!("HTTP error: {}", e))?;
+
+            return handle_submit_response(resp).await;
+        }
+    }
+
+    // ── External preflight report path ───────────────────────────
+    // Pre-existing PitStop / Callas / Acrobat / LintPDF report. The engine
+    // accepts these at `POST /api/v1/jobs` with `preflight_source=external`
+    // and the report body in the `external_report` field. No `file` is
+    // sent — the upstream PDF isn't required for this path.
+    if is_external_report(file_path, folder) {
+        let report_part = multipart::Part::bytes(file_bytes)
+            .file_name(file_name)
+            .mime_str("application/octet-stream")
+            .map_err(|e| format!("MIME error: {}", e))?;
+
+        let mut form = multipart::Form::new()
+            .text("preflight_source", "external")
+            .part("external_report", report_part);
+
+        if let Some(fmt) = folder.external_format.as_deref() {
+            let fmt = fmt.trim();
+            if !fmt.is_empty() {
+                form = form.text("external_format", fmt.to_string());
+            }
+        }
+        // Branding still applies to external imports since the engine renders
+        // hosted reports the same way.
+        if let Some(brand) = resolve_brand_param(folder) {
+            form = form.text("brand", brand);
+        }
+
+        let url = format!("{}/api/v1/jobs", base_url.trim_end_matches('/'));
+        let resp = client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", api_key))
+            .multipart(form)
+            .timeout(Duration::from_secs(120))
+            .send()
+            .await
+            .map_err(|e| format!("HTTP error: {}", e))?;
+
+        return handle_submit_response(resp).await;
+    }
+
+    // ── Default preflight path ───────────────────────────────────
     let part = multipart::Part::bytes(file_bytes)
         .file_name(file_name)
         .mime_str("application/octet-stream")
@@ -249,6 +370,10 @@ async fn submit_file(
         .await
         .map_err(|e| format!("HTTP error: {}", e))?;
 
+    handle_submit_response(resp).await
+}
+
+async fn handle_submit_response(resp: reqwest::Response) -> Result<String, String> {
     if resp.status() == 429 {
         let retry_after = resp
             .headers()
@@ -272,6 +397,39 @@ async fn submit_file(
         .map_err(|e| format!("Failed to parse response: {}", e))?;
 
     Ok(data.job_id)
+}
+
+async fn attach_approval_chain(
+    client: &reqwest::Client,
+    base_url: &str,
+    api_key: &str,
+    api_job_id: &str,
+    template_id: &str,
+) -> Result<(), String> {
+    let url = format!(
+        "{}/api/v1/jobs/{}/approval-chain",
+        base_url.trim_end_matches('/'),
+        api_job_id
+    );
+
+    let body = serde_json::json!({ "template_id": template_id });
+
+    let resp = client
+        .post(&url)
+        .header("Authorization", format!("Bearer {}", api_key))
+        .json(&body)
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("HTTP error: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!("API error {}: {}", status, body));
+    }
+
+    Ok(())
 }
 
 async fn poll_job(
@@ -369,7 +527,37 @@ mod tests {
             brand_mode: mode,
             brand_profile_id: profile.map(String::from),
             jdf_companion_timeout_secs: 30.0,
+            endpoint_id: None,
+            external_format: None,
+            approval_template_id: None,
         }
+    }
+
+    #[test]
+    fn external_report_only_when_opted_in() {
+        use std::path::PathBuf;
+        let mut folder = make_folder(BrandMode::Default, None);
+
+        // Stray XML next to PDFs: not external unless folder opts in.
+        assert!(!is_external_report(
+            &PathBuf::from("/watch/report.xml"),
+            &folder
+        ));
+
+        folder.external_format = Some("pitstop_xml".to_string());
+        assert!(is_external_report(
+            &PathBuf::from("/watch/report.xml"),
+            &folder
+        ));
+        assert!(is_external_report(
+            &PathBuf::from("/watch/report.json"),
+            &folder
+        ));
+        // Still submits PDFs as regular preflight.
+        assert!(!is_external_report(
+            &PathBuf::from("/watch/artwork.pdf"),
+            &folder
+        ));
     }
 
     #[test]

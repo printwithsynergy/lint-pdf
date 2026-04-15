@@ -3,6 +3,36 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+const KEYRING_SERVICE: &str = "com.lintpdf.desktop";
+const KEYRING_USER: &str = "api_key";
+
+/// Read the API key from the OS keyring (macOS Keychain, Windows Credential
+/// Manager, Linux Secret Service). Returns `None` when the keyring backend
+/// isn't available (e.g. headless Linux without D-Bus) or no key has been
+/// stored — callers fall back to `AppConfig::api_key`.
+fn keyring_read() -> Option<String> {
+    keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
+        .ok()
+        .and_then(|entry| entry.get_password().ok())
+        .filter(|s| !s.is_empty())
+}
+
+/// Write the API key to the OS keyring. Returns `Err` when the backend
+/// rejects the write — the caller decides whether to fall back.
+fn keyring_write(value: &str) -> Result<(), String> {
+    let entry = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER)
+        .map_err(|e| format!("Keyring unavailable: {}", e))?;
+    entry
+        .set_password(value)
+        .map_err(|e| format!("Keyring write failed: {}", e))
+}
+
+fn keyring_delete() {
+    if let Ok(entry) = keyring::Entry::new(KEYRING_SERVICE, KEYRING_USER) {
+        let _ = entry.delete_credential();
+    }
+}
+
 /// How a folder should brand the reports it submits.
 ///
 /// Mirrors the `brand` query-parameter values accepted by
@@ -57,6 +87,26 @@ pub struct FolderConfig {
     /// stabilizes, before submitting the PDF without a companion.
     #[serde(default = "default_jdf_timeout")]
     pub jdf_companion_timeout_secs: f64,
+
+    /// Route submissions from this folder through a tenant custom endpoint
+    /// (`POST /api/v1/endpoints/{identifier}/submit`) instead of the default
+    /// `POST /api/v1/jobs`. When set, the endpoint's bound profile / brand
+    /// win — `profile_id` and `brand_*` become ignored for submit, though
+    /// they still act as the UI's display value.
+    #[serde(default)]
+    pub endpoint_id: Option<String>,
+
+    /// Treat files matching `external_extensions` as pre-existing external
+    /// preflight reports. Submitted via `/api/v1/jobs` with
+    /// `preflight_source=external`. Set to `None` for "auto-detect" (the
+    /// engine sniffs the report shape at ingest).
+    #[serde(default)]
+    pub external_format: Option<String>,
+
+    /// Approval-chain template to attach to every job submitted from this
+    /// folder. UUID of a row in `GET /api/v1/approval-templates`.
+    #[serde(default)]
+    pub approval_template_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -98,7 +148,7 @@ impl ConfigManager {
         fs::create_dir_all(&config_dir).ok();
         let config_path = config_dir.join("config.json");
 
-        let config = if config_path.exists() {
+        let mut config = if config_path.exists() {
             match fs::read_to_string(&config_path) {
                 Ok(data) => serde_json::from_str(&data).unwrap_or_default(),
                 Err(_) => AppConfig::default(),
@@ -107,22 +157,87 @@ impl ConfigManager {
             AppConfig::default()
         };
 
-        Self {
-            config: Mutex::new(config),
-            config_path,
+        // Key migration:
+        // 1) If the keyring has a key, that wins — copy it into memory and
+        //    blank any legacy plaintext copy on disk.
+        // 2) Otherwise, if config.json still has a plaintext key from a
+        //    pre-keyring install, push it into the keyring and blank it on
+        //    disk on the next save.
+        if let Some(key) = keyring_read() {
+            config.api_key = key;
+            // Ensure the on-disk file doesn't retain stale plaintext.
+            // Write only when needed to avoid churning mtimes on launch.
+        } else if !config.api_key.is_empty() {
+            if keyring_write(&config.api_key).is_ok() {
+                log::info!(
+                    "Migrated API key from config.json to OS keyring ({})",
+                    KEYRING_SERVICE
+                );
+            } else {
+                log::warn!(
+                    "OS keyring unavailable; API key remains in config.json"
+                );
+            }
         }
+
+        let manager = Self {
+            config: Mutex::new(config.clone()),
+            config_path,
+        };
+
+        // Re-persist (without the plaintext key) if we just pulled it from
+        // the keyring. This scrubs any plaintext residue from older versions.
+        if keyring_read().is_some() && !config.api_key.is_empty() {
+            let _ = manager.save(config);
+        }
+
+        manager
     }
 
+    /// Returns the in-memory config, which already has the real API key —
+    /// callers never need to consult the keyring directly.
     pub fn get(&self) -> AppConfig {
         self.config.lock().unwrap().clone()
     }
 
     pub fn save(&self, config: AppConfig) -> Result<(), String> {
-        let json = serde_json::to_string_pretty(&config)
+        // Try to stash the API key in the OS keyring first. If that
+        // succeeds, we blank the plaintext copy in the on-disk file. On
+        // backends where the keyring is unavailable (headless Linux,
+        // locked-down kiosks) we fall back to keeping it in config.json,
+        // exactly like before this change.
+        let mut on_disk = config.clone();
+        let keyring_ok = if config.api_key.is_empty() {
+            keyring_delete();
+            true
+        } else {
+            match keyring_write(&config.api_key) {
+                Ok(()) => {
+                    on_disk.api_key = String::new();
+                    true
+                }
+                Err(e) => {
+                    log::warn!("{} — keeping API key in config.json", e);
+                    false
+                }
+            }
+        };
+
+        let json = serde_json::to_string_pretty(&on_disk)
             .map_err(|e| format!("Failed to serialize config: {}", e))?;
         fs::write(&self.config_path, json)
             .map_err(|e| format!("Failed to write config: {}", e))?;
+
+        // In-memory we always keep the real key so callers don't have to
+        // re-read the keyring on every request.
         *self.config.lock().unwrap() = config;
+
+        // Emit a tiny log trace so support can distinguish "kept in keyring"
+        // from "fell back to disk" in bug reports.
+        log::debug!(
+            "Config saved (keyring={})",
+            if keyring_ok { "ok" } else { "fallback" }
+        );
         Ok(())
     }
 

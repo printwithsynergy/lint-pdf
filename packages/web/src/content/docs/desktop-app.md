@@ -146,14 +146,55 @@ Every row in the **Results** tab has a **Share** section. For any completed job 
 - **PDF** — printable report (`/r/{token}.pdf`)
 - **JSON** — machine-readable findings (`/r/{token}.json`)
 - **XML** — the same findings in XML (`/r/{token}.xml`)
+- **Annotated PDF** — the source PDF with findings overlaid (Scale / Enterprise plans)
 
 Links persist across app restarts (they're cached alongside the job
 history) and honour the branding mode the folder was set to at the time
-of submission. Plan-gated formats (e.g. PDF on Free tier) surface the
-engine's 403 message inline — the other formats still mint fine.
+of submission. Plan-gated formats surface the engine's 403 message
+inline — the other formats still mint fine.
 
 See [Share Links](/docs/share-links) for the full semantics of these
 tokens, including expiry, revocation, and tier gating.
+
+## AI interpretation
+
+When your plan includes AI features, the Results detail panel shows an
+**Interpret** button on any completed job. Clicking it calls
+`GET /api/v1/captains-log/{job_id}/interpret` and renders the
+natural-language summary plus per-finding explanations, "why it matters"
+context, and suggestions.
+
+Runs cost AI credits per
+[AI Credits](/docs/ai-credits) — a 403 response from the engine is
+surfaced inline telling you to enable or top up AI access.
+
+## Submit routing: custom endpoints &amp; external imports
+
+Under **Submit routing** in the folder editor:
+
+- **Custom endpoint** — picks a tenant-defined vanity endpoint from
+  `GET /api/v1/endpoints`. When set, the folder submits to
+  `POST /api/v1/endpoints/{id}/submit` and the endpoint's bound profile
+  and brand win over the folder-level settings.
+- **External report import** — flips the folder from "preflight this
+  file" to "this file **is** a preflight report, just ingest it." When
+  set, `.xml` / `.json` files in the watched directory are submitted to
+  `POST /api/v1/jobs` with `preflight_source=external` and your chosen
+  `external_format` (PitStop XML, Callas JSON/XML, Acrobat XML, LintPDF
+  JSON). PDFs in the same folder still go through fresh preflight.
+
+See [External Imports](/docs/external-imports) for supported report
+formats and auto-detection rules.
+
+## Approval chains
+
+Under **Approvals** in the folder editor, attach an
+[approval-chain template](/docs/share-links#approval-chains) to every
+job submitted from this folder. The app calls
+`POST /api/v1/jobs/{id}/approval-chain` with `template_id` right after
+the job is created. A failure here is non-fatal — the preflight still
+runs, and an advisory note is surfaced in the Results panel so you know
+to re-attach manually.
 
 ## Advanced Settings Per Folder
 
@@ -204,9 +245,15 @@ The app stores data locally on your machine:
 | Data          | Location                                                                                                                                                                |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Configuration | `~/.config/lintpdf-desktop/config.json` (Linux), `~/Library/Application Support/lintpdf-desktop/config.json` (macOS), `%APPDATA%/lintpdf-desktop/config.json` (Windows) |
+| API key       | macOS Keychain / Windows Credential Manager / Linux Secret Service (service `com.lintpdf.desktop`, user `api_key`). Older installs that stored the key in `config.json` are migrated on first launch. |
 | Job History   | `~/.local/share/lintpdf-desktop/jobs.db` (Linux), `~/Library/Application Support/lintpdf-desktop/jobs.db` (macOS), `%APPDATA%/lintpdf-desktop/jobs.db` (Windows)        |
 
 Job history is stored in a local SQLite database and auto-prunes to the most recent 1,000 entries.
+
+> On headless Linux hosts without a running Secret Service daemon, the
+> app falls back to storing the API key in `config.json` (the same place
+> it was stored before the keyring integration). A warning is written to
+> the log on startup so you know.
 
 ## CLI Alternative
 

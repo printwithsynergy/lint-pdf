@@ -9,6 +9,13 @@
  */
 export type BrandMode = "default" | "anonymous" | "lintpdf" | "profile";
 
+export type ExternalFormat =
+  | "pitstop_xml"
+  | "callas_json"
+  | "callas_xml"
+  | "acrobat_xml"
+  | "lintpdf_json";
+
 export interface FolderConfig {
   id: string;
   name: string;
@@ -25,6 +32,9 @@ export interface FolderConfig {
   brand_mode: BrandMode;
   brand_profile_id: string | null;
   jdf_companion_timeout_secs: number;
+  endpoint_id: string | null;
+  external_format: ExternalFormat | null;
+  approval_template_id: string | null;
 }
 
 export interface BrandProfileSummary {
@@ -38,6 +48,32 @@ export interface ShareLinks {
   pdf?: string;
   json?: string;
   xml?: string;
+  annotated_pdf?: string;
+}
+
+export interface EndpointSummary {
+  id: string;
+  slug: string;
+  profile_id: string;
+  description: string | null;
+  is_active: boolean;
+}
+
+export interface ApprovalTemplateSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  is_default: boolean;
+}
+
+export interface AiInterpretation {
+  summary: string;
+  interpretations: Array<{
+    inspection_id?: string;
+    explanation?: string;
+    why_it_matters?: string;
+    suggestion?: string;
+  }>;
 }
 
 export interface AppConfig {
@@ -96,6 +132,11 @@ export const DEFAULT_EXTENSIONS = [
   ".xjdf",
 ];
 
+/// Extensions recognised as pre-existing external preflight reports (PitStop,
+/// Callas, Acrobat, LintPDF native). Enabled only when a folder has an
+/// `external_format` configured or selects auto-detect.
+export const EXTERNAL_REPORT_EXTENSIONS = [".xml", ".json"];
+
 export function newFolderConfig(partial?: Partial<FolderConfig>): FolderConfig {
   return {
     id: crypto.randomUUID(),
@@ -113,6 +154,9 @@ export function newFolderConfig(partial?: Partial<FolderConfig>): FolderConfig {
     brand_mode: "default",
     brand_profile_id: null,
     jdf_companion_timeout_secs: 30.0,
+    endpoint_id: null,
+    external_format: null,
+    approval_template_id: null,
     ...partial,
   };
 }

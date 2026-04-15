@@ -23,6 +23,8 @@ pub struct ShareLinks {
     pub json: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub xml: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub annotated_pdf: Option<String>,
 }
 
 impl ShareLinks {
@@ -31,6 +33,7 @@ impl ShareLinks {
             && self.pdf.is_none()
             && self.json.is_none()
             && self.xml.is_none()
+            && self.annotated_pdf.is_none()
     }
 }
 

@@ -1,9 +1,28 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Save, Trash2 } from "lucide-react";
-import type { BrandMode, BrandProfileSummary, FolderConfig } from "../lib/types";
-import { DEFAULT_EXTENSIONS } from "../lib/types";
+import type {
+  ApprovalTemplateSummary,
+  BrandMode,
+  BrandProfileSummary,
+  EndpointSummary,
+  ExternalFormat,
+  FolderConfig,
+} from "../lib/types";
+import { DEFAULT_EXTENSIONS, EXTERNAL_REPORT_EXTENSIONS } from "../lib/types";
 import { DirectoryPicker } from "../components/DirectoryPicker";
-import { listBrandProfiles } from "../lib/tauri";
+import {
+  listApprovalTemplates,
+  listBrandProfiles,
+  listEndpoints,
+} from "../lib/tauri";
+
+const EXTERNAL_FORMATS: Array<{ value: ExternalFormat; label: string }> = [
+  { value: "pitstop_xml", label: "Enfocus PitStop XML" },
+  { value: "callas_json", label: "Callas pdfToolbox JSON" },
+  { value: "callas_xml", label: "Callas pdfToolbox XML" },
+  { value: "acrobat_xml", label: "Adobe Acrobat XML" },
+  { value: "lintpdf_json", label: "LintPDF native JSON" },
+];
 
 interface FolderEditProps {
   folder: FolderConfig;
@@ -26,10 +45,49 @@ export function FolderEdit({
   const [brandProfilesError, setBrandProfilesError] = useState<string | null>(
     null,
   );
+  const [endpoints, setEndpoints] = useState<EndpointSummary[] | null>(null);
+  const [endpointsError, setEndpointsError] = useState<string | null>(null);
+  const [approvalTemplates, setApprovalTemplates] = useState<
+    ApprovalTemplateSummary[] | null
+  >(null);
+  const [approvalTemplatesError, setApprovalTemplatesError] = useState<
+    string | null
+  >(null);
 
   function update(partial: Partial<FolderConfig>) {
     setFolder((prev) => ({ ...prev, ...partial }));
   }
+
+  // Lazily fetch endpoints on mount — the dropdown wants them available
+  // before the user opens it, and the list is small.
+  useEffect(() => {
+    let cancelled = false;
+    listEndpoints()
+      .then((items) => {
+        if (!cancelled) setEndpoints(items);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setEndpointsError(String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Same for approval templates.
+  useEffect(() => {
+    let cancelled = false;
+    listApprovalTemplates()
+      .then((items) => {
+        if (!cancelled) setApprovalTemplates(items);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setApprovalTemplatesError(String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Lazily fetch BrandProfiles the first time the user picks "profile" mode.
   useEffect(() => {
@@ -190,6 +248,114 @@ export function FolderEdit({
           </div>
         </div>
 
+        {/* Submit routing */}
+        <div className="card p-4 space-y-4">
+          <div>
+            <h3 className="text-sm font-medium text-gray-900">
+              Submit routing
+            </h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Optional. Pick a tenant custom endpoint to route files through
+              (its bound profile + brand win over the folder-level settings
+              above), or enable external-report import for pre-existing
+              PitStop / Callas / Acrobat reports.
+            </p>
+          </div>
+
+          <div>
+            <label className="label">Custom endpoint</label>
+            <select
+              className="input"
+              value={folder.endpoint_id ?? ""}
+              onChange={(e) =>
+                update({ endpoint_id: e.target.value || null })
+              }
+              disabled={endpoints === null && endpointsError !== null}
+            >
+              <option value="">
+                Use default /api/v1/jobs (no custom endpoint)
+              </option>
+              {(endpoints ?? [])
+                .filter((ep) => ep.is_active)
+                .map((ep) => (
+                  <option key={ep.id} value={ep.id}>
+                    {ep.slug} — {ep.profile_id}
+                  </option>
+                ))}
+            </select>
+            {endpointsError && (
+              <p className="text-xs text-amber-600 mt-1">
+                Could not load endpoints ({endpointsError}).
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="label">External report import</label>
+            <select
+              className="input"
+              value={folder.external_format ?? ""}
+              onChange={(e) =>
+                update({
+                  external_format: (e.target.value ||
+                    null) as FolderConfig["external_format"],
+                })
+              }
+            >
+              <option value="">Off — submit files for fresh preflight</option>
+              {EXTERNAL_FORMATS.map((fmt) => (
+                <option key={fmt.value} value={fmt.value}>
+                  {fmt.label}
+                </option>
+              ))}
+            </select>
+            {folder.external_format && (
+              <p className="text-xs text-gray-400 mt-1">
+                .xml and .json files in this folder will be submitted as
+                external preflight reports, not re-preflighted. Add those
+                extensions under File Types below.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Approvals */}
+        <div className="card p-4 space-y-4">
+          <div>
+            <h3 className="text-sm font-medium text-gray-900">Approvals</h3>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Attach an approval-chain template to every job submitted from
+              this folder. Leave empty to skip.
+            </p>
+          </div>
+          <div>
+            <label className="label">Approval template</label>
+            <select
+              className="input"
+              value={folder.approval_template_id ?? ""}
+              onChange={(e) =>
+                update({ approval_template_id: e.target.value || null })
+              }
+              disabled={
+                approvalTemplates === null && approvalTemplatesError !== null
+              }
+            >
+              <option value="">No approval chain</option>
+              {(approvalTemplates ?? []).map((tpl) => (
+                <option key={tpl.id} value={tpl.id}>
+                  {tpl.name}
+                  {tpl.is_default ? " (default)" : ""}
+                </option>
+              ))}
+            </select>
+            {approvalTemplatesError && (
+              <p className="text-xs text-amber-600 mt-1">
+                Could not load templates ({approvalTemplatesError}).
+              </p>
+            )}
+          </div>
+        </div>
+
         {/* Branding */}
         <div className="card p-4 space-y-4">
           <div>
@@ -260,7 +426,12 @@ export function FolderEdit({
         <div className="card p-4 space-y-3">
           <h3 className="text-sm font-medium text-gray-900">File Types</h3>
           <div className="flex flex-wrap gap-2">
-            {DEFAULT_EXTENSIONS.map((ext) => {
+            {[
+              ...DEFAULT_EXTENSIONS,
+              ...(folder.external_format
+                ? EXTERNAL_REPORT_EXTENSIONS
+                : []),
+            ].map((ext) => {
               const active = folder.file_extensions.includes(ext);
               return (
                 <button
