@@ -4,6 +4,7 @@ import { FolderList } from "./pages/FolderList";
 import { FolderEdit } from "./pages/FolderEdit";
 import { Results } from "./pages/Results";
 import { Settings } from "./pages/Settings";
+import { ViewerPane } from "./components/viewer/ViewerPane";
 import type {
   AppConfig,
   FolderConfig,
@@ -16,7 +17,8 @@ export type Page =
   | { kind: "folders" }
   | { kind: "folder-edit"; folder: FolderConfig; isNew: boolean }
   | { kind: "results" }
-  | { kind: "settings" };
+  | { kind: "settings" }
+  | { kind: "viewer"; job: JobResult };
 
 export default function App() {
   const [page, setPage] = useState<Page>({ kind: "folders" });
@@ -139,6 +141,13 @@ export default function App() {
             await api.clearHistory();
             setJobs([]);
           }}
+          onOpenViewer={(job) => setPage({ kind: "viewer", job })}
+        />
+      )}
+      {page.kind === "viewer" && (
+        <ViewerPane
+          job={page.job}
+          onClose={() => setPage({ kind: "results" })}
         />
       )}
       {page.kind === "settings" && (

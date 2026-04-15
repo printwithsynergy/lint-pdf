@@ -116,6 +116,141 @@ export interface TestConnectionResult {
   error: string | null;
 }
 
+// ── Viewer types ─────────────────────────────────────────────
+
+export interface PageBox {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export interface PageInfo {
+  page_num: number;
+  width_pts: number;
+  height_pts: number;
+  media_box: PageBox;
+  crop_box: PageBox | null;
+  trim_box: PageBox | null;
+  bleed_box: PageBox | null;
+  rotation: number;
+}
+
+export interface PagesResponse {
+  job_id: string;
+  page_count: number;
+  pages: PageInfo[];
+}
+
+export interface SeparationChannel {
+  name: string;
+  type: string; // "process" | "spot"
+}
+
+export interface SeparationsResponse {
+  job_id: string;
+  channels: SeparationChannel[];
+}
+
+export interface LayerInfo {
+  name: string;
+  ocg_index: number;
+  default_on: boolean;
+}
+
+export interface LayersResponse {
+  job_id: string;
+  layers: LayerInfo[];
+}
+
+export interface ViewerAnnotation {
+  id: string;
+  job_id: string;
+  page_num: number;
+  kind: string;
+  geometry: Record<string, unknown>;
+  color: string | null;
+  text: string | null;
+  author_email: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+export interface ViewerFinding {
+  inspection_id: string;
+  severity: "error" | "warning" | "advisory" | string;
+  message: string;
+  page_num: number | null;
+  bbox: number[] | null;
+  category: string | null;
+  source: string | null;
+  object_id: string | null;
+  object_type: string | null;
+}
+
+export interface ViewerConfig {
+  enable_separations: boolean;
+  enable_tac_heatmap: boolean;
+  enable_annotations: boolean;
+  enable_measurement: boolean;
+  enable_layers: boolean;
+  enable_findings_panel: boolean;
+  enable_page_thumbnails: boolean;
+  enable_zoom: boolean;
+  default_zoom: number | null;
+  default_dpi: number | null;
+  default_tac_limit: number | null;
+  preflight_source: string | null;
+  capabilities: Record<string, boolean>;
+}
+
+export interface VerdictResponse {
+  verdict: string | null;
+  auto_passed: boolean | null;
+  verdict_by: string | null;
+  verdict_at: string | null;
+  notes: string | null;
+}
+
+export interface TacRun {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  mean_tac: number;
+  limit: number;
+  exceeds: boolean;
+}
+
+export interface TacRunsResponse {
+  job_id: string;
+  page_num: number;
+  dpi: number;
+  tac_limit: number;
+  runs: TacRun[];
+}
+
+export interface DensitometerChannel {
+  name: string;
+  percent: number;
+}
+
+export interface DensitometerResponse {
+  x: number;
+  y: number;
+  dpi: number;
+  channels: DensitometerChannel[];
+  tac: number;
+  tac_limit: number;
+  limit_exceeded: boolean;
+}
+
+export interface TileResult {
+  path: string;
+  bytes: number;
+  from_cache: boolean;
+}
+
 export interface JobSummary {
   passed: boolean;
   error_count: number;

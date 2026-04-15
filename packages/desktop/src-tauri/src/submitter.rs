@@ -689,6 +689,7 @@ async fn send_for_job_id(
 /// any records whose source file is no longer on disk. Returns the
 /// batch response. When zero files survive the disk check, returns
 /// `Terminal("No readable files in batch")`.
+#[allow(clippy::too_many_arguments)]
 async fn submit_batch(
     client: &reqwest::Client,
     base_url: &str,

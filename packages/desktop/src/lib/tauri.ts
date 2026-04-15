@@ -6,11 +6,21 @@ import type {
   ApprovalTemplateSummary,
   BrandProfileSummary,
   ConnectivityStatus,
+  DensitometerResponse,
   EndpointSummary,
   FolderConfig,
   JobResult,
+  LayersResponse,
+  PagesResponse,
+  SeparationsResponse,
   ShareLinks,
+  TacRunsResponse,
   TestConnectionResult,
+  TileResult,
+  VerdictResponse,
+  ViewerAnnotation,
+  ViewerConfig,
+  ViewerFinding,
   WatcherStatus,
 } from "./types";
 
@@ -136,6 +146,99 @@ export async function testConnection(
 // `queued_retry` and the drainer picks it up on the next tick.
 export async function retryJob(localId: string): Promise<void> {
   return invoke("retry_job", { localId });
+}
+
+// ── Native viewer ────────────────────────────────────────────
+
+export async function viewerPages(jobId: string): Promise<PagesResponse> {
+  return invoke("viewer_pages", { jobId });
+}
+
+export async function viewerSeparations(
+  jobId: string,
+): Promise<SeparationsResponse> {
+  return invoke("viewer_separations", { jobId });
+}
+
+export async function viewerLayers(jobId: string): Promise<LayersResponse> {
+  return invoke("viewer_layers", { jobId });
+}
+
+export async function viewerAnnotations(
+  jobId: string,
+): Promise<ViewerAnnotation[]> {
+  return invoke("viewer_annotations", { jobId });
+}
+
+export async function viewerConfig(jobId: string): Promise<ViewerConfig> {
+  return invoke("viewer_config", { jobId });
+}
+
+export async function viewerVerdict(jobId: string): Promise<VerdictResponse> {
+  return invoke("viewer_verdict", { jobId });
+}
+
+export async function viewerFindings(
+  jobId: string,
+): Promise<ViewerFinding[]> {
+  return invoke("viewer_findings", { jobId });
+}
+
+export async function viewerTile(
+  jobId: string,
+  pageNum: number,
+  dpi?: number,
+): Promise<TileResult> {
+  return invoke("viewer_tile", { jobId, pageNum, dpi });
+}
+
+export async function viewerChannelTile(
+  jobId: string,
+  pageNum: number,
+  channel: string,
+  dpi?: number,
+): Promise<TileResult> {
+  return invoke("viewer_channel_tile", { jobId, pageNum, channel, dpi });
+}
+
+export async function viewerTacHeatmap(
+  jobId: string,
+  pageNum: number,
+  dpi?: number,
+  tacLimit?: number,
+): Promise<TileResult> {
+  return invoke("viewer_tac_heatmap", { jobId, pageNum, dpi, tacLimit });
+}
+
+export async function viewerTacRuns(
+  jobId: string,
+  pageNum: number,
+  dpi: number,
+  tacLimit: number,
+): Promise<TacRunsResponse> {
+  return invoke("viewer_tac_runs", { jobId, pageNum, dpi, tacLimit });
+}
+
+export async function viewerDensitometer(
+  jobId: string,
+  pageNum: number,
+  x: number,
+  y: number,
+  dpi?: number,
+  tacLimit?: number,
+): Promise<DensitometerResponse> {
+  return invoke("viewer_densitometer", {
+    jobId,
+    pageNum,
+    x,
+    y,
+    dpi,
+    tacLimit,
+  });
+}
+
+export async function viewerClearTileCache(jobId: string): Promise<void> {
+  return invoke("viewer_clear_tile_cache", { jobId });
 }
 
 // Directory picker

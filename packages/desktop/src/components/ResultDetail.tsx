@@ -10,6 +10,7 @@ import {
   Sparkles,
   ExternalLink,
   RotateCcw,
+  Eye,
 } from "lucide-react";
 import type {
   AiInterpretation,
@@ -30,6 +31,8 @@ interface ResultDetailProps {
   job: JobResult;
   onClose: () => void;
   onJobUpdate?: (job: JobResult) => void;
+  /** Navigate to the in-app native viewer. */
+  onOpenViewer?: (job: JobResult) => void;
 }
 
 type ReportFormat = "html" | "pdf" | "json" | "xml" | "annotated_pdf";
@@ -42,7 +45,12 @@ const FORMAT_LABELS: Record<ReportFormat, string> = {
   annotated_pdf: "Annotated PDF",
 };
 
-export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
+export function ResultDetail({
+  job,
+  onClose,
+  onJobUpdate,
+  onOpenViewer,
+}: ResultDetailProps) {
   const [links, setLinks] = useState<ShareLinks>(job.share_links ?? {});
   const [busy, setBusy] = useState<ReportFormat | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -109,7 +117,16 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
     }
   }
 
-  async function handleOpenViewer() {
+  function handleOpenViewer() {
+    // Phase 4 replaces the child-window hosted viewer with an in-app
+    // native viewer driven by the engine's tile/channel/TAC endpoints.
+    // We still keep the hosted share-link minting path available under
+    // `openViewerWindow` for cases where the user explicitly wants a
+    // browser session (e.g. to send the /r/{token} URL to a teammate).
+    onOpenViewer?.(job);
+  }
+
+  async function handleOpenHostedViewer() {
     if (!job.job_id || viewerBusy) return;
     setViewerBusy(true);
     setViewerError(null);
@@ -267,19 +284,32 @@ export function ResultDetail({ job, onClose, onJobUpdate }: ResultDetailProps) {
       {canShare && (
         <div className="mt-4 border-t border-gray-100 pt-3">
           <button
-            onClick={() => void handleOpenViewer()}
-            disabled={!canOpenViewer || viewerBusy}
-            className="btn-primary text-xs w-full mb-3"
+            onClick={handleOpenViewer}
+            disabled={!onOpenViewer || !online}
+            className="btn-primary text-xs w-full mb-2"
             title={
               online
-                ? "Open the hosted viewer in a new window"
+                ? "Open the native viewer (page tiles, channels, TAC, findings, probe)"
+                : "Offline — the native viewer pulls tiles from the engine on demand and can't render pages not previously cached."
+            }
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Open viewer
+          </button>
+          <button
+            onClick={() => void handleOpenHostedViewer()}
+            disabled={!canOpenViewer || viewerBusy}
+            className="btn-secondary text-xs w-full mb-3"
+            title={
+              online
+                ? "Open the hosted viewer in a browser window instead — useful for sharing a short-lived /r/{token} URL with a teammate."
                 : hasCachedHtml
                   ? "Open the cached viewer link (will show the browser's offline page if still disconnected)"
-                  : "Offline — viewer unavailable. Reconnect to mint a share link."
+                  : "Offline — hosted viewer unavailable. Reconnect to mint a share link."
             }
           >
             <ExternalLink className="h-3.5 w-3.5" />
-            {viewerBusy ? "Opening…" : "Open viewer"}
+            {viewerBusy ? "Opening…" : "Open hosted viewer"}
           </button>
           {viewerError && (
             <p className="mb-2 text-xs text-red-600 whitespace-pre-wrap">

@@ -180,17 +180,56 @@ Every row in the **Results** tab has a **Share** section. For any completed job 
 
 ### Open viewer
 
-Above the share-link row, an **Open viewer** button mints an HTML
-share link (if not already cached) and opens it in a new desktop
-window at 1400×900. You get the same interactive viewer the web
-dashboard renders — page tiles, channel toggles, TAC heatmap,
-densitometer, layer panel, annotation sidebar — without a
-context switch out of the app.
+The **Open viewer** button on a completed job swaps the main panel
+over to a native viewer rendered inside the desktop shell. The
+toolbar, page navigation, thumbnail strip, and six side panels
+(Findings, Channels, TAC, Layers, Notes, Probe) are all driven
+directly by the engine's `/api/v1/viewer/…` endpoints, not by a
+hosted web page in a child window.
 
-The button is disabled while offline unless a viewer URL has already
-been minted for this job (in which case you can still open it — the
-child window shows the browser's offline page if the server is
-genuinely unreachable).
+What each panel does:
+
+- **Findings** — lists every inspection-raised error, warning, and
+  advisory. Click a row to jump to that page with the relevant bbox
+  halo'd on the canvas. Severity colours: red (error), amber
+  (warning), sky (advisory).
+- **Channels** — isolate a single process (Cyan/Magenta/Yellow/
+  Black) or spot separation as a grayscale overlay, composited
+  multiply so hotspots are obvious.
+- **TAC** — enable a TAC heatmap overlay with a slider-driven ink
+  limit (100–500%). The panel lists every TAC run on the current
+  page, colour-coded by whether it exceeds the limit.
+- **Layers** — the PDF's OCG list with the user's intended visibility
+  state. (The engine renders the document's default state of each
+  layer, so this panel records your intent but doesn't re-render; use
+  the hosted viewer for interactive layer isolation.)
+- **Notes** — annotations attached to the job. Click to jump, author
+  + timestamp shown.
+- **Probe** — the densitometer. Click anywhere on the page image and
+  a 300 DPI server-side sample returns per-channel ink coverage plus
+  the summed TAC, highlighted red when the result exceeds the active
+  limit.
+
+Behind the scenes:
+
+- **Tile cache**: every page raster, channel tile, and TAC heatmap
+  the viewer fetches is written through a durable LRU cache at
+  `{APPDATA}/lintpdf-desktop/tiles/{job_id}/…` (1 GiB default
+  budget). Reopening the same job is instant, and — critically —
+  pages you've seen before render offline. Uncached tiles on an
+  offline machine fail fast with a clear "Offline — tile not in
+  cache" message.
+- **DPI switching**: ≤150% zoom uses 150 DPI rasters (fast, small);
+  anything higher re-fetches at 300 DPI for crisp detail. The
+  densitometer always samples at 300 DPI regardless of zoom.
+- **Bearer auth**: the viewer reuses the same API key the rest of
+  the app already holds in the OS keyring — no `/r/{token}` mint
+  round-trip is required. The "Open hosted viewer" button (kept as
+  a secondary action) still mints a share link for sending a short-
+  lived URL to a teammate.
+- **Clearing the cache**: quitting and relaunching keeps the cache;
+  deleting a job from Results prunes its tile directory in the
+  background.
 
 Links persist across app restarts (they're cached alongside the job
 history) and honour the branding mode the folder was set to at the time

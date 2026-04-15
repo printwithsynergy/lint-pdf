@@ -5,7 +5,9 @@ mod db;
 mod drainer;
 mod router;
 mod submitter;
+mod tiles;
 mod tray;
+mod viewer;
 mod watcher;
 
 use commands::AppState;
@@ -145,6 +147,19 @@ pub fn run() {
             commands::open_viewer_window,
             commands::test_connection,
             commands::retry_job,
+            viewer::viewer_pages,
+            viewer::viewer_separations,
+            viewer::viewer_layers,
+            viewer::viewer_annotations,
+            viewer::viewer_config,
+            viewer::viewer_verdict,
+            viewer::viewer_findings,
+            viewer::viewer_tac_runs,
+            viewer::viewer_densitometer,
+            viewer::viewer_tile,
+            viewer::viewer_channel_tile,
+            viewer::viewer_tac_heatmap,
+            viewer::viewer_clear_tile_cache,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

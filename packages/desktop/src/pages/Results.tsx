@@ -8,9 +8,15 @@ interface ResultsProps {
   jobs: JobResult[];
   folders: FolderConfig[];
   onClear: () => Promise<void>;
+  onOpenViewer: (job: JobResult) => void;
 }
 
-export function Results({ jobs, folders, onClear }: ResultsProps) {
+export function Results({
+  jobs,
+  folders,
+  onClear,
+  onOpenViewer,
+}: ResultsProps) {
   const [selectedJob, setSelectedJob] = useState<JobResult | null>(null);
   const [filter, setFilter] = useState<string>("all");
 
@@ -92,6 +98,7 @@ export function Results({ jobs, folders, onClear }: ResultsProps) {
               job={selectedJob}
               onClose={() => setSelectedJob(null)}
               onJobUpdate={setSelectedJob}
+              onOpenViewer={onOpenViewer}
             />
           </div>
         )}
