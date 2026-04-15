@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@thinkneverland/pixie-dust-ui";
 import { SkeletonDashboard } from "@/components/skeleton";
 
 interface ColorConfig {
@@ -422,13 +423,11 @@ export default function ColorConfigPage() {
         </div>
       )}
 
-      <button
-        onClick={handleSave}
-        disabled={saving}
-        className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-      >
-        {saving ? "Saving..." : "Save Color Configuration"}
-      </button>
+      <div className="mt-4">
+        <Button onClick={handleSave} disabled={saving} loading={saving}>
+          Save Color Configuration
+        </Button>
+      </div>
 
       {/* Pantone Color Overrides */}
       <div className="mt-10 rounded-lg border p-4">
