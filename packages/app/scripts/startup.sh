@@ -35,6 +35,9 @@ ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "sidebarAccentColor" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "faviconUrl" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "loginHeading" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "loginSubheading" TEXT;
+-- Added in @thinkneverland/pixie-dust-database 2.x (Phase 5 refresh):
+-- JSON blob of theme-token overrides applied globally.
+ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "themeTokenOverrides" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "disabledPlugins" TEXT;
 
 -- MagicLink ipAddress column added in PD update

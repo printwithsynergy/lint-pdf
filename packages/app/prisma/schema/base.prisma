@@ -185,6 +185,10 @@ model AppSettings {
   faviconUrl           String?  /// Favicon as data URL or path
   loginHeading         String?  /// Custom login heading
   loginSubheading      String?  /// Custom login subheading
+  /// JSON blob of { [cssVarName]: "hsl(...)" | "#hex" | "rgb(...)" }
+  /// — applied globally by the Pixie Dust ThemeTokenEditor to
+  /// override the default theme. Required by @thinkneverland/pixie-dust-database >= 2.0.
+  themeTokenOverrides  String?
   disabledPlugins      String?  /// Comma-separated plugin names to disable
   updatedAt            DateTime @updatedAt
 }
