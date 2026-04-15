@@ -31,6 +31,7 @@ import {
   viewerTacHeatmap,
   viewerTacRuns,
   viewerTile,
+  type OcgMask,
 } from "../../lib/tauri";
 import { PageCanvas } from "./PageCanvas";
 import { FindingsPanel } from "./FindingsPanel";
@@ -90,8 +91,12 @@ export function ViewerPane({ job, onClose }: ViewerPaneProps) {
   const [tacImagePath, setTacImagePath] = useState<string | null>(null);
   const [tacRuns, setTacRuns] = useState<TacRunsResponse | null>(null);
 
-  // Layer toggles (visual-only — OCG filtering isn't implemented in
-  // the tile renderer yet. Displayed state only for now.)
+  // Layer toggles. We keep the user's intended visibility per OCG
+  // index; the effective mask is computed against the PDF's declared
+  // defaults (``layer.default_on``) so re-showing a layer that was
+  // off-by-default produces ``on=[idx]``, hiding a layer that was
+  // on-by-default produces ``off=[idx]``. Default matches = empty
+  // mask = Phase 4 cache hit.
   const [layerVisibility, setLayerVisibility] = useState<Record<number, boolean>>(
     {},
   );
@@ -106,6 +111,28 @@ export function ViewerPane({ job, onClose }: ViewerPaneProps) {
   // Zoom determines DPI: ≤1.5× uses 150 DPI, >1.5× uses 300 DPI for
   // crisp zoomed detail without spamming 600 DPI requests.
   const effectiveDpi = zoom > 1.5 ? HI_DPI : DEFAULT_DPI;
+
+  // Compute the OCG override mask from user toggles vs PDF defaults.
+  // `useMemo` with a stable string key avoids triggering fetch
+  // effects on every render when the mask is unchanged.
+  const ocgMask = useMemo<OcgMask>(() => {
+    if (!layers) return { on: [], off: [] };
+    const on: number[] = [];
+    const off: number[] = [];
+    for (const layer of layers.layers) {
+      const userOn = layerVisibility[layer.ocg_index] ?? layer.default_on;
+      if (userOn && !layer.default_on) on.push(layer.ocg_index);
+      else if (!userOn && layer.default_on) off.push(layer.ocg_index);
+    }
+    on.sort((a, b) => a - b);
+    off.sort((a, b) => a - b);
+    return { on, off };
+  }, [layers, layerVisibility]);
+
+  /** Serialized form used as a stable dependency for fetch effects
+   * — React's default reference equality would re-fetch every
+   * render otherwise. */
+  const ocgKey = `${ocgMask.on.join(",")}|${ocgMask.off.join(",")}`;
 
   // Keep a ref so that page-fetch effects can detect staleness.
   const fetchTokenRef = useRef(0);
@@ -175,7 +202,7 @@ export function ViewerPane({ job, onClose }: ViewerPaneProps) {
     const token = ++fetchTokenRef.current;
     setPageLoading(true);
     setPageError(null);
-    viewerTile(apiJobId, currentPage, effectiveDpi)
+    viewerTile(apiJobId, currentPage, effectiveDpi, ocgMask)
       .then((r) => {
         if (token !== fetchTokenRef.current) return; // superseded
         setCurrentImagePath(r.path);
@@ -188,7 +215,10 @@ export function ViewerPane({ job, onClose }: ViewerPaneProps) {
       .finally(() => {
         if (token === fetchTokenRef.current) setPageLoading(false);
       });
-  }, [apiJobId, pages, currentPage, effectiveDpi]);
+    // `ocgKey` is the serialized mask; keeps the effect stable when
+    // the mask object identity changes but the values don't.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiJobId, pages, currentPage, effectiveDpi, ocgKey]);
 
   // ── Channel overlay fetch ────────────────────────────────
 
@@ -198,7 +228,7 @@ export function ViewerPane({ job, onClose }: ViewerPaneProps) {
       return;
     }
     let cancelled = false;
-    viewerChannelTile(apiJobId, currentPage, activeChannel, effectiveDpi)
+    viewerChannelTile(apiJobId, currentPage, activeChannel, effectiveDpi, ocgMask)
       .then((r) => {
         if (!cancelled) setChannelImagePath(r.path);
       })
@@ -208,7 +238,8 @@ export function ViewerPane({ job, onClose }: ViewerPaneProps) {
     return () => {
       cancelled = true;
     };
-  }, [apiJobId, activeChannel, currentPage, effectiveDpi]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiJobId, activeChannel, currentPage, effectiveDpi, ocgKey]);
 
   // ── TAC heatmap + runs fetch ─────────────────────────────
 
@@ -219,7 +250,7 @@ export function ViewerPane({ job, onClose }: ViewerPaneProps) {
       return;
     }
     let cancelled = false;
-    viewerTacHeatmap(apiJobId, currentPage, effectiveDpi, tacLimit)
+    viewerTacHeatmap(apiJobId, currentPage, effectiveDpi, tacLimit, ocgMask)
       .then((r) => {
         if (!cancelled) setTacImagePath(r.path);
       })
@@ -236,7 +267,8 @@ export function ViewerPane({ job, onClose }: ViewerPaneProps) {
     return () => {
       cancelled = true;
     };
-  }, [apiJobId, tacEnabled, currentPage, effectiveDpi, tacLimit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiJobId, tacEnabled, currentPage, effectiveDpi, tacLimit, ocgKey]);
 
   // ── Helpers ──────────────────────────────────────────────
 

@@ -43,13 +43,14 @@ export default function ApiViewerSection() {
       <Endpoint
         method="GET"
         path="/api/v1/viewer/jobs/{job_id}/pages/{page_num}/tile?dpi=150"
-        description="Render a single page as a PNG tile. dpi range 36–600."
+        description="Render a single page as a PNG tile. dpi range 36–600. Optional ocg_on / ocg_off query params render the page with specific OCG (layer) indices toggled — see the Layers section below."
         auth
-        request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/d4e5f6a7-.../pages/1/tile?dpi=200" \\
+        request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/d4e5f6a7-.../pages/1/tile?dpi=200&ocg_on=0,3&ocg_off=2" \\
   -H "Authorization: Bearer lpdf_live_..." \\
   --output page-1.png`}
         response={`200 OK
-Content-Type: image/png`}
+Content-Type: image/png
+# 422 if ocg_on/ocg_off conflict, indices are out of range, or the PDF has no OCGs.`}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Separations &amp; channels</h4>

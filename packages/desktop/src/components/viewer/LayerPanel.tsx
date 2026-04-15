@@ -14,11 +14,11 @@ export function LayerPanel({
   return (
     <div className="p-3 text-xs">
       <p className="mb-2 text-gray-500">
-        Optional Content Groups (layers) declared in the PDF. Toggling
-        here shows the user's intended visibility for each layer — the
-        engine always renders the document's default state, so this
-        panel doesn't re-render pages. Check the hosted viewer or an
-        Acrobat-class tool if you need interactive layer isolation.
+        Optional Content Groups (layers) declared in the PDF. Checking
+        or unchecking a layer triggers an engine-side re-render with
+        that visibility mask applied — the first toggle for a given
+        combination takes about 500ms, subsequent requests hit the
+        local tile cache and paint instantly.
       </p>
       <ul className="space-y-1">
         {layers.map((layer) => {

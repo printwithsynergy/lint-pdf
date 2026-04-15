@@ -184,12 +184,30 @@ export async function viewerFindings(
   return invoke("viewer_findings", { jobId });
 }
 
+/**
+ * OCG (layer) toggle mask. ``on`` forces visibility; ``off`` forces
+ * hiding. Empty arrays mean "use PDF defaults" — and also mean the
+ * engine/tile-cache key matches the pre-Phase-5 layout, so warmed
+ * tiles still hit.
+ */
+export interface OcgMask {
+  on: number[];
+  off: number[];
+}
+
 export async function viewerTile(
   jobId: string,
   pageNum: number,
   dpi?: number,
+  ocg?: OcgMask,
 ): Promise<TileResult> {
-  return invoke("viewer_tile", { jobId, pageNum, dpi });
+  return invoke("viewer_tile", {
+    jobId,
+    pageNum,
+    dpi,
+    ocgOn: ocg?.on ?? null,
+    ocgOff: ocg?.off ?? null,
+  });
 }
 
 export async function viewerChannelTile(
@@ -197,8 +215,16 @@ export async function viewerChannelTile(
   pageNum: number,
   channel: string,
   dpi?: number,
+  ocg?: OcgMask,
 ): Promise<TileResult> {
-  return invoke("viewer_channel_tile", { jobId, pageNum, channel, dpi });
+  return invoke("viewer_channel_tile", {
+    jobId,
+    pageNum,
+    channel,
+    dpi,
+    ocgOn: ocg?.on ?? null,
+    ocgOff: ocg?.off ?? null,
+  });
 }
 
 export async function viewerTacHeatmap(
@@ -206,8 +232,16 @@ export async function viewerTacHeatmap(
   pageNum: number,
   dpi?: number,
   tacLimit?: number,
+  ocg?: OcgMask,
 ): Promise<TileResult> {
-  return invoke("viewer_tac_heatmap", { jobId, pageNum, dpi, tacLimit });
+  return invoke("viewer_tac_heatmap", {
+    jobId,
+    pageNum,
+    dpi,
+    tacLimit,
+    ocgOn: ocg?.on ?? null,
+    ocgOff: ocg?.off ?? null,
+  });
 }
 
 export async function viewerTacRuns(

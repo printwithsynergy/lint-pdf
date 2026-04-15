@@ -66,6 +66,85 @@ fn sanitize(component: &str) -> String {
         .collect()
 }
 
+/// OCG layer override mask passed through with every tile request
+/// that toggles any layer away from its PDF default. Empty vectors
+/// (the "default state" case) produce the legacy cache key so
+/// warmed S3 tiles still hit.
+#[derive(Debug, Clone, Default)]
+pub struct OcgMask {
+    pub on: Vec<i32>,
+    pub off: Vec<i32>,
+}
+
+impl OcgMask {
+    pub fn is_empty(&self) -> bool {
+        self.on.is_empty() && self.off.is_empty()
+    }
+
+    /// 12-hex digest of the sorted on/off pair. Order-independent by
+    /// construction: both vectors are sorted before hashing. Mirrors
+    /// the engine's ``_ocg_cache_suffix`` so the desktop's cache key
+    /// stays aligned with what the server emits.
+    pub fn hash(&self) -> String {
+        use sha2::{Digest, Sha256};
+        let mut on = self.on.clone();
+        let mut off = self.off.clone();
+        on.sort_unstable();
+        off.sort_unstable();
+        let on_s = on
+            .iter()
+            .map(i32::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
+        let off_s = off
+            .iter()
+            .map(i32::to_string)
+            .collect::<Vec<_>>()
+            .join(",");
+        let raw = format!("on={};off={}", on_s, off_s);
+        let digest = Sha256::digest(raw.as_bytes());
+        format!("{:x}", digest).chars().take(12).collect()
+    }
+
+    fn filename_suffix(&self) -> String {
+        if self.is_empty() {
+            String::new()
+        } else {
+            format!("-ocg{}", self.hash())
+        }
+    }
+
+    fn query_suffix(&self) -> String {
+        if self.is_empty() {
+            return String::new();
+        }
+        let mut parts = Vec::new();
+        if !self.on.is_empty() {
+            let mut on = self.on.clone();
+            on.sort_unstable();
+            parts.push(format!(
+                "ocg_on={}",
+                on.iter()
+                    .map(i32::to_string)
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ));
+        }
+        if !self.off.is_empty() {
+            let mut off = self.off.clone();
+            off.sort_unstable();
+            parts.push(format!(
+                "ocg_off={}",
+                off.iter()
+                    .map(i32::to_string)
+                    .collect::<Vec<_>>()
+                    .join(",")
+            ));
+        }
+        format!("&{}", parts.join("&"))
+    }
+}
+
 /// Key describing a single cached tile.
 #[derive(Debug, Clone)]
 pub enum TileKey {
@@ -73,18 +152,21 @@ pub enum TileKey {
         job_id: String,
         page: u32,
         dpi: u32,
+        ocg: OcgMask,
     },
     Channel {
         job_id: String,
         page: u32,
         dpi: u32,
         channel: String,
+        ocg: OcgMask,
     },
     TacHeatmap {
         job_id: String,
         page: u32,
         dpi: u32,
         tac_limit: u32,
+        ocg: OcgMask,
     },
 }
 
@@ -97,18 +179,35 @@ impl TileKey {
         }
     }
 
-    fn file_name(&self) -> String {
+    fn ocg(&self) -> &OcgMask {
         match self {
-            Self::Base { page, dpi, .. } => format!("p{}-dpi{}-base.png", page, dpi),
+            Self::Base { ocg, .. }
+            | Self::Channel { ocg, .. }
+            | Self::TacHeatmap { ocg, .. } => ocg,
+        }
+    }
+
+    fn file_name(&self) -> String {
+        let suffix = self.ocg().filename_suffix();
+        match self {
+            Self::Base { page, dpi, .. } => {
+                format!("p{}-dpi{}{}-base.png", page, dpi, suffix)
+            }
             Self::Channel {
                 page, dpi, channel, ..
-            } => format!("p{}-dpi{}-ch-{}.png", page, dpi, sanitize(channel)),
+            } => format!(
+                "p{}-dpi{}{}-ch-{}.png",
+                page,
+                dpi,
+                suffix,
+                sanitize(channel)
+            ),
             Self::TacHeatmap {
                 page,
                 dpi,
                 tac_limit,
                 ..
-            } => format!("p{}-dpi{}-tac{}.png", page, dpi, tac_limit),
+            } => format!("p{}-dpi{}{}-tac{}.png", page, dpi, suffix, tac_limit),
         }
     }
 
@@ -118,32 +217,38 @@ impl TileKey {
 
     fn endpoint_url(&self, base_url: &str) -> String {
         let base = base_url.trim_end_matches('/');
+        let ocg = self.ocg().query_suffix();
         match self {
-            Self::Base { job_id, page, dpi } => format!(
-                "{}/api/v1/viewer/jobs/{}/pages/{}/tile?dpi={}",
-                base, job_id, page, dpi
+            Self::Base {
+                job_id, page, dpi, ..
+            } => format!(
+                "{}/api/v1/viewer/jobs/{}/pages/{}/tile?dpi={}{}",
+                base, job_id, page, dpi, ocg
             ),
             Self::Channel {
                 job_id,
                 page,
                 dpi,
                 channel,
+                ..
             } => format!(
-                "{}/api/v1/viewer/jobs/{}/pages/{}/channel/{}?dpi={}",
+                "{}/api/v1/viewer/jobs/{}/pages/{}/channel/{}?dpi={}{}",
                 base,
                 job_id,
                 page,
                 urlencoding::encode(channel),
-                dpi
+                dpi,
+                ocg
             ),
             Self::TacHeatmap {
                 job_id,
                 page,
                 dpi,
                 tac_limit,
+                ..
             } => format!(
-                "{}/api/v1/viewer/jobs/{}/pages/{}/tac-heatmap?dpi={}&tac_limit={}",
-                base, job_id, page, dpi, tac_limit
+                "{}/api/v1/viewer/jobs/{}/pages/{}/tac-heatmap?dpi={}&tac_limit={}{}",
+                base, job_id, page, dpi, tac_limit, ocg
             ),
         }
     }
@@ -314,29 +419,32 @@ mod tests {
         assert_eq!(sanitize("../../etc/passwd"), "______etc_passwd");
     }
 
+    fn base(job: &str, page: u32, dpi: u32) -> TileKey {
+        TileKey::Base {
+            job_id: job.into(),
+            page,
+            dpi,
+            ocg: OcgMask::default(),
+        }
+    }
+
     #[test]
     fn tile_key_generates_distinct_filenames() {
-        let k1 = TileKey::Base {
-            job_id: "abc".into(),
-            page: 1,
-            dpi: 150,
-        };
-        let k2 = TileKey::Base {
-            job_id: "abc".into(),
-            page: 1,
-            dpi: 300,
-        };
+        let k1 = base("abc", 1, 150);
+        let k2 = base("abc", 1, 300);
         let k3 = TileKey::Channel {
             job_id: "abc".into(),
             page: 1,
             dpi: 150,
             channel: "Cyan".into(),
+            ocg: OcgMask::default(),
         };
         let k4 = TileKey::TacHeatmap {
             job_id: "abc".into(),
             page: 1,
             dpi: 150,
             tac_limit: 300,
+            ocg: OcgMask::default(),
         };
         assert_ne!(k1.file_name(), k2.file_name());
         assert_ne!(k1.file_name(), k3.file_name());
@@ -345,14 +453,9 @@ mod tests {
 
     #[test]
     fn endpoint_urls_match_engine_routes() {
-        let base = "https://api.lintpdf.com";
-        let k = TileKey::Base {
-            job_id: "j1".into(),
-            page: 3,
-            dpi: 150,
-        };
+        let b = "https://api.lintpdf.com";
         assert_eq!(
-            k.endpoint_url(base),
+            base("j1", 3, 150).endpoint_url(b),
             "https://api.lintpdf.com/api/v1/viewer/jobs/j1/pages/3/tile?dpi=150"
         );
         let k = TileKey::Channel {
@@ -360,19 +463,83 @@ mod tests {
             page: 1,
             dpi: 300,
             channel: "PANTONE 485 C".into(),
+            ocg: OcgMask::default(),
         };
         assert!(k
-            .endpoint_url(base)
+            .endpoint_url(b)
             .contains("/pages/1/channel/PANTONE%20485%20C"));
         let k = TileKey::TacHeatmap {
             job_id: "j1".into(),
             page: 2,
             dpi: 150,
             tac_limit: 320,
+            ocg: OcgMask::default(),
         };
         assert_eq!(
-            k.endpoint_url(base),
+            k.endpoint_url(b),
             "https://api.lintpdf.com/api/v1/viewer/jobs/j1/pages/2/tac-heatmap?dpi=150&tac_limit=320"
         );
+    }
+
+    #[test]
+    fn ocg_mask_empty_preserves_legacy_filename() {
+        // Phase 4 cache entries must still hit when an OCG mask
+        // hasn't been set. Adding the mask with empty vectors
+        // preserves the filename.
+        let k = TileKey::Base {
+            job_id: "j1".into(),
+            page: 1,
+            dpi: 150,
+            ocg: OcgMask::default(),
+        };
+        assert_eq!(k.file_name(), "p1-dpi150-base.png");
+        assert_eq!(
+            k.endpoint_url("https://api.lintpdf.com"),
+            "https://api.lintpdf.com/api/v1/viewer/jobs/j1/pages/1/tile?dpi=150"
+        );
+    }
+
+    #[test]
+    fn ocg_mask_hash_is_order_independent() {
+        let a = OcgMask {
+            on: vec![3, 1],
+            off: vec![2],
+        };
+        let b = OcgMask {
+            on: vec![1, 3],
+            off: vec![2],
+        };
+        assert_eq!(a.hash(), b.hash());
+    }
+
+    #[test]
+    fn ocg_mask_differs_when_masks_differ() {
+        let a = OcgMask {
+            on: vec![0],
+            off: vec![],
+        };
+        let b = OcgMask {
+            on: vec![],
+            off: vec![0],
+        };
+        assert_ne!(a.hash(), b.hash());
+    }
+
+    #[test]
+    fn ocg_mask_url_includes_params() {
+        let k = TileKey::Base {
+            job_id: "j1".into(),
+            page: 1,
+            dpi: 150,
+            ocg: OcgMask {
+                on: vec![3, 0],
+                off: vec![2],
+            },
+        };
+        let url = k.endpoint_url("https://api.lintpdf.com");
+        assert!(url.contains("ocg_on=0,3"), "got {}", url);
+        assert!(url.contains("ocg_off=2"), "got {}", url);
+        // Filename must include the -ocg<hash> suffix.
+        assert!(k.file_name().contains("-ocg"), "got {}", k.file_name());
     }
 }

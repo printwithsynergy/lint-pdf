@@ -2354,7 +2354,7 @@ dependencies = [
 
 [[package]]
 name = "lintpdf-desktop"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "chrono",
  "dirs",
@@ -2367,6 +2367,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",

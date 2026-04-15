@@ -199,10 +199,12 @@ What each panel does:
 - **TAC** — enable a TAC heatmap overlay with a slider-driven ink
   limit (100–500%). The panel lists every TAC run on the current
   page, colour-coded by whether it exceeds the limit.
-- **Layers** — the PDF's OCG list with the user's intended visibility
-  state. (The engine renders the document's default state of each
-  layer, so this panel records your intent but doesn't re-render; use
-  the hosted viewer for interactive layer isolation.)
+- **Layers** — interactive OCG isolation. Checking / unchecking a
+  layer sends an `ocg_on` / `ocg_off` mask to the engine's tile,
+  channel, and TAC endpoints so the page re-renders with that layer
+  set visible. The first toggle for a given combination takes the
+  usual tile render round-trip (~500ms); subsequent visits to the
+  same mask paint instantly from the local tile cache.
 - **Notes** — annotations attached to the job. Click to jump, author
   + timestamp shown.
 - **Probe** — the densitometer. Click anywhere on the page image and

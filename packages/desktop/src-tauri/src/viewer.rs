@@ -18,7 +18,14 @@ use tauri::State;
 
 use crate::commands::AppState;
 use crate::connectivity::ConnectivityState;
-use crate::tiles::{self, TileKey};
+use crate::tiles::{self, OcgMask, TileKey};
+
+fn ocg_mask(on: Option<Vec<i32>>, off: Option<Vec<i32>>) -> OcgMask {
+    OcgMask {
+        on: on.unwrap_or_default(),
+        off: off.unwrap_or_default(),
+    }
+}
 
 fn require_online(c: &ConnectivityState, op: &str) -> Result<(), String> {
     if c.is_online() {
@@ -377,12 +384,15 @@ pub async fn viewer_tile(
     job_id: String,
     page_num: u32,
     dpi: Option<u32>,
+    ocg_on: Option<Vec<i32>>,
+    ocg_off: Option<Vec<i32>>,
 ) -> Result<tiles::TileResult, String> {
     let dpi = dpi.unwrap_or(150);
     let key = TileKey::Base {
         job_id,
         page: page_num,
         dpi,
+        ocg: ocg_mask(ocg_on, ocg_off),
     };
     tiles::fetch_tile(
         key,
@@ -399,6 +409,8 @@ pub async fn viewer_channel_tile(
     page_num: u32,
     channel: String,
     dpi: Option<u32>,
+    ocg_on: Option<Vec<i32>>,
+    ocg_off: Option<Vec<i32>>,
 ) -> Result<tiles::TileResult, String> {
     let dpi = dpi.unwrap_or(150);
     let key = TileKey::Channel {
@@ -406,6 +418,7 @@ pub async fn viewer_channel_tile(
         page: page_num,
         dpi,
         channel,
+        ocg: ocg_mask(ocg_on, ocg_off),
     };
     tiles::fetch_tile(
         key,
@@ -422,6 +435,8 @@ pub async fn viewer_tac_heatmap(
     page_num: u32,
     dpi: Option<u32>,
     tac_limit: Option<u32>,
+    ocg_on: Option<Vec<i32>>,
+    ocg_off: Option<Vec<i32>>,
 ) -> Result<tiles::TileResult, String> {
     let dpi = dpi.unwrap_or(150);
     let tac_limit = tac_limit.unwrap_or(300);
@@ -430,6 +445,7 @@ pub async fn viewer_tac_heatmap(
         page: page_num,
         dpi,
         tac_limit,
+        ocg: ocg_mask(ocg_on, ocg_off),
     };
     tiles::fetch_tile(
         key,

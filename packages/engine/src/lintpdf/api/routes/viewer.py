@@ -177,9 +177,72 @@ def _extract_box(page: Any, name: str) -> PageBox | None:
     return PageBox(x0=coords[0], y0=coords[1], x1=coords[2], y1=coords[3])
 
 
-def _tile_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
+def _expand_int_list(value: list[int] | list[str] | None) -> list[int] | None:
+    """FastAPI parses ``?ocg_on=0,3`` as a single-element list
+    ``["0,3"]`` when the caller uses comma-list form, and as
+    ``[0, 3]`` when the caller uses repeated-query form. Normalise
+    both to ``[0, 3]``. Empty / None → None.
+
+    Raises HTTP 422 on non-numeric tokens so the user gets a clear
+    error rather than an inscrutable 500.
+    """
+    if value is None:
+        return None
+    out: list[int] = []
+    for item in value:
+        if isinstance(item, int):
+            out.append(item)
+            continue
+        s = str(item).strip()
+        if not s:
+            continue
+        for tok in s.split(","):
+            tok = tok.strip()
+            if not tok:
+                continue
+            try:
+                out.append(int(tok))
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Invalid OCG index '{tok}': must be an integer.",
+                ) from exc
+    return out or None
+
+
+def _ocg_cache_suffix(
+    ocg_on: list[int] | None, ocg_off: list[int] | None
+) -> str:
+    """Deterministic cache-key suffix for an OCG override.
+
+    Returns ``""`` when both inputs are absent/empty so tiles
+    requested without OCG params keep using the legacy key — this
+    preserves hits against the S3 cache warmed by
+    ``warm_viewer_tiles`` (which only renders the default state).
+
+    Non-empty inputs produce ``_ocg-<12-hex-of-sha256>`` from the
+    sorted pair so any two requests with the same effective mask
+    share a cache entry regardless of input ordering.
+    """
+    on = sorted(ocg_on or [])
+    off = sorted(ocg_off or [])
+    if not on and not off:
+        return ""
+    raw = f"on={','.join(map(str, on))};off={','.join(map(str, off))}".encode()
+    return f"_ocg-{hashlib.sha256(raw).hexdigest()[:12]}"
+
+
+def _tile_cache_key(
+    tenant_id: str,
+    job_id: str,
+    page_num: int,
+    dpi: int,
+    ocg_on: list[int] | None = None,
+    ocg_off: list[int] | None = None,
+) -> str:
     """S3 key for a cached tile."""
-    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}.png"
+    suffix = _ocg_cache_suffix(ocg_on, ocg_off)
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}{suffix}.png"
 
 
 def _channel_cache_key(
@@ -262,8 +325,16 @@ async def list_pages(
 # means ops can turn it on per-environment without a code change.
 
 
-def _tile_hot_cache_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
-    return f"lintpdf:tile-hot:{tenant_id}:{job_id}:{page_num}:{dpi}"
+def _tile_hot_cache_key(
+    tenant_id: str,
+    job_id: str,
+    page_num: int,
+    dpi: int,
+    ocg_on: list[int] | None = None,
+    ocg_off: list[int] | None = None,
+) -> str:
+    suffix = _ocg_cache_suffix(ocg_on, ocg_off)
+    return f"lintpdf:tile-hot:{tenant_id}:{job_id}:{page_num}:{dpi}{suffix}"
 
 
 def _hot_cache_enabled() -> bool:
@@ -285,6 +356,24 @@ async def get_page_tile(
         le=600,
         description="Render DPI. 36-600. Defaults to 150 (screen-friendly).",
     ),
+    ocg_on: list[int] | None = Query(
+        default=None,
+        description=(
+            "OCG (layer) indices to force **visible**, overriding the "
+            "PDF's /D/OFF defaults. Indices match ``ocg_index`` from "
+            "``GET /api/v1/viewer/jobs/{id}/layers``. Accepts a repeated "
+            "query param (``ocg_on=0&ocg_on=3``) or a comma-list "
+            "(``ocg_on=0,3``)."
+        ),
+    ),
+    ocg_off: list[int] | None = Query(
+        default=None,
+        description=(
+            "OCG (layer) indices to force **hidden**. Same index "
+            "convention as ``ocg_on``. An index that appears in both "
+            "``ocg_on`` and ``ocg_off`` is rejected with 422."
+        ),
+    ),
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> Response:
@@ -296,20 +385,34 @@ async def get_page_tile(
        preflight completion - this is where the bytes live durably).
     3. Render on demand via ``render_page_to_image`` and populate
        both caches for the next reader.
+
+    When ``ocg_on`` / ``ocg_off`` are omitted the response is
+    byte-identical to the legacy default-state tile and shares its
+    cache key, so S3 tiles warmed by ``warm_viewer_tiles`` still hit.
     """
     import contextlib as _contextlib
 
     from lintpdf.api.middleware import get_redis_client
 
+    # Normalize comma-separated values that FastAPI delivered as a
+    # single element (e.g. ``?ocg_on=0,3``). Repeated-param form
+    # arrives already expanded.
+    ocg_on = _expand_int_list(ocg_on)
+    ocg_off = _expand_int_list(ocg_off)
+
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
-    cache_key = _tile_cache_key(str(tenant.id), str(job.id), page_num, dpi)
+    cache_key = _tile_cache_key(
+        str(tenant.id), str(job.id), page_num, dpi, ocg_on, ocg_off
+    )
 
     hot_enabled = _hot_cache_enabled()
     redis = get_redis_client() if hot_enabled else None
     hot_key = (
-        _tile_hot_cache_key(str(tenant.id), str(job.id), page_num, dpi)
+        _tile_hot_cache_key(
+            str(tenant.id), str(job.id), page_num, dpi, ocg_on, ocg_off
+        )
         if redis is not None and dpi == 150
         else None
     )
@@ -357,10 +460,21 @@ async def get_page_tile(
         pass  # Cache miss — render on demand
 
     # 3. Render on demand
-    from lintpdf.ai.rendering import render_page_to_image
+    from lintpdf.ai.rendering import OCGError, render_page_to_image
 
     try:
-        tile_bytes = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
+        tile_bytes = render_page_to_image(
+            pdf_bytes,
+            page_num,
+            dpi=dpi,
+            ocg_on=ocg_on,
+            ocg_off=ocg_off,
+        )
+    except OCGError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
     except RuntimeError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,

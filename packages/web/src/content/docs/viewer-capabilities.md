@@ -32,7 +32,7 @@ The viewer reads `capabilities` from `GET /api/v1/viewer/jobs/{job_id}/config` a
 | `tiles_warmed` | ✗ (set by background task) | `lintpdf.viewer.warm_tiles` Celery task | Flips to `true` once every page tile is cached in S3. Drives the viewer's browser-side prefetch pass. Tracked in Redis at `lintpdf:tile-warm:{job_id}`; poll `/api/v1/viewer/jobs/{job_id}/tile-warming` for progress. |
 | `fonts` | ✓ | Font analyzer | Font inspector |
 | `images` | ✓ | Image analyzer | Image inventory |
-| `layers` | ✗ | Extracted from PDF at job creation; not re-derivable | Layers panel |
+| `layers` | ✗ | Extracted from PDF at job creation; not re-derivable | Layers panel (interactive via `ocg_on` / `ocg_off` query params on the tile endpoint — see below) |
 | `thumbnails` | ✓ (always populated on `complete`) | Page rasterizer | Page thumbnails strip |
 | `metadata` | ✓ (always populated on `complete`) | PDF metadata extractor | Document info panel |
 
@@ -200,3 +200,37 @@ Check your plan's analyzer-invocation allowance at [Pricing](/pricing).
 - [External Preflight Imports](/docs/external-imports)
 - [Viewer-Only Submissions](/docs/viewer-only-mode)
 - [Share Links](/docs/share-links)
+
+## Interactive layer (OCG) isolation
+
+The `layers` capability is not fillable — it's discovered at ingest
+from the PDF's `/OCProperties/OCGs` array — but the **tile endpoint
+accepts an override mask** so clients can render any combination of
+layers on demand:
+
+```
+GET /api/v1/viewer/jobs/{job_id}/pages/{page_num}/tile
+    ?dpi=150
+    &ocg_on=0,3        # force these layers visible
+    &ocg_off=2         # force these layers hidden
+```
+
+Rules:
+
+- Indices match `ocg_index` returned by
+  `GET /api/v1/viewer/jobs/{job_id}/layers`.
+- Either param may repeat (`?ocg_on=0&ocg_on=3`) or be a comma list.
+- An index present in both `ocg_on` and `ocg_off` returns 422.
+- An index outside the `OCGs` array returns 422.
+- Calling this on a PDF without `/OCProperties` returns 422 with a
+  clear "no layers to toggle" message.
+- Response bytes for the no-params case are byte-identical to the
+  default-state tile and share its S3 cache key, so warm-cache hits
+  are preserved. Every distinct `(ocg_on, ocg_off)` pair gets its
+  own cache entry keyed by `sha256(sorted_on;sorted_off)[:12]`.
+
+The rewriter modifies the PDF's `/Root/OCProperties/D/OFF` list
+before handing bytes to poppler — no Ghostscript subprocess is
+introduced. Round-trip latency matches the standard tile render
+(~500ms–2s on-demand, ~100ms when a prior request populated the
+cache).
