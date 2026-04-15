@@ -14,7 +14,7 @@ LintPDF is a PDF preflight quality assurance SaaS built on the Pixie Dust framew
 
 **Key conventions:**
 - Always push to `main` unless told otherwise
-- All `@thinkneverland/pixie-dust-*` packages use `"*"` version specifiers — always pull latest
+- All `@thinkneverland/pixie-dust-*` packages use **caret (`^`) version specifiers** pinned to the latest published version on `npm.pkg.github.com` — **never `"*"`**. When upgrading, query the GitHub Packages registry for each package's `dist-tags.latest` using `GITHUB_TOKEN` and bump the caret range to match. See the "Pixie Dust Upgrade Checklist" below for the exact procedure.
 - Plugin routes use `req.auth?.tenantId` (NOT `req.tenantId`) for tenant context
 - Engine routes use SQLAlchemy + Alembic migrations
 - App routes use Prisma with multi-file schema in `prisma/schema/`
@@ -23,7 +23,30 @@ LintPDF is a PDF preflight quality assurance SaaS built on the Pixie Dust framew
 
 ## Pixie Dust Upgrade Checklist
 
-After upgrading any `@thinkneverland/pixie-dust-*` packages, you **MUST** sync your database schema:
+### Version specifier policy
+
+All `@thinkneverland/pixie-dust-*` dependencies in `packages/app/package.json`, `packages/plugin/package.json`, and `packages/stripe/package.json` **MUST** use caret ranges pinned to the latest published version on `npm.pkg.github.com` (e.g. `"^1.8.0"`). **Do not use `"*"`** — it defers resolution to `pnpm install`, which makes deploys non-reproducible and hides breaking major bumps.
+
+`.npmrc` is configured with `save-prefix=^` so `pnpm add` / `pnpm update` write caret ranges by default.
+
+### Refreshing to latest (run this on every Pixie Dust bump)
+
+Use the `GITHUB_TOKEN` env var to query the GitHub Packages npm registry directly, then update every `@thinkneverland/pixie-dust-*` specifier to `^<latest>` in **all three** workspace package.json files (`packages/app`, `packages/plugin`, `packages/stripe`).
+
+One-liner to fetch latest versions for every Pixie Dust package this repo depends on:
+
+```sh
+for pkg in api-keys auth boilerplate config cookie-consent core dashboard database \
+           devtools email fairy-ring stripe-kit theme-default theme-kit ui usage \
+           waitlist webhooks tsconfig; do
+  version=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+    "https://npm.pkg.github.com/@thinkneverland/pixie-dust-$pkg" \
+    | python3 -c "import sys,json; print(json.load(sys.stdin)['dist-tags']['latest'])")
+  echo "@thinkneverland/pixie-dust-$pkg: ^$version"
+done
+```
+
+After bumping the specifiers, run `pnpm install` and commit the updated `package.json` files (no lockfile). Then sync the database schema:
 
 ```sh
 npx prisma db push
@@ -41,15 +64,14 @@ Your deploy/start command should **ALWAYS** include a schema sync before the app
 
 ```
 pnpm store prune          # Clear cached packages — no stale Pixie Dust
-pnpm install              # Fresh resolve from GitHub Packages (no lockfile)
-pnpm update '@thinkneverland/*' -r  # Force re-resolve to newest published
+pnpm install              # Fresh resolve honoring caret ranges in package.json
 prisma db push            # Sync schema for any new PD columns
 next start                # Run the app
 ```
 
-No lockfile committed, no local references, no cached packages. Every deploy pulls the latest published Pixie Dust versions from `npm.pkg.github.com`.
+No lockfile committed, no local references, no cached packages. Every deploy resolves the caret ranges against `npm.pkg.github.com` using `GITHUB_TOKEN`. To pull in a new major release, re-run the refresh script above and bump the caret.
 
-**Important:** `.npmrc` must contain `save-prefix=` to prevent pnpm from rewriting `"*"` specifiers to caret ranges like `"^4.0.2"` during `pnpm update`.
+**Important:** `.npmrc` must contain `save-prefix=^` so pnpm preserves caret ranges during `pnpm add` / `pnpm update`. Never revert to `save-prefix=` (empty) or `"*"` specifiers.
 
 **Railway / Docker:**
 ```sh
