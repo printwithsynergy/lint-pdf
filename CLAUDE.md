@@ -79,7 +79,7 @@ for pkg in api-keys auth boilerplate config cookie-consent core dashboard databa
 done
 ```
 
-After bumping the specifiers, run `pnpm install` and commit the updated `package.json` files (no lockfile). Then sync the database schema:
+After bumping the specifiers, run `pnpm install` to update both `package.json` and `pnpm-lock.yaml`, then commit both. Then sync the database schema:
 
 ```sh
 npx prisma db push
@@ -96,13 +96,19 @@ npx prisma migrate deploy
 Your deploy/start command should **ALWAYS** include a schema sync before the app starts. The full pipeline is:
 
 ```
-pnpm store prune          # Clear cached packages — no stale Pixie Dust
-pnpm install              # Fresh resolve honoring caret ranges in package.json
-prisma db push            # Sync schema for any new PD columns
-next start                # Run the app
+pnpm install --frozen-lockfile    # Reproducible resolve from pnpm-lock.yaml
+prisma db push                     # Sync schema for any new PD columns
+next start                         # Run the app
 ```
 
-No lockfile committed, no local references, no cached packages. Every deploy resolves the caret ranges against `npm.pkg.github.com` using `GITHUB_TOKEN`. To pull in a new major release, re-run the refresh script above and bump the caret.
+**`pnpm-lock.yaml` IS committed** and Railway's Railpack builder runs with `--frozen-lockfile` by default. This gives reproducible deploys and catches accidental drift. **After every `package.json` bump (Pixie Dust or otherwise) you MUST regenerate and commit the lockfile**, otherwise deploys fail with `ERR_PNPM_OUTDATED_LOCKFILE`:
+
+```sh
+pnpm install --lockfile-only      # Update pnpm-lock.yaml without touching node_modules
+git add packages/app/package.json pnpm-lock.yaml
+```
+
+To pull in a new major Pixie Dust release, re-run the refresh script above, bump the caret in `package.json`, regenerate the lockfile, and commit both.
 
 **Important:** `.npmrc` must contain `save-prefix=^` so pnpm preserves caret ranges during `pnpm add` / `pnpm update`. Never revert to `save-prefix=` (empty) or `"*"` specifiers.
 
