@@ -6,6 +6,31 @@
 
 echo "=== LintPDF App Startup ==="
 
+# RAILPACK builds a Next.js standalone image where devDependencies (including
+# the `prisma` CLI) get pruned from the production node_modules, so bare
+# `prisma` used to fail with "prisma: not found" on every boot — which meant
+# Step 1 never ran and every subsequent request 500'd on missing columns
+# (AppSettings.themeTokenOverrides, Session.impersonatingTenantId, ...).
+# Resolve it through the local bin first, falling back to npx which will
+# download the CLI on demand if it's truly absent.
+if [ -x "./node_modules/.bin/prisma" ]; then
+  PRISMA="./node_modules/.bin/prisma"
+elif [ -x "../../node_modules/.bin/prisma" ]; then
+  PRISMA="../../node_modules/.bin/prisma"
+else
+  PRISMA="npx --yes prisma@7"
+fi
+echo "Using prisma CLI: $PRISMA"
+
+# Step 0: Regenerate the Prisma client against the app's own schema so
+# LintPDF-specific columns (Tenant.engineTenantId, Session.impersonatingTenantId,
+# etc.) are known to the runtime client. Without this, pnpm's hoisted
+# @prisma/client can end up pointed at a sibling package's schema and every
+# query touching those columns throws "Unknown field ..." / "Unknown
+# argument ...".
+echo "Step 0: Generating Prisma client from app schema..."
+$PRISMA generate --schema prisma/schema 2>&1 || echo "prisma generate had warnings — continuing"
+
 # Step 1: Add missing columns via raw SQL (safe — IF NOT EXISTS, no drops)
 # This handles columns added to the Prisma schema that prisma db push
 # can't apply without --accept-data-loss (because engine tables exist).
@@ -13,7 +38,7 @@ echo "=== LintPDF App Startup ==="
 # is not available as a CJS require in the standalone Next.js output.
 echo "Step 1: Ensuring new columns exist..."
 
-prisma db execute --schema prisma/schema --stdin <<'SQL'
+$PRISMA db execute --schema prisma/schema --stdin <<'SQL'
 -- AppSettings columns required by pixie-dust-dashboard
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "primaryColor" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "accentColor" TEXT;
@@ -114,6 +139,101 @@ CREATE TABLE IF NOT EXISTS "WebhookDelivery" (
 CREATE INDEX IF NOT EXISTS "WebhookDelivery_endpointId_idx" ON "WebhookDelivery"("endpointId");
 CREATE INDEX IF NOT EXISTS "WebhookDelivery_event_idx" ON "WebhookDelivery"("event");
 CREATE INDEX IF NOT EXISTS "WebhookDelivery_createdAt_idx" ON "WebhookDelivery"("createdAt");
+
+-- Stripe billing tables (pixie-dust-stripe-kit). The stripe-kit
+-- subscriptions dashboard widget throws P2021 when Subscription is missing,
+-- and every checkout flow needs StripeCustomer. Prisma db push can't create
+-- them on a DB that already holds engine tables (SQLAlchemy-owned), so mirror
+-- the shapes here.
+CREATE TABLE IF NOT EXISTS "StripeCustomer" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "stripeCustomerId" TEXT NOT NULL,
+  "mode" TEXT NOT NULL DEFAULT 'standard',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "StripeCustomer_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "StripeCustomer_stripeCustomerId_key" UNIQUE ("stripeCustomerId")
+);
+CREATE INDEX IF NOT EXISTS "StripeCustomer_tenantId_idx" ON "StripeCustomer"("tenantId");
+CREATE INDEX IF NOT EXISTS "StripeCustomer_stripeCustomerId_idx" ON "StripeCustomer"("stripeCustomerId");
+CREATE INDEX IF NOT EXISTS "StripeCustomer_mode_idx" ON "StripeCustomer"("mode");
+
+DO $$ BEGIN
+  CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'PAST_DUE', 'CANCELED', 'TRIALING', 'INCOMPLETE', 'UNPAID');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+CREATE TABLE IF NOT EXISTS "Subscription" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "stripeSubscriptionId" TEXT NOT NULL,
+  "stripePriceId" TEXT NOT NULL,
+  "stripeProductId" TEXT,
+  "status" "SubscriptionStatus" NOT NULL,
+  "currentPeriodStart" TIMESTAMP(3) NOT NULL,
+  "currentPeriodEnd" TIMESTAMP(3) NOT NULL,
+  "trialEnd" TIMESTAMP(3),
+  "cancelAtPeriodEnd" BOOLEAN NOT NULL DEFAULT false,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Subscription_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "Subscription_stripeSubscriptionId_key" UNIQUE ("stripeSubscriptionId")
+);
+CREATE INDEX IF NOT EXISTS "Subscription_tenantId_idx" ON "Subscription"("tenantId");
+CREATE INDEX IF NOT EXISTS "Subscription_stripeSubscriptionId_idx" ON "Subscription"("stripeSubscriptionId");
+CREATE INDEX IF NOT EXISTS "Subscription_status_idx" ON "Subscription"("status");
+
+DO $$ BEGIN
+  CREATE TYPE "PaymentStatus" AS ENUM ('SUCCEEDED', 'PENDING', 'FAILED', 'REFUNDED');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
+CREATE TABLE IF NOT EXISTS "Payment" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "stripePaymentId" TEXT NOT NULL,
+  "amount" INTEGER NOT NULL,
+  "currency" TEXT NOT NULL DEFAULT 'usd',
+  "status" "PaymentStatus" NOT NULL,
+  "description" TEXT,
+  "connectedAccountId" TEXT,
+  "applicationFeeAmount" INTEGER,
+  "metadata" JSONB NOT NULL DEFAULT '{}',
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Payment_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "Payment_stripePaymentId_key" UNIQUE ("stripePaymentId")
+);
+CREATE INDEX IF NOT EXISTS "Payment_tenantId_idx" ON "Payment"("tenantId");
+CREATE INDEX IF NOT EXISTS "Payment_stripePaymentId_idx" ON "Payment"("stripePaymentId");
+CREATE INDEX IF NOT EXISTS "Payment_status_idx" ON "Payment"("status");
+CREATE INDEX IF NOT EXISTS "Payment_connectedAccountId_idx" ON "Payment"("connectedAccountId");
+
+CREATE TABLE IF NOT EXISTS "ConnectedAccount" (
+  "id" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "stripeAccountId" TEXT NOT NULL,
+  "email" TEXT NOT NULL,
+  "businessName" TEXT,
+  "onboardingComplete" BOOLEAN NOT NULL DEFAULT false,
+  "payoutsEnabled" BOOLEAN NOT NULL DEFAULT false,
+  "chargesEnabled" BOOLEAN NOT NULL DEFAULT false,
+  "feePercent" DOUBLE PRECISION NOT NULL DEFAULT 0.2,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "ConnectedAccount_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "ConnectedAccount_stripeAccountId_key" UNIQUE ("stripeAccountId")
+);
+CREATE INDEX IF NOT EXISTS "ConnectedAccount_tenantId_idx" ON "ConnectedAccount"("tenantId");
+CREATE INDEX IF NOT EXISTS "ConnectedAccount_stripeAccountId_idx" ON "ConnectedAccount"("stripeAccountId");
+
+CREATE TABLE IF NOT EXISTS "WebhookEvent" (
+  "id" TEXT NOT NULL,
+  "stripeEventId" TEXT NOT NULL,
+  "eventType" TEXT NOT NULL,
+  "processedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "WebhookEvent_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "WebhookEvent_stripeEventId_key" UNIQUE ("stripeEventId")
+);
+CREATE INDEX IF NOT EXISTS "WebhookEvent_stripeEventId_idx" ON "WebhookEvent"("stripeEventId");
+CREATE INDEX IF NOT EXISTS "WebhookEvent_eventType_idx" ON "WebhookEvent"("eventType");
 
 -- PluginSettings table (pixie-dust-fairy-ring plugin)
 CREATE TABLE IF NOT EXISTS "PluginSettings" (
@@ -342,7 +462,7 @@ echo "Step 1 complete (exit code: $?)"
 
 # Step 2: Prisma db push (may warn about engine tables — we continue regardless)
 echo "Step 2: Running prisma db push..."
-prisma db push --schema prisma/schema --skip-generate 2>&1 || echo "prisma db push had warnings — continuing"
+$PRISMA db push --schema prisma/schema --skip-generate 2>&1 || echo "prisma db push had warnings — continuing"
 
 # Step 3: Seed (idempotent)
 echo "Step 3: Running seed..."

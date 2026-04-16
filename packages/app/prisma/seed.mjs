@@ -3,9 +3,17 @@
  * Runs on every deploy (uses upsert, safe to re-run).
  */
 
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// Prisma 7 requires an explicit driver adapter — the bare
+// `new PrismaClient()` call throws PrismaClientInitializationError
+// ("needs to be constructed with a non-empty, valid PrismaClientOptions")
+// on the first db call. Wire up the pg adapter with DATABASE_URL.
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   // Ensure engineTenantId column exists (prisma db push may skip it
