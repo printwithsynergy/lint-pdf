@@ -232,6 +232,13 @@ ALTER TABLE report_tokens
   ADD COLUMN IF NOT EXISTS brand_mode VARCHAR(16);
 ALTER TABLE report_tokens
   ADD COLUMN IF NOT EXISTS brand_profile_id UUID;
+-- Alembic 023: widen report_tokens.format from VARCHAR(10) to VARCHAR(32) so
+-- 'annotated_pdf' (13 chars) and 'annotated_pdf_markup' (20 chars) can persist.
+-- Without this the mint endpoint 500'd with StringDataRightTruncation for
+-- every request that asked for either format, even though the code path
+-- produced valid PDF bytes and had already uploaded them to R2.
+ALTER TABLE report_tokens
+  ALTER COLUMN format TYPE VARCHAR(32);
 
 -- Engine: tenant_import_mappings (Alembic 020). Tenant-defined custom
 -- parsers so teams with proprietary preflight formats can map their

@@ -396,7 +396,15 @@ class ReportToken(Base):
         Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     token: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
-    format: Mapped[str] = mapped_column(String(10), nullable=False)
+    # VARCHAR(32) fits every current format name with headroom for
+    # future additions. The original VARCHAR(10) was fine for the
+    # initial ``html / pdf / json / xml`` set but silently broke the
+    # mint endpoint as soon as ``annotated_pdf`` (13 chars) and
+    # ``annotated_pdf_markup`` (20 chars) came online — Postgres
+    # rejected the INSERT with ``StringDataRightTruncation`` and the
+    # whole ``POST /api/v1/jobs/{id}/reports`` request 500'd. Widened
+    # via Alembic 023 + startup.sh ALTER TABLE.
+    format: Mapped[str] = mapped_column(String(32), nullable=False)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
