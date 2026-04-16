@@ -249,3 +249,13 @@ export const POST = handleRequest;
 export const PUT = handleRequest;
 export const PATCH = handleRequest;
 export const DELETE = handleRequest;
+// iOS Safari / Messages / Mail fire HEAD requests to preview links. Without
+// a HEAD handler Next.js falls back to 405, and the in-app browser then
+// shows the page shell but the client-side fetch (also sometimes routed
+// through the same handler internally) gets odd behaviour — users
+// reported the viewer rendering "Invalid or expired link" on a freshly
+// minted token. Routing HEAD to the same handler as GET is safe: the
+// plugin handlers are idempotent and reading the body isn't attempted
+// for GET/HEAD (see the ``if (method !== "GET" && method !== "HEAD")``
+// guard in handleRequest).
+export const HEAD = handleRequest;
