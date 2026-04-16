@@ -66,7 +66,7 @@ def _pdf_string(s: str) -> str:
     """Escape a Python string for use inside a PDF ``(...)`` literal.
 
     Also replaces any character that isn't representable in latin-1
-    with ``"?"`` so the final ``.encode("latin-1")`` in the content
+    with ``"?"`` so the final ``.encode("latin-1", errors="replace")`` in the content
     stream can't blow up on a surrogate emoji or a CJK glyph that
     slipped into a comment body. A custom font subset would be the
     "right" fix for multilingual markup; until that lands, a sanitised
@@ -345,7 +345,7 @@ def generate_markup_pdf(
                 ),
             }
         )
-        overlay_obj = pdf.make_stream(overlay_stream.encode("latin-1"), overlay_dict)
+        overlay_obj = pdf.make_stream(overlay_stream.encode("latin-1", errors="replace"), overlay_dict)
 
         xobjects = resources.get("/XObject", pikepdf.Dictionary({}))
         if not isinstance(xobjects, pikepdf.Dictionary):
@@ -495,6 +495,6 @@ def _append_markup_appendix(
                 "/Resources": pikepdf.Dictionary({"/Font": pikepdf.Dictionary({"/F1": helvetica})}),
             }
         )
-        content_stream = pdf.make_stream("\n".join(page_lines).encode("latin-1"))
+        content_stream = pdf.make_stream("\n".join(page_lines).encode("latin-1", errors="replace"))
         page_obj["/Contents"] = content_stream
         pdf.pages.append(pikepdf.Page(page_obj))

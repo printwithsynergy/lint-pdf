@@ -48,6 +48,26 @@ LEGEND_LINE_HEIGHT = 12
 LEGEND_MAX_ENTRIES = 40
 
 
+def _pdf_string(s: str) -> str:
+    """Escape a Python string for safe use inside a PDF ``(...)`` literal.
+
+    Rules:
+      - ``\\``, ``(``, ``)`` get backslash-escaped so the parser doesn't
+        close the literal prematurely.
+      - ``\\r`` becomes a space so content-stream line folding doesn't
+        get confused by embedded carriage returns.
+      - Any non-latin-1 character (em-dash, smart quotes, CJK, emoji) is
+        replaced with ``?`` so the final ``.encode("latin-1")`` the
+        caller runs cannot ``UnicodeEncodeError``. The proper fix is a
+        custom Helvetica subset, but a lossy ASCII rendering in the
+        legend/summary page beats the whole annotated PDF silently
+        disappearing (the previous behavior — an uncaught em-dash in a
+        hard-coded template string killed the format for every job).
+    """
+    escaped = s.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)").replace("\r", " ")
+    return escaped.encode("latin-1", errors="replace").decode("latin-1")
+
+
 def generate_annotated_pdf(
     pdf_bytes: bytes,
     findings: list[dict[str, Any]],
@@ -136,7 +156,9 @@ def generate_annotated_pdf(
                     ),
                 }
             )
-            overlay_obj = pdf.make_stream(overlay_stream.encode("latin-1"), overlay_dict)
+            overlay_obj = pdf.make_stream(
+                overlay_stream.encode("latin-1", errors="replace"), overlay_dict
+            )
 
             xobjects = resources.get("/XObject", pikepdf.Dictionary({}))
             if not isinstance(xobjects, pikepdf.Dictionary):
@@ -155,8 +177,15 @@ def generate_annotated_pdf(
                 else:
                     page["/Contents"] = pikepdf.Array([existing_contents, overlay_ref_stream])
 
-    # Add a findings legend page at the end
-    _add_legend_page(pdf, findings_by_page, branding_name)
+    # Add a findings legend page at the end. Wrapped in try/except so
+    # an unexpected character in branding / inspection_id / message
+    # cannot blow away the entire annotated PDF — the overlay rectangles
+    # and numbered callouts already stamped onto the original pages are
+    # the core deliverable; the legend is nice-to-have.
+    try:
+        _add_legend_page(pdf, findings_by_page, branding_name)
+    except Exception:
+        logger.exception("Annotated PDF: legend page generation failed, continuing without it")
 
     # Write output
     output = io.BytesIO()
@@ -247,7 +276,7 @@ def _build_overlay_stream(
         lines.append("B")  # Fill and stroke
 
         # Badge number (white text)
-        text = str(callout_num)
+        text = _pdf_string(str(callout_num))
         # Approximate centering
         text_x = cx - len(text) * BADGE_FONT_SIZE * 0.3
         text_y = cy - BADGE_FONT_SIZE * 0.35
@@ -276,9 +305,13 @@ def _add_legend_page(
 
     lines: list[str] = []
 
-    # Title
+    # Title. Use ASCII "--" instead of U+2014 EM DASH — the content
+    # stream encodes to latin-1 below, and em-dash isn't in latin-1
+    # (it's Windows-1252). Using a hard-coded em-dash here previously
+    # killed the annotated_pdf format for every job.
     lines.append(
-        f"BT /F1 16 Tf {margin} {y} Td ({branding_name} Preflight Report \u2014 Findings Legend) Tj ET"
+        f"BT /F1 16 Tf {margin} {y} Td "
+        f"({_pdf_string(branding_name)} Preflight Report -- Findings Legend) Tj ET"
     )
     y -= 28
 
@@ -289,7 +322,7 @@ def _add_legend_page(
         lines.append(f"{color[0]:.3f} {color[1]:.3f} {color[2]:.3f} rg")
         lines.append(f"{margin} {y - 2} 10 10 re f")
         lines.append("Q")
-        lines.append(f"BT /F1 10 Tf {margin + 16} {y} Td ({label}) Tj ET")
+        lines.append(f"BT /F1 10 Tf {margin + 16} {y} Td ({_pdf_string(label)}) Tj ET")
         y -= 16
 
     y -= 12
@@ -314,9 +347,11 @@ def _add_legend_page(
 
             severity = f.get("severity", "advisory")
             color = _SEVERITY_STROKE.get(severity, (0, 0, 0))
-            check_id = f.get("inspection_id", "")
-            # Escape parentheses in message for PDF string
-            message = f.get("message", "")[:80].replace("(", "\\(").replace(")", "\\)")
+            # Escape user-controlled strings (inspection_id may include
+            # parens in custom mappings; message contains arbitrary
+            # unicode from AI analyzer output).
+            check_id = _pdf_string(str(f.get("inspection_id", "")))
+            message = _pdf_string(str(f.get("message", ""))[:80])
 
             lines.append("q")
             # Badge circle
@@ -380,7 +415,11 @@ def _add_legend_page(
     )
 
     content = "\n".join(lines)
-    content_stream = pdf.make_stream(content.encode("latin-1"))
+    # errors="replace" is a belt-and-suspenders guard in case a future
+    # edit forgets to run a user string through _pdf_string. A '?'
+    # somewhere in the legend is infinitely better than losing the
+    # whole annotated PDF.
+    content_stream = pdf.make_stream(content.encode("latin-1", errors="replace"))
     summary_page["/Contents"] = content_stream
 
     pdf.pages.append(pikepdf.Page(summary_page))
@@ -409,7 +448,9 @@ def _add_summary_page(
     y = 740
 
     lines: list[str] = []
-    lines.append(f"BT /F1 16 Tf {margin} {y} Td ({branding_name} Preflight Report) Tj ET")
+    lines.append(
+        f"BT /F1 16 Tf {margin} {y} Td ({_pdf_string(branding_name)} Preflight Report) Tj ET"
+    )
     y -= 28
     lines.append(f"BT /F1 11 Tf {margin} {y} Td (Total findings: {total}) Tj ET")
     y -= 16
@@ -421,10 +462,10 @@ def _add_summary_page(
     # List individual findings
     for f in findings[:LEGEND_MAX_ENTRIES]:
         severity = f.get("severity", "advisory")
-        sev_label = _SEVERITY_LABELS.get(severity, severity)
-        check_id = f.get("inspection_id", "")
-        page = f.get("page_num", 0)
-        message = f.get("message", "")[:70].replace("(", "\\(").replace(")", "\\)")
+        sev_label = _pdf_string(_SEVERITY_LABELS.get(severity, severity))
+        check_id = _pdf_string(str(f.get("inspection_id", "")))
+        page = f.get("page_num", 0) or 0
+        message = _pdf_string(str(f.get("message", ""))[:70])
         page_text = f"p.{page}" if page > 0 else "doc"
 
         lines.append(
@@ -462,7 +503,7 @@ def _add_summary_page(
     )
 
     content = "\n".join(lines)
-    content_stream = pdf.make_stream(content.encode("latin-1"))
+    content_stream = pdf.make_stream(content.encode("latin-1", errors="replace"))
     summary_page["/Contents"] = content_stream
 
     pdf.pages.append(pikepdf.Page(summary_page))
