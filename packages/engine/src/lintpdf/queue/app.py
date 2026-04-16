@@ -34,9 +34,16 @@ def create_celery_app(broker_url: str) -> Celery:
         # ``Job`` rows stay in ``processing`` forever.
         task_reject_on_worker_lost=True,
         worker_max_tasks_per_child=25,  # Restart worker after 25 tasks (lower for larger files)
+        # All beat-scheduled tasks must route to a queue the worker actually
+        # listens on (``default`` / ``priority``) — Celery's default queue is
+        # ``celery``, which no service consumes, so an unrouted scheduled task
+        # sits in Redis forever and the corresponding safety net never fires.
         task_routes={
             "lintpdf.webhook.dispatch": {"queue": "webhooks"},
             "lintpdf.queue.tasks.cleanup_expired_reports": {"queue": "default"},
+            "lintpdf.queue.tasks.probe_pending_custom_domains": {"queue": "default"},
+            "lintpdf.queue.tasks.process_approval_timeouts": {"queue": "default"},
+            "lintpdf.queue.tasks.reap_stale_jobs": {"queue": "default"},
         },
         beat_schedule={
             "cleanup-expired-reports": {
