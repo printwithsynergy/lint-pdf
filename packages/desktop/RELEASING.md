@@ -9,6 +9,12 @@ Releases are cut by pushing a `desktop-v*` tag. CI
 builds macOS (universal), Windows, and Linux bundles and attaches them
 to the Release along with the `latest.json` manifest the updater reads.
 
+The same workflow also uploads the installers to **Cloudflare R2** so
+that licensed tenants can download them from the in-app
+`/dashboard/downloads` page. For the R2 setup, required secrets, and
+how to run the upload manually from a dev machine, see
+[`RELEASING-R2.md`](./RELEASING-R2.md).
+
 ---
 
 ## One-time signing-key setup

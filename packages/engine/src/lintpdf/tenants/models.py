@@ -35,6 +35,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "max_webhooks": 0,
         "approval_chains_enabled": False,
         "max_approval_templates": 0,
+        "desktop_app_enabled": False,
     },
     TenantPlan.STARTER: {
         "rate_limit_daily": 500,
@@ -52,6 +53,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "max_webhooks": 0,
         "approval_chains_enabled": False,
         "max_approval_templates": 0,
+        "desktop_app_enabled": False,
     },
     TenantPlan.GROWTH: {
         "rate_limit_daily": 5000,
@@ -69,6 +71,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "max_webhooks": 5,
         "approval_chains_enabled": True,
         "max_approval_templates": 3,
+        "desktop_app_enabled": False,
     },
     TenantPlan.SCALE: {
         "rate_limit_daily": 25000,
@@ -93,6 +96,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "max_webhooks": 20,
         "approval_chains_enabled": True,
         "max_approval_templates": None,
+        "desktop_app_enabled": False,
     },
     TenantPlan.ENTERPRISE: {
         "rate_limit_daily": 100000,
@@ -117,6 +121,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "max_webhooks": 100,
         "approval_chains_enabled": True,
         "max_approval_templates": None,
+        "desktop_app_enabled": False,
     },
 }
 

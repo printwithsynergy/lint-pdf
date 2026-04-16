@@ -51,6 +51,7 @@ export { lintpdfUsagePlugin } from "./plugins/usage/index";
 export { lintpdfApiKeysPlugin } from "./plugins/api-keys/index";
 export { lintpdfReportsPlugin } from "./plugins/reports/index";
 export { lintpdfAccountPlugin } from "./plugins/account/index";
+export { lintpdfDownloadsPlugin } from "./plugins/downloads/index";
 export { lintpdfSiteAdminPlugin } from "./plugins/site-admin/index";
 export { lintpdfWebhooksPlugin } from "./plugins/webhooks/index";
 export { lintpdfEndpointsPlugin } from "./plugins/endpoints/index";

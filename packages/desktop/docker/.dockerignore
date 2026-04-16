@@ -1,0 +1,11 @@
+# Keep the Docker build context small — everything is mounted at runtime.
+**/node_modules
+**/dist
+**/target
+**/.next
+**/.turbo
+**/.venv
+**/__pycache__
+.git
+.github
+*.log

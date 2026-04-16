@@ -13,14 +13,20 @@ No code, no terminal, no scripting required.
 
 ## Download
 
-Builds are published to [GitHub Releases](https://github.com/thinkneverland/lint-pdf/releases)
-and updated automatically in place via the built-in updater.
+The Hot Folders desktop app is a paid add-on. Once the LintPDF team
+enables the desktop add-on on your account, download links appear in
+the dashboard at **[Desktop App](https://app.lintpdf.com/dashboard/downloads)**
+with signed, short-lived URLs for each platform:
 
-| Platform          | Download                                                                                                              | Requirements        |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| macOS (Universal) | [Latest `.dmg`](https://github.com/thinkneverland/lint-pdf/releases/latest)     | macOS 10.15+        |
-| Windows (64-bit)  | [Latest `.msi`](https://github.com/thinkneverland/lint-pdf/releases/latest)     | Windows 10+         |
-| Linux (AppImage)  | [Latest `.AppImage`](https://github.com/thinkneverland/lint-pdf/releases/latest) | GTK 4 / WebKitGTK 6 |
+| Platform          | Format              | Requirements        |
+| ----------------- | ------------------- | ------------------- |
+| macOS (Universal) | `.dmg`              | macOS 10.15+        |
+| Windows (64-bit)  | `.msi`              | Windows 10+         |
+| Linux             | `.AppImage` / `.deb`| GTK 4 / WebKitGTK 6 |
+
+If you don't see the download page, email
+[sales@lintpdf.com](mailto:sales@lintpdf.com?subject=Desktop%20App%20Access)
+and we'll enable it for you.
 
 Once installed, the app checks for updates on launch and prompts you
 before downloading — no re-install cycle.

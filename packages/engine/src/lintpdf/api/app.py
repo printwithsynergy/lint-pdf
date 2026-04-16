@@ -23,6 +23,7 @@ from lintpdf.api.routes import (
     batch,
     branding,
     color_config,
+    downloads,
     endpoints,
     health,
     import_mappings,
@@ -155,6 +156,9 @@ def create_app() -> FastAPI:
     app.include_router(endpoints.router)
     app.include_router(color_config.router, prefix="/api/v1")
     app.include_router(user_ai_access.router, prefix="/api/v1")
+
+    # Desktop app downloads (R2-backed)
+    app.include_router(downloads.router)
 
     # Dev auth (impersonation) — only when explicitly enabled
     from lintpdf.api.config import get_settings
