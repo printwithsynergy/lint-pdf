@@ -609,6 +609,36 @@ async def update_tenant_branding(
     return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
 
 
+# ── Tenant share-link settings (admin) ─────────────────────
+
+
+class UpdateShareSettingsRequest(BaseModel):
+    """Admin PATCH body for tenant-wide share-link preferences."""
+
+    share_email_required: bool | None = None
+
+
+@router.patch("/tenants/{tenant_id}/share-settings", response_model=AdminTenantResponse)
+async def update_tenant_share_settings(
+    tenant_id: str,
+    body: UpdateShareSettingsRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminTenantResponse:
+    """Toggle the email-capture gate on public share-link viewers.
+
+    Flip ``share_email_required=false`` for tenants that share reports
+    internally and don't need lead-gen on every share-link click. The
+    default stays ``true`` to preserve broker / print-shop workflows
+    where email capture is part of the review loop.
+    """
+    tenant = _get_tenant(db, tenant_id)
+    if body.share_email_required is not None:
+        tenant.share_email_required = body.share_email_required
+    db.commit()
+    return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
+
+
 # ── White-label custom report domain (admin override) ───────
 
 
