@@ -494,7 +494,17 @@ async def serve_pdf_report(
     download: int = 0,
     db: Session = Depends(get_db),
 ) -> Response:
-    """Serve a PDF report by token (public, no auth)."""
+    """Serve a PDF-flavoured report by token (public, no auth).
+
+    Handles all three PDF-bearing token formats — plain ``pdf``, the
+    findings-overlay ``annotated_pdf``, and the reviewer-markup
+    ``annotated_pdf_markup`` — since every one of them lives behind a
+    ``{report_base}/r/{token}.pdf`` URL. The storage key encodes the
+    specific format (see ``InMemoryStorage.upload_report`` /
+    ``S3Storage.upload_report`` — ``reports/{tenant}/{job}/report.{fmt}``),
+    so we must pass ``record.format`` through rather than hard-coding
+    ``"pdf"``.
+    """
     from datetime import datetime, timezone
 
     record: ReportToken | None = db.query(ReportToken).filter(ReportToken.token == token).first()
@@ -504,7 +514,8 @@ async def serve_pdf_report(
     if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Report has expired.")
 
-    if record.format != "pdf":
+    _PDF_FORMATS = {"pdf", "annotated_pdf", "annotated_pdf_markup"}
+    if record.format not in _PDF_FORMATS:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="PDF report not found for this token.",
@@ -519,7 +530,11 @@ async def serve_pdf_report(
     loop = asyncio.get_running_loop()
     try:
         content = await loop.run_in_executor(
-            None, storage.download_report, str(record.tenant_id), str(record.job_id), "pdf"
+            None,
+            storage.download_report,
+            str(record.tenant_id),
+            str(record.job_id),
+            record.format,
         )
     except FileNotFoundError as exc:
         raise HTTPException(
