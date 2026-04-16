@@ -15,12 +15,6 @@ import { resolveEngineTenantId } from "../../index";
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 
-interface AccountDb {
-  appSettings: {
-    upsert: (args: Record<string, unknown>) => Promise<unknown>;
-  };
-}
-
 // ---------------------------------------------------------------------------
 // Helper: proxy fetch to the LintPDF engine admin API
 // ---------------------------------------------------------------------------
@@ -82,8 +76,6 @@ export const lintpdfAccountPlugin: PixieDustPlugin = {
     });
 
     // Routes
-    const db = ctx.services.db as AccountDb;
-
     const routes: RouteDefinition[] = [
       {
         method: "GET" as HttpMethod,
@@ -142,7 +134,6 @@ export const lintpdfAccountPlugin: PixieDustPlugin = {
             return { status: 400, body: { error: "Missing tenant context" } };
           }
 
-          // 1. Update branding in the LintPDF engine
           const engineId = await resolveEngineTenantId(tenantId);
           const resp = await adminFetch(
             `/api/v1/admin/tenants/${engineId}/branding`,
@@ -156,36 +147,6 @@ export const lintpdfAccountPlugin: PixieDustPlugin = {
             return { status: resp.status, body: { error: detail } };
           }
           const engineData = await resp.json();
-
-          // 2. Sync branding to Pixie Dust AppSettings
-          try {
-            const branding = req.body as Record<string, unknown>;
-            await db.appSettings.upsert({
-              where: { tenantId },
-              update: {
-                brandName: branding.name ?? undefined,
-                brandLogoUrl: branding.logo_url ?? undefined,
-                primaryColor: branding.primary_color ?? undefined,
-                accentColor: branding.accent_color ?? undefined,
-              },
-              create: {
-                tenantId,
-                brandName: (branding.name as string) ?? "",
-                brandLogoUrl: (branding.logo_url as string) ?? null,
-                primaryColor: (branding.primary_color as string) ?? "#000000",
-                accentColor: (branding.accent_color as string) ?? "#0066FF",
-              },
-            });
-          } catch (err) {
-            ctx.services.logger.warn(
-              "Account plugin: failed to sync branding to AppSettings",
-              {
-                tenantId,
-                error: err instanceof Error ? err.message : String(err),
-              },
-            );
-          }
-
           return { status: 200, body: engineData };
         }) as RouteHandler,
       },
