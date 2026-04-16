@@ -65,7 +65,7 @@ class GenerateReportsRequest(BaseModel):
     # above are still honoured for back-compat; when both are provided,
     # the nested envelope wins because it's more explicit.
     # See ``lintpdf.overrides.OverridesEnvelope``.
-    overrides: "OverridesEnvelope | None" = None
+    overrides: OverridesEnvelope | None = None
 
 
 class ReportInfo(BaseModel):
@@ -255,13 +255,9 @@ async def generate_reports(  # skipcq: PY-R1000
     from lintpdf.overrides.envelope import ReportOverrides
 
     try:
-        enforce_report_entitlements(
-            ReportOverrides(formats=body.formats), entitlements
-        )
+        enforce_report_entitlements(ReportOverrides(formats=body.formats), entitlements)
     except EntitlementDenied as exc:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
     # Check white-label branding restriction
     if body.branding and not entitlements.whitelabel_enabled:
@@ -592,8 +588,8 @@ async def serve_pdf_report(
     if record.expires_at is not None and datetime.now(timezone.utc) > record.expires_at:
         raise HTTPException(status_code=status.HTTP_410_GONE, detail="Report has expired.")
 
-    _PDF_FORMATS = {"pdf", "annotated_pdf", "annotated_pdf_markup"}
-    if record.format not in _PDF_FORMATS:
+    pdf_formats = {"pdf", "annotated_pdf", "annotated_pdf_markup"}
+    if record.format not in pdf_formats:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="PDF report not found for this token.",
@@ -723,9 +719,7 @@ async def validate_report_token(
         email_required = bool(per_token)
     else:
         tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
-        email_required = (
-            bool(getattr(tenant, "share_email_required", True)) if tenant else True
-        )
+        email_required = bool(getattr(tenant, "share_email_required", True)) if tenant else True
 
     return {
         "job_id": str(record.job_id),

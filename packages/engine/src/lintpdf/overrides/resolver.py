@@ -24,18 +24,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from lintpdf.overrides.envelope import (
-    OverridesEnvelope,
-    ReportOverrides,
-    ViewerOverrides,
-)
-
 if TYPE_CHECKING:
+    from lintpdf.overrides.envelope import (
+        OverridesEnvelope,
+        ReportOverrides,
+        ViewerOverrides,
+    )
     from lintpdf.profiles.schema import PreflightProfile
     from lintpdf.tenants.entitlements import TenantEntitlements
 
 
-class EntitlementDenied(Exception):
+class EntitlementDenied(Exception):  # noqa: N818 — public API, renaming breaks callers
     """Raised when an override requests something outside the tenant's plan.
 
     The route layer converts this to HTTP 403 with the message intact so
@@ -98,9 +97,7 @@ def apply_profile_overrides(
         # ThresholdConfig has explicit fields — drop unknown keys so a
         # typo doesn't get silently persisted as a bogus attribute.
         known = set(ThresholdConfig.model_fields.keys())
-        merged_thresh.update(
-            {k: v for k, v in overrides.thresholds.items() if k in known}
-        )
+        merged_thresh.update({k: v for k, v in overrides.thresholds.items() if k in known})
         updates["thresholds"] = ThresholdConfig(**merged_thresh)
 
     # --- color ---
@@ -123,9 +120,7 @@ def apply_profile_overrides(
         thresh = updates.get("thresholds") or profile.thresholds
         thresh_updates: dict[str, Any] = {}
         if overrides.color.target_output_condition is not None:
-            thresh_updates["target_output_condition"] = (
-                overrides.color.target_output_condition
-            )
+            thresh_updates["target_output_condition"] = overrides.color.target_output_condition
         if overrides.color.gamut_check is not None:
             thresh_updates["gamut_check"] = overrides.color.gamut_check
         if overrides.color.epm_mode is not None:
@@ -135,9 +130,7 @@ def apply_profile_overrides(
         if overrides.color.tac_limit is not None:
             thresh_updates["tac_limit"] = overrides.color.tac_limit
         if thresh_updates:
-            updates["thresholds"] = ThresholdConfig(
-                **{**thresh.model_dump(), **thresh_updates}
-            )
+            updates["thresholds"] = ThresholdConfig(**{**thresh.model_dump(), **thresh_updates})
 
     # --- AI ---
     if overrides.ai is not None:

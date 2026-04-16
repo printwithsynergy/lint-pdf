@@ -7,3 +7,8 @@ numReplicas = 1
 startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --loglevel=info --queues=default,priority --concurrency=${CELERY_DEFAULT_CONCURRENCY:-2}'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
+# Allow in-flight Celery tasks to finish (Celery worker drains on SIGTERM).
+# Must be ≥ the task time_limit in queue/app.py (600s) so a redeploy can't
+# kill a running preflight mid-flight — that's how jobs get stuck in
+# "processing" forever.
+gracefulShutdownTimeoutSec = 660

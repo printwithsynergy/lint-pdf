@@ -75,17 +75,13 @@ def _apply_ocg_overrides(
 
     conflict = on & off
     if conflict:
-        raise OCGError(
-            f"ocg_on and ocg_off conflict on indices {sorted(conflict)}"
-        )
+        raise OCGError(f"ocg_on and ocg_off conflict on indices {sorted(conflict)}")
 
     with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
         catalog = pdf.Root
         oc_props = catalog.get("/OCProperties")
         if oc_props is None:
-            raise OCGError(
-                "PDF has no /OCProperties dictionary; cannot toggle layers."
-            )
+            raise OCGError("PDF has no /OCProperties dictionary; cannot toggle layers.")
         ocgs = oc_props.get("/OCGs")
         if ocgs is None:
             raise OCGError("/OCProperties has no /OCGs array.")
@@ -93,9 +89,7 @@ def _apply_ocg_overrides(
         max_idx = len(ocgs) - 1
         for idx in on | off:
             if idx < 0 or idx > max_idx:
-                raise OCGError(
-                    f"OCG index {idx} out of range (0..{max_idx})."
-                )
+                raise OCGError(f"OCG index {idx} out of range (0..{max_idx}).")
 
         d = oc_props.get("/D")
         if d is None:

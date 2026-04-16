@@ -39,49 +39,61 @@ export function PageCanvas({
   // Tooltip state: shows finding info near the clicked bbox
   const [tooltip, setTooltip] = useState<{ finding: ViewerFinding; x: number; y: number } | null>(null);
 
-  // Touch gesture tracking
-  const touchRef = useRef<{ x: number; y: number; dist: number; zoom: number; moved: boolean } | null>(null);
+  // Root wrapper — we attach a non-passive touchmove listener here so
+  // pinch-zoom (2-finger) can preventDefault without blocking the browser's
+  // native 1 & 2-finger pan (which scrolls the outer overflow-auto container).
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const getTouchDist = (touches: React.TouchList) => {
+  // Pinch-zoom state: initial finger distance + zoom at gesture start.
+  const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
+
+  const pinchDist = (touches: TouchList): number => {
     if (touches.length < 2) return 0;
     const dx = touches[1]!.clientX - touches[0]!.clientX;
     const dy = touches[1]!.clientY - touches[0]!.clientY;
     return Math.hypot(dx, dy);
   };
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (e.touches.length === 2 && onZoomChange) {
+  // Native (non-React) touch listeners so preventDefault is honored on
+  // pinch-zoom (React synthesises passive listeners in modern versions).
+  // 1-finger drag is left alone so the outer scroll container handles pan.
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el || !onZoomChange) return;
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        pinchRef.current = { startDist: pinchDist(e.touches), startZoom: zoom };
+      }
+    };
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || !pinchRef.current || pinchRef.current.startDist <= 0) return;
+      // Only preventDefault on pinch — leaves 1-finger pan native.
       e.preventDefault();
-      touchRef.current = { x: 0, y: 0, dist: getTouchDist(e.touches), zoom, moved: false };
-    } else if (e.touches.length === 1) {
-      touchRef.current = { x: e.touches[0]!.clientX, y: e.touches[0]!.clientY, dist: 0, zoom, moved: false };
-    }
+      const scale = pinchDist(e.touches) / pinchRef.current.startDist;
+      const next = Math.round(Math.max(25, Math.min(400, pinchRef.current.startZoom * scale)));
+      onZoomChange(next);
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) pinchRef.current = null;
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    el.addEventListener("touchcancel", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+      el.removeEventListener("touchcancel", onEnd);
+    };
   }, [zoom, onZoomChange]);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchRef.current) return;
-    if (e.touches.length === 2 && onZoomChange && touchRef.current.dist > 0) {
-      e.preventDefault();
-      const newDist = getTouchDist(e.touches);
-      const scale = newDist / touchRef.current.dist;
-      const newZoom = Math.round(Math.max(25, Math.min(400, touchRef.current.zoom * scale)));
-      onZoomChange(newZoom);
-      touchRef.current.moved = true;
-    } else if (e.touches.length === 1) {
-      touchRef.current.moved = true;
-    }
-  }, [onZoomChange]);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchRef.current || !onPageChange) return;
-    if (touchRef.current.dist === 0 && touchRef.current.moved && e.changedTouches.length === 1) {
-      const dx = e.changedTouches[0]!.clientX - touchRef.current.x;
-      if (Math.abs(dx) > 60) {
-        onPageChange(dx < 0 ? 1 : -1);
-      }
-    }
-    touchRef.current = null;
-  }, [onPageChange]);
+  // onPageChange is kept in the prop list for call-site compatibility, but
+  // swipe-to-change-page would fight native touch-pan. Consumers that need
+  // page navigation use the toolbar arrows / keyboard.
+  void onPageChange;
   const [pulsePhase, setPulsePhase] = useState(0);
 
   // Scale factor: zoom% maps to DPI scaling
@@ -287,11 +299,13 @@ export function PageCanvas({
 
   return (
     <div
+      ref={wrapperRef}
       className="relative inline-block"
-      style={{ touchAction: onZoomChange || onPageChange ? "none" : undefined }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      // "pan-x pan-y" lets the browser scroll the outer overflow-auto
+      // container on 1- or 2-finger drag (touch pan). Pinch-zoom is still
+      // intercepted by our non-passive touchmove listener above. When no
+      // zoom callback is wired (static reader mode), fall back to default.
+      style={{ touchAction: onZoomChange ? "pan-x pan-y" : undefined }}
     >
       {loading && (
         <div
