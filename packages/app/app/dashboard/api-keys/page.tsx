@@ -106,14 +106,16 @@ export default function ApiKeysPage() {
             Manage API keys for authenticating with the LintPDF engine.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setShowCreate(!showCreate);
-            setNewlyCreatedKey(null);
-          }}
-        >
-          {showCreate ? "Cancel" : "Create Key"}
-        </Button>
+        {!showCreate && (
+          <Button
+            onClick={() => {
+              setShowCreate(true);
+              setNewlyCreatedKey(null);
+            }}
+          >
+            Create Key
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -159,9 +161,19 @@ export default function ApiKeysPage() {
               />
             </FormField>
           </div>
-          <div className="mt-3">
+          <div className="mt-4 flex gap-2">
             <Button onClick={handleCreate} loading={creating}>
               Create
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setShowCreate(false);
+                setNewLabel("");
+              }}
+              disabled={creating}
+            >
+              Cancel
             </Button>
           </div>
         </div>

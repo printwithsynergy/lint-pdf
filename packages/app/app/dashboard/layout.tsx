@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 import { ensureRegistry } from "@/lib/plugins";
 import { SuperAdminToolbar } from "@/components/super-admin-toolbar";
 import { ClientProviders } from "@/components/client-providers";
+import { buildBrandingCss, type BrandingColors } from "@/lib/branding-css";
 
 export default async function DashboardLayout({
   children,
@@ -42,6 +43,11 @@ export default async function DashboardLayout({
   // When impersonating, load the target tenant's branding instead
   const branding = await getBranding(prisma);
 
+  const brandingCss = buildBrandingCss(branding as BrandingColors);
+  const customCss = [brandingCss, branding.customCss]
+    .filter((s): s is string => Boolean(s && s.trim()))
+    .join("\n\n");
+
   return (
     <ClientProviders>
       <div className="flex min-h-screen flex-col">
@@ -51,7 +57,7 @@ export default async function DashboardLayout({
           user={user}
           brandName={branding.brandName ?? "LintPDF"}
           brandLogoUrl={branding.brandLogoUrl ?? "/logo.svg"}
-          customCss={branding.customCss}
+          customCss={customCss || undefined}
         >
           {children}
         </DashboardShell>
