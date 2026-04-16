@@ -184,7 +184,7 @@ export default function AdminWarmingPage() {
 
       {/* Window size selector */}
       <div
-        className="mt-4 flex items-center gap-2"
+        className="mt-6 flex items-center gap-2"
         data-testid="warming-window-picker"
       >
         <span className="text-sm text-muted-foreground">Window:</span>

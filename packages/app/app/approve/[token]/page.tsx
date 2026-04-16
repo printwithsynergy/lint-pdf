@@ -300,14 +300,14 @@ export default function ApprovePage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowRejectForm(false)}
-                  className="flex-1 rounded-md border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="flex-1 rounded-md border border-slate-300 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
                 >
                   Back
                 </button>
                 <button
                   onClick={() => submitDecision("rejected")}
                   disabled={submitting || !notes.trim()}
-                  className="flex-1 rounded-md bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700 disabled:opacity-40"
+                  className="flex-1 rounded-md bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-40"
                 >
                   {submitting ? "Submitting…" : "Confirm Rejection"}
                 </button>
@@ -318,14 +318,14 @@ export default function ApprovePage() {
               <button
                 onClick={() => setShowRejectForm(true)}
                 disabled={submitting}
-                className="flex-1 rounded-md border-2 border-red-500 bg-white px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-40"
+                className="flex-1 rounded-md border-2 border-red-500 bg-white px-6 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-40"
               >
                 Reject
               </button>
               <button
                 onClick={() => submitDecision("approved")}
                 disabled={submitting}
-                className="flex-1 rounded-md bg-green-600 px-4 py-3 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-40"
+                className="flex-1 rounded-md bg-green-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-40"
               >
                 {submitting ? "Submitting…" : "Approve"}
               </button>
