@@ -87,7 +87,7 @@ export default function DownloadsPage() {
   }, [refresh]);
 
   if (loading) {
-    return <SkeletonDashboard />;
+    return <SkeletonDashboard type="cards" />;
   }
 
   if (error) {
