@@ -44,6 +44,16 @@ class GenerateReportsRequest(BaseModel):
     # the X-Visitor-Email header. Defaults to read-only (false) so
     # existing share behaviour is unchanged.
     allow_annotations: bool = False
+    # Per-mint override for the email-capture gate on ``/view/{token}``.
+    #   - ``None`` (default) → inherit the tenant's ``share_email_required``
+    #     setting; brokers who need lead-gen keep the gate on, internal
+    #     shares from tenants that flipped the tenant flag off don't.
+    #   - ``True``  → gate on regardless of tenant setting.
+    #   - ``False`` → gate off regardless of tenant setting — use when
+    #     sharing with a trusted party who shouldn't be prompted.
+    # Persisted on the minted ReportToken row so the validator endpoint
+    # can resolve it without re-reading the tenant later.
+    require_visitor_email: bool | None = None
 
 
 class ReportInfo(BaseModel):
@@ -294,6 +304,7 @@ async def generate_reports(  # skipcq: PY-R1000
             or getattr(tenant, "report_summary_page", None)
             or "prepend",
             allow_annotations=body.allow_annotations,
+            require_visitor_email=body.require_visitor_email,
         ),
     )
 
@@ -632,16 +643,22 @@ async def validate_report_token(
     job: Job | None = db.query(Job).filter(Job.id == record.job_id).first()
     file_name = job.file_name if job else "Untitled"
 
-    # Respect the tenant's ``share_email_required`` setting instead of
-    # the old hard-coded ``True``. Gating every public share-link behind
-    # an email prompt is correct for brokers who need lead-gen, but
-    # wrong for tenants sharing internally — the gate looked like a
-    # "link invalid" error to anyone who hit it without context.
-    # ``getattr`` with a ``True`` fallback keeps the old behaviour if a
-    # row predates the column being added (stale schema, startup.sh
-    # hasn't run yet, etc.).
-    tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
-    email_required = bool(getattr(tenant, "share_email_required", True)) if tenant else True
+    # Resolve the email gate in three layers, most specific first:
+    #   1. Per-token override (``ReportToken.require_visitor_email``):
+    #      the mint call asked for gate on / off for *this* link.
+    #   2. Tenant-wide default (``Tenant.share_email_required``):
+    #      what the tenant usually wants.
+    #   3. ``True`` fallback:
+    #      rows predating either column keep the pre-existing
+    #      behaviour — never accidentally de-gate an old share link.
+    per_token = getattr(record, "require_visitor_email", None)
+    if per_token is not None:
+        email_required = bool(per_token)
+    else:
+        tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+        email_required = (
+            bool(getattr(tenant, "share_email_required", True)) if tenant else True
+        )
 
     return {
         "job_id": str(record.job_id),

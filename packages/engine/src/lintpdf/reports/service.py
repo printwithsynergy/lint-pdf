@@ -420,6 +420,7 @@ class ReportService:
         detail_level: str = "standard",
         summary_page: str = "prepend",
         allow_annotations: bool = False,
+        require_visitor_email: bool | None = None,
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 
@@ -520,6 +521,7 @@ class ReportService:
                 format=fmt,
                 expires_at=expires_at,
                 allow_annotations=allow_annotations,
+                require_visitor_email=require_visitor_email,
             )
             self._db.add(token_record)
 

@@ -303,6 +303,12 @@ CREATE INDEX IF NOT EXISTS ix_share_visitors_token_email
 
 ALTER TABLE report_tokens
   ADD COLUMN IF NOT EXISTS allow_annotations BOOLEAN NOT NULL DEFAULT false;
+-- Alembic 025: per-token email-gate override. NULL = inherit the tenant's
+-- share_email_required setting. True/False = force the gate on/off for
+-- this specific token regardless of tenant default. Lets a tenant mint
+-- both gated (external) and ungated (internal) links in one session.
+ALTER TABLE report_tokens
+  ADD COLUMN IF NOT EXISTS require_visitor_email BOOLEAN;
 
 -- Engine: viewer_annotation_comments (Alembic 022). Threaded replies on
 -- a reviewer annotation — the Wave B collaboration surface. Comments
