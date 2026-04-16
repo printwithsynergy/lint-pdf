@@ -205,6 +205,13 @@ class Job(Base):
     duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     color_quality_score: Mapped[Any | None] = mapped_column(Numeric(5, 1), nullable=True)
     jdf_overrides: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # Universal per-call override envelope (see ``lintpdf.overrides``).
+    # The resolved envelope is persisted here at submit time so the
+    # orchestrator and viewer config endpoints can read it back later
+    # without re-parsing the request. JDF overrides continue to live in
+    # ``jdf_overrides`` above (they're a specialised subset of thresholds
+    # + conformance, fed by the JDF parser) and are merged on top.
+    overrides: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
     # Verdict (manual review disposition)
     verdict: Mapped[str | None] = mapped_column(String(20), nullable=True)
@@ -441,6 +448,13 @@ class ReportToken(Base):
     # for external distribution *and* "ungated" tokens for internal review
     # in the same session, without flipping a tenant-wide flag between calls.
     require_visitor_email: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    # Universal per-call override envelope captured at mint time (see
+    # ``lintpdf.overrides``). The viewer config endpoint reads this dict
+    # to apply per-token viewer flags (hide separations, force dark
+    # mode, override footer text, etc.) so each share link carries its
+    # own immutable behaviour — you can share the same job via three
+    # tokens with three different override sets.
+    overrides: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
 
 
 # --- AI Feature Models ---

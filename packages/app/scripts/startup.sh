@@ -309,6 +309,15 @@ ALTER TABLE report_tokens
 -- both gated (external) and ungated (internal) links in one session.
 ALTER TABLE report_tokens
   ADD COLUMN IF NOT EXISTS require_visitor_email BOOLEAN;
+-- Alembic 026: universal per-call override envelope. JSON blob captured
+-- at submit time (jobs.overrides) and mint time (report_tokens.overrides)
+-- so every stage of the pipeline honours the caller's per-job / per-mint
+-- tweaks — checks, thresholds, color workflow, AI, viewer UI defaults,
+-- share-link gating — without re-parsing the request. NULL = no overrides.
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS overrides JSON;
+ALTER TABLE report_tokens
+  ADD COLUMN IF NOT EXISTS overrides JSON;
 
 -- Engine: viewer_annotation_comments (Alembic 022). Threaded replies on
 -- a reviewer annotation — the Wave B collaboration surface. Comments
