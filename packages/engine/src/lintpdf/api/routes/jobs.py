@@ -121,6 +121,18 @@ _unbranded_param = Form(
         "branding (equivalent to ``brand=anonymous``)."
     ),
 )
+_overrides_param = Form(
+    default=None,
+    description=(
+        "Universal per-call override envelope as a JSON string. Accepts "
+        "``checks``, ``thresholds``, ``conformance``, ``workflow``, "
+        "``color``, ``ai``, ``viewer``, ``report``, ``branding``, "
+        "``share`` — see ``lintpdf.overrides.OverridesEnvelope``. All "
+        "fields optional; only provided values override the resolved "
+        "profile / tenant default. Flat parameters (brand, unbranded, "
+        "ai_enabled, etc.) continue to work for back-compat."
+    ),
+)
 
 
 def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skipcq: PY-R1000
@@ -200,6 +212,7 @@ async def submit_job(  # skipcq: PY-R1000
     mapping_id: str | None = _mapping_id_param,
     brand: str | None = _brand_param,
     unbranded: bool | None = _unbranded_param,
+    overrides: str | None = _overrides_param,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> JSONResponse:
@@ -208,6 +221,58 @@ async def submit_job(  # skipcq: PY-R1000
     The job is processed asynchronously. Use GET /api/v1/jobs/{job_id}
     to check status and retrieve results.
     """
+    # Parse the overrides envelope (JSON string in a multipart form —
+    # Pydantic can't natively nest JSON through FastAPI's Form). Empty
+    # string / None = no overrides; invalid JSON or unknown fields =
+    # 422 with the path that broke so the caller can fix their payload.
+    overrides_envelope = None
+    overrides_as_dict: dict[str, object] | None = None
+    if overrides:
+        import json as _json
+        from pydantic import ValidationError as _ValidationError
+
+        from lintpdf.overrides import OverridesEnvelope as _OverridesEnvelope
+
+        try:
+            overrides_payload = _json.loads(overrides)
+        except _json.JSONDecodeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"overrides must be valid JSON: {exc}",
+            ) from exc
+        try:
+            overrides_envelope = _OverridesEnvelope.model_validate(overrides_payload)
+        except _ValidationError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"overrides failed validation: {exc.errors()}",
+            ) from exc
+        overrides_as_dict = overrides_envelope.model_dump(
+            exclude_unset=True, exclude_none=True
+        )
+
+        # Map envelope → flat form params where both exist, so the rest
+        # of this handler (branding resolution, AI resolution) sees one
+        # consistent set of values. The nested envelope wins because
+        # it's more explicit — callers using it are opting in to the
+        # new shape.
+        if overrides_envelope.branding is not None:
+            b = overrides_envelope.branding
+            if b.mode is not None and brand is None:
+                if b.mode == "profile" and b.profile_id:
+                    brand = b.profile_id
+                else:
+                    brand = b.mode
+        if overrides_envelope.ai is not None:
+            a = overrides_envelope.ai
+            if a.enabled is not None and ai_enabled is None:
+                ai_enabled = a.enabled
+            if a.categories is not None and ai_categories is None:
+                ai_categories = ",".join(a.categories)
+            if a.features is not None and ai_features is None:
+                ai_features = ",".join(a.features)
+            if a.preset is not None and ai_preset is None:
+                ai_preset = a.preset
     # Check rate limit (raises 429 if hard limit exceeded)
     usage = check_rate_limit(tenant)
 
@@ -450,6 +515,10 @@ async def submit_job(  # skipcq: PY-R1000
         external_format=resolved_external_format,
         brand_profile_id_override=brand_profile_override_id,
         unbranded_override=unbranded_override_flag,
+        # Persisted so the worker (via ``run_preflight``), the viewer
+        # config endpoint, and any subsequent mint call all see the
+        # exact envelope the caller sent — no re-parsing, no drift.
+        overrides=overrides_as_dict,
     )
     db.add(job)
 

@@ -296,6 +296,34 @@ def run_preflight(
                         update={"conformance": jdf_overrides["conformance"]}
                     )
 
+            # Apply the universal per-call override envelope captured
+            # at submit time. This is the single path for every
+            # non-JDF override the caller sent: checks enabled/disabled,
+            # severity overrides / max_severity, thresholds beyond the
+            # JDF subset, color workflow, AI config. Applied AFTER JDF
+            # so explicit envelope values beat the JDF-derived ones
+            # when both are present.
+            job_overrides = job.overrides if job is not None else None
+            if job_overrides:
+                from lintpdf.overrides import (
+                    OverridesEnvelope,
+                    apply_profile_overrides,
+                )
+
+                try:
+                    envelope = OverridesEnvelope.model_validate(job_overrides)
+                    profile = apply_profile_overrides(profile, envelope)
+                except Exception:
+                    # Persisted envelopes should always round-trip, but
+                    # if a future schema change drifts, fall back to the
+                    # profile rather than failing the whole job. Log so
+                    # the drift is visible.
+                    logger.exception(
+                        "Failed to apply overrides envelope for job %s — "
+                        "running with profile defaults",
+                        job_id,
+                    )
+
             # Apply per-job AI overrides if provided. ``ai_enabled`` flips the
             # profile's AI on or off; ``ai_categories``/``ai_features`` further
             # narrow which analyzers run. None means "leave profile alone".

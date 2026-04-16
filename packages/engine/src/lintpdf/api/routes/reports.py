@@ -14,6 +14,11 @@ from sqlalchemy.orm import Session  # noqa: TC002
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
 from lintpdf.api.models import BrandProfile, BrandProfileType, Job, JobFinding, ReportToken, Tenant
+from lintpdf.overrides import (
+    EntitlementDenied,
+    OverridesEnvelope,
+    enforce_report_entitlements,
+)
 
 if TYPE_CHECKING:
     from lintpdf.reports.service import BrandingContext
@@ -54,6 +59,13 @@ class GenerateReportsRequest(BaseModel):
     # Persisted on the minted ReportToken row so the validator endpoint
     # can resolve it without re-reading the tenant later.
     require_visitor_email: bool | None = None
+    # Universal per-call override envelope. Everything the tenant has
+    # access to is toggleable through this single field — viewer UI
+    # defaults, report knobs, branding, share-link gating. Flat fields
+    # above are still honoured for back-compat; when both are provided,
+    # the nested envelope wins because it's more explicit.
+    # See ``lintpdf.overrides.OverridesEnvelope``.
+    overrides: "OverridesEnvelope | None" = None
 
 
 class ReportInfo(BaseModel):
@@ -185,21 +197,71 @@ async def generate_reports(  # skipcq: PY-R1000
     if body is None:
         body = GenerateReportsRequest()
 
+    # Fold nested ``body.overrides`` onto the flat fields. The flat API
+    # was here first and legacy clients still use it; the nested
+    # envelope is the forward-looking shape. When both are set, the
+    # nested (more explicit) values win for each field — caller opts in
+    # by including the field in ``overrides``.
+    if body.overrides is not None:
+        if body.overrides.report is not None:
+            r = body.overrides.report
+            if r.formats is not None:
+                body.formats = list(r.formats)
+            if r.detail_level is not None:
+                body.detail_level = r.detail_level
+            if r.summary_page is not None:
+                body.summary_page = r.summary_page
+            if r.expiry_days is not None:
+                body.expiry_days = r.expiry_days
+            if r.email_to is not None:
+                body.email_to = r.email_to
+        if body.overrides.share is not None:
+            s = body.overrides.share
+            if s.require_visitor_email is not None:
+                body.require_visitor_email = s.require_visitor_email
+            if s.allow_annotations is not None:
+                body.allow_annotations = s.allow_annotations
+        if body.overrides.branding is not None and body.branding is None:
+            # Map the envelope's branding fields onto the flat
+            # BrandingOverride only when the caller didn't already
+            # supply one — the flat surface remains authoritative if it
+            # was explicitly set.
+            b = body.overrides.branding
+            if any(
+                v is not None
+                for v in (
+                    b.name,
+                    b.logo_url,
+                    b.primary_color,
+                    b.accent_color,
+                    b.hide_footer,
+                )
+            ):
+                body.branding = BrandingOverride(
+                    name=b.name,
+                    logo_url=b.logo_url,
+                    primary_color=b.primary_color,
+                    accent_color=b.accent_color,
+                    hide_footer=b.hide_footer,
+                )
+
     # Enforce tier-based restrictions
     from lintpdf.tenants.entitlements import resolve_entitlements
 
     entitlements = resolve_entitlements(tenant)
 
-    # Check report format restrictions
-    disallowed = set(body.formats) - set(entitlements.allowed_report_formats)
-    if disallowed:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=(
-                f"Your plan does not include report format(s): {', '.join(sorted(disallowed))}. "
-                f"Allowed formats: {', '.join(entitlements.allowed_report_formats)}."
-            ),
+    # Report format entitlements — resolver owns the message formatting so
+    # there's only one place to update when plan gates change.
+    from lintpdf.overrides.envelope import ReportOverrides
+
+    try:
+        enforce_report_entitlements(
+            ReportOverrides(formats=body.formats), entitlements
         )
+    except EntitlementDenied as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)
+        ) from exc
 
     # Check white-label branding restriction
     if body.branding and not entitlements.whitelabel_enabled:
@@ -305,6 +367,11 @@ async def generate_reports(  # skipcq: PY-R1000
             or "prepend",
             allow_annotations=body.allow_annotations,
             require_visitor_email=body.require_visitor_email,
+            overrides_dict=(
+                body.overrides.model_dump(exclude_unset=True, exclude_none=True)
+                if body.overrides is not None
+                else None
+            ),
         ),
     )
 

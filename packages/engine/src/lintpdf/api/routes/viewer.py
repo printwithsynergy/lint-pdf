@@ -845,9 +845,22 @@ def _apply_branding_to_config(config: ViewerConfigResponse, branding: Any, tenan
 
 
 def _build_viewer_config(
-    *, job: Job, tenant: Tenant, db: Session, brand_param: str | None
+    *,
+    job: Job,
+    tenant: Tenant,
+    db: Session,
+    brand_param: str | None,
+    overrides_dict: dict[str, Any] | None = None,
 ) -> ViewerConfigResponse:
-    """Shared builder for authenticated + public viewer config endpoints."""
+    """Shared builder for authenticated + public viewer config endpoints.
+
+    ``overrides_dict`` is the per-token or per-job override envelope
+    (``lintpdf.overrides.OverridesEnvelope`` serialised to a dict). When
+    present, its ``viewer`` section is applied last, overriding any
+    value the brand-profile layer had set. This is how a single tenant
+    can mint multiple tokens for the same job with different viewer UI
+    shapes.
+    """
     from lintpdf.reports.service import BrandingContext, resolve_branding
 
     caps = dict(job.data_capabilities or {})
@@ -919,6 +932,28 @@ def _build_viewer_config(
                 if field_name in vc:
                     setattr(config, field_name, vc[field_name])
 
+    # Per-call override envelope wins over every other layer — the
+    # caller explicitly asked for these viewer flags when they submitted
+    # the job or minted the token. See ``lintpdf.overrides.envelope``
+    # for the ``viewer`` schema. Unknown keys are ignored so a future
+    # OverridesEnvelope field doesn't break older rows stored in the DB.
+    if overrides_dict:
+        viewer_override = overrides_dict.get("viewer") or {}
+        protected = {
+            "anonymous",
+            "tenant_name",
+            "support_email",
+            "preflight_source",
+            "capabilities",
+        }
+        for field_name, value in viewer_override.items():
+            if value is None:
+                continue
+            if field_name in protected:
+                continue
+            if field_name in ViewerConfigResponse.model_fields:
+                setattr(config, field_name, value)
+
     return config
 
 
@@ -945,7 +980,13 @@ async def get_viewer_config(
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    return _build_viewer_config(job=job, tenant=tenant, db=db, brand_param=brand)
+    return _build_viewer_config(
+        job=job,
+        tenant=tenant,
+        db=db,
+        brand_param=brand,
+        overrides_dict=job.overrides,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -1946,7 +1987,18 @@ async def public_config(token: str, db: Session = Depends(get_db)) -> dict:
     elif record.brand_mode == "profile" and record.brand_profile_id:
         brand_param = str(record.brand_profile_id)
 
-    config = _build_viewer_config(job=job, tenant=tenant, db=db, brand_param=brand_param)
+    # Layer: per-token overrides (highest priority) fall back to per-job
+    # overrides. The token snapshot is what the minter asked for at share
+    # time; if it's absent, the job's own overrides still apply.
+    overrides_for_config = record.overrides or job.overrides
+
+    config = _build_viewer_config(
+        job=job,
+        tenant=tenant,
+        db=db,
+        brand_param=brand_param,
+        overrides_dict=overrides_for_config,
+    )
     # Surface the token's annotation permission on the public config so the
     # viewer UI can enable / disable the Mark Up toolbar accordingly. On the
     # authenticated viewer this is always implicitly true.

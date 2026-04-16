@@ -421,6 +421,7 @@ class ReportService:
         summary_page: str = "prepend",
         allow_annotations: bool = False,
         require_visitor_email: bool | None = None,
+        overrides_dict: dict[str, Any] | None = None,
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 
@@ -512,7 +513,12 @@ class ReportService:
                 )
                 continue
 
-            # Create token record
+            # Create token record. ``overrides`` is the caller's
+            # universal override envelope captured at mint time so the
+            # viewer config endpoint can layer per-token viewer flags on
+            # top of the tenant / BrandProfile defaults. Same content for
+            # every format minted in this batch — one mint call, one
+            # override set.
             token_record = ReportToken(
                 id=uuid_mod.uuid4(),
                 job_id=uuid_mod.UUID(job_id),
@@ -522,6 +528,7 @@ class ReportService:
                 expires_at=expires_at,
                 allow_annotations=allow_annotations,
                 require_visitor_email=require_visitor_email,
+                overrides=overrides_dict,
             )
             self._db.add(token_record)
 
