@@ -474,19 +474,42 @@ class ReportService:
             pdf_bytes = self._fetch_original_pdf(result_json)
 
         for fmt in formats:
-            content = self._generate_format(
-                result_json,
-                fmt,
-                branding,
-                pdf_bytes=pdf_bytes,
-                detail_level=detail_level,
-                summary_page=summary_page,
-            )
+            # Per-format try/except: one broken format MUST NOT kill the
+            # mint endpoint for every other format the caller asked for.
+            # Previously an unhandled UnicodeEncodeError in the annotated
+            # PDF legend (or any other render bug) bubbled up as HTTP 500
+            # even when the caller also requested html/pdf/json/xml —
+            # those sibling formats would never be stored or tokenised.
+            try:
+                content = self._generate_format(
+                    result_json,
+                    fmt,
+                    branding,
+                    pdf_bytes=pdf_bytes,
+                    detail_level=detail_level,
+                    summary_page=summary_page,
+                )
+            except Exception:
+                logger.exception(
+                    "Report format %s failed for job %s; skipping and continuing",
+                    fmt,
+                    job_id,
+                )
+                continue
             if content is None:
                 continue
 
-            # Upload to storage
-            self._storage.upload_report(tenant_id, job_id, fmt, content)
+            # Upload to storage — wrap so an S3 hiccup on one format
+            # doesn't block the sibling formats from tokenising.
+            try:
+                self._storage.upload_report(tenant_id, job_id, fmt, content)
+            except Exception:
+                logger.exception(
+                    "Report format %s failed to upload for job %s; skipping",
+                    fmt,
+                    job_id,
+                )
+                continue
 
             # Create token record
             token_record = ReportToken(
