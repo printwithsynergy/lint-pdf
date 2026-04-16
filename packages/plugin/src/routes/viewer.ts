@@ -404,11 +404,36 @@ async function validateToken(
   anonymous: boolean;
 } | null> {
   try {
+    // The engine's ``/api/v1/reports/tokens/{token}`` endpoint is
+    // token-authenticated (the token in the URL path is the credential) —
+    // it does not require a tenant API key. Previously this call sent
+    // ``authHeaders()`` (``Authorization: Bearer ${LINTPDF_API_KEY}``),
+    // which introduced a silent failure mode: when the env var drifted
+    // between deploys (or wasn't set at all on an edge instance), the
+    // engine's auth middleware could reject the request, validateToken
+    // returned null, the plugin handler 404'd, and the browser rendered
+    // "Invalid or expired link" on a token that was perfectly valid.
+    // Dropping the header removes that coupling entirely.
     const [tokenResp, configResp] = await Promise.all([
-      fetch(engineUrl(`/api/v1/reports/tokens/${token}`), { headers: authHeaders() }),
+      fetch(engineUrl(`/api/v1/reports/tokens/${token}`)),
       fetch(engineUrl(`/api/v1/viewer/public/${token}/config`)).catch(() => null),
     ]);
-    if (!tokenResp.ok) return null;
+    if (!tokenResp.ok) {
+      // Surface the real reason in logs so the next "invalid link"
+      // report can be debugged in 10 seconds instead of an hour of
+      // curl-vs-browser divergence guessing.
+      let body = "";
+      try {
+        body = (await tokenResp.text()).slice(0, 200);
+      } catch {
+        body = "(failed to read body)";
+      }
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[fairy-ring] validateToken: engine token endpoint ${tokenResp.status} — ${body}`,
+      );
+      return null;
+    }
     const data = await tokenResp.json() as Record<string, unknown>;
     let brandName: string | undefined;
     let logoUrl: string | undefined;
@@ -433,7 +458,11 @@ async function validateToken(
       logoUrl,
       anonymous,
     };
-  } catch {
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[fairy-ring] validateToken: threw for token ${token.slice(0, 8)}… — ${e instanceof Error ? e.message : String(e)}`,
+    );
     return null;
   }
 }

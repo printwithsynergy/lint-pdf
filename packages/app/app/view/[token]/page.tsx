@@ -135,34 +135,86 @@ export default function PublicViewerPage() {
   const [error, setError] = useState("");
 
   const fetchJobData = useCallback(async () => {
-    try {
-      const resp = await fetch(`/api/lintpdf/viewer/public/${token}/job`);
-      if (!resp.ok) {
-        throw new Error("Invalid or expired link");
-      }
-      const data: JobData = await resp.json();
-      setJobData(data);
-
-      // Check if we already have a saved email cookie
-      const savedEmail = getCookie("lintpdf-viewer-email");
-      if (!data.emailRequired || savedEmail) {
-        setIdentified(true);
-        // If we have a saved email, auto-identify
-        if (savedEmail && data.emailRequired) {
-          const savedName = getCookie("lintpdf-viewer-name") ?? "";
-          // Fire and forget identify call to record the view
-          fetch(`/api/lintpdf/viewer/public/${token}/identify`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: savedEmail, name: savedName }),
-          }).catch(() => {});
+    // Distinguish between "bad URL / revoked", "expired", "auth needed"
+    // and "transient network error" so the user sees a message that maps
+    // to an actual next step. The previous single "Invalid or expired
+    // link" string was a false positive on legitimate tokens whenever an
+    // edge/middleware/caching layer briefly blipped — users couldn't tell
+    // whether the link was really dead or just needed a reload.
+    const doFetch = async (
+      attempt: number,
+    ): Promise<{ ok: true; data: JobData } | { ok: false; message: string }> => {
+      try {
+        const resp = await fetch(`/api/lintpdf/viewer/public/${token}/job`);
+        if (resp.ok) {
+          const data = (await resp.json()) as JobData;
+          return { ok: true, data };
         }
+        if (resp.status === 404) {
+          return {
+            ok: false,
+            message: "This link does not exist or has been revoked.",
+          };
+        }
+        if (resp.status === 410) {
+          return { ok: false, message: "This link has expired." };
+        }
+        if (resp.status === 401 || resp.status === 403) {
+          return {
+            ok: false,
+            message: "This link requires you to sign in.",
+          };
+        }
+        if (resp.status >= 500 && attempt === 0) {
+          // One retry after 1.5s for transient 5xx so a brief edge blip
+          // doesn't force the user to reload manually.
+          await new Promise((r) => setTimeout(r, 1500));
+          return doFetch(attempt + 1);
+        }
+        return {
+          ok: false,
+          message: `Server error ${resp.status}. Try reloading in a moment.`,
+        };
+      } catch (e) {
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 1500));
+          return doFetch(attempt + 1);
+        }
+        return {
+          ok: false,
+          message:
+            e instanceof Error
+              ? `Network error: ${e.message}. Check your connection and reload.`
+              : "Network error. Check your connection and reload.",
+        };
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load report");
-    } finally {
+    };
+
+    const result = await doFetch(0);
+    if (!result.ok) {
+      setError(result.message);
       setLoading(false);
+      return;
     }
+    const data = result.data;
+    setJobData(data);
+
+    // Check if we already have a saved email cookie
+    const savedEmail = getCookie("lintpdf-viewer-email");
+    if (!data.emailRequired || savedEmail) {
+      setIdentified(true);
+      // If we have a saved email, auto-identify
+      if (savedEmail && data.emailRequired) {
+        const savedName = getCookie("lintpdf-viewer-name") ?? "";
+        // Fire and forget identify call to record the view
+        fetch(`/api/lintpdf/viewer/public/${token}/identify`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: savedEmail, name: savedName }),
+        }).catch(() => {});
+      }
+    }
+    setLoading(false);
   }, [token]);
 
   useEffect(() => {
@@ -208,15 +260,21 @@ export default function PublicViewerPage() {
   }
 
   if (error || !jobData) {
+    // If we have a specific error message from the discriminated
+    // fetcher (404/410/401/5xx/network), render that. If we somehow
+    // reached here without an error AND without jobData, it's a
+    // genuine empty-response case — rarer than the old codepath
+    // implied, so word it plainly rather than guessing.
+    const msg =
+      error ||
+      "The server didn't return report data. Try reloading in a moment.";
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <h1 className="font-display text-xl font-bold text-destructive">
             Unable to load report
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {error || "This link may be invalid or expired."}
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{msg}</p>
         </div>
       </div>
     );

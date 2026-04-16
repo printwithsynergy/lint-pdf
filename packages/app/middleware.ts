@@ -17,7 +17,20 @@ export function middleware(request: NextRequest) {
   const result = evaluateMiddleware(
     {
       cookieName: appConfig.cookieName,
-      publicPaths: ["/view", "/api/waitlist"],
+      // The interactive viewer at ``/view/{token}`` is public, but so are
+      // the endpoints the client-side bundle hits once the page hydrates:
+      // token validation, viewer config, page tiles, findings. If those
+      // aren't explicitly public, a stale or invalid session cookie on an
+      // iOS in-app browser trips the middleware and the fetch 401s — the
+      // page then shows "Invalid or expired link" even though the token
+      // is fine. Keep these patterns narrow: only the /public/ surfaces
+      // that take a token as the authentication credential go in here.
+      publicPaths: [
+        "/view",
+        "/api/waitlist",
+        "/api/lintpdf/viewer/public",
+        "/api/lintpdf/reports/tokens",
+      ],
       rateLimitExemptPaths: [
         "/api/auth/magic-link/status",
         "/api/auth/claim-session",
