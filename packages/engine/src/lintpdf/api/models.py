@@ -433,6 +433,14 @@ class ReportToken(Base):
     allow_annotations: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default="false"
     )
+    # Per-token override for the email-capture gate at ``/view/{token}``.
+    # ``NULL`` → inherit the tenant's ``share_email_required`` setting;
+    # ``True`` → force the gate on regardless of tenant;
+    # ``False`` → force the gate off regardless of tenant.
+    # Persisting per-token means a single tenant can mint "gated" tokens
+    # for external distribution *and* "ungated" tokens for internal review
+    # in the same session, without flipping a tenant-wide flag between calls.
+    require_visitor_email: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
 
 
 # --- AI Feature Models ---
