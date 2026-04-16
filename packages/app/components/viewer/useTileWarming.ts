@@ -45,6 +45,8 @@ export function useTileWarmingStatus(
     terminalRef.current = false;
     let cancelled = false;
     let timerId: ReturnType<typeof setTimeout> | null = null;
+    let pendingSinceMs: number | null = null;
+    const PENDING_TIMEOUT_MS = 90_000;
 
     async function poll() {
       if (cancelled) return;
@@ -63,6 +65,15 @@ export function useTileWarmingStatus(
           ) {
             terminalRef.current = true;
             return;
+          }
+          if (body.status === "pending") {
+            if (pendingSinceMs === null) pendingSinceMs = Date.now();
+            if (Date.now() - pendingSinceMs > PENDING_TIMEOUT_MS) {
+              terminalRef.current = true;
+              return;
+            }
+          } else {
+            pendingSinceMs = null;
           }
         }
       } catch {

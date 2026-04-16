@@ -107,7 +107,7 @@ export function FindingsPanel({
   return (
     <div className="flex h-full flex-col bg-slate-900 text-slate-200">
       {/* Search box */}
-      <div className="shrink-0 border-b border-slate-700 px-3 py-2">
+      <div className="shrink-0 border-b border-slate-800/40 px-3 py-2">
         <div className="relative">
           <svg
             className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"
@@ -130,7 +130,7 @@ export function FindingsPanel({
       </div>
 
       {/* Severity filter tabs */}
-      <div className="flex shrink-0 border-b border-slate-700">
+      <div className="flex shrink-0 border-b border-slate-800/40">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -163,18 +163,30 @@ export function FindingsPanel({
         ))}
       </div>
 
-      {/* Page scope toggle */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-slate-700 px-3 py-1.5">
-        <button
-          onClick={() => setFilterScope((s) => (s === "all" ? "page" : "all"))}
-          className={`rounded border px-2 py-0.5 text-[11px] transition-colors ${
-            filterScope === "page"
-              ? "border-blue-500 bg-blue-500/20 text-blue-400"
-              : "border-slate-700 text-slate-400 hover:border-slate-500"
-          }`}
-        >
-          Page {currentPage} only
-        </button>
+      {/* Page scope toggle — segmented control */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-slate-800/40 px-3 py-1.5">
+        <div className="inline-flex rounded-md bg-slate-800/50 p-0.5">
+          <button
+            onClick={() => setFilterScope("all")}
+            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              filterScope === "all"
+                ? "bg-slate-700 text-white"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            All pages
+          </button>
+          <button
+            onClick={() => setFilterScope("page")}
+            className={`rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
+              filterScope === "page"
+                ? "bg-slate-700 text-white"
+                : "text-slate-500 hover:text-slate-300"
+            }`}
+          >
+            Page {currentPage} only
+          </button>
+        </div>
         <span className="text-[11px] text-slate-500">
           {filtered.length} finding{filtered.length !== 1 ? "s" : ""}
         </span>
@@ -196,7 +208,6 @@ export function FindingsPanel({
           </div>
         ) : (
           <>
-            {/* Document & Compliance Issues */}
             {(() => {
               const docFindings = filtered.filter((f) => !f.page_num && !f.bbox);
               const pageFindings = filtered.filter((f) => f.page_num || f.bbox);
@@ -204,29 +215,21 @@ export function FindingsPanel({
                 <>
                   {docFindings.length > 0 && (
                     <>
-                      <div className="flex items-center justify-between border-b border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                      <div className="flex items-center justify-between bg-slate-800/50 px-3 py-1.5">
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                           Document &amp; Compliance ({docFindings.length})
                         </span>
                       </div>
-                      {docFindings.map((f, i) => {
-                        const isSelected =
-                          selectedFinding?.inspection_id === f.inspection_id &&
-                          selectedFinding?.message === f.message;
-                        return (
-                          <button
-                            key={`doc-${f.inspection_id}-${i}`}
-                            onClick={() => onSelectFinding(f)}
-                            className={`flex w-full items-center gap-2 border-b border-slate-800/50 px-3 py-1.5 text-left transition-colors hover:bg-slate-800/80 ${
-                              isSelected ? SEVERITY_SELECTED_BG[f.severity] : ""
-                            }`}
-                          >
-                            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[f.severity]}`} />
-                            <code className="shrink-0 text-[10px] font-mono text-slate-500">{f.inspection_id}</code>
-                            <span className="flex-1 truncate text-[11px] text-slate-400">{f.message}</span>
-                          </button>
-                        );
-                      })}
+                      {docFindings.map((f, i) => (
+                        <div
+                          key={`doc-${f.inspection_id}-${i}`}
+                          className="flex w-full items-center gap-2 px-3 py-1.5 text-left"
+                        >
+                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[f.severity]}`} />
+                          <code className="shrink-0 text-[10px] font-mono text-slate-500">{f.inspection_id}</code>
+                          <span className="flex-1 truncate text-[11px] text-slate-400">{f.message}</span>
+                        </div>
+                      ))}
                     </>
                   )}
 
@@ -234,7 +237,7 @@ export function FindingsPanel({
                   {pageFindings.length > 0 && (
                     <>
                       {docFindings.length > 0 && (
-                        <div className="flex items-center justify-between border-b border-slate-700 bg-slate-800/50 px-3 py-1.5">
+                        <div className="flex items-center justify-between bg-slate-800/50 px-3 py-1.5">
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                             Page Issues ({pageFindings.length})
                           </span>
@@ -249,7 +252,7 @@ export function FindingsPanel({
                           <button
                             key={`page-${f.inspection_id}-${f.page_num}-${i}`}
                             onClick={() => onSelectFinding(f)}
-                            className={`w-full border-b border-slate-800 px-3 py-2.5 text-left transition-colors hover:bg-slate-800/80 ${
+                            className={`w-full border-b border-slate-800/30 px-3 py-2.5 text-left transition-colors hover:bg-slate-800/80 ${
                               isSelected
                                 ? `border-l-[3px] ${SEVERITY_BORDER[f.severity]} ${SEVERITY_SELECTED_BG[f.severity]}`
                                 : "border-l-[3px] border-l-transparent"
