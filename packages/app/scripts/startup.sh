@@ -213,6 +213,12 @@ ALTER TABLE jobs
 
 ALTER TABLE tenants
   ADD COLUMN IF NOT EXISTS unbranded_by_default BOOLEAN NOT NULL DEFAULT false;
+-- Alembic 024: share_email_required toggle. Default true preserves the
+-- pre-existing behaviour for every existing tenant (public share-link
+-- viewers are gated behind an email prompt). Admins flip it to false
+-- for tenants that share internally and don't need lead-gen.
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS share_email_required BOOLEAN NOT NULL DEFAULT true;
 
 CREATE TABLE IF NOT EXISTS job_imported_reports (
   id UUID PRIMARY KEY,

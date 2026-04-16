@@ -132,6 +132,13 @@ class Tenant(Base):
     report_default_expiry_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     report_email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     report_summary_page: Mapped[str] = mapped_column(String(10), nullable=False, default="prepend")
+    # Gate public share-link viewers behind an email capture prompt. Default
+    # ``True`` for brokers / print shops who need lead-gen on every shared
+    # report; admins can flip it to ``False`` for tenants that only share
+    # internally (the LintPDF Production tenant itself, for example). The
+    # token validation endpoint previously hard-coded ``email_required=True``
+    # here regardless of tenant settings, which broke trusted-share workflows.
+    share_email_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     report_storage_used_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     default_brand_profile_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
     # Default output branding — when true, viewer config + reports default to

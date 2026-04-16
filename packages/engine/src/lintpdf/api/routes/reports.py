@@ -632,9 +632,16 @@ async def validate_report_token(
     job: Job | None = db.query(Job).filter(Job.id == record.job_id).first()
     file_name = job.file_name if job else "Untitled"
 
-    # Check if the tenant requires email identification for public views
-    db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
-    email_required = True  # default to requiring email
+    # Respect the tenant's ``share_email_required`` setting instead of
+    # the old hard-coded ``True``. Gating every public share-link behind
+    # an email prompt is correct for brokers who need lead-gen, but
+    # wrong for tenants sharing internally — the gate looked like a
+    # "link invalid" error to anyone who hit it without context.
+    # ``getattr`` with a ``True`` fallback keeps the old behaviour if a
+    # row predates the column being added (stale schema, startup.sh
+    # hasn't run yet, etc.).
+    tenant = db.query(Tenant).filter(Tenant.id == record.tenant_id).first()
+    email_required = bool(getattr(tenant, "share_email_required", True)) if tenant else True
 
     return {
         "job_id": str(record.job_id),
