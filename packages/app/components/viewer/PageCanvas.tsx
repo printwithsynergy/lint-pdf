@@ -13,6 +13,7 @@ interface PageCanvasProps {
   onFindingClick: (finding: ViewerFinding) => void;
   onZoomChange?: (zoom: number) => void;
   onPageChange?: (delta: number) => void;
+  tileDpi?: number;
 }
 
 const SEVERITY_HEX: Record<string, string> = {
@@ -30,6 +31,7 @@ export function PageCanvas({
   onFindingClick,
   onZoomChange,
   onPageChange,
+  tileDpi,
 }: PageCanvasProps) {
   const { apiBase } = useViewerApi();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -98,7 +100,7 @@ export function PageCanvas({
 
   // Scale factor: zoom% maps to DPI scaling
   const scale = zoom / 100;
-  const dpi = DEFAULT_DPI;
+  const dpi = tileDpi ?? DEFAULT_DPI;
 
   // PDF points to pixels at the given DPI
   const ptsToPixels = dpi / 72;

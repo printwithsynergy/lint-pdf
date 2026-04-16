@@ -84,20 +84,23 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   // warming status so the reviewer sees a progress badge, and once
   // warming settles we kick off a browser-side prefetch pass so the
   // tile bytes are in the local HTTP cache before they're clicked.
+  const MOBILE_DPI = 96;
+  const effectiveDpi = isMobile ? MOBILE_DPI : DEFAULT_DPI;
+
   const { status: warmingStatus, terminal: warmingTerminal } =
     useTileWarmingStatus(apiBase);
-  // Only prefetch once warming is done or disabled — we don't want
-  // the browser thundering the engine for still-cold tiles.
+  // Start prefetching as soon as at least one tile is warm (or warming
+  // is terminal) — don't wait for the full page set. This lets the
+  // browser pull page 1 from S3 within seconds of job completion.
   const prefetchEnabled =
-    warmingTerminal &&
-    (warmingStatus?.status === "complete" ||
-      warmingStatus?.status === "disabled");
+    warmingTerminal ||
+    (warmingStatus !== null && warmingStatus.rendered >= 1);
   const { prefetched, total: prefetchTotal } = useTilePrefetch(
     apiBase,
     pages.length,
     prefetchEnabled,
     currentPage,
-    DEFAULT_DPI,
+    effectiveDpi,
   );
 
   // Auto-expand bottom sheet when a panel-mode is selected on mobile
@@ -339,7 +342,8 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
           // Auto-fit zoom on mobile: fit page width to screen
           const firstPage = (pagesData.pages ?? [])[0];
           if (window.innerWidth < 768 && firstPage) {
-            const ptsToPixels = 150 / 72; // DEFAULT_DPI / 72
+            const mobileDpi = 96;
+            const ptsToPixels = mobileDpi / 72;
             const pagePixelWidth = firstPage.width_pts * ptsToPixels;
             const fitZoom = Math.round(((window.innerWidth - 16) / pagePixelWidth) * 100);
             setZoom(Math.max(25, Math.min(200, fitZoom)));
@@ -520,7 +524,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
   }
 
   const currentPageInfo = pages.find((p) => p.page_num === currentPage);
-  const ptsToPixels = DEFAULT_DPI / 72;
+  const ptsToPixels = effectiveDpi / 72;
   const canvasWidth = currentPageInfo ? Math.round(currentPageInfo.width_pts * ptsToPixels * (zoom / 100)) : 0;
   const canvasHeight = currentPageInfo ? Math.round(currentPageInfo.height_pts * ptsToPixels * (zoom / 100)) : 0;
 
@@ -751,7 +755,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                   {viewerMode === "separation" ? (
                     <SeparationCanvas jobId={jobId} pageNum={currentPage} enabledChannels={enabledChannels} allChannels={allChannelNames} width={canvasWidth} height={canvasHeight} />
                   ) : (
-                    <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} findings={findings} selectedFinding={selectedFinding} onFindingClick={handleSelectFinding} onZoomChange={measureMode === "none" ? setZoom : undefined} onPageChange={measureMode === "none" ? (d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d))) : undefined} />
+                    <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} findings={findings} selectedFinding={selectedFinding} onFindingClick={handleSelectFinding} onZoomChange={measureMode === "none" ? setZoom : undefined} onPageChange={measureMode === "none" ? (d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d))) : undefined} tileDpi={effectiveDpi} />
                   )}
 
                   {/* Annotation overlay */}
@@ -986,6 +990,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                     findings={findings}
                     selectedFinding={selectedFinding}
                     onFindingClick={handleSelectFinding}
+                    tileDpi={effectiveDpi}
                   />
                 )}
 

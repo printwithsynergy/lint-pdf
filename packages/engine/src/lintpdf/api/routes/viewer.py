@@ -1039,7 +1039,12 @@ def _is_warming_complete(job_id: str) -> bool:
     return decoded == "complete"
 
 
-def _load_tile_warming_status(*, job_id: str, page_count: int) -> TileWarmingStatusResponse:
+def _load_tile_warming_status(
+    *,
+    job_id: str,
+    page_count: int,
+    job_created_at: datetime | None = None,
+) -> TileWarmingStatusResponse:
     """Read the warming-status hash from Redis and shape it for the client.
 
     Shared by the authenticated and public surfaces so the two stay in
@@ -1068,12 +1073,18 @@ def _load_tile_warming_status(*, job_id: str, page_count: int) -> TileWarmingSta
         raw = None
 
     if not raw:
-        # No Redis record yet — either warming hasn't started or the
-        # job completed before the warming feature shipped.
-        # Job hasn't started warming (either still processing, or
-        # finished before this feature shipped). Surface ``pending``
-        # regardless — the frontend treats it as "no progress bar yet
-        # but don't panic".
+        stale_threshold = 300
+        if job_created_at is not None:
+            age = (datetime.now(timezone.utc) - job_created_at).total_seconds()
+            if age > stale_threshold:
+                return TileWarmingStatusResponse(
+                    job_id=job_id,
+                    status="disabled",
+                    rendered=0,
+                    total=page_count,
+                    dpi=150,
+                    percent=0,
+                )
         return TileWarmingStatusResponse(
             job_id=job_id,
             status="pending",
@@ -1141,6 +1152,7 @@ async def get_tile_warming_status(
     return _load_tile_warming_status(
         job_id=job_id,
         page_count=int(job.page_count or 0),
+        job_created_at=job.created_at,
     )
 
 
@@ -1946,6 +1958,7 @@ async def public_tile_warming_status(
     return _load_tile_warming_status(
         job_id=str(job.id),
         page_count=int(job.page_count or 0),
+        job_created_at=job.created_at,
     )
 
 

@@ -41,12 +41,34 @@ export function FindingsPanel({
   };
 
   return (
-    <ul className="divide-y divide-gray-100 text-xs">
+    <ul className="divide-y divide-gray-50 text-xs">
       {(["error", "warning", "other"] as const).map((bucket) =>
         grouped[bucket].map((f) => {
           const globalIdx = findings.indexOf(f);
           const active = globalIdx === selectedIdx;
+          const isDocLevel = !f.page_num;
           const onThisPage = f.page_num === currentPage;
+
+          if (isDocLevel) {
+            return (
+              <li
+                key={`${globalIdx}-${f.inspection_id}`}
+                className={`flex items-start gap-2 px-3 py-2 ${
+                  active ? "bg-brand-50" : ""
+                }`}
+              >
+                {severityIcon(f.severity)}
+                <div className="min-w-0 flex-1">
+                  <p className="break-words">{f.message}</p>
+                  <p className="mt-0.5 flex items-center gap-2 text-[11px] text-gray-400">
+                    <span>{f.inspection_id}</span>
+                    {f.category && <span>· {f.category}</span>}
+                  </p>
+                </div>
+              </li>
+            );
+          }
+
           return (
             <li
               key={`${globalIdx}-${f.inspection_id}`}
