@@ -345,7 +345,9 @@ def generate_markup_pdf(
                 ),
             }
         )
-        overlay_obj = pdf.make_stream(overlay_stream.encode("latin-1", errors="replace"), overlay_dict)
+        overlay_obj = pdf.make_stream(
+            overlay_stream.encode("latin-1", errors="replace"), overlay_dict
+        )
 
         xobjects = resources.get("/XObject", pikepdf.Dictionary({}))
         if not isinstance(xobjects, pikepdf.Dictionary):

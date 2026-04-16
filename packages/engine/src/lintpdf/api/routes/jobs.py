@@ -229,6 +229,7 @@ async def submit_job(  # skipcq: PY-R1000
     overrides_as_dict: dict[str, object] | None = None
     if overrides:
         import json as _json
+
         from pydantic import ValidationError as _ValidationError
 
         from lintpdf.overrides import OverridesEnvelope as _OverridesEnvelope
@@ -247,9 +248,7 @@ async def submit_job(  # skipcq: PY-R1000
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"overrides failed validation: {exc.errors()}",
             ) from exc
-        overrides_as_dict = overrides_envelope.model_dump(
-            exclude_unset=True, exclude_none=True
-        )
+        overrides_as_dict = overrides_envelope.model_dump(exclude_unset=True, exclude_none=True)
 
         # Map envelope → flat form params where both exist, so the rest
         # of this handler (branding resolution, AI resolution) sees one
@@ -259,10 +258,7 @@ async def submit_job(  # skipcq: PY-R1000
         if overrides_envelope.branding is not None:
             b = overrides_envelope.branding
             if b.mode is not None and brand is None:
-                if b.mode == "profile" and b.profile_id:
-                    brand = b.profile_id
-                else:
-                    brand = b.mode
+                brand = b.profile_id if b.mode == "profile" and b.profile_id else b.mode
         if overrides_envelope.ai is not None:
             a = overrides_envelope.ai
             if a.enabled is not None and ai_enabled is None:

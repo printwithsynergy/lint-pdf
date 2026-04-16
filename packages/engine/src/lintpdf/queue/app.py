@@ -28,6 +28,11 @@ def create_celery_app(broker_url: str) -> Celery:
         task_soft_time_limit=540,  # 9 minute soft limit
         worker_prefetch_multiplier=1,  # One task at a time per worker
         task_acks_late=True,  # Acknowledge after completion
+        # When a worker is killed mid-task (redeploy, OOM, SIGKILL), the
+        # broker requeues the task to another worker instead of dropping
+        # it. Without this, a redeploy abandons in-flight jobs and their
+        # ``Job`` rows stay in ``processing`` forever.
+        task_reject_on_worker_lost=True,
         worker_max_tasks_per_child=25,  # Restart worker after 25 tasks (lower for larger files)
         task_routes={
             "lintpdf.webhook.dispatch": {"queue": "webhooks"},
@@ -45,6 +50,10 @@ def create_celery_app(broker_url: str) -> Celery:
             "process-approval-timeouts": {
                 "task": "lintpdf.queue.tasks.process_approval_timeouts",
                 "schedule": 600.0,  # Every 10 minutes
+            },
+            "reap-stale-jobs": {
+                "task": "lintpdf.queue.tasks.reap_stale_jobs",
+                "schedule": 300.0,  # Every 5 minutes — safety net
             },
         },
     )

@@ -19,7 +19,6 @@ import pytest
 from lintpdf.ai.rendering import OCGError, _apply_ocg_overrides
 from lintpdf.api.routes.viewer import _ocg_cache_suffix
 
-
 # ── Fixtures ─────────────────────────────────────────────────
 
 

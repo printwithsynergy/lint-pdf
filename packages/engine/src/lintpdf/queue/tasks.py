@@ -169,8 +169,12 @@ def _auto_generate_reports(
     name="lintpdf.preflight.run",
     max_retries=2,
     default_retry_delay=10,
-    time_limit=300,
-    soft_time_limit=270,
+    # Matches the app-wide default (10 min hard / 9 min soft). AI-heavy
+    # profiles (full-ai-scan) can legitimately run 6–8 minutes on larger
+    # PDFs; the previous 5-minute cap silently killed them, leaving the
+    # Job row stuck in "processing".
+    time_limit=600,
+    soft_time_limit=540,
 )
 def run_preflight(
     self: Any,
@@ -565,6 +569,86 @@ def run_preflight(
             "status": "failed",
             "error": str(exc),
         }
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    name="lintpdf.queue.tasks.reap_stale_jobs",
+)
+def reap_stale_jobs() -> dict[str, Any]:
+    """Safety net for jobs stuck in ``processing`` longer than any legit run.
+
+    The primary defense against abandoned in-flight work is:
+
+    1. Railway ``gracefulShutdownTimeoutSec`` on the worker services, so
+       redeploys wait for the current task to finish instead of SIGKILL.
+    2. Celery ``task_reject_on_worker_lost = True``, which re-delivers
+       abandoned tasks to another worker.
+    3. Celery ``time_limit = 600`` on the preflight task, so runaway jobs
+       self-terminate and flip the row to ``failed``.
+
+    This reaper only fires when all three of those miss — broker eviction,
+    database-transaction-rolled-back-but-cancelled-after-commit, worker
+    crash during the final DB write. We run it every 5 minutes and mark
+    any ``processing`` job whose ``created_at`` is older than the hard
+    time limit + a generous safety margin as ``failed``. Never cancels
+    work that could still legitimately be running.
+    """
+    import datetime as _dt
+    import uuid as _uuid
+
+    from lintpdf.api.database import get_db_session
+    from lintpdf.api.models import Job, JobStatus
+
+    # Hard timeout (10 min) + 10 min grace. Anything still "processing"
+    # after 20 minutes is definitively dead.
+    stale_after = _dt.timedelta(minutes=20)
+    cutoff = _dt.datetime.now(_dt.UTC) - stale_after
+
+    db = get_db_session()
+    try:
+        stuck: list[Job] = (
+            db.query(Job).filter(Job.status == JobStatus.PROCESSING, Job.created_at < cutoff).all()
+        )
+        reaped = 0
+        for job in stuck:
+            job.status = JobStatus.FAILED
+            job.error_message = (
+                "Job abandoned by worker (reaped after "
+                f"{int(stale_after.total_seconds() / 60)}-minute timeout). "
+                "Please resubmit."
+            )
+            job.completed_at = _dt.datetime.now(_dt.UTC)
+            reaped += 1
+            # Fire the standard failure webhook so downstream callers
+            # (dashboard, email, integrations) aren't left hanging.
+            try:
+                _dispatch_tenant_webhooks(
+                    db,
+                    job.tenant_id,
+                    "job.failed",
+                    {
+                        "job_id": str(job.id),
+                        "status": "failed",
+                        "error": job.error_message,
+                        "reaped": True,
+                    },
+                )
+            except Exception:
+                logger.exception("Reaper: webhook dispatch failed for job %s", job.id)
+        if reaped:
+            db.commit()
+            logger.warning(
+                "Reaped %d stale processing job(s): %s",
+                reaped,
+                ", ".join(str(j.id) for j in stuck),
+            )
+        # Touch _uuid to keep the import in the module namespace for
+        # future extensions (per-tenant filtering by id) without a ruff
+        # unused-import warning.
+        _ = _uuid
+        return {"reaped": reaped, "cutoff": cutoff.isoformat()}
+    finally:
+        db.close()
 
 
 @celery_app.task(  # type: ignore[untyped-decorator]

@@ -19,9 +19,8 @@ import pytest
 # collection time.
 pikepdf = pytest.importorskip("pikepdf")
 
-from lintpdf.reports.annotated_pdf_report import generate_annotated_pdf
-from lintpdf.reports.markup_pdf_report import generate_markup_pdf
-
+from lintpdf.reports.annotated_pdf_report import generate_annotated_pdf  # noqa: E402
+from lintpdf.reports.markup_pdf_report import generate_markup_pdf  # noqa: E402
 
 _FIXTURE_DIR = Path(__file__).resolve().parent.parent / "fixtures"
 

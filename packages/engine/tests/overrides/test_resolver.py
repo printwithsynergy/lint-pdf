@@ -107,9 +107,9 @@ class TestApplyProfileOverrides:
         profile = _make_profile()
         env = OverridesEnvelope(
             thresholds={
-                "tac_limit": 280.0,      # known
-                "min_dpi": 200.0,        # known
-                "bogus_field": "zzz",    # unknown — must be dropped
+                "tac_limit": 280.0,  # known
+                "min_dpi": 200.0,  # known
+                "bogus_field": "zzz",  # unknown — must be dropped
             }
         )
         out = apply_profile_overrides(profile, env)

@@ -210,9 +210,7 @@ def _expand_int_list(value: list[int] | list[str] | None) -> list[int] | None:
     return out or None
 
 
-def _ocg_cache_suffix(
-    ocg_on: list[int] | None, ocg_off: list[int] | None
-) -> str:
+def _ocg_cache_suffix(ocg_on: list[int] | None, ocg_off: list[int] | None) -> str:
     """Deterministic cache-key suffix for an OCG override.
 
     Returns ``""`` when both inputs are absent/empty so tiles
@@ -403,16 +401,12 @@ async def get_page_tile(
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
-    cache_key = _tile_cache_key(
-        str(tenant.id), str(job.id), page_num, dpi, ocg_on, ocg_off
-    )
+    cache_key = _tile_cache_key(str(tenant.id), str(job.id), page_num, dpi, ocg_on, ocg_off)
 
     hot_enabled = _hot_cache_enabled()
     redis = get_redis_client() if hot_enabled else None
     hot_key = (
-        _tile_hot_cache_key(
-            str(tenant.id), str(job.id), page_num, dpi, ocg_on, ocg_off
-        )
+        _tile_hot_cache_key(str(tenant.id), str(job.id), page_num, dpi, ocg_on, ocg_off)
         if redis is not None and dpi == 150
         else None
     )
