@@ -12,8 +12,7 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  Alert,
-  AlertDescription,
+  useToast,
 } from "@thinkneverland/pixie-dust-ui";
 
 interface AccountInfo {
@@ -38,9 +37,8 @@ interface AccountInfo {
 export default function AccountPage() {
   const [account, setAccount] = useState<AccountInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState("");
+  const { toast } = useToast();
 
   // Editable fields
   const [name, setName] = useState("");
@@ -65,11 +63,11 @@ export default function AccountPage() {
       setPrimaryColor(data.branding?.primary_color ?? "#000000");
       setAccentColor(data.branding?.accent_color ?? "#0066FF");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load account");
+      toast(e instanceof Error ? e.message : "Failed to load account", "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchAccount();
@@ -77,8 +75,6 @@ export default function AccountPage() {
 
   async function handleSaveSettings() {
     setSaving(true);
-    setError("");
-    setSuccess("");
     try {
       const resp = await fetch("/api/lintpdf/account", {
         method: "PATCH",
@@ -86,10 +82,13 @@ export default function AccountPage() {
         body: JSON.stringify({ name, contact_email: contactEmail }),
       });
       if (!resp.ok) throw new Error("Failed to update settings");
-      setSuccess("Settings saved");
+      toast("Settings saved", "success");
       await fetchAccount();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update settings");
+      toast(
+        e instanceof Error ? e.message : "Failed to update settings",
+        "error",
+      );
     } finally {
       setSaving(false);
     }
@@ -97,8 +96,6 @@ export default function AccountPage() {
 
   async function handleSaveBranding() {
     setSaving(true);
-    setError("");
-    setSuccess("");
     try {
       const resp = await fetch("/api/lintpdf/account/branding", {
         method: "PATCH",
@@ -111,10 +108,13 @@ export default function AccountPage() {
         }),
       });
       if (!resp.ok) throw new Error("Failed to update branding");
-      setSuccess("Branding saved");
+      toast("Branding saved", "success");
       await fetchAccount();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update branding");
+      toast(
+        e instanceof Error ? e.message : "Failed to update branding",
+        "error",
+      );
     } finally {
       setSaving(false);
     }
@@ -127,17 +127,6 @@ export default function AccountPage() {
   return (
     <>
       <h1 className="text-2xl font-bold">Account Settings</h1>
-
-      {error && (
-        <Alert variant="destructive" className="mt-4">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {success && (
-        <Alert className="mt-4">
-          <AlertDescription>{success}</AlertDescription>
-        </Alert>
-      )}
 
       {/* Plan overview */}
       {account && (
