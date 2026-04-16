@@ -1,0 +1,56 @@
+# Cross-compiles the LintPDF desktop app (Tauri) for Linux x86_64 from any host
+# that can run amd64 Docker images. The script at scripts/desktop-release.sh
+# builds this image and runs it with the repo mounted at /workspace.
+#
+# Artifacts emerge at /workspace/packages/desktop/src-tauri/target/release/bundle/
+# (AppImage + .deb). The `target/` directory and `~/.cargo` should be backed by
+# named volumes so re-runs are fast.
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    RUSTUP_HOME=/usr/local/rustup \
+    CARGO_HOME=/usr/local/cargo \
+    PATH=/usr/local/cargo/bin:/usr/local/share/pnpm:/usr/local/nvm/versions/node/v20.18.0/bin:$PATH \
+    PNPM_HOME=/usr/local/share/pnpm \
+    NODE_VERSION=20.18.0
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential \
+      ca-certificates \
+      curl \
+      file \
+      git \
+      libappindicator3-dev \
+      libayatana-appindicator3-dev \
+      libfuse2 \
+      libgtk-3-dev \
+      libjavascriptcoregtk-4.1-dev \
+      librsvg2-dev \
+      libsoup-3.0-dev \
+      libssl-dev \
+      libwebkit2gtk-4.1-dev \
+      patchelf \
+      pkg-config \
+      wget \
+      xdg-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node 20 via official binary tarball (keeps image reproducible).
+RUN mkdir -p /usr/local/nvm/versions/node \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+       | tar -xJ -C /usr/local/nvm/versions/node \
+    && mv /usr/local/nvm/versions/node/node-v${NODE_VERSION}-linux-x64 /usr/local/nvm/versions/node/v${NODE_VERSION}
+
+# pnpm — matches packageManager pin in root package.json
+RUN mkdir -p "$PNPM_HOME" \
+    && npm install -g pnpm@10.11.0
+
+# Rust toolchain
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --default-toolchain stable --profile minimal \
+    && rustup target add x86_64-unknown-linux-gnu
+
+WORKDIR /workspace/packages/desktop
+
+CMD ["bash", "-lc", "pnpm install --ignore-workspace && pnpm tauri build"]

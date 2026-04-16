@@ -12,6 +12,7 @@ interface TenantSummary {
   contact_email: string;
   rate_limit_daily: number;
   created_at: string;
+  entitlement_overrides?: Record<string, unknown> | null;
 }
 
 const PLANS = ["free", "starter", "growth", "scale", "enterprise"];
@@ -78,6 +79,27 @@ export default function AdminTenantsPage() {
     }
   }
 
+  async function handleDesktopToggle(tenantId: string, enabled: boolean) {
+    try {
+      const resp = await fetch(
+        `/api/lintpdf/admin/tenants/${tenantId}/entitlements`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ desktop_app_enabled: enabled }),
+        },
+      );
+      if (!resp.ok) {
+        throw new Error(`Failed (${resp.status})`);
+      }
+      await fetchTenants();
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Failed to update desktop access",
+      );
+    }
+  }
+
   async function handleAssist(tenantId: string) {
     try {
       const resp = await fetch("/api/auth/impersonate", {
@@ -121,6 +143,7 @@ export default function AdminTenantsPage() {
                   <th className="pb-2 font-medium">Plan</th>
                   <th className="pb-2 font-medium">Status</th>
                   <th className="pb-2 font-medium">Daily Limit</th>
+                  <th className="pb-2 font-medium">Desktop App</th>
                   <th className="pb-2 font-medium">Created</th>
                   <th className="pb-2 font-medium"></th>
                 </tr>
@@ -164,6 +187,23 @@ export default function AdminTenantsPage() {
                     </td>
                     <td className="py-2 text-xs">
                       {t.rate_limit_daily?.toLocaleString()}
+                    </td>
+                    <td className="py-2">
+                      <label className="inline-flex items-center gap-2 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(
+                            (t.entitlement_overrides as
+                              | { desktop_app_enabled?: boolean }
+                              | null
+                              | undefined)?.desktop_app_enabled,
+                          )}
+                          onChange={(e) =>
+                            handleDesktopToggle(t.id, e.target.checked)
+                          }
+                        />
+                        <span>Enabled</span>
+                      </label>
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">
                       {new Date(t.created_at).toLocaleDateString()}

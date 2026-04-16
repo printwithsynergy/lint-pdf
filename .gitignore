@@ -25,6 +25,7 @@
 .eggs/
 .env
 .env.*
+!.env.*.example
 .idea/
 .mypy_cache/
 .next/

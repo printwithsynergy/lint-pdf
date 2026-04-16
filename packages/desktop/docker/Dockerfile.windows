@@ -1,0 +1,51 @@
+# Cross-compiles the LintPDF desktop app (Tauri) for Windows x86_64 from a
+# Linux host using cargo-xwin, which fetches the MSVC redistributable from
+# Microsoft on first run and drives the build through Wine + rust's
+# x86_64-pc-windows-msvc target.
+#
+# EXPERIMENTAL: Tauri + cargo-xwin works for most projects but MSI generation
+# is sensitive to toolchain drift. If this image or run fails, fall back to
+# CI (tag `desktop-v<version>` and let `.github/workflows/desktop-release.yml`
+# build on a real Windows runner).
+
+FROM rust:1-bookworm
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PATH=/usr/local/cargo/bin:/usr/local/share/pnpm:/usr/local/nvm/versions/node/v20.18.0/bin:$PATH \
+    PNPM_HOME=/usr/local/share/pnpm \
+    NODE_VERSION=20.18.0 \
+    XWIN_ARCH=x86_64 \
+    XWIN_CACHE_DIR=/root/.xwin \
+    XWIN_ACCEPT_LICENSE=1
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      build-essential \
+      ca-certificates \
+      clang \
+      curl \
+      git \
+      libclang-dev \
+      llvm \
+      nsis \
+      pkg-config \
+      tar \
+      xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Node 20 via official binary tarball
+RUN mkdir -p /usr/local/nvm/versions/node \
+    && curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" \
+       | tar -xJ -C /usr/local/nvm/versions/node \
+    && mv /usr/local/nvm/versions/node/node-v${NODE_VERSION}-linux-x64 /usr/local/nvm/versions/node/v${NODE_VERSION}
+
+RUN mkdir -p "$PNPM_HOME" \
+    && npm install -g pnpm@10.11.0
+
+# Windows cross-compile toolchain
+RUN rustup target add x86_64-pc-windows-msvc \
+    && cargo install --locked cargo-xwin \
+    && cargo install --locked tauri-cli --version "^2.0"
+
+WORKDIR /workspace/packages/desktop
+
+CMD ["bash", "-lc", "pnpm install --ignore-workspace && pnpm tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc"]

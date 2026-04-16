@@ -114,6 +114,7 @@ class UpdateEntitlementsRequest(BaseModel):
     report_storage_mb: int | None = None
     report_default_expiry_days: int | None = None
     overage_rate_cents: int | None = None
+    desktop_app_enabled: bool | None = None
 
 
 class EntitlementOverridesResponse(BaseModel):

@@ -28,6 +28,7 @@ class TenantEntitlements:
     ai_enabled: bool
     approval_chains_enabled: bool = False
     max_approval_templates: int | None = None
+    desktop_app_enabled: bool = False
 
 
 def resolve_entitlements(tenant: Any) -> TenantEntitlements:
@@ -83,4 +84,5 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
         ai_enabled=merged.get("ai_enabled", False),
         approval_chains_enabled=merged.get("approval_chains_enabled", False),
         max_approval_templates=merged.get("max_approval_templates", 0),
+        desktop_app_enabled=merged.get("desktop_app_enabled", False),
     )
