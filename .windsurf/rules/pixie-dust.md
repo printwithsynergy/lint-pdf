@@ -20,9 +20,9 @@ description: "Pixie Dust framework compliance rules for LintPDF"
 
 ## Package Policy
 
-- ALL `@thinkneverland/pixie-dust-*` packages use `"*"` version specifier
+- ALL `@thinkneverland/pixie-dust-*` packages use `"^"` version specifier
 - Commit `pnpm-lock.yaml` for reproducibility
-- On deploy: `pnpm update '@thinkneverland/*' -r` pulls latest versions
+- On deploy: `pnpm update '@thinkneverland/*' -r` pulls latest compatible versions
 - After upgrading: always run `npx prisma db push`
 
 ## Workflow

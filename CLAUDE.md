@@ -1,3 +1,36 @@
+# lint-pdf — PDF Preflight Engine
+## Stack (TypeScript)
+Next.js 15, React 19, TypeScript 5.9 (strict), tRPC 11, Prisma 7,
+PostgreSQL, TailwindCSS 4, Tauri 2.2 (desktop), Vite 6,
+Fabric.js 6, pnpm 10 + Turbo, Fairy Ring plugins, Railway
+## Stack (Python)
+FastAPI 0.115, Uvicorn, Celery + Redis, SQLAlchemy 2, Alembic,
+pikepdf 9, Pillow 10, pdf2image 1.17, numpy 1.26
+Optional AI: PyTorch, transformers, ultralytics, paddleocr, pyiqa
+## Architecture
+Packages: app (Next.js), web (docs), database (Prisma), engine (FastAPI),
+  desktop (Tauri), inference (AI/vision), hotfolder (Python watcher),
+  plugin (Fairy Ring), stripe, sdk-python
+## Pixie Dust packages in use
+api-keys, auth, boilerplate, config, cookie-consent, core, dashboard,
+devtools, email, fairy-ring, stripe-kit, theme-default, theme-kit,
+ui, usage, waitlist, webhooks
+## Layer detection rules
+Python engine (packages/engine, packages/inference):
+  → use openapi-fastapi + code-graph-python + pypi-audit
+  → run: ruff check, mypy, pytest, alembic check
+TypeScript (app, web, plugin, stripe):
+  → use code-review-graph + ctxo
+  → run: pnpm typecheck, pnpm build, pnpm test
+Prisma schema (packages/database):
+  → STOP — confirm before any changes
+  → schema cascades to FastAPI models via alembic
+Desktop (packages/desktop):
+  → Tauri 2.2 + Vite 6 ONLY — no Tauri v1 APIs
+  → run: pnpm tauri build
+
+---
+
 # CLAUDE.md — LintPDF Project Instructions
 
 ## Project Overview
