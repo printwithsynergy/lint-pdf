@@ -36,8 +36,8 @@ importers:
         specifier: workspace:*
         version: link:../plugin
       '@thinkneverland/pixie-dust-api-keys':
-        specifier: ^1.1.0
-        version: 1.1.0(react@19.2.4)
+        specifier: ^1.2.0
+        version: 1.2.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@thinkneverland/pixie-dust-auth':
         specifier: ^1.8.0
         version: 1.8.0(typescript@5.9.3)
@@ -2491,8 +2491,8 @@ packages:
     peerDependencies:
       react: ^18 || ^19
 
-  '@thinkneverland/pixie-dust-api-keys@1.1.0':
-    resolution: {integrity: sha512-9iu7EAeqeFiaaHJwuOkH7UiYgrEhfv7uXIcKdgOm08TXo8/Ziz4tf5zcPuyNUpyj2eU8hFaxfTlyjprButXHSA==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-api-keys/1.1.0/4b4fbbef39323f88ba4d00eed830963cd9977014}
+  '@thinkneverland/pixie-dust-api-keys@1.2.0':
+    resolution: {integrity: sha512-dvaXV6XO2CGOAJSWsTraFhjBDv+nwg2CAuZgl8DU1U12RnHLQuyK4KcWwVCOGM90O04ByPUyBnp219ZgAlhf/g==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-api-keys/1.2.0/03084376d69e452862807f30ec4b479511bc11c1}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
@@ -8339,10 +8339,15 @@ snapshots:
       '@tanstack/query-core': 5.96.2
       react: 19.2.4
 
-  '@thinkneverland/pixie-dust-api-keys@1.1.0(react@19.2.4)':
+  '@thinkneverland/pixie-dust-api-keys@1.2.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.1
+      '@thinkneverland/pixie-dust-ui': 4.0.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react: 19.2.4
+    transitivePeerDependencies:
+      - '@types/react'
+      - '@types/react-dom'
+      - react-dom
 
   '@thinkneverland/pixie-dust-auth@1.8.0(typescript@5.9.3)':
     dependencies:
