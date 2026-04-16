@@ -523,6 +523,27 @@ class ReportService:
             )
             self._db.add(token_record)
 
+            # Commit per-format so a DB-level error on one format (e.g. a
+            # schema drift that fails the INSERT with
+            # StringDataRightTruncation) cannot roll back the siblings
+            # that successfully minted in the same request. The original
+            # single-commit-at-the-end design meant that requesting
+            # ["html","pdf","json","xml","annotated_pdf"] returned HTTP
+            # 500 and persisted ZERO tokens the moment annotated_pdf's
+            # INSERT tripped the width limit — while the bytes for every
+            # format had already been uploaded to R2. The orphans had to
+            # be cleaned up by hand.
+            try:
+                self._db.commit()
+            except Exception:
+                logger.exception(
+                    "Token INSERT failed for job %s format %s; rolling back and skipping",
+                    job_id,
+                    fmt,
+                )
+                self._db.rollback()
+                continue
+
             # Build URL — each non-HTML format gets its own extension so the
             # public reports.lintpdf.com router knows which content-type to
             # serve. HTML stays extensionless because /r/{token} is the
@@ -546,7 +567,6 @@ class ReportService:
                 }
             )
 
-        self._db.commit()
         return report_result
 
     def get_report(self, token: str) -> tuple[bytes, str] | None:
