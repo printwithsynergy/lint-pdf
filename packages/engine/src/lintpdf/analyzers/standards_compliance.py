@@ -27,7 +27,9 @@ _G7_IDENTIFIERS = frozenset(
         "GRACOL",
         "GRACoL2006",
         "GRACoL2013",
+        "GRACoL2013_CRPC6",
         "SWOP",
+        "SWOP2013_CRPC5",
         "CGATS TR 006",
         "CGATS TR006",
         "CGATS TR 001",
@@ -42,6 +44,7 @@ _GRACOL_IDENTIFIERS = frozenset(
         "GRACoL2006",
         "GRACoL2013",
         "GRACoL2006_Coated1v2",
+        "GRACoL2013_CRPC6",
         "CGATS TR 006",
         "CGATS TR006",
     }
@@ -54,6 +57,9 @@ _ISO_12647_IDENTIFIERS = frozenset(
         "FOGRA39L",
         "FOGRA51",
         "FOGRA52",
+        "FOGRA53",
+        "FOGRA55",
+        "FOGRA59",
     }
 )
 

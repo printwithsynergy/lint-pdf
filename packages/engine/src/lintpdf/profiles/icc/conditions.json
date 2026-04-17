@@ -62,5 +62,67 @@
     "use_case": "Extended gamut",
     "tac_limit": 300,
     "mesh_file": "fogra55_ecg.json"
+  },
+  "fogra53_ecicmyk": {
+    "name": "FOGRA53 eciCMYK",
+    "source_data": "FOGRA53",
+    "region": "Europe",
+    "use_case": "eciCMYK exchange color space",
+    "tac_limit": 350,
+    "mesh_file": null,
+    "icc_source": "eci.org/en/downloads — download eciCMYK.icc, run: python build_gamut_meshes.py --profile eciCMYK.icc --condition fogra53_ecicmyk --name 'FOGRA53 eciCMYK'"
+  },
+  "fogra59_ecicmyk_v2": {
+    "name": "FOGRA59 eciCMYK v2",
+    "source_data": "FOGRA59",
+    "region": "Europe",
+    "use_case": "eciCMYK v2 exchange color space",
+    "tac_limit": 330,
+    "mesh_file": null,
+    "icc_source": "eci.org/en/downloads — download eciCMYKv2.icc, run: python build_gamut_meshes.py --profile eciCMYKv2.icc --condition fogra59_ecicmyk_v2 --name 'FOGRA59 eciCMYK v2'"
+  },
+  "gracol2013_crpc6": {
+    "name": "GRACoL 2013 CRPC6",
+    "source_data": "GRACoL2013 CRPC6",
+    "region": "North America",
+    "use_case": "Sheetfed coated (current)",
+    "tac_limit": 340,
+    "mesh_file": null,
+    "icc_source": "printing.org — download GRACoL2013_CRPC6.icc, run: python build_gamut_meshes.py --profile GRACoL2013_CRPC6.icc --condition gracol2013_crpc6 --name 'GRACoL 2013 CRPC6'"
+  },
+  "swop2013_crpc5": {
+    "name": "SWOP 2013 CRPC5",
+    "source_data": "SWOP2013 CRPC5",
+    "region": "North America",
+    "use_case": "Web offset coated (current)",
+    "tac_limit": 300,
+    "mesh_file": null,
+    "icc_source": "printing.org — download SWOP2013C3_CRPC5.icc, run: python build_gamut_meshes.py --profile SWOP2013C3_CRPC5.icc --condition swop2013_crpc5 --name 'SWOP 2013 CRPC5'"
+  },
+  "swop2013_crpc3": {
+    "name": "SWOP 2013 CRPC3",
+    "source_data": "SWOP2013 CRPC3",
+    "region": "North America",
+    "use_case": "Web offset uncoated",
+    "tac_limit": 280,
+    "mesh_file": null,
+    "icc_source": "printing.org — download SWOP2013C5_CRPC3.icc, run: python build_gamut_meshes.py --profile SWOP2013C5_CRPC3.icc --condition swop2013_crpc3 --name 'SWOP 2013 CRPC3'"
+  },
+  "adobergb_1998": {
+    "name": "Adobe RGB (1998)",
+    "source_data": "Adobe RGB 1998 specification",
+    "region": "Universal",
+    "use_case": "Wide-gamut RGB validation",
+    "tac_limit": null,
+    "mesh_file": "adobergb_1998.json"
+  },
+  "xcmyk_2017": {
+    "name": "XCMYK 2017",
+    "source_data": "XCMYK 2017 (IDEAlliance)",
+    "region": "North America",
+    "use_case": "Extended gamut CMYK",
+    "tac_limit": 400,
+    "mesh_file": null,
+    "icc_source": "printing.org — download XCMYK_2017.icc, run: python build_gamut_meshes.py --profile XCMYK_2017.icc --condition xcmyk_2017 --name 'XCMYK 2017'"
   }
 }

@@ -35,21 +35,50 @@ _KNOWN_SUBTYPES = frozenset({"GTS_PDFX", "GTS_PDFA1", "ISO_PDFE1"})
 # Known output condition identifiers
 KNOWN_CONDITIONS = frozenset(
     {
+        # ECI / Europe
         "FOGRA39",
         "FOGRA39L",
         "FOGRA45",
         "FOGRA47",
         "FOGRA51",
         "FOGRA52",
+        "FOGRA53",
+        "FOGRA54",
         "FOGRA55",
+        "FOGRA56",
+        "FOGRA57",
+        "FOGRA58",
+        "FOGRA59",
+        # IDEAlliance / North America
         "GRACoL2006_Coated1v2",
         "GRACoL2013_CRPC6",
         "SWOP2006_Coated3v2",
         "SWOP2006_Coated5v2",
-        "JC200103",
+        "SWOP2013_CRPC5",
+        "SWOP2013_CRPC3",
+        # CGATS / CRPC characterization datasets
         "CGATS TR 001",
         "CGATS TR 003",
         "CGATS TR 006",
+        "CRPC1",
+        "CRPC2",
+        "CRPC3",
+        "CRPC4",
+        "CRPC5",
+        "CRPC6",
+        "CRPC7",
+        # Japan
+        "JC200103",
+        "Japan Color 2001 Coated",
+        "Japan Color 2002 Newspaper",
+        "Japan Color 2003 Web Coated",
+        "Japan Color 2011 Coated",
+        # ECG / Extended Gamut
+        "XCMYK",
+        "XCMYK_2017",
+        # North America newspaper
+        "SNAP 2007",
+        "IFRA26",
     }
 )
 
