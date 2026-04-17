@@ -87,8 +87,13 @@ def check_and_consume_file_quota(
     ents = resolve_entitlements(tenant)
     tenant_id = tenant.id if hasattr(tenant, "id") else tenant  # type: ignore[union-attr]
 
-    # Plan doesn't use metered files — no-op (legacy daily-only path).
-    if ents.monthly_files_included <= 0 and not _has_active_file_packs(tenant_id, db):
+    # No metered-resource packs for this tenant yet — either their plan
+    # allots 0 files, or invoice.paid hasn't fired since the feature
+    # rolled out. Fall through to the legacy rate_limit_daily-only path
+    # without decrementing anything. Once the allocator runs (on the
+    # next billing cycle or via the admin grant endpoint) subsequent
+    # submits will correctly decrement the monthly pool.
+    if not _has_active_file_packs(tenant_id, db):
         return get_file_quota_balance(tenant_id, db)
 
     now = datetime.now(timezone.utc)
