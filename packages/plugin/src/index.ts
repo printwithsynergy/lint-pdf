@@ -16,6 +16,7 @@ import { webhookRoutes } from "./routes/index";
 import { jobRoutes } from "./routes/jobs";
 import { profileRoutes } from "./routes/profiles";
 import { aiConfigRoutes } from "./routes/ai-config";
+import { meteredResourceRoutes } from "./routes/metered-resources";
 import { colorConfigRoutes } from "./routes/color-config";
 import { viewerRoutes } from "./routes/viewer";
 import { brandingRoutes } from "./routes/branding";
@@ -190,6 +191,35 @@ export const lintpdfPlugin: PixieDustPlugin = {
       title: "PDF Viewer",
       layout: "dashboard",
     });
+    // Metered-resource billing surfaces — "Buy more AI credits" and
+    // "Buy more file packs" live under /dashboard/account/billing/* so
+    // they're grouped with other account-level configuration.
+    ctx.addPage({
+      path: "/dashboard/account/billing/credits",
+      title: "AI Credits",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/account/billing/files",
+      title: "File Packs",
+      layout: "dashboard",
+    });
+    ctx.addNavItem({
+      label: "AI Credits",
+      href: "/dashboard/account/billing/credits",
+      icon: "sparkles",
+      section: "account",
+      order: 60,
+      requiredPermission: "account:manage",
+    });
+    ctx.addNavItem({
+      label: "File Packs",
+      href: "/dashboard/account/billing/files",
+      icon: "file-text",
+      section: "account",
+      order: 61,
+      requiredPermission: "account:manage",
+    });
 
     // ── Public paths (HMAC-authenticated, not session-authenticated) ──
     ctx.addPublicPath("/api/lintpdf/webhooks");
@@ -201,6 +231,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       ...jobRoutes(),
       ...profileRoutes(),
       ...aiConfigRoutes(),
+      ...meteredResourceRoutes(),
       ...colorConfigRoutes(),
       ...viewerRoutes(ctx.services.db as Parameters<typeof viewerRoutes>[0]),
       ...brandingRoutes(),

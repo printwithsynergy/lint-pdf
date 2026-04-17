@@ -106,6 +106,19 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       order: 41,
       requiredRole: "SUPER_ADMIN",
     });
+    ctx.addNavItem({
+      label: "Metered Billing",
+      href: "/dashboard/admin/billing",
+      icon: "credit-card",
+      section: "admin",
+      order: 45,
+      requiredRole: "SUPER_ADMIN",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/billing",
+      title: "Metered Resources — Admin",
+      layout: "dashboard",
+    });
 
     // Pages
     ctx.addPage({
@@ -432,6 +445,111 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
             return { status: resp.status, body: { error: detail } };
           }
           return { status: 204 };
+        }) as RouteHandler,
+      },
+      // ── Metered resource overrides + direct grants ──
+      {
+        method: "PUT" as HttpMethod,
+        path: "/tenants/:tenantId/credits/monthly-override",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Override a tenant's monthly AI-credit allotment",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/credits/monthly-override`,
+            { method: "PUT", body: JSON.stringify(req.body) },
+          );
+          const text = await resp.text();
+          const body = (() => {
+            try {
+              return JSON.parse(text);
+            } catch {
+              return text;
+            }
+          })();
+          return { status: resp.status, body };
+        }) as RouteHandler,
+      },
+      {
+        method: "PUT" as HttpMethod,
+        path: "/tenants/:tenantId/files/monthly-override",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Override a tenant's monthly file allotment",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/files/monthly-override`,
+            { method: "PUT", body: JSON.stringify(req.body) },
+          );
+          const text = await resp.text();
+          const body = (() => {
+            try {
+              return JSON.parse(text);
+            } catch {
+              return text;
+            }
+          })();
+          return { status: resp.status, body };
+        }) as RouteHandler,
+      },
+      {
+        method: "POST" as HttpMethod,
+        path: "/tenants/:tenantId/credits/grant",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Grant AI credits directly (admin bypass — no Stripe)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams();
+          const body = (req.body as Record<string, unknown>) ?? {};
+          if (typeof body.credit_amount === "number") {
+            qs.set("credit_amount", String(body.credit_amount));
+          }
+          if (typeof body.price_paid === "number") {
+            qs.set("price_paid", String(body.price_paid));
+          }
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/ai/credits?${qs.toString()}`,
+            { method: "POST" },
+          );
+          const text = await resp.text();
+          const parsed = (() => {
+            try {
+              return JSON.parse(text);
+            } catch {
+              return text;
+            }
+          })();
+          return { status: resp.status, body: parsed };
+        }) as RouteHandler,
+      },
+      {
+        method: "POST" as HttpMethod,
+        path: "/tenants/:tenantId/files/grant",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Grant a file pack directly (admin bypass — no Stripe)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams();
+          const body = (req.body as Record<string, unknown>) ?? {};
+          if (typeof body.files_granted === "number") {
+            qs.set("files_granted", String(body.files_granted));
+          }
+          if (typeof body.price_paid === "number") {
+            qs.set("price_paid", String(body.price_paid));
+          }
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/files/packages?${qs.toString()}`,
+            { method: "POST" },
+          );
+          const text = await resp.text();
+          const parsed = (() => {
+            try {
+              return JSON.parse(text);
+            } catch {
+              return text;
+            }
+          })();
+          return { status: resp.status, body: parsed };
         }) as RouteHandler,
       },
       {
