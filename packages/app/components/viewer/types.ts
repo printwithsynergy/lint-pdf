@@ -121,6 +121,7 @@ export interface ViewerConfig {
   preflight_source: PreflightSourceMode;
   /** Per-capability availability map (true = backed by data). */
   capabilities: Partial<Record<ViewerCapabilityKey, boolean>>;
+  tile_cdn_base: string | null;
 }
 
 export interface LayerInfo {
@@ -254,6 +255,7 @@ export const DEFAULT_VIEWER_CONFIG: ViewerConfig = {
     thumbnails: true,
     metadata: true,
   },
+  tile_cdn_base: null,
 };
 
 /**

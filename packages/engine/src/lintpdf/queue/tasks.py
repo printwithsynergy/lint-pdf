@@ -1767,7 +1767,12 @@ def warm_viewer_tiles(
                 pass  # Probe failure — re-render and upload.
             try:
                 tile_bytes = render_page_to_image(pdf_bytes, page_num, dpi=render_dpi)
-                storage.upload_raw(key, tile_bytes, content_type="image/png")
+                storage.upload_raw(
+                    key,
+                    tile_bytes,
+                    content_type="image/png",
+                    cache_control="public, max-age=86400",
+                )
             except Exception:
                 logger.warning(
                     "warm_viewer_tiles: render p%d @ %dpi failed for %s",
