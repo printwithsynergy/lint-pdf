@@ -84,7 +84,10 @@ def check_and_consume_file_quota(
     from lintpdf.api.models import TenantAICreditPackage
     from lintpdf.tenants.entitlements import resolve_entitlements
 
-    ents = resolve_entitlements(tenant)
+    # Materialise entitlements for its side-effects (plan resolution
+    # errors surface here) even though we don't need the current
+    # monthly_files_included value on the fall-through path.
+    resolve_entitlements(tenant)
     tenant_id = tenant.id if hasattr(tenant, "id") else tenant  # type: ignore[union-attr]
 
     # No metered-resource packs for this tenant yet — either their plan

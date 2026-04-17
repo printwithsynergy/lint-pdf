@@ -28,6 +28,47 @@ def _app_base_url() -> str:
     return get_settings().app_base_url.rstrip("/")
 
 
+@router.get("/packages")
+async def list_my_credit_packages(
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> dict[str, object]:
+    """Return every AI-credit package for the authenticated tenant.
+
+    Drives the "Package history" table on the tenant credits page.
+    Doesn't require check_ai_access — customers should see their own
+    history even if ai is disabled.
+    """
+    from sqlalchemy import desc
+
+    from lintpdf.api.models import TenantAICreditPackage
+
+    rows = (
+        db.query(TenantAICreditPackage)
+        .filter(
+            TenantAICreditPackage.tenant_id == tenant.id,
+            TenantAICreditPackage.kind == "credits",
+        )
+        .order_by(desc(TenantAICreditPackage.purchased_at))
+        .all()
+    )
+    return {
+        "packages": [
+            {
+                "id": str(p.id),
+                "kind": p.kind,
+                "source": p.source,
+                "credits_purchased": p.credits_purchased,
+                "credits_remaining": p.credits_remaining,
+                "price_paid": float(p.price_paid) if p.price_paid is not None else 0.0,
+                "purchased_at": p.purchased_at.isoformat() if p.purchased_at else None,
+                "expires_at": p.expires_at.isoformat() if p.expires_at else None,
+            }
+            for p in rows
+        ]
+    }
+
+
 @router.get("", response_model=CreditBalanceResponse)
 async def get_credits(
     db: Session = Depends(get_db),

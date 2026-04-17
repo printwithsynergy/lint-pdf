@@ -8,6 +8,7 @@ import {
   comparisonFeatures,
   pricingFaq,
   AI_CREDIT_PACKAGES,
+  FILE_PACK_OPTIONS,
 } from "@/lib/brand";
 
 export default function PricingPage() {
@@ -223,8 +224,47 @@ export default function PricingPage() {
             </p>
           </div>
 
+          {/* Plan-Included Monthly Allotments */}
+          <div className="mb-10 rounded-2xl border border-slate-200 bg-white p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-3">
+              Monthly allotments included with your plan
+            </h3>
+            <p className="text-sm text-slate-500 mb-4">
+              Every paid plan grants a monthly bucket of AI credits plus a
+              monthly file quota that resets each billing cycle. Unused monthly
+              allotments don&rsquo;t roll over — purchased packs (below) do.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <tr>
+                    <th className="py-2 pr-4">Plan</th>
+                    <th className="py-2 pr-4 text-right">AI credits / mo</th>
+                    <th className="py-2 pr-4 text-right">Files / mo</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-700">
+                  <tr className="border-t border-slate-100"><td className="py-2 pr-4">Free</td><td className="py-2 pr-4 text-right font-mono">0</td><td className="py-2 pr-4 text-right font-mono">50</td></tr>
+                  <tr className="border-t border-slate-100"><td className="py-2 pr-4">Viewer</td><td className="py-2 pr-4 text-right font-mono">0</td><td className="py-2 pr-4 text-right font-mono">50</td></tr>
+                  <tr className="border-t border-slate-100"><td className="py-2 pr-4">Starter</td><td className="py-2 pr-4 text-right font-mono">100</td><td className="py-2 pr-4 text-right font-mono">500</td></tr>
+                  <tr className="border-t border-slate-100"><td className="py-2 pr-4">Growth</td><td className="py-2 pr-4 text-right font-mono">500</td><td className="py-2 pr-4 text-right font-mono">2,500</td></tr>
+                  <tr className="border-t border-slate-100"><td className="py-2 pr-4">Scale</td><td className="py-2 pr-4 text-right font-mono">2,000</td><td className="py-2 pr-4 text-right font-mono">10,000</td></tr>
+                  <tr className="border-t border-slate-100"><td className="py-2 pr-4">Enterprise</td><td className="py-2 pr-4 text-right font-mono">10,000</td><td className="py-2 pr-4 text-right font-mono">100,000</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">
+            Top-up AI credit packs
+          </h3>
+          <p className="text-sm text-slate-500 mb-4">
+            Running low mid-month? Buy a fixed pack through Stripe Checkout.
+            Purchased packs roll over for 12 months.
+          </p>
+
           {/* Credit Package Cards */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-10">
+          <div className="grid gap-6 md:grid-cols-3 mb-10">
             {AI_CREDIT_PACKAGES.map((pkg) => (
               <div
                 key={pkg.name}
@@ -252,6 +292,52 @@ export default function PricingPage() {
                 </p>
                 <p className="text-sm text-slate-500 mb-4">
                   {pkg.perCredit} per credit
+                </p>
+                <p className="text-xs font-medium text-emerald-600">
+                  {pkg.savings}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* File pack tiles — run parallel to credit packs. Same
+              pattern, different SKU. Prices pulled from brand.ts. */}
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">
+            Top-up file packs
+          </h3>
+          <p className="text-sm text-slate-500 mb-4">
+            Each PDF submission consumes one file from your monthly allotment.
+            Once the monthly pool is empty, buy a pack or enable per-file
+            overage billing. Packs roll over for 12 months.
+          </p>
+          <div className="grid gap-6 md:grid-cols-3 mb-10">
+            {FILE_PACK_OPTIONS.map((pkg) => (
+              <div
+                key={`files-${pkg.name}`}
+                className={`relative rounded-2xl border-2 p-6 flex flex-col transition-all hover:-translate-y-1 ${
+                  pkg.highlighted
+                    ? "border-brand-500 bg-white ring-2 ring-brand-200/50 shadow-xl shadow-brand-100"
+                    : "border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-brand-200"
+                }`}
+              >
+                {pkg.highlighted && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-900 px-3 py-1 text-xs font-bold text-white shadow-md whitespace-nowrap">
+                    Best Value
+                  </span>
+                )}
+                <h3 className="text-xl font-semibold text-slate-900">
+                  {pkg.name}
+                </h3>
+                <div className="mt-3 mb-1">
+                  <span className="text-3xl font-bold text-slate-900">
+                    ${pkg.price}
+                  </span>
+                </div>
+                <p className="text-xs font-medium text-brand-600 mb-1">
+                  {pkg.files.toLocaleString()} files
+                </p>
+                <p className="text-sm text-slate-500 mb-4">
+                  {pkg.perFile} per file
                 </p>
                 <p className="text-xs font-medium text-emerald-600">
                   {pkg.savings}

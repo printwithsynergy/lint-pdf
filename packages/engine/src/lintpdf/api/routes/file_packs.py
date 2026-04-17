@@ -43,6 +43,42 @@ def _app_base_url() -> str:
     return get_settings().app_base_url.rstrip("/")
 
 
+@router.get("/packages")
+async def list_my_file_packages(
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> dict[str, object]:
+    """Every file pack for the authenticated tenant (history table)."""
+    from sqlalchemy import desc
+
+    from lintpdf.api.models import TenantAICreditPackage
+
+    rows = (
+        db.query(TenantAICreditPackage)
+        .filter(
+            TenantAICreditPackage.tenant_id == tenant.id,
+            TenantAICreditPackage.kind == "files",
+        )
+        .order_by(desc(TenantAICreditPackage.purchased_at))
+        .all()
+    )
+    return {
+        "packages": [
+            {
+                "id": str(p.id),
+                "kind": p.kind,
+                "source": p.source,
+                "credits_purchased": p.credits_purchased,
+                "credits_remaining": p.credits_remaining,
+                "price_paid": float(p.price_paid) if p.price_paid is not None else 0.0,
+                "purchased_at": p.purchased_at.isoformat() if p.purchased_at else None,
+                "expires_at": p.expires_at.isoformat() if p.expires_at else None,
+            }
+            for p in rows
+        ]
+    }
+
+
 @router.get("/quota", response_model=FileQuotaResponse)
 async def get_quota(
     db: Session = Depends(get_db),

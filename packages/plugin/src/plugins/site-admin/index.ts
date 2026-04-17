@@ -523,6 +523,45 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
         }) as RouteHandler,
       },
       {
+        method: "GET" as HttpMethod,
+        path: "/tenants/:tenantId/metered-packages",
+        auth: true,
+        permission: "site-admin:access",
+        description: "List every metered-resource package for a tenant",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/metered-packages`,
+          );
+          const text = await resp.text();
+          const body = (() => {
+            try {
+              return JSON.parse(text);
+            } catch {
+              return text;
+            }
+          })();
+          return { status: resp.status, body };
+        }) as RouteHandler,
+      },
+      {
+        method: "DELETE" as HttpMethod,
+        path: "/tenants/:tenantId/metered-packages/:packageId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Revoke a metered-resource package (credits or files)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/metered-packages/${req.params.packageId}`,
+            { method: "DELETE" },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 204 };
+        }) as RouteHandler,
+      },
+      {
         method: "POST" as HttpMethod,
         path: "/tenants/:tenantId/files/grant",
         auth: true,

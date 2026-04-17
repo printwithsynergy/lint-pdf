@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid as uuid_mod
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session  # noqa: TC002
@@ -1638,6 +1638,90 @@ async def grant_tenant_file_pack(
         "files_granted": files_granted,
         "message": "File pack granted",
     }
+
+
+@router.get("/tenants/{tenant_id}/metered-packages")
+async def list_tenant_metered_packages(
+    tenant_id: str,
+    db: Session = Depends(get_db),
+    _admin: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """List the tenant's metered-resource packages (credits + files).
+
+    Drives the admin "Active packages" table. Returns every row, not
+    just active ones — expired/empty rows matter for audit. Sorted by
+    ``purchased_at`` DESC (newest first).
+    """
+    from lintpdf.api.models import TenantAICreditPackage
+
+    tenant = _get_tenant(db, tenant_id)
+    rows = (
+        db.query(TenantAICreditPackage)
+        .filter(TenantAICreditPackage.tenant_id == tenant.id)
+        .order_by(desc(TenantAICreditPackage.purchased_at))
+        .all()
+    )
+    return {
+        "packages": [
+            {
+                "id": str(p.id),
+                "kind": p.kind,
+                "source": p.source,
+                "credits_purchased": p.credits_purchased,
+                "credits_remaining": p.credits_remaining,
+                "price_paid": float(p.price_paid) if p.price_paid is not None else 0.0,
+                "purchased_at": p.purchased_at.isoformat() if p.purchased_at else None,
+                "expires_at": p.expires_at.isoformat() if p.expires_at else None,
+                "stripe_session_id": p.stripe_session_id,
+                "billing_period_start": (
+                    p.billing_period_start.isoformat() if p.billing_period_start else None
+                ),
+            }
+            for p in rows
+        ]
+    }
+
+
+@router.delete(
+    "/tenants/{tenant_id}/metered-packages/{package_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def revoke_tenant_metered_package(
+    tenant_id: str,
+    package_id: str,
+    db: Session = Depends(get_db),
+    _admin: str = Depends(_verify_admin_key),
+) -> Response:
+    """Revoke (delete) a specific metered-resource package.
+
+    Admin bypass for mistakes — a Stripe refund should happen
+    separately when revoking a purchased pack. Monthly allocations
+    can be safely revoked here; they'll regrant on the next
+    ``invoice.paid`` via the allocator dedupe check.
+    """
+    import uuid as uuid_mod
+
+    from lintpdf.api.models import TenantAICreditPackage
+
+    try:
+        tuid = uuid_mod.UUID(tenant_id)
+        puid = uuid_mod.UUID(package_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid tenant_id or package_id — both must be UUIDs.",
+        ) from exc
+
+    pkg = (
+        db.query(TenantAICreditPackage)
+        .filter(TenantAICreditPackage.id == puid, TenantAICreditPackage.tenant_id == tuid)
+        .first()
+    )
+    if pkg is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Package not found.")
+    db.delete(pkg)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.put("/tenants/{tenant_id}/ai/trial")

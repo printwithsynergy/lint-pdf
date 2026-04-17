@@ -66,12 +66,30 @@ export function meteredResourceRoutes(): RouteDefinition[] {
     },
     {
       method: "GET" as HttpMethod,
+      path: "/credits/packages",
+      auth: true,
+      permission: "account:manage",
+      description: "List every AI-credit package for the authenticated tenant.",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> =>
+        passthrough("/api/v1/ai/credits/packages")) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
       path: "/files/quota",
       auth: true,
       permission: "account:manage",
       description: "Current file-pack balance + monthly allotment.",
       handler: (async (_req: RouteRequest): Promise<RouteResponse> =>
         passthrough("/api/v1/files/quota")) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/files/packages",
+      auth: true,
+      permission: "account:manage",
+      description: "List every file pack for the authenticated tenant.",
+      handler: (async (_req: RouteRequest): Promise<RouteResponse> =>
+        passthrough("/api/v1/files/packages")) as RouteHandler,
     },
     {
       method: "POST" as HttpMethod,

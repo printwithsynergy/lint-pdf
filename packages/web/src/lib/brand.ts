@@ -1249,37 +1249,72 @@ export interface AICreditPackage {
   highlighted: boolean;
 }
 
+// Top-up AI-credit packs sold through Stripe Checkout. Size + pricing
+// MUST match packages/stripe/src/metered-packs.ts and the engine's
+// billing/metered_packs.py — the Stripe price IDs were minted against
+// these numbers. Monthly plan allotments live on FEATURE_TIERS.
 export const AI_CREDIT_PACKAGES: AICreditPackage[] = [
   {
     name: "Starter",
-    credits: 100,
-    price: 10,
-    perCredit: "$0.10",
-    savings: "Pay-as-you-go rate",
+    credits: 500,
+    price: 25,
+    perCredit: "$0.050",
+    savings: "Starter pack",
     highlighted: false,
   },
   {
     name: "Growth",
-    credits: 500,
-    price: 40,
-    perCredit: "$0.08",
-    savings: "Save 20%",
-    highlighted: false,
-  },
-  {
-    name: "Scale",
     credits: 2000,
-    price: 120,
-    perCredit: "$0.06",
-    savings: "Save 40%",
+    price: 90,
+    perCredit: "$0.045",
+    savings: "Save 10%",
     highlighted: true,
   },
   {
-    name: "Enterprise",
+    name: "Volume",
     credits: 10000,
-    price: 500,
-    perCredit: "$0.05",
-    savings: "Save 50%",
+    price: 400,
+    perCredit: "$0.040",
+    savings: "Save 20%",
+    highlighted: false,
+  },
+];
+
+// File packs — sold parallel to AI credits. Customers can buy these
+// when their plan-included monthly file allotment is exhausted. IDs
+// live in packages/stripe/src/metered-packs.ts (kind='files').
+export interface FilePackOption {
+  name: string;
+  files: number;
+  price: number;
+  perFile: string;
+  savings: string;
+  highlighted: boolean;
+}
+
+export const FILE_PACK_OPTIONS: FilePackOption[] = [
+  {
+    name: "Starter",
+    files: 500,
+    price: 15,
+    perFile: "$0.030",
+    savings: "Starter pack",
+    highlighted: false,
+  },
+  {
+    name: "Growth",
+    files: 2500,
+    price: 60,
+    perFile: "$0.024",
+    savings: "Save 20%",
+    highlighted: true,
+  },
+  {
+    name: "Volume",
+    files: 10000,
+    price: 200,
+    perFile: "$0.020",
+    savings: "Save 33%",
     highlighted: false,
   },
 ];
