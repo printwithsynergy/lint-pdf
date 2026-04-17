@@ -399,7 +399,14 @@ def run_preflight(
 
             duration_ms = int((time.monotonic() - start) * 1000)
 
-            # Serialize result for storage
+            # Serialize result for storage. Findings are denormalised
+            # into a plain dict list so downstream report generators
+            # (annotated_pdf, annotated_pdf_markup, html, json, xml) can
+            # draw overlays without round-tripping through the DB.
+            # Previously the annotated PDF pipeline always saw an empty
+            # findings list here because this dict only carried summary
+            # + metadata -- the overlay never rendered a single bbox
+            # even when the analyzers computed perfectly good ones.
             result_dict = {
                 "summary": {
                     "total_findings": result.summary.total_findings,
@@ -411,6 +418,23 @@ def run_preflight(
                     "file_size_bytes": result.summary.file_size_bytes,
                 },
                 "metadata": result.metadata,
+                "findings": [
+                    {
+                        "inspection_id": f.inspection_id,
+                        "severity": (
+                            f.severity.value if hasattr(f.severity, "value") else str(f.severity)
+                        ),
+                        "message": f.message,
+                        "page_num": f.page_num,
+                        "bbox": list(f.bbox) if f.bbox else None,
+                        "details": f.details,
+                        "source": f.source or "engine",
+                        "category": f.category,
+                        "object_id": f.object_id,
+                        "object_type": f.object_type,
+                    }
+                    for f in result.findings
+                ],
             }
 
             # Upload results JSON to storage (best-effort — results are in DB too)
@@ -1291,6 +1315,23 @@ def _run_external_preflight(
             "external_format": resolved_format,
             "external_tool": (imported.source_metadata or {}).get("tool"),
         },
+        "findings": [
+            {
+                "inspection_id": f.inspection_id,
+                "severity": (
+                    f.severity.value if hasattr(f.severity, "value") else str(f.severity)
+                ),
+                "message": f.message,
+                "page_num": f.page_num,
+                "bbox": list(f.bbox) if f.bbox else None,
+                "details": f.details,
+                "source": f.source or "external",
+                "category": f.category,
+                "object_id": f.object_id,
+                "object_type": f.object_type,
+            }
+            for f in imported.findings
+        ],
     }
 
     return _finalize_non_engine_job(db, job, job_id, start, result_dict, pdf_bytes, storage)
