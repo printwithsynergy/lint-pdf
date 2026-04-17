@@ -305,13 +305,22 @@ export const lintpdfBillingPlugin: PixieDustPlugin = {
         return;
       }
 
-      // Map Stripe price to LintPDF plan name
+      // Map Stripe price lookup_key → LintPDF engine plan name. Monthly
+      // and yearly prices both resolve to the same engine plan — the
+      // billing cadence is a Stripe concern, not an entitlement one.
+      // Keep in sync with `packages/stripe/scripts/setup-stripe.ts`.
       const priceId = subscription.items?.data?.[0]?.price?.lookup_key;
       const planMap: Record<string, string> = {
+        lintpdf_viewer_monthly: "viewer",
+        lintpdf_viewer_yearly: "viewer",
         lintpdf_starter_monthly: "starter",
+        lintpdf_starter_yearly: "starter",
         lintpdf_growth_monthly: "growth",
+        lintpdf_growth_yearly: "growth",
         lintpdf_scale_monthly: "scale",
+        lintpdf_scale_yearly: "scale",
         lintpdf_enterprise_monthly: "enterprise",
+        lintpdf_enterprise_yearly: "enterprise",
       };
       const plan = (priceId != null ? planMap[priceId] : undefined) ?? "free";
 

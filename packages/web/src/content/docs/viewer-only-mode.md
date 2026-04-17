@@ -95,6 +95,17 @@ See [Viewer Capabilities & On-Demand Fill-In](/docs/viewer-capabilities) for the
 
 A minimal-mode submission counts as **one file processed** against your plan. Each capability fill-in is counted separately, at roughly the same rate as one analyzer pass — typically cheaper than a full engine run. See [Pricing](/pricing) for tier limits and overage.
 
+## The Viewer tier
+
+For teams who always submit in minimal or external mode, the dedicated **Viewer tier** ($15 / month, 150 files / month) packages this workflow at a lower price point. The trade-off is a tighter feature envelope:
+
+- `preflight_source=engine` is **not allowed** — engine-mode submissions return a `403 plan_upgrade_required` envelope. Submit in `minimal` or `external` only.
+- On-demand capability fill-in is **not available** — the `POST /api/v1/viewer/jobs/{id}/capabilities/{capability}` endpoint 403s. The viewer shows read-only copies of whatever came in with your submission (minimal = pages + metadata; external = pages + imported findings).
+- Viewer annotations are **off** — the annotation toolbar is hidden and the viewer ships read-only. Share-link tokens carry `allow_annotations=false` regardless of what was requested at mint time.
+- Report downloads are **disabled** — `allowed_report_formats` is empty, so PDF / JSON / XML exports return 403. The only output of the tier is the interactive viewer share link.
+
+Upgrade to **Starter** to unlock engine submissions, on-demand fill-in, annotations, and downloadable reports. The viewer config response (`GET /api/v1/viewer/jobs/{id}/config`) surfaces these gates as `capability_fillin_enabled`, `annotations_enabled`, and `allowed_report_formats` so frontends can render appropriate upgrade prompts instead of raw 403s.
+
 ## Share links and branding
 
 Minimal-mode jobs work with share links and branding resolution exactly like engine- or external-mode jobs. You can:

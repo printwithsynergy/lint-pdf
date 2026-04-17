@@ -369,16 +369,20 @@ def _mock_service_capturing_specs() -> tuple[MagicMock, list[list]]:
             mode = getattr(spec, "return_", None) or (
                 spec.get("return", "url") if isinstance(spec, dict) else "url"
             )
-            entry: dict = {"format": fmt, "url": None, "token": None, "expires_at": None,
-                           "data": None, "content_type": None}
+            entry: dict = {
+                "format": fmt,
+                "url": None,
+                "token": None,
+                "expires_at": None,
+                "data": None,
+                "content_type": None,
+            }
             if mode in ("url", "both"):
                 entry["url"] = f"https://reports.example.com/r/tok_{fmt}.{fmt}"
                 entry["token"] = f"tok_{fmt}"
             if mode in ("inline", "both") and fmt in ("json", "xml"):
                 entry["data"] = {"sample": True} if fmt == "json" else "<root/>"
-                entry["content_type"] = (
-                    "application/json" if fmt == "json" else "application/xml"
-                )
+                entry["content_type"] = "application/json" if fmt == "json" else "application/xml"
             result.reports.append(entry)
         return result
 
@@ -389,15 +393,11 @@ def _mock_service_capturing_specs() -> tuple[MagicMock, list[list]]:
 
 class TestInlineReturnMode:
     @staticmethod
-    def test_formats_bare_string_back_compat(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_formats_bare_string_back_compat(client: TestClient, db_session: Session) -> None:
         """Legacy ``formats: ["html","pdf"]`` body still minted as url mode."""
         job = _seed_completed_job(db_session)
         mock_service, captured = _mock_service_capturing_specs()
-        with patch(
-            "lintpdf.reports.service.ReportService", return_value=mock_service
-        ):
+        with patch("lintpdf.reports.service.ReportService", return_value=mock_service):
             resp = client.post(
                 f"/api/v1/jobs/{job.id}/reports",
                 json={"formats": ["html", "pdf"]},
@@ -412,14 +412,10 @@ class TestInlineReturnMode:
             assert getattr(spec, "return_", "url") == "url"
 
     @staticmethod
-    def test_formats_object_inline_json(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_formats_object_inline_json(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         mock_service, _ = _mock_service_capturing_specs()
-        with patch(
-            "lintpdf.reports.service.ReportService", return_value=mock_service
-        ):
+        with patch("lintpdf.reports.service.ReportService", return_value=mock_service):
             resp = client.post(
                 f"/api/v1/jobs/{job.id}/reports",
                 json={"formats": [{"format": "json", "return": "inline"}]},
@@ -433,14 +429,10 @@ class TestInlineReturnMode:
         assert data["content_type"] == "application/json"
 
     @staticmethod
-    def test_formats_object_both_xml(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_formats_object_both_xml(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         mock_service, _ = _mock_service_capturing_specs()
-        with patch(
-            "lintpdf.reports.service.ReportService", return_value=mock_service
-        ):
+        with patch("lintpdf.reports.service.ReportService", return_value=mock_service):
             resp = client.post(
                 f"/api/v1/jobs/{job.id}/reports",
                 json={"formats": [{"format": "xml", "return": "both"}]},
@@ -454,9 +446,7 @@ class TestInlineReturnMode:
         assert data["content_type"] == "application/xml"
 
     @staticmethod
-    def test_inline_rejected_for_binary(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_inline_rejected_for_binary(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         resp = client.post(
             f"/api/v1/jobs/{job.id}/reports",
@@ -468,9 +458,7 @@ class TestInlineReturnMode:
         assert "Inline return is not supported" in str(body)
 
     @staticmethod
-    def test_inline_disabled_flag(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_inline_disabled_flag(client: TestClient, db_session: Session) -> None:
         """Flipping off LINTPDF_REPORTS_INLINE_ENABLED turns inline into 422."""
         job = _seed_completed_job(db_session)
         with patch("lintpdf.api.config.get_settings") as mock_settings:
@@ -488,9 +476,7 @@ class TestInlineReturnMode:
         assert "disabled" in resp.json()["detail"].lower()
 
     @staticmethod
-    def test_idempotency_key_too_long_rejected(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_idempotency_key_too_long_rejected(client: TestClient, db_session: Session) -> None:
         job = _seed_completed_job(db_session)
         resp = client.post(
             f"/api/v1/jobs/{job.id}/reports",
@@ -523,9 +509,10 @@ class TestDeterministicTokens:
         storage = get_storage()
         service = ReportService(storage, db_session)
 
-        with patch.object(
-            ReportService, "_generate_format", return_value=b'{"findings":[]}'
-        ), patch.object(ReportService, "_fetch_original_pdf", return_value=None):
+        with (
+            patch.object(ReportService, "_generate_format", return_value=b'{"findings":[]}'),
+            patch.object(ReportService, "_fetch_original_pdf", return_value=None),
+        ):
             a = service.generate_and_store(
                 job_id=str(job.id),
                 tenant_id=str(PLACEHOLDER_TENANT_ID),
@@ -566,9 +553,10 @@ class TestDeterministicTokens:
         upload_spy = MagicMock(wraps=storage.upload_report)
         storage.upload_report = upload_spy  # type: ignore[method-assign]
 
-        with patch.object(
-            ReportService, "_generate_format", return_value=b'{"findings":[]}'
-        ), patch.object(ReportService, "_fetch_original_pdf", return_value=None):
+        with (
+            patch.object(ReportService, "_generate_format", return_value=b'{"findings":[]}'),
+            patch.object(ReportService, "_fetch_original_pdf", return_value=None),
+        ):
             service.generate_and_store(
                 job_id=str(job.id),
                 tenant_id=str(PLACEHOLDER_TENANT_ID),
@@ -598,9 +586,10 @@ class TestDeterministicTokens:
         upload_spy = MagicMock(wraps=storage.upload_report)
         storage.upload_report = upload_spy  # type: ignore[method-assign]
 
-        with patch.object(
-            ReportService, "_generate_format", return_value=b'{"findings":[1]}'
-        ), patch.object(ReportService, "_fetch_original_pdf", return_value=None):
+        with (
+            patch.object(ReportService, "_generate_format", return_value=b'{"findings":[1]}'),
+            patch.object(ReportService, "_fetch_original_pdf", return_value=None),
+        ):
             result = service.generate_and_store(
                 job_id=str(job.id),
                 tenant_id=str(PLACEHOLDER_TENANT_ID),
@@ -614,9 +603,4 @@ class TestDeterministicTokens:
         assert row["content_type"] == "application/json"
         assert upload_spy.call_count == 0
         # No ReportToken row persisted for inline-only mints.
-        assert (
-            db_session.query(ReportToken)
-            .filter(ReportToken.job_id == job.id)
-            .count()
-            == 0
-        )
+        assert db_session.query(ReportToken).filter(ReportToken.job_id == job.id).count() == 0

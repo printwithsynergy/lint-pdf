@@ -297,6 +297,23 @@ async def submit_job(  # skipcq: PY-R1000
             ),
         ) from exc
 
+    # Tier gate: some plans (e.g. Viewer) forbid engine-mode submissions.
+    from lintpdf.api.gates import plan_upgrade_required
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    entitlements = resolve_entitlements(tenant)
+    if source_enum.value not in entitlements.allowed_preflight_sources:
+        raise plan_upgrade_required(
+            gate="preflight_source",
+            current_plan=str(tenant.plan),
+            required_plan="starter",
+            message=(
+                f"Your plan ({tenant.plan}) does not allow "
+                f"preflight_source={source_enum.value!r}. "
+                f"Allowed: {entitlements.allowed_preflight_sources}."
+            ),
+        )
+
     if source_enum is PreflightSource.EXTERNAL and external_report is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

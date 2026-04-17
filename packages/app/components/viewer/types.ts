@@ -121,6 +121,16 @@ export interface ViewerConfig {
   preflight_source: PreflightSourceMode;
   /** Per-capability availability map (true = backed by data). */
   capabilities: Partial<Record<ViewerCapabilityKey, boolean>>;
+  /** Plan-gate: false means the tenant may not invoke on-demand
+   *  capability fill-in (Viewer tier). The UI must hide Load buttons and
+   *  render an ``UpgradePrompt`` instead. */
+  capability_fillin_enabled: boolean;
+  /** Plan-gate: false means the viewer must hide the annotation toolbar
+   *  and disable annotation write paths. */
+  annotations_enabled: boolean;
+  /** Plan-gate: empty means report downloads are not available (Viewer
+   *  tier). The share-link is the only output. */
+  allowed_report_formats: string[];
   tile_cdn_base: string | null;
 }
 
@@ -255,6 +265,9 @@ export const DEFAULT_VIEWER_CONFIG: ViewerConfig = {
     thumbnails: true,
     metadata: true,
   },
+  capability_fillin_enabled: true,
+  annotations_enabled: true,
+  allowed_report_formats: ["json", "html", "pdf", "xml"],
   tile_cdn_base: null,
 };
 

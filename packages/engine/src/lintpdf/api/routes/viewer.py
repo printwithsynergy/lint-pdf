@@ -816,6 +816,15 @@ class ViewerConfigResponse(BaseModel):
     # backed by data; ``False`` means unavailable (the UI may offer a
     # one-click fill-in for supported capabilities).
     capabilities: dict[str, bool] = {}
+    # Whether the tenant's plan allows on-demand capability fill-in.
+    # When ``False`` the UI must hide Load buttons and render the
+    # ``UpgradePrompt`` component instead.
+    capability_fillin_enabled: bool = True
+    # Whether the tenant's plan allows annotation tools in the viewer.
+    annotations_enabled: bool = True
+    # Whether the tenant's plan allows downloadable reports. When empty
+    # the UI must disable PDF/JSON/XML download buttons.
+    allowed_report_formats: list[str] = []
     tile_cdn_base: str | None = None
 
 
@@ -876,6 +885,11 @@ def _build_viewer_config(
     # (which shouldn't run against still-cold tiles). Resolved lazily
     # from Redis so no extra schema cost.
     caps["tiles_warmed"] = _is_warming_complete(str(job.id))
+
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    entitlements = resolve_entitlements(tenant)
+
     config = ViewerConfigResponse(
         preflight_source=(
             job.preflight_source.value
@@ -883,7 +897,20 @@ def _build_viewer_config(
             else str(job.preflight_source or "engine")
         ),
         capabilities=caps,
+        capability_fillin_enabled=entitlements.capability_fillin_enabled,
+        annotations_enabled=entitlements.annotations_enabled,
+        allowed_report_formats=list(entitlements.allowed_report_formats),
     )
+    # When the plan forbids annotations, force the annotations toggle
+    # off regardless of what the profile / brand / override layer says.
+    # This is the immutable constraint — the frontend never sees an
+    # annotate tool on a Viewer-tier tenant.
+    if not entitlements.annotations_enabled:
+        config.enable_annotations = False
+    # Likewise for report downloads — the download button in the viewer
+    # chrome uses ``enable_download`` to decide whether to render.
+    if not entitlements.allowed_report_formats:
+        config.enable_download = False
 
     def _lookup_profile(profile_id: str) -> BrandProfile | None:
         try:
@@ -1214,6 +1241,22 @@ async def fill_job_capability(
             detail=(
                 f"Capability {capability!r} cannot be filled on demand. "
                 f"Supported: {sorted(_FILLABLE_CAPABILITIES)}"
+            ),
+        )
+
+    from lintpdf.api.gates import plan_upgrade_required
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    entitlements = resolve_entitlements(tenant)
+    if not entitlements.capability_fillin_enabled:
+        raise plan_upgrade_required(
+            gate="capability_fillin",
+            current_plan=str(tenant.plan),
+            required_plan="starter",
+            message=(
+                f"Your plan ({tenant.plan}) does not allow on-demand capability "
+                f"fill-in. Upgrade to Starter to unlock findings, separations, "
+                f"TAC, fonts, and images."
             ),
         )
 

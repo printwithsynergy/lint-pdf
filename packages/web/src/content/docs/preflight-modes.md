@@ -67,6 +67,16 @@ On the resulting job the viewer surfaces the five fillable capabilities (separat
 
 Every job counts as one "file processed" against your plan regardless of mode. Capability fill-in runs (requested from the viewer) are counted separately, one per analyzer invocation — typically cheaper than a full engine run. See [Pricing](/pricing) for plan limits and overage rates.
 
+## Plan-level gating
+
+Some plans restrict which `preflight_source` values a tenant may submit. The Viewer tier, for example, is sized around minimal / external workflows only and forbids engine submissions. The restriction is enforced at the submit route — attempts return `403 plan_upgrade_required` with a structured envelope that dashboards render as an inline upgrade CTA.
+
+| Plan | `engine` | `external` | `minimal` | Capability fill-in | Report downloads | Annotations |
+|---|---|---|---|---|---|---|
+| Free | ✓ | ✓ | ✓ | ✓ | JSON only | ✓ |
+| Viewer | ✗ | ✓ | ✓ | ✗ | ✗ (viewer link only) | ✗ |
+| Starter / Growth / Scale / Enterprise | ✓ | ✓ | ✓ | ✓ | PDF / JSON / XML (+ annotated PDF on Scale+) | ✓ |
+
 ## Picking a mode
 
 - **Your shop runs PitStop / callas / Acrobat today** → external mode, feed us the native report.

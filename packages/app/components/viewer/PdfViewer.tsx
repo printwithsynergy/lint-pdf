@@ -668,6 +668,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             onSelectFinding={handleSelectFinding}
             currentPage={currentPage}
             preflightSource={config.preflight_source}
+            capabilityFillinEnabled={config.capability_fillin_enabled !== false}
           />
         </>
       );

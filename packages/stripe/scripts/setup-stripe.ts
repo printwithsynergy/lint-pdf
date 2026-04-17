@@ -1,10 +1,18 @@
 /**
  * Idempotent Stripe setup script.
  *
- * Creates products, prices, and portal configuration for LintPDF.
- * Run: npx tsx packages/stripe/scripts/setup-stripe.ts
+ * Creates products, prices (monthly + yearly + metered overage), and portal
+ * configuration for LintPDF. Run once per Stripe environment (sandbox or
+ * production) — the script searches by product name + price lookup_key so
+ * re-runs are safe no-ops.
  *
- * Requires STRIPE_SECRET_KEY environment variable.
+ * Usage:
+ *   STRIPE_SECRET_KEY=sk_test_... npx tsx packages/stripe/scripts/setup-stripe.ts
+ *
+ * The resulting product/price IDs are written to `.stripe-ids.json` next to
+ * this script for reference only — the runtime plan-map in
+ * `packages/stripe/src/index.ts` keys on `lookup_key`, not raw IDs, so this
+ * file should not be committed (it's gitignored).
  */
 
 import Stripe from "stripe";
@@ -25,34 +33,50 @@ interface PlanConfig {
   name: string;
   lookup_key: string;
   monthly_cents: number;
+  yearly_cents: number; // 0 means "no yearly price for this plan"
   overage_cents: number;
 }
 
+// Keep these in sync with `packages/web/src/lib/brand.ts` (pricingTiers) and
+// `packages/stripe/src/index.ts` (planMap). Yearly is ~20% off the monthly
+// x 12 list price — adjust per plan before running against prod.
 const PLANS: PlanConfig[] = [
   {
     name: "LintPDF Free",
     lookup_key: "lintpdf_free",
     monthly_cents: 0,
+    yearly_cents: 0,
     overage_cents: 0,
+  },
+  {
+    name: "LintPDF Viewer",
+    lookup_key: "lintpdf_viewer",
+    monthly_cents: 1500, // $15/mo — viewer-only tier, no preflight / fill-in / downloads
+    yearly_cents: 14400, // $144/yr (~20% off)
+    overage_cents: 5,
   },
   {
     name: "LintPDF Starter",
     lookup_key: "lintpdf_starter",
     monthly_cents: 4900,
+    yearly_cents: 47000, // $470/yr (~20% off)
     overage_cents: 10,
   },
   {
-    name: "LintPDF Pro",
-    lookup_key: "lintpdf_pro",
+    name: "LintPDF Growth",
+    lookup_key: "lintpdf_growth",
     monthly_cents: 14900,
+    yearly_cents: 143000, // $1,430/yr (~20% off)
     overage_cents: 10,
   },
   {
-    name: "LintPDF Enterprise",
-    lookup_key: "lintpdf_enterprise",
-    monthly_cents: 99900,
+    name: "LintPDF Scale",
+    lookup_key: "lintpdf_scale",
+    monthly_cents: 39900,
+    yearly_cents: 383000, // $3,830/yr (~20% off)
     overage_cents: 10,
   },
+  // Enterprise is sales-led — no self-serve checkout price.
 ];
 
 async function findOrCreateProduct(
@@ -76,12 +100,12 @@ async function findOrCreatePrice(
   productId: string,
   unitAmount: number,
   lookupKey: string,
-  recurring: { interval: "month"; usage_type?: "metered" },
+  recurring: { interval: "month" | "year"; usage_type?: "metered" },
 ): Promise<string> {
   const existing = await stripe.prices.list({
     product: productId,
     active: true,
-    limit: 10,
+    limit: 50,
   });
   for (const price of existing.data) {
     if (
@@ -121,11 +145,19 @@ async function main() {
         productId,
         plan.monthly_cents,
         `${plan.lookup_key}_monthly`,
-        {
-          interval: "month",
-        },
+        { interval: "month" },
       );
       ids[`${plan.lookup_key}_monthly`] = priceId;
+    }
+
+    if (plan.yearly_cents > 0) {
+      const yearlyId = await findOrCreatePrice(
+        productId,
+        plan.yearly_cents,
+        `${plan.lookup_key}_yearly`,
+        { interval: "year" },
+      );
+      ids[`${plan.lookup_key}_yearly`] = yearlyId;
     }
 
     if (plan.overage_cents > 0) {
@@ -133,20 +165,20 @@ async function main() {
         productId,
         plan.overage_cents,
         `${plan.lookup_key}_overage`,
-        {
-          interval: "month",
-          usage_type: "metered",
-        },
+        { interval: "month", usage_type: "metered" },
       );
       ids[`${plan.lookup_key}_overage`] = overagePriceId;
     }
   }
 
-  // Save IDs
   const outputPath = resolve(import.meta.dirname ?? ".", ".stripe-ids.json");
   writeFileSync(outputPath, JSON.stringify(ids, null, 2));
   console.log(`\nSaved Stripe IDs to ${outputPath}`);
-  console.log("\nDone! Copy the price IDs into your PricingSection.tsx URLs.");
+  console.log(
+    "\nDone. Legacy 'LintPDF Pro' product — if present in your Stripe account — " +
+      "is no longer referenced by this script. Archive it manually in the Stripe " +
+      "dashboard once any existing Pro subscriptions have migrated.",
+  );
 }
 
 main().catch((err) => {
