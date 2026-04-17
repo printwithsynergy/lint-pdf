@@ -17,13 +17,18 @@ export default function ApiReportsSection() {
       <Endpoint
         method="POST"
         path="/api/v1/jobs/{job_id}/reports"
-        description="Mint one or more reports for a completed job. Returns 201 on success, 403 if any requested format or the branding override exceeds the tenant's plan."
+        description="Mint one or more reports for a completed job. Returns 201 on success, 403 if any requested format or the branding override exceeds the tenant's plan. Supports an optional Idempotency-Key header; repeated requests with the same key converge on the same token and reuse the stored artifact instead of regenerating it."
         auth
         request={`curl -X POST https://api.lintpdf.com/api/v1/jobs/d4e5f6a7-.../reports \\
   -H "Authorization: Bearer lpdf_live_..." \\
   -H "Content-Type: application/json" \\
+  -H "Idempotency-Key: invoice-42-2026-04-17" \\
   -d '{
-    "formats": ["pdf", "html"],
+    "formats": [
+      { "format": "json", "return": "inline" },
+      { "format": "annotated_pdf", "return": "url" },
+      "html"
+    ],
     "expiry_days": 14,
     "email_to": "printer@acme.com",
     "branding": {
@@ -38,10 +43,17 @@ export default function ApiReportsSection() {
   }'`}
         response={`{
   "reports": [
-    { "format": "pdf",  "token": "rpt_01HXY...", "expires_at": "2026-04-26T10:30:00Z",
-      "url": "https://reports.lintpdf.com/r/rpt_01HXY....pdf" },
-    { "format": "html", "token": "rpt_01HXZ...", "expires_at": "2026-04-26T10:30:00Z",
-      "url": "https://reports.lintpdf.com/r/rpt_01HXZ..." }
+    { "format": "json", "url": null, "token": null, "expires_at": null,
+      "data": { "summary": { "error_count": 2 }, "findings": [ ... ] },
+      "content_type": "application/json" },
+    { "format": "annotated_pdf", "token": "rpt_01HXY...",
+      "expires_at": "2026-04-26T10:30:00Z",
+      "url": "https://reports.lintpdf.com/r/rpt_01HXY....pdf",
+      "data": null, "content_type": null },
+    { "format": "html", "token": "rpt_01HXZ...",
+      "expires_at": "2026-04-26T10:30:00Z",
+      "url": "https://reports.lintpdf.com/r/rpt_01HXZ...",
+      "data": null, "content_type": null }
   ]
 }`}
       />
@@ -49,14 +61,36 @@ export default function ApiReportsSection() {
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Generate-reports request fields</h4>
       <FieldTable
         rows={[
-          { name: "formats", type: '("html" | "pdf" | "json" | "xml" | "annotated_pdf" | "annotated_pdf_markup")[]', default: '["html","pdf"]', description: "Output formats to mint. Formats not in your plan return 403. annotated_pdf_markup stamps reviewer markup (annotations + comment threads) and an appendix onto the original PDF; it is silently skipped when the job has no annotations." },
-          { name: "expiry_days", type: "integer | null", default: "tenant / plan default (typically 7)", description: "Token lifetime in days. Null defers to the tenant setting or plan limit." },
+          { name: "formats", type: '(FormatName | { format: FormatName; return?: "url" | "inline" | "both" })[]', default: '["html","pdf"]', description: "Output formats to mint. Each entry is either a bare format string (back-compat; equivalent to return=\"url\") or an object selecting the return mode. Inline returns embed the payload in the response body and are supported only for json and xml; requesting inline on a binary format (pdf, annotated_pdf, annotated_pdf_markup, html) returns 422. Formats not in your plan return 403." },
+          { name: "expiry_days", type: "integer | null", default: "tenant / plan default (typically 7)", description: "Token lifetime in days. Null defers to the tenant setting or plan limit. Ignored for inline-only formats (no token minted)." },
           { name: "email_to", type: "string | null", description: "Single email address to deliver the report URLs to." },
           { name: "branding", type: "BrandingOverride | null", description: "Per-call branding override. Object with name/logo_url/primary_color/accent_color/hide_footer fields (each optional). Requires the white-label entitlement." },
           { name: "detail_level", type: '"executive" | "standard" | "comprehensive"', default: '"standard"', description: "Narrative density of the generated PDF/HTML report." },
           { name: "summary_page", type: '"prepend" | "only" | "off" | null', default: '"prepend" (or tenant override)', description: "Where the executive summary page lands in the PDF." },
         ]}
       />
+
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Generate-reports response fields</h4>
+      <FieldTable
+        rows={[
+          { name: "reports[].format", type: "string", description: "The requested format name, echoed back." },
+          { name: "reports[].url", type: "string | null", description: "Signed token URL for the hosted artifact, e.g. https://reports.lintpdf.com/r/{token}{.ext}. null for inline-only rows." },
+          { name: "reports[].token", type: "string | null", description: "Opaque share token. 43 characters and deterministic when the caller sent an Idempotency-Key header, otherwise a random 32-byte urlsafe string. null for inline-only rows." },
+          { name: "reports[].expires_at", type: "string | null", description: "ISO-8601 timestamp when the URL stops resolving. null for inline-only rows and for mints created with expiry_days: null." },
+          { name: "reports[].data", type: "object | string | null", description: "Inline payload. Parsed object for format=\"json\", raw string for format=\"xml\". Present only when return is \"inline\" or \"both\" — omitted (null) for URL-only rows." },
+          { name: "reports[].content_type", type: "string | null", description: "MIME type for the inline payload (application/json or application/xml). null when data is null." },
+        ]}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Idempotency-Key (optional)</h4>
+      <p className="text-slate-600 text-sm mb-2">
+        Send the <code className="bg-slate-100 px-1 rounded">Idempotency-Key</code> request header (max 255 characters) to make
+        mints safe to retry. The engine derives each token as
+        <code className="bg-slate-100 px-1 rounded"> sha256(tenant_id + idempotency_key + format) </code>
+        and reuses the stored artifact instead of regenerating it when
+        the same key recurs. Keys are scoped per tenant — a shared key
+        will never collide with another tenant's reports.
+      </p>
       <p className="text-slate-600 text-sm mt-2">
         For a job-submit-time brand override using the three-way enum
         ({`"anonymous" | "lintpdf" | uuid`}) use the <code className="bg-slate-100 px-1 rounded">brand</code> field

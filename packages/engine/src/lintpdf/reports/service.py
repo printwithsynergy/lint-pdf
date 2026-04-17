@@ -2,12 +2,60 @@
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import json as _json
 import logging
 import secrets
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from enum import StrEnum
 from typing import TYPE_CHECKING, Any
+
+# Format-classification sets must match ``lintpdf.api.routes.reports``.
+# Duplicated here (instead of imported) because the service layer is
+# called from Celery workers and auto-gen tasks that don't import the
+# FastAPI router; pulling the router in would drag FastAPI into every
+# worker start. They are small and change together rarely.
+_TEXT_FORMATS: frozenset[str] = frozenset({"json", "xml"})
+_INLINE_CONTENT_TYPES: dict[str, str] = {
+    "json": "application/json",
+    "xml": "application/xml",
+}
+
+
+def _deterministic_token(tenant_id: str, idempotency_key: str, fmt: str) -> str:
+    """Stable urlsafe token derived from (tenant, key, format).
+
+    SHA-256 → urlsafe-base64 → strip padding → 43 chars, which fits the
+    existing ``ReportToken.token`` column (``String(255)``) with room to
+    spare. Tenant id is part of the preimage so an attacker who knows a
+    peer's idempotency key still can't enumerate their reports (and two
+    tenants can reuse the same client-side key without collision).
+    Format is part of the preimage so ``json`` and ``xml`` mints with
+    the same key don't alias each other in storage.
+    """
+    material = f"{tenant_id}:{idempotency_key}:{fmt}".encode()
+    digest = hashlib.sha256(material).digest()
+    return base64.urlsafe_b64encode(digest).rstrip(b"=").decode("ascii")
+
+
+def _decode_inline_payload(fmt: str, content: bytes) -> tuple[Any, str]:
+    """Shape the on-disk bytes into the response ``data`` field.
+
+    Returning JSON as a real object (not a string) is the key
+    ergonomic win of inline mode — callers can branch on
+    ``reports[0].data.summary.error_count`` without a second parse.
+    XML stays as a string because there's no canonical object
+    representation and the client typically feeds it into a vendor
+    parser unchanged.
+    """
+    if fmt == "json":
+        return _json.loads(content.decode("utf-8")), _INLINE_CONTENT_TYPES["json"]
+    if fmt == "xml":
+        return content.decode("utf-8"), _INLINE_CONTENT_TYPES["xml"]
+    # Fallback — caller should have rejected this before calling us.
+    return None, "application/octet-stream"
 
 
 class ReportDetailLevel(StrEnum):
@@ -413,7 +461,7 @@ class ReportService:
         tenant_id: str,
         result_json: dict[str, Any],
         *,
-        formats: list[str] | None = None,
+        formats: list[Any] | None = None,
         expiry_days: int | None = None,
         branding: BrandingContext | None = None,
         report_base_url: str = "https://reports.lintpdf.com",
@@ -422,6 +470,7 @@ class ReportService:
         allow_annotations: bool = False,
         require_visitor_email: bool | None = None,
         overrides_dict: dict[str, Any] | None = None,
+        idempotency_key: str | None = None,
     ) -> ReportResult:
         """Generate reports, upload to storage, and create access tokens.
 
@@ -429,14 +478,24 @@ class ReportService:
             job_id: UUID of the completed job.
             tenant_id: UUID of the tenant.
             result_json: The job's result_json dict (summary + metadata).
-            formats: Report formats to generate (default: ["html", "pdf"]).
+            formats: Report formats to generate. Accepts a mix of bare
+                strings (back-compat — default ``return="url"``),
+                ``FormatSpec`` instances, or ``{"format": ..., "return": ...}``
+                dicts. Default: ``["html", "pdf"]``.
             expiry_days: Days until report tokens expire (None = no expiry).
             branding: White-label branding context.
             report_base_url: Base URL for hosted report links.
             detail_level: Report detail level ("executive", "standard", "comprehensive").
+            idempotency_key: Optional client-supplied key. When present,
+                tokens are derived deterministically from
+                ``(tenant_id, idempotency_key, format)`` and an existing
+                live artifact for the same key is reused instead of
+                regenerated + re-uploaded.
 
         Returns:
-            ReportResult with generated report URLs and tokens.
+            ReportResult with generated report URLs, tokens, and (for
+            inline / both modes on text formats) the payload bytes
+            shaped into ``data``/``content_type`` fields.
         """
         import uuid as uuid_mod
 
@@ -447,18 +506,52 @@ class ReportService:
         if branding is None:
             branding = BrandingContext()
 
+        # Normalize inputs to (format, return_mode) tuples. Accept bare
+        # strings, FormatSpec Pydantic models, and {"format":...,"return":...}
+        # dicts so callers from the router, Celery tasks, and the Python
+        # SDK can hand us whatever shape they already have without
+        # converting first.
+        norm_specs: list[tuple[str, str]] = []
+        for item in formats:
+            if isinstance(item, str):
+                norm_specs.append((item, "url"))
+            elif isinstance(item, dict):
+                fmt_name = item.get("format")
+                if not isinstance(fmt_name, str):
+                    continue
+                mode = item.get("return", "url")
+                if mode not in ("url", "inline", "both"):
+                    mode = "url"
+                norm_specs.append((fmt_name, mode))
+            else:
+                # Pydantic FormatSpec (or any duck with .format / .return_)
+                fmt_name = getattr(item, "format", None)
+                mode = getattr(item, "return_", "url")
+                if isinstance(fmt_name, str):
+                    norm_specs.append((fmt_name, mode))
+
         expires_at = None
         if expiry_days is not None:
             expires_at = datetime.now(timezone.utc) + timedelta(days=expiry_days)
 
         report_result = ReportResult()
 
-        # Generate tokens first so we can cross-link HTML <-> PDF
-        tokens: dict[str, str] = {}
-        for fmt in formats:
-            tokens[fmt] = secrets.token_urlsafe(32)
+        def _mint_token(fmt: str) -> str:
+            return (
+                _deterministic_token(tenant_id, idempotency_key, fmt)
+                if idempotency_key
+                else secrets.token_urlsafe(32)
+            )
 
-        # Set cross-links in branding
+        # Generate tokens up-front for formats that produce a URL so we
+        # can cross-link HTML <-> PDF in branding context. Inline-only
+        # formats get no token (nothing to link to).
+        tokens: dict[str, str] = {}
+        for fmt, mode in norm_specs:
+            if mode in ("url", "both"):
+                tokens[fmt] = _mint_token(fmt)
+
+        # Set cross-links in branding (unchanged)
         if "pdf" in tokens:
             branding.pdf_download_url = f"{report_base_url}/r/{tokens['pdf']}.pdf"
         if "html" in tokens:
@@ -475,104 +568,198 @@ class ReportService:
         if detail_level != ReportDetailLevel.EXECUTIVE:
             pdf_bytes = self._fetch_original_pdf(result_json)
 
-        for fmt in formats:
-            # Per-format try/except: one broken format MUST NOT kill the
-            # mint endpoint for every other format the caller asked for.
-            # Previously an unhandled UnicodeEncodeError in the annotated
-            # PDF legend (or any other render bug) bubbled up as HTTP 500
-            # even when the caller also requested html/pdf/json/xml —
-            # those sibling formats would never be stored or tokenised.
-            try:
-                content = self._generate_format(
-                    result_json,
-                    fmt,
-                    branding,
-                    pdf_bytes=pdf_bytes,
-                    detail_level=detail_level,
-                    summary_page=summary_page,
+        _suffix_by_format = {
+            "pdf": ".pdf",
+            "annotated_pdf": ".pdf",
+            "annotated_pdf_markup": ".pdf",
+            "json": ".json",
+            "xml": ".xml",
+        }
+
+        for fmt, mode in norm_specs:
+            needs_url = mode in ("url", "both")
+            needs_inline = mode in ("inline", "both")
+
+            # Idempotency fast-path: if a deterministic token for this
+            # (tenant, key, format) already points at a live, unexpired
+            # artifact, reuse it instead of regenerating bytes + re-
+            # uploading. This is what makes retries free.
+            reused_content: bytes | None = None
+            existing: ReportToken | None = None
+            if idempotency_key:
+                token_value = tokens.get(fmt) or _mint_token(fmt)
+                existing = (
+                    self._db.query(ReportToken)
+                    .filter(
+                        ReportToken.tenant_id == uuid_mod.UUID(tenant_id),
+                        ReportToken.token == token_value,
+                    )
+                    .first()
                 )
-            except Exception:
-                logger.exception(
-                    "Report format %s failed for job %s; skipping and continuing",
-                    fmt,
-                    job_id,
+                if (
+                    existing is not None
+                    and existing.expires_at is not None
+                    and datetime.now(timezone.utc) > existing.expires_at
+                ):
+                    existing = None
+                if existing is not None and needs_inline:
+                    # Text formats only — reuse stored bytes for the
+                    # inline payload so we don't regenerate identical
+                    # content.
+                    try:
+                        reused_content = self._storage.download_report(
+                            tenant_id, job_id, fmt
+                        )
+                    except Exception:
+                        # Token row survived but object is gone (e.g.
+                        # lifecycle expired the R2 object). Fall through
+                        # to regenerate and re-upload.
+                        existing = None
+                        reused_content = None
+
+            if existing is not None and not needs_inline:
+                # Pure URL reuse — no body work.
+                url = f"{report_base_url}/r/{existing.token}{_suffix_by_format.get(fmt, '')}"
+                report_result.reports.append(
+                    {
+                        "format": fmt,
+                        "url": url,
+                        "token": existing.token,
+                        "expires_at": existing.expires_at.isoformat()
+                        if existing.expires_at
+                        else None,
+                        "data": None,
+                        "content_type": None,
+                    }
                 )
                 continue
+
+            # Generate bytes (fresh or to attach inline even when URL
+            # reused). Per-format try/except: one broken format MUST
+            # NOT kill the mint endpoint for every other format the
+            # caller asked for.
+            if reused_content is not None:
+                content: bytes | None = reused_content
+            else:
+                try:
+                    content = self._generate_format(
+                        result_json,
+                        fmt,
+                        branding,
+                        pdf_bytes=pdf_bytes,
+                        detail_level=detail_level,
+                        summary_page=summary_page,
+                    )
+                except Exception:
+                    logger.exception(
+                        "Report format %s failed for job %s; skipping and continuing",
+                        fmt,
+                        job_id,
+                    )
+                    continue
             if content is None:
                 continue
 
-            # Upload to storage — wrap so an S3 hiccup on one format
-            # doesn't block the sibling formats from tokenising.
-            try:
-                self._storage.upload_report(tenant_id, job_id, fmt, content)
-            except Exception:
-                logger.exception(
-                    "Report format %s failed to upload for job %s; skipping",
-                    fmt,
-                    job_id,
+            # Upload + token insert only when a URL is needed. Inline-
+            # only deliveries skip both — nothing to store, nothing to
+            # serve later.
+            url_value: str | None = None
+            token_value_out: str | None = None
+            expires_out: str | None = None
+            if needs_url:
+                if existing is None or reused_content is None:
+                    # Skip upload if we already reused the object via
+                    # idempotency; re-upload when content is newly
+                    # generated.
+                    try:
+                        self._storage.upload_report(tenant_id, job_id, fmt, content)
+                    except Exception:
+                        logger.exception(
+                            "Report format %s failed to upload for job %s; skipping",
+                            fmt,
+                            job_id,
+                        )
+                        continue
+
+                if existing is None:
+                    token_record = ReportToken(
+                        id=uuid_mod.uuid4(),
+                        job_id=uuid_mod.UUID(job_id),
+                        tenant_id=uuid_mod.UUID(tenant_id),
+                        token=tokens[fmt],
+                        format=fmt,
+                        expires_at=expires_at,
+                        allow_annotations=allow_annotations,
+                        require_visitor_email=require_visitor_email,
+                        overrides=overrides_dict,
+                    )
+                    self._db.add(token_record)
+
+                    # Commit per-format so a DB-level error on one
+                    # format cannot roll back its siblings. See
+                    # git blame on this block for the
+                    # annotated_pdf-width-truncation incident report.
+                    try:
+                        self._db.commit()
+                    except Exception:
+                        # Deterministic-token races: a parallel request
+                        # with the same key won the INSERT. Rollback,
+                        # look up the winner, and proceed with its
+                        # token/row.
+                        logger.warning(
+                            "Token INSERT failed for job %s format %s; "
+                            "retrying against existing row",
+                            job_id,
+                            fmt,
+                        )
+                        self._db.rollback()
+                        if idempotency_key:
+                            existing = (
+                                self._db.query(ReportToken)
+                                .filter(
+                                    ReportToken.tenant_id == uuid_mod.UUID(tenant_id),
+                                    ReportToken.token == tokens[fmt],
+                                )
+                                .first()
+                            )
+                            if existing is None:
+                                continue
+                        else:
+                            continue
+
+                suffix = _suffix_by_format.get(fmt, "")
+                token_to_use = existing.token if existing else tokens[fmt]
+                exp_to_use = (
+                    existing.expires_at if existing else expires_at
                 )
-                continue
+                url_value = f"{report_base_url}/r/{token_to_use}{suffix}"
+                token_value_out = token_to_use
+                expires_out = exp_to_use.isoformat() if exp_to_use else None
 
-            # Create token record. ``overrides`` is the caller's
-            # universal override envelope captured at mint time so the
-            # viewer config endpoint can layer per-token viewer flags on
-            # top of the tenant / BrandProfile defaults. Same content for
-            # every format minted in this batch — one mint call, one
-            # override set.
-            token_record = ReportToken(
-                id=uuid_mod.uuid4(),
-                job_id=uuid_mod.UUID(job_id),
-                tenant_id=uuid_mod.UUID(tenant_id),
-                token=tokens[fmt],
-                format=fmt,
-                expires_at=expires_at,
-                allow_annotations=allow_annotations,
-                require_visitor_email=require_visitor_email,
-                overrides=overrides_dict,
-            )
-            self._db.add(token_record)
-
-            # Commit per-format so a DB-level error on one format (e.g. a
-            # schema drift that fails the INSERT with
-            # StringDataRightTruncation) cannot roll back the siblings
-            # that successfully minted in the same request. The original
-            # single-commit-at-the-end design meant that requesting
-            # ["html","pdf","json","xml","annotated_pdf"] returned HTTP
-            # 500 and persisted ZERO tokens the moment annotated_pdf's
-            # INSERT tripped the width limit — while the bytes for every
-            # format had already been uploaded to R2. The orphans had to
-            # be cleaned up by hand.
-            try:
-                self._db.commit()
-            except Exception:
-                logger.exception(
-                    "Token INSERT failed for job %s format %s; rolling back and skipping",
-                    job_id,
-                    fmt,
-                )
-                self._db.rollback()
-                continue
-
-            # Build URL — each non-HTML format gets its own extension so the
-            # public reports.lintpdf.com router knows which content-type to
-            # serve. HTML stays extensionless because /r/{token} is the
-            # canonical landing page.
-            _suffix_by_format = {
-                "pdf": ".pdf",
-                "annotated_pdf": ".pdf",
-                "annotated_pdf_markup": ".pdf",
-                "json": ".json",
-                "xml": ".xml",
-            }
-            suffix = _suffix_by_format.get(fmt, "")
-            url = f"{report_base_url}/r/{tokens[fmt]}{suffix}"
+            # Shape inline payload for text formats.
+            data_value: Any | None = None
+            content_type_value: str | None = None
+            if needs_inline and fmt in _TEXT_FORMATS:
+                try:
+                    data_value, content_type_value = _decode_inline_payload(fmt, content)
+                except Exception:
+                    # A decoding failure shouldn't nuke sibling formats.
+                    logger.exception(
+                        "Failed to decode inline payload for format %s (job %s)",
+                        fmt,
+                        job_id,
+                    )
+                    data_value = None
+                    content_type_value = None
 
             report_result.reports.append(
                 {
                     "format": fmt,
-                    "url": url,
-                    "token": tokens[fmt],
-                    "expires_at": expires_at.isoformat() if expires_at else None,
+                    "url": url_value,
+                    "token": token_value_out,
+                    "expires_at": expires_out,
+                    "data": data_value,
+                    "content_type": content_type_value,
                 }
             )
 

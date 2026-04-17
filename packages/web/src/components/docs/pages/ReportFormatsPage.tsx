@@ -24,12 +24,12 @@ export default function ReportFormatsPage() {
       <h3 className="font-semibold text-slate-900 mb-3">Available formats</h3>
       <FieldTable
         rows={[
-          { name: "html", type: "format", description: "Branded interactive landing page. Served at /r/{token} (no extension). Plans: Free+." },
-          { name: "pdf", type: "format", description: "Print-ready PDF report with summary page and findings detail. Served at /r/{token}.pdf. Plans: Starter+." },
-          { name: "json", type: "format", description: "Structured findings matching the LintPDF v1 import schema — re-importable via preflight_source=external, external_format=lintpdf_json. Served at /r/{token}.json. Plans: Free+." },
-          { name: "xml", type: "format", description: "Same field taxonomy as JSON, for Switch / MIS / legacy XML consumers. Served at /r/{token}.xml. Plans: Starter+." },
-          { name: "annotated_pdf", type: "format", description: "Original PDF with findings drawn as overlays on the source pages. Served at /r/{token}.pdf. Plans: Scale+ (silently skipped if the original PDF cannot be re-fetched from object storage)." },
-          { name: "annotated_pdf_markup", type: "format", description: "Original PDF stamped with the reviewer's interactive-viewer markup (rects, circles, arrows, freehand strokes, numbered sticky-note pins) plus an appendix page that resolves each note number to its body and full comment thread. Served at /r/{token}.pdf. Plans: Scale+. Silently skipped if no annotations exist." },
+          { name: "html", type: "format", description: "Branded interactive landing page. Served at /r/{token} (no extension). Plans: Free+. Delivery: URL only." },
+          { name: "pdf", type: "format", description: "Print-ready PDF report with summary page and findings detail. Served at /r/{token}.pdf. Plans: Starter+. Delivery: URL only." },
+          { name: "json", type: "format", description: "Structured findings matching the LintPDF v1 import schema — re-importable via preflight_source=external, external_format=lintpdf_json. Served at /r/{token}.json. Plans: Free+. Supports return=\"inline\" — parsed object embedded in the response body as reports[].data." },
+          { name: "xml", type: "format", description: "Same field taxonomy as JSON, for Switch / MIS / legacy XML consumers. Served at /r/{token}.xml. Plans: Starter+. Supports return=\"inline\" — raw XML string embedded in reports[].data." },
+          { name: "annotated_pdf", type: "format", description: "Original PDF with findings drawn as overlays on the source pages. Served at /r/{token}.pdf. Plans: Scale+ (silently skipped if the original PDF cannot be re-fetched from object storage). Delivery: URL only." },
+          { name: "annotated_pdf_markup", type: "format", description: "Original PDF stamped with the reviewer's interactive-viewer markup (rects, circles, arrows, freehand strokes, numbered sticky-note pins) plus an appendix page that resolves each note number to its body and full comment thread. Served at /r/{token}.pdf. Plans: Scale+. Silently skipped if no annotations exist. Delivery: URL only." },
         ]}
       />
 
@@ -38,17 +38,34 @@ export default function ReportFormatsPage() {
         Call <code className="bg-slate-100 px-1 rounded">POST /api/v1/jobs/{`{job_id}`}/reports</code>{" "}
         with the fields below. Every knob has a sensible default, so the
         minimum request is <code className="bg-slate-100 px-1 rounded">{`{ "formats": ["pdf"] }`}</code>.
+        Each <code className="bg-slate-100 px-1 rounded">formats</code> entry may be a bare format string
+        (back-compat — resolves to <code className="bg-slate-100 px-1 rounded">return: "url"</code>) or
+        a <code className="bg-slate-100 px-1 rounded">{`{ format, return }`}</code> spec to request inline
+        or both (text formats only).
       </p>
       <FieldTable
         rows={[
-          { name: "formats", type: '("html"|"pdf"|"json"|"xml"|"annotated_pdf"|"annotated_pdf_markup")[]', required: true, description: "Output formats to mint. Each gets its own token. Default: [\"html\", \"pdf\"]." },
-          { name: "expiry_days", type: "integer", default: "tenant default (typically 7–30)", description: "Token lifetime in days. After expiry the public URLs return 410 Gone." },
+          { name: "formats", type: '(FormatName | { format: FormatName; return?: "url" | "inline" | "both" })[]', required: true, description: "Output formats to mint. return=\"url\" (default) gives a hosted share link. return=\"inline\" embeds parsed JSON / raw XML directly in the response body and skips both object storage and token minting. return=\"both\" does both. Inline is rejected with 422 on binary formats (pdf, annotated_pdf, annotated_pdf_markup, html). Default: [\"html\", \"pdf\"]." },
+          { name: "expiry_days", type: "integer", default: "tenant default (typically 7–30)", description: "Token lifetime in days. After expiry the public URLs return 410 Gone. Ignored for inline-only rows because no token is minted." },
           { name: "email_to", type: "string[]", description: "If provided, LintPDF emails the share URLs to these addresses (tenant-branded unless branding=anonymous)." },
           { name: "branding", type: '"anonymous" | "lintpdf" | uuid', description: "Freezes the brand state at mint time. Overrides the tenant default." },
           { name: "detail_level", type: '"executive"|"standard"|"comprehensive"', default: "standard", description: "Narrative density in PDF/HTML — executive is summary-only, comprehensive walks every finding. Ignored by JSON/XML." },
           { name: "summary_page", type: '"prepend"|"only"|"off"', default: "prepend", description: "Controls the PDF summary page placement. Ignored by JSON/XML." },
         ]}
       />
+
+      <h3 className="font-semibold text-slate-900 mt-8 mb-3">Idempotent mints (opt-in)</h3>
+      <p className="text-slate-600 mb-3">
+        Send an <code className="bg-slate-100 px-1 rounded">Idempotency-Key</code> header
+        (max 255 characters) and the engine derives each token
+        deterministically from
+        <code className="bg-slate-100 px-1 rounded"> sha256(tenant_id + key + format)</code>.
+        A subsequent mint with the same key reuses the existing artifact
+        instead of regenerating and re-uploading — safe to retry, CDN-friendly,
+        and survives transient failures without creating duplicate share links.
+        The header is per-tenant scoped, so a client-side key cannot collide
+        with another tenant's reports.
+      </p>
 
       <h3 className="font-semibold text-slate-900 mt-8 mb-3">JSON schema</h3>
       <p className="text-slate-600 mb-3">

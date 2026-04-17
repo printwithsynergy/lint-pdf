@@ -175,16 +175,16 @@ for r in d.get('reports', []):
 echo "    Saved: $OUTPUT_DIR/03-reports-response.json"
 echo ""
 
-# Download each report
+# Download each report. Inline-only rows (url is null) don't need a
+# download — they're already in the response body under `.data`.
 echo "    Downloading reports..."
 echo "$REPORTS_RESPONSE" | python3 -c "
 import sys, json
 d = json.load(sys.stdin)
 for r in d.get('reports', []):
-    fmt = r['format']
-    url = r['url']
-    token = r['token']
-    print(f'{fmt}|{url}|{token}')
+    if not r.get('url'):
+        continue  # inline-only row — payload is already in r['data']
+    print(f\"{r['format']}|{r['url']}|{r.get('token','')}\")
 " | while IFS='|' read -r fmt url token; do
   ext="$fmt"
   case "$fmt" in
@@ -197,6 +197,71 @@ for r in d.get('reports', []):
   size=$(wc -c < "$outfile")
   echo "    Downloaded: $outfile ($size bytes)"
 done
+echo ""
+
+# -------------------------------------------------------------------
+# Return Type B.inline: Inline JSON in the response body
+# -------------------------------------------------------------------
+# Ask for the JSON report inline and the annotated PDF as a URL in
+# one call. `return: "inline"` embeds the parsed findings directly in
+# reports[].data, so programmatic consumers can branch on it without
+# a second GET. Binary formats are always URL-only; requesting inline
+# on `pdf`, `annotated_pdf`, `annotated_pdf_markup`, or `html` returns
+# HTTP 422.
+echo ">>> Return Type B.inline: Inline JSON + URL'd annotated PDF..."
+INLINE_RESPONSE=$(curl -s --fail-with-body \
+  -X POST "${API_URL}/api/v1/jobs/${JOB_ID}/reports" \
+  -H "Authorization: Bearer ${LINTPDF_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "formats": [
+      { "format": "json", "return": "inline" },
+      { "format": "annotated_pdf", "return": "url" }
+    ]
+  }')
+
+echo "$INLINE_RESPONSE" | python3 -m json.tool > "$OUTPUT_DIR/03b-inline-response.json"
+echo "$INLINE_RESPONSE" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for r in d.get('reports', []):
+    if r.get('data') is not None:
+        findings = r['data'].get('findings', []) if isinstance(r['data'], dict) else []
+        print(f\"    {r['format']:25s} INLINE ({len(findings)} findings in body)\")
+    else:
+        print(f\"    {r['format']:25s} URL    {r['url']}\")
+"
+echo "    Saved: $OUTPUT_DIR/03b-inline-response.json"
+echo ""
+
+# -------------------------------------------------------------------
+# Return Type B.idempotent: Retry-safe mint with Idempotency-Key
+# -------------------------------------------------------------------
+# Two mints with the same Idempotency-Key converge on the same token
+# (deterministic sha256(tenant_id + key + format)); the second call
+# reuses the stored object instead of regenerating + re-uploading.
+# Safe to retry on network errors, CDN-friendly (same URL survives).
+echo ">>> Return Type B.idempotent: Two mints with same Idempotency-Key..."
+IDEM_KEY="demo-$(date +%s)-$$"
+for attempt in 1 2; do
+  IDEM_RESPONSE=$(curl -s --fail-with-body \
+    -X POST "${API_URL}/api/v1/jobs/${JOB_ID}/reports" \
+    -H "Authorization: Bearer ${LINTPDF_API_KEY}" \
+    -H "Content-Type: application/json" \
+    -H "Idempotency-Key: ${IDEM_KEY}" \
+    -d '{"formats": ["html"]}')
+  token=$(echo "$IDEM_RESPONSE" | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for r in d.get('reports', []):
+    if r['format'] == 'html':
+        print(r.get('token') or '')
+        break
+")
+  echo "    attempt $attempt → token: $token"
+done
+echo "    Saved: $OUTPUT_DIR/03c-idempotent-response.json"
+echo "$IDEM_RESPONSE" | python3 -m json.tool > "$OUTPUT_DIR/03c-idempotent-response.json"
 echo ""
 
 # -------------------------------------------------------------------

@@ -340,3 +340,283 @@ class TestServePdfReportRoute:
         _seed_report_token(db_session, job.id, fmt="pdf", token="tok_pdf_noext", no_expiry=True)
         resp = client.get("/r/tok_pdf_noext")
         assert resp.status_code == 404
+
+
+# -----------------------------------------------------------------------
+# Inline return mode + Idempotency-Key on POST /reports
+# -----------------------------------------------------------------------
+
+
+def _mock_service_capturing_specs() -> tuple[MagicMock, list[list]]:
+    """Build a mock ReportService that records the ``formats`` it was called with.
+
+    Returns ``(mock_service, captured_formats_list)`` — the second item
+    grows on each call so tests can assert the router normalized the
+    request body correctly before handing it off to the service.
+    """
+    captured: list[list] = []
+
+    def _capture(**kwargs):
+        captured.append(list(kwargs.get("formats") or []))
+        result = MagicMock()
+        # Mirror the real service's dict shape; let individual tests
+        # override per-format via side-effect if needed.
+        result.reports = []
+        for spec in kwargs.get("formats") or []:
+            fmt = getattr(spec, "format", None) or (
+                spec.get("format") if isinstance(spec, dict) else spec
+            )
+            mode = getattr(spec, "return_", None) or (
+                spec.get("return", "url") if isinstance(spec, dict) else "url"
+            )
+            entry: dict = {"format": fmt, "url": None, "token": None, "expires_at": None,
+                           "data": None, "content_type": None}
+            if mode in ("url", "both"):
+                entry["url"] = f"https://reports.example.com/r/tok_{fmt}.{fmt}"
+                entry["token"] = f"tok_{fmt}"
+            if mode in ("inline", "both") and fmt in ("json", "xml"):
+                entry["data"] = {"sample": True} if fmt == "json" else "<root/>"
+                entry["content_type"] = (
+                    "application/json" if fmt == "json" else "application/xml"
+                )
+            result.reports.append(entry)
+        return result
+
+    mock_service = MagicMock()
+    mock_service.generate_and_store.side_effect = _capture
+    return mock_service, captured
+
+
+class TestInlineReturnMode:
+    @staticmethod
+    def test_formats_bare_string_back_compat(
+        client: TestClient, db_session: Session
+    ) -> None:
+        """Legacy ``formats: ["html","pdf"]`` body still minted as url mode."""
+        job = _seed_completed_job(db_session)
+        mock_service, captured = _mock_service_capturing_specs()
+        with patch(
+            "lintpdf.reports.service.ReportService", return_value=mock_service
+        ):
+            resp = client.post(
+                f"/api/v1/jobs/{job.id}/reports",
+                json={"formats": ["html", "pdf"]},
+            )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert {r["format"] for r in data["reports"]} == {"html", "pdf"}
+        assert all(r["url"] and r["token"] for r in data["reports"])
+        # Handler must have normalized strings into FormatSpec(return_="url")
+        assert len(captured) == 1
+        for spec in captured[0]:
+            assert getattr(spec, "return_", "url") == "url"
+
+    @staticmethod
+    def test_formats_object_inline_json(
+        client: TestClient, db_session: Session
+    ) -> None:
+        job = _seed_completed_job(db_session)
+        mock_service, _ = _mock_service_capturing_specs()
+        with patch(
+            "lintpdf.reports.service.ReportService", return_value=mock_service
+        ):
+            resp = client.post(
+                f"/api/v1/jobs/{job.id}/reports",
+                json={"formats": [{"format": "json", "return": "inline"}]},
+            )
+        assert resp.status_code == 201
+        data = resp.json()["reports"][0]
+        assert data["format"] == "json"
+        assert data["url"] is None
+        assert data["token"] is None
+        assert data["data"] == {"sample": True}
+        assert data["content_type"] == "application/json"
+
+    @staticmethod
+    def test_formats_object_both_xml(
+        client: TestClient, db_session: Session
+    ) -> None:
+        job = _seed_completed_job(db_session)
+        mock_service, _ = _mock_service_capturing_specs()
+        with patch(
+            "lintpdf.reports.service.ReportService", return_value=mock_service
+        ):
+            resp = client.post(
+                f"/api/v1/jobs/{job.id}/reports",
+                json={"formats": [{"format": "xml", "return": "both"}]},
+            )
+        assert resp.status_code == 201
+        data = resp.json()["reports"][0]
+        assert data["format"] == "xml"
+        assert data["url"] is not None
+        assert data["token"] is not None
+        assert data["data"] == "<root/>"
+        assert data["content_type"] == "application/xml"
+
+    @staticmethod
+    def test_inline_rejected_for_binary(
+        client: TestClient, db_session: Session
+    ) -> None:
+        job = _seed_completed_job(db_session)
+        resp = client.post(
+            f"/api/v1/jobs/{job.id}/reports",
+            json={"formats": [{"format": "pdf", "return": "inline"}]},
+        )
+        assert resp.status_code == 422
+        body = resp.json()
+        # FastAPI surfaces the pydantic validator message somewhere in detail.
+        assert "Inline return is not supported" in str(body)
+
+    @staticmethod
+    def test_inline_disabled_flag(
+        client: TestClient, db_session: Session
+    ) -> None:
+        """Flipping off LINTPDF_REPORTS_INLINE_ENABLED turns inline into 422."""
+        job = _seed_completed_job(db_session)
+        with patch("lintpdf.api.config.get_settings") as mock_settings:
+            s = MagicMock()
+            s.reports_inline_enabled = False
+            s.reports_idempotency_enabled = True
+            s.report_base_url = "https://reports.example.com"
+            s.app_base_url = "https://app.example.com"
+            mock_settings.return_value = s
+            resp = client.post(
+                f"/api/v1/jobs/{job.id}/reports",
+                json={"formats": [{"format": "json", "return": "inline"}]},
+            )
+        assert resp.status_code == 422
+        assert "disabled" in resp.json()["detail"].lower()
+
+    @staticmethod
+    def test_idempotency_key_too_long_rejected(
+        client: TestClient, db_session: Session
+    ) -> None:
+        job = _seed_completed_job(db_session)
+        resp = client.post(
+            f"/api/v1/jobs/{job.id}/reports",
+            headers={"Idempotency-Key": "x" * 256},
+            json={"formats": ["html"]},
+        )
+        assert resp.status_code == 422
+
+
+# -----------------------------------------------------------------------
+# ReportService.generate_and_store — deterministic tokens + idempotency
+# -----------------------------------------------------------------------
+
+
+class TestDeterministicTokens:
+    """Unit tests for the service layer's deterministic-token behavior.
+
+    Mocks ``_generate_format`` so we don't have to render real reports
+    to exercise the idempotency bookkeeping. Uses the InMemoryStorage
+    backend that test fixtures install for the API client, but talks
+    to it directly since these assertions don't need the HTTP layer.
+    """
+
+    @staticmethod
+    def test_deterministic_token_is_stable(db_session: Session) -> None:
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
+
+        job = _seed_completed_job(db_session)
+        storage = get_storage()
+        service = ReportService(storage, db_session)
+
+        with patch.object(
+            ReportService, "_generate_format", return_value=b'{"findings":[]}'
+        ), patch.object(ReportService, "_fetch_original_pdf", return_value=None):
+            a = service.generate_and_store(
+                job_id=str(job.id),
+                tenant_id=str(PLACEHOLDER_TENANT_ID),
+                result_json={"summary": {}},
+                formats=[{"format": "json", "return": "url"}],
+                idempotency_key="invoice-42",
+            )
+            b = service.generate_and_store(
+                job_id=str(job.id),
+                tenant_id=str(PLACEHOLDER_TENANT_ID),
+                result_json={"summary": {}},
+                formats=[{"format": "json", "return": "url"}],
+                idempotency_key="invoice-42",
+            )
+        assert a.reports[0]["token"] == b.reports[0]["token"]
+
+    @staticmethod
+    def test_deterministic_token_cross_tenant_isolation(
+        db_session: Session,
+    ) -> None:
+        from lintpdf.reports.service import _deterministic_token
+
+        tenant_a = str(uuid.uuid4())
+        tenant_b = str(uuid.uuid4())
+        tok_a = _deterministic_token(tenant_a, "shared-key", "json")
+        tok_b = _deterministic_token(tenant_b, "shared-key", "json")
+        assert tok_a != tok_b
+
+    @staticmethod
+    def test_idempotent_mint_skips_reupload(db_session: Session) -> None:
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
+
+        job = _seed_completed_job(db_session)
+        storage = get_storage()
+        service = ReportService(storage, db_session)
+
+        upload_spy = MagicMock(wraps=storage.upload_report)
+        storage.upload_report = upload_spy  # type: ignore[method-assign]
+
+        with patch.object(
+            ReportService, "_generate_format", return_value=b'{"findings":[]}'
+        ), patch.object(ReportService, "_fetch_original_pdf", return_value=None):
+            service.generate_and_store(
+                job_id=str(job.id),
+                tenant_id=str(PLACEHOLDER_TENANT_ID),
+                result_json={"summary": {}},
+                formats=[{"format": "json", "return": "url"}],
+                idempotency_key="invoice-42",
+            )
+            service.generate_and_store(
+                job_id=str(job.id),
+                tenant_id=str(PLACEHOLDER_TENANT_ID),
+                result_json={"summary": {}},
+                formats=[{"format": "json", "return": "url"}],
+                idempotency_key="invoice-42",
+            )
+        # First call uploads; second call hits the idempotent fast path.
+        assert upload_spy.call_count == 1
+
+    @staticmethod
+    def test_inline_mode_skips_upload_and_token(db_session: Session) -> None:
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
+
+        job = _seed_completed_job(db_session)
+        storage = get_storage()
+        service = ReportService(storage, db_session)
+
+        upload_spy = MagicMock(wraps=storage.upload_report)
+        storage.upload_report = upload_spy  # type: ignore[method-assign]
+
+        with patch.object(
+            ReportService, "_generate_format", return_value=b'{"findings":[1]}'
+        ), patch.object(ReportService, "_fetch_original_pdf", return_value=None):
+            result = service.generate_and_store(
+                job_id=str(job.id),
+                tenant_id=str(PLACEHOLDER_TENANT_ID),
+                result_json={"summary": {}},
+                formats=[{"format": "json", "return": "inline"}],
+            )
+        row = result.reports[0]
+        assert row["url"] is None
+        assert row["token"] is None
+        assert row["data"] == {"findings": [1]}
+        assert row["content_type"] == "application/json"
+        assert upload_spy.call_count == 0
+        # No ReportToken row persisted for inline-only mints.
+        assert (
+            db_session.query(ReportToken)
+            .filter(ReportToken.job_id == job.id)
+            .count()
+            == 0
+        )
