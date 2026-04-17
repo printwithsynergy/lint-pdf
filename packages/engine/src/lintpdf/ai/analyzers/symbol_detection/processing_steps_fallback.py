@@ -18,6 +18,7 @@ from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.gpu_client import (
     GPUInferenceClient,
     GPUServiceNotConfiguredError,
+    GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
 )
 from lintpdf.ai.registry import register_ai_analyzer
@@ -178,7 +179,7 @@ class ProcessingStepsFallbackAnalyzer(BaseAIAnalyzer):
                     first_page_png,
                     prompt="varnish mask. foil area. emboss region. die cut line. spot UV.",
                 )
-            except GPUServiceNotConfiguredError:
+            except (GPUServiceNotConfiguredError, GPUServiceRateLimitedError):
                 logger.debug("processing_steps_fallback: GPU service not configured, skipping")
                 return []
             except GPUServiceUnavailableError as exc:

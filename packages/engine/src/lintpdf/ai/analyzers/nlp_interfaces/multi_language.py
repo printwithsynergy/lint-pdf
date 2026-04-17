@@ -15,6 +15,7 @@ from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.gpu_client import (
     GPUInferenceClient,
     GPUServiceNotConfiguredError,
+    GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
 )
 from lintpdf.ai.registry import register_ai_analyzer
@@ -125,7 +126,7 @@ class MultiLanguageReportsAnalyzer(BaseAIAnalyzer):
                     source_lang=source_lang,
                     target_lang=target_lang,
                 )
-            except GPUServiceNotConfiguredError:
+            except (GPUServiceNotConfiguredError, GPUServiceRateLimitedError):
                 logger.debug(
                     "multi_language: GPU service not configured, skipping '%s'",
                     target_lang,

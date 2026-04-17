@@ -14,6 +14,7 @@ from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.gpu_client import (
     GPUInferenceClient,
     GPUServiceNotConfiguredError,
+    GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
 )
 from lintpdf.ai.registry import register_ai_analyzer
@@ -69,7 +70,7 @@ class ImageQualityAnalyzer(BaseAIAnalyzer):
             page_num = page_idx + 1
             try:
                 result = gpu.assess_image_quality(png_bytes)
-            except GPUServiceNotConfiguredError:
+            except (GPUServiceNotConfiguredError, GPUServiceRateLimitedError):
                 logger.debug("image_quality: GPU service not configured, skipping")
                 return findings
             except GPUServiceUnavailableError as exc:

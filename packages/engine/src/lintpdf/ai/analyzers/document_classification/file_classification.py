@@ -15,6 +15,7 @@ from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.gpu_client import (
     GPUInferenceClient,
     GPUServiceNotConfiguredError,
+    GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
 )
 from lintpdf.ai.registry import register_ai_analyzer
@@ -64,7 +65,7 @@ class FileClassificationAnalyzer(BaseAIAnalyzer):
 
         try:
             result = gpu.classify_document(first_page_png)
-        except GPUServiceNotConfiguredError:
+        except (GPUServiceNotConfiguredError, GPUServiceRateLimitedError):
             logger.debug("file_classification: GPU service not configured, skipping")
             return []
         except GPUServiceUnavailableError as exc:
