@@ -62,5 +62,76 @@
     "use_case": "Extended gamut",
     "tac_limit": 300,
     "mesh_file": "fogra55_ecg.json"
+  },
+  "fogra53_ecicmyk": {
+    "name": "FOGRA53 eciCMYK",
+    "source_data": "FOGRA53",
+    "region": "Europe",
+    "use_case": "eciCMYK exchange color space",
+    "tac_limit": 350,
+    "mesh_file": "fogra53_ecicmyk.json",
+    "icc_source": "eci.org/en/downloads — eciCMYK.icc (free, commercial use OK)"
+  },
+  "fogra59_ecicmyk_v2": {
+    "name": "FOGRA59 eciCMYK v2",
+    "source_data": "FOGRA59",
+    "region": "Europe",
+    "use_case": "eciCMYK v2 exchange color space",
+    "tac_limit": 330,
+    "mesh_file": "fogra59_ecicmyk_v2.json",
+    "icc_source": "eci.org/en/downloads — eciCMYK_v2.icc (free, commercial use OK)"
+  },
+  "gracol2013_crpc6": {
+    "name": "GRACoL 2013 CRPC6",
+    "source_data": "GRACoL2013 CRPC6",
+    "region": "North America",
+    "use_case": "Sheetfed coated (current)",
+    "tac_limit": 340,
+    "mesh_file": "gracol2013_crpc6.json",
+    "icc_source": "printing.org — GRACoL2013_CRPC6.icc (free download)"
+  },
+  "swop2013_crpc5": {
+    "name": "SWOP 2013 CRPC5",
+    "source_data": "SWOP2013 CRPC5",
+    "region": "North America",
+    "use_case": "Web offset coated (current)",
+    "tac_limit": 300,
+    "mesh_file": "swop2013_crpc5.json",
+    "icc_source": "printing.org — SWOP2013C3_CRPC5.icc (free download)"
+  },
+  "gracol2013unc_crpc3": {
+    "name": "GRACoL 2013 Uncoated CRPC3",
+    "source_data": "GRACoL2013UNC CRPC3",
+    "region": "North America",
+    "use_case": "Sheetfed uncoated",
+    "tac_limit": 280,
+    "mesh_file": "gracol2013unc_crpc3.json",
+    "icc_source": "printing.org — GRACoL2013UNC_CRPC3.icc (free download)"
+  },
+  "swop2013c5": {
+    "name": "SWOP 2013 C5",
+    "source_data": "SWOP2013C5",
+    "region": "North America",
+    "use_case": "Web offset commercial grade 5",
+    "tac_limit": 300,
+    "mesh_file": "swop2013c5.json",
+    "icc_source": "printing.org — SWOP2013C5.icc (free download)"
+  },
+  "adobergb_1998": {
+    "name": "Adobe RGB (1998)",
+    "source_data": "Adobe RGB 1998 specification",
+    "region": "Universal",
+    "use_case": "Wide-gamut RGB validation",
+    "tac_limit": null,
+    "mesh_file": "adobergb_1998.json"
+  },
+  "xcmyk_2017": {
+    "name": "XCMYK 2017",
+    "source_data": "XCMYK 2017 (IDEAlliance)",
+    "region": "North America",
+    "use_case": "Extended gamut CMYK",
+    "tac_limit": 400,
+    "mesh_file": "xcmyk_2017.json",
+    "icc_source": "printing.org — XCMYK 2017.icc (free download)"
   }
 }
