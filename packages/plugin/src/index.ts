@@ -208,7 +208,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       label: "AI Credits",
       href: "/dashboard/account/billing/credits",
       icon: "sparkles",
-      section: "account",
+      section: "tenant",
       order: 60,
       requiredPermission: "account:manage",
     });
@@ -216,7 +216,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       label: "File Packs",
       href: "/dashboard/account/billing/files",
       icon: "file-text",
-      section: "account",
+      section: "tenant",
       order: 61,
       requiredPermission: "account:manage",
     });
