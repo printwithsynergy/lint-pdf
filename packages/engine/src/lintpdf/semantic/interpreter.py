@@ -590,8 +590,48 @@ class ContentStreamInterpreter:
                 opacity=self.state.non_stroking_alpha,
                 rendering_mode=self.state.text_rendering_mode,
                 rendering_intent=self.state.rendering_intent,
+                bbox=self._text_bbox(),
             )
         )
+
+    def _text_bbox(self) -> tuple[float, float, float, float] | None:
+        """Approximate bbox for the current text-rendering state.
+
+        The interpreter doesn't have the rendered glyph string at this
+        point (the text operator splits out operands upstream and the
+        glyph widths live in the font resource), so an exact bbox would
+        require a font-metrics lookup per Tj/TJ call. Instead, anchor
+        the bbox at the current text-matrix origin and size it by the
+        effective font size, applying the CTM so the bbox is in
+        user-space points.
+
+        This is coarse but sufficient for the annotated-PDF overlay —
+        the reviewer sees a square where the text starts, which is
+        vastly better than the previous behaviour (no bbox at all, so
+        no overlay rendered). Analyzers that need exact character
+        extents can still fall back to ``event.text_matrix`` +
+        ``event.font_size`` for their own computation.
+        """
+        size = self.state.font_size
+        if size <= 0:
+            return None
+        tm = self.state.text_matrix
+        m = self.state.ctm
+        # Anchor in text space is (0, 0); end-of-line anchor we'll treat as
+        # (size, size) — a conservative square box. This is just an
+        # annotation hint, not a measurement.
+        def xform(x: float, y: float) -> tuple[float, float]:
+            # tx = tm(x,y) then ctm(tx)
+            tx = tm.a * x + tm.c * y + tm.e
+            ty = tm.b * x + tm.d * y + tm.f
+            ux = m.a * tx + m.c * ty + m.e
+            uy = m.b * tx + m.d * ty + m.f
+            return ux, uy
+
+        corners = [xform(0, 0), xform(size, 0), xform(size, size), xform(0, size)]
+        xs = [c[0] for c in corners]
+        ys = [c[1] for c in corners]
+        return (min(xs), min(ys), max(xs), max(ys))
 
     # --- CRITICAL: Color (non-stroking) ---
 
@@ -806,6 +846,7 @@ class ContentStreamInterpreter:
         self, operator: str, *, fill: bool, stroke: bool, even_odd: bool = False
     ) -> None:
         """Emit PathPaintingEvent and clear current path."""
+        bbox = self._path_bbox()
         self._emit(
             PathPaintingEvent(
                 operator=operator,
@@ -822,9 +863,36 @@ class ContentStreamInterpreter:
                 line_cap=self.state.line_cap,
                 line_join=self.state.line_join,
                 dash_pattern=self.state.dash_pattern,
+                bbox=bbox,
             )
         )
         self._current_path = []
+
+    def _path_bbox(self) -> tuple[float, float, float, float] | None:
+        """Axis-aligned bounding box of ``self._current_path`` in user space.
+
+        Returns ``None`` for empty paths. Transforms each control point by
+        the current CTM so the bbox is in the same coordinate space the
+        viewer and annotated PDF overlay expect (PDF user-space points,
+        lower-left origin).
+
+        Curve control points are approximated by their anchors only —
+        that's correct for straight segments and a conservative lower
+        bound for Beziers. Good enough for "where on the page is this
+        finding" rendering; exact curve bounds aren't worth the cost.
+        """
+        if not self._current_path:
+            return None
+        m = self.state.ctm
+        xs: list[float] = []
+        ys: list[float] = []
+        for px, py in self._current_path:
+            # Apply CTM: [x'] = [a c e][x]  y' = b*x + d*y + f
+            x = m.a * px + m.c * py + m.e
+            y = m.b * px + m.d * py + m.f
+            xs.append(x)
+            ys.append(y)
+        return (min(xs), min(ys), max(xs), max(ys))
 
     def _handle_S(self, _operands: list[Any]) -> None:
         """Stroke path."""

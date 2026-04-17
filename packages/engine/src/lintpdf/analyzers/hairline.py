@@ -99,6 +99,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                                 "operator": event.operator,
                             },
                             object_type="path",
+                            bbox=event.bbox,
                         )
                     )
             elif isinstance(event, TextRenderedEvent):
@@ -127,6 +128,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                     },
                     iso_clause="ISO 32000-2:2020 8.4.3.2",
                     object_type="path",
+                    bbox=event.bbox,
                 )
             )
             return findings
@@ -148,6 +150,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                     },
                     iso_clause="ISO 32000-2:2020 8.4.3.2",
                     object_type="path",
+                    bbox=event.bbox,
                 )
             )
 
@@ -168,6 +171,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                         "line_cap": event.line_cap,
                     },
                     object_type="path",
+                    bbox=event.bbox,
                 )
             )
 
@@ -195,6 +199,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                             "non_zero_inks": non_zero,
                         },
                         object_type="path",
+                        bbox=event.bbox,
                     )
                 )
 
@@ -215,6 +220,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                         "line_width": line_width,
                     },
                     object_type="path",
+                    bbox=event.bbox,
                 )
             )
         elif stroke_alpha is None and line_width > 0:
@@ -242,6 +248,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                             "line_width": line_width,
                         },
                         object_type="path",
+                        bbox=event.bbox,
                     )
                 )
 
@@ -261,6 +268,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                         "flatness": flatness,
                     },
                     object_type="path",
+                    bbox=event.bbox,
                 )
             )
 
@@ -287,6 +295,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                     "fill_color_values": list(fill_cv),
                 },
                 object_type="path",
+                bbox=event.bbox,
             )
         return None
 
@@ -321,6 +330,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                         "rendering_mode": event.rendering_mode,
                     },
                     object_type="text",
+                    bbox=event.bbox,
                 )
             )
 
@@ -338,6 +348,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                         "color_values": list(event.color_values),
                     },
                     object_type="text",
+                    bbox=event.bbox,
                 )
             )
 
@@ -360,6 +371,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                         "color_values": list(event.color_values),
                     },
                     object_type="text",
+                    bbox=event.bbox,
                 )
             )
 
@@ -396,6 +408,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                             "non_zero_inks": non_zero,
                         },
                         object_type="text",
+                        bbox=event.bbox,
                     )
                 )
 
@@ -419,6 +432,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                     },
                     object_id=event.font_name,
                     object_type="text",
+                    bbox=event.bbox,
                 )
             )
         # LPDF_TEXT_001: Small text
@@ -441,6 +455,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                     },
                     object_id=event.font_name,
                     object_type="text",
+                    bbox=event.bbox,
                 )
             )
 

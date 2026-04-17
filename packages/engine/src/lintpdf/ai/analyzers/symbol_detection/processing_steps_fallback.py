@@ -15,7 +15,11 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from lintpdf.ai.base import BaseAIAnalyzer
-from lintpdf.ai.gpu_client import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.gpu_client import (
+    GPUInferenceClient,
+    GPUServiceNotConfiguredError,
+    GPUServiceUnavailableError,
+)
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
@@ -174,6 +178,9 @@ class ProcessingStepsFallbackAnalyzer(BaseAIAnalyzer):
                     first_page_png,
                     prompt="varnish mask. foil area. emboss region. die cut line. spot UV.",
                 )
+            except GPUServiceNotConfiguredError:
+                logger.debug("processing_steps_fallback: GPU service not configured, skipping")
+                return []
             except GPUServiceUnavailableError as exc:
                 return [
                     self._make_finding(

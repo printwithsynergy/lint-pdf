@@ -12,7 +12,11 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from lintpdf.ai.base import BaseAIAnalyzer
-from lintpdf.ai.gpu_client import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.gpu_client import (
+    GPUInferenceClient,
+    GPUServiceNotConfiguredError,
+    GPUServiceUnavailableError,
+)
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
@@ -73,6 +77,13 @@ class LogoDetectionAnalyzer(BaseAIAnalyzer):
                     png_bytes,
                     reference_embeddings=reference_logos if reference_logos else None,
                 )
+            except GPUServiceNotConfiguredError:
+                # GPU inference service is intentionally not wired up
+                # (LINTPDF_GPU_INFERENCE_URL unset). Skip silently — no
+                # reviewer-facing advisory. Matches the ClamAV fail-open
+                # pattern documented in CLAUDE.md.
+                logger.debug("logo_detection: GPU service not configured, skipping")
+                return findings
             except GPUServiceUnavailableError as exc:
                 findings.append(
                     self._make_finding(

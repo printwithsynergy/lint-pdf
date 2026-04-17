@@ -26,6 +26,18 @@ class GPUServiceRateLimitedError(GPUServiceUnavailableError):
     """
 
 
+class GPUServiceNotConfiguredError(GPUServiceUnavailableError):
+    """Raised when ``LINTPDF_GPU_INFERENCE_URL`` is not set.
+
+    Subclass of :class:`GPUServiceUnavailableError` so existing analyzer
+    except blocks still catch it, but callers that want to distinguish
+    "service intentionally disabled" from "service configured but
+    unreachable" can match this subclass first and skip silently
+    instead of emitting a reviewer-facing advisory. Same shape as the
+    documented ClamAV fail-open behaviour in CLAUDE.md.
+    """
+
+
 # Retry budget for upstream 429s. Exponential backoff with full jitter;
 # capped so a request never stalls longer than ~10s of waiting total.
 _RATE_LIMIT_MAX_RETRIES = 3
@@ -135,10 +147,29 @@ class GPUInferenceClient:
     """
 
     def __init__(self, base_url: str, timeout: float = 30.0) -> None:
-        self._base_url = base_url.rstrip("/")
+        self._base_url = (base_url or "").rstrip("/")
         self._timeout = timeout
         self._breaker = CircuitBreaker()
         self._client = httpx.Client(timeout=timeout)
+
+    @property
+    def configured(self) -> bool:
+        """True when ``LINTPDF_GPU_INFERENCE_URL`` is set to a non-empty value."""
+        return bool(self._base_url)
+
+    def _require_configured(self) -> None:
+        """Short-circuit any request when the service URL isn't configured.
+
+        Raises :class:`GPUServiceNotConfiguredError` (a subclass of
+        :class:`GPUServiceUnavailableError`) so analyzers that already
+        handle the generic unavailable error keep working, but ones
+        that want to skip silently on the unconfigured path can match
+        the subclass first.
+        """
+        if not self._base_url:
+            raise GPUServiceNotConfiguredError(
+                "LINTPDF_GPU_INFERENCE_URL is not set; GPU analyzer skipped."
+            )
 
     def _send_with_retry(
         self,
@@ -227,6 +258,7 @@ class GPUInferenceClient:
 
     def _post(self, endpoint: str, image_bytes: bytes, **kwargs: Any) -> dict[str, Any]:
         """Send image to inference endpoint."""
+        self._require_configured()
         url = f"{self._base_url}{endpoint}"
         return self._send_with_retry(
             "POST",
@@ -280,6 +312,7 @@ class GPUInferenceClient:
 
     def translate_text(self, text: str, source_lang: str, target_lang: str) -> dict[str, Any]:
         """Translate text (OPUS-MT)."""
+        self._require_configured()
         url = f"{self._base_url}/inference/translate"
         return self._send_with_retry(
             "POST",

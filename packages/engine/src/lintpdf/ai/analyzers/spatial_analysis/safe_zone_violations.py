@@ -11,7 +11,11 @@ import logging
 from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
-from lintpdf.ai.gpu_client import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.gpu_client import (
+    GPUInferenceClient,
+    GPUServiceNotConfiguredError,
+    GPUServiceUnavailableError,
+)
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
@@ -88,6 +92,9 @@ class SafeZoneViolationsAnalyzer(BaseAIAnalyzer):
 
             try:
                 result = gpu.detect_objects(png_bytes, prompt="text. logo. barcode.")
+            except GPUServiceNotConfiguredError:
+                logger.debug("safe_zone_violations: GPU service not configured, skipping")
+                return findings
             except GPUServiceUnavailableError as exc:
                 findings.append(
                     self._make_finding(

@@ -188,6 +188,17 @@ class InkCoverageAnalyzer(BaseAnalyzer):
             max_tac = max(tac_values)
             max_entry = max(entries, key=lambda e: e["tac"])
 
+            # Use the bbox of the highest-TAC sample as the authoritative
+            # location for this page-level finding. The annotated PDF
+            # overlay draws a single box where the ink coverage peaks,
+            # which matches how a prepress reviewer would mark the spot.
+            max_bbox = max_entry.get("bbox")
+            bbox_tuple = (
+                tuple(float(v) for v in max_bbox)
+                if max_bbox and len(max_bbox) == 4
+                else None
+            )
+
             findings.append(
                 Finding(
                     inspection_id="LPDF_INK_001",
@@ -205,6 +216,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                         "tac_limit": self.tac_limit,
                         "samples": entries,
                     },
+                    bbox=bbox_tuple,
                     object_type="path",
                 )
             )

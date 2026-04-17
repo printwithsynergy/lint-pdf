@@ -12,7 +12,11 @@ import logging
 from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
-from lintpdf.ai.gpu_client import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.gpu_client import (
+    GPUInferenceClient,
+    GPUServiceNotConfiguredError,
+    GPUServiceUnavailableError,
+)
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
@@ -121,6 +125,12 @@ class MultiLanguageReportsAnalyzer(BaseAIAnalyzer):
                     source_lang=source_lang,
                     target_lang=target_lang,
                 )
+            except GPUServiceNotConfiguredError:
+                logger.debug(
+                    "multi_language: GPU service not configured, skipping '%s'",
+                    target_lang,
+                )
+                continue
             except GPUServiceUnavailableError as exc:
                 findings.append(
                     self._make_finding(

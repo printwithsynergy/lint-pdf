@@ -1460,16 +1460,25 @@ async def get_tenant_ai_status(
     tenant = _get_tenant(db, tenant_id)
 
     from lintpdf.ai.config import get_or_create_ai_config
+    from lintpdf.ai.credits import get_credit_balance
 
     config = get_or_create_ai_config(tenant.id, db)
     db.commit()
+
+    # The legacy TenantAIConfig.credit_balance column is never written
+    # by the grant/consumption path (those operate on
+    # TenantAICreditPackage rows). Callers that read the stale column
+    # always saw 0 no matter how many credits were granted. Derive the
+    # balance the same way the tenant-facing /ai/credits endpoint does
+    # so this surface is consistent.
+    balance = get_credit_balance(tenant.id, db)
 
     return {
         "tenant_id": str(tenant.id),
         "tenant_name": tenant.name,
         "ai_enabled": config.ai_enabled,
         "billing_mode": str(config.billing_mode),
-        "credit_balance": float(config.credit_balance),
+        "credit_balance": float(balance.package_credits_remaining),
         "trial_enabled": config.trial_enabled,
         "trial_expires_at": config.trial_expires_at.isoformat()
         if config.trial_expires_at

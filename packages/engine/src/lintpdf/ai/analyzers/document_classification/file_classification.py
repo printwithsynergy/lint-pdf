@@ -12,7 +12,11 @@ import logging
 from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
-from lintpdf.ai.gpu_client import GPUInferenceClient, GPUServiceUnavailableError
+from lintpdf.ai.gpu_client import (
+    GPUInferenceClient,
+    GPUServiceNotConfiguredError,
+    GPUServiceUnavailableError,
+)
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
@@ -60,6 +64,9 @@ class FileClassificationAnalyzer(BaseAIAnalyzer):
 
         try:
             result = gpu.classify_document(first_page_png)
+        except GPUServiceNotConfiguredError:
+            logger.debug("file_classification: GPU service not configured, skipping")
+            return []
         except GPUServiceUnavailableError as exc:
             return [
                 self._make_finding(
