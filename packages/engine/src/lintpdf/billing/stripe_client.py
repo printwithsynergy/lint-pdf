@@ -43,13 +43,24 @@ class StripeConfig:
 def load_config() -> StripeConfig:
     """Pick the right Stripe secret based on STRIPE_SANDBOX.
 
-    Live mode: ``STRIPE_SECRET_KEY`` + ``STRIPE_WEBHOOK_SECRET``.
-    Sandbox:    ``STRIPE_SDB_SECRET_KEY`` + ``STRIPE_SDB_WEBHOOK_SECRET`` (falls
-    back to STRIPE_WEBHOOK_SECRET if the sandbox one isn't set).
+    The monorepo's two services use slightly different conventions —
+    the Next.js app keeps separate ``STRIPE_SECRET_KEY`` (live) and
+    ``STRIPE_SDB_SECRET_KEY`` (sandbox) so both are present at the
+    same time, while the Python engine holds only ``STRIPE_SECRET_KEY``
+    and swaps its value based on deploy environment. This resolver
+    accommodates both:
+
+    * Sandbox: prefer ``STRIPE_SDB_SECRET_KEY``; fall back to
+      ``STRIPE_SECRET_KEY`` (engine convention). Webhook secret picks
+      ``STRIPE_SDB_WEBHOOK_SECRET`` if set, else ``STRIPE_WEBHOOK_SECRET``.
+    * Live: ``STRIPE_SECRET_KEY`` + ``STRIPE_WEBHOOK_SECRET``.
     """
     sandbox = os.environ.get("STRIPE_SANDBOX", "").strip().lower() == "true"
     if sandbox:
-        api_key = os.environ.get("STRIPE_SDB_SECRET_KEY", "").strip()
+        api_key = (
+            os.environ.get("STRIPE_SDB_SECRET_KEY", "").strip()
+            or os.environ.get("STRIPE_SECRET_KEY", "").strip()
+        )
         webhook_secret = (
             os.environ.get("STRIPE_SDB_WEBHOOK_SECRET", "").strip()
             or os.environ.get("STRIPE_WEBHOOK_SECRET", "").strip()
