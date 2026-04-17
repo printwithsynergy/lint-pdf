@@ -55,7 +55,7 @@ KNOWN_CONDITIONS = frozenset(
         "SWOP2006_Coated3v2",
         "SWOP2006_Coated5v2",
         "SWOP2013_CRPC5",
-        "SWOP2013_CRPC3",
+        "GRACoL2013UNC_CRPC3",
         # CGATS / CRPC characterization datasets
         "CGATS TR 001",
         "CGATS TR 003",

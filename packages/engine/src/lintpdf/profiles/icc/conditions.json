@@ -69,8 +69,8 @@
     "region": "Europe",
     "use_case": "eciCMYK exchange color space",
     "tac_limit": 350,
-    "mesh_file": null,
-    "icc_source": "eci.org/en/downloads — download eciCMYK.icc, run: python build_gamut_meshes.py --profile eciCMYK.icc --condition fogra53_ecicmyk --name 'FOGRA53 eciCMYK'"
+    "mesh_file": "fogra53_ecicmyk.json",
+    "icc_source": "eci.org/en/downloads — eciCMYK.icc (free, commercial use OK)"
   },
   "fogra59_ecicmyk_v2": {
     "name": "FOGRA59 eciCMYK v2",
@@ -78,8 +78,8 @@
     "region": "Europe",
     "use_case": "eciCMYK v2 exchange color space",
     "tac_limit": 330,
-    "mesh_file": null,
-    "icc_source": "eci.org/en/downloads — download eciCMYKv2.icc, run: python build_gamut_meshes.py --profile eciCMYKv2.icc --condition fogra59_ecicmyk_v2 --name 'FOGRA59 eciCMYK v2'"
+    "mesh_file": "fogra59_ecicmyk_v2.json",
+    "icc_source": "eci.org/en/downloads — eciCMYK_v2.icc (free, commercial use OK)"
   },
   "gracol2013_crpc6": {
     "name": "GRACoL 2013 CRPC6",
@@ -87,8 +87,8 @@
     "region": "North America",
     "use_case": "Sheetfed coated (current)",
     "tac_limit": 340,
-    "mesh_file": null,
-    "icc_source": "printing.org — download GRACoL2013_CRPC6.icc, run: python build_gamut_meshes.py --profile GRACoL2013_CRPC6.icc --condition gracol2013_crpc6 --name 'GRACoL 2013 CRPC6'"
+    "mesh_file": "gracol2013_crpc6.json",
+    "icc_source": "printing.org — GRACoL2013_CRPC6.icc (free download)"
   },
   "swop2013_crpc5": {
     "name": "SWOP 2013 CRPC5",
@@ -96,17 +96,17 @@
     "region": "North America",
     "use_case": "Web offset coated (current)",
     "tac_limit": 300,
-    "mesh_file": null,
-    "icc_source": "printing.org — download SWOP2013C3_CRPC5.icc, run: python build_gamut_meshes.py --profile SWOP2013C3_CRPC5.icc --condition swop2013_crpc5 --name 'SWOP 2013 CRPC5'"
+    "mesh_file": "swop2013_crpc5.json",
+    "icc_source": "printing.org — SWOP2013C3_CRPC5.icc (free download)"
   },
-  "swop2013_crpc3": {
-    "name": "SWOP 2013 CRPC3",
-    "source_data": "SWOP2013 CRPC3",
+  "gracol2013unc_crpc3": {
+    "name": "GRACoL 2013 Uncoated CRPC3",
+    "source_data": "GRACoL2013UNC CRPC3",
     "region": "North America",
-    "use_case": "Web offset uncoated",
+    "use_case": "Sheetfed uncoated",
     "tac_limit": 280,
     "mesh_file": null,
-    "icc_source": "printing.org — download SWOP2013C5_CRPC3.icc, run: python build_gamut_meshes.py --profile SWOP2013C5_CRPC3.icc --condition swop2013_crpc3 --name 'SWOP 2013 CRPC3'"
+    "icc_source": "printing.org via ilearningplus.org (free $0 registration) — GRACoL2013UNC_CRPC3.icc"
   },
   "adobergb_1998": {
     "name": "Adobe RGB (1998)",
