@@ -74,7 +74,8 @@
       "mcp__playwright__browser_take_screenshot",
       "mcp__playwright__browser_evaluate",
       "mcp__railway__list-services",
-      "mcp__railway__check-railway-status"
+      "mcp__railway__check-railway-status",
+      "mcp__railway__list-projects"
     ]
   },
   "hooks": {
