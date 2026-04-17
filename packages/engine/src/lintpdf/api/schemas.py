@@ -106,7 +106,7 @@ class JobResponse(BaseModel):
         description=(
             "Terminal values are `complete` and `failed`. In-flight values are "
             "`pending` and `processing`. Note the enum uses `complete` (not "
-            '`completed`) — callers polling for `status == "completed"` will '
+            "`completed`) -- callers polling for status == completed will "
             "loop forever. Accept both spellings when writing client code."
         ),
     )

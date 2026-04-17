@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import uuid as uuid_mod  # noqa: TC003 — runtime needed for route signature
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
@@ -15,9 +15,6 @@ from lintpdf.api.schemas import (
     UserAIAccessResponse,
     UserAIAccessUpdateRequest,
 )
-
-if TYPE_CHECKING:
-    import uuid as uuid_mod
 
 router = APIRouter(prefix="/users", tags=["user-ai-access"])
 

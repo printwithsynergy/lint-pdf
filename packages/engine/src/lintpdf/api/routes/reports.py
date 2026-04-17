@@ -162,10 +162,10 @@ class ReportInfo(BaseModel):
     skipped_reason: str | None = Field(
         default=None,
         description=(
-            "When the caller requested a format the engine couldn't produce a URL for, "
+            "When the caller requested a format the engine could not produce a URL for, "
             "this carries the machine-readable reason instead of dropping the format "
             "from the response. Values: `no_content` (generator returned None by design "
-            "— e.g. `annotated_pdf_markup` asked for but no viewer annotations exist), "
+            "-- e.g. `annotated_pdf_markup` requested but no viewer annotations exist), "
             "`generation_failed` (unexpected exception, details in engine logs)."
         ),
     )
