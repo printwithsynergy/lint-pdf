@@ -105,8 +105,17 @@
     "region": "North America",
     "use_case": "Sheetfed uncoated",
     "tac_limit": 280,
-    "mesh_file": null,
-    "icc_source": "printing.org via ilearningplus.org (free $0 registration) — GRACoL2013UNC_CRPC3.icc"
+    "mesh_file": "gracol2013unc_crpc3.json",
+    "icc_source": "printing.org — GRACoL2013UNC_CRPC3.icc (free download)"
+  },
+  "swop2013c5": {
+    "name": "SWOP 2013 C5",
+    "source_data": "SWOP2013C5",
+    "region": "North America",
+    "use_case": "Web offset commercial grade 5",
+    "tac_limit": 300,
+    "mesh_file": "swop2013c5.json",
+    "icc_source": "printing.org — SWOP2013C5.icc (free download)"
   },
   "adobergb_1998": {
     "name": "Adobe RGB (1998)",
@@ -122,7 +131,7 @@
     "region": "North America",
     "use_case": "Extended gamut CMYK",
     "tac_limit": 400,
-    "mesh_file": null,
-    "icc_source": "printing.org — download XCMYK_2017.icc, run: python build_gamut_meshes.py --profile XCMYK_2017.icc --condition xcmyk_2017 --name 'XCMYK 2017'"
+    "mesh_file": "xcmyk_2017.json",
+    "icc_source": "printing.org — XCMYK 2017.icc (free download)"
   }
 }
