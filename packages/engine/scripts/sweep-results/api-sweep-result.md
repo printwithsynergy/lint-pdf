@@ -142,3 +142,23 @@ Fresh tenants (any plan) get 403 on /ai/credits, /ai/usage, /ai/config PUT unles
 
 **Files:**
 - `packages/engine/src/lintpdf/ai/access.py`
+
+---
+
+## Post-deploy retest (prod `api.lintpdf.com`, commits `ab2e13e` + `494d26f`)
+
+All fixes live and verified against production:
+
+| Fix | Verification |
+|---|---|
+| ISSUE-3 wrong `required_plan` | `POST /jobs/{id}/reports` with `annotated_pdf` on a `growth` tenant now returns `"required_plan": "scale"` (was `"starter"`). |
+| ISSUE-2 silent markup drop | `POST /jobs/{id}/reports` without viewer annotations returns `{"format": "annotated_pdf_markup", "url": null, "skipped_reason": "no_content"}` instead of dropping the entry. |
+| ISSUE-4 500 on invalid `billing_mode` | `PUT /admin/tenants/{id}/ai?billing_mode=unlimited` returns `422` with `"Invalid billing_mode 'unlimited'. Expected one of: pay_per_use, credit_package."` |
+| ISSUE-6 `status` docstring | `JobResponse.status` in `/openapi.json` now carries the "enum uses `complete`, not `completed`" note. |
+| ISSUE-8 AI gate copy | `GET /ai/credits` on an AI-disabled tenant returns the per-tenant-flag message, no longer "invite-only alpha". |
+| **ISSUE-9 (new)** `/openapi.json` 500 | Pre-existing bug uncovered by retest. `approvals/schemas.py` and `api/routes/user_ai_access.py` had `datetime` / `uuid_mod` imports under `if TYPE_CHECKING:`; pydantic couldn't resolve the forward refs and schema generation crashed. Moved imports to runtime. `/openapi.json` now returns HTTP 200 with 192 schemas. |
+
+Deeper issues still documented but out of scope for this sweep:
+- ISSUE-1: only 10/266 findings carry bbox — annotated overlay underpopulated
+- ISSUE-5: `credit_balance` stays at 0 after admin grant
+- ISSUE-7: `AI_AFP_001: GPU inference service unavailable` on every prod job
