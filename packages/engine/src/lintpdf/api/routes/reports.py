@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import uuid as uuid_mod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
@@ -26,6 +26,69 @@ if TYPE_CHECKING:
 router = APIRouter(tags=["reports"])
 
 
+# --- Format specs ---
+#
+# Inline return is supported only for text-oriented formats. Binary
+# formats are always delivered via signed token URL; asking for them
+# inline is a validation error so clients fail fast instead of getting
+# a surprising base64 blob. Keep these sets in sync with the report
+# generator dispatch in ``lintpdf.reports.service``.
+TEXT_FORMATS: frozenset[str] = frozenset({"json", "xml"})
+BINARY_FORMATS: frozenset[str] = frozenset(
+    {"html", "pdf", "annotated_pdf", "annotated_pdf_markup"}
+)
+
+
+class FormatSpec(BaseModel):
+    """Per-format return-mode spec.
+
+    Accepted in ``GenerateReportsRequest.formats`` alongside bare
+    strings. A bare string (back-compat) normalizes to
+    ``FormatSpec(format=s, return_="url")`` so existing callers are
+    unaffected.
+
+    ``return`` is the JSON key because ``return`` is a Python keyword; we
+    expose it via an alias while keeping ``return_`` as the attribute.
+    """
+
+    format: str
+    return_: Literal["url", "inline", "both"] = Field("url", alias="return")
+
+    model_config = {"populate_by_name": True}
+
+
+def _normalize_format_list(
+    v: list[str | FormatSpec | dict],
+) -> list[FormatSpec]:
+    """Normalize heterogeneous format input to ``list[FormatSpec]``.
+
+    Shared between the Pydantic ``@field_validator`` on
+    ``GenerateReportsRequest.formats`` and the overrides-fold path in
+    the handler, which may receive a fresh list of strings from the
+    nested envelope and needs the same back-compat + binary-format
+    validation behavior.
+    """
+    out: list[FormatSpec] = []
+    for item in v:
+        if isinstance(item, FormatSpec):
+            spec = item
+        elif isinstance(item, str):
+            spec = FormatSpec(format=item)
+        elif isinstance(item, dict):
+            spec = FormatSpec.model_validate(item)
+        else:  # pragma: no cover — defensive, validator should reject
+            raise ValueError(
+                f"Unexpected format entry type: {type(item).__name__}"
+            )
+        if spec.return_ in ("inline", "both") and spec.format in BINARY_FORMATS:
+            raise ValueError(
+                f"Inline return is not supported for binary format "
+                f"'{spec.format}'. Use 'url' (default) for binary formats."
+            )
+        out.append(spec)
+    return out
+
+
 # --- Request/Response schemas ---
 
 
@@ -38,7 +101,13 @@ class BrandingOverride(BaseModel):
 
 
 class GenerateReportsRequest(BaseModel):
-    formats: list[str] = ["html", "pdf"]
+    # ``validate_default=True`` so the default list is routed through
+    # ``_normalize_formats`` — otherwise a caller sending an empty body
+    # would reach the handler with ``body.formats`` still as bare
+    # strings and every downstream ``spec.format`` access would blow up.
+    formats: list[str | FormatSpec] = Field(
+        default=["html", "pdf"], validate_default=True
+    )
     expiry_days: int | None = None
     email_to: str | None = None
     branding: BrandingOverride | None = None
@@ -67,12 +136,37 @@ class GenerateReportsRequest(BaseModel):
     # See ``lintpdf.overrides.OverridesEnvelope``.
     overrides: OverridesEnvelope | None = None
 
+    @field_validator("formats", mode="after")
+    @classmethod
+    def _normalize_formats(
+        cls, v: list[str | FormatSpec]
+    ) -> list[FormatSpec]:
+        """Normalize bare strings → FormatSpec and reject inline for binary.
+
+        Back-compat: ``"json"`` becomes ``FormatSpec(format="json")`` with
+        the default ``return="url"``. Requesting
+        ``{"format": "pdf", "return": "inline"}`` raises a validation
+        error because PDFs would otherwise inflate the response ~33% as
+        base64; use the default URL flow for binary formats.
+        """
+        return _normalize_format_list(v)
+
 
 class ReportInfo(BaseModel):
+    """One generated report entry in the POST /reports response.
+
+    Fields are nullable because callers can now opt into inline-only
+    delivery (no token minted, no URL generated) per format. Old
+    callers receive ``url``/``token``/``expires_at`` as before and
+    simply ignore the additive ``data``/``content_type`` fields.
+    """
+
     format: str
-    url: str
-    token: str
+    url: str | None = None
+    token: str | None = None
     expires_at: str | None = None
+    data: Any | None = None  # dict for JSON, str for XML; None for url-only
+    content_type: str | None = None
 
 
 class GenerateReportsResponse(BaseModel):
@@ -189,13 +283,45 @@ def _resolve_branding(
 )
 async def generate_reports(  # skipcq: PY-R1000
     job_id: str,
+    request: Request,
     body: GenerateReportsRequest | None = None,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> GenerateReportsResponse:
     """Generate hosted reports for a completed job."""
+    from lintpdf.api.config import get_settings
+
+    settings = get_settings()
+
     if body is None:
         body = GenerateReportsRequest()
+
+    # Read optional Idempotency-Key header. When present, tokens become
+    # deterministic (hash of tenant + key + format) so retries converge
+    # on the same artifact and the stored bytes are reused instead of
+    # regenerated. A header-sized DoS guard mirrors Stripe's 255-char
+    # limit.
+    idempotency_key: str | None = None
+    if getattr(settings, "reports_idempotency_enabled", True):
+        raw_idem = request.headers.get("Idempotency-Key")
+        if raw_idem is not None:
+            raw_idem = raw_idem.strip()
+            if len(raw_idem) > 255:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Idempotency-Key must be 255 characters or fewer.",
+                )
+            if raw_idem:
+                idempotency_key = raw_idem
+
+    # Inline kill-switch: reject any inline/both spec when disabled.
+    if not getattr(settings, "reports_inline_enabled", True):
+        for spec in body.formats:
+            if spec.return_ in ("inline", "both"):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Inline returns are disabled on this instance.",
+                )
 
     # Fold nested ``body.overrides`` onto the flat fields. The flat API
     # was here first and legacy clients still use it; the nested
@@ -206,7 +332,17 @@ async def generate_reports(  # skipcq: PY-R1000
         if body.overrides.report is not None:
             r = body.overrides.report
             if r.formats is not None:
-                body.formats = list(r.formats)
+                # ``r.formats`` is a list of strings from the envelope
+                # schema; re-run through the shared normalizer so bare
+                # strings normalize to ``FormatSpec`` and inline-for-
+                # binary is still rejected via the envelope surface.
+                try:
+                    body.formats = _normalize_format_list(list(r.formats))
+                except ValueError as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=str(exc),
+                    ) from exc
             if r.detail_level is not None:
                 body.detail_level = r.detail_level
             if r.summary_page is not None:
@@ -251,11 +387,16 @@ async def generate_reports(  # skipcq: PY-R1000
     entitlements = resolve_entitlements(tenant)
 
     # Report format entitlements — resolver owns the message formatting so
-    # there's only one place to update when plan gates change.
+    # there's only one place to update when plan gates change. The
+    # entitlements resolver works with bare format strings, so project
+    # the FormatSpec list down before checking.
     from lintpdf.overrides.envelope import ReportOverrides
 
     try:
-        enforce_report_entitlements(ReportOverrides(formats=body.formats), entitlements)
+        enforce_report_entitlements(
+            ReportOverrides(formats=[spec.format for spec in body.formats]),
+            entitlements,
+        )
     except EntitlementDenied as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
@@ -284,12 +425,10 @@ async def generate_reports(  # skipcq: PY-R1000
             detail="Job has not completed yet.",
         )
 
-    from lintpdf.api.config import get_settings
     from lintpdf.api.storage import get_storage
     from lintpdf.reports.service import ReportService, resolve_report_base_url
     from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
 
-    settings = get_settings()
     storage = get_storage()
     service = ReportService(storage, db)
 
@@ -368,6 +507,7 @@ async def generate_reports(  # skipcq: PY-R1000
                 if body.overrides is not None
                 else None
             ),
+            idempotency_key=idempotency_key,
         ),
     )
 

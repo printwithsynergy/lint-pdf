@@ -186,3 +186,120 @@ class LintPDF:
         )
         response.raise_for_status()
         return response.json()
+
+    def reports(
+        self,
+        job_id: str,
+        formats: list,
+        *,
+        idempotency_key: str | None = None,
+        branding: dict | None = None,
+        expiry_days: int | None = None,
+        detail_level: str | None = None,
+        summary_page: str | None = None,
+    ) -> "ReportsResult":
+        """Generate hosted and/or inline reports for a completed job.
+
+        Wraps ``POST /api/v1/jobs/{job_id}/reports``.
+
+        Args:
+            job_id: UUID of the completed job.
+            formats: Mixed list of bare format strings (back-compat —
+                ``["html", "pdf"]``) or per-format specs
+                (``[{"format": "json", "return": "inline"}]``). ``return``
+                may be ``"url"`` (default), ``"inline"`` (text formats
+                only: ``json``/``xml``), or ``"both"``.
+            idempotency_key: Optional client-supplied key. Repeated
+                calls with the same key converge on the same token and
+                reuse the stored artifact instead of regenerating it.
+            branding: Optional ``{"name", "logo_url", "primary_color",
+                "accent_color", "hide_footer"}`` override. Ignored
+                unless the tenant has the white-label entitlement.
+            expiry_days: Override token TTL.
+            detail_level: ``"executive"`` | ``"standard"`` (default) |
+                ``"comprehensive"``.
+            summary_page: ``"prepend"`` (default) | ``"only"`` | ``"off"``.
+
+        Returns:
+            ``ReportsResult`` whose ``reports`` list exposes both the
+            hosted URL (when applicable) and the inline ``data`` /
+            ``content_type`` (when applicable) for each requested
+            format.
+        """
+        import httpx
+
+        headers: dict[str, str] = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        if idempotency_key is not None:
+            headers["Idempotency-Key"] = idempotency_key
+
+        body: dict = {"formats": formats}
+        if branding is not None:
+            body["branding"] = branding
+        if expiry_days is not None:
+            body["expiry_days"] = expiry_days
+        if detail_level is not None:
+            body["detail_level"] = detail_level
+        if summary_page is not None:
+            body["summary_page"] = summary_page
+
+        response = httpx.post(
+            f"{self.base_url}/api/v1/jobs/{job_id}/reports",
+            headers=headers,
+            json=body,
+            timeout=self.timeout,
+        )
+        if response.status_code == 401:
+            raise AuthenticationError("Invalid API key")
+        if response.status_code == 429:
+            raise RateLimitError(int(response.headers.get("Retry-After", 60)))
+        response.raise_for_status()
+        return ReportsResult(response.json())
+
+
+class ReportArtifact:
+    """One row from ``POST /reports``.
+
+    Either ``url`` is populated (default / ``return="url"``), ``data``
+    is populated (``return="inline"`` — text formats only), or both
+    (``return="both"``). ``token`` and ``expires_at`` mirror ``url``:
+    populated when the engine minted a share link, ``None`` otherwise.
+    """
+
+    def __init__(self, data: dict):
+        self.format: str = data.get("format", "")
+        self.url: str | None = data.get("url")
+        self.token: str | None = data.get("token")
+        self.expires_at: str | None = data.get("expires_at")
+        self.data = data.get("data")
+        self.content_type: str | None = data.get("content_type")
+
+    def __repr__(self) -> str:
+        return (
+            f"ReportArtifact({self.format}, url={self.url!r}, "
+            f"token={self.token!r}, inline={'yes' if self.data is not None else 'no'})"
+        )
+
+
+class ReportsResult:
+    """Envelope returned by :py:meth:`LintPDF.reports`."""
+
+    def __init__(self, payload: dict):
+        self.reports: list[ReportArtifact] = [
+            ReportArtifact(r) for r in payload.get("reports", [])
+        ]
+
+    def by_format(self, fmt: str) -> ReportArtifact | None:
+        """Return the first artifact matching ``fmt`` (or None)."""
+        for r in self.reports:
+            if r.format == fmt:
+                return r
+        return None
+
+    def __iter__(self):
+        return iter(self.reports)
+
+    def __len__(self) -> int:
+        return len(self.reports)

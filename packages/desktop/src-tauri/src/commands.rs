@@ -237,13 +237,29 @@ pub async fn list_brand_profiles(
 #[derive(serde::Deserialize)]
 struct MintReportInfo {
     format: String,
-    url: String,
+    // ``url`` is nullable because the engine supports an opt-in inline
+    // return mode (POST /reports with {"format":"json","return":"inline"})
+    // that omits the signed-token URL. Desktop always sends bare
+    // format strings, which the engine maps to return="url", so in
+    // practice this field is always Some — the Option is purely for
+    // schema parity with the widened server response.
+    #[serde(default)]
+    url: Option<String>,
     #[serde(default)]
     #[allow(dead_code)]
     token: Option<String>,
     #[serde(default)]
     #[allow(dead_code)]
     expires_at: Option<String>,
+    // Present only when the caller requested inline/both on text formats.
+    // Desktop ignores these for now; captured so serde_json::from_str
+    // doesn't fail on the additive fields.
+    #[serde(default)]
+    #[allow(dead_code)]
+    data: Option<serde_json::Value>,
+    #[serde(default)]
+    #[allow(dead_code)]
+    content_type: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -297,12 +313,23 @@ pub async fn mint_share_link(
 
     let mut links = ShareLinks::default();
     for report in parsed.reports {
+        // Desktop only mints url-mode (see body at line 275: bare
+        // format strings). An inline-only response row would carry a
+        // None url; skip it defensively so we don't overwrite a
+        // previously cached URL with nothing.
+        let Some(report_url) = report.url else {
+            log::info!(
+                "mint response for format {} had no url (inline-only?); skipping",
+                report.format
+            );
+            continue;
+        };
         match report.format.as_str() {
-            "html" => links.html = Some(report.url),
-            "pdf" => links.pdf = Some(report.url),
-            "json" => links.json = Some(report.url),
-            "xml" => links.xml = Some(report.url),
-            "annotated_pdf" => links.annotated_pdf = Some(report.url),
+            "html" => links.html = Some(report_url),
+            "pdf" => links.pdf = Some(report_url),
+            "json" => links.json = Some(report_url),
+            "xml" => links.xml = Some(report_url),
+            "annotated_pdf" => links.annotated_pdf = Some(report_url),
             other => {
                 log::info!("Unknown report format in mint response: {}", other);
             }

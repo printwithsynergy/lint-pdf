@@ -91,6 +91,18 @@ class Settings(BaseSettings):
     trial_auto_submit: bool = False
     trial_auto_submit_profile_id: str = "lintpdf-default"
 
+    # POST /reports feature gates.
+    #   reports_inline_enabled — set to False to disable inline (JSON/XML
+    #     in the response body) and force every request back to the
+    #     URL-only flow. Used as a kill-switch if the new path regresses
+    #     in production without needing a redeploy.
+    #   reports_idempotency_enabled — when False the engine ignores the
+    #     ``Idempotency-Key`` header and mints random tokens like it
+    #     always did. Independent gate because the two features can
+    #     regress independently.
+    reports_inline_enabled: bool = True
+    reports_idempotency_enabled: bool = True
+
     @property
     def max_upload_size_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024

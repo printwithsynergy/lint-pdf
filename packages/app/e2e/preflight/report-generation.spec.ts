@@ -15,10 +15,16 @@ const TEST_PDF = resolve(
 );
 
 interface ReportInfo {
-  token: string;
+  // token and url are nullable because the engine now supports an
+  // opt-in inline return mode that omits the signed-token URL for
+  // text formats (json, xml). Callers asking for the default
+  // return="url" still get both fields populated.
+  token?: string | null;
   format: string;
-  url?: string;
-  expires_at?: string;
+  url?: string | null;
+  expires_at?: string | null;
+  data?: unknown;
+  content_type?: string | null;
 }
 
 interface ReportResponse {
@@ -374,6 +380,72 @@ test.describe("Preflight: Report Generation", () => {
         [404, 410].includes(res.status()),
         `Expected 404/410 for revoked report, got ${res.status()}`,
       ).toBe(true);
+    });
+  });
+
+  test.describe("Inline return mode", () => {
+    test("POST /reports with return=inline returns JSON data in body", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+
+      const res = await request.post(
+        `${engineBase}/api/v1/jobs/${completedJobId}/reports`,
+        {
+          headers: {
+            Authorization: `Bearer ${engineApiKey}`,
+            "Content-Type": "application/json",
+          },
+          data: {
+            formats: [{ format: "json", return: "inline" }],
+          },
+        },
+      );
+
+      if (res.status() === 404 || res.status() === 501) {
+        test.skip(true, "Inline return mode not implemented on this engine build");
+        return;
+      }
+
+      expect(
+        [200, 201].includes(res.status()),
+        `Inline report generation failed: ${res.status()} ${await res.text()}`,
+      ).toBe(true);
+
+      const data = (await res.json()) as ReportResponse;
+      const jsonReport = (data.reports ?? []).find((r) => r.format === "json");
+      expect(jsonReport, "No json report in response").toBeTruthy();
+      expect(jsonReport?.url, "inline JSON must not carry a hosted url").toBeFalsy();
+      expect(jsonReport?.token, "inline JSON must not carry a token").toBeFalsy();
+      expect(
+        typeof jsonReport?.data === "object" && jsonReport?.data !== null,
+        "inline JSON must surface parsed object in data",
+      ).toBe(true);
+      expect(jsonReport?.content_type).toBe("application/json");
+    });
+
+    test("POST /reports rejects return=inline on binary formats (422)", async ({
+      request,
+    }) => {
+      test.skip(!reportEndpointAvailable, "Report generation endpoint not available");
+
+      const res = await request.post(
+        `${engineBase}/api/v1/jobs/${completedJobId}/reports`,
+        {
+          headers: {
+            Authorization: `Bearer ${engineApiKey}`,
+            "Content-Type": "application/json",
+          },
+          data: {
+            formats: [{ format: "pdf", return: "inline" }],
+          },
+        },
+      );
+
+      expect(
+        res.status(),
+        `Expected 422 for inline PDF request, got ${res.status()}`,
+      ).toBe(422);
     });
   });
 

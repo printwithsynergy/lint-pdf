@@ -55,3 +55,6 @@ report_*.png
 
 # Local engine storage (runtime data from seed_and_serve.py)
 .local-storage/
+
+# ctxo MCP index (local per-machine symbol cache; rebuilt on demand)
+.ctxo/

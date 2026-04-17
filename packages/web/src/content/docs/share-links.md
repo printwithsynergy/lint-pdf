@@ -35,16 +35,22 @@ curl -X POST https://api.lintpdf.com/api/v1/jobs/{job_id}/reports \
   }'
 ```
 
+Share links are only minted for rows where you asked for a URL. Requesting a text-only format inline (`{"format": "json", "return": "inline"}`) embeds the payload in the response body and skips token minting entirely — no share link is created and `url`, `token`, and `expires_at` come back `null` for that row.
+
 ### Request fields
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `formats` | array of `"html"` \| `"pdf"` \| `"json"` \| `"xml"` \| `"annotated_pdf"` \| `"annotated_pdf_markup"` | `["html", "pdf"]` | Which formats to mint. Each returns its own token. `annotated_pdf` and `annotated_pdf_markup` are silently skipped if their inputs are missing (original PDF unreadable, or zero annotations, respectively); the other formats in the same request still mint. |
-| `expiry_days` | int \| `null` | Plan default (7 for Free, 30 for Starter, 90 for Growth+, `null`/never for Enterprise) | Token lifetime. `null` = no expiry. |
+| `formats` | array of `FormatName` \| `{ format, return? }` | `["html", "pdf"]` | Output formats to mint. Bare strings are back-compat for `{format, return: "url"}`. `return` is one of `"url"` (hosted share link — default), `"inline"` (embeds parsed JSON / raw XML in the response body; text formats only — requesting inline on `pdf`, `annotated_pdf`, `annotated_pdf_markup`, or `html` returns 422), or `"both"`. `annotated_pdf` and `annotated_pdf_markup` are silently skipped if their inputs are missing. |
+| `expiry_days` | int \| `null` | Plan default (7 for Free, 30 for Starter, 90 for Growth+, `null`/never for Enterprise) | Token lifetime. `null` = no expiry. Ignored for inline-only rows because no token is minted. |
 | `email_to` | string \| `null` | `null` | When set, the share link is emailed to this address on mint. The email envelope honors the job's brand resolution (anonymous sends from `no-reply@reports.lintpdf.com`). |
 | `branding` | object \| `null` | Job/tenant default | Inline branding override. Accepts `name`, `logo_url`, `primary_color`, `accent_color`, `hide_footer`. Use with care — prefer BrandProfile references. |
 | `detail_level` | `"executive"` \| `"standard"` \| `"comprehensive"` | `"standard"` | Summary density. Executive = 1-page overview, Standard = per-category, Comprehensive = every finding with detail. |
 | `summary_page` | `"prepend"` \| `"only"` \| `"off"` | `"prepend"` | `prepend`: summary page + full findings. `only`: summary page, no detailed findings. `off`: findings only. |
+
+### Optional `Idempotency-Key` header
+
+Send an `Idempotency-Key` request header (max 255 characters) to make mints safe to retry. When the header is present, each token is derived deterministically from `sha256(tenant_id + idempotency_key + format)` and the engine reuses the stored artifact on subsequent calls instead of regenerating and re-uploading. Keys are scoped per tenant — a shared client-side key cannot collide with another tenant's reports.
 
 ### Response
 
@@ -55,17 +61,23 @@ curl -X POST https://api.lintpdf.com/api/v1/jobs/{job_id}/reports \
       "format": "html",
       "url": "https://reports.lintpdf.com/r/tok_9a8b7c6d5e4f",
       "token": "tok_9a8b7c6d5e4f",
-      "expires_at": "2026-05-12T14:30:00Z"
+      "expires_at": "2026-05-12T14:30:00Z",
+      "data": null,
+      "content_type": null
     },
     {
       "format": "pdf",
       "url": "https://reports.lintpdf.com/r/tok_9a8b7c6d5e4f.pdf",
       "token": "tok_9a8b7c6d5e4f",
-      "expires_at": "2026-05-12T14:30:00Z"
+      "expires_at": "2026-05-12T14:30:00Z",
+      "data": null,
+      "content_type": null
     }
   ]
 }
 ```
+
+`data` and `content_type` are `null` on URL-only rows. When a row was requested with `return: "inline"` or `"both"`, `data` carries the parsed payload (object for `json`, raw string for `xml`) and `content_type` is set to `application/json` or `application/xml`.
 
 ## Branding immutability
 

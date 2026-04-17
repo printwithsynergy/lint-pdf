@@ -169,6 +169,32 @@ class StorageBackend:
         result: bytes = response["Body"].read()
         return result
 
+    def report_object_exists(self, tenant_id: str, job_id: str, fmt: str) -> bool:
+        """Cheap existence probe for a stored report object.
+
+        Used by the deterministic-token fast path so we can reuse a
+        previously minted artifact instead of regenerating + re-uploading
+        identical bytes. A missing object returns False; any other error
+        is reraised so genuine outages surface.
+        """
+        key = f"reports/{tenant_id}/{job_id}/report.{fmt}"
+        try:
+            client = self._get_client()
+            client.head_object(Bucket=self._bucket_name, Key=key)
+            return True
+        except Exception as exc:
+            # boto3 raises ClientError with .response["Error"]["Code"]
+            # equal to "404" / "NoSuchKey" / "NotFound" for missing
+            # objects. We don't import botocore here so the in-memory
+            # backend (and future non-boto3 backends) don't need it.
+            response = getattr(exc, "response", None)
+            code = None
+            if isinstance(response, dict):
+                code = response.get("Error", {}).get("Code")
+            if code in ("404", "NoSuchKey", "NotFound"):
+                return False
+            raise
+
     def delete_file(self, file_key: str) -> None:
         """Delete a file from storage.
 
@@ -296,6 +322,10 @@ class InMemoryStorage(StorageBackend):
         if key not in self._files:
             raise FileNotFoundError(f"Report not found: {key}")
         return self._files[key]
+
+    def report_object_exists(self, tenant_id: str, job_id: str, fmt: str) -> bool:
+        key = f"reports/{tenant_id}/{job_id}/report.{fmt}"
+        return key in self._files
 
     def delete_file(self, file_key: str) -> None:
         self._files.pop(file_key, None)

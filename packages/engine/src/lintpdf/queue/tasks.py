@@ -24,6 +24,11 @@ def _auto_generate_reports(
     Creates report tokens so reports are available immediately via
     ``GET /api/v1/jobs/{id}`` response without requiring a separate
     ``POST /reports`` call.
+
+    Auto-gen always produces URL-only tokens; the inline return mode is
+    an opt-in surface of ``POST /reports`` only. Webhook payloads and
+    ``GET /jobs/{id}.reports`` consumers can keep assuming ``url`` is
+    populated on every row minted here.
     """
     import secrets
     import uuid as uuid_mod

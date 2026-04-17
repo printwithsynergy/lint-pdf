@@ -99,4 +99,28 @@ test.describe("Reports", () => {
     const res = await request.get(`/r/${htmlReport.token}`);
     expect(res.status()).toBe(200);
   });
+
+  test("POST /reports with return=inline skips token mint and embeds data", async ({
+    request,
+  }) => {
+    test.skip(!apiKey || !completedJobId, "No completed job available");
+
+    const res = await request.post(`/api/v1/jobs/${completedJobId}/reports`, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      data: { formats: [{ format: "json", return: "inline" }] },
+    });
+    expect([200, 201]).toContain(res.status());
+    const body = await res.json();
+    const jsonReport = (body.reports ?? []).find(
+      (r: { format: string }) => r.format === "json",
+    );
+    expect(jsonReport, "response missing json row").toBeTruthy();
+    expect(jsonReport.url).toBeFalsy();
+    expect(jsonReport.token).toBeFalsy();
+    expect(jsonReport.data).toBeTruthy();
+    expect(jsonReport.content_type).toBe("application/json");
+  });
 });
