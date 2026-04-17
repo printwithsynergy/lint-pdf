@@ -48,50 +48,109 @@ curl -X POST https://api.lintpdf.com/api/v1/submit \\
         request={`curl https://api.lintpdf.com/api/v1/ai/credits \\
   -H "Authorization: Bearer lpdf_..."`}
         response={`{
-  "balance": 4250,
-  "billing_mode": "package",
-  "auto_topup": false,
-  "consumed_this_month": 750,
-  "consumed_total": 3250
+  "credit_balance": 4250,
+  "billing_mode": "pay_per_use",
+  "packages_active": 2,
+  "package_credits_remaining": 4250,
+  "monthly_spent": 12.34,
+  "monthly_spending_limit": 100.0
+}`}
+      />
+
+      <Endpoint
+        method="GET"
+        path="/api/v1/ai/credits/packages"
+        description="List every AI credit package granted to your tenant, including plan-monthly, purchase, and admin_grant sources."
+        auth
+        request={`curl https://api.lintpdf.com/api/v1/ai/credits/packages \\
+  -H "Authorization: Bearer lpdf_..."`}
+        response={`{
+  "packages": [
+    {
+      "id": "b538a0a5-...",
+      "kind": "credits",
+      "source": "purchase",
+      "credits_purchased": 2000,
+      "credits_remaining": 1750,
+      "price_paid": 90.00,
+      "purchased_at": "2026-04-17T17:54:46Z",
+      "expires_at": "2027-04-17T17:54:46Z"
+    }
+  ]
 }`}
       />
 
       <Endpoint
         method="POST"
         path="/api/v1/ai/credits/topup"
-        description="Purchase a credit package. Available packages: starter (1,000), growth (5,000), scale (25,000)."
+        description='Create a Stripe Checkout session for a credit pack. Packs: "500" ($25), "2000" ($90, 10% off), "10000" ($400, 20% off). Redirect the customer to the returned checkout_url; the engine inserts the package row only when Stripe posts checkout.session.completed to the webhook.'
         auth
         request={`curl -X POST https://api.lintpdf.com/api/v1/ai/credits/topup \\
   -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
-  -d '{"package": "starter"}'`}
+  -d '{"pack": "500"}'`}
         response={`{
-  "balance": 5250,
-  "package_purchased": "starter",
-  "credits_added": 1000,
-  "amount_charged": "$50.00"
+  "checkout_url": "https://checkout.stripe.com/c/pay/cs_live_...",
+  "session_id": "cs_live_a1qhsQgX9HVVefrYX...",
+  "pack_size": 500,
+  "usd_cents": 2500
 }`}
       />
 
       <Endpoint
-        method="PUT"
-        path="/api/v1/ai/credits/auto-topup"
-        description="Configure automatic credit top-up. When balance drops below threshold, the specified package is purchased automatically."
+        method="GET"
+        path="/api/v1/files/quota"
+        description="Current metered file quota — monthly allotment plus any purchased file packs that are still active."
         auth
-        request={`curl -X PUT https://api.lintpdf.com/api/v1/ai/credits/auto-topup \\
+        request={`curl https://api.lintpdf.com/api/v1/files/quota \\
+  -H "Authorization: Bearer lpdf_..."`}
+        response={`{
+  "tenant_id": "a660f3e2-...",
+  "total_remaining": 3250,
+  "monthly_allotment_remaining": 500,
+  "purchased_remaining": 2750,
+  "active_packages": 1,
+  "monthly_allotment": 500
+}`}
+      />
+
+      <Endpoint
+        method="POST"
+        path="/api/v1/files/topup"
+        description='Create a Stripe Checkout session for a file pack. Packs: "500" ($15), "2500" ($60, 20% off), "10000" ($200, 33% off).'
+        auth
+        request={`curl -X POST https://api.lintpdf.com/api/v1/files/topup \\
   -H "Authorization: Bearer lpdf_..." \\
   -H "Content-Type: application/json" \\
-  -d '{
-    "enabled": true,
-    "threshold": 100,
-    "package": "starter"
-  }'`}
+  -d '{"pack": "2500"}'`}
         response={`{
-  "auto_topup": {
-    "enabled": true,
-    "threshold": 100,
-    "package": "starter"
-  }
+  "checkout_url": "https://checkout.stripe.com/c/pay/cs_live_...",
+  "session_id": "cs_live_...",
+  "pack_size": 2500,
+  "usd_cents": 6000
+}`}
+      />
+
+      <Endpoint
+        method="GET"
+        path="/api/v1/files/packages"
+        description="List every file pack granted to your tenant (tenant-scoped, same shape as credits/packages)."
+        auth
+        request={`curl https://api.lintpdf.com/api/v1/files/packages \\
+  -H "Authorization: Bearer lpdf_..."`}
+        response={`{
+  "packages": [
+    {
+      "id": "e...",
+      "kind": "files",
+      "source": "plan_monthly",
+      "credits_purchased": 2500,
+      "credits_remaining": 2140,
+      "price_paid": 0.0,
+      "purchased_at": "2026-04-01T00:00:00Z",
+      "expires_at": "2026-05-03T00:00:00Z"
+    }
+  ]
 }`}
       />
 

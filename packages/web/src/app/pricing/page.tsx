@@ -203,24 +203,24 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* AI Credits */}
+      {/* AI Credits + File Packs (metered resources) */}
       <section className="py-16">
         <div className="mx-auto max-w-5xl px-6">
           <div className="text-center mb-10">
             <div className="flex items-center justify-center gap-3 mb-4">
               <h2 className="text-2xl font-bold text-slate-900">
-                AI Credit Pricing
+                Metered Resources
               </h2>
               <span className="rounded-full bg-brand-900 px-3 py-1 text-xs font-bold text-white">
                 Invite-Only Alpha
               </span>
             </div>
             <p className="text-slate-500 max-w-2xl mx-auto">
-              Core preflight checks (500+ checks) are unlimited on all paid
-              plans. AI inspections are metered separately using credits.
-              Pay-per-use at{" "}
-              <span className="font-semibold text-slate-700">$0.12/credit</span>{" "}
-              or save with volume packages.
+              Core preflight checks (500+) stay unlimited on every paid plan.
+              AI inspections and file submissions are metered separately — each
+              plan grants a monthly allotment that resets every billing cycle,
+              and you can buy top-up packs at any time that roll over for 12
+              months.
             </p>
           </div>
 

@@ -66,6 +66,19 @@ export function meteredResourceRoutes(): RouteDefinition[] {
     },
     {
       method: "GET" as HttpMethod,
+      path: "/credits/usage",
+      auth: true,
+      permission: "account:manage",
+      description: "Daily AI credit consumption trend for the dashboard chart.",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const days = req.query?.days ?? "30";
+        return passthrough(
+          `/api/v1/ai/usage/trends?days=${encodeURIComponent(String(days))}`,
+        );
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
       path: "/credits/packages",
       auth: true,
       permission: "account:manage",

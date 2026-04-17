@@ -39,6 +39,12 @@ interface MeteredPackage {
   expires_at: string | null;
 }
 
+interface UsagePoint {
+  date: string;
+  credits_consumed: number;
+  ai_jobs: number;
+}
+
 const PACKS: { size: "500" | "2000" | "10000"; usd: number; label: string; perCredit: number }[] = [
   { size: "500", usd: 25, label: "500 credits", perCredit: 0.05 },
   { size: "2000", usd: 90, label: "2,000 credits", perCredit: 0.045 },
@@ -57,14 +63,16 @@ function CreditsBillingPageInner() {
   const toast = useToast();
   const [balance, setBalance] = useState<CreditBalance | null>(null);
   const [history, setHistory] = useState<MeteredPackage[]>([]);
+  const [usage, setUsage] = useState<UsagePoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [buyingSize, setBuyingSize] = useState<string | null>(null);
 
   const fetchBalance = useCallback(async () => {
     try {
-      const [balResp, pkgResp] = await Promise.all([
+      const [balResp, pkgResp, usageResp] = await Promise.all([
         fetch("/api/lintpdf/credits"),
         fetch("/api/lintpdf/credits/packages").catch(() => null),
+        fetch("/api/lintpdf/credits/usage?days=30").catch(() => null),
       ]);
       if (balResp.ok) setBalance(await balResp.json());
       if (pkgResp && pkgResp.ok) {
@@ -73,6 +81,16 @@ function CreditsBillingPageInner() {
           (data.packages ?? []).filter(
             (p: MeteredPackage) => p.kind === "credits",
           ),
+        );
+      }
+      if (usageResp && usageResp.ok) {
+        const data = await usageResp.json();
+        setUsage(
+          (data.data_points ?? []).map((p: UsagePoint & { credits_consumed: number | string }) => ({
+            date: p.date,
+            credits_consumed: Number(p.credits_consumed ?? 0),
+            ai_jobs: Number(p.ai_jobs ?? 0),
+          })),
         );
       }
     } catch (e) {
@@ -207,6 +225,28 @@ function CreditsBillingPageInner() {
         </div>
       </section>
 
+      <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
+        <header className="mb-3 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">
+              Usage (last 30 days)
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Credits consumed per day across AI inspections.
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-foreground">
+              {usage.reduce((n, p) => n + p.credits_consumed, 0).toLocaleString()}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              total credits in window
+            </div>
+          </div>
+        </header>
+        <UsageChart points={usage} />
+      </section>
+
       <section className="rounded-lg border border-border bg-card shadow-sm">
         <header className="border-b border-border px-5 py-3">
           <h2 className="text-lg font-semibold text-foreground">
@@ -278,6 +318,68 @@ function Stat({ label, value }: { label: string; value: string }) {
       </p>
       <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
     </div>
+  );
+}
+
+function UsageChart({ points }: { points: UsagePoint[] }) {
+  if (points.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
+        No usage data yet. Once AI analyzers run they&rsquo;ll show up here.
+      </div>
+    );
+  }
+  // Pad the series to exactly 30 slots so bars render at a fixed width
+  // even when the engine only returns days with activity.
+  const byDate = new Map(points.map((p) => [p.date, p]));
+  const today = new Date();
+  const series: UsagePoint[] = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(today.getUTCDate() - i);
+    const iso = d.toISOString().slice(0, 10);
+    series.push(byDate.get(iso) ?? { date: iso, credits_consumed: 0, ai_jobs: 0 });
+  }
+  const max = Math.max(1, ...series.map((p) => p.credits_consumed));
+  const width = 600;
+  const height = 140;
+  const pad = 8;
+  const bw = (width - pad * 2) / series.length;
+  return (
+    <svg
+      viewBox={`0 0 ${width} ${height}`}
+      className="h-36 w-full"
+      role="img"
+      aria-label="Daily AI credit consumption over the last 30 days"
+    >
+      {series.map((p, i) => {
+        const h = p.credits_consumed === 0 ? 1 : ((height - pad * 2) * p.credits_consumed) / max;
+        const x = pad + i * bw + 1;
+        const y = height - pad - h;
+        const w = Math.max(1, bw - 2);
+        return (
+          <g key={p.date}>
+            <title>{`${p.date}: ${p.credits_consumed} credits, ${p.ai_jobs} jobs`}</title>
+            <rect
+              x={x}
+              y={y}
+              width={w}
+              height={h}
+              rx={1}
+              className="fill-[color:var(--primary,currentColor)] opacity-80"
+            />
+          </g>
+        );
+      })}
+      <line
+        x1={pad}
+        x2={width - pad}
+        y1={height - pad}
+        y2={height - pad}
+        className="stroke-border"
+        strokeWidth={0.5}
+      />
+    </svg>
   );
 }
 
