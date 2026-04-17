@@ -266,12 +266,21 @@ def get_storage() -> StorageBackend:
                 from lintpdf.api.config import get_settings
 
                 settings = get_settings()
+                # Strip whitespace from every S3 setting because Railway
+                # (and some docker-compose envs) silently preserve leading
+                # or trailing spaces around the value, and botocore's
+                # bucket-name regex rejects them with a raw 500 instead of
+                # failing fast at boot. Lost an afternoon debugging a
+                # bucket named "lintpdf-uploads " — never again.
+                def _clean(v: str | None) -> str | None:
+                    return v.strip() if isinstance(v, str) else v
+
                 _storage_state["instance"] = StorageBackend(
-                    endpoint_url=settings.s3_endpoint_url,
-                    bucket_name=settings.s3_bucket_name,
-                    access_key_id=settings.s3_access_key_id,
-                    secret_access_key=settings.s3_secret_access_key,
-                    region=settings.s3_region,
+                    endpoint_url=_clean(settings.s3_endpoint_url),
+                    bucket_name=_clean(settings.s3_bucket_name) or "lintpdf-uploads",
+                    access_key_id=_clean(settings.s3_access_key_id),
+                    secret_access_key=_clean(settings.s3_secret_access_key),
+                    region=_clean(settings.s3_region) or "auto",
                 )
     return _storage_state["instance"]  # type: ignore[return-value]
 
