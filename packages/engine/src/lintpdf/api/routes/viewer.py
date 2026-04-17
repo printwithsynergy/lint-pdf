@@ -477,7 +477,12 @@ async def get_page_tile(
 
     # Populate both caches (fire-and-forget).
     try:
-        storage.upload_raw(cache_key, tile_bytes, content_type="image/png")
+        storage.upload_raw(
+            cache_key,
+            tile_bytes,
+            content_type="image/png",
+            cache_control="public, max-age=86400",
+        )
     except Exception:
         logger.warning("Failed to cache tile to S3: %s", cache_key)
     if hot_key is not None and redis is not None:
@@ -811,6 +816,7 @@ class ViewerConfigResponse(BaseModel):
     # backed by data; ``False`` means unavailable (the UI may offer a
     # one-click fill-in for supported capabilities).
     capabilities: dict[str, bool] = {}
+    tile_cdn_base: str | None = None
 
 
 def _apply_branding_to_config(config: ViewerConfigResponse, branding: Any, tenant: Tenant) -> None:
@@ -947,6 +953,13 @@ def _build_viewer_config(
                 continue
             if field_name in ViewerConfigResponse.model_fields:
                 setattr(config, field_name, value)
+
+    from lintpdf.api.config import get_settings as _cdn_settings
+
+    _settings = _cdn_settings()
+    if _settings.tile_cdn_base_url and caps.get("tiles_warmed"):
+        cdn_base = _settings.tile_cdn_base_url.rstrip("/")
+        config.tile_cdn_base = f"{cdn_base}/{tenant.id}/{job.id}/tiles/"
 
     return config
 

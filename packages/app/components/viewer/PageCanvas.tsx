@@ -14,6 +14,7 @@ interface PageCanvasProps {
   onZoomChange?: (zoom: number) => void;
   onPageChange?: (delta: number) => void;
   tileDpi?: number;
+  tileCdnBase?: string | null;
 }
 
 const SEVERITY_HEX: Record<string, string> = {
@@ -32,6 +33,7 @@ export function PageCanvas({
   onZoomChange,
   onPageChange,
   tileDpi,
+  tileCdnBase,
 }: PageCanvasProps) {
   const { apiBase } = useViewerApi();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -107,17 +109,28 @@ export function PageCanvas({
   const canvasWidth = Math.round(page.width_pts * ptsToPixels * scale);
   const canvasHeight = Math.round(page.height_pts * ptsToPixels * scale);
 
-  // Load tile image
+  // Load tile image — prefer CDN when available, fall back to engine proxy
   useEffect(() => {
     setLoading(true);
     const img = new Image();
-    img.src = `${apiBase}/pages/${page.page_num}/tile?dpi=${dpi}`;
+    const cdnUrl = tileCdnBase
+      ? `${tileCdnBase}p${page.page_num}_d${dpi}.png`
+      : null;
+    const proxyUrl = `${apiBase}/pages/${page.page_num}/tile?dpi=${dpi}`;
+
     img.onload = () => {
       setTileImg(img);
       setLoading(false);
     };
-    img.onerror = () => setLoading(false);
-  }, [apiBase, page.page_num, dpi]);
+    img.onerror = () => {
+      if (cdnUrl && img.src === cdnUrl) {
+        img.src = proxyUrl;
+      } else {
+        setLoading(false);
+      }
+    };
+    img.src = cdnUrl ?? proxyUrl;
+  }, [apiBase, page.page_num, dpi, tileCdnBase]);
 
   // Animate pulse for selected finding
   useEffect(() => {

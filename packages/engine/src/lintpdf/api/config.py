@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     s3_secret_access_key: str | None = None
     s3_region: str = "auto"
 
+    # CDN tile delivery — when set, the viewer fetches pre-warmed tiles
+    # directly from the R2 CDN instead of proxying through the engine.
+    # Set to the base URL of the R2 custom domain (e.g. "https://cdn.lintpdf.com").
+    tile_cdn_base_url: str | None = None
+
     # Report hosting
     #
     # The engine serves /r/{token} routes at this base URL. Default points at

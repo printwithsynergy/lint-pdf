@@ -179,7 +179,11 @@ class StorageBackend:
         client.delete_object(Bucket=self._bucket_name, Key=file_key)
 
     def upload_raw(
-        self, key: str, data: bytes, content_type: str = "application/octet-stream"
+        self,
+        key: str,
+        data: bytes,
+        content_type: str = "application/octet-stream",
+        cache_control: str | None = None,
     ) -> str:
         """Upload arbitrary bytes to storage at the given key.
 
@@ -187,12 +191,21 @@ class StorageBackend:
             key: Full storage key.
             data: Raw bytes to store.
             content_type: MIME type for the object.
+            cache_control: Optional Cache-Control header for the object.
 
         Returns:
             The storage key.
         """
         client = self._get_client()
-        client.put_object(Bucket=self._bucket_name, Key=key, Body=data, ContentType=content_type)
+        kwargs: dict[str, Any] = {
+            "Bucket": self._bucket_name,
+            "Key": key,
+            "Body": data,
+            "ContentType": content_type,
+        }
+        if cache_control:
+            kwargs["CacheControl"] = cache_control
+        client.put_object(**kwargs)
         return key
 
     def download_raw(self, key: str) -> bytes | None:
@@ -288,7 +301,11 @@ class InMemoryStorage(StorageBackend):
         self._files.pop(file_key, None)
 
     def upload_raw(
-        self, key: str, data: bytes, content_type: str = "application/octet-stream"
+        self,
+        key: str,
+        data: bytes,
+        content_type: str = "application/octet-stream",
+        cache_control: str | None = None,
     ) -> str:
         self._files[key] = data
         return key

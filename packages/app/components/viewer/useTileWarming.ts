@@ -118,6 +118,8 @@ export function useTilePrefetch(
   anchorPage: number = 1,
   /** Tile DPI to prefetch. Defaults to the viewer's default (150). */
   dpi: number = 150,
+  /** CDN tile base URL. When set, prefetch from CDN instead of engine proxy. */
+  tileCdnBase: string | null = null,
 ): { prefetched: number; total: number } {
   const [prefetched, setPrefetched] = useState(0);
 
@@ -162,7 +164,10 @@ export function useTilePrefetch(
         // eslint-disable-next-line security/detect-object-injection
         const page = order[idx]!;
         try {
-          await fetch(`${apiBase}/pages/${page}/tile?dpi=${dpi}`, {
+          const url = tileCdnBase
+            ? `${tileCdnBase}p${page}_d${dpi}.png`
+            : `${apiBase}/pages/${page}/tile?dpi=${dpi}`;
+          await fetch(url, {
             cache: "force-cache",
             // Don't need the response body in JS — the browser HTTP
             // cache holds the bytes. Drain the stream so the TCP
@@ -184,7 +189,7 @@ export function useTilePrefetch(
     return () => {
       cancelled = true;
     };
-  }, [apiBase, enabled, pageCount, anchorPage, dpi]);
+  }, [apiBase, enabled, pageCount, anchorPage, dpi, tileCdnBase]);
 
   return { prefetched, total: pageCount };
 }
