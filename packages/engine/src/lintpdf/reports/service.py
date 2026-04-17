@@ -654,8 +654,36 @@ class ReportService:
                         fmt,
                         job_id,
                     )
+                    report_result.reports.append(
+                        {
+                            "format": fmt,
+                            "url": None,
+                            "token": None,
+                            "expires_at": None,
+                            "data": None,
+                            "content_type": None,
+                            "skipped_reason": "generation_failed",
+                        }
+                    )
                     continue
             if content is None:
+                # Generator returned None intentionally — e.g.
+                # annotated_pdf_markup with no viewer annotations stamped,
+                # or annotated_pdf when the original PDF is unreachable.
+                # Emit an explicit skipped entry instead of silently
+                # dropping the format so callers can distinguish
+                # "skipped by design" from "request partially failed".
+                report_result.reports.append(
+                    {
+                        "format": fmt,
+                        "url": None,
+                        "token": None,
+                        "expires_at": None,
+                        "data": None,
+                        "content_type": None,
+                        "skipped_reason": "no_content",
+                    }
+                )
                 continue
 
             # Upload + token insert only when a URL is needed. Inline-

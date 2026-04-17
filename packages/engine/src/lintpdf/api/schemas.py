@@ -101,7 +101,15 @@ class JobResponse(BaseModel):
     """Full job response with status and optional results."""
 
     job_id: uuid.UUID
-    status: str
+    status: str = Field(
+        ...,
+        description=(
+            "Terminal values are `complete` and `failed`. In-flight values are "
+            "`pending` and `processing`. Note the enum uses `complete` (not "
+            '`completed`) — callers polling for `status == "completed"` will '
+            "loop forever. Accept both spellings when writing client code."
+        ),
+    )
     profile_id: str
     file_name: str
     file_size: int

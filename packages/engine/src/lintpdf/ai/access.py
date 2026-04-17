@@ -39,9 +39,12 @@ def check_ai_access(tenant: Tenant, db: Session) -> TenantAIConfig:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=(
-                "AI features are not enabled for your account. "
-                "AI Inspections are currently invite-only alpha. "
-                "Contact your account administrator to request access."
+                "AI features are not enabled for this tenant. AI Inspections "
+                "are gated per-tenant via the admin toggle "
+                "(PUT /api/v1/admin/tenants/{tenant_id}/ai?ai_enabled=true) "
+                "or via the tenant dashboard by an account owner. This is a "
+                "per-tenant flag, not a global waitlist — once enabled, AI "
+                "is available on every plan that includes AI credits."
             ),
         )
 

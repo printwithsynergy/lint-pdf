@@ -1493,6 +1493,22 @@ async def update_tenant_ai(
     tenant = _get_tenant(db, tenant_id)
 
     from lintpdf.ai.config import admin_update_ai_config
+    from lintpdf.api.models import AIBillingMode
+
+    # Reject unknown billing modes up front. Previously an invalid value
+    # propagated all the way to the ORM enum coercion and surfaced as a
+    # bare 500 Internal Server Error, with no hint that the wrong
+    # parameter was the cause.
+    if billing_mode is not None:
+        valid_modes = [m.value for m in AIBillingMode]
+        if billing_mode not in valid_modes:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Invalid billing_mode {billing_mode!r}. "
+                    f"Expected one of: {', '.join(valid_modes)}."
+                ),
+            )
 
     updates: dict[str, Any] = {}
     if ai_enabled is not None:

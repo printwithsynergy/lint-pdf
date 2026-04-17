@@ -159,6 +159,16 @@ class ReportInfo(BaseModel):
     expires_at: str | None = None
     data: Any | None = None  # dict for JSON, str for XML; None for url-only
     content_type: str | None = None
+    skipped_reason: str | None = Field(
+        default=None,
+        description=(
+            "When the caller requested a format the engine couldn't produce a URL for, "
+            "this carries the machine-readable reason instead of dropping the format "
+            "from the response. Values: `no_content` (generator returned None by design "
+            "— e.g. `annotated_pdf_markup` asked for but no viewer annotations exist), "
+            "`generation_failed` (unexpected exception, details in engine logs)."
+        ),
+    )
 
 
 class GenerateReportsResponse(BaseModel):
@@ -391,11 +401,34 @@ async def generate_reports(  # skipcq: PY-R1000
         )
     except EntitlementDenied as exc:
         from lintpdf.api.gates import plan_upgrade_required
+        from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
+
+        requested = [spec.format for spec in body.formats]
+        # Find the cheapest plan whose allowed_report_formats covers every
+        # requested format. Iterate in ascending tier order so we return
+        # the real minimum upgrade target — the previous hard-coded
+        # "starter" was wrong for annotated_pdf / annotated_pdf_markup
+        # (which require scale+), misleading customers into a cheaper
+        # plan that still doesn't include the format.
+        plan_order = [
+            TenantPlan.FREE,
+            TenantPlan.VIEWER,
+            TenantPlan.STARTER,
+            TenantPlan.GROWTH,
+            TenantPlan.SCALE,
+            TenantPlan.ENTERPRISE,
+        ]
+        required = "enterprise"
+        for plan in plan_order:
+            allowed = set(PLAN_LIMITS[plan].get("allowed_report_formats") or [])
+            if all(fmt in allowed for fmt in requested):
+                required = str(plan)
+                break
 
         raise plan_upgrade_required(
             gate="report_format",
             current_plan=str(tenant.plan),
-            required_plan="starter",
+            required_plan=required,
             message=str(exc),
         ) from exc
 
