@@ -25,11 +25,13 @@ from lintpdf.api.routes import (
     color_config,
     downloads,
     endpoints,
+    file_packs,
     health,
     import_mappings,
     jobs,
     profiles,
     reports,
+    stripe_webhooks,
     trial,
     usage,
     user_ai_access,
@@ -148,6 +150,11 @@ def create_app() -> FastAPI:
     app.include_router(ai_presets.router)
     app.include_router(ai_generate.router)
     app.include_router(ai_interpret.router)
+    # Metered-resource counterparts to the AI credit endpoints.
+    app.include_router(file_packs.router)
+    # Stripe webhook endpoint handles metered-resource fulfillment
+    # (checkout.session.completed) and plan-monthly grants (invoice.paid).
+    app.include_router(stripe_webhooks.router)
 
     # Batch submission
     app.include_router(batch.router)

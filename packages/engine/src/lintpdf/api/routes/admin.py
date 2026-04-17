@@ -1536,6 +1536,8 @@ async def grant_tenant_ai_credits(
 
     package = TenantAICreditPackage(
         tenant_id=tenant.id,
+        kind="credits",
+        source="admin_grant",
         credits_purchased=credit_amount,
         credits_remaining=credit_amount,
         price_paid=Decimal(str(price_paid)),
@@ -1548,6 +1550,93 @@ async def grant_tenant_ai_credits(
         "package_id": str(package.id),
         "credits_granted": credit_amount,
         "message": "AI credits granted",
+    }
+
+
+# ── Metered-resource monthly overrides ────────────────────────
+#
+# These two endpoints are the admin knob for "grant this specific
+# tenant more than their plan default for the monthly allotment".
+# Takes effect on the next invoice.paid; doesn't retroactively
+# back-fill the current period. Body is ``{credits: int | null}``
+# — null clears the override, integer sets it.
+
+
+class _MonthlyOverrideBody(BaseModel):
+    """Per-tenant monthly allotment override for a metered resource."""
+
+    credits: int | None = None
+
+
+@router.put("/tenants/{tenant_id}/credits/monthly-override")
+async def set_tenant_monthly_credits_override(
+    tenant_id: str,
+    body: _MonthlyOverrideBody,
+    db: Session = Depends(get_db),
+    _admin: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """Override the tenant's monthly AI-credit allotment.
+
+    Set ``credits`` to an integer to override, or ``null`` to revert to
+    the plan default. Takes effect at the next ``invoice.paid``.
+    """
+    tenant = _get_tenant(db, tenant_id)
+    tenant.monthly_ai_credits_override = body.credits
+    db.commit()
+    return {
+        "tenant_id": str(tenant.id),
+        "monthly_ai_credits_override": tenant.monthly_ai_credits_override,
+        "message": "Monthly credits override updated. Takes effect at next invoice.paid.",
+    }
+
+
+@router.put("/tenants/{tenant_id}/files/monthly-override")
+async def set_tenant_monthly_files_override(
+    tenant_id: str,
+    body: _MonthlyOverrideBody,
+    db: Session = Depends(get_db),
+    _admin: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """Override the tenant's monthly file allotment (same shape as credits)."""
+    tenant = _get_tenant(db, tenant_id)
+    tenant.monthly_files_override = body.credits
+    db.commit()
+    return {
+        "tenant_id": str(tenant.id),
+        "monthly_files_override": tenant.monthly_files_override,
+        "message": "Monthly files override updated. Takes effect at next invoice.paid.",
+    }
+
+
+@router.post("/tenants/{tenant_id}/files/packages")
+async def grant_tenant_file_pack(
+    tenant_id: str,
+    files_granted: int = 500,
+    price_paid: float = 0.0,
+    db: Session = Depends(get_db),
+    _admin: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """Grant a file-pack directly (admin bypass; analogous to the credits grant)."""
+    from decimal import Decimal
+
+    from lintpdf.api.models import TenantAICreditPackage
+
+    tenant = _get_tenant(db, tenant_id)
+    package = TenantAICreditPackage(
+        tenant_id=tenant.id,
+        kind="files",
+        source="admin_grant",
+        credits_purchased=files_granted,
+        credits_remaining=files_granted,
+        price_paid=Decimal(str(price_paid)),
+    )
+    db.add(package)
+    db.commit()
+    return {
+        "tenant_id": str(tenant.id),
+        "package_id": str(package.id),
+        "files_granted": files_granted,
+        "message": "File pack granted",
     }
 
 

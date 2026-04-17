@@ -46,12 +46,15 @@ def get_credit_balance(tenant_id: uuid.UUID, db: Session) -> CreditBalance:
             monthly_spending_limit=None,
         )
 
-    # Count active (non-expired) credit packages
+    # Count active (non-expired) credit packages. Filter by kind so the
+    # shared metered-resource table never bleeds file packs into the
+    # AI-credit balance calculation.
     now = datetime.now(timezone.utc)
     packages = (
         db.query(TenantAICreditPackage)
         .filter(
             TenantAICreditPackage.tenant_id == tenant_id,
+            TenantAICreditPackage.kind == "credits",
             TenantAICreditPackage.credits_remaining > 0,
         )
         .all()
@@ -173,6 +176,7 @@ def deduct_credits(
             db.query(TenantAICreditPackage)
             .filter(
                 TenantAICreditPackage.tenant_id == tenant_id,
+                TenantAICreditPackage.kind == "credits",
                 TenantAICreditPackage.credits_remaining > 0,
             )
             .order_by(TenantAICreditPackage.purchased_at.asc())

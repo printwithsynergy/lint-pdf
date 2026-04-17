@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.ai_schemas import (
@@ -19,6 +20,12 @@ if TYPE_CHECKING:
     from lintpdf.api.models import Tenant
 
 router = APIRouter(prefix="/api/v1/ai/credits", tags=["ai-credits"])
+
+
+def _app_base_url() -> str:
+    from lintpdf.api.config import get_settings
+
+    return get_settings().app_base_url.rstrip("/")
 
 
 @router.get("", response_model=CreditBalanceResponse)
@@ -43,38 +50,81 @@ async def get_credits(
     )
 
 
-@router.post("/topup", response_model=CreditTopupResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/topup",
+    response_model=CreditTopupResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def topup_credits(
     request: CreditTopupRequest,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> CreditTopupResponse:
-    """Purchase a credit top-up package.
+    """Create a Stripe Checkout session for a credit top-up purchase.
 
-    Note: In production, this would integrate with Stripe for payment.
-    Currently creates the package directly.
+    The endpoint does NOT insert a package row. The package is only
+    inserted when Stripe posts back ``checkout.session.completed`` to
+    our webhook, which calls
+    :py:func:`lintpdf.billing.allocation.fulfill_purchase`. This is
+    the standard Stripe pattern — the server never trusts that the
+    customer actually paid until Stripe says so.
     """
     from lintpdf.ai.access import check_ai_access
+    from lintpdf.billing.metered_packs import pack_for_size, resolve_price_id
+    from lintpdf.billing.stripe_client import (
+        StripeError,
+        create_checkout_session,
+        load_config,
+    )
 
     check_ai_access(tenant, db)
 
-    # Calculate price (example: $0.05 per credit for packages)
-    from decimal import Decimal
+    cfg = load_config()
+    pack_size = int(request.pack)
+    defn = pack_for_size("credits", pack_size)
+    if defn is None:
+        # The Pydantic ``Literal`` already rejects unknown values, but
+        # belt-and-suspenders since the catalogue is the source of truth.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Unknown credit pack size: {pack_size}",
+        )
+    price_id = resolve_price_id(f"credits_{pack_size}", sandbox=cfg.sandbox)
 
-    from lintpdf.api.models import TenantAICreditPackage
-
-    price = Decimal(str(request.credits)) * Decimal("0.05")
-
-    package = TenantAICreditPackage(
-        tenant_id=tenant.id,
-        credits_purchased=request.credits,
-        credits_remaining=request.credits,
-        price_paid=price,
+    app_base = _app_base_url()
+    success_url = os.environ.get(
+        "LINTPDF_CHECKOUT_SUCCESS_URL",
+        f"{app_base}/dashboard/account/ai/credits?checkout=success&session_id={{CHECKOUT_SESSION_ID}}",
     )
-    db.add(package)
-    db.commit()
+    cancel_url = os.environ.get(
+        "LINTPDF_CHECKOUT_CANCEL_URL",
+        f"{app_base}/dashboard/account/ai/credits?checkout=cancelled",
+    )
+
+    try:
+        session = create_checkout_session(
+            price_id=price_id,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            customer=tenant.stripe_customer_id,
+            customer_email=tenant.contact_email,
+            client_reference_id=str(tenant.id),
+            metadata={
+                "lintpdf_kind": "credits",
+                "lintpdf_pack_size": str(pack_size),
+                "lintpdf_tenant_id": str(tenant.id),
+            },
+            config=cfg,
+        )
+    except StripeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Stripe Checkout session creation failed: {exc}",
+        ) from exc
 
     return CreditTopupResponse(
-        package_id=package.id,
-        credits_purchased=request.credits,
+        checkout_url=session["url"],
+        session_id=session["id"],
+        pack_size=pack_size,
+        usd_cents=defn.usd_cents,
     )

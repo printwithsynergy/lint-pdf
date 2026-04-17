@@ -43,6 +43,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": False,
         "max_approval_templates": 0,
         "desktop_app_enabled": False,
+        "monthly_ai_credits": 0,
+        "monthly_files_included": 50,
     },
     TenantPlan.VIEWER: {
         "rate_limit_daily": 150,
@@ -64,6 +66,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": False,
         "max_approval_templates": 0,
         "desktop_app_enabled": False,
+        "monthly_ai_credits": 0,
+        "monthly_files_included": 50,
     },
     TenantPlan.STARTER: {
         "rate_limit_daily": 500,
@@ -85,6 +89,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": False,
         "max_approval_templates": 0,
         "desktop_app_enabled": False,
+        "monthly_ai_credits": 100,
+        "monthly_files_included": 500,
     },
     TenantPlan.GROWTH: {
         "rate_limit_daily": 5000,
@@ -106,6 +112,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": True,
         "max_approval_templates": 3,
         "desktop_app_enabled": False,
+        "monthly_ai_credits": 500,
+        "monthly_files_included": 2500,
     },
     TenantPlan.SCALE: {
         "rate_limit_daily": 25000,
@@ -134,6 +142,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": True,
         "max_approval_templates": None,
         "desktop_app_enabled": False,
+        "monthly_ai_credits": 2000,
+        "monthly_files_included": 10000,
     },
     TenantPlan.ENTERPRISE: {
         "rate_limit_daily": 100000,
@@ -162,6 +172,8 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": True,
         "max_approval_templates": None,
         "desktop_app_enabled": False,
+        "monthly_ai_credits": 10000,
+        "monthly_files_included": 100000,
     },
 }
 

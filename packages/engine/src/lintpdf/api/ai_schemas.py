@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid  # noqa: TC003
 from datetime import datetime  # noqa: TC003
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_serializer
 
@@ -143,17 +144,43 @@ class CreditBalanceResponse(BaseModel):
 
 
 class CreditTopupRequest(BaseModel):
-    """Purchase credit package."""
+    """Purchase one of the fixed credit packs.
 
-    credits: int = Field(ge=100, description="Number of credits to purchase.")
+    Only the three catalogued sizes are accepted — anything else is a
+    422. The server resolves the Stripe price id from the pack size and
+    creates a Stripe Checkout session; the package row is not inserted
+    until the ``checkout.session.completed`` webhook fires.
+    """
+
+    pack: Literal["500", "2000", "10000"] = Field(
+        ..., description="Credit pack size."
+    )
 
 
 class CreditTopupResponse(BaseModel):
-    """Response after purchasing credits."""
+    """Stripe Checkout session pointer returned to the caller."""
 
-    package_id: uuid.UUID
-    credits_purchased: int
-    message: str = "Credits added successfully"
+    checkout_url: str
+    session_id: str
+    pack_size: int
+    usd_cents: int
+
+
+class FileTopupRequest(BaseModel):
+    """Purchase one of the fixed file packs."""
+
+    pack: Literal["500", "2500", "10000"] = Field(
+        ..., description="File pack size."
+    )
+
+
+class FileTopupResponse(BaseModel):
+    """Stripe Checkout session pointer for a file-pack purchase."""
+
+    checkout_url: str
+    session_id: str
+    pack_size: int
+    usd_cents: int
 
 
 class AdminCreditGrantRequest(BaseModel):

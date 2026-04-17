@@ -269,8 +269,17 @@ async def submit_job(  # skipcq: PY-R1000
                 ai_features = ",".join(a.features)
             if a.preset is not None and ai_preset is None:
                 ai_preset = a.preset
-    # Check rate limit (raises 429 if hard limit exceeded)
+    # Check rate limit (raises 429 if hard limit exceeded).
+    # Daily rate limit stays as the abuse shield; the monthly file
+    # quota check below consumes a file from the tenant's metered pool
+    # and returns 402 Payment Required once the pool is empty (unless
+    # overage billing is on). The two checks compose — rate_limit_daily
+    # rejects traffic bursts, file_quota rejects over-consumption.
     usage = check_rate_limit(tenant)
+
+    from lintpdf.billing.file_quota import check_and_consume_file_quota
+
+    check_and_consume_file_quota(tenant, files_requested=1, db=db)
 
     # Validate ``profile_id`` exists at submit time so clients get a clean
     # 404 instead of a queued job that silently fails in the worker. This

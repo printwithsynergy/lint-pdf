@@ -110,6 +110,12 @@ class Tenant(Base):
     overage_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     overage_cap_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     overage_rate_override_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Per-tenant metered-resource overrides. NULL = inherit plan default
+    # from PLAN_LIMITS; integer = use this value regardless of plan. Lets
+    # ops grant a VIP Growth customer Enterprise-level monthly credits
+    # without upselling them the whole plan.
+    monthly_ai_credits_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    monthly_files_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     stripe_subscription_item_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     brand_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -518,18 +524,56 @@ class TenantAIConfig(Base):
 
 
 class TenantAICreditPackage(Base):
-    """Prepaid AI credit package for a tenant."""
+    """Prepaid metered-resource package (AI credits or file quota).
+
+    Despite the legacy ``tenant_ai_credit_packages`` table name, this
+    table holds both kinds of packs — the ``kind`` discriminator column
+    selects between them. See ``packages/engine/src/lintpdf/billing/
+    metered_packs.py`` for the pack catalogue.
+
+    Sources:
+      - ``plan_monthly`` — granted on invoice.paid, expires on next cycle
+      - ``purchase`` — tenant bought via Stripe Checkout
+      - ``admin_grant`` — ops bypass via the admin API
+      - ``trial`` — trial allocation from the AI-trial endpoint
+    """
 
     __tablename__ = "tenant_ai_credit_packages"
-    __table_args__ = (Index("ix_ai_credit_packages_tenant", "tenant_id", "purchased_at"),)
+    __table_args__ = (
+        Index("ix_ai_credit_packages_tenant", "tenant_id", "purchased_at"),
+        Index("ix_ai_credit_packages_tenant_kind", "tenant_id", "kind"),
+        Index(
+            "ix_ai_credit_packages_stripe_session",
+            "stripe_session_id",
+            unique=True,
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    # Which metered resource this pack funds. 'credits' preserves
+    # pre-refactor behavior for existing rows (default).
+    kind: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="credits", server_default="credits"
+    )
+    # Origin of the package — see docstring for the enum values.
+    source: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="admin_grant", server_default="admin_grant"
+    )
     credits_purchased: Mapped[int] = mapped_column(Integer, nullable=False)
     credits_remaining: Mapped[int] = mapped_column(Integer, nullable=False)
     price_paid: Mapped[Any] = mapped_column(Numeric(10, 2), nullable=False)
+    # Stripe checkout session id when source='purchase'. Unique to
+    # enforce webhook idempotency.
+    stripe_session_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # For source='plan_monthly': the start of the billing period this
+    # allotment is for. Used to dedupe allocations so a replayed
+    # invoice.paid webhook never double-grants.
+    billing_period_start: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     purchased_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

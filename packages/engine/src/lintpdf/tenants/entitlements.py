@@ -32,6 +32,14 @@ class TenantEntitlements:
     approval_chains_enabled: bool = False
     max_approval_templates: int | None = None
     desktop_app_enabled: bool = False
+    # Metered-resource monthly allotments (see billing/metered_packs.py).
+    # ``monthly_ai_credits`` is the monthly AI-credit grant; tenants can
+    # also buy top-up packs via Stripe Checkout that roll over.
+    # ``monthly_files_included`` is the monthly file/job allotment; the
+    # daily ``rate_limit_daily`` still serves as an abuse shield on top
+    # of this monthly cap.
+    monthly_ai_credits: int = 0
+    monthly_files_included: int = 0
 
 
 def resolve_entitlements(tenant: Any) -> TenantEntitlements:
@@ -67,8 +75,19 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
     if tenant_max_mb is not None and tenant_max_mb != plan_defaults["max_file_size_mb"]:
         merged["max_file_size_mb"] = tenant_max_mb
 
-    # Layer in JSON overrides (highest priority)
+    # Layer in JSON overrides (highest priority for generic entitlements)
     merged.update(overrides)
+
+    # Dedicated per-tenant columns for metered-resource monthly caps
+    # beat both the plan defaults and the generic JSON overrides, so
+    # ops can set ``monthly_ai_credits_override=2000`` on a Growth
+    # tenant without reshaping their entitlement_overrides blob.
+    credits_override = getattr(tenant, "monthly_ai_credits_override", None)
+    if credits_override is not None:
+        merged["monthly_ai_credits"] = credits_override
+    files_override = getattr(tenant, "monthly_files_override", None)
+    if files_override is not None:
+        merged["monthly_files_included"] = files_override
 
     return TenantEntitlements(
         rate_limit_daily=merged["rate_limit_daily"],
@@ -93,4 +112,6 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
         approval_chains_enabled=merged.get("approval_chains_enabled", False),
         max_approval_templates=merged.get("max_approval_templates", 0),
         desktop_app_enabled=merged.get("desktop_app_enabled", False),
+        monthly_ai_credits=int(merged.get("monthly_ai_credits", 0) or 0),
+        monthly_files_included=int(merged.get("monthly_files_included", 0) or 0),
     )

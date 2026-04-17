@@ -456,6 +456,31 @@ CREATE INDEX IF NOT EXISTS ix_viewer_ann_comments_annotation
   ON viewer_annotation_comments(annotation_id, created_at);
 CREATE INDEX IF NOT EXISTS ix_viewer_ann_comments_token
   ON viewer_annotation_comments(share_token);
+
+-- Engine: metered-resource packs (Alembic TBD). Extend the existing
+-- tenant_ai_credit_packages table so it holds both AI credits AND
+-- file packs, discriminated by ``kind``. Also add per-tenant overrides
+-- on tenants so ops can grant VIP customers more than their plan
+-- default without changing plan. Additive + defaulted → safe on rows
+-- created before the credits+files unification.
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS monthly_ai_credits_override INTEGER NULL;
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS monthly_files_override INTEGER NULL;
+
+ALTER TABLE tenant_ai_credit_packages
+  ADD COLUMN IF NOT EXISTS kind VARCHAR(16) NOT NULL DEFAULT 'credits';
+ALTER TABLE tenant_ai_credit_packages
+  ADD COLUMN IF NOT EXISTS source VARCHAR(32) NOT NULL DEFAULT 'admin_grant';
+ALTER TABLE tenant_ai_credit_packages
+  ADD COLUMN IF NOT EXISTS stripe_session_id VARCHAR(255);
+ALTER TABLE tenant_ai_credit_packages
+  ADD COLUMN IF NOT EXISTS billing_period_start TIMESTAMPTZ;
+CREATE UNIQUE INDEX IF NOT EXISTS ix_ai_credit_packages_stripe_session
+  ON tenant_ai_credit_packages(stripe_session_id)
+  WHERE stripe_session_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_ai_credit_packages_tenant_kind
+  ON tenant_ai_credit_packages(tenant_id, kind);
 SQL
 
 echo "Step 1 complete (exit code: $?)"
