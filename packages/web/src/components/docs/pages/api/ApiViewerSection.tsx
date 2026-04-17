@@ -220,7 +220,10 @@ Content-Type: image/png`}
   "capabilities": {
     "separations": true, "tac": true, "tac_runs": true, "tiles_warmed": true,
     "fonts": true, "images": true, "layers": false
-  }
+  },
+  "capability_fillin_enabled": true,
+  "annotations_enabled": true,
+  "allowed_report_formats": ["json", "html", "pdf", "xml"]
 }`}
       />
 
@@ -255,6 +258,9 @@ Content-Type: image/png`}
           { name: "support_email", type: "string | null", description: "Tenant support email (null when anonymous)." },
           { name: "preflight_source", type: '"engine" | "external" | "minimal"', description: "How findings were produced. Drives the viewer's Load-button affordances." },
           { name: "capabilities", type: "Record<string, boolean>", description: "Per-capability availability map. Fillable keys: separations, tac, fonts, images. Non-fillable: layers (extracted at ingest), tac_runs (derived on demand, tracks the tac flag), and tiles_warmed (flipped by the background warm_tiles task; see /tile-warming endpoint)." },
+          { name: "capability_fillin_enabled", type: "boolean", description: "Plan gate. When false the fill-in endpoint returns 403 plan_upgrade_required — render an UpgradePrompt instead of Load buttons. Viewer tier: false. Starter+: true." },
+          { name: "annotations_enabled", type: "boolean", description: "Plan gate. When false the annotation toolbar must be hidden; annotation write endpoints return 403; share-link minting forces allow_annotations=false. Viewer tier: false. Starter+: true." },
+          { name: "allowed_report_formats", type: "string[]", description: "Plan gate. Formats the tenant may request on POST /api/v1/jobs/{id}/reports. Empty list means report downloads are disabled (Viewer tier) — the share link is the only output. Starter+ includes json/html/pdf/xml; Scale+ adds annotated_pdf." },
         ]}
       />
 

@@ -607,9 +607,7 @@ class ReportService:
                     # inline payload so we don't regenerate identical
                     # content.
                     try:
-                        reused_content = self._storage.download_report(
-                            tenant_id, job_id, fmt
-                        )
+                        reused_content = self._storage.download_report(tenant_id, job_id, fmt)
                     except Exception:
                         # Token row survived but object is gone (e.g.
                         # lifecycle expired the R2 object). Fall through
@@ -729,9 +727,7 @@ class ReportService:
 
                 suffix = _suffix_by_format.get(fmt, "")
                 token_to_use = existing.token if existing else tokens[fmt]
-                exp_to_use = (
-                    existing.expires_at if existing else expires_at
-                )
+                exp_to_use = existing.expires_at if existing else expires_at
                 url_value = f"{report_base_url}/r/{token_to_use}{suffix}"
                 token_value_out = token_to_use
                 expires_out = exp_to_use.isoformat() if exp_to_use else None

@@ -104,6 +104,25 @@ def _validate_kind(kind: str) -> None:
         )
 
 
+def _require_annotations_entitlement(tenant: Tenant) -> None:
+    """Raise a plan_upgrade_required 403 if the tenant's plan forbids annotations."""
+    from lintpdf.api.gates import plan_upgrade_required
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    entitlements = resolve_entitlements(tenant)
+    if not entitlements.annotations_enabled:
+        raise plan_upgrade_required(
+            gate="annotations",
+            current_plan=str(tenant.plan),
+            required_plan="starter",
+            message=(
+                f"Your plan ({tenant.plan}) does not include viewer "
+                f"annotations. Upgrade to Starter to unlock annotation "
+                f"tools."
+            ),
+        )
+
+
 # ---------------------------------------------------------------------------
 # Authenticated (dashboard) endpoints
 # ---------------------------------------------------------------------------
@@ -155,6 +174,7 @@ async def create_annotation_auth(
       2. ``tenant.contact_email`` — fallback for direct API-key callers.
       3. ``"dashboard@lintpdf"`` sentinel so the column is never NULL.
     """
+    _require_annotations_entitlement(tenant)
     _validate_kind(body.kind)
     try:
         jid = uuid_mod.UUID(job_id)
@@ -191,6 +211,7 @@ async def update_annotation_auth(
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> AnnotationResponse:
+    _require_annotations_entitlement(tenant)
     try:
         aid = uuid_mod.UUID(annotation_id)
     except ValueError:
@@ -229,6 +250,7 @@ async def delete_annotation_auth(
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
 ) -> None:
+    _require_annotations_entitlement(tenant)
     try:
         aid = uuid_mod.UUID(annotation_id)
     except ValueError:

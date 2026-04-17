@@ -11,10 +11,14 @@ class TenantPlan(enum.StrEnum):
     """Subscription plans with resource limits."""
 
     FREE = "free"
+    VIEWER = "viewer"
     STARTER = "starter"
     GROWTH = "growth"
     SCALE = "scale"
     ENTERPRISE = "enterprise"
+
+
+ALL_PREFLIGHT_SOURCES: list[str] = ["engine", "external", "minimal"]
 
 
 # Plan limits configuration
@@ -27,6 +31,30 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "report_storage_mb": 100,
         "report_default_expiry_days": 7,
         "allowed_report_formats": ["json", "html"],
+        "allowed_preflight_sources": ALL_PREFLIGHT_SOURCES,
+        "capability_fillin_enabled": True,
+        "annotations_enabled": True,
+        "webhooks_enabled": False,
+        "whitelabel_enabled": False,
+        "priority_processing": False,
+        "custom_integrations": False,
+        "custom_profiles": False,
+        "max_webhooks": 0,
+        "approval_chains_enabled": False,
+        "max_approval_templates": 0,
+        "desktop_app_enabled": False,
+    },
+    TenantPlan.VIEWER: {
+        "rate_limit_daily": 150,
+        "max_file_size_mb": 250,
+        "max_custom_profiles": 0,
+        "overage_rate_cents": 5,
+        "report_storage_mb": 2048,
+        "report_default_expiry_days": 30,
+        "allowed_report_formats": [],
+        "allowed_preflight_sources": ["minimal", "external"],
+        "capability_fillin_enabled": False,
+        "annotations_enabled": False,
         "webhooks_enabled": False,
         "whitelabel_enabled": False,
         "priority_processing": False,
@@ -45,6 +73,9 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "report_storage_mb": 5120,
         "report_default_expiry_days": 30,
         "allowed_report_formats": ["json", "html", "pdf", "xml"],
+        "allowed_preflight_sources": ALL_PREFLIGHT_SOURCES,
+        "capability_fillin_enabled": True,
+        "annotations_enabled": True,
         "webhooks_enabled": False,
         "whitelabel_enabled": False,
         "priority_processing": False,
@@ -63,6 +94,9 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "report_storage_mb": 25600,
         "report_default_expiry_days": 90,
         "allowed_report_formats": ["json", "html", "pdf", "xml"],
+        "allowed_preflight_sources": ALL_PREFLIGHT_SOURCES,
+        "capability_fillin_enabled": True,
+        "annotations_enabled": True,
         "webhooks_enabled": True,
         "whitelabel_enabled": False,
         "priority_processing": False,
@@ -88,6 +122,9 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
             "annotated_pdf",
             "annotated_pdf_markup",
         ],
+        "allowed_preflight_sources": ALL_PREFLIGHT_SOURCES,
+        "capability_fillin_enabled": True,
+        "annotations_enabled": True,
         "webhooks_enabled": True,
         "whitelabel_enabled": True,
         "priority_processing": True,
@@ -113,6 +150,9 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
             "annotated_pdf",
             "annotated_pdf_markup",
         ],
+        "allowed_preflight_sources": ALL_PREFLIGHT_SOURCES,
+        "capability_fillin_enabled": True,
+        "annotations_enabled": True,
         "webhooks_enabled": True,
         "whitelabel_enabled": True,
         "priority_processing": True,

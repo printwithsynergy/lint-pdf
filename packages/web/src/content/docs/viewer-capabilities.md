@@ -21,6 +21,18 @@ The viewer reads `capabilities` from `GET /api/v1/viewer/jobs/{job_id}/config` a
 - **`false`** and fill-in supported → tool renders a **Load** button that triggers on-demand fill-in.
 - **`false`** and fill-in unsupported (`layers` only) → tool is hidden.
 
+### Viewer tier gate
+
+The same config response surfaces three plan-level gates alongside the per-job capability map:
+
+| Field | Type | When `false` / empty |
+|---|---|---|
+| `capability_fillin_enabled` | bool | Fill-in Load buttons are hidden; `POST .../capabilities/{capability}` returns `403 plan_upgrade_required`. |
+| `annotations_enabled` | bool | The annotation toolbar is hidden; annotation write endpoints return 403; share-link tokens minted by this tenant force `allow_annotations=false` regardless of request. |
+| `allowed_report_formats` | string[] | Viewer download chrome is hidden; `POST /api/v1/jobs/{id}/reports` with any downloadable format returns `403 plan_upgrade_required`. Share-link minting (no formats) still succeeds. |
+
+Viewer-tier tenants see all three as `false` / `[]`. Starter and above see them as `true` / `["json","html","pdf","xml",...]`. Frontends should render the shared `UpgradePrompt` component instead of Load buttons whenever the matching gate is off.
+
 ## The capability registry
 
 | Capability | Fillable | Backing analyzer | Viewer tool |

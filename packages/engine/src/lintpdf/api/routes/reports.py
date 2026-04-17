@@ -34,9 +34,7 @@ router = APIRouter(tags=["reports"])
 # a surprising base64 blob. Keep these sets in sync with the report
 # generator dispatch in ``lintpdf.reports.service``.
 TEXT_FORMATS: frozenset[str] = frozenset({"json", "xml"})
-BINARY_FORMATS: frozenset[str] = frozenset(
-    {"html", "pdf", "annotated_pdf", "annotated_pdf_markup"}
-)
+BINARY_FORMATS: frozenset[str] = frozenset({"html", "pdf", "annotated_pdf", "annotated_pdf_markup"})
 
 
 class FormatSpec(BaseModel):
@@ -77,9 +75,7 @@ def _normalize_format_list(
         elif isinstance(item, dict):
             spec = FormatSpec.model_validate(item)
         else:  # pragma: no cover — defensive, validator should reject
-            raise ValueError(
-                f"Unexpected format entry type: {type(item).__name__}"
-            )
+            raise ValueError(f"Unexpected format entry type: {type(item).__name__}")
         if spec.return_ in ("inline", "both") and spec.format in BINARY_FORMATS:
             raise ValueError(
                 f"Inline return is not supported for binary format "
@@ -105,9 +101,7 @@ class GenerateReportsRequest(BaseModel):
     # ``_normalize_formats`` — otherwise a caller sending an empty body
     # would reach the handler with ``body.formats`` still as bare
     # strings and every downstream ``spec.format`` access would blow up.
-    formats: list[str | FormatSpec] = Field(
-        default=["html", "pdf"], validate_default=True
-    )
+    formats: list[str | FormatSpec] = Field(default=["html", "pdf"], validate_default=True)
     expiry_days: int | None = None
     email_to: str | None = None
     branding: BrandingOverride | None = None
@@ -138,9 +132,7 @@ class GenerateReportsRequest(BaseModel):
 
     @field_validator("formats", mode="after")
     @classmethod
-    def _normalize_formats(
-        cls, v: list[str | FormatSpec]
-    ) -> list[FormatSpec]:
+    def _normalize_formats(cls, v: list[str | FormatSpec]) -> list[FormatSpec]:
         """Normalize bare strings → FormatSpec and reject inline for binary.
 
         Back-compat: ``"json"`` becomes ``FormatSpec(format="json")`` with
@@ -398,7 +390,14 @@ async def generate_reports(  # skipcq: PY-R1000
             entitlements,
         )
     except EntitlementDenied as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+        from lintpdf.api.gates import plan_upgrade_required
+
+        raise plan_upgrade_required(
+            gate="report_format",
+            current_plan=str(tenant.plan),
+            required_plan="starter",
+            message=str(exc),
+        ) from exc
 
     # Check white-label branding restriction
     if body.branding and not entitlements.whitelabel_enabled:
@@ -406,6 +405,13 @@ async def generate_reports(  # skipcq: PY-R1000
             status_code=status.HTTP_403_FORBIDDEN,
             detail="White-label branding (Livery) requires Scale or Enterprise plan.",
         )
+
+    # Viewer tier: force allow_annotations=False on every minted share
+    # link, regardless of what the caller requested. The token carries the
+    # constraint immutably so the public viewer never sees an annotate
+    # affordance.
+    if not entitlements.annotations_enabled:
+        body.allow_annotations = False
 
     try:
         uid = uuid_mod.UUID(job_id)

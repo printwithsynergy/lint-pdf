@@ -18,3 +18,10 @@ export { VerdictBar } from "./VerdictBar";
 export { ComparisonPanel } from "./ComparisonPanel";
 export { MobileBottomSheet } from "./MobileBottomSheet";
 export { MobileDrawer } from "./MobileDrawer";
+export {
+  UpgradePrompt,
+  isPlanUpgradeRequired,
+  type UpgradePromptGate,
+  type UpgradePromptProps,
+  type PlanUpgradeRequiredDetail,
+} from "./UpgradePrompt";

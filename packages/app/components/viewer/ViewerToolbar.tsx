@@ -171,8 +171,11 @@ export function ViewerToolbar({
     caps[key] !== false; // undefined means "assume present" (engine jobs)
   // Public / read-only viewers never see the "Load" affordance — kicking
   // off analyzer runs is reserved to authenticated users on their own jobs.
+  // Tenants whose plan forbids fill-in (Viewer tier) also see no Load buttons.
   const capFillable = (key: ViewerCapabilityKey): boolean =>
-    !readOnly && FILLABLE_CAPABILITIES.includes(key);
+    !readOnly &&
+    config.capability_fillin_enabled !== false &&
+    FILLABLE_CAPABILITIES.includes(key);
 
   return (
     <div

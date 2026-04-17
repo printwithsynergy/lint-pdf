@@ -163,6 +163,15 @@ export interface PricingTier {
   name: string;
   price: string;
   period: string;
+  // Yearly billing — when `yearlyPrice` is set the pricing page renders a
+  // monthly / yearly toggle. Leave the yearly fields undefined for plans
+  // that are free or sales-led.
+  yearlyPrice?: string;
+  yearlyPeriod?: string;
+  yearlyTotal?: string;
+  yearlySavings?: string;
+  stripeMonthlyLookupKey?: string;
+  stripeYearlyLookupKey?: string;
   filesPerMonth: string;
   description: string;
   features: string[];
@@ -190,9 +199,41 @@ export const pricingTiers: PricingTier[] = [
     highlighted: false,
   },
   {
+    name: "Viewer",
+    price: "$15",
+    period: "/ month",
+    yearlyPrice: "$12",
+    yearlyPeriod: "/ month, billed annually",
+    yearlyTotal: "$144 / year",
+    yearlySavings: "Save 20%",
+    stripeMonthlyLookupKey: "lintpdf_viewer_monthly",
+    stripeYearlyLookupKey: "lintpdf_viewer_yearly",
+    filesPerMonth: "150 files / month",
+    description:
+      "Bring your own preflight data. We give you a share-ready interactive Web Viewer link.",
+    features: [
+      "150 files per month",
+      "Hosted Web Viewer — pages, separations, TAC, layers",
+      "External imports (PitStop, callas, Acrobat, LintPDF JSON)",
+      "Viewer-only (minimal) submissions",
+      "Branded share-link output",
+      "Anonymous output mode",
+      "No preflight runs, no annotations, no report downloads",
+    ],
+    cta: "Start with the Viewer",
+    href: "/beta/join",
+    highlighted: false,
+  },
+  {
     name: "Starter",
     price: "$49",
     period: "/ month",
+    yearlyPrice: "$39",
+    yearlyPeriod: "/ month, billed annually",
+    yearlyTotal: "$470 / year",
+    yearlySavings: "Save 20%",
+    stripeMonthlyLookupKey: "lintpdf_starter_monthly",
+    stripeYearlyLookupKey: "lintpdf_starter_yearly",
     filesPerMonth: "500 files / month",
     description: "For small teams and freelancers.",
     features: [
@@ -200,6 +241,8 @@ export const pricingTiers: PricingTier[] = [
       "All Rulesets",
       "PDF, JSON & XML reports",
       "500+ Checks",
+      "On-demand capability fill-in",
+      "Viewer annotations",
       "Email support",
     ],
     cta: "Get Started",
@@ -210,6 +253,12 @@ export const pricingTiers: PricingTier[] = [
     name: "Growth",
     price: "$149",
     period: "/ month",
+    yearlyPrice: "$119",
+    yearlyPeriod: "/ month, billed annually",
+    yearlyTotal: "$1,430 / year",
+    yearlySavings: "Save 20%",
+    stripeMonthlyLookupKey: "lintpdf_growth_monthly",
+    stripeYearlyLookupKey: "lintpdf_growth_yearly",
     filesPerMonth: "5,000 files / month",
     description: "For production workflows.",
     features: [
@@ -228,6 +277,12 @@ export const pricingTiers: PricingTier[] = [
     name: "Scale",
     price: "$399",
     period: "/ month",
+    yearlyPrice: "$319",
+    yearlyPeriod: "/ month, billed annually",
+    yearlyTotal: "$3,830 / year",
+    yearlySavings: "Save 20%",
+    stripeMonthlyLookupKey: "lintpdf_scale_monthly",
+    stripeYearlyLookupKey: "lintpdf_scale_yearly",
     filesPerMonth: "25,000 files / month",
     description: "For high-volume operations.",
     features: [
@@ -266,6 +321,7 @@ export const pricingTiers: PricingTier[] = [
 export interface ComparisonFeature {
   name: string;
   free: string | boolean;
+  viewer: string | boolean;
   starter: string | boolean;
   growth: string | boolean;
   scale: string | boolean;
@@ -276,54 +332,79 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Files per month",
     free: "50",
+    viewer: "150",
     starter: "500",
     growth: "5,000",
     scale: "25,000",
     enterprise: "Unlimited",
   },
   {
-    name: "Checks",
-    free: "500+",
-    starter: "500+",
-    growth: "500+",
-    scale: "500+",
-    enterprise: "500+",
+    name: "Engine preflight (500+ checks)",
+    free: true,
+    viewer: false,
+    starter: true,
+    growth: true,
+    scale: true,
+    enterprise: true,
   },
   {
     name: "Rulesets",
     free: "Basic",
+    viewer: "N/A (BYO report)",
     starter: "All built-in",
     growth: "Custom",
     scale: "Custom",
     enterprise: "Custom",
   },
   {
-    name: "Report formats",
+    name: "Hosted Web Viewer",
+    free: true,
+    viewer: true,
+    starter: true,
+    growth: true,
+    scale: true,
+    enterprise: true,
+  },
+  {
+    name: "Interactive viewer share links",
+    free: true,
+    viewer: true,
+    starter: true,
+    growth: true,
+    scale: true,
+    enterprise: true,
+  },
+  {
+    name: "On-demand capability fill-in",
+    free: true,
+    viewer: false,
+    starter: true,
+    growth: true,
+    scale: true,
+    enterprise: true,
+  },
+  {
+    name: "Viewer annotations",
+    free: true,
+    viewer: false,
+    starter: true,
+    growth: true,
+    scale: true,
+    enterprise: true,
+  },
+  {
+    name: "Report downloads (PDF / JSON / XML)",
     free: "JSON",
+    viewer: "Viewer link only",
     starter: "PDF, JSON, XML",
     growth: "PDF, JSON, XML",
     scale: "PDF, JSON, XML",
     enterprise: "PDF, JSON, XML",
   },
   {
-    name: "White Label",
-    free: false,
-    starter: false,
-    growth: false,
-    scale: true,
-    enterprise: true,
-  },
-  {
-    name: "Webhooks",
-    free: false,
-    starter: false,
-    growth: true,
-    scale: true,
-    enterprise: true,
-  },
-  {
     name: "External preflight imports",
     free: true,
+    viewer: true,
     starter: true,
     growth: true,
     scale: true,
@@ -332,6 +413,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Custom import mappings",
     free: true,
+    viewer: true,
     starter: true,
     growth: true,
     scale: true,
@@ -340,6 +422,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Viewer-only (minimal) submissions",
     free: true,
+    viewer: true,
     starter: true,
     growth: true,
     scale: true,
@@ -348,7 +431,26 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Anonymous output",
     free: true,
+    viewer: true,
     starter: true,
+    growth: true,
+    scale: true,
+    enterprise: true,
+  },
+  {
+    name: "White Label",
+    free: false,
+    viewer: false,
+    starter: false,
+    growth: false,
+    scale: true,
+    enterprise: true,
+  },
+  {
+    name: "Webhooks",
+    free: false,
+    viewer: false,
+    starter: false,
     growth: true,
     scale: true,
     enterprise: true,
@@ -356,6 +458,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Custom report domains",
     free: false,
+    viewer: false,
     starter: false,
     growth: false,
     scale: true,
@@ -364,6 +467,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Vanity submission endpoints",
     free: false,
+    viewer: false,
     starter: false,
     growth: true,
     scale: true,
@@ -372,6 +476,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Priority Queue",
     free: false,
+    viewer: false,
     starter: false,
     growth: false,
     scale: true,
@@ -380,6 +485,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Custom integrations",
     free: false,
+    viewer: false,
     starter: false,
     growth: false,
     scale: false,
@@ -388,6 +494,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "SLA",
     free: false,
+    viewer: false,
     starter: false,
     growth: false,
     scale: false,
@@ -396,6 +503,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
   {
     name: "Dedicated infrastructure",
     free: false,
+    viewer: false,
     starter: false,
     growth: false,
     scale: false,
@@ -561,7 +669,12 @@ export const pricingFaq = [
   {
     question: "Do you offer annual billing?",
     answer:
-      "Not yet, but annual plans with a discount are on our roadmap. Contact sales@thinkneverland.com if you need annual invoicing now.",
+      "Yes — save 20% on every self-serve plan by choosing annual billing. Toggle Monthly / Yearly above the tier cards to see the annual rate.",
+  },
+  {
+    question: "What's the Viewer tier and when should I pick it?",
+    answer:
+      "The Viewer tier is for teams who already run preflight in PitStop, callas pdfToolbox, Acrobat, or another tool and just want a hosted interactive viewer to share with stakeholders. You bring the PDF (optionally with your existing preflight report) and we give you a branded share-link that opens in the Web Viewer with separations, TAC, and layers. No engine runs, no annotations, no report downloads — viewer-link output only. See the Viewer-Only Submissions and External Imports docs for the submit API.",
   },
   {
     question: "What is a Ruleset?",

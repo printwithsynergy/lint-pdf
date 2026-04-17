@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
+from lintpdf.tenants.models import ALL_PREFLIGHT_SOURCES, PLAN_LIMITS, TenantPlan
 
 
 @dataclass(frozen=True)
@@ -19,6 +19,9 @@ class TenantEntitlements:
     report_storage_mb: int
     report_default_expiry_days: int
     allowed_report_formats: list[str]
+    allowed_preflight_sources: list[str]
+    capability_fillin_enabled: bool
+    annotations_enabled: bool
     webhooks_enabled: bool
     whitelabel_enabled: bool
     priority_processing: bool
@@ -74,7 +77,12 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
         overage_rate_cents=merged["overage_rate_cents"],
         report_storage_mb=merged["report_storage_mb"],
         report_default_expiry_days=merged["report_default_expiry_days"],
-        allowed_report_formats=merged["allowed_report_formats"],
+        allowed_report_formats=list(merged["allowed_report_formats"]),
+        allowed_preflight_sources=list(
+            merged.get("allowed_preflight_sources", ALL_PREFLIGHT_SOURCES)
+        ),
+        capability_fillin_enabled=bool(merged.get("capability_fillin_enabled", True)),
+        annotations_enabled=bool(merged.get("annotations_enabled", True)),
         webhooks_enabled=merged["webhooks_enabled"],
         whitelabel_enabled=merged["whitelabel_enabled"],
         priority_processing=merged["priority_processing"],

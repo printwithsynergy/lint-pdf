@@ -58,3 +58,8 @@ report_*.png
 
 # ctxo MCP index (local per-machine symbol cache; rebuilt on demand)
 .ctxo/
+
+# Stripe setup script output — environment-specific product/price IDs.
+# Runtime code keys off `lookup_key` (checked into source), so this file
+# is for local debugging only.
+packages/stripe/scripts/.stripe-ids.json

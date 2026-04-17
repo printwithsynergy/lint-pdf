@@ -17,11 +17,14 @@ export default function PricingPage() {
 
   const tierKeys = [
     "free",
+    "viewer",
     "starter",
     "growth",
     "scale",
     "enterprise",
   ] as const;
+
+  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
 
   return (
     <main>
@@ -41,89 +44,144 @@ export default function PricingPage() {
 
       {/* Tier Cards */}
       <section className="py-16">
-        <div className="mx-auto max-w-6xl px-6">
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {pricingTiers.map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative rounded-2xl border-2 p-6 flex flex-col transition-all hover:-translate-y-1 ${
-                  plan.highlighted
-                    ? "border-brand-500 bg-white ring-2 ring-brand-200/50 shadow-xl shadow-brand-100"
-                    : "border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-brand-200"
+        <div className="mx-auto max-w-7xl px-6">
+          {/* Monthly / Yearly toggle */}
+          <div className="mb-10 flex items-center justify-center gap-3">
+            <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+              <button
+                type="button"
+                onClick={() => setBilling("monthly")}
+                aria-pressed={billing === "monthly"}
+                className={`rounded-full px-5 py-1.5 text-sm font-medium transition-colors ${
+                  billing === "monthly"
+                    ? "bg-brand-900 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
                 }`}
               >
-                {plan.highlighted && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-900 px-3 py-1 text-xs font-bold text-white shadow-md whitespace-nowrap">
-                    Most Popular
-                  </span>
-                )}
-                <h3 className="text-xl font-semibold text-slate-900">
-                  {plan.name}
-                </h3>
-                <div className="mt-3 mb-1">
-                  <span className="text-3xl font-bold text-slate-900">
-                    {plan.price}
-                  </span>
-                  {plan.period && (
-                    <span className="text-sm text-slate-400 ml-1">
-                      {plan.period}
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setBilling("yearly")}
+                aria-pressed={billing === "yearly"}
+                className={`rounded-full px-5 py-1.5 text-sm font-medium transition-colors ${
+                  billing === "yearly"
+                    ? "bg-brand-900 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                Yearly
+              </button>
+            </div>
+            <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
+              Save 20%
+            </span>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {pricingTiers.map((plan) => {
+              const showYearly =
+                billing === "yearly" && plan.yearlyPrice !== undefined;
+              const displayPrice = showYearly
+                ? (plan.yearlyPrice as string)
+                : plan.price;
+              const displayPeriod = showYearly
+                ? plan.yearlyPeriod
+                : plan.period;
+              const lookupKey = showYearly
+                ? plan.stripeYearlyLookupKey
+                : plan.stripeMonthlyLookupKey;
+              const href = lookupKey
+                ? `${plan.href}${plan.href.includes("?") ? "&" : "?"}price=${lookupKey}`
+                : plan.href;
+
+              return (
+                <div
+                  key={plan.name}
+                  className={`relative rounded-2xl border-2 p-6 flex flex-col transition-all hover:-translate-y-1 ${
+                    plan.highlighted
+                      ? "border-brand-500 bg-white ring-2 ring-brand-200/50 shadow-xl shadow-brand-100"
+                      : "border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-brand-200"
+                  }`}
+                >
+                  {plan.highlighted && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-900 px-3 py-1 text-xs font-bold text-white shadow-md whitespace-nowrap">
+                      Most Popular
                     </span>
                   )}
+                  <h3 className="text-xl font-semibold text-slate-900">
+                    {plan.name}
+                  </h3>
+                  <div className="mt-3 mb-1">
+                    <span className="text-3xl font-bold text-slate-900">
+                      {displayPrice}
+                    </span>
+                    {displayPeriod && (
+                      <span className="text-sm text-slate-400 ml-1">
+                        {displayPeriod}
+                      </span>
+                    )}
+                  </div>
+                  {showYearly && plan.yearlyTotal && (
+                    <p className="text-xs text-slate-400 mb-1">
+                      {plan.yearlyTotal} · {plan.yearlySavings}
+                    </p>
+                  )}
+                  <p className="text-xs font-medium text-brand-600 mb-1">
+                    {plan.filesPerMonth}
+                  </p>
+                  <p className="text-sm text-slate-500 mb-6">
+                    {plan.description}
+                  </p>
+
+                  <ul className="mb-8 flex-1 space-y-3 text-sm text-slate-600">
+                    {plan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <svg
+                          className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {betaMode ? (
+                    <button
+                      type="button"
+                      onClick={() => setWaitlistOpen(true)}
+                      className={`block w-full rounded-xl py-2.5 text-center text-sm font-semibold transition-all ${
+                        plan.highlighted
+                          ? "bg-brand-900 text-white hover:bg-brand-800 shadow-md shadow-brand-200"
+                          : "bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200"
+                      }`}
+                    >
+                      Join the Waitlist
+                    </button>
+                  ) : (
+                    <a
+                      href={href}
+                      className={`block rounded-xl py-2.5 text-center text-sm font-semibold transition-all ${
+                        plan.highlighted
+                          ? "bg-brand-900 text-white hover:bg-brand-800 shadow-md shadow-brand-200"
+                          : "bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200"
+                      }`}
+                    >
+                      {plan.cta}
+                    </a>
+                  )}
                 </div>
-                <p className="text-xs font-medium text-brand-600 mb-1">
-                  {plan.filesPerMonth}
-                </p>
-                <p className="text-sm text-slate-500 mb-6">
-                  {plan.description}
-                </p>
-
-                <ul className="mb-8 flex-1 space-y-3 text-sm text-slate-600">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <svg
-                        className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-500"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                {betaMode ? (
-                  <button
-                    type="button"
-                    onClick={() => setWaitlistOpen(true)}
-                    className={`block w-full rounded-xl py-2.5 text-center text-sm font-semibold transition-all ${
-                      plan.highlighted
-                        ? "bg-brand-900 text-white hover:bg-brand-800 shadow-md shadow-brand-200"
-                        : "bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200"
-                    }`}
-                  >
-                    Join the Waitlist
-                  </button>
-                ) : (
-                  <a
-                    href={plan.href}
-                    className={`block rounded-xl py-2.5 text-center text-sm font-semibold transition-all ${
-                      plan.highlighted
-                        ? "bg-brand-900 text-white hover:bg-brand-800 shadow-md shadow-brand-200"
-                        : "bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200"
-                    }`}
-                  >
-                    {plan.cta}
-                  </a>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -421,6 +479,14 @@ export default function PricingPage() {
                 <span className="font-medium text-slate-700">one file</span>.
                 Page geometry is computed on ingest; deeper analyzers only run
                 if you invoke on-demand capability fill-in.
+              </li>
+              <li>
+                <span className="font-medium text-slate-600">Viewer tier</span>{" "}
+                files count one-for-one against your monthly limit. Engine
+                preflight, capability fill-in, annotations, and report
+                downloads are not available on this tier — bring your own
+                preflight report (PitStop, callas, Acrobat, LintPDF JSON) or
+                upgrade to Starter.
               </li>
               <li>
                 <span className="font-medium text-slate-600">

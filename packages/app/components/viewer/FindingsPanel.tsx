@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { PreflightSourceMode, ViewerFinding } from "./types";
+import { UpgradePrompt } from "./UpgradePrompt";
 
 interface FindingsPanelProps {
   findings: ViewerFinding[];
@@ -16,6 +17,11 @@ interface FindingsPanelProps {
   preflightSource?: PreflightSourceMode;
   /** Human-readable label for the import source, e.g. "Enfocus PitStop". */
   externalSourceLabel?: string | null;
+  /** Plan gate — when false, render an UpgradePrompt instead of the
+   *  generic "load a tool" copy. Viewer tier sets this false. */
+  capabilityFillinEnabled?: boolean;
+  /** Plan name, surfaced in the UpgradePrompt when present. */
+  currentPlan?: string;
 }
 
 type SeverityTab = "all" | "error" | "warning" | "advisory";
@@ -45,6 +51,8 @@ export function FindingsPanel({
   currentPage,
   preflightSource,
   externalSourceLabel,
+  capabilityFillinEnabled = true,
+  currentPlan,
 }: FindingsPanelProps) {
   const [activeTab, setActiveTab] = useState<SeverityTab>("all");
   const [filterScope, setFilterScope] = useState<"all" | "page">("all");
@@ -195,17 +203,29 @@ export function FindingsPanel({
       {/* Findings list - split into document and page sections */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <div className="p-4 text-center text-sm text-slate-500">
-            {deduped.length === 0 && preflightSource === "external"
-              ? externalSourceLabel
-                ? `No findings reported by ${externalSourceLabel}.`
-                : "No findings reported by the imported preflight tool."
-              : deduped.length === 0 && preflightSource === "minimal"
-                ? "Viewer-only mode — no preflight was run. Load a tool above to analyze this PDF."
-                : deduped.length === 0
-                  ? "This document is clean — no findings were produced."
-                  : "No findings match the current filter."}
-          </div>
+          deduped.length === 0 &&
+          preflightSource === "minimal" &&
+          !capabilityFillinEnabled ? (
+            <div className="p-4">
+              <UpgradePrompt
+                gate="capability_fillin"
+                currentPlan={currentPlan}
+                requiredPlan="starter"
+              />
+            </div>
+          ) : (
+            <div className="p-4 text-center text-sm text-slate-500">
+              {deduped.length === 0 && preflightSource === "external"
+                ? externalSourceLabel
+                  ? `No findings reported by ${externalSourceLabel}.`
+                  : "No findings reported by the imported preflight tool."
+                : deduped.length === 0 && preflightSource === "minimal"
+                  ? "Viewer-only mode — no preflight was run. Load a tool above to analyze this PDF."
+                  : deduped.length === 0
+                    ? "This document is clean — no findings were produced."
+                    : "No findings match the current filter."}
+            </div>
+          )
         ) : (
           <>
             {(() => {

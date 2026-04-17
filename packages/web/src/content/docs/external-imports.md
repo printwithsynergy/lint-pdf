@@ -15,6 +15,18 @@ External imports let you keep running preflight in your tool of choice — Enfoc
 - You want the interactive viewer, branded PDF/HTML reports, share links, and approval workflows layered on top of findings your operators trust.
 - You want to consolidate reporting across teams that use different preflight tools.
 
+## Viewer tier customers
+
+Most external-import workloads land naturally on the **Viewer tier** ($15 / month, 150 files / month) — you already have your preflight findings, you just need a hosted viewer + share link. On the Viewer tier:
+
+- `preflight_source=external` submissions are allowed and behave exactly as documented below.
+- `preflight_source=minimal` is also allowed, for jobs where you want the viewer with nothing else.
+- `preflight_source=engine` returns `403 plan_upgrade_required` — upgrade to Starter if you want to run our 500+ check pipeline.
+- Report downloads (PDF / JSON / XML) are disabled. The output is the interactive viewer share link only.
+- Annotations are off.
+
+See [Pricing](/pricing) for the full tier matrix.
+
 ## Supported formats
 
 | `external_format` | Tool | Notes |

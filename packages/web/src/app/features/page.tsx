@@ -491,8 +491,15 @@ export default function FeaturesPage() {
               </h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-4">
                 Submit in minimal mode for pure viewer + share-link use cases —
-                no analyzers run. Separations, TAC, fonts, and images can still
-                be filled on demand when you need them.
+                no analyzers run. On Starter+, separations, TAC, fonts, and
+                images can be filled on demand when you need them. The new{" "}
+                <Link
+                  href="/pricing"
+                  className="font-semibold text-brand-700 hover:underline"
+                >
+                  Viewer tier
+                </Link>{" "}
+                packages this workflow at $15/mo.
               </p>
               <Link
                 href="/docs/viewer-only-mode"
@@ -501,6 +508,62 @@ export default function FeaturesPage() {
                 Minimal mode docs →
               </Link>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Hosted Web Viewer capabilities */}
+      <section className="py-16">
+        <div className="mx-auto max-w-6xl px-6">
+          <div className="mb-12">
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              Hosted Web Viewer
+            </h2>
+            <p className="text-slate-500 max-w-3xl">
+              Every job — engine, external import, or minimal — opens in the
+              same production-grade viewer. Share links are tokenized,
+              branded, and stream from Cloudflare R2 edge caches.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: "Separations & ink channels",
+                body: "Toggle process (CMYK) and spot channels per page. Isolate single inks, inspect overprint behaviour, verify plate counts.",
+              },
+              {
+                title: "TAC heatmap + densitometer",
+                body: "Total Area Coverage overlay flags ink-limit violations. Click any pixel to read the densitometer across every separation.",
+              },
+              {
+                title: "Layers & optional content",
+                body: "PDF optional-content groups render as toggleable layers. Dieline, white ink, and varnish each get their own visibility switch.",
+              },
+              {
+                title: "File comparison",
+                body: "Diff two revisions side-by-side with SSIM heatmaps. Catch moved elements, colour shifts, font substitutions before they ship.",
+              },
+              {
+                title: "Branded & anonymous share links",
+                body: "Every job mints a tokenized URL with your logo and colours — or strip all branding including PDF metadata with one flag.",
+              },
+              {
+                title: "Cloudflare R2 edge caching",
+                body: "Page tiles are pre-warmed into Cloudflare R2 on ingest. Reviewers load from the closest edge, no cold-render waits.",
+              },
+            ].map((cap) => (
+              <div
+                key={cap.title}
+                className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm transition-all hover:shadow-md hover:-translate-y-1"
+              >
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  {cap.title}
+                </h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  {cap.body}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

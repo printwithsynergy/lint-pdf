@@ -29,6 +29,32 @@ class TestTenantPlan:
         assert enterprise_limits["rate_limit_daily"] > free_limits["rate_limit_daily"]
         assert enterprise_limits["max_file_size_mb"] > free_limits["max_file_size_mb"]
 
+    @staticmethod
+    def test_viewer_tier_forbids_engine_and_fillin_and_annotations_and_downloads() -> None:
+        limits = PLAN_LIMITS[TenantPlan.VIEWER]
+        assert "engine" not in limits["allowed_preflight_sources"]
+        assert "minimal" in limits["allowed_preflight_sources"]
+        assert "external" in limits["allowed_preflight_sources"]
+        assert limits["capability_fillin_enabled"] is False
+        assert limits["annotations_enabled"] is False
+        assert limits["allowed_report_formats"] == []
+        assert limits["webhooks_enabled"] is False
+
+    @staticmethod
+    def test_non_viewer_plans_retain_full_access() -> None:
+        for plan in (
+            TenantPlan.FREE,
+            TenantPlan.STARTER,
+            TenantPlan.GROWTH,
+            TenantPlan.SCALE,
+            TenantPlan.ENTERPRISE,
+        ):
+            limits = PLAN_LIMITS[plan]
+            assert "engine" in limits["allowed_preflight_sources"]
+            assert limits["capability_fillin_enabled"] is True
+            assert limits["annotations_enabled"] is True
+            assert len(limits["allowed_report_formats"]) > 0
+
 
 class TestTenantInfo:
     @staticmethod

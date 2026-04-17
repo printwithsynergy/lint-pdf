@@ -1,5 +1,6 @@
 import { HeroSection } from "@/components/HeroSection";
 import { FeaturesSection } from "@/components/FeaturesSection";
+import { WebViewerSection } from "@/components/WebViewerSection";
 import { HotFolderSection } from "@/components/HotFolderSection";
 import { AIFeaturesSection } from "@/components/AIFeaturesSection";
 import { HowItWorksSection } from "@/components/HowItWorksSection";
@@ -13,6 +14,7 @@ export default function Home() {
     <main>
       <HeroSection />
       <FeaturesSection />
+      <WebViewerSection />
       <HotFolderSection />
       <AIFeaturesSection />
       <HowItWorksSection />
