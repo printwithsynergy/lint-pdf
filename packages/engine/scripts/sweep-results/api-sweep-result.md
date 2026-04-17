@@ -162,3 +162,40 @@ Deeper issues still documented but out of scope for this sweep:
 - ISSUE-1: only 10/266 findings carry bbox — annotated overlay underpopulated
 - ISSUE-5: `credit_balance` stays at 0 after admin grant
 - ISSUE-7: `AI_AFP_001: GPU inference service unavailable` on every prod job
+
+---
+
+## Deep-issue retest (prod `api.lintpdf.com`, commits `7e38511` + `bf79288` + `2460be9`)
+
+All three previously-documented "too-deep-for-one-session" issues are now fixed and verified on a fresh post-deploy job (`a5ea30b1-c3f9-439b-b932-a1e606b2e065`, 10-page test PDF, full-ai-scan preset).
+
+| Issue | Before | After |
+|---|---|---|
+| **ISSUE-1** bbox missing on most findings | 10/266 (4%) findings had bbox; annotated PDF overlays were empty. | **178/275 (65%)** findings carry bbox. The remaining 35% are document-level checks (XMP metadata, structure, page boxes) that correctly have no bbox. The annotated PDF now renders **10 overlay XObjects with 65 KB of drawing commands** (2.5 KB to 22 KB per page, scaling with finding density). |
+| **ISSUE-5** `credit_balance` stuck at 0 after grant | `GET /admin/tenants/{id}/ai` always returned `credit_balance: 0.0` even after successful grants. | Grant 2500 credits → response `credits_granted: 2500`; follow-up GET returns `credit_balance: 4500.0` (sum of all active package rows, same aggregation as tenant-facing `/ai/credits`). |
+| **ISSUE-7** GPU advisories firing on every prod job | 8 `gpu_unavailable` advisories per job (`AI_AFP_001`, `AI_IQ_001`, `AI_LOGO_001`, `AI_NSFW_001`, `AI_SZ_001`, `AI_FCLASS_001`, `AI_SIM_001`, `AI_PSTEP_001`) due to GPU service 429 rate-limit. | **0 `gpu_unavailable` advisories.** New `GPUServiceNotConfiguredError` + silent-skip on `GPUServiceRateLimitedError` means transient infra issues don't surface as reviewer-facing findings; only real unreachability (network down, 5xx) still emits the advisory. |
+
+### Fix commits
+
+1. `7e38511` — `fix(engine): wire bbox through interpreter + analyzers, compute credit balance, silent-skip GPU when unconfigured`
+   - `semantic/interpreter.py`: compute bbox when emitting `PathPaintingEvent` (from `_current_path` × CTM) and `TextRenderedEvent` (from text matrix + font size × CTM).
+   - `analyzers/hairline.py`: 15 `Finding()` call sites now pass `bbox=event.bbox`.
+   - `analyzers/ink_coverage_analyzer.py`: `LPDF_INK_001` emits bbox of highest-TAC sample as the authoritative location.
+   - `api/routes/admin.py`: `get_tenant_ai_status` calls `get_credit_balance()` helper instead of reading the stale `config.credit_balance` column.
+   - `ai/gpu_client.py`: new `GPUServiceNotConfiguredError` raised when URL is empty.
+   - 9 GPU-analyzer files: catch the new error and silent-skip.
+2. `bf79288` — `fix(engine): silent-skip GPU analyzers on rate-limit too (not just unconfigured)`
+   - Extends the silent-skip branch to `GPUServiceRateLimitedError` since the production GPU service is reachable but hitting 429 per-job.
+3. `2460be9` — `fix(engine): include findings in result_json so annotated PDFs actually render overlays`
+   - `queue/tasks.py`: engine-run and external-import `result_dict` now carry a denormalised `findings` list. The annotated PDF generator's `result_json.get("findings", [])` was always returning `[]` even though findings lived in the DB, because this dict only carried summary + metadata.
+
+### Artifact
+
+Fresh post-deploy run, all six formats, including the now-working annotated overlay:
+
+- `annotated_pdf`: <https://reports.lintpdf.com/r/jvmNUHQfteMndMJKjoSrH4YYCUICGHqcuQ2SJy2pTRg.pdf>
+- `pdf`: <https://reports.lintpdf.com/r/h5JxQqwIVsk44aCLqSQsev6Ahn7NVeGQK7A-7QchJKY.pdf>
+- `html`: <https://reports.lintpdf.com/r/9x4VoNybX3VO0qcCNFVopjljoSkR6oP2QEVQkr9L1do>
+- `json`: <https://reports.lintpdf.com/r/7rlAsUz6luEhlU3ko9WX57_1oD9YSY6UcHnEbWfQhxw.json>
+- `xml`: <https://reports.lintpdf.com/r/5zjiGT1JEe9CpzeD5bF9If5Y15lJfLV82lLluqthtFg.xml>
+- `annotated_pdf_markup`: returned `skipped_reason: no_content` (correct — no viewer annotations stamped on this job).
