@@ -89,7 +89,7 @@ export default function ApiReportsSection() {
         <code className="bg-slate-100 px-1 rounded"> sha256(tenant_id + idempotency_key + format) </code>
         and reuses the stored artifact instead of regenerating it when
         the same key recurs. Keys are scoped per tenant — a shared key
-        will never collide with another tenant's reports.
+        will never collide with another tenant&apos;s reports.
       </p>
       <p className="text-slate-600 text-sm mt-2">
         For a job-submit-time brand override using the three-way enum

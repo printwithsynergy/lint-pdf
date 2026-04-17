@@ -39,7 +39,7 @@ export default function ReportFormatsPage() {
         with the fields below. Every knob has a sensible default, so the
         minimum request is <code className="bg-slate-100 px-1 rounded">{`{ "formats": ["pdf"] }`}</code>.
         Each <code className="bg-slate-100 px-1 rounded">formats</code> entry may be a bare format string
-        (back-compat — resolves to <code className="bg-slate-100 px-1 rounded">return: "url"</code>) or
+        (back-compat — resolves to <code className="bg-slate-100 px-1 rounded">{`return: "url"`}</code>) or
         a <code className="bg-slate-100 px-1 rounded">{`{ format, return }`}</code> spec to request inline
         or both (text formats only).
       </p>
@@ -64,7 +64,7 @@ export default function ReportFormatsPage() {
         instead of regenerating and re-uploading — safe to retry, CDN-friendly,
         and survives transient failures without creating duplicate share links.
         The header is per-tenant scoped, so a client-side key cannot collide
-        with another tenant's reports.
+        with another tenant&apos;s reports.
       </p>
 
       <h3 className="font-semibold text-slate-900 mt-8 mb-3">JSON schema</h3>
