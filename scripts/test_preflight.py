@@ -418,10 +418,27 @@ def exercise_viewer_surface(
     return out
 
 
-def exercise_share_link(http: HTTP, api_key: str, job_id: str) -> str | None:
-    """Mint a share-link report token + open the public-state mirror."""
-    print(f"\n=== share link for job {job_id[:8]}… ===")
+def exercise_share_link(http: HTTP, api_key: str, job_id: str) -> tuple[str | None, str | None]:
+    """Mint TWO share-link tokens: gated + fully public.
+
+    * Gated token carries ``require_visitor_email=true`` so the public
+      routes exercise the ``X-Visitor-Email`` capture path (used by the
+      real dashboard when a reviewer shares with a specific person).
+    * Public token carries ``require_visitor_email=false`` so the URL
+      is clickable with zero headers -- this is what prospects follow
+      from a marketing share or a password-less "see this report" link.
+
+    Returns ``(gated_token, public_token)``. Callers use the public
+    token for the summary block's "interactive viewer" URL so the
+    operator running the script can actually click through without
+    forging a visitor email.
+    """
+    print(f"\n=== share links for job {job_id[:8]}… (gated + public) ===")
     h = {"Authorization": f"Bearer {api_key}"}
+
+    gated_token: str | None = None
+    public_token: str | None = None
+
     code, body = http.request(
         "POST",
         f"/api/v1/jobs/{job_id}/reports",
@@ -432,27 +449,48 @@ def exercise_share_link(http: HTTP, api_key: str, job_id: str) -> str | None:
             "allow_annotations": True,
             "require_visitor_email": True,
         },
+        note="gated share",
     )
-    if not isinstance(body, dict):
-        return None
-    reports = body.get("reports", [])
-    if not reports:
-        return None
-    token = reports[0].get("token")
-    if token:
-        # Public state mirror — visitor email proves access
+    if isinstance(body, dict):
+        for r in body.get("reports", []):
+            if r.get("token"):
+                gated_token = r["token"]
+                break
+    if gated_token:
+        # Exercise the visitor-email gate + public state mirror.
         http.request(
             "GET",
-            f"/api/v1/viewer/public/{token}/state",
+            f"/api/v1/viewer/public/{gated_token}/state",
             headers={"X-Visitor-Email": "viewer@example.test"},
         )
-        # Public annotations with comments inlined
         http.request(
             "GET",
-            f"/api/v1/viewer/public/{token}/annotations?include=comments",
+            f"/api/v1/viewer/public/{gated_token}/annotations?include=comments",
             headers={"X-Visitor-Email": "viewer@example.test"},
         )
-    return token
+
+    code, body = http.request(
+        "POST",
+        f"/api/v1/jobs/{job_id}/reports",
+        headers=h,
+        json_body={
+            "formats": ["html"],
+            "expiry_days": 7,
+            "allow_annotations": True,
+            "require_visitor_email": False,
+        },
+        note="public share",
+    )
+    if isinstance(body, dict):
+        for r in body.get("reports", []):
+            if r.get("token"):
+                public_token = r["token"]
+                break
+    if public_token:
+        # Verify the public token needs zero headers.
+        http.request("GET", f"/api/v1/viewer/public/{public_token}/state")
+        http.request("GET", f"/api/v1/viewer/public/{public_token}/pages")
+    return gated_token, public_token
 
 
 def exercise_approval_chain(http: HTTP, api_key: str, job_id: str) -> dict[str, Any]:
@@ -551,11 +589,12 @@ def main() -> int:
     # ----- Reports + viewer + share + approval against the vanilla job
     primary_job = job_vanilla
     reports: dict[str, str] = {}
-    share_token: str | None = None
+    gated_token: str | None = None
+    public_token: str | None = None
     if primary_job:
         reports = generate_every_report_format(http, api_key, primary_job)
         exercise_viewer_surface(http, api_key, primary_job)
-        share_token = exercise_share_link(http, api_key, primary_job)
+        gated_token, public_token = exercise_share_link(http, api_key, primary_job)
         exercise_approval_chain(http, api_key, primary_job)
 
     # ----- Captain's Log AI interpret on the AI job (if available)
@@ -589,19 +628,26 @@ def main() -> int:
     print(f"  api key         : {api_key}")
     if job_vanilla:
         print(f"\n  primary job     : {job_vanilla}")
-        print(f"  /state digest   : {API_BASE}/api/v1/jobs/{job_vanilla}/state")
-        print(f"  interactive     : {APP_BASE}/dashboard/jobs/{job_vanilla}/viewer")
+        # NOTE: the two URLs below are AUTHENTICATED. /jobs/{id}/state
+        # needs ``Authorization: Bearer $API_KEY``; the dashboard viewer
+        # needs a logged-in session for this tenant. Use the public
+        # share URL further down for click-through without headers.
+        print(f"  auth /state     : {API_BASE}/api/v1/jobs/{job_vanilla}/state  (needs Bearer token)")
+        print(f"  auth dashboard  : {APP_BASE}/dashboard/jobs/{job_vanilla}/viewer  (needs login)")
     if job_ai:
-        print(f"  AI job          : {job_ai}")
-        print(f"  AI interactive  : {APP_BASE}/dashboard/jobs/{job_ai}/viewer")
+        print(f"  AI job          : {job_ai}  (auth)")
     if reports:
-        print("\n  report URLs (every format):")
+        print("\n  report URLs (every format, public via signed token):")
         for fmt, url in reports.items():
             print(f"    {fmt:24} {url}")
-    if share_token:
-        print(f"\n  share-link token: {share_token}")
-        print(f"  share-link page : {API_BASE}/r/{share_token}")
-        print(f"  share /state    : {API_BASE}/api/v1/viewer/public/{share_token}/state")
+    if public_token:
+        print(f"\n  ✨ PUBLIC interactive viewer (no login, no headers):")
+        print(f"    {API_BASE}/r/{public_token}")
+        print(f"    public /state : {API_BASE}/api/v1/viewer/public/{public_token}/state")
+        print(f"    public pages  : {API_BASE}/api/v1/viewer/public/{public_token}/pages")
+    if gated_token:
+        print(f"\n  gated share-link (needs X-Visitor-Email header):")
+        print(f"    {API_BASE}/r/{gated_token}")
     if import_jobs:
         print("\n  external-import jobs (one per parser):")
         for fmt, jid in import_jobs.items():
