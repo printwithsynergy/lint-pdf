@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { FieldTable } from "@/components/docs/FieldTable";
 
@@ -9,9 +10,9 @@ export default function WebhooksPage() {
         Webhooks deliver real-time events to your HTTPS endpoint. Every
         delivery is HMAC-SHA256 signed and every dispatch is recorded in a
         per-tenant audit log you can inspect and replay. See the{" "}
-        <a className="text-blue-600 underline" href="/swagger">
+        <Link className="text-blue-600 underline" href="/swagger">
           Swagger reference
-        </a>{" "}
+        </Link>{" "}
         for the exact request/response shapes.
       </p>
 
@@ -185,7 +186,7 @@ export function valid(body: Buffer, header: string, secret: string) {
         <code className="bg-slate-100 px-1 rounded">test.ping</code> event
         against your current URL + secret, writes a{" "}
         <code className="bg-slate-100 px-1 rounded">WebhookDelivery</code>{" "}
-        audit row so it's visible in the replay surface, and returns the
+        audit row so it&apos;s visible in the replay surface, and returns the
         response status inline.
       </p>
       <CodeBlock>{`curl -X POST https://api.lintpdf.com/api/v1/webhooks/{webhook_id}/test \\

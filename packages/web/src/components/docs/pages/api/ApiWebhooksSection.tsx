@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { Endpoint } from "@/components/docs/Endpoint";
 import { FieldTable } from "@/components/docs/FieldTable";
@@ -181,7 +182,7 @@ export function valid(body: Buffer, header: string, secret: string) {
       <h4 className="font-semibold text-slate-900 mt-8 mb-2">Event catalog</h4>
       <p className="text-slate-600 mb-3">
         The full list of events your endpoint can subscribe to. See the
-        dedicated <a href="/docs/webhooks" className="text-blue-600 underline">Webhooks</a> page for delivery semantics, replay, and sample payloads.
+        dedicated <Link href="/docs/webhooks" className="text-blue-600 underline">Webhooks</Link> page for delivery semantics, replay, and sample payloads.
       </p>
       <FieldTable
         rows={[

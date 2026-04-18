@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { Endpoint } from "@/components/docs/Endpoint";
 import { FieldTable } from "@/components/docs/FieldTable";
@@ -383,9 +384,9 @@ Content-Type: image/png`}
         <code className="bg-slate-100 px-1 rounded">GET /api/v1/viewer/jobs/{"{job_id}"}/annotations</code>
         {" "}returns the flat annotation list by default (back-compat).
         Pass <code className="bg-slate-100 px-1 rounded">?include=comments</code>
-        {" "}to embed each annotation's full comment thread inline in one
+        {" "}to embed each annotation&apos;s full comment thread inline in one
         round trip — no N+1 fan-out of per-annotation comment fetches.
-        The aggregated <a href="/docs/job-state" className="text-blue-600 underline">GET /api/v1/jobs/{"{id}"}/state</a>
+        The aggregated <Link href="/docs/job-state" className="text-blue-600 underline">GET /api/v1/jobs/{"{id}"}/state</Link>
         {" "}endpoint uses the same embedding.
       </p>
       <Endpoint
@@ -423,7 +424,7 @@ Content-Type: image/png`}
         The same <code className="bg-slate-100 px-1 rounded">?include=comments</code>
         {" "}param works on the share-link mirror
         {" "}<code className="bg-slate-100 px-1 rounded">GET /api/v1/viewer/public/{"{token}"}/annotations?include=comments</code>
-        {" "}— unauthenticated read, subject to the token's expiry.
+        {" "}— unauthenticated read, subject to the token&apos;s expiry.
       </p>
 
       <h4 className="font-semibold text-slate-900 mt-8 mb-2">
@@ -434,8 +435,8 @@ Content-Type: image/png`}
         links. Returns the same stitched digest (summary + approval chain +
         verdict + annotations + comments) minus the{" "}
         <code className="bg-slate-100 px-1 rounded">reports</code> section —
-        those are scoped to the issuing tenant and shouldn't leak sibling
-        tokens. See <a className="text-blue-600 underline" href="/docs/job-state">Universal Job State</a> for the full field reference.
+        those are scoped to the issuing tenant and shouldn&apos;t leak sibling
+        tokens. See <Link className="text-blue-600 underline" href="/docs/job-state">Universal Job State</Link> for the full field reference.
       </p>
       <Endpoint
         method="GET"

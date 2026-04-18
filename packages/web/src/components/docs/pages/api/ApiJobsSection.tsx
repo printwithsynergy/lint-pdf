@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { Endpoint } from "@/components/docs/Endpoint";
 import { FieldTable } from "@/components/docs/FieldTable";
@@ -208,10 +209,10 @@ export default function ApiJobsSection() {
       <p className="text-slate-600 mb-3">
         <code className="bg-slate-100 px-1 rounded">GET /api/v1/jobs/{"{job_id}"}/state</code>
         {" "}returns preflight results, every minted report URL, the approval
-        chain (with each approver's notes), the manual verdict, and every
+        chain (with each approver&apos;s notes), the manual verdict, and every
         viewer annotation with its comment thread embedded — in one call.
         Previously this required 3+ round trips and an N+1 fan-out for
-        comments. See the dedicated <a href="/docs/job-state" className="text-blue-600 underline">Universal Job State</a>
+        comments. See the dedicated <Link href="/docs/job-state" className="text-blue-600 underline">Universal Job State</Link>
         {" "}page for the full field table and a runnable example payload.
       </p>
       <Endpoint
@@ -260,7 +261,7 @@ export default function ApiJobsSection() {
       <p className="text-slate-600 text-sm mt-3 mb-6">
         Share-link mirror: <code className="bg-slate-100 px-1 rounded">GET /api/v1/viewer/public/{"{token}"}/state</code>
         {" "}returns the same shape minus the <code className="bg-slate-100 px-1 rounded">reports</code>
-        {" "}section (listing sibling share-link tokens from a single token would leak shares that weren't handed to the current visitor).
+        {" "}section (listing sibling share-link tokens from a single token would leak shares that weren&apos;t handed to the current visitor).
       </p>
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Custom submission endpoints</h4>

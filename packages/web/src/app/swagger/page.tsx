@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -30,13 +31,13 @@ export default function SwaggerPage() {
             <p className="text-sm text-slate-600">
               Live OpenAPI reference for every endpoint your API key can
               call. Admin-only routes are excluded —{" "}
-              <a className="text-blue-600 underline" href="/docs/webhooks">
+              <Link className="text-blue-600 underline" href="/docs/webhooks">
                 webhooks
-              </a>
+              </Link>
               ,{" "}
-              <a className="text-blue-600 underline" href="/docs/job-state">
+              <Link className="text-blue-600 underline" href="/docs/job-state">
                 job state
-              </a>
+              </Link>
               , and{" "}
               <a
                 className="text-blue-600 underline"
@@ -48,18 +49,18 @@ export default function SwaggerPage() {
             </p>
           </div>
           <div className="flex gap-2 text-sm">
-            <a
+            <Link
               href="/docs/postman"
               className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-50"
             >
               Postman collection
-            </a>
-            <a
+            </Link>
+            <Link
               href="/docs"
               className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-50"
             >
               Docs home
-            </a>
+            </Link>
           </div>
         </div>
       </div>
