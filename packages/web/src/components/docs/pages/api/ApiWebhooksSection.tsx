@@ -157,6 +157,96 @@ export function valid(body: Buffer, header: string, secret: string) {
   return a.length === b.length && timingSafeEqual(a, b);
 }`}</CodeBlock>
 
+      <h4 className="font-semibold text-slate-900 mt-8 mb-2">Event catalog</h4>
+      <p className="text-slate-600 mb-3">
+        The full list of events your endpoint can subscribe to. See the
+        dedicated <a href="/docs/webhooks" className="text-blue-600 underline">Webhooks</a> page for delivery semantics, replay, and sample payloads.
+      </p>
+      <FieldTable
+        rows={[
+          { name: "job.completed", type: "event", description: "Preflight completes successfully." },
+          { name: "job.failed", type: "event", description: "Engine exception or import parse failure." },
+          { name: "job.state_changed", type: "event", description: "Umbrella event. Fires whenever GET /jobs/{id}/state would differ. Payload carries the full /state digest inline plus a 'reason' tag." },
+          { name: "approval.chain.started", type: "event", description: "Approval chain attached + step 0 kicked off." },
+          { name: "approval.step.started", type: "event", description: "Step enters active review." },
+          { name: "approval.step.decided", type: "event", description: "Approver submits a decision + optional notes." },
+          { name: "approval.chain.completed", type: "event", description: "Final step approved → chain success." },
+          { name: "approval.chain.rejected", type: "event", description: "Any step rejected → chain terminates." },
+          { name: "approval.chain.cancelled", type: "event", description: "Chain manually cancelled." },
+          { name: "approval.chain.timeout", type: "event", description: "Step expired without decision." },
+          { name: "annotation.created", type: "event", description: "Reviewer drew a rect/circle/arrow/note/freehand." },
+          { name: "annotation.deleted", type: "event", description: "Annotation removed." },
+          { name: "comment.created", type: "event", description: "New comment on an annotation thread." },
+          { name: "verdict.changed", type: "event", description: "Manual verdict pass/fail flipped. Payload: previous, current, verdict_by, notes." },
+          { name: "report.minted", type: "event", description: "POST /jobs/{id}/reports returned at least one URL. Payload lists every minted format + URL + expires_at." },
+          { name: "report.expired", type: "event", description: "Report token's expires_at passed and the nightly sweep deleted it. One event per token." },
+          { name: "share_link.visited", type: "event", description: "First touch per (token, visitor_email) pair. Subsequent visits update last_seen_at silently." },
+          { name: "billing.file_quota.low", type: "event", description: "Monthly file pool dropped from >10% to ≤10% on deduction. One-shot per crossing." },
+          { name: "billing.file_quota.exhausted", type: "event", description: "Submit rejected with 402 — pool empty + overage off." },
+          { name: "billing.ai_credits.low", type: "event", description: "AI credits crossed the 10% watermark (CREDIT_PACKAGE billing mode only)." },
+          { name: "billing.ai_credits.exhausted", type: "event", description: "Credit package drained to zero." },
+          { name: "tenant.plan.changed", type: "event", description: "Admin PATCH /admin/tenants/{id}/plan set a new plan value. Payload: previous_plan, new_plan." },
+        ]}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-8 mb-2">Delivery audit + replay</h4>
+      <p className="text-slate-600 mb-3">
+        Every dispatched event lands in the <code className="bg-slate-100 px-1 rounded">webhook_deliveries</code> table with the exact JSON body LintPDF signed. A failed endpoint no longer means a lost event — operators can inspect and replay any past delivery.
+      </p>
+      <Endpoint
+        method="GET"
+        path="/api/v1/webhooks/deliveries"
+        description="List delivery attempts newest-first. Filter with ?webhook_id=, ?event=, ?success=false. Paginates via ?page= + ?page_size= (default 50, max 200)."
+        auth
+        request={`curl "https://api.lintpdf.com/api/v1/webhooks/deliveries?success=false&page_size=25" \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "deliveries": [
+    {
+      "id": "...",
+      "webhook_id": "...",
+      "event": "job.state_changed",
+      "url": "https://your-app.com/webhooks/lintpdf",
+      "attempt_count": 1,
+      "final_status_code": 503,
+      "success": false,
+      "last_error": "HTTP 503",
+      "created_at": "2026-04-18T02:11:00Z",
+      "delivered_at": "2026-04-18T02:11:02Z"
+    }
+  ],
+  "total": 1, "page": 1, "page_size": 25
+}`}
+      />
+      <Endpoint
+        method="GET"
+        path="/api/v1/webhooks/deliveries/{delivery_id}"
+        description="Fetch one delivery row + the exact signed payload we POSTed."
+        auth
+        request={`curl "https://api.lintpdf.com/api/v1/webhooks/deliveries/..." \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "id": "...", "event": "job.state_changed", "success": false,
+  "payload": { "reason": "verdict.changed", "job": { "...": "..." } }
+}`}
+      />
+      <Endpoint
+        method="POST"
+        path="/api/v1/webhooks/deliveries/{delivery_id}/replay"
+        description="Re-fire a past delivery against the original endpoint. Creates a NEW WebhookDelivery row; the original is preserved for audit history. Returns 409 if the endpoint is inactive or deleted."
+        auth
+        request={`curl -X POST https://api.lintpdf.com/api/v1/webhooks/deliveries/.../replay \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`HTTP/1.1 201 Created
+{
+  "id": "<new-delivery-id>",
+  "event": "job.state_changed",
+  "attempt_count": 0,
+  "success": false,
+  "payload": { "...": "same as original" }
+}`}
+      />
+
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Check-name registry</h4>
       <p className="text-slate-600 mb-3">
         Unauthenticated, cache-aggressive endpoint mapping every engine

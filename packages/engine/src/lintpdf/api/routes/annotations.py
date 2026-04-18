@@ -108,6 +108,31 @@ def _comment_to_response(row: ViewerAnnotationComment) -> CommentResponse:
     )
 
 
+class _AnnotationSnapshot:
+    """Lightweight struct to carry annotation fields past a delete-commit.
+
+    The ORM row becomes unusable the moment SQLAlchemy expires it on
+    commit, so the deletion-event helpers need a plain container to
+    quote ``id`` / ``job_id`` / ``page_num`` / ``tenant_id`` from after
+    the delete has landed.
+    """
+
+    __slots__ = ("id", "tenant_id", "job_id", "page_num")
+
+    def __init__(
+        self,
+        *,
+        id: uuid_mod.UUID,
+        tenant_id: uuid_mod.UUID,
+        job_id: uuid_mod.UUID,
+        page_num: int,
+    ) -> None:
+        self.id = id
+        self.tenant_id = tenant_id
+        self.job_id = job_id
+        self.page_num = page_num
+
+
 def _to_response(row: ViewerAnnotation) -> AnnotationResponse:
     return AnnotationResponse(
         id=str(row.id),
@@ -312,6 +337,15 @@ async def create_annotation_auth(
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    # Notify subscribers: granular (annotation.created) + umbrella
+    # (job.state_changed with the full /state digest inline).
+    from lintpdf.webhooks.events import fire_annotation_created, fire_job_state_changed
+
+    fire_annotation_created(db, row)
+    fire_job_state_changed(db, job, tenant.id, reason="annotation.created")
+    db.commit()
+
     return _to_response(row)
 
 
@@ -378,7 +412,25 @@ async def delete_annotation_auth(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="Annotation not found.")
+
+    # Capture a plain-dict snapshot BEFORE deletion so the event helper
+    # still has the fields it needs after the ORM row is gone.
+    snapshot = _AnnotationSnapshot(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        job_id=row.job_id,
+        page_num=row.page_num,
+    )
+    deleted_job_id = row.job_id
     db.delete(row)
+    db.commit()
+
+    job = db.query(Job).filter(Job.id == deleted_job_id, Job.tenant_id == tenant.id).first()
+    from lintpdf.webhooks.events import fire_annotation_deleted, fire_job_state_changed
+
+    fire_annotation_deleted(db, snapshot)
+    if job is not None:
+        fire_job_state_changed(db, job, tenant.id, reason="annotation.deleted")
     db.commit()
 
 
@@ -415,6 +467,7 @@ def _capture_visitor(token: str, email: str, request: Request, db: Session) -> N
         )
         .first()
     )
+    first_visit = existing is None
     if existing is None:
         db.add(
             ShareLinkVisitor(
@@ -431,6 +484,25 @@ def _capture_visitor(token: str, email: str, request: Request, db: Session) -> N
             existing.ip_hash = ip_hash
         if ua:
             existing.user_agent = ua
+
+    # Fire share_link.visited only on first touch per (token, email) pair.
+    # Subsequent visits update last_seen_at but don't spam webhooks.
+    if first_visit:
+        try:
+            rec = db.query(ReportToken).filter(ReportToken.token == token).first()
+            if rec is not None:
+                from lintpdf.webhooks.events import fire_share_link_visited
+
+                fire_share_link_visited(
+                    db,
+                    rec.tenant_id,
+                    token=token,
+                    visitor_email=email.lower(),
+                    job_id=rec.job_id,
+                    first_visit=True,
+                )
+        except Exception:
+            logger.exception("share_link.visited webhook emit failed")
 
 
 def _require_visitor_email(request: Request) -> str:
@@ -516,6 +588,18 @@ async def create_annotation_public(
     db.add(row)
     db.commit()
     db.refresh(row)
+
+    # Share-link annotation creates still fire tenant-scoped webhooks so
+    # the issuing tenant's dashboard gets the same signal whether the
+    # reviewer typed in the dashboard or a share-link page.
+    from lintpdf.webhooks.events import fire_annotation_created, fire_job_state_changed
+
+    fire_annotation_created(db, row)
+    job = db.query(Job).filter(Job.id == rec.job_id).first()
+    if job is not None:
+        fire_job_state_changed(db, job, rec.tenant_id, reason="annotation.created")
+    db.commit()
+
     return _to_response(row)
 
 
@@ -597,7 +681,23 @@ async def delete_annotation_public(
     )
     if row is None:
         raise HTTPException(status_code=404, detail="Annotation not found.")
+    snapshot = _AnnotationSnapshot(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        job_id=row.job_id,
+        page_num=row.page_num,
+    )
+    deleted_job_id = row.job_id
+    deleted_tenant_id = row.tenant_id
     db.delete(row)
+    db.commit()
+
+    from lintpdf.webhooks.events import fire_annotation_deleted, fire_job_state_changed
+
+    fire_annotation_deleted(db, snapshot)
+    job = db.query(Job).filter(Job.id == deleted_job_id).first()
+    if job is not None:
+        fire_job_state_changed(db, job, deleted_tenant_id, reason="annotation.deleted")
     db.commit()
 
 
@@ -778,6 +878,13 @@ async def create_comment_auth(
     job = db.query(Job).filter(Job.id == annotation.job_id).first()
     _fan_out_comment_email(db=db, annotation=annotation, new_comment=row, job=job)
 
+    from lintpdf.webhooks.events import fire_comment_created, fire_job_state_changed
+
+    fire_comment_created(db, row)
+    if job is not None:
+        fire_job_state_changed(db, job, tenant.id, reason="comment.created")
+    db.commit()
+
     return _comment_to_response(row)
 
 
@@ -915,6 +1022,13 @@ async def create_comment_public(
 
     job = db.query(Job).filter(Job.id == annotation.job_id).first()
     _fan_out_comment_email(db=db, annotation=annotation, new_comment=row, job=job)
+
+    from lintpdf.webhooks.events import fire_comment_created, fire_job_state_changed
+
+    fire_comment_created(db, row)
+    if job is not None:
+        fire_job_state_changed(db, job, rec.tenant_id, reason="comment.created")
+    db.commit()
 
     return _comment_to_response(row)
 

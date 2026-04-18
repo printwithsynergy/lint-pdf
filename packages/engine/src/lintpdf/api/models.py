@@ -336,6 +336,62 @@ class WebhookEndpoint(Base):
     tenant: Mapped[Tenant] = relationship(back_populates="webhook_endpoints")
 
 
+class WebhookDelivery(Base):
+    """Audit row for one webhook delivery attempt.
+
+    Every time the engine dispatches an event to a ``WebhookEndpoint``,
+    a row is written here before the first attempt and updated with the
+    final status after retries. The row persists the exact payload we
+    signed so operators can replay a failed delivery verbatim via
+    ``POST /api/v1/webhooks/deliveries/{id}/replay``. Without this
+    table the previous behaviour was fire-and-forget: a 5xx on the
+    caller's endpoint meant the event was lost with only the engine
+    log as trail.
+    """
+
+    __tablename__ = "webhook_deliveries"
+    __table_args__ = (
+        Index("ix_webhook_deliveries_endpoint_created", "webhook_id", "created_at"),
+        Index("ix_webhook_deliveries_tenant_created", "tenant_id", "created_at"),
+        Index("ix_webhook_deliveries_event_created", "event", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    webhook_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        ForeignKey("webhook_endpoints.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    event: Mapped[str] = mapped_column(String(64), nullable=False)
+    # Full JSON body we POSTed -- stored verbatim so replay re-sends the
+    # exact same signed bytes. ``sort_keys=True`` in the dispatcher keeps
+    # the serialisation stable.
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    # URL at time of dispatch (persisted even if endpoint later changes URL).
+    url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    # Number of HTTP attempts made (1 = first try + 0 retries, up to max_retries+1).
+    attempt_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Final HTTP status code from the caller, or 0 if no response was
+    # received (DNS / connection / timeout failures).
+    final_status_code: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # True iff the final attempt returned a 2xx / 3xx. False for 4xx, 5xx,
+    # or network failure.
+    success: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Last error string (HTTP status text, exception message, etc).
+    # Capped by the column length; full details stay in engine logs.
+    last_error: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    delivered_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
 class CustomProfile(Base):
     """Custom preflight profile owned by a tenant."""
 

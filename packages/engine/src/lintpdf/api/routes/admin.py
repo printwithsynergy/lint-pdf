@@ -415,6 +415,7 @@ async def update_tenant_plan(
             detail=f"Invalid plan: {body.plan}",
         ) from exc
 
+    previous_plan = str(tenant.plan) if tenant.plan else None
     limits = PLAN_LIMITS[new_plan]
     tenant.plan = new_plan
     tenant.rate_limit_daily = limits["rate_limit_daily"]
@@ -426,6 +427,14 @@ async def update_tenant_plan(
         tenant.overage_cap_cents = body.overage_cap_cents
 
     db.commit()
+
+    if previous_plan != str(new_plan):
+        from lintpdf.webhooks.events import fire_tenant_plan_changed
+
+        fire_tenant_plan_changed(
+            db, tenant.id, previous_plan=previous_plan, new_plan=str(new_plan)
+        )
+        db.commit()
 
     return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
 

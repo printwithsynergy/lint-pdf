@@ -550,6 +550,33 @@ async def generate_reports(  # skipcq: PY-R1000
         ),
     )
 
+    # Notify subscribers. Only the formats that actually produced a URL
+    # are interesting for a "report.minted" event -- a skipped format
+    # (e.g. annotated_pdf_markup with no viewer annotations) returns
+    # url=None and skipped_reason set; those don't constitute a mint.
+    minted = [r for r in result.reports if r.get("url")]
+    if minted:
+        from lintpdf.webhooks.events import fire_job_state_changed, fire_report_minted
+
+        fire_report_minted(
+            db,
+            tenant.id,
+            job_id=uid,
+            reports=[
+                {
+                    "format": r["format"],
+                    "url": r["url"],
+                    "token": r.get("token"),
+                    "expires_at": r.get("expires_at"),
+                }
+                for r in minted
+            ],
+        )
+        job_row = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
+        if job_row is not None:
+            fire_job_state_changed(db, job_row, tenant.id, reason="report.minted")
+        db.commit()
+
     return GenerateReportsResponse(
         reports=[ReportInfo(**r) for r in result.reports],
     )

@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
-from lintpdf.api.models import Tenant, WebhookEndpoint
+from lintpdf.api.models import Tenant, WebhookDelivery, WebhookEndpoint
 from lintpdf.api.schemas import (
     WebhookCreateRequest,
     WebhookListResponse,
@@ -272,3 +272,215 @@ async def test_webhook(
         error=result.error,
         event="test.ping",
     )
+
+
+# ---------------------------------------------------------------------------
+# Delivery audit + replay
+# ---------------------------------------------------------------------------
+
+
+class WebhookDeliveryResponse(BaseModel):
+    """One row from the webhook delivery audit log."""
+
+    id: str
+    webhook_id: str
+    event: str
+    url: str
+    attempt_count: int
+    final_status_code: int
+    success: bool
+    last_error: str | None = None
+    created_at: str
+    delivered_at: str | None = None
+
+
+class WebhookDeliveryDetail(WebhookDeliveryResponse):
+    """Delivery row + the exact signed payload we POSTed."""
+
+    payload: dict
+
+
+class WebhookDeliveryListResponse(BaseModel):
+    deliveries: list[WebhookDeliveryResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+def _row_to_summary(d: WebhookDelivery) -> WebhookDeliveryResponse:
+    return WebhookDeliveryResponse(
+        id=str(d.id),
+        webhook_id=str(d.webhook_id),
+        event=d.event,
+        url=d.url,
+        attempt_count=d.attempt_count,
+        final_status_code=d.final_status_code,
+        success=d.success,
+        last_error=d.last_error,
+        created_at=d.created_at.isoformat(),
+        delivered_at=d.delivered_at.isoformat() if d.delivered_at else None,
+    )
+
+
+@router.get("/deliveries", response_model=WebhookDeliveryListResponse)
+async def list_deliveries(
+    webhook_id: str | None = None,
+    event: str | None = None,
+    success: bool | None = None,
+    page: int = 1,
+    page_size: int = 50,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> WebhookDeliveryListResponse:
+    """List webhook delivery attempts for the authenticated tenant.
+
+    Newest first. Filter by ``webhook_id``, ``event``, or
+    ``success=false`` to narrow in on failures. Paginates via
+    ``?page=`` + ``?page_size=`` (default 50, capped at 200).
+    """
+    if page < 1:
+        page = 1
+    if page_size < 1 or page_size > 200:
+        page_size = 50
+
+    query = db.query(WebhookDelivery).filter(WebhookDelivery.tenant_id == tenant.id)
+    if webhook_id:
+        try:
+            wid = uuid_mod.UUID(webhook_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid webhook_id UUID.",
+            ) from None
+        query = query.filter(WebhookDelivery.webhook_id == wid)
+    if event:
+        query = query.filter(WebhookDelivery.event == event)
+    if success is not None:
+        query = query.filter(WebhookDelivery.success.is_(success))
+
+    total = query.count()
+    rows = (
+        query.order_by(WebhookDelivery.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return WebhookDeliveryListResponse(
+        deliveries=[_row_to_summary(r) for r in rows],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/deliveries/{delivery_id}", response_model=WebhookDeliveryDetail)
+async def get_delivery(
+    delivery_id: str,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> WebhookDeliveryDetail:
+    """Fetch one delivery row + the exact signed payload we POSTed."""
+    try:
+        did = uuid_mod.UUID(delivery_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Delivery not found.",
+        ) from None
+    row = (
+        db.query(WebhookDelivery)
+        .filter(WebhookDelivery.id == did, WebhookDelivery.tenant_id == tenant.id)
+        .first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Delivery not found.",
+        )
+    summary = _row_to_summary(row)
+    return WebhookDeliveryDetail(**summary.model_dump(), payload=row.payload)
+
+
+@router.post(
+    "/deliveries/{delivery_id}/replay",
+    response_model=WebhookDeliveryDetail,
+    status_code=status.HTTP_201_CREATED,
+)
+async def replay_delivery(
+    delivery_id: str,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> WebhookDeliveryDetail:
+    """Re-fire a previously-recorded delivery against its original URL.
+
+    Creates a NEW ``WebhookDelivery`` row with the same event + payload
+    so the audit log grows rather than mutating history. The endpoint's
+    current secret signs the replayed body (if it was rotated since
+    the original attempt, the replay will sign with the new secret --
+    callers who rotate secrets lose replayability of older bodies,
+    which is the expected security tradeoff).
+    """
+    try:
+        did = uuid_mod.UUID(delivery_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Delivery not found.",
+        ) from None
+    original = (
+        db.query(WebhookDelivery)
+        .filter(WebhookDelivery.id == did, WebhookDelivery.tenant_id == tenant.id)
+        .first()
+    )
+    if original is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Delivery not found.",
+        )
+    endpoint = (
+        db.query(WebhookEndpoint)
+        .filter(WebhookEndpoint.id == original.webhook_id)
+        .first()
+    )
+    if endpoint is None or not endpoint.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot replay: webhook endpoint is inactive or deleted.",
+        )
+
+    new_row = WebhookDelivery(
+        id=uuid_mod.uuid4(),
+        webhook_id=endpoint.id,
+        tenant_id=tenant.id,
+        event=original.event,
+        payload=original.payload,
+        url=endpoint.url,
+        attempt_count=0,
+        final_status_code=0,
+        success=False,
+    )
+    db.add(new_row)
+    db.commit()
+    db.refresh(new_row)
+
+    # Queue async dispatch. Errors here are logged but don't rollback
+    # the audit row -- "we attempted a replay" is worth preserving.
+    try:
+        from lintpdf.queue.tasks import dispatch_webhook
+
+        dispatch_webhook.delay(  # type: ignore[attr-defined]
+            webhook_url=endpoint.url,
+            webhook_secret=endpoint.secret,
+            event=original.event,
+            payload=original.payload,
+            delivery_id=str(new_row.id),
+        )
+    except Exception:
+        import logging as _logging
+
+        _logging.getLogger(__name__).exception(
+            "replay_delivery: failed to queue dispatch for %s", new_row.id
+        )
+
+    summary = _row_to_summary(new_row)
+    return WebhookDeliveryDetail(**summary.model_dump(), payload=new_row.payload)

@@ -534,6 +534,19 @@ def run_preflight(
                     "summary": result_dict["summary"],
                 },
             )
+            # Also emit the umbrella state_changed event so subscribers
+            # that only want one webhook per logical change don't need
+            # to listen to job.completed + approval.* + verdict.* etc.
+            try:
+                from lintpdf.webhooks.events import fire_job_state_changed
+
+                fire_job_state_changed(
+                    db, job, job.tenant_id, reason="job.completed"
+                )
+            except Exception:
+                logger.exception(
+                    "job.state_changed emit failed for job %s", job_id
+                )
 
             # Auto-generate HTML + PDF reports so they're ready immediately.
             # Callers get report URLs from GET /api/v1/jobs/{id} without a
@@ -968,25 +981,16 @@ def _dispatch_tenant_webhooks(
     event: str,
     payload: dict[str, Any],
 ) -> None:
-    """Dispatch webhooks for a tenant asynchronously."""
-    from lintpdf.api.models import WebhookEndpoint
+    """Dispatch webhooks for a tenant asynchronously.
 
-    endpoints = (
-        db.query(WebhookEndpoint)
-        .filter(WebhookEndpoint.tenant_id == tenant_id, WebhookEndpoint.is_active.is_(True))
-        .all()
-    )
+    Funnels through ``lintpdf.webhooks.events.emit_event`` so every
+    dispatch lands in the ``webhook_deliveries`` audit table -- both
+    pre-existing callers (job.completed, approval.* from approvals
+    service) and the new event helpers share one emit path.
+    """
+    from lintpdf.webhooks.events import emit_event
 
-    for endpoint in endpoints:
-        # Only dispatch if endpoint subscribes to this event (empty = all)
-        if endpoint.events and event not in endpoint.events:
-            continue
-        dispatch_webhook.delay(
-            webhook_url=endpoint.url,
-            webhook_secret=endpoint.secret,
-            event=event,
-            payload=payload,
-        )
+    emit_event(db, tenant_id, event, payload)
 
 
 @celery_app.task(  # type: ignore[untyped-decorator]
@@ -999,6 +1003,7 @@ def dispatch_webhook(
     webhook_secret: str,
     event: str,
     payload: dict[str, Any],
+    delivery_id: str | None = None,
 ) -> dict[str, Any]:
     """Dispatch a webhook notification.
 
@@ -1007,14 +1012,22 @@ def dispatch_webhook(
         webhook_secret: HMAC secret for signing.
         event: Event type (e.g. "job.completed").
         payload: Event payload dict.
+        delivery_id: Optional ``WebhookDelivery`` row UUID. When set, this
+            task updates the row with attempt count, final status, and
+            ``delivered_at`` so operators have a replayable audit trail.
 
     Returns:
         Delivery status dict.
     """
+    import datetime as _dt
     import hashlib
     import hmac
+    import uuid as uuid_mod
 
     import httpx
+
+    from lintpdf.api.database import SessionLocal
+    from lintpdf.api.models import WebhookDelivery
 
     # Sign the payload
     body = json.dumps(payload, sort_keys=True, default=str)
@@ -1024,34 +1037,77 @@ def dispatch_webhook(
         hashlib.sha256,
     ).hexdigest()
 
-    try:
-        response = httpx.post(
-            webhook_url,
-            content=body,
-            headers={
-                "Content-Type": "application/json",
-                "X-LintPDF-Event": event,
-                "X-LintPDF-Signature": f"sha256={signature}",
-            },
-            timeout=10.0,
-        )
-        response.raise_for_status()
+    last_error: str | None = None
+    final_status: int = 0
+    success: bool = False
+    attempt: int = 0
 
+    # Single attempt here (Celery handles retries when configured at the
+    # task level; worker backoff is additive with `autoretry_for`). Most
+    # failures are timeouts or 5xx -- retried upstream via Celery. 4xx
+    # are terminal and persisted to the audit row so operators can see
+    # "endpoint returning 410 Gone -- deactivate it."
+    for attempt in range(1, 2):
+        try:
+            response = httpx.post(
+                webhook_url,
+                content=body,
+                headers={
+                    "Content-Type": "application/json",
+                    "X-LintPDF-Event": event,
+                    "X-LintPDF-Signature": f"sha256={signature}",
+                    "User-Agent": "LintPDF-Webhook/0.1.0",
+                },
+                timeout=10.0,
+            )
+            final_status = response.status_code
+            if response.status_code < 400:
+                success = True
+            else:
+                last_error = f"HTTP {response.status_code}"
+            break
+        except Exception as exc:
+            last_error = str(exc)
+
+    # Persist the audit row if we have one to update.
+    if delivery_id:
+        session = SessionLocal()
+        try:
+            row = (
+                session.query(WebhookDelivery)
+                .filter(WebhookDelivery.id == uuid_mod.UUID(delivery_id))
+                .first()
+            )
+            if row is not None:
+                row.attempt_count = attempt
+                row.final_status_code = final_status
+                row.success = success
+                row.last_error = (last_error or "")[:1024] if last_error else None
+                row.delivered_at = _dt.datetime.now(_dt.timezone.utc)
+                session.commit()
+        except Exception:
+            logger.exception(
+                "Webhook audit: failed to update WebhookDelivery %s", delivery_id
+            )
+            session.rollback()
+        finally:
+            session.close()
+
+    if success:
         return {
             "status": "delivered",
             "url": webhook_url,
             "event": event,
-            "status_code": response.status_code,
+            "status_code": final_status,
         }
 
-    except Exception as exc:
-        logger.warning("Webhook delivery to %s failed: %s", webhook_url, exc)
-        return {
-            "status": "failed",
-            "url": webhook_url,
-            "event": event,
-            "error": str(exc),
-        }
+    logger.warning("Webhook delivery to %s failed: %s", webhook_url, last_error)
+    return {
+        "status": "failed",
+        "url": webhook_url,
+        "event": event,
+        "error": last_error,
+    }
 
 
 @celery_app.task(  # type: ignore[untyped-decorator]

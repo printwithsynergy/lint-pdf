@@ -1631,11 +1631,19 @@ async def set_verdict(
     reviewer_email = getattr(tenant, "owner_email", None) or "reviewer"
     now = datetime.now(timezone.utc)
 
+    previous_verdict = job.verdict
     job.verdict = body.verdict
     job.verdict_by = reviewer_email
     job.verdict_at = now
     job.verdict_notes = body.notes
     db.commit()
+
+    if previous_verdict != body.verdict:
+        from lintpdf.webhooks.events import fire_job_state_changed, fire_verdict_changed
+
+        fire_verdict_changed(db, job, tenant.id, previous_verdict=previous_verdict)
+        fire_job_state_changed(db, job, tenant.id, reason="verdict.changed")
+        db.commit()
 
     return VerdictResponse(
         verdict=job.verdict,

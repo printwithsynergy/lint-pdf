@@ -215,3 +215,45 @@ def deduct_credits(
     )
 
     db.flush()
+
+    # Webhook threshold checks. Only meaningful in credit_package mode
+    # (pay_per_use has no pool to exhaust). Compares balance before vs
+    # after the deduct so a single crossing of the 10% line fires once,
+    # not every subsequent deduction while already-low.
+    if config.billing_mode == AIBillingMode.CREDIT_PACKAGE:
+        try:
+            post_balance = get_credit_balance(tenant_id, db)
+            current_total = float(post_balance.package_credits_remaining)
+            before_total = current_total + float(credit_amount)
+            if current_total <= 0 < before_total:
+                from lintpdf.webhooks.events import fire_billing_threshold
+
+                fire_billing_threshold(
+                    db,
+                    tenant_id,
+                    resource="ai_credits",
+                    severity="exhausted",
+                    remaining=0,
+                )
+                db.flush()
+            elif before_total > 0:
+                # Low threshold: 10% of pre-deduction balance.
+                if before_total > 0 and current_total / before_total <= 0.10 < 1.0:
+                    # Only fire "low" when we actually crossed the line
+                    # on this deduction, not when we're already below.
+                    prev_pct = 1.0  # before_total / before_total
+                    curr_pct = current_total / before_total
+                    if prev_pct > 0.10 >= curr_pct:
+                        from lintpdf.webhooks.events import fire_billing_threshold
+
+                        fire_billing_threshold(
+                            db,
+                            tenant_id,
+                            resource="ai_credits",
+                            severity="low",
+                            remaining=current_total,
+                            allotment=before_total,
+                        )
+                        db.flush()
+        except Exception:
+            logger.exception("ai_credits threshold webhook check failed")

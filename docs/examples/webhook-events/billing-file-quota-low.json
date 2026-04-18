@@ -1,0 +1,6 @@
+{
+  "resource": "file_quota",
+  "severity": "low",
+  "remaining": 125,
+  "allotment": 2500
+}

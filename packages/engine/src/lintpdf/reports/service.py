@@ -836,7 +836,10 @@ class ReportService:
             .all()
         )
 
+        import uuid as uuid_mod
+
         count = 0
+        expired_snapshots: list[tuple[uuid_mod.UUID, uuid_mod.UUID, str, str]] = []
         for record in expired:
             try:
                 file_key = f"reports/{record.tenant_id}/{record.job_id}/report.{record.format}"
@@ -846,11 +849,37 @@ class ReportService:
                     "Failed to delete report file for token %s", record.token
                 )
 
+            # Snapshot what we need for the webhook BEFORE the delete
+            # expires the ORM row.
+            expired_snapshots.append(
+                (record.tenant_id, record.job_id, record.token, record.format)
+            )
             self._db.delete(record)
             count += 1
 
         if count > 0:
             self._db.commit()
+
+            # Fire report.expired for every token that was cleaned up.
+            # The beat task runs once a day, so the batch size here is
+            # small (one row per token that crossed expires_at since the
+            # last sweep); emitting one event per token keeps the payload
+            # shape consistent with report.minted.
+            try:
+                from lintpdf.webhooks.events import fire_report_expired
+
+                for tenant_id, job_id, token, fmt in expired_snapshots:
+                    fire_report_expired(
+                        self._db,
+                        tenant_id,
+                        job_id=job_id,
+                        token=token,
+                        format=fmt,
+                    )
+                if expired_snapshots:
+                    self._db.commit()
+            except Exception:
+                logger.exception("report.expired webhook emit failed")
 
         return count
 

@@ -124,6 +124,21 @@ def check_and_consume_file_quota(
     if remaining > 0:
         # Pool exhausted — decide: overage or reject.
         if not getattr(tenant, "overage_enabled", False):
+            # Fire the exhausted webhook BEFORE raising so subscribers
+            # see the signal even on the 402 path.
+            try:
+                from lintpdf.webhooks.events import fire_billing_threshold
+
+                fire_billing_threshold(
+                    db,
+                    tenant_id,
+                    resource="file_quota",
+                    severity="exhausted",
+                    remaining=0,
+                )
+                db.flush()
+            except Exception:
+                logger.exception("file_quota.exhausted webhook emit failed")
             raise HTTPException(
                 status_code=status.HTTP_402_PAYMENT_REQUIRED,
                 detail=(
@@ -140,7 +155,37 @@ def check_and_consume_file_quota(
         )
 
     db.flush()
-    return get_file_quota_balance(tenant_id, db)
+    post_balance = get_file_quota_balance(tenant_id, db)
+
+    # Low-water-mark alert: fire when we cross the 10% threshold on
+    # decrement (i.e. previous balance was above 10% and current is at
+    # or below). Threshold compares the monthly allotment share so
+    # tenants with large pools get a useful warning window.
+    try:
+        total = post_balance.total_remaining
+        monthly = post_balance.monthly_allotment_remaining + post_balance.purchased_remaining
+        # Use monthly+purchased as the denominator fallback when there's
+        # no plan allotment (tenant bought purely ad-hoc packs).
+        if total > 0 and monthly > 0:
+            before = total + files_requested
+            pct_before = before / max(monthly + files_requested, 1)
+            pct_after = total / max(monthly + files_requested, 1)
+            if pct_before > 0.10 >= pct_after:
+                from lintpdf.webhooks.events import fire_billing_threshold
+
+                fire_billing_threshold(
+                    db,
+                    tenant_id,
+                    resource="file_quota",
+                    severity="low",
+                    remaining=total,
+                    allotment=monthly + files_requested,
+                )
+                db.flush()
+    except Exception:
+        logger.exception("file_quota.low threshold check failed")
+
+    return post_balance
 
 
 def _has_active_file_packs(tenant_id: uuid.UUID, db: Session) -> bool:

@@ -12,10 +12,10 @@ export const docSections = [
     items: [
       { slug: "api-reference", label: "API Reference" },
       { slug: "job-state", label: "Universal Job State" },
+      { slug: "webhooks", label: "Webhooks" },
       { slug: "rulesets", label: "Rulesets" },
       { slug: "checks", label: "Checks" },
       { slug: "report-formats", label: "Report Formats" },
-      { slug: "webhooks", label: "Webhooks" },
       { slug: "sdks", label: "SDKs" },
       { slug: "glossary", label: "Glossary" },
     ],
