@@ -44,6 +44,7 @@ def create_celery_app(broker_url: str) -> Celery:
             "lintpdf.queue.tasks.probe_pending_custom_domains": {"queue": "default"},
             "lintpdf.queue.tasks.process_approval_timeouts": {"queue": "default"},
             "lintpdf.queue.tasks.reap_stale_jobs": {"queue": "default"},
+            "lintpdf.queue.tasks.sweep_webhook_deliveries": {"queue": "default"},
         },
         beat_schedule={
             "cleanup-expired-reports": {
@@ -61,6 +62,10 @@ def create_celery_app(broker_url: str) -> Celery:
             "reap-stale-jobs": {
                 "task": "lintpdf.queue.tasks.reap_stale_jobs",
                 "schedule": 300.0,  # Every 5 minutes — safety net
+            },
+            "sweep-webhook-deliveries": {
+                "task": "lintpdf.queue.tasks.sweep_webhook_deliveries",
+                "schedule": 86400.0,  # Daily
             },
         },
     )

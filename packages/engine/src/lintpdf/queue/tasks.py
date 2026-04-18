@@ -993,19 +993,27 @@ def _dispatch_tenant_webhooks(
     emit_event(db, tenant_id, event, payload)
 
 
+_DEFAULT_MAX_RETRIES = 3
+_DEFAULT_RETRY_BASE_DELAY_S = 5
+_DEFAULT_RETRY_MAX_DELAY_S = 300
+_RETRY_CEILING = 10  # Hard ceiling irrespective of per-endpoint config
+
+
 @celery_app.task(  # type: ignore[untyped-decorator]
     name="lintpdf.webhook.dispatch",
-    max_retries=3,
-    default_retry_delay=5,
+    bind=True,
+    max_retries=_RETRY_CEILING,
+    default_retry_delay=_DEFAULT_RETRY_BASE_DELAY_S,
 )
 def dispatch_webhook(
+    self: Any,
     webhook_url: str,
     webhook_secret: str,
     event: str,
     payload: dict[str, Any],
     delivery_id: str | None = None,
 ) -> dict[str, Any]:
-    """Dispatch a webhook notification.
+    """Dispatch a webhook notification with per-endpoint retry config.
 
     Args:
         webhook_url: URL to deliver the webhook to.
@@ -1017,7 +1025,8 @@ def dispatch_webhook(
             ``delivered_at`` so operators have a replayable audit trail.
 
     Returns:
-        Delivery status dict.
+        Delivery status dict (terminal outcome only — intermediate
+        retries raise ``Retry`` instead of returning).
     """
     import datetime as _dt
     import hashlib
@@ -1025,9 +1034,10 @@ def dispatch_webhook(
     import uuid as uuid_mod
 
     import httpx
+    from celery.exceptions import MaxRetriesExceededError
 
     from lintpdf.api.database import SessionLocal
-    from lintpdf.api.models import WebhookDelivery
+    from lintpdf.api.models import WebhookDelivery, WebhookEndpoint
 
     # Sign the payload
     body = json.dumps(payload, sort_keys=True, default=str)
@@ -1040,36 +1050,35 @@ def dispatch_webhook(
     last_error: str | None = None
     final_status: int = 0
     success: bool = False
-    attempt: int = 0
 
-    # Single attempt here (Celery handles retries when configured at the
-    # task level; worker backoff is additive with `autoretry_for`). Most
-    # failures are timeouts or 5xx -- retried upstream via Celery. 4xx
-    # are terminal and persisted to the audit row so operators can see
-    # "endpoint returning 410 Gone -- deactivate it."
-    for attempt in range(1, 2):
-        try:
-            response = httpx.post(
-                webhook_url,
-                content=body,
-                headers={
-                    "Content-Type": "application/json",
-                    "X-LintPDF-Event": event,
-                    "X-LintPDF-Signature": f"sha256={signature}",
-                    "User-Agent": "LintPDF-Webhook/0.1.0",
-                },
-                timeout=10.0,
-            )
-            final_status = response.status_code
-            if response.status_code < 400:
-                success = True
-            else:
-                last_error = f"HTTP {response.status_code}"
-            break
-        except Exception as exc:
-            last_error = str(exc)
+    # ``self.request.retries`` starts at 0 on the first delivery and
+    # increments on every ``self.retry()``. Translate to 1-indexed for
+    # the audit row so "attempt_count=3" reads naturally as "we tried
+    # three times."
+    attempt = int(getattr(self.request, "retries", 0) or 0) + 1
 
-    # Persist the audit row if we have one to update.
+    try:
+        response = httpx.post(
+            webhook_url,
+            content=body,
+            headers={
+                "Content-Type": "application/json",
+                "X-LintPDF-Event": event,
+                "X-LintPDF-Signature": f"sha256={signature}",
+                "User-Agent": "LintPDF-Webhook/0.1.0",
+            },
+            timeout=10.0,
+        )
+        final_status = response.status_code
+        if response.status_code < 400:
+            success = True
+        else:
+            last_error = f"HTTP {response.status_code}"
+    except Exception as exc:
+        last_error = str(exc)
+
+    # Update audit row before deciding whether to retry so even
+    # intermediate attempts are visible in /webhooks/deliveries.
     if delivery_id:
         session = SessionLocal()
         try:
@@ -1093,21 +1102,154 @@ def dispatch_webhook(
         finally:
             session.close()
 
+    # Retry only on 5xx / network errors. 4xx means the caller's
+    # endpoint rejected the payload; retrying the same body won't
+    # make it better.
+    retryable = (not success) and (final_status == 0 or final_status >= 500)
+
+    if not success and retryable:
+        # Load the per-endpoint retry config on every attempt so a
+        # live ``PATCH /webhooks/{id}`` takes effect mid-backoff.
+        session = SessionLocal()
+        try:
+            max_retries = _DEFAULT_MAX_RETRIES
+            base_delay = _DEFAULT_RETRY_BASE_DELAY_S
+            max_delay = _DEFAULT_RETRY_MAX_DELAY_S
+            if delivery_id:
+                delivery = (
+                    session.query(WebhookDelivery)
+                    .filter(WebhookDelivery.id == uuid_mod.UUID(delivery_id))
+                    .first()
+                )
+                if delivery is not None:
+                    endpoint = (
+                        session.query(WebhookEndpoint)
+                        .filter(WebhookEndpoint.id == delivery.webhook_id)
+                        .first()
+                    )
+                    if endpoint is not None:
+                        if endpoint.max_retries is not None:
+                            max_retries = min(endpoint.max_retries, _RETRY_CEILING)
+                        if endpoint.retry_base_delay_seconds is not None:
+                            base_delay = endpoint.retry_base_delay_seconds
+                        if endpoint.retry_max_delay_seconds is not None:
+                            max_delay = endpoint.retry_max_delay_seconds
+        finally:
+            session.close()
+
+        if attempt <= max_retries:
+            # Exponential backoff, capped. attempt is 1-indexed; first
+            # retry sleeps ``base_delay`` (not ``base_delay * 2``).
+            countdown = min(base_delay * (2 ** (attempt - 1)), max_delay)
+            try:
+                raise self.retry(
+                    countdown=countdown,
+                    max_retries=max_retries,
+                    exc=Exception(last_error or f"HTTP {final_status}"),
+                )
+            except MaxRetriesExceededError:
+                pass  # Fall through to the failed-return below.
+
     if success:
         return {
             "status": "delivered",
             "url": webhook_url,
             "event": event,
             "status_code": final_status,
+            "attempt_count": attempt,
         }
 
-    logger.warning("Webhook delivery to %s failed: %s", webhook_url, last_error)
+    logger.warning(
+        "Webhook delivery to %s failed after %d attempts: %s",
+        webhook_url,
+        attempt,
+        last_error,
+    )
     return {
         "status": "failed",
         "url": webhook_url,
         "event": event,
         "error": last_error,
     }
+
+
+@celery_app.task(  # type: ignore[untyped-decorator]
+    name="lintpdf.queue.tasks.sweep_webhook_deliveries",
+)
+def sweep_webhook_deliveries() -> dict[str, Any]:
+    """Delete old ``WebhookDelivery`` rows per-endpoint retention policy.
+
+    Runs daily via Celery Beat. For every endpoint with a non-null
+    ``delivery_retention_days``, deletes rows whose ``created_at`` is
+    older than that retention window. ``retention_overrides`` entries
+    take precedence for matching event names (fnmatch glob, longest
+    match wins), so a tenant can keep billing events for a year while
+    annotation events expire in a week.
+
+    Endpoints with ``delivery_retention_days IS NULL`` and no matching
+    override are left alone -- operators can opt out of the sweep by
+    leaving both fields unset.
+    """
+    import datetime as _dt
+    import fnmatch
+
+    from lintpdf.api.database import get_db_session
+    from lintpdf.api.models import WebhookDelivery, WebhookEndpoint
+
+    db = get_db_session()
+    now = _dt.datetime.now(_dt.timezone.utc)
+    total_deleted = 0
+    per_endpoint: dict[str, int] = {}
+    try:
+        endpoints = db.query(WebhookEndpoint).all()
+        for endpoint in endpoints:
+            default_days = endpoint.delivery_retention_days
+            overrides: dict[str, int] = endpoint.retention_overrides or {}
+            if default_days is None and not overrides:
+                continue
+
+            rows = (
+                db.query(WebhookDelivery)
+                .filter(WebhookDelivery.webhook_id == endpoint.id)
+                .all()
+            )
+            deleted_here = 0
+            for row in rows:
+                # Longest-glob wins so ``billing.file_quota.low`` is
+                # bound by ``billing.file_quota.*`` rather than the
+                # broader ``billing.*`` when both are present.
+                matched_days: int | None = default_days
+                best_match_len = -1
+                for glob, days in overrides.items():
+                    if fnmatch.fnmatchcase(row.event, glob) and len(glob) > best_match_len:
+                        matched_days = days
+                        best_match_len = len(glob)
+                if matched_days is None:
+                    continue
+                cutoff = now - _dt.timedelta(days=matched_days)
+                # SQLite stores naive datetimes; Postgres stores tz-aware.
+                # Normalise to tz-aware UTC for the comparison.
+                row_created = row.created_at
+                if row_created.tzinfo is None:
+                    row_created = row_created.replace(tzinfo=_dt.timezone.utc)
+                if row_created < cutoff:
+                    db.delete(row)
+                    deleted_here += 1
+
+            if deleted_here:
+                per_endpoint[str(endpoint.id)] = deleted_here
+                total_deleted += deleted_here
+
+        if total_deleted:
+            db.commit()
+            logger.info(
+                "sweep_webhook_deliveries: deleted %d rows across %d endpoint(s)",
+                total_deleted,
+                len(per_endpoint),
+            )
+        return {"deleted": total_deleted, "per_endpoint": per_endpoint}
+    finally:
+        db.close()
 
 
 @celery_app.task(  # type: ignore[untyped-decorator]

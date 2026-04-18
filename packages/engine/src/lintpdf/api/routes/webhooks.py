@@ -107,18 +107,17 @@ async def create_webhook(
         events=request.events,
         secret=secrets.token_urlsafe(32),
         is_active=True,
+        max_retries=request.max_retries,
+        retry_base_delay_seconds=request.retry_base_delay_seconds,
+        retry_max_delay_seconds=request.retry_max_delay_seconds,
+        delivery_retention_days=request.delivery_retention_days,
+        retention_overrides=request.retention_overrides,
     )
     db.add(webhook)
     db.commit()
     db.refresh(webhook)
 
-    return WebhookResponse(
-        id=webhook.id,
-        url=webhook.url,
-        events=webhook.events,
-        is_active=webhook.is_active,
-        created_at=webhook.created_at,
-    )
+    return _webhook_to_response(webhook)
 
 
 @router.get("", response_model=WebhookListResponse)
@@ -131,16 +130,7 @@ async def list_webhooks(
         db.query(WebhookEndpoint).filter(WebhookEndpoint.tenant_id == tenant.id).all()
     )
     return WebhookListResponse(
-        webhooks=[
-            WebhookResponse(
-                id=e.id,
-                url=e.url,
-                events=e.events,
-                is_active=e.is_active,
-                created_at=e.created_at,
-            )
-            for e in endpoints
-        ]
+        webhooks=[_webhook_to_response(e) for e in endpoints]
     )
 
 
@@ -181,15 +171,47 @@ async def update_webhook(
     if request.is_active is not None:
         endpoint.is_active = request.is_active
 
+    if request.max_retries is not None:
+        endpoint.max_retries = request.max_retries
+
+    if request.retry_base_delay_seconds is not None:
+        endpoint.retry_base_delay_seconds = request.retry_base_delay_seconds
+
+    if request.retry_max_delay_seconds is not None:
+        endpoint.retry_max_delay_seconds = request.retry_max_delay_seconds
+
+    if request.delivery_retention_days is not None:
+        endpoint.delivery_retention_days = request.delivery_retention_days
+
+    if request.retention_overrides is not None:
+        endpoint.retention_overrides = request.retention_overrides
+
     db.commit()
     db.refresh(endpoint)
 
+    return _webhook_to_response(endpoint)
+
+
+def _webhook_to_response(e: WebhookEndpoint) -> WebhookResponse:
+    """One place to project WebhookEndpoint → WebhookResponse.
+
+    Keeps the three routes (create / list / update) from drifting when a
+    new column is added. ``max_retries``, ``retry_base_delay_seconds``,
+    ``retry_max_delay_seconds``, ``delivery_retention_days``, and
+    ``retention_overrides`` return ``None`` when the row inherits the
+    platform default.
+    """
     return WebhookResponse(
-        id=endpoint.id,
-        url=endpoint.url,
-        events=endpoint.events,
-        is_active=endpoint.is_active,
-        created_at=endpoint.created_at,
+        id=e.id,
+        url=e.url,
+        events=e.events,
+        is_active=e.is_active,
+        created_at=e.created_at,
+        max_retries=e.max_retries,
+        retry_base_delay_seconds=e.retry_base_delay_seconds,
+        retry_max_delay_seconds=e.retry_max_delay_seconds,
+        delivery_retention_days=e.delivery_retention_days,
+        retention_overrides=e.retention_overrides,
     )
 
 
@@ -258,6 +280,25 @@ async def test_webhook(
         "message": "This is a test webhook delivery from LintPDF.",
     }
 
+    # Persist an audit row BEFORE dispatch so a timeout / crash still
+    # leaves a trail. The dispatcher returns synchronously here (no
+    # Celery), so we update the row inline with whatever the caller's
+    # endpoint returned.
+    delivery = WebhookDelivery(
+        id=uuid_mod.uuid4(),
+        webhook_id=endpoint.id,
+        tenant_id=tenant.id,
+        event="test.ping",
+        payload=test_payload,
+        url=endpoint.url,
+        attempt_count=0,
+        final_status_code=0,
+        success=False,
+    )
+    db.add(delivery)
+    db.commit()
+    db.refresh(delivery)
+
     dispatcher = WebhookDispatcher(max_retries=0, timeout=10.0)
     result = dispatcher.deliver(
         url=endpoint.url,
@@ -265,6 +306,13 @@ async def test_webhook(
         event="test.ping",
         payload=test_payload,
     )
+
+    delivery.attempt_count = 1
+    delivery.final_status_code = result.status_code
+    delivery.success = result.success
+    delivery.last_error = (result.error or "")[:1024] if result.error else None
+    delivery.delivered_at = datetime.now(timezone.utc)
+    db.commit()
 
     return WebhookTestResponse(
         success=result.success,

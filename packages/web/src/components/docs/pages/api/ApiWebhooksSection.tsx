@@ -27,15 +27,36 @@ export default function ApiWebhooksSection() {
   -H "Content-Type: application/json" \\
   -d '{
     "url": "https://your-app.com/webhooks/lintpdf",
-    "events": ["job.completed", "job.failed"]
+    "events": ["job.state_changed", "approval.chain.completed"],
+    "max_retries": 5,
+    "retry_base_delay_seconds": 2,
+    "retry_max_delay_seconds": 60,
+    "delivery_retention_days": 30,
+    "retention_overrides": { "billing.*": 365 }
   }'`}
         response={`{
   "id": "0e7f6c5b-4a3f-4210-9876-543210fedcba",
   "url": "https://your-app.com/webhooks/lintpdf",
-  "events": ["job.completed", "job.failed"],
+  "events": ["job.state_changed", "approval.chain.completed"],
   "is_active": true,
-  "created_at": "2026-04-12T10:30:00Z"
+  "created_at": "2026-04-12T10:30:00Z",
+  "max_retries": 5,
+  "retry_base_delay_seconds": 2,
+  "retry_max_delay_seconds": 60,
+  "delivery_retention_days": 30,
+  "retention_overrides": { "billing.*": 365 }
 }`}
+      />
+      <FieldTable
+        rows={[
+          { name: "url", type: "string (HTTPS URL)", required: true, description: "Public endpoint to POST events to. Private networks rejected at registration." },
+          { name: "events", type: "string[]", default: "[job.completed, job.failed]", description: "Subscription list. Empty [] subscribes to every event. See the catalog below." },
+          { name: "max_retries", type: "int (0-10)", default: "3", description: "Retry budget for 5xx/timeout failures. Null inherits the platform default. Capped at 10 platform-wide." },
+          { name: "retry_base_delay_seconds", type: "int (1-600)", default: "5", description: "Initial retry delay. Subsequent retries double exponentially, capped by retry_max_delay_seconds." },
+          { name: "retry_max_delay_seconds", type: "int (1-3600)", default: "300", description: "Exponential-backoff ceiling. Keeps a high max_retries from waiting absurdly long." },
+          { name: "delivery_retention_days", type: "int (1-365)", default: "null (forever)", description: "Nightly sweep deletes WebhookDelivery audit rows older than this for this endpoint. Null keeps forever." },
+          { name: "retention_overrides", type: "object", default: "{}", description: 'Per-event retention overrides, e.g. {"billing.*": 365, "annotation.*": 7}. Keys are fnmatch globs matched against event names; longest-match wins.' },
+        ]}
       />
       <p className="text-slate-600 text-sm mt-2">
         The signing secret is generated server-side at registration and is not

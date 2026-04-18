@@ -89,12 +89,34 @@ curl -X POST https://api.lintpdf.com/api/v1/webhooks \
 
 ## Delivery semantics
 
-Every delivery is recorded in a new `webhook_deliveries` audit table. For each event the engine:
+Every delivery is recorded in a `webhook_deliveries` audit table. For each event the engine:
 
 1. Creates a `WebhookDelivery` row with the exact JSON body we'll sign.
-2. Queues a Celery task that POSTs the body, applies HMAC-SHA256 signing, and updates the row with `attempt_count`, `final_status_code`, `delivered_at`, and `last_error`.
-3. On 2xx response → row marked `success = true`.
-4. On 4xx/5xx/timeout → row marked `success = false`. Retry policy is Celery-level (max_retries=3, base delay 5s).
+2. Queues a Celery task that POSTs the body with HMAC-SHA256 signing, updates the row with `attempt_count`, `final_status_code`, `delivered_at`, and `last_error`.
+3. On 2xx response → row marked `success = true`, no more attempts.
+4. On 5xx / timeout / network error → Celery `self.retry()` is invoked with exponential backoff until `max_retries` is hit. Every retry updates the SAME row, so `attempt_count` reflects the total tries.
+5. On 4xx → row marked `success = false`, **no retry** (the caller's endpoint rejected the payload shape; retrying the same body won't fix it).
+
+### Retry config
+
+Configurable per endpoint at create or update time:
+
+| Field | Default | Range | Purpose |
+|---|---|---|---|
+| `max_retries` | 3 | 0–10 | Upper bound on retry attempts for one delivery. Capped at 10 platform-wide so a misconfiguration can't DoS the dispatch pool. |
+| `retry_base_delay_seconds` | 5 | 1–600 | Initial delay before the first retry. |
+| `retry_max_delay_seconds` | 300 | 1–3600 | Ceiling on the exponential backoff — attempt N sleeps `min(base * 2**(N-1), max)` seconds. |
+
+Any field set to `null` inherits the platform default.
+
+### Retention
+
+| Field | Default | Range | Purpose |
+|---|---|---|---|
+| `delivery_retention_days` | `null` (forever) | 1–365 | Nightly sweep deletes `webhook_deliveries` rows older than this for the endpoint. `null` keeps forever. |
+| `retention_overrides` | `{}` | — | Per-event overrides keyed by fnmatch glob. E.g. `{"billing.*": 365, "annotation.*": 7}`. Longest-match wins; events that don't match any key use `delivery_retention_days`. |
+
+The sweep runs daily via Celery Beat (`sweep_webhook_deliveries` task). Deletion is tenant-scoped — rows from other tenants' endpoints are never touched.
 
 Operators and integrators can inspect / replay every past delivery:
 

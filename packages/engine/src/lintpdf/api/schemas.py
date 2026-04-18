@@ -407,6 +407,53 @@ class WebhookCreateRequest(BaseModel):
         default_factory=lambda: ["job.completed", "job.failed"],
         description="Events to subscribe to.",
     )
+    max_retries: int | None = Field(
+        default=None,
+        ge=0,
+        le=10,
+        description=(
+            "Override the default retry budget (3) for 5xx/timeout failures. "
+            "Capped at 10 so a runaway config can't DoS the dispatch pool. "
+            "Null inherits the platform default."
+        ),
+    )
+    retry_base_delay_seconds: int | None = Field(
+        default=None,
+        ge=1,
+        le=600,
+        description=(
+            "Initial retry delay. Subsequent retries double exponentially, "
+            "capped by `retry_max_delay_seconds`. Null inherits 5."
+        ),
+    )
+    retry_max_delay_seconds: int | None = Field(
+        default=None,
+        ge=1,
+        le=3600,
+        description=(
+            "Ceiling on the exponential backoff so a high `max_retries` "
+            "never waits absurdly long. Null inherits 300."
+        ),
+    )
+    delivery_retention_days: int | None = Field(
+        default=None,
+        ge=1,
+        le=365,
+        description=(
+            "Days to keep WebhookDelivery audit rows before the nightly "
+            "sweep deletes them. Null keeps forever (use with care -- "
+            "payloads stay queryable until you remove the endpoint)."
+        ),
+    )
+    retention_overrides: dict[str, int] | None = Field(
+        default=None,
+        description=(
+            "Per-event retention overrides. Keys are fnmatch globs matched "
+            'against event names, e.g. `{"billing.*": 365, "annotation.*": 7}`. '
+            "Longest-match wins. Events that don't match any key use "
+            "`delivery_retention_days`."
+        ),
+    )
 
 
 class WebhookResponse(BaseModel):
@@ -417,6 +464,26 @@ class WebhookResponse(BaseModel):
     events: list[str]
     is_active: bool
     created_at: datetime
+    max_retries: int | None = Field(
+        default=None,
+        description="Per-endpoint retry budget override. Null = platform default (3).",
+    )
+    retry_base_delay_seconds: int | None = Field(
+        default=None,
+        description="Initial retry delay in seconds. Null = platform default (5).",
+    )
+    retry_max_delay_seconds: int | None = Field(
+        default=None,
+        description="Exponential-backoff ceiling in seconds. Null = platform default (300).",
+    )
+    delivery_retention_days: int | None = Field(
+        default=None,
+        description="Days to retain WebhookDelivery rows. Null = forever.",
+    )
+    retention_overrides: dict[str, int] | None = Field(
+        default=None,
+        description="Per-event retention overrides keyed by fnmatch glob.",
+    )
 
 
 class WebhookUpdateRequest(BaseModel):
@@ -425,6 +492,11 @@ class WebhookUpdateRequest(BaseModel):
     url: str | None = Field(default=None, max_length=2048, description="New webhook URL.")
     events: list[str] | None = Field(default=None, description="New event subscriptions.")
     is_active: bool | None = Field(default=None, description="Enable or disable the webhook.")
+    max_retries: int | None = Field(default=None, ge=0, le=10)
+    retry_base_delay_seconds: int | None = Field(default=None, ge=1, le=600)
+    retry_max_delay_seconds: int | None = Field(default=None, ge=1, le=3600)
+    delivery_retention_days: int | None = Field(default=None, ge=1, le=365)
+    retention_overrides: dict[str, int] | None = None
 
 
 class WebhookListResponse(BaseModel):

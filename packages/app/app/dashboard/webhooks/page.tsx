@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 import { EmptyState } from "@thinkneverland/pixie-dust-ui";
@@ -337,6 +338,11 @@ export default function WebhooksPage() {
                       )}
                     </div>
                     <div className="ml-4 flex shrink-0 gap-1">
+                      <Link href={`/dashboard/webhooks/${wh.id}/deliveries`}>
+                        <Button variant="secondary" size="sm">
+                          Deliveries
+                        </Button>
+                      </Link>
                       <Button
                         variant="secondary"
                         size="sm"

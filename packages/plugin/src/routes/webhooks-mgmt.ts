@@ -124,5 +124,68 @@ export function webhookMgmtRoutes(): RouteDefinition[] {
         return { status: 200, body: data };
       }) as RouteHandler,
     },
+    // --- Delivery audit + replay ----------------------------------
+    {
+      method: "GET" as HttpMethod,
+      path: "/webhook-endpoints/:webhookId/deliveries",
+      auth: true,
+      permission: "webhooks:manage",
+      description: "List recent delivery attempts for one webhook endpoint",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const page = req.query?.page ?? "1";
+        const pageSize = req.query?.page_size ?? "50";
+        const successFilter =
+          req.query?.success !== undefined
+            ? `&success=${encodeURIComponent(req.query.success)}`
+            : "";
+        const eventFilter = req.query?.event
+          ? `&event=${encodeURIComponent(req.query.event)}`
+          : "";
+        const resp = await engineFetch(
+          `/api/v1/webhooks/deliveries?webhook_id=${req.params.webhookId}` +
+            `&page=${page}&page_size=${pageSize}${successFilter}${eventFilter}`,
+        );
+        if (!resp.ok) {
+          const detail = await resp.text();
+          return { status: resp.status, body: { error: detail } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "GET" as HttpMethod,
+      path: "/webhook-endpoints/deliveries/:deliveryId",
+      auth: true,
+      permission: "webhooks:manage",
+      description: "Fetch the signed payload of one past delivery",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch(
+          `/api/v1/webhooks/deliveries/${req.params.deliveryId}`,
+        );
+        if (!resp.ok) {
+          const detail = await resp.text();
+          return { status: resp.status, body: { error: detail } };
+        }
+        return { status: 200, body: await resp.json() };
+      }) as RouteHandler,
+    },
+    {
+      method: "POST" as HttpMethod,
+      path: "/webhook-endpoints/deliveries/:deliveryId/replay",
+      auth: true,
+      permission: "webhooks:manage",
+      description: "Re-fire a past delivery against its original endpoint",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await engineFetch(
+          `/api/v1/webhooks/deliveries/${req.params.deliveryId}/replay`,
+          { method: "POST" },
+        );
+        if (!resp.ok) {
+          const detail = await resp.text();
+          return { status: resp.status, body: { error: detail } };
+        }
+        return { status: 201, body: await resp.json() };
+      }) as RouteHandler,
+    },
   ];
 }

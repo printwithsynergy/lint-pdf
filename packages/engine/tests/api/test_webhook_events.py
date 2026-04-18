@@ -284,6 +284,234 @@ class TestKnownEventsCatalog:
             assert ev in evt_mod.KNOWN_EVENTS, f"{ev} missing from KNOWN_EVENTS tuple"
 
 
+class TestPerEndpointRetryConfig:
+    def test_create_persists_and_echoes_new_fields(
+        self, client: TestClient
+    ) -> None:
+        resp = client.post(
+            "/api/v1/webhooks",
+            json={
+                "url": "https://hooks.example.test/retry",
+                "events": ["job.state_changed"],
+                "max_retries": 5,
+                "retry_base_delay_seconds": 2,
+                "retry_max_delay_seconds": 30,
+                "delivery_retention_days": 7,
+                "retention_overrides": {"billing.*": 365},
+            },
+        )
+        assert resp.status_code == 201, resp.text
+        body = resp.json()
+        assert body["max_retries"] == 5
+        assert body["retry_base_delay_seconds"] == 2
+        assert body["retry_max_delay_seconds"] == 30
+        assert body["delivery_retention_days"] == 7
+        assert body["retention_overrides"] == {"billing.*": 365}
+
+    def test_patch_updates_retry_fields(
+        self, client: TestClient, db_session: Session
+    ) -> None:
+        ep = _seed_webhook(db_session)
+        resp = client.patch(
+            f"/api/v1/webhooks/{ep.id}",
+            json={"max_retries": 1, "retry_base_delay_seconds": 10},
+        )
+        assert resp.status_code == 200, resp.text
+        body = resp.json()
+        assert body["max_retries"] == 1
+        assert body["retry_base_delay_seconds"] == 10
+
+    def test_max_retries_above_ceiling_422s(self, client: TestClient) -> None:
+        resp = client.post(
+            "/api/v1/webhooks",
+            json={
+                "url": "https://hooks.example.test/too-many",
+                "events": [],
+                "max_retries": 99,  # ceiling is 10
+            },
+        )
+        assert resp.status_code == 422
+
+
+class TestRetentionSweep:
+    def test_default_retention_deletes_old_rows(
+        self, client: TestClient, db_session: Session
+    ) -> None:
+        import datetime as _dt
+
+        ep = _seed_webhook(db_session)
+        ep.delivery_retention_days = 7
+        db_session.commit()
+
+        # One old row (outside window), one fresh (inside).
+        old = WebhookDelivery(
+            id=uuid.uuid4(),
+            webhook_id=ep.id,
+            tenant_id=ep.tenant_id,
+            event="verdict.changed",
+            payload={"x": 1},
+            url=ep.url,
+            attempt_count=1,
+            final_status_code=200,
+            success=True,
+        )
+        fresh = WebhookDelivery(
+            id=uuid.uuid4(),
+            webhook_id=ep.id,
+            tenant_id=ep.tenant_id,
+            event="verdict.changed",
+            payload={"x": 2},
+            url=ep.url,
+            attempt_count=1,
+            final_status_code=200,
+            success=True,
+        )
+        db_session.add_all([old, fresh])
+        db_session.commit()
+        # Capture IDs up front — after the sweep expires the session we
+        # can't compare via instance attribute.
+        fresh_id = fresh.id
+        old_id = old.id
+        # Backdate the `old` row manually (server_default ignored on update).
+        db_session.query(WebhookDelivery).filter(
+            WebhookDelivery.id == old_id
+        ).update(
+            {WebhookDelivery.created_at: _dt.datetime.now(_dt.timezone.utc)
+             - _dt.timedelta(days=30)}
+        )
+        db_session.commit()
+
+        # Run the sweep through an in-process session override so we
+        # don't need a live Celery worker.
+        # Patch the source module that sweep_webhook_deliveries imports
+        # from so the task sees our in-memory test session.
+        from lintpdf.api import database as _dbmod
+        from lintpdf.queue import tasks as qt
+
+        original_get = _dbmod.get_db_session
+        _dbmod.get_db_session = lambda: db_session  # type: ignore[assignment]
+        try:
+            result = qt.sweep_webhook_deliveries()
+        finally:
+            _dbmod.get_db_session = original_get  # type: ignore[assignment]
+
+        assert result["deleted"] == 1
+        remaining_ids = [r.id for r in db_session.query(WebhookDelivery).all()]
+        assert remaining_ids == [fresh_id]
+
+    def test_per_event_override_keeps_matching_rows(
+        self, client: TestClient, db_session: Session
+    ) -> None:
+        import datetime as _dt
+
+        ep = _seed_webhook(db_session)
+        ep.delivery_retention_days = 7
+        ep.retention_overrides = {"billing.*": 365}
+        db_session.commit()
+
+        now = _dt.datetime.now(_dt.timezone.utc)
+        old_billing = WebhookDelivery(
+            id=uuid.uuid4(),
+            webhook_id=ep.id,
+            tenant_id=ep.tenant_id,
+            event="billing.file_quota.low",
+            payload={},
+            url=ep.url,
+            attempt_count=1,
+            final_status_code=200,
+            success=True,
+        )
+        old_annotation = WebhookDelivery(
+            id=uuid.uuid4(),
+            webhook_id=ep.id,
+            tenant_id=ep.tenant_id,
+            event="annotation.created",
+            payload={},
+            url=ep.url,
+            attempt_count=1,
+            final_status_code=200,
+            success=True,
+        )
+        db_session.add_all([old_billing, old_annotation])
+        db_session.commit()
+        # Both backdated 30 days. Billing override = 365d (keeps),
+        # annotation falls under default 7d (deletes).
+        for row_id in (old_billing.id, old_annotation.id):
+            db_session.query(WebhookDelivery).filter(
+                WebhookDelivery.id == row_id
+            ).update(
+                {WebhookDelivery.created_at: now - _dt.timedelta(days=30)}
+            )
+        db_session.commit()
+
+        # Patch the source module that sweep_webhook_deliveries imports
+        # from so the task sees our in-memory test session.
+        from lintpdf.api import database as _dbmod
+        from lintpdf.queue import tasks as qt
+
+        original_get = _dbmod.get_db_session
+        _dbmod.get_db_session = lambda: db_session  # type: ignore[assignment]
+        try:
+            result = qt.sweep_webhook_deliveries()
+        finally:
+            _dbmod.get_db_session = original_get  # type: ignore[assignment]
+
+        assert result["deleted"] == 1
+        remaining = db_session.query(WebhookDelivery).all()
+        assert [r.event for r in remaining] == ["billing.file_quota.low"]
+
+
+class TestTestPingAudit:
+    def test_test_ping_writes_delivery_row_and_signs(
+        self, client: TestClient, db_session: Session
+    ) -> None:
+        import httpx
+
+        ep = _seed_webhook(db_session)
+
+        # Patch httpx.post to capture the signed headers + return 200.
+        captured: dict = {}
+
+        class _Response:
+            status_code = 200
+            text = "ok"
+
+            def raise_for_status(self) -> None:
+                return None
+
+        def fake_post(url: str, **kwargs):  # type: ignore[no-untyped-def]
+            captured["url"] = url
+            captured["headers"] = kwargs.get("headers") or {}
+            captured["content"] = kwargs.get("content") or b""
+            return _Response()
+
+        original_post = httpx.post
+        httpx.post = fake_post  # type: ignore[assignment]
+        try:
+            resp = client.post(f"/api/v1/webhooks/{ep.id}/test")
+        finally:
+            httpx.post = original_post  # type: ignore[assignment]
+
+        assert resp.status_code == 200, resp.text
+        # Signature header present
+        headers = captured["headers"]
+        assert headers.get("X-LintPDF-Event") == "test.ping"
+        sig = headers.get("X-LintPDF-Signature", "")
+        assert sig.startswith("sha256="), sig
+
+        # A WebhookDelivery row was persisted
+        rows = (
+            db_session.query(WebhookDelivery)
+            .filter(WebhookDelivery.webhook_id == ep.id)
+            .all()
+        )
+        assert len(rows) == 1
+        assert rows[0].event == "test.ping"
+        assert rows[0].success is True
+        assert rows[0].final_status_code == 200
+        assert rows[0].attempt_count == 1
+
+
 @pytest.fixture(autouse=True)
 def _seed_tenant_api_keys_tables_exist(db_session: Session) -> None:
     # No-op: just ensures the schema includes webhook_deliveries (the

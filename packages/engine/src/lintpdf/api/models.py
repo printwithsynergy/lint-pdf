@@ -331,6 +331,25 @@ class WebhookEndpoint(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Per-endpoint retry budget. NULL -> fall back to the Celery
+    # decorator's max_retries=3. Capped at 10 so a runaway config can't
+    # DoS the webhook worker pool.
+    max_retries: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Initial retry delay in seconds. The dispatcher applies exponential
+    # backoff: attempt N waits ``min(base * 2**N, retry_max_delay_seconds)``.
+    retry_base_delay_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Ceiling on the exponential backoff. NULL -> fall back to 300s.
+    retry_max_delay_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Default age (days) for WebhookDelivery rows owned by this endpoint
+    # before the daily sweep deletes them. NULL -> keep forever.
+    delivery_retention_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Per-event retention overrides, e.g.
+    # ``{"billing.*": 365, "annotation.*": 7}``. Keys are fnmatch globs
+    # matched against the event name; longest-match wins. Events that
+    # don't match any key use ``delivery_retention_days``.
+    retention_overrides: Mapped[dict[str, int] | None] = mapped_column(
+        JSON, nullable=True
+    )
 
     # Relationships
     tenant: Mapped[Tenant] = relationship(back_populates="webhook_endpoints")
