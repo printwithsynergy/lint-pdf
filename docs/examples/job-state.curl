@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Runnable sample for the Universal Job State API.
+#
+# Required env vars:
+#   LINTPDF_API_KEY   tenant API key (lpdf_live_... or lpdf_test_...)
+#   JOB_ID            UUID of a completed job owned by the tenant
+# Optional:
+#   INCLUDE=reports,approval_chain,verdict,annotations
+#                     comma-separated subset of sections (default = all)
+#   BASE_URL=https://api.lintpdf.com
+#
+# Emits the stitched state JSON. Piping through `jq` shows the structure.
+
+set -euo pipefail
+
+: "${LINTPDF_API_KEY:?must be set}"
+: "${JOB_ID:?must be set}"
+BASE_URL="${BASE_URL:-https://api.lintpdf.com}"
+
+url="${BASE_URL}/api/v1/jobs/${JOB_ID}/state"
+if [ -n "${INCLUDE:-}" ]; then
+  url="${url}?include=${INCLUDE}"
+fi
+
+curl --fail-with-body -sS \
+  -H "Authorization: Bearer ${LINTPDF_API_KEY}" \
+  "${url}"

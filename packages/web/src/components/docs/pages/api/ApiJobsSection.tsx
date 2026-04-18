@@ -204,6 +204,65 @@ export default function ApiJobsSection() {
         response={`HTTP/1.1 204 No Content`}
       />
 
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Universal job state</h4>
+      <p className="text-slate-600 mb-3">
+        <code className="bg-slate-100 px-1 rounded">GET /api/v1/jobs/{"{job_id}"}/state</code>
+        {" "}returns preflight results, every minted report URL, the approval
+        chain (with each approver's notes), the manual verdict, and every
+        viewer annotation with its comment thread embedded — in one call.
+        Previously this required 3+ round trips and an N+1 fan-out for
+        comments. See the dedicated <a href="/docs/job-state" className="text-blue-600 underline">Universal Job State</a>
+        {" "}page for the full field table and a runnable example payload.
+      </p>
+      <Endpoint
+        method="GET"
+        path="/api/v1/jobs/{job_id}/state"
+        description="Aggregated digest: core job + reports + approval chain + verdict + annotations-with-comments. Filter with ?include=reports,approval_chain,verdict,annotations."
+        auth
+        request={`curl "https://api.lintpdf.com/api/v1/jobs/d4e5f6a7-.../state" \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "job": { "job_id": "...", "status": "complete", "summary": { "passed": true, "total_findings": 2 } },
+  "reports": [
+    { "format": "annotated_pdf", "url": "https://reports.lintpdf.com/r/...", "token": "...",
+      "allow_annotations": false, "require_visitor_email": null }
+  ],
+  "approval_chain": {
+    "status": "approved", "current_step": 0,
+    "step_history": [
+      { "step_name": "Print ops", "approver_email": "ops@example.com",
+        "decision": "approved", "notes": "Looks great, ship it." }
+    ]
+  },
+  "verdict": { "verdict": "approved", "auto_passed": true, "notes": "..." },
+  "annotations": {
+    "total": 1, "by_page": { "1": 1 },
+    "items": [
+      { "id": "...", "page_num": 1, "kind": "rect", "text": "Fix the bleed",
+        "comments": [ { "body": "Will do by EOD.", "author_email": "..." } ] }
+    ]
+  }
+}`}
+      />
+
+      <FieldTable
+        rows={[
+          {
+            name: "include",
+            type: "string (CSV)",
+            default: "all sections",
+            description:
+              "Optional comma-separated list. Accepted keys: reports, approval_chain, verdict, annotations. Unknown keys 422. Core job block is always returned.",
+          },
+        ]}
+      />
+
+      <p className="text-slate-600 text-sm mt-3 mb-6">
+        Share-link mirror: <code className="bg-slate-100 px-1 rounded">GET /api/v1/viewer/public/{"{token}"}/state</code>
+        {" "}returns the same shape minus the <code className="bg-slate-100 px-1 rounded">reports</code>
+        {" "}section (listing sibling share-link tokens from a single token would leak shares that weren't handed to the current visitor).
+      </p>
+
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Custom submission endpoints</h4>
       <p className="text-slate-600 mb-3">
         Growth-tier customers can mint vanity slugs and give customers a branded

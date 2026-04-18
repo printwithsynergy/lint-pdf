@@ -2164,6 +2164,167 @@ async def public_verdict(token: str, db: Session = Depends(get_db)) -> dict:
     }
 
 
+@router.get("/public/{token}/state")
+async def public_state(token: str, include: str | None = None, db: Session = Depends(get_db)) -> dict:
+    """Public share-link mirror of ``/api/v1/jobs/{id}/state``.
+
+    Returns the same shape the tenant-authenticated digest does **minus**
+    the ``reports`` section — listing every share-link token for the job
+    from a single token would leak sibling shares that the current
+    visitor wasn't handed. Everything else (preflight summary, verdict
+    with notes, approval chain with per-step notes, annotations with
+    comments embedded) is already exposed via the existing public
+    endpoints; this endpoint just stitches them into one round trip.
+
+    Accepted ``?include=`` keys: ``approval_chain``, ``verdict``,
+    ``annotations`` (default = all three).
+    """
+    from lintpdf.api.models import (
+        ApprovalChain,
+        ApprovalStep,
+        ViewerAnnotation,
+        ViewerAnnotationComment,
+    )
+
+    allowed = {"approval_chain", "verdict", "annotations"}
+    if include is None or not include.strip():
+        wanted = set(allowed)
+    else:
+        wanted = set()
+        for part in include.split(","):
+            key = part.strip()
+            if not key:
+                continue
+            if key not in allowed:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Unknown include key {key!r}. Expected any of: "
+                        f"{', '.join(sorted(allowed))}."
+                    ),
+                )
+            wanted.add(key)
+
+    job, _ = _get_job_pdf_by_token(token, db)
+
+    # Core summary — always included so the caller knows WHICH job they got.
+    out: dict[str, Any] = {
+        "job": {
+            "job_id": str(job.id),
+            "status": job.status.value if hasattr(job.status, "value") else str(job.status),
+            "profile_id": job.profile_id,
+            "file_name": job.file_name,
+            "page_count": job.page_count,
+            "completed_at": job.completed_at.isoformat() if job.completed_at else None,
+        },
+    }
+    if job.result_json:
+        summary = job.result_json.get("summary") or {}
+        out["summary"] = {
+            "total_findings": summary.get("total_findings", 0),
+            "error_count": summary.get("error_count", 0),
+            "warning_count": summary.get("warning_count", 0),
+            "advisory_count": summary.get("advisory_count", 0),
+            "passed": summary.get("passed", True),
+            "page_count": summary.get("page_count", 0),
+            "file_size_bytes": summary.get("file_size_bytes", 0),
+        }
+
+    if "verdict" in wanted:
+        auto_passed = None
+        if job.result_json:
+            auto_passed = (job.result_json.get("summary") or {}).get("passed")
+        out["verdict"] = {
+            "verdict": job.verdict,
+            "auto_passed": auto_passed,
+            "verdict_by": job.verdict_by,
+            "verdict_at": job.verdict_at.isoformat() if job.verdict_at else None,
+            "notes": job.verdict_notes,
+        }
+
+    if "approval_chain" in wanted:
+        chain = (
+            db.query(ApprovalChain).filter(ApprovalChain.job_id == job.id).first()
+        )
+        if chain is None:
+            out["approval_chain"] = None
+        else:
+            steps = (
+                db.query(ApprovalStep)
+                .filter(ApprovalStep.chain_id == chain.id)
+                .order_by(ApprovalStep.step_index, ApprovalStep.created_at)
+                .all()
+            )
+            out["approval_chain"] = {
+                "id": str(chain.id),
+                "template_id": str(chain.template_id) if chain.template_id else None,
+                "status": chain.status,
+                "current_step": chain.current_step,
+                "step_history": [
+                    {
+                        "step_index": s.step_index,
+                        "step_name": s.step_name,
+                        "approver_email": s.approver_email,
+                        "decision": s.decision,
+                        "notes": s.notes,
+                        "decided_at": s.decided_at.isoformat() if s.decided_at else None,
+                    }
+                    for s in steps
+                ],
+                "created_at": chain.created_at.isoformat() if chain.created_at else None,
+                "completed_at": chain.completed_at.isoformat() if chain.completed_at else None,
+            }
+
+    if "annotations" in wanted:
+        ann_rows = (
+            db.query(ViewerAnnotation)
+            .filter(ViewerAnnotation.job_id == job.id)
+            .order_by(ViewerAnnotation.created_at.asc())
+            .all()
+        )
+        comments_by_ann: dict[str, list[dict]] = {}
+        if ann_rows:
+            comment_rows = (
+                db.query(ViewerAnnotationComment)
+                .filter(ViewerAnnotationComment.annotation_id.in_([r.id for r in ann_rows]))
+                .order_by(ViewerAnnotationComment.created_at.asc())
+                .all()
+            )
+            for c in comment_rows:
+                comments_by_ann.setdefault(str(c.annotation_id), []).append(
+                    {
+                        "id": str(c.id),
+                        "annotation_id": str(c.annotation_id),
+                        "author_email": c.author_email,
+                        "body": c.body,
+                        "created_at": c.created_at.isoformat(),
+                        "updated_at": c.updated_at.isoformat(),
+                    }
+                )
+        by_page: dict[str, int] = {}
+        items = []
+        for r in ann_rows:
+            by_page[str(r.page_num)] = by_page.get(str(r.page_num), 0) + 1
+            items.append(
+                {
+                    "id": str(r.id),
+                    "job_id": str(r.job_id),
+                    "page_num": r.page_num,
+                    "kind": r.kind,
+                    "geometry": r.geometry_json,
+                    "color": r.color,
+                    "text": r.text,
+                    "author_email": r.author_email,
+                    "created_at": r.created_at.isoformat(),
+                    "updated_at": r.updated_at.isoformat(),
+                    "comments": comments_by_ann.get(str(r.id), []),
+                }
+            )
+        out["annotations"] = {"total": len(ann_rows), "by_page": by_page, "items": items}
+
+    return out
+
+
 class ShareRequest(BaseModel):
     emails: list[str]
     from_name: str | None = None

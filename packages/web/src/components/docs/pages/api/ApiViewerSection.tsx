@@ -377,6 +377,54 @@ while True:
         response={`200 OK
 Content-Type: image/png`}
       />
+
+      <h4 className="font-semibold text-slate-900 mt-8 mb-2">Annotations + comments</h4>
+      <p className="text-slate-600 mb-3">
+        <code className="bg-slate-100 px-1 rounded">GET /api/v1/viewer/jobs/{"{job_id}"}/annotations</code>
+        {" "}returns the flat annotation list by default (back-compat).
+        Pass <code className="bg-slate-100 px-1 rounded">?include=comments</code>
+        {" "}to embed each annotation's full comment thread inline in one
+        round trip — no N+1 fan-out of per-annotation comment fetches.
+        The aggregated <a href="/docs/job-state" className="text-blue-600 underline">GET /api/v1/jobs/{"{id}"}/state</a>
+        {" "}endpoint uses the same embedding.
+      </p>
+      <Endpoint
+        method="GET"
+        path="/api/v1/viewer/jobs/{job_id}/annotations?include=comments"
+        description="Annotation list with each comment thread embedded inline under items[].comments."
+        auth
+        request={`curl "https://api.lintpdf.com/api/v1/viewer/jobs/d4e5f6a7-.../annotations?include=comments" \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`[
+  {
+    "id": "...", "page_num": 1, "kind": "rect",
+    "geometry": { "x": 10, "y": 10, "w": 100, "h": 50 },
+    "color": "#dc2626", "text": "Fix the bleed",
+    "author_email": "reviewer@example.com",
+    "comments": [
+      { "id": "...", "annotation_id": "...",
+        "author_email": "reviewer@example.com", "body": "Will do by EOD." }
+    ]
+  }
+]`}
+      />
+      <FieldTable
+        rows={[
+          {
+            name: "include",
+            type: "string",
+            default: "unset",
+            description:
+              'Optional. Set to "comments" to embed each annotation\'s comment thread inline. Any other value returns 422. Omit the param for the legacy shape (flat AnnotationResponse list without a comments key).',
+          },
+        ]}
+      />
+      <p className="text-slate-600 text-sm mt-3">
+        The same <code className="bg-slate-100 px-1 rounded">?include=comments</code>
+        {" "}param works on the share-link mirror
+        {" "}<code className="bg-slate-100 px-1 rounded">GET /api/v1/viewer/public/{"{token}"}/annotations?include=comments</code>
+        {" "}— unauthenticated read, subject to the token's expiry.
+      </p>
     </section>
   );
 }

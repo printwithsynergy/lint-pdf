@@ -64,6 +64,50 @@ class AnnotationResponse(BaseModel):
     updated_at: str
 
 
+class CommentCreateRequest(BaseModel):
+    body: str = Field(..., min_length=1, max_length=4000, description="Comment body")
+
+
+class CommentUpdateRequest(BaseModel):
+    body: str = Field(..., min_length=1, max_length=4000)
+
+
+class CommentResponse(BaseModel):
+    id: str
+    annotation_id: str
+    author_email: str
+    body: str
+    created_at: str
+    updated_at: str
+
+
+class AnnotationWithCommentsResponse(AnnotationResponse):
+    """Annotation with its comment thread embedded inline.
+
+    Returned from ``GET .../annotations?include=comments`` instead of the
+    bare :class:`AnnotationResponse`. The extra ``comments`` field is an
+    ordered list (oldest first) of every comment on the annotation —
+    matches the shape used by ``GET /jobs/{id}/state`` so clients can
+    parse both surfaces with one model.
+    """
+
+    comments: list[CommentResponse] = Field(
+        default_factory=list,
+        description="Ordered (oldest first) comments on this annotation.",
+    )
+
+
+def _comment_to_response(row: ViewerAnnotationComment) -> CommentResponse:
+    return CommentResponse(
+        id=str(row.id),
+        annotation_id=str(row.annotation_id),
+        author_email=row.author_email,
+        body=row.body,
+        created_at=row.created_at.isoformat(),
+        updated_at=row.updated_at.isoformat(),
+    )
+
+
 def _to_response(row: ViewerAnnotation) -> AnnotationResponse:
     return AnnotationResponse(
         id=str(row.id),
@@ -128,13 +172,79 @@ def _require_annotations_entitlement(tenant: Tenant) -> None:
 # ---------------------------------------------------------------------------
 
 
-@router.get("/jobs/{job_id}/annotations", response_model=list[AnnotationResponse])
+def _parse_include_comments(raw: str | None) -> bool:
+    """Normalise the optional ``?include=comments`` query param.
+
+    Accepts ``comments`` (singular, case-insensitive). Any other non-empty
+    value 422s so typos like ``?include=comment`` surface loudly instead
+    of silently returning the bare shape. ``None`` / empty returns False,
+    preserving back-compat for every existing caller.
+    """
+    if raw is None or not raw.strip():
+        return False
+    wanted = {part.strip().lower() for part in raw.split(",") if part.strip()}
+    unknown = wanted - {"comments"}
+    if unknown:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Unknown include key(s): {', '.join(sorted(unknown))}. "
+                "Only `comments` is supported on this endpoint."
+            ),
+        )
+    return "comments" in wanted
+
+
+def _embed_comments(
+    db: Session, rows: list[ViewerAnnotation]
+) -> list[AnnotationWithCommentsResponse]:
+    """Stitch a single `comments` thread onto each annotation.
+
+    One SELECT pulls every comment for the given annotation IDs, then we
+    group in Python. Net O(1) round trips instead of N+1 -- same strategy
+    the /jobs/{id}/state aggregator uses for its annotations section.
+    """
+    if not rows:
+        return []
+    ann_ids = [r.id for r in rows]
+    comment_rows = (
+        db.query(ViewerAnnotationComment)
+        .filter(ViewerAnnotationComment.annotation_id.in_(ann_ids))
+        .order_by(ViewerAnnotationComment.created_at.asc())
+        .all()
+    )
+    by_ann: dict[str, list[CommentResponse]] = {}
+    for c in comment_rows:
+        by_ann.setdefault(str(c.annotation_id), []).append(_comment_to_response(c))
+    out: list[AnnotationWithCommentsResponse] = []
+    for r in rows:
+        base = _to_response(r)
+        out.append(
+            AnnotationWithCommentsResponse(
+                **base.model_dump(),
+                comments=by_ann.get(str(r.id), []),
+            )
+        )
+    return out
+
+
+@router.get(
+    "/jobs/{job_id}/annotations",
+    response_model=list[AnnotationResponse] | list[AnnotationWithCommentsResponse],
+)
 async def list_annotations_auth(
     job_id: str,
+    include: str | None = None,
     tenant: Tenant = Depends(get_current_tenant),
     db: Session = Depends(get_db),
-) -> list[AnnotationResponse]:
-    """List all annotations for a job (tenant-scoped)."""
+) -> list[AnnotationResponse] | list[AnnotationWithCommentsResponse]:
+    """List all annotations for a job (tenant-scoped).
+
+    Pass ``?include=comments`` to embed each annotation's full comment
+    thread inline, eliminating the N+1 fan-out that previously required
+    a ``GET .../annotations/{id}/comments`` round trip per annotation.
+    Default shape is unchanged for back-compat.
+    """
     try:
         jid = uuid_mod.UUID(job_id)
     except ValueError:
@@ -150,6 +260,8 @@ async def list_annotations_auth(
         .order_by(ViewerAnnotation.created_at.asc())
         .all()
     )
+    if _parse_include_comments(include):
+        return _embed_comments(db, rows)
     return [_to_response(r) for r in rows]
 
 
@@ -333,11 +445,22 @@ def _require_visitor_email(request: Request) -> str:
     return email
 
 
-@router.get("/public/{token}/annotations", response_model=list[AnnotationResponse])
+@router.get(
+    "/public/{token}/annotations",
+    response_model=list[AnnotationResponse] | list[AnnotationWithCommentsResponse],
+)
 async def list_annotations_public(
-    token: str, db: Session = Depends(get_db)
-) -> list[AnnotationResponse]:
-    """List annotations for a share-link job (unauthenticated read)."""
+    token: str,
+    include: str | None = None,
+    db: Session = Depends(get_db),
+) -> list[AnnotationResponse] | list[AnnotationWithCommentsResponse]:
+    """List annotations for a share-link job (unauthenticated read).
+
+    Pass ``?include=comments`` to embed each annotation's comment thread
+    inline. The share-link surface is always read-only for comments; the
+    ``allow_annotations`` flag on the token only gates *creation* of new
+    annotations, not retrieval of the thread on existing ones.
+    """
     rec = _resolve_token(token, db)
     rows = (
         db.query(ViewerAnnotation)
@@ -345,6 +468,8 @@ async def list_annotations_public(
         .order_by(ViewerAnnotation.created_at.asc())
         .all()
     )
+    if _parse_include_comments(include):
+        return _embed_comments(db, rows)
     return [_to_response(r) for r in rows]
 
 
@@ -479,34 +604,6 @@ async def delete_annotation_public(
 # ---------------------------------------------------------------------------
 # Comment threads — Wave B collaboration
 # ---------------------------------------------------------------------------
-
-
-class CommentCreateRequest(BaseModel):
-    body: str = Field(..., min_length=1, max_length=4000, description="Comment body")
-
-
-class CommentUpdateRequest(BaseModel):
-    body: str = Field(..., min_length=1, max_length=4000)
-
-
-class CommentResponse(BaseModel):
-    id: str
-    annotation_id: str
-    author_email: str
-    body: str
-    created_at: str
-    updated_at: str
-
-
-def _comment_to_response(row: ViewerAnnotationComment) -> CommentResponse:
-    return CommentResponse(
-        id=str(row.id),
-        annotation_id=str(row.annotation_id),
-        author_email=row.author_email,
-        body=row.body,
-        created_at=row.created_at.isoformat(),
-        updated_at=row.updated_at.isoformat(),
-    )
 
 
 def _parse_annotation_id(annotation_id: str) -> uuid_mod.UUID:

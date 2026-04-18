@@ -29,6 +29,14 @@ from lintpdf.api.schemas import (
     JobCreateResponse,
     JobListResponse,
     JobResponse,
+    JobStateAnnotationComment,
+    JobStateAnnotationItem,
+    JobStateAnnotations,
+    JobStateApprovalChain,
+    JobStateApprovalStep,
+    JobStateReportInfo,
+    JobStateResponse,
+    JobStateVerdict,
     JobSummaryResponse,
 )
 from lintpdf.api.storage import get_storage
@@ -740,6 +748,229 @@ async def get_job(
             }
 
     return response
+
+
+# ---------------------------------------------------------------------------
+# Universal job-state digest
+# ---------------------------------------------------------------------------
+
+_STATE_SECTIONS = {"reports", "approval_chain", "verdict", "annotations"}
+
+
+def _parse_include(raw: str | None) -> set[str]:
+    """Normalise the `?include=` query param.
+
+    * Unset (``None`` or empty) → every section included (default).
+    * Comma-separated list → exactly those sections; unknown keys 422.
+    * The ``job`` key is always returned (there's no job-less digest).
+    """
+    if raw is None or not raw.strip():
+        return set(_STATE_SECTIONS)
+    wanted: set[str] = set()
+    for part in raw.split(","):
+        key = part.strip()
+        if not key:
+            continue
+        if key not in _STATE_SECTIONS:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Unknown include key {key!r}. Expected any of: "
+                    f"{', '.join(sorted(_STATE_SECTIONS))}."
+                ),
+            )
+        wanted.add(key)
+    return wanted
+
+
+@router.get("/{job_id}/state", response_model=JobStateResponse)
+async def get_job_state(
+    job_id: str,
+    include: str | None = None,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> JobStateResponse:
+    """Return the universal state of a preflight job in one call.
+
+    Stitches together the five retrieval surfaces callers currently have
+    to fan out across:
+
+    1. Core job (`GET /jobs/{id}`) — status, preflight summary + findings,
+       auto-attached report URLs.
+    2. Reports (`GET /jobs/{id}/reports`) — every minted token with
+       share-link metadata (`allow_annotations`, `require_visitor_email`).
+    3. Approval chain (`GET /jobs/{id}/approval-chain`) — status +
+       step history including each approver's free-text `notes`.
+    4. Verdict (`GET /viewer/jobs/{id}/verdict`) — manual pass/fail
+       marker + aggregated notes + the auto-passed flag mirrored from
+       the preflight summary.
+    5. Annotations (`GET /viewer/jobs/{id}/annotations`) with threaded
+       comments embedded inline (no N+1; comments are joined in a single
+       query via ``annotation_id IN (...)``).
+
+    Use ``?include=approval_chain,verdict`` to trim the payload to just
+    the sections you need. Unknown include keys return 422.
+    """
+    from lintpdf.api.config import get_settings as _get_settings
+    from lintpdf.api.models import (
+        ApprovalChain,
+        ApprovalStep,
+        ReportToken,
+        ViewerAnnotation,
+        ViewerAnnotationComment,
+    )
+
+    wanted = _parse_include(include)
+
+    # 1. Core job (reuse the existing /jobs/{id} surface wholesale).
+    job_response = await get_job(job_id=job_id, db=db, tenant=tenant)
+    # At this point we know the job exists + belongs to the tenant, since
+    # get_job() has already 404'd otherwise. Pull the UUID back so we
+    # don't pay the parse twice.
+    uid = uuid_mod.UUID(job_id)
+
+    state = JobStateResponse(job=job_response)
+
+    # 2. Reports — every token, including share-link metadata.
+    if "reports" in wanted:
+        base_url = _get_settings().report_base_url.rstrip("/")
+        tokens = (
+            db.query(ReportToken)
+            .filter(ReportToken.job_id == uid, ReportToken.tenant_id == tenant.id)
+            .order_by(ReportToken.created_at.asc())
+            .all()
+        )
+        state.reports = [
+            JobStateReportInfo(
+                format=t.format,
+                # Match the suffix logic used by /r/{token}.{ext} public routes.
+                url=(
+                    f"{base_url}/r/{t.token}.pdf"
+                    if t.format in ("pdf", "annotated_pdf", "annotated_pdf_markup")
+                    else f"{base_url}/r/{t.token}.json"
+                    if t.format == "json"
+                    else f"{base_url}/r/{t.token}.xml"
+                    if t.format == "xml"
+                    else f"{base_url}/r/{t.token}"
+                ),
+                token=t.token,
+                expires_at=t.expires_at.isoformat() if t.expires_at else None,
+                allow_annotations=bool(t.allow_annotations),
+                require_visitor_email=t.require_visitor_email,
+            )
+            for t in tokens
+        ]
+
+    # 3. Approval chain — reuse the existing serialiser so the shape
+    # matches the standalone /approval-chain endpoint exactly.
+    if "approval_chain" in wanted:
+        chain = (
+            db.query(ApprovalChain)
+            .filter(ApprovalChain.job_id == uid, ApprovalChain.tenant_id == tenant.id)
+            .first()
+        )
+        if chain is not None:
+            steps = (
+                db.query(ApprovalStep)
+                .filter(ApprovalStep.chain_id == chain.id)
+                .order_by(ApprovalStep.step_index, ApprovalStep.created_at)
+                .all()
+            )
+            state.approval_chain = JobStateApprovalChain(
+                id=str(chain.id),
+                template_id=str(chain.template_id) if chain.template_id else None,
+                status=chain.status,
+                current_step=chain.current_step,
+                step_history=[
+                    JobStateApprovalStep(
+                        step_index=s.step_index,
+                        step_name=s.step_name,
+                        approver_email=s.approver_email,
+                        decision=s.decision,
+                        notes=s.notes,
+                        decided_at=s.decided_at,
+                    )
+                    for s in steps
+                ],
+                created_at=chain.created_at,
+                completed_at=chain.completed_at,
+            )
+
+    # 4. Verdict — same read as /viewer/jobs/{id}/verdict.
+    if "verdict" in wanted:
+        job_row = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
+        auto_passed: bool | None = None
+        if job_row is not None and job_row.result_json:
+            auto_passed = (job_row.result_json.get("summary") or {}).get("passed")
+        state.verdict = JobStateVerdict(
+            verdict=job_row.verdict if job_row else None,
+            auto_passed=auto_passed,
+            verdict_by=job_row.verdict_by if job_row else None,
+            verdict_at=job_row.verdict_at.isoformat()
+            if job_row and job_row.verdict_at
+            else None,
+            notes=job_row.verdict_notes if job_row else None,
+        )
+
+    # 5. Annotations — single SELECT for the annotation rows, single
+    # SELECT for all their comments, then stitch in Python. Net O(1)
+    # round trips instead of the old N+1 fan-out.
+    if "annotations" in wanted:
+        ann_rows = (
+            db.query(ViewerAnnotation)
+            .filter(ViewerAnnotation.job_id == uid)
+            .order_by(ViewerAnnotation.created_at.asc())
+            .all()
+        )
+        comments_by_ann: dict[str, list[JobStateAnnotationComment]] = {}
+        if ann_rows:
+            ann_ids = [r.id for r in ann_rows]
+            comment_rows = (
+                db.query(ViewerAnnotationComment)
+                .filter(ViewerAnnotationComment.annotation_id.in_(ann_ids))
+                .order_by(ViewerAnnotationComment.created_at.asc())
+                .all()
+            )
+            for c in comment_rows:
+                comments_by_ann.setdefault(str(c.annotation_id), []).append(
+                    JobStateAnnotationComment(
+                        id=str(c.id),
+                        annotation_id=str(c.annotation_id),
+                        author_email=c.author_email,
+                        body=c.body,
+                        created_at=c.created_at.isoformat(),
+                        updated_at=c.updated_at.isoformat(),
+                    )
+                )
+
+        items = [
+            JobStateAnnotationItem(
+                id=str(r.id),
+                job_id=str(r.job_id),
+                page_num=r.page_num,
+                kind=r.kind,
+                geometry=r.geometry_json,
+                color=r.color,
+                text=r.text,
+                author_email=r.author_email,
+                created_at=r.created_at.isoformat(),
+                updated_at=r.updated_at.isoformat(),
+                comments=comments_by_ann.get(str(r.id), []),
+            )
+            for r in ann_rows
+        ]
+        by_page: dict[str, int] = {}
+        for r in ann_rows:
+            key = str(r.page_num)
+            by_page[key] = by_page.get(key, 0) + 1
+
+        state.annotations = JobStateAnnotations(
+            total=len(ann_rows),
+            by_page=by_page,
+            items=items,
+        )
+
+    return state
 
 
 @router.get("", response_model=JobListResponse)

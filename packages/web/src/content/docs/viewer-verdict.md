@@ -80,6 +80,7 @@ For multi-stage review workflows (designer → QA → print manager), use Approv
 
 ## Related
 
+- [Universal Job State API](/docs/job-state) — fetch verdict + approval chain with notes + annotations with comments in one call.
 - [Viewer Capabilities & On-Demand Fill-In](/docs/viewer-capabilities)
 - [Share Links](/docs/share-links)
 - [API Reference](/docs/api-reference)

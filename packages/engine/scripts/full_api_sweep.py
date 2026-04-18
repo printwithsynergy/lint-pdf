@@ -479,6 +479,47 @@ def exercise_jobs_list(jobs: dict[str, dict]) -> None:
             _hit("GET", f"/api/v1/jobs/{jid}", headers=h)
 
 
+def exercise_job_state(jobs: dict[str, dict]) -> None:
+    """Exercise GET /jobs/{id}/state + the ?include=comments annotations variant."""
+    h = _tenant_headers()
+    for source, job in jobs.items():
+        jid = job.get("job_id")
+        if not jid:
+            continue
+        # Full digest
+        r = _hit("GET", f"/api/v1/jobs/{jid}/state", headers=h)
+        if r.status_code == 200:
+            body = r.json()
+            sections = [k for k in ("reports", "approval_chain", "verdict", "annotations") if k in body]
+            print(f"    state sections present: {sections}")
+        # Filtered digest
+        _hit(
+            "GET",
+            f"/api/v1/jobs/{jid}/state",
+            headers=h,
+            params={"include": "verdict,annotations"},
+            note="state with include filter",
+        )
+        # Reject unknown include
+        _hit(
+            "GET",
+            f"/api/v1/jobs/{jid}/state",
+            headers=h,
+            params={"include": "nope"},
+            expect=(422,),
+            note="unknown include key should 422",
+        )
+        # Annotations ?include=comments
+        _hit(
+            "GET",
+            f"/api/v1/viewer/jobs/{jid}/annotations",
+            headers=h,
+            params={"include": "comments"},
+            note="annotations with comments embedded",
+        )
+        break  # one job is enough to prove the surface works
+
+
 def emit_markdown() -> None:
     lines = [
         f"# LintPDF API sweep — {BASE_URL}",
@@ -524,6 +565,7 @@ def main() -> int:
     done = wait_for_jobs(jobs)
     exercise_jobs_list(done)
     generate_reports(done)
+    exercise_job_state(done)
 
     # Pick first completed job for viewer/annotation exercise
     for source, job in done.items():

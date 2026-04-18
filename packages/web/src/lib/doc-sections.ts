@@ -11,6 +11,7 @@ export const docSections = [
     heading: "API",
     items: [
       { slug: "api-reference", label: "API Reference" },
+      { slug: "job-state", label: "Universal Job State" },
       { slug: "rulesets", label: "Rulesets" },
       { slug: "checks", label: "Checks" },
       { slug: "report-formats", label: "Report Formats" },

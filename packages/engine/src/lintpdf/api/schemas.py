@@ -136,6 +136,211 @@ class JobListResponse(BaseModel):
     page_size: int
 
 
+# --- Aggregated /jobs/{id}/state schemas ---
+
+
+class JobStateReportInfo(BaseModel):
+    """One minted report token as embedded in /jobs/{id}/state."""
+
+    format: str = Field(
+        ...,
+        description="Report format: `pdf`, `annotated_pdf`, `annotated_pdf_markup`, `html`, `json`, `xml`.",
+    )
+    url: str = Field(..., description="Public hosted URL (`/r/{token}.{ext}`).")
+    token: str = Field(
+        ...,
+        description="Raw token. Use only for building URLs; never embed in client-side code.",
+    )
+    expires_at: str | None = Field(
+        default=None,
+        description="ISO-8601 UTC. `null` means no expiry.",
+    )
+    allow_annotations: bool = Field(
+        default=False,
+        description=(
+            "When True, anonymous viewers at `/view/{token}` can POST annotations if "
+            "they supply an `X-Visitor-Email` header. Default False = read-only share."
+        ),
+    )
+    require_visitor_email: bool | None = Field(
+        default=None,
+        description=(
+            "Per-token override of the tenant-wide email-capture gate. `null` inherits "
+            "tenant default; True forces gate on; False forces gate off."
+        ),
+    )
+
+
+class JobStateApprovalStep(BaseModel):
+    """One row in the approval chain history embedded in /jobs/{id}/state."""
+
+    step_index: int = Field(..., description="0-indexed step position in the chain.")
+    step_name: str = Field(..., description="Human label for the step.")
+    approver_email: str = Field(..., description="Email of the approver who decided.")
+    decision: str = Field(
+        ...,
+        description="`pending`, `approved`, or `rejected`. `pending` means the step is open.",
+    )
+    notes: str | None = Field(
+        default=None,
+        description=(
+            "Free-text notes recorded by the approver alongside their decision. "
+            "Rendered in the aggregated `verdict.notes` field and in the markup PDF."
+        ),
+    )
+    decided_at: datetime | None = Field(
+        default=None,
+        description="ISO-8601 timestamp of the decision. `null` for pending steps.",
+    )
+
+
+class JobStateApprovalChain(BaseModel):
+    """Approval chain section of /jobs/{id}/state.
+
+    Returned as `null` when no chain is attached to the job.
+    """
+
+    id: str = Field(..., description="Chain UUID.")
+    template_id: str | None = Field(
+        default=None,
+        description="UUID of the template the chain was spawned from, or `null` for ad-hoc.",
+    )
+    status: str = Field(
+        ...,
+        description="`pending`, `approved`, `rejected`, or `cancelled`.",
+    )
+    current_step: int = Field(
+        ...,
+        description="Index of the step currently awaiting a decision. `-1` when the chain is terminal.",
+    )
+    step_history: list[JobStateApprovalStep] = Field(
+        default_factory=list,
+        description="Ordered per-step decisions, including any approver `notes`.",
+    )
+    created_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+class JobStateVerdict(BaseModel):
+    """Manual verdict section of /jobs/{id}/state.
+
+    Carries both the auto-assigned `auto_passed` (from preflight summary) and any
+    human-set verdict + aggregated approval notes.
+    """
+
+    verdict: str | None = Field(
+        default=None,
+        description="Human-set verdict: `pass`, `fail`, or `null` if no manual verdict is recorded.",
+    )
+    auto_passed: bool | None = Field(
+        default=None,
+        description="Mirrors `summary.passed`. `true` when the preflight run had zero errors.",
+    )
+    verdict_by: str | None = Field(
+        default=None,
+        description="Email of the reviewer who set the manual verdict.",
+    )
+    verdict_at: str | None = Field(
+        default=None,
+        description="ISO-8601 timestamp of the manual verdict.",
+    )
+    notes: str | None = Field(
+        default=None,
+        description=(
+            "Aggregated approval notes. Concatenation of every step's `notes` field "
+            "once the chain completes, for easy export in audit trails."
+        ),
+    )
+
+
+class JobStateAnnotationComment(BaseModel):
+    """One comment embedded in the `annotations.items[].comments` array."""
+
+    id: str
+    annotation_id: str
+    author_email: str
+    body: str
+    created_at: str
+    updated_at: str
+
+
+class JobStateAnnotationItem(BaseModel):
+    """One annotation with its full comment thread embedded inline.
+
+    Matches the shape returned by `GET /viewer/jobs/{id}/annotations?include=comments`
+    so both endpoints can share the same client-side parser.
+    """
+
+    id: str
+    job_id: str
+    page_num: int
+    kind: str = Field(..., description='"rect" | "circle" | "arrow" | "freehand" | "note"')
+    geometry: dict[str, object]
+    color: str
+    text: str | None
+    author_email: str
+    created_at: str
+    updated_at: str
+    comments: list[JobStateAnnotationComment] = Field(
+        default_factory=list,
+        description="Threaded comments on this annotation, oldest first.",
+    )
+
+
+class JobStateAnnotations(BaseModel):
+    """Annotations section of /jobs/{id}/state."""
+
+    total: int = Field(..., description="Total annotation count across every page.")
+    by_page: dict[str, int] = Field(
+        default_factory=dict,
+        description="Counts keyed by `page_num` as a string (JSON-object-safe).",
+    )
+    items: list[JobStateAnnotationItem] = Field(
+        default_factory=list,
+        description="Every annotation, each with its `comments: []` thread embedded.",
+    )
+
+
+class JobStateResponse(BaseModel):
+    """Universal state of a preflight job — preflight + approvals + annotations + reports.
+
+    One call returns everything a dashboard / audit exporter / partner integration
+    needs. Each section is nullable so callers can filter with `?include=...` and
+    get a compact payload.
+    """
+
+    job: JobResponse = Field(
+        ...,
+        description="Core job metadata + preflight summary + findings + auto-report URLs.",
+    )
+    reports: list[JobStateReportInfo] | None = Field(
+        default=None,
+        description=(
+            "Every minted report token for this job, including share-link metadata "
+            "(`allow_annotations`, `require_visitor_email`). `null` when the "
+            "`reports` section is excluded via `?include=`."
+        ),
+    )
+    approval_chain: JobStateApprovalChain | None = Field(
+        default=None,
+        description=(
+            "Approval chain attached to the job, including each step's `notes`. "
+            "`null` when no chain is attached, OR when the section is excluded."
+        ),
+    )
+    verdict: JobStateVerdict | None = Field(
+        default=None,
+        description="Manual verdict + aggregated approval notes + auto-pass flag.",
+    )
+    annotations: JobStateAnnotations | None = Field(
+        default=None,
+        description=(
+            "Every viewer annotation with its comments embedded inline — no N+1 "
+            "fan-out. `null` when the section is excluded."
+        ),
+    )
+
+
 # --- Profile schemas ---
 
 
