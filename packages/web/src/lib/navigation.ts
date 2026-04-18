@@ -13,6 +13,7 @@ export const headerLinks: NavLink[] = [
   { href: "/integrations", label: "Integrations" },
   { href: "/pricing", label: "Pricing" },
   { href: "/docs", label: "Docs" },
+  { href: "/swagger", label: "API" },
   { href: "/about", label: "About" },
 ];
 
@@ -30,6 +31,16 @@ export const footerGroups: FooterGroup[] = [
       { href: "/pricing", label: "Pricing" },
       { href: "/try-it", label: "Free PDF Test" },
       { href: "/docs", label: "Docs" },
+    ],
+  },
+  {
+    title: "Developers",
+    links: [
+      { href: "/swagger", label: "API Reference" },
+      { href: "/docs/postman", label: "Postman Collection" },
+      { href: "/docs/webhooks", label: "Webhooks" },
+      { href: "/docs/job-state", label: "Universal Job State" },
+      { href: "/docs/authentication", label: "Authentication" },
     ],
   },
   {

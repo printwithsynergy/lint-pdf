@@ -114,6 +114,23 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       order: 45,
       requiredRole: "SUPER_ADMIN",
     });
+    // Admin-scoped Swagger: loads the FULL openapi.json so super-admins
+    // can exercise every route (including /api/v1/admin/*). The
+    // tenant-facing slice lives under /dashboard/api-reference + the
+    // marketing-site /swagger, which both read /openapi.tenant.json.
+    ctx.addPage({
+      path: "/dashboard/admin/swagger",
+      title: "API Reference (All)",
+      layout: "dashboard",
+    });
+    ctx.addNavItem({
+      label: "API Reference (All)",
+      href: "/dashboard/admin/swagger",
+      icon: "code",
+      section: "admin",
+      order: 46,
+      requiredRole: "SUPER_ADMIN",
+    });
     ctx.addPage({
       path: "/dashboard/admin/billing",
       title: "Metered Resources — Admin",

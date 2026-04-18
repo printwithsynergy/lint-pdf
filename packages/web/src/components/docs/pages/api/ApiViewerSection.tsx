@@ -425,6 +425,32 @@ Content-Type: image/png`}
         {" "}<code className="bg-slate-100 px-1 rounded">GET /api/v1/viewer/public/{"{token}"}/annotations?include=comments</code>
         {" "}— unauthenticated read, subject to the token's expiry.
       </p>
+
+      <h4 className="font-semibold text-slate-900 mt-8 mb-2">
+        Public share-link state digest
+      </h4>
+      <p className="text-slate-600 mb-3">
+        Mirror of the authenticated universal-state endpoint for share
+        links. Returns the same stitched digest (summary + approval chain +
+        verdict + annotations + comments) minus the{" "}
+        <code className="bg-slate-100 px-1 rounded">reports</code> section —
+        those are scoped to the issuing tenant and shouldn't leak sibling
+        tokens. See <a className="text-blue-600 underline" href="/docs/job-state">Universal Job State</a> for the full field reference.
+      </p>
+      <Endpoint
+        method="GET"
+        path="/api/v1/viewer/public/{token}/state"
+        description="Unauthenticated state digest for a share link. Same payload shape as /api/v1/jobs/{id}/state minus reports[]. Accepts ?include=approval_chain,verdict,annotations."
+        auth={false}
+        request={`curl "https://api.lintpdf.com/api/v1/viewer/public/CahsfLjcly.../state?include=verdict,annotations"`}
+        response={`{
+  "job": { "job_id": "...", "status": "complete" },
+  "summary": { "total_findings": 275, "passed": true },
+  "approval_chain": { "status": "approved", "step_history": [ ... ] },
+  "verdict": { "verdict": "pass", "auto_passed": true, "notes": "..." },
+  "annotations": { "total": 1, "by_page": {"1": 1}, "items": [ ... ] }
+}`}
+      />
     </section>
   );
 }

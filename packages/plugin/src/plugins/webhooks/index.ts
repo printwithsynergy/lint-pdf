@@ -41,6 +41,15 @@ export const lintpdfWebhooksPlugin: PixieDustPlugin = {
       title: "Webhooks",
       layout: "dashboard",
     });
+    // Per-endpoint delivery audit / replay view. Reads from
+    // /api/lintpdf/webhook-endpoints/:id/deliveries which the plugin
+    // proxies to GET /api/v1/webhooks/deliveries?webhook_id=... on the
+    // engine.
+    ctx.addPage({
+      path: "/dashboard/webhooks/[id]/deliveries",
+      title: "Webhook Deliveries",
+      layout: "dashboard",
+    });
 
     // Routes
     ctx.addRoutes("/api/lintpdf", webhookMgmtRoutes());

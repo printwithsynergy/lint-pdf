@@ -13,6 +13,7 @@ export const docSections = [
       { slug: "api-reference", label: "API Reference" },
       { slug: "job-state", label: "Universal Job State" },
       { slug: "webhooks", label: "Webhooks" },
+      { slug: "postman", label: "Postman Collection" },
       { slug: "rulesets", label: "Rulesets" },
       { slug: "checks", label: "Checks" },
       { slug: "report-formats", label: "Report Formats" },

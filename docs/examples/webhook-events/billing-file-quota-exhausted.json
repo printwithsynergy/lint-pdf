@@ -1,0 +1,6 @@
+{
+  "resource": "file_quota",
+  "severity": "exhausted",
+  "remaining": 0,
+  "allotment": null
+}
