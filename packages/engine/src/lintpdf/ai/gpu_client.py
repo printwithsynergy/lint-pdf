@@ -53,10 +53,20 @@ class CircuitBreaker:
     - OPEN: too many failures, requests fail immediately
     - HALF_OPEN: allow one test request after recovery timeout
 
-    Note: 429 responses are **not** treated as failures because the server
-    is healthy and responsive — it's telling us to slow down. Counting
-    them would open the breaker during normal bursty load and take the
-    whole AI pipeline offline.
+    Note on 429s: individual 429 responses that resolve within our
+    retry budget are NOT failures. The server is healthy and responsive;
+    it's telling us to slow down, and our per-call retry loop already
+    respects that with exponential backoff + ``Retry-After``.
+
+    But a 429 that keeps reappearing AFTER the retry budget is exhausted
+    does count as one failure. Persistent upstream rate-limiting (what
+    you see when Modal throttles every call for minutes at a time) would
+    otherwise burn 3 retries × N analyzers × M pages of wall-clock time
+    before giving up on each job — driving job completion well past
+    timeout. Counting exhausted-budget 429s lets the breaker open after
+    ``failure_threshold`` such events, so subsequent calls fast-fail
+    (analyzers silently skip AI findings) and the job completes in
+    seconds instead of minutes.
     """
 
     def __init__(
@@ -213,11 +223,18 @@ class GPUInferenceClient:
             if response.status_code == 429:
                 last_retry_after = response.headers.get("Retry-After")
                 if attempt >= _RATE_LIMIT_MAX_RETRIES:
-                    # Budget exhausted. Don't mark the breaker — the
-                    # service is healthy, it's just asking us to slow
-                    # down. The analyzer layer already bails out
-                    # silently on GPUServiceUnavailableError so the
-                    # reviewer's findings list stays clean.
+                    # Budget exhausted. Mark the breaker: a single 429
+                    # that retries successfully is fine (bursty traffic),
+                    # but 429s that outlast our retry loop signal the
+                    # upstream is persistently throttling. Without this,
+                    # every analyzer for every page burns the full 3x
+                    # retry budget during a rate-limit storm -- jobs
+                    # appear to hang in ``processing`` until the client
+                    # poll loop times out. With this, the breaker opens
+                    # after ``failure_threshold`` exhausted-budget
+                    # events and subsequent calls fast-fail; analyzers
+                    # silently skip AI findings and the job completes.
+                    self._breaker.record_failure()
                     logger.warning(
                         "GPU service rate-limited after %d retries "
                         "(Retry-After=%s); giving up on this request",

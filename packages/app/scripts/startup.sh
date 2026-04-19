@@ -304,6 +304,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_brand_profiles_custom_domain_unique
   ON brand_profiles (custom_domain)
   WHERE custom_domain IS NOT NULL;
 
+-- Engine: brand_profiles.viewer_config (SQLAlchemy model has it at
+-- api/models.py:857 but no Alembic migration was ever written). The
+-- probe_pending_custom_domains Celery beat task SELECTs every column
+-- on brand_profiles every 5 minutes and crashes with UndefinedColumn
+-- if this is missing, taking the whole probe loop offline (custom
+-- domains never verify). JSONB nullable matches the model exactly.
+ALTER TABLE brand_profiles
+  ADD COLUMN IF NOT EXISTS viewer_config JSONB NULL;
+
 -- One-shot data migration: rewrite any logo URLs still pinned to the dead
 -- reports.lintpdf.com host (never configured in DNS) to the working
 -- api.lintpdf.com host. Safe to run repeatedly — a no-op on fresh rows.

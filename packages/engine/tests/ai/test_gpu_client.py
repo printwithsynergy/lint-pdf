@@ -218,3 +218,86 @@ class TestGPUInferenceClient:
         with patch("httpx.Client"):
             client = GPUInferenceClient("http://gpu:8080/")
             assert client._base_url == "http://gpu:8080"
+
+
+class TestRateLimit429Handling:
+    """Verify the retry-budget-exhausted 429 path records a breaker failure.
+
+    Contract locked in here:
+
+    1. A single 429 that resolves inside the retry budget DOES NOT hit
+       the breaker. Normal rate-limit bursts shouldn't take the whole
+       AI pipeline offline.
+    2. A 429 that keeps coming back after the retry budget is exhausted
+       counts as ONE breaker failure.
+    3. After ``failure_threshold`` exhausted-budget events, the breaker
+       opens and subsequent calls fast-fail (no retry budget spent).
+
+    This contract is what keeps jobs from hanging in ``processing`` for
+    10+ minutes during Modal throttling storms: each analyzer no longer
+    burns its full 3x retry budget before giving up.
+    """
+
+    @staticmethod
+    def _mock_response(status: int, body: dict | None = None) -> MagicMock:
+        r = MagicMock()
+        r.status_code = status
+        r.headers = {}
+        r.json.return_value = body or {}
+        r.raise_for_status = MagicMock()
+        return r
+
+    @staticmethod
+    def test_single_429_that_resolves_does_not_record_failure() -> None:
+        from lintpdf.ai.gpu_client import GPUInferenceClient
+
+        ok = TestRateLimit429Handling._mock_response(200, {"score": 90})
+        throttled = TestRateLimit429Handling._mock_response(429)
+
+        with patch("httpx.Client") as mock_client_cls:
+            # 429 once, then 200. Should succeed without touching the breaker.
+            mock_client_cls.return_value.request.side_effect = [throttled, ok]
+            client = GPUInferenceClient("http://gpu:8080")
+            result = client.assess_image_quality(b"img")
+            assert result["score"] == 90
+            assert len(client._breaker._failures) == 0
+
+    @staticmethod
+    def test_budget_exhausted_429_records_one_failure() -> None:
+        from lintpdf.ai.gpu_client import (
+            GPUInferenceClient,
+            GPUServiceRateLimitedError,
+        )
+
+        throttled = TestRateLimit429Handling._mock_response(429)
+
+        with patch("httpx.Client") as mock_client_cls:
+            # 429 on every attempt. Budget (3 retries) exhausted.
+            mock_client_cls.return_value.request.return_value = throttled
+            client = GPUInferenceClient("http://gpu:8080")
+            with pytest.raises(GPUServiceRateLimitedError):
+                client.assess_image_quality(b"img")
+            assert len(client._breaker._failures) == 1
+
+    @staticmethod
+    def test_three_budget_exhausted_429s_open_the_breaker() -> None:
+        from lintpdf.ai.gpu_client import (
+            GPUInferenceClient,
+            GPUServiceRateLimitedError,
+            GPUServiceUnavailableError,
+        )
+
+        throttled = TestRateLimit429Handling._mock_response(429)
+
+        with patch("httpx.Client") as mock_client_cls:
+            mock_client_cls.return_value.request.return_value = throttled
+            client = GPUInferenceClient("http://gpu:8080")
+            # Breaker threshold is 3 failures in 60s.
+            for _ in range(3):
+                with pytest.raises(GPUServiceRateLimitedError):
+                    client.assess_image_quality(b"img")
+            # Next call: breaker open, fast-fails WITHOUT burning retries.
+            call_count_before = mock_client_cls.return_value.request.call_count
+            with pytest.raises(GPUServiceUnavailableError, match="circuit breaker"):
+                client.assess_image_quality(b"img")
+            assert mock_client_cls.return_value.request.call_count == call_count_before
