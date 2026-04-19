@@ -38,7 +38,7 @@ $PRISMA generate --schema prisma/schema 2>&1 || echo "prisma generate had warnin
 # is not available as a CJS require in the standalone Next.js output.
 echo "Step 1: Ensuring new columns exist..."
 
-$PRISMA db execute --schema prisma/schema --stdin <<'SQL'
+$PRISMA db execute --stdin <<'SQL'
 -- AppSettings columns required by pixie-dust-dashboard
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "primaryColor" TEXT;
 ALTER TABLE "AppSettings" ADD COLUMN IF NOT EXISTS "accentColor" TEXT;
