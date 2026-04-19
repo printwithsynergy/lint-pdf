@@ -132,18 +132,26 @@ export function webhookMgmtRoutes(): RouteDefinition[] {
       permission: "webhooks:manage",
       description: "List recent delivery attempts for one webhook endpoint",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
-        const page = req.query?.page ?? "1";
-        const pageSize = req.query?.page_size ?? "50";
-        const successFilter =
-          req.query?.success !== undefined
-            ? `&success=${encodeURIComponent(req.query.success)}`
-            : "";
-        const eventFilter = req.query?.event
-          ? `&event=${encodeURIComponent(req.query.event)}`
+        // Plugin RouteRequest types ``query`` values as
+        // ``string | string[] | undefined`` so a repeated key (?event=a&event=b)
+        // still parses. Coerce to a single string before encoding -- arrays
+        // can't be encodeURIComponent'd directly.
+        const firstValue = (
+          v: string | string[] | undefined,
+        ): string => (Array.isArray(v) ? (v[0] ?? "") : v ?? "");
+        const page = firstValue(req.query?.page) || "1";
+        const pageSize = firstValue(req.query?.page_size) || "50";
+        const successRaw = firstValue(req.query?.success);
+        const eventRaw = firstValue(req.query?.event);
+        const successFilter = successRaw
+          ? `&success=${encodeURIComponent(successRaw)}`
+          : "";
+        const eventFilter = eventRaw
+          ? `&event=${encodeURIComponent(eventRaw)}`
           : "";
         const resp = await engineFetch(
           `/api/v1/webhooks/deliveries?webhook_id=${req.params.webhookId}` +
-            `&page=${page}&page_size=${pageSize}${successFilter}${eventFilter}`,
+            `&page=${encodeURIComponent(page)}&page_size=${encodeURIComponent(pageSize)}${successFilter}${eventFilter}`,
         );
         if (!resp.ok) {
           const detail = await resp.text();

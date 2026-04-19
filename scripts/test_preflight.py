@@ -313,11 +313,19 @@ def submit_external_import(
 
 def generate_every_report_format(
     http: HTTP, api_key: str, job_id: str
-) -> dict[str, str]:
-    """One POST per format so each is independently inspectable."""
+) -> tuple[dict[str, str], str | None]:
+    """One POST per format so each is independently inspectable.
+
+    Returns ``(static_url_per_format, html_viewer_url)``. The viewer URL
+    comes from the engine's new ``viewer_url`` field in the ``html`` mint
+    response (added in this commit) -- it honors the tenant's
+    ``app_custom_domain`` so white-labeled tenants see their branded
+    domain, others fall back to the global app_base_url.
+    """
     print(f"\n=== generate every report format for job {job_id[:8]}… ===")
     formats = ["html", "pdf", "json", "xml", "annotated_pdf", "annotated_pdf_markup"]
     out: dict[str, str] = {}
+    html_viewer_url: str | None = None
     for fmt in formats:
         code, body = http.request(
             "POST",
@@ -331,9 +339,11 @@ def generate_every_report_format(
             for r in body.get("reports", []):
                 if r.get("url"):
                     out[fmt] = r["url"]
-                elif r.get("skipped_reason"):
+                if r.get("viewer_url") and fmt == "html" and not html_viewer_url:
+                    html_viewer_url = r["viewer_url"]
+                if not r.get("url") and r.get("skipped_reason"):
                     print(f"      ↳ {fmt} skipped: {r['skipped_reason']}")
-    return out
+    return out, html_viewer_url
 
 
 def exercise_viewer_surface(
@@ -589,10 +599,11 @@ def main() -> int:
     # ----- Reports + viewer + share + approval against the vanilla job
     primary_job = job_vanilla
     reports: dict[str, str] = {}
+    html_viewer_url: str | None = None
     gated_token: str | None = None
     public_token: str | None = None
     if primary_job:
-        reports = generate_every_report_format(http, api_key, primary_job)
+        reports, html_viewer_url = generate_every_report_format(http, api_key, primary_job)
         exercise_viewer_surface(http, api_key, primary_job)
         gated_token, public_token = exercise_share_link(http, api_key, primary_job)
         exercise_approval_chain(http, api_key, primary_job)
@@ -640,16 +651,29 @@ def main() -> int:
         print("\n  report URLs (every format, public via signed token):")
         for fmt, url in reports.items():
             print(f"    {fmt:24} {url}")
+    if html_viewer_url:
+        # The engine now returns ``viewer_url`` directly in the html
+        # mint response (added with the per-tenant URL resolver). For
+        # white-labeled tenants this carries their custom app domain;
+        # otherwise it's the global ``app_base_url``.
+        print(f"\n  ✨ HTML viewer_url from mint response (interactive):")
+        print(f"    {html_viewer_url}")
     if public_token:
         print(f"\n  ✨ PUBLIC interactive viewer (no login, no headers):")
-        print(f"    {API_BASE}/r/{public_token}")
-        print(f"    public /state : {API_BASE}/api/v1/viewer/public/{public_token}/state")
-        print(f"    public pages  : {API_BASE}/api/v1/viewer/public/{public_token}/pages")
+        # /view/{token} on the App service is the actual interactive
+        # pan/zoom/layer/annotate viewer. /r/{token} on reports is just
+        # the static HTML report. Surface BOTH so the reader knows the
+        # difference at a glance.
+        print(f"    interactive : {APP_BASE}/view/{public_token}")
+        print(f"    static html : {API_BASE}/r/{public_token}")
+        print(f"    /state api  : {API_BASE}/api/v1/viewer/public/{public_token}/state")
+        print(f"    /pages api  : {API_BASE}/api/v1/viewer/public/{public_token}/pages")
     if gated_token:
-        print(f"\n  gated share-link (needs X-Visitor-Email header):")
-        print(f"    {API_BASE}/r/{gated_token}")
+        print(f"\n  gated share-link (X-Visitor-Email gate served inline by /view):")
+        print(f"    interactive : {APP_BASE}/view/{gated_token}")
+        print(f"    static html : {API_BASE}/r/{gated_token}")
     if import_jobs:
-        print("\n  external-import jobs (one per parser):")
+        print("\n  external-import jobs (one per parser, dashboard requires login):")
         for fmt, jid in import_jobs.items():
             print(f"    {fmt:14} {APP_BASE}/dashboard/jobs/{jid}/viewer")
 

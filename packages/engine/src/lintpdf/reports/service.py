@@ -465,6 +465,7 @@ class ReportService:
         expiry_days: int | None = None,
         branding: BrandingContext | None = None,
         report_base_url: str = "https://reports.lintpdf.com",
+        viewer_base_url: str | None = None,
         detail_level: str = "standard",
         summary_page: str = "prepend",
         allow_annotations: bool = False,
@@ -554,13 +555,22 @@ class ReportService:
         # Set cross-links in branding (unchanged)
         if "pdf" in tokens:
             branding.pdf_download_url = f"{report_base_url}/r/{tokens['pdf']}.pdf"
+        # Resolve the viewer base ONCE per call so both the
+        # ``branding.viewer_url`` and the per-report ``viewer_url`` field
+        # surfaced in the response use the same host. Honors the
+        # tenant-resolved override when passed; falls back to the global
+        # ``app_base_url`` for internal callers that don't have a tenant
+        # context (e.g. background re-renders).
+        if viewer_base_url:
+            viewer_base = viewer_base_url.rstrip("/")
+        else:
+            from lintpdf.api.config import get_settings as _get_settings
+            viewer_base = _get_settings().app_base_url.rstrip("/")
+
         if "html" in tokens:
             branding.report_url = f"{report_base_url}/r/{tokens['html']}"
-            # Link to the interactive viewer (served by the Next.js app)
-            from lintpdf.api.config import get_settings as _get_settings
-
-            app_base = _get_settings().app_base_url.rstrip("/")
-            branding.viewer_url = f"{app_base}/view/{tokens['html']}"
+            # Link to the interactive viewer (served by the Next.js app).
+            branding.viewer_url = f"{viewer_base}/view/{tokens['html']}"
 
         # Fetch original PDF bytes for page screenshot rendering (lazy, once).
         # Executive reports skip screenshots entirely — no PDF fetch needed.
@@ -618,10 +628,14 @@ class ReportService:
             if existing is not None and not needs_inline:
                 # Pure URL reuse — no body work.
                 url = f"{report_base_url}/r/{existing.token}{_suffix_by_format.get(fmt, '')}"
+                viewer_url = (
+                    f"{viewer_base}/view/{existing.token}" if fmt == "html" else None
+                )
                 report_result.reports.append(
                     {
                         "format": fmt,
                         "url": url,
+                        "viewer_url": viewer_url,
                         "token": existing.token,
                         "expires_at": existing.expires_at.isoformat()
                         if existing.expires_at
@@ -776,10 +790,16 @@ class ReportService:
                     data_value = None
                     content_type_value = None
 
+            viewer_url_out = (
+                f"{viewer_base}/view/{token_value_out}"
+                if fmt == "html" and token_value_out
+                else None
+            )
             report_result.reports.append(
                 {
                     "format": fmt,
                     "url": url_value,
+                    "viewer_url": viewer_url_out,
                     "token": token_value_out,
                     "expires_at": expires_out,
                     "data": data_value,

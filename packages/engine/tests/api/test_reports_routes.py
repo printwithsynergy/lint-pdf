@@ -604,3 +604,95 @@ class TestDeterministicTokens:
         assert upload_spy.call_count == 0
         # No ReportToken row persisted for inline-only mints.
         assert db_session.query(ReportToken).filter(ReportToken.job_id == job.id).count() == 0
+
+
+class TestViewerUrlField:
+    """Mint response surfaces ``viewer_url`` for HTML format only.
+
+    Locks in two contracts:
+
+    1. HTML mints get ``viewer_url`` populated as ``{viewer_base}/view/{token}``.
+       Non-HTML mints get ``viewer_url=None``.
+    2. ``viewer_base_url`` parameter overrides the global default. This
+       is what the route handler uses to thread the tenant-resolved
+       custom domain through (so a white-labeled tenant sees their
+       ``app_custom_domain`` in the response, not ``app.lintpdf.com``).
+    """
+
+    @staticmethod
+    def test_html_mint_carries_viewer_url(db_session: Session) -> None:
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
+
+        job = _seed_completed_job(db_session)
+        storage = get_storage()
+        service = ReportService(storage, db_session)
+
+        with (
+            patch.object(
+                ReportService, "_generate_format", return_value=b"<html></html>"
+            ),
+            patch.object(ReportService, "_fetch_original_pdf", return_value=None),
+        ):
+            result = service.generate_and_store(
+                job_id=str(job.id),
+                tenant_id=str(PLACEHOLDER_TENANT_ID),
+                result_json={"summary": {}},
+                formats=["html"],
+                viewer_base_url="https://acme.example.com",
+            )
+        row = result.reports[0]
+        assert row["format"] == "html"
+        assert row["token"]
+        assert row["viewer_url"] == f"https://acme.example.com/view/{row['token']}"
+
+    @staticmethod
+    def test_non_html_format_has_null_viewer_url(db_session: Session) -> None:
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
+
+        job = _seed_completed_job(db_session)
+        storage = get_storage()
+        service = ReportService(storage, db_session)
+
+        with (
+            patch.object(
+                ReportService, "_generate_format", return_value=b'{"findings":[]}'
+            ),
+            patch.object(ReportService, "_fetch_original_pdf", return_value=None),
+        ):
+            result = service.generate_and_store(
+                job_id=str(job.id),
+                tenant_id=str(PLACEHOLDER_TENANT_ID),
+                result_json={"summary": {}},
+                formats=["json"],
+                viewer_base_url="https://acme.example.com",
+            )
+        assert result.reports[0]["format"] == "json"
+        assert result.reports[0]["viewer_url"] is None
+
+    @staticmethod
+    def test_default_viewer_base_falls_back_to_global(db_session: Session) -> None:
+        """When no ``viewer_base_url`` passed, fall back to global app_base_url."""
+        from lintpdf.api.config import get_settings
+        from lintpdf.api.storage import get_storage
+        from lintpdf.reports.service import ReportService
+
+        job = _seed_completed_job(db_session)
+        storage = get_storage()
+        service = ReportService(storage, db_session)
+
+        with (
+            patch.object(
+                ReportService, "_generate_format", return_value=b"<html></html>"
+            ),
+            patch.object(ReportService, "_fetch_original_pdf", return_value=None),
+        ):
+            result = service.generate_and_store(
+                job_id=str(job.id),
+                tenant_id=str(PLACEHOLDER_TENANT_ID),
+                result_json={"summary": {}},
+                formats=["html"],
+            )
+        global_base = get_settings().app_base_url.rstrip("/")
+        assert result.reports[0]["viewer_url"].startswith(f"{global_base}/view/")

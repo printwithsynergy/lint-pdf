@@ -67,26 +67,41 @@ LINTPDF_ADMIN_KEY=... python3 scripts/test_preflight.py
 **Output:**
 
 ```
-SUMMARY  ✓ 126   ✗ 0   total 126
+SUMMARY  ✓ 128   ✗ 0   total 128
   tenant id       : a62820e8-...
-  api key         : lpdf_Idh8xQQGFa_...
+  api key         : lpdf_...
   primary job     : 2012a9b3-...
-  /state digest   : https://api.lintpdf.com/api/v1/jobs/2012a9b3-.../state
-  interactive     : https://app.lintpdf.com/dashboard/jobs/2012a9b3-.../viewer
+  auth /state     : https://api.lintpdf.com/api/v1/jobs/.../state  (needs Bearer token)
+  auth dashboard  : https://app.lintpdf.com/dashboard/jobs/.../viewer  (needs login)
   AI job          : 309f4086-...
-  report URLs (every format):
-    html                     https://reports.lintpdf.com/r/...
-    pdf                      https://reports.lintpdf.com/r/...pdf
+
+  report URLs (every format, public via signed token):
+    html                     https://reports.lintpdf.com/r/...        (static HTML report)
+    pdf                      https://reports.lintpdf.com/r/...pdf     (static PDF report)
     json                     https://reports.lintpdf.com/r/...json
     xml                      https://reports.lintpdf.com/r/...xml
     annotated_pdf            https://reports.lintpdf.com/r/...pdf
-  share-link token: KqteajkT...
-  share-link page : https://api.lintpdf.com/r/...
-  external-import jobs (one per parser):
-    pitstop_xml    https://app.lintpdf.com/dashboard/jobs/.../viewer
-    callas_xml     https://app.lintpdf.com/dashboard/jobs/.../viewer
-    ...
+
+  ✨ HTML viewer_url from mint response (interactive):
+    https://app.lintpdf.com/view/{token}
+
+  ✨ PUBLIC interactive viewer (no login, no headers):
+    interactive : https://app.lintpdf.com/view/{token}
+    static html : https://api.lintpdf.com/r/{token}
+    /state api  : https://api.lintpdf.com/api/v1/viewer/public/{token}/state
+    /pages api  : https://api.lintpdf.com/api/v1/viewer/public/{token}/pages
 ```
+
+**The "interactive" URL points at `app.lintpdf.com/view/{token}`** —
+that's the actual pan/zoom/layer/annotate viewer. The
+`reports.lintpdf.com/r/{token}` URL is the static pre-rendered HTML
+report (handy for email forwarding; not interactive).
+
+White-labeling note: the engine now resolves the viewer base from the
+tenant's verified `app_custom_domain` (when set) and surfaces the
+result in the new `viewer_url` field on every HTML mint response. So a
+tenant with `acme.lintpdf.com` set sees `acme.lintpdf.com/view/{token}`
+in the response automatically — no client-side construction needed.
 
 ---
 

@@ -155,6 +155,17 @@ class ReportInfo(BaseModel):
 
     format: str
     url: str | None = None
+    viewer_url: str | None = Field(
+        default=None,
+        description=(
+            "Public interactive viewer URL (Next.js app at "
+            "``{viewer_base}/view/{token}``). Populated for the ``html`` "
+            "format when a token is minted; null for non-HTML formats and "
+            "for inline-only HTML deliveries. ``viewer_base`` honors the "
+            "tenant's verified ``app_custom_domain`` for white-labeled "
+            "share links, falls back to the global default otherwise."
+        ),
+    )
     token: str | None = None
     expires_at: str | None = None
     data: Any | None = None  # dict for JSON, str for XML; None for url-only
@@ -465,7 +476,11 @@ async def generate_reports(  # skipcq: PY-R1000
         )
 
     from lintpdf.api.storage import get_storage
-    from lintpdf.reports.service import ReportService, resolve_report_base_url
+    from lintpdf.reports.service import (
+        ReportService,
+        resolve_report_base_url,
+        resolve_viewer_base_url,
+    )
     from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
 
     storage = get_storage()
@@ -535,6 +550,10 @@ async def generate_reports(  # skipcq: PY-R1000
             expiry_days=expiry_days,
             branding=branding,
             report_base_url=resolve_report_base_url(tenant, active_profile, entitlements, settings),
+            # Pass the tenant-resolved viewer base so white-labeled tenants
+            # see their custom app domain in the share/viewer URLs that the
+            # mint response + desktop app + dashboard surface.
+            viewer_base_url=resolve_viewer_base_url(tenant, active_profile, entitlements, settings),
             detail_level=detail_level,
             summary_page=body.summary_page
             or getattr(tenant, "report_summary_page", None)
