@@ -835,6 +835,20 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             outcome = client.add_custom_domain(domain)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
+                # Surface Railway's per-domain required CNAME target so
+                # admins spot the mismatch in Worker logs -- customers
+                # pointing at the old shared service hostname will have
+                # certs stuck in VALIDATING_OWNERSHIP forever.
+                if outcome.required_cname and not cname.rstrip(".").endswith(
+                    outcome.required_cname.rstrip(".")
+                ):
+                    logger.warning(
+                        "Domain %s CNAME=%s but Railway requires CNAME=%s — "
+                        "customer must update their DNS for cert to issue",
+                        domain,
+                        cname,
+                        outcome.required_cname,
+                    )
                 tenant.brand_custom_domain_verified = True
                 db.commit()
                 result["activated"] += 1
@@ -875,6 +889,20 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             outcome = client.add_custom_domain(domain)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
+                # Surface Railway's per-domain required CNAME target so
+                # admins spot the mismatch in Worker logs -- customers
+                # pointing at the old shared service hostname will have
+                # certs stuck in VALIDATING_OWNERSHIP forever.
+                if outcome.required_cname and not cname.rstrip(".").endswith(
+                    outcome.required_cname.rstrip(".")
+                ):
+                    logger.warning(
+                        "Domain %s CNAME=%s but Railway requires CNAME=%s — "
+                        "customer must update their DNS for cert to issue",
+                        domain,
+                        cname,
+                        outcome.required_cname,
+                    )
                 profile.custom_domain_verified = True
                 db.commit()
                 result["activated"] += 1
@@ -909,6 +937,20 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             outcome = client.add_custom_domain(domain, service_id=client.app_service_id)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
+                # Surface Railway's per-domain required CNAME target so
+                # admins spot the mismatch in Worker logs -- customers
+                # pointing at the old shared service hostname will have
+                # certs stuck in VALIDATING_OWNERSHIP forever.
+                if outcome.required_cname and not cname.rstrip(".").endswith(
+                    outcome.required_cname.rstrip(".")
+                ):
+                    logger.warning(
+                        "Domain %s CNAME=%s but Railway requires CNAME=%s — "
+                        "customer must update their DNS for cert to issue",
+                        domain,
+                        cname,
+                        outcome.required_cname,
+                    )
                 tenant.app_custom_domain_verified = True
                 db.commit()
                 result["activated"] += 1
@@ -938,6 +980,20 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             outcome = client.add_custom_domain(domain, service_id=client.app_service_id)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
+                # Surface Railway's per-domain required CNAME target so
+                # admins spot the mismatch in Worker logs -- customers
+                # pointing at the old shared service hostname will have
+                # certs stuck in VALIDATING_OWNERSHIP forever.
+                if outcome.required_cname and not cname.rstrip(".").endswith(
+                    outcome.required_cname.rstrip(".")
+                ):
+                    logger.warning(
+                        "Domain %s CNAME=%s but Railway requires CNAME=%s — "
+                        "customer must update their DNS for cert to issue",
+                        domain,
+                        cname,
+                        outcome.required_cname,
+                    )
                 profile.app_custom_domain_verified = True
                 db.commit()
                 result["activated"] += 1

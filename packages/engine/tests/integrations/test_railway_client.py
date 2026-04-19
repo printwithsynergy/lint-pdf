@@ -81,6 +81,8 @@ class TestAddCustomDomain:
 
     @staticmethod
     def test_successful_create() -> None:
+        # New Railway schema: ``status`` is a CustomDomainStatus object,
+        # not a scalar. Matches the actual mutation shape post-Envoy.
         response = _FakeResponse(
             200,
             {
@@ -88,7 +90,18 @@ class TestAddCustomDomain:
                     "customDomainCreate": {
                         "id": "cd-1",
                         "domain": "reports.acme.example",
-                        "status": "active",
+                        "status": {
+                            "verified": False,
+                            "certificateStatus": "CERTIFICATE_STATUS_TYPE_VALIDATING_OWNERSHIP",
+                            "dnsRecords": [
+                                {
+                                    "hostlabel": "reports",
+                                    "recordType": "DNS_RECORD_TYPE_CNAME",
+                                    "requiredValue": "xyz123.up.railway.app",
+                                    "purpose": "DNS_RECORD_PURPOSE_TRAFFIC_ROUTE",
+                                }
+                            ],
+                        },
                     }
                 }
             },
@@ -96,6 +109,8 @@ class TestAddCustomDomain:
         with _patch_httpx(response):
             result = _make_client().add_custom_domain("reports.acme.example")
         assert result.status == "created"
+        # The per-domain target is threaded back for the admin UI.
+        assert result.required_cname == "xyz123.up.railway.app"
 
     @staticmethod
     def test_already_exists_detected_from_graphql_error() -> None:

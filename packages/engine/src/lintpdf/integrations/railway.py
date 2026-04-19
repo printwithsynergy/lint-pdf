@@ -29,6 +29,17 @@ class RailwayDomainResult:
     status: str
     """One of: 'created', 'already_exists', 'disabled', 'unauthorized', 'error'."""
     message: str | None = None
+    required_cname: str | None = None
+    """The unique Railway backend hostname the customer must CNAME to.
+
+    Railway's new Envoy-based routing assigns a DIFFERENT target per
+    custom domain (e.g. ``zaprv9d7.up.railway.app``), not the shared
+    service hostname (``app.lintpdf.com`` / ``bwfl38nz.up.railway.app``).
+    Returned from ``customDomainCreate.status.dnsRecords[0].requiredValue``
+    so the admin UI can show the customer exactly what to CNAME to.
+
+    None if the mutation didn't return a dnsRecords entry (e.g., already
+    exists, error, or pre-Envoy Railway project)."""
 
 
 class RailwayClient:
@@ -107,6 +118,16 @@ class RailwayClient:
         # driven by DNS + TLS issuance in the background), so select a
         # minimal subfield set. ``dnsRecords`` / ``verificationToken`` are
         # available for richer diagnostics in a future patch.
+        # ``dnsRecords[].requiredValue`` is the per-domain unique Railway
+        # backend hostname the customer must CNAME to (e.g.
+        # ``zaprv9d7.up.railway.app``, NOT the shared ``app.lintpdf.com``
+        # hostname). Railway's new Envoy-based routing needs each custom
+        # domain to point at its own generated target -- CNAMEing to the
+        # shared service hostname leaves the cert stuck in
+        # ``VALIDATING_OWNERSHIP`` forever. We thread this value back to
+        # the caller so the admin UI can show the customer exactly what
+        # to CNAME to, instead of the stale "reports.lintpdf.com" /
+        # "app.lintpdf.com" targets in the old docs.
         query = """
         mutation CustomDomainCreate($input: CustomDomainCreateInput!) {
           customDomainCreate(input: $input) {
@@ -115,6 +136,12 @@ class RailwayClient:
             status {
               verified
               certificateStatus
+              dnsRecords {
+                hostlabel
+                recordType
+                requiredValue
+                purpose
+              }
             }
           }
         }
@@ -174,9 +201,26 @@ class RailwayClient:
             return RailwayDomainResult(status="error", message="Empty response from Railway")
 
         # ``status`` used to be a scalar enum we surfaced as the message;
-        # it's now a dict of verified + certificateStatus so summarize it
-        # into something humans can read in probe logs without exposing
-        # the raw Railway shape to callers.
+        # it's now a dict of verified + certificateStatus + dnsRecords so
+        # pull out the bits we care about.
         st = data.get("status") or {}
         message = f"verified={st.get('verified')}  cert={st.get('certificateStatus')}"
-        return RailwayDomainResult(status="created", message=message)
+
+        # Extract the customer-facing CNAME target. There should be exactly
+        # one TRAFFIC_ROUTE record per domain — if the shape shifts under
+        # us (e.g. Railway adds a separate ownership-verification record)
+        # we fall back to the first CNAME with a requiredValue.
+        required_cname: str | None = None
+        for rec in st.get("dnsRecords") or []:
+            if rec.get("recordType") == "DNS_RECORD_TYPE_CNAME" and rec.get("requiredValue"):
+                if rec.get("purpose") == "DNS_RECORD_PURPOSE_TRAFFIC_ROUTE":
+                    required_cname = rec["requiredValue"]
+                    break
+                if required_cname is None:
+                    required_cname = rec["requiredValue"]
+
+        return RailwayDomainResult(
+            status="created",
+            message=message,
+            required_cname=required_cname,
+        )
