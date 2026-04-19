@@ -85,29 +85,35 @@ class TestGPUInferenceClient:
     """Tests for GPUInferenceClient with mocked httpx."""
 
     @staticmethod
+    def _ok_response(body: dict) -> MagicMock:
+        """Build a 200-response mock shaped for the new ``.request()`` path."""
+        r = MagicMock()
+        r.status_code = 200
+        r.json.return_value = body
+        r.raise_for_status = MagicMock()
+        return r
+
+    @staticmethod
     def test_assess_image_quality() -> None:
         with patch("httpx.Client") as mock_client_cls:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {"score": 72.5, "model": "musiq"}
-            mock_response.raise_for_status = MagicMock()
-            mock_client_cls.return_value.post.return_value = mock_response
+            mock_response = TestGPUInferenceClient._ok_response(
+                {"score": 72.5, "model": "musiq"}
+            )
+            mock_client_cls.return_value.request.return_value = mock_response
 
             client = GPUInferenceClient("http://gpu:8080")
             result = client.assess_image_quality(b"fake_image_bytes")
 
             assert result["score"] == 72.5
-            mock_client_cls.return_value.post.assert_called_once()
+            mock_client_cls.return_value.request.assert_called_once()
 
     @staticmethod
     def test_classify_document() -> None:
         with patch("httpx.Client") as mock_client_cls:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "class": "packaging_artwork",
-                "confidence": 0.92,
-            }
-            mock_response.raise_for_status = MagicMock()
-            mock_client_cls.return_value.post.return_value = mock_response
+            mock_response = TestGPUInferenceClient._ok_response(
+                {"class": "packaging_artwork", "confidence": 0.92}
+            )
+            mock_client_cls.return_value.request.return_value = mock_response
 
             client = GPUInferenceClient("http://gpu:8080")
             result = client.classify_document(b"fake_image")
@@ -117,10 +123,10 @@ class TestGPUInferenceClient:
     @staticmethod
     def test_detect_logos_with_references() -> None:
         with patch("httpx.Client") as mock_client_cls:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {"logos": [{"label": "brand", "confidence": 0.95}]}
-            mock_response.raise_for_status = MagicMock()
-            mock_client_cls.return_value.post.return_value = mock_response
+            mock_response = TestGPUInferenceClient._ok_response(
+                {"logos": [{"label": "brand", "confidence": 0.95}]}
+            )
+            mock_client_cls.return_value.request.return_value = mock_response
 
             client = GPUInferenceClient("http://gpu:8080")
             result = client.detect_logos(
@@ -133,20 +139,20 @@ class TestGPUInferenceClient:
     @staticmethod
     def test_translate_text() -> None:
         with patch("httpx.Client") as mock_client_cls:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "translated_text": "Bonjour",
-                "source_lang": "en",
-                "target_lang": "fr",
-            }
-            mock_response.raise_for_status = MagicMock()
-            mock_client_cls.return_value.post.return_value = mock_response
+            mock_response = TestGPUInferenceClient._ok_response(
+                {
+                    "translated_text": "Bonjour",
+                    "source_lang": "en",
+                    "target_lang": "fr",
+                }
+            )
+            mock_client_cls.return_value.request.return_value = mock_response
 
             client = GPUInferenceClient("http://gpu:8080")
             result = client.translate_text("Hello", "en", "fr")
 
             assert result["translated_text"] == "Bonjour"
-            mock_client_cls.return_value.post.assert_called_once()
+            mock_client_cls.return_value.request.assert_called_once()
 
     @staticmethod
     def test_health_check_success() -> None:
@@ -171,7 +177,9 @@ class TestGPUInferenceClient:
         import httpx
 
         with patch("httpx.Client") as mock_client_cls:
-            mock_client_cls.return_value.post.side_effect = httpx.ConnectError("connection refused")
+            mock_client_cls.return_value.request.side_effect = httpx.ConnectError(
+                "connection refused"
+            )
 
             client = GPUInferenceClient("http://gpu:8080")
 
@@ -181,18 +189,20 @@ class TestGPUInferenceClient:
                     client.assess_image_quality(b"img")
 
             # 4th call should fail immediately (circuit open) without making HTTP call
-            mock_client_cls.return_value.post.reset_mock()
+            mock_client_cls.return_value.request.reset_mock()
             with pytest.raises(GPUServiceUnavailableError, match="circuit breaker"):
                 client.assess_image_quality(b"img")
             # No HTTP call should have been made because circuit is open
-            mock_client_cls.return_value.post.assert_not_called()
+            mock_client_cls.return_value.request.assert_not_called()
 
     @staticmethod
     def test_circuit_breaker_resets_after_success() -> None:
         import httpx
 
         with patch("httpx.Client") as mock_client_cls:
-            mock_client_cls.return_value.post.side_effect = httpx.ConnectError("connection refused")
+            mock_client_cls.return_value.request.side_effect = httpx.ConnectError(
+                "connection refused"
+            )
 
             client = GPUInferenceClient("http://gpu:8080")
 
@@ -204,11 +214,9 @@ class TestGPUInferenceClient:
             # Manually reset circuit and succeed
             client._breaker.record_success()
 
-            mock_response = MagicMock()
-            mock_response.json.return_value = {"score": 80}
-            mock_response.raise_for_status = MagicMock()
-            mock_client_cls.return_value.post.side_effect = None
-            mock_client_cls.return_value.post.return_value = mock_response
+            mock_response = TestGPUInferenceClient._ok_response({"score": 80})
+            mock_client_cls.return_value.request.side_effect = None
+            mock_client_cls.return_value.request.return_value = mock_response
 
             result = client.assess_image_quality(b"img")
             assert result["score"] == 80
