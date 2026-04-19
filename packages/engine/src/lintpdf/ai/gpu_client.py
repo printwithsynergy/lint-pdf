@@ -348,3 +348,49 @@ class GPUInferenceClient:
             return response.status_code == 200
         except Exception:
             return False
+
+
+# ---------------------------------------------------------------------------
+# Process-level shared client
+# ---------------------------------------------------------------------------
+# Every analyzer used to call ``GPUInferenceClient(settings.gpu_inference_url)``
+# in its own ``_get_gpu_client()`` factory, which returned a FRESH instance
+# (and hence a fresh ``CircuitBreaker``) on every call. That defeats the
+# breaker entirely during a Modal rate-limit storm -- each analyzer burns its
+# full retry budget, records a failure on its OWN breaker, and then throws
+# the breaker away. Analyzer N+1 starts with a clean breaker and repeats.
+#
+# The fix is a module-level singleton keyed on ``gpu_inference_url``: every
+# analyzer calling ``get_gpu_client()`` sees the same ``CircuitBreaker``, so
+# ``failure_threshold`` accumulates across calls. Once it trips, subsequent
+# analyzers ``check()`` returns immediately, they raise
+# ``GPUServiceUnavailableError``, the analyzer silently bails out, and the
+# job completes fast instead of burning budget on every call.
+#
+# Per-URL keying lets tests and alternate deployments (different inference
+# endpoints) coexist without stepping on each other's breakers.
+_shared_clients: dict[str, GPUInferenceClient] = {}
+
+
+def get_gpu_client() -> GPUInferenceClient:
+    """Return the process-wide ``GPUInferenceClient`` for the configured URL.
+
+    Lazy-initialized on first access, memoized for the lifetime of the
+    process. ``GPUInferenceClient`` does its own configured-vs-unconfigured
+    check internally, so callers can always treat the returned instance as
+    valid and let ``_require_configured`` raise at call time if the
+    inference URL isn't set.
+    """
+    from lintpdf.api.config import get_settings
+
+    url = get_settings().gpu_inference_url or ""
+    client = _shared_clients.get(url)
+    if client is None:
+        client = GPUInferenceClient(url)
+        _shared_clients[url] = client
+    return client
+
+
+def _reset_shared_clients_for_tests() -> None:
+    """Drop the memoized client map. Tests only."""
+    _shared_clients.clear()

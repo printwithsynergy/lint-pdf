@@ -25,10 +25,11 @@ logger = logging.getLogger(__name__)
 
 
 def _get_gpu_client() -> GPUInferenceClient:
-    from lintpdf.api.config import get_settings
+    # Delegates to the process-level shared client so the circuit breaker
+    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
+    from lintpdf.ai.gpu_client import get_gpu_client
 
-    settings = get_settings()
-    return GPUInferenceClient(settings.gpu_inference_url)
+    return get_gpu_client()
 
 
 def _format_skin_tone_summary(detections: list[dict[str, Any]]) -> str:

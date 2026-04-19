@@ -145,11 +145,18 @@ class TestCircuitBreakerIntegration:
 
     @staticmethod
     def test_multiple_analyzers_share_client_breaker() -> None:
-        """All GPU method calls on a single client share the same circuit breaker."""
+        """All GPU method calls on a single client share the same circuit breaker.
+
+        The production code calls ``self._client.request("POST", ...)`` (see
+        ``_send_with_retry`` in gpu_client.py). Mock ``.request``, not
+        ``.post`` -- the older test version was silently broken because the
+        ``.post`` mock never fired and the raised ConnectError propagated
+        from the unmocked ``.request`` call getting a bare MagicMock back.
+        """
         import httpx
 
         with patch("httpx.Client") as mock_client_cls:
-            mock_client_cls.return_value.post.side_effect = httpx.ConnectError("refused")
+            mock_client_cls.return_value.request.side_effect = httpx.ConnectError("refused")
 
             client = GPUInferenceClient("http://gpu:8080", timeout=1.0)
 
@@ -165,7 +172,7 @@ class TestCircuitBreakerIntegration:
             assert client._breaker.state == "open"
 
             # Next call should fail fast (circuit open)
-            mock_client_cls.return_value.post.reset_mock()
+            mock_client_cls.return_value.request.reset_mock()
             with pytest.raises(GPUServiceUnavailableError, match="circuit breaker"):
                 client.detect_nsfw(b"img")
-            mock_client_cls.return_value.post.assert_not_called()
+            mock_client_cls.return_value.request.assert_not_called()

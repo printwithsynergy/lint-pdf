@@ -228,6 +228,63 @@ class TestGPUInferenceClient:
             assert client._base_url == "http://gpu:8080"
 
 
+class TestSharedClientSingleton:
+    """Process-wide ``get_gpu_client()`` must return the same instance.
+
+    This is load-bearing for circuit-breaker semantics: if every
+    analyzer built its own ``GPUInferenceClient``, the breaker would
+    never accumulate failures across calls during a rate-limit storm.
+    """
+
+    @staticmethod
+    def test_same_url_returns_same_instance() -> None:
+        from lintpdf.ai.gpu_client import (
+            _reset_shared_clients_for_tests,
+            get_gpu_client,
+        )
+
+        _reset_shared_clients_for_tests()
+        with patch("lintpdf.api.config.get_settings") as mock_settings:
+            mock_settings.return_value.gpu_inference_url = "http://gpu:8080"
+            a = get_gpu_client()
+            b = get_gpu_client()
+            assert a is b
+
+    @staticmethod
+    def test_different_urls_return_different_instances() -> None:
+        """Test harness / multi-endpoint deployments shouldn't share breakers."""
+        from lintpdf.ai.gpu_client import (
+            _reset_shared_clients_for_tests,
+            get_gpu_client,
+        )
+
+        _reset_shared_clients_for_tests()
+        with patch("lintpdf.api.config.get_settings") as mock_settings:
+            mock_settings.return_value.gpu_inference_url = "http://gpu-a:8080"
+            a = get_gpu_client()
+            mock_settings.return_value.gpu_inference_url = "http://gpu-b:8080"
+            b = get_gpu_client()
+            assert a is not b
+
+    @staticmethod
+    def test_breaker_failures_persist_across_get_calls() -> None:
+        """After record_failure, the next get_gpu_client() sees the same breaker."""
+        from lintpdf.ai.gpu_client import (
+            _reset_shared_clients_for_tests,
+            get_gpu_client,
+        )
+
+        _reset_shared_clients_for_tests()
+        with patch("lintpdf.api.config.get_settings") as mock_settings:
+            mock_settings.return_value.gpu_inference_url = "http://gpu:8080"
+            a = get_gpu_client()
+            a._breaker.record_failure()
+            a._breaker.record_failure()
+            b = get_gpu_client()
+            # Same breaker: 2 failures carried over.
+            assert len(b._breaker._failures) == 2
+
+
 class TestRateLimit429Handling:
     """Verify the retry-budget-exhausted 429 path records a breaker failure.
 
