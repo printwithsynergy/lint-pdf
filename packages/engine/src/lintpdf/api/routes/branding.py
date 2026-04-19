@@ -124,6 +124,49 @@ def _cleanup_alias_best_effort(alias_fqdn: str | None) -> None:
         )
 
 
+def _provision_alias_sync(tenant_id: Any, purpose: str = "") -> str | None:
+    """Create the Cloudflare DNS record for a customer's branded subdomain NOW.
+
+    Historically this happened asynchronously in the Celery probe task
+    (up to 5-min delay before the customer's dashboard showed the
+    final ``dns_target``). Calling it inline on the admin / tenant
+    PATCH endpoint means customers see the branded target the moment
+    they submit their hostname -- no probe-beat wait.
+
+    Uses the same slug logic as the probe task so repeated calls are
+    idempotent (second call hits the ``already_correct`` branch and
+    returns without a DB or CF write).
+
+    Returns the FQDN on success, or None if CF is unreachable /
+    disabled. Never raises -- a CF outage must not block a tenant's
+    domain submission; the probe task still runs periodically and
+    will fill the column on the next cycle.
+    """
+    try:
+        from lintpdf.integrations.cloudflare import CloudflareClient
+        from lintpdf.queue.tasks import _alias_slug, _provision_alias
+
+        slug = _alias_slug(tenant_id, purpose)
+        cf = CloudflareClient()
+        # We don't have a required_cname here because Railway hasn't
+        # registered the domain yet (that happens async in the probe
+        # task). Pass a sentinel: _provision_alias only uses the arg
+        # as a "did Railway give us anything?" gate, and the CNAME
+        # record target is hardcoded to ``lintpdf.com`` anyway (the
+        # edge Worker intercepts before DNS resolves to any IP).
+        fqdn, _ = _provision_alias(cf, slug, "lintpdf.com")
+        return fqdn
+    except Exception:  # noqa: BLE001 -- never block a customer API call
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Synchronous alias provision crashed for tenant=%s purpose=%s",
+            tenant_id,
+            purpose,
+        )
+        return None
+
+
 def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileResponse:
     """Convert a BrandProfile model to a response schema."""
     return BrandProfileResponse(
@@ -558,13 +601,20 @@ async def set_tenant_custom_domain(
     else:
         canonical = validate_custom_domain(request.domain)
         # If the customer is changing domains, tear down the alias for
-        # the old one so the next probe cycle can provision a fresh alias.
+        # the old one so we provision a fresh alias in the new slug shape.
         if tenant.brand_custom_domain != canonical:
             _cleanup_alias_best_effort(tenant.custom_domain_alias)
             tenant.custom_domain_alias = None
         tenant.brand_custom_domain = canonical
         tenant.brand_custom_domain_verified = False
         tenant.brand_custom_domain_requested_at = datetime.now(timezone.utc)
+        # Provision the branded alias NOW so the dashboard shows the
+        # final dns_target immediately. The probe task still runs on
+        # its 5-min beat to reconcile, but the customer doesn't have
+        # to wait for it -- they get their CNAME target right here.
+        alias = _provision_alias_sync(tenant.id, "reports")
+        if alias:
+            tenant.custom_domain_alias = alias
 
     try:
         db.commit()
@@ -640,6 +690,11 @@ async def set_brand_profile_custom_domain(
         profile.custom_domain = canonical
         profile.custom_domain_verified = False
         profile.custom_domain_requested_at = datetime.now(timezone.utc)
+        alias = _provision_alias_sync(
+            tenant.id, f"profile-{profile.id.hex[:8]}-reports"
+        )
+        if alias:
+            profile.custom_domain_alias = alias
 
     try:
         db.commit()
@@ -737,6 +792,9 @@ async def set_tenant_app_custom_domain(
         tenant.app_custom_domain = canonical
         tenant.app_custom_domain_verified = False
         tenant.app_custom_domain_requested_at = datetime.now(timezone.utc)
+        alias = _provision_alias_sync(tenant.id, "app")
+        if alias:
+            tenant.app_custom_domain_alias = alias
 
     try:
         db.commit()
