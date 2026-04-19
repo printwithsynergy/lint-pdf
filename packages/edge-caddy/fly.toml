@@ -1,0 +1,61 @@
+# Fly.io deployment for the LintPDF edge (Caddy + on-demand TLS).
+#
+# Customer hostnames (``reports.acme.com``, ``app.acme.com``, etc.)
+# CNAME to this app's stable Fly.io hostname / anycast IP. Caddy
+# requests LE certs on first request (gated by the engine's
+# ``/api/v1/internal/on-demand-tls-check``) and proxies to Railway
+# backends by URL path.
+
+app = "lintpdf-edge"
+primary_region = "ord"
+
+[build]
+dockerfile = "Dockerfile"
+
+[env]
+# Matches the ``ask`` endpoint in the engine. Rotate by changing both
+# sides and redeploying.
+LINTPDF_EDGE_SHARED_SECRET = "rotated-via-fly-secrets"
+
+# TLS cert + state. Caddy writes to /data; Fly's volume keeps it
+# across restarts so we don't re-request certs on every cold start.
+# (LE has per-registered-domain rate limits.)
+[[mounts]]
+source = "caddy_data"
+destination = "/data"
+
+# Public port 443 -> container 443 (TLS termination).
+[[services]]
+protocol = "tcp"
+internal_port = 443
+
+[[services.ports]]
+port = 443
+
+[services.concurrency]
+type = "connections"
+hard_limit = 1000
+soft_limit = 800
+
+[[services.tcp_checks]]
+interval = "30s"
+timeout = "5s"
+grace_period = "10s"
+
+# Platform health check on the HTTP port.
+[[services]]
+protocol = "tcp"
+internal_port = 8080
+
+[[services.http_checks]]
+interval = "30s"
+timeout = "5s"
+grace_period = "10s"
+method = "GET"
+path = "/__edge/health"
+
+# Single VM in ord to start. Bump later if cert renewal traffic or
+# customer request volume warrants it.
+[vm]
+size = "shared-cpu-1x"
+memory = "256mb"

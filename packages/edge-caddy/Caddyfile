@@ -1,0 +1,111 @@
+# LintPDF edge — Caddy with on-demand TLS
+#
+# Customers' OWN domains (e.g. ``reports.acme.com``) CNAME here. Caddy
+# requests a Let's Encrypt cert on first request, terminates TLS, and
+# path-routes to Railway's reports + app backends. Railway never sees
+# the customer hostname -- we proxy with ``Host: reports.lintpdf.com``
+# or ``Host: app.lintpdf.com``, which Railway already has registered.
+#
+# Abuse guard: on_demand_tls only issues certs for hostnames the
+# engine recognizes (known tenant / brand-profile domain). The
+# ``ask`` endpoint is called by Caddy before each cert issuance.
+
+{
+  # Fly.io gives us IPv4 + IPv6; health check relies on HTTP.
+  # Email is required by ACME + should match a real monitoring inbox.
+  email ops@lintpdf.com
+
+  # Rate-limit LE cert requests so a misbehaving customer + a bug in
+  # the ask endpoint can't burn our LE account through rate-limits.
+  on_demand_tls {
+    # Caddy POSTs to this URL with ``?domain=<hostname>``. 200 means
+    # issue; any non-2xx means refuse.
+    ask http://localhost:8081/internal/caddy-ask
+
+    # Back-off so a probe loop can't drive 50 LE requests/minute.
+    interval 5m
+    burst 10
+  }
+}
+
+# -------- HTTP health check for Fly.io's platform + own diagnostics --------
+:8080 {
+  handle /__edge/health {
+    respond "ok" 200
+  }
+  # Fallback -- Fly's load balancer probes root every few seconds.
+  handle {
+    respond "lintpdf-edge" 200
+  }
+}
+
+# -------- Internal ask endpoint (only reachable inside the container) ------
+# Implemented in Go via a tiny sidecar -- but Caddy can't call raw POST
+# easily in ``ask``. Simpler: proxy the ask request through to the
+# LintPDF engine, with the shared secret as an auth header.
+:8081 {
+  handle /internal/caddy-ask {
+    reverse_proxy https://api.lintpdf.com {
+      header_up Host api.lintpdf.com
+      header_up X-Forwarded-For {remote}
+      header_up X-Edge-Shared-Secret {$LINTPDF_EDGE_SHARED_SECRET}
+
+      # Caddy passes ``?domain=...``; rewrite the path for the engine
+      rewrite /api/v1/internal/on-demand-tls-check
+    }
+  }
+}
+
+# -------- TLS on 443 -- match ANY hostname, on-demand cert --------------
+:443 {
+  tls {
+    on_demand
+  }
+
+  # Static reports + public viewer API -> reports.lintpdf.com
+  @reports path /r/* /api/v1/*
+  handle @reports {
+    reverse_proxy https://reports.lintpdf.com {
+      header_up Host reports.lintpdf.com
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-Proto https
+      transport http {
+        tls
+        tls_server_name reports.lintpdf.com
+      }
+    }
+  }
+
+  # Interactive viewer + Next.js assets + dashboard -> app.lintpdf.com
+  @app path /view/* /_next/* /dashboard/* /favicon.ico /robots.txt
+  handle @app {
+    reverse_proxy https://app.lintpdf.com {
+      header_up Host app.lintpdf.com
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-Proto https
+      transport http {
+        tls
+        tls_server_name app.lintpdf.com
+      }
+    }
+  }
+
+  # Default -- landing, /login, etc. -> App service
+  handle {
+    reverse_proxy https://app.lintpdf.com {
+      header_up Host app.lintpdf.com
+      header_up X-Forwarded-Host {host}
+      header_up X-Forwarded-Proto https
+      transport http {
+        tls
+        tls_server_name app.lintpdf.com
+      }
+    }
+  }
+
+  # Structured logs for fly logs.
+  log {
+    output stdout
+    format json
+  }
+}

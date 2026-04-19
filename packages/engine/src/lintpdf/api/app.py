@@ -25,6 +25,7 @@ from lintpdf.api.routes import (
     branding,
     color_config,
     downloads,
+    edge,
     endpoints,
     file_packs,
     health,
@@ -138,6 +139,7 @@ def create_app() -> FastAPI:
     app.include_router(admin.router)
     app.include_router(admin_warming.router)
     app.include_router(trial.router)
+    app.include_router(edge.router)
     app.include_router(viewer.router)
     app.include_router(branding.router)
     app.include_router(approvals.router)
