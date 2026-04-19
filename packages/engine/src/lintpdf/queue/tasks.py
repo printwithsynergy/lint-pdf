@@ -914,8 +914,18 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # admins spot the mismatch in Worker logs -- customers
                 # pointing at the old shared service hostname will have
                 # certs stuck in VALIDATING_OWNERSHIP forever.
-                if outcome.required_cname and not cname.rstrip(".").endswith(
-                    outcome.required_cname.rstrip(".")
+                #
+                # The check is chain-aware: if the customer CNAMEs to an
+                # auto-provisioned alias under ``*.custom.lintpdf.com``,
+                # the full resolver chain ends at Railway's required
+                # target anyway, so the "direct CNAME mismatch" isn't a
+                # real misconfiguration. Skip the warning in that case.
+                cname_rstripped = cname.rstrip(".")
+                cname_via_alias = cname_rstripped.endswith(".custom.lintpdf.com")
+                if (
+                    outcome.required_cname
+                    and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
+                    and not cname_via_alias
                 ):
                     logger.warning(
                         "Domain %s CNAME=%s but Railway requires CNAME=%s — "
@@ -979,8 +989,18 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # admins spot the mismatch in Worker logs -- customers
                 # pointing at the old shared service hostname will have
                 # certs stuck in VALIDATING_OWNERSHIP forever.
-                if outcome.required_cname and not cname.rstrip(".").endswith(
-                    outcome.required_cname.rstrip(".")
+                #
+                # The check is chain-aware: if the customer CNAMEs to an
+                # auto-provisioned alias under ``*.custom.lintpdf.com``,
+                # the full resolver chain ends at Railway's required
+                # target anyway, so the "direct CNAME mismatch" isn't a
+                # real misconfiguration. Skip the warning in that case.
+                cname_rstripped = cname.rstrip(".")
+                cname_via_alias = cname_rstripped.endswith(".custom.lintpdf.com")
+                if (
+                    outcome.required_cname
+                    and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
+                    and not cname_via_alias
                 ):
                     logger.warning(
                         "Domain %s CNAME=%s but Railway requires CNAME=%s — "
@@ -1039,8 +1059,18 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # admins spot the mismatch in Worker logs -- customers
                 # pointing at the old shared service hostname will have
                 # certs stuck in VALIDATING_OWNERSHIP forever.
-                if outcome.required_cname and not cname.rstrip(".").endswith(
-                    outcome.required_cname.rstrip(".")
+                #
+                # The check is chain-aware: if the customer CNAMEs to an
+                # auto-provisioned alias under ``*.custom.lintpdf.com``,
+                # the full resolver chain ends at Railway's required
+                # target anyway, so the "direct CNAME mismatch" isn't a
+                # real misconfiguration. Skip the warning in that case.
+                cname_rstripped = cname.rstrip(".")
+                cname_via_alias = cname_rstripped.endswith(".custom.lintpdf.com")
+                if (
+                    outcome.required_cname
+                    and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
+                    and not cname_via_alias
                 ):
                     logger.warning(
                         "Domain %s CNAME=%s but Railway requires CNAME=%s — "
@@ -1094,8 +1124,18 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # admins spot the mismatch in Worker logs -- customers
                 # pointing at the old shared service hostname will have
                 # certs stuck in VALIDATING_OWNERSHIP forever.
-                if outcome.required_cname and not cname.rstrip(".").endswith(
-                    outcome.required_cname.rstrip(".")
+                #
+                # The check is chain-aware: if the customer CNAMEs to an
+                # auto-provisioned alias under ``*.custom.lintpdf.com``,
+                # the full resolver chain ends at Railway's required
+                # target anyway, so the "direct CNAME mismatch" isn't a
+                # real misconfiguration. Skip the warning in that case.
+                cname_rstripped = cname.rstrip(".")
+                cname_via_alias = cname_rstripped.endswith(".custom.lintpdf.com")
+                if (
+                    outcome.required_cname
+                    and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
+                    and not cname_via_alias
                 ):
                     logger.warning(
                         "Domain %s CNAME=%s but Railway requires CNAME=%s — "
