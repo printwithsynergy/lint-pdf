@@ -16,27 +16,35 @@ LintPDF tracks two independent custom domains per tenant:
 
 Plus optional **per-BrandProfile** report domains, so a tenant with multiple brand identities can serve each brand's reports from its own hostname.
 
-## DNS setup
+## Branded subdomain (recommended — zero DNS work)
 
-After you submit your hostname, LintPDF returns a **unique CNAME target for that hostname** in the dashboard (and in the API response's `dns_target` field). Every hostname gets its own target — do not copy examples from this page verbatim.
-
-The target looks like:
+Every tenant gets a LintPDF-branded subdomain immediately, no DNS configuration required on your side. Shape:
 
 ```
-acme-reports.custom.lintpdf.com
+https://{slug}-custom.lintpdf.com/r/{token}        (static report)
+https://{slug}-custom.lintpdf.com/view/{token}     (interactive viewer)
 ```
 
-The slug (`acme-reports`) is derived from your tenant ID + the domain's purpose (reports vs. app). The `custom.lintpdf.com` suffix is stable; only the slug varies.
+The slug is derived from your tenant ID — stable for the lifetime of the tenant. Find yours in the dashboard under **Account → Branding**, or via `GET /api/v1/tenants/{tenant_id}/custom-domain` in the `dns_target` field.
 
-### Example DNS records
+Both report and viewer paths resolve on the **same** subdomain; the LintPDF edge routes by URL path:
 
-Given a dashboard-reported target of `8cdd7799-reports.custom.lintpdf.com`, you'd add:
+- `/r/*`, `/api/v1/*` → static reports + public viewer API
+- `/view/*`, `/_next/*`, `/dashboard/*` → interactive viewer + Next.js assets
+
+The cert on this subdomain is managed by LintPDF. Nothing to provision, nothing to renew, nothing to wait for.
+
+## Your own domain (BYO) — optional
+
+If you want URLs on a hostname you own (e.g. `reports.yourdomain.com`), add **one** CNAME pointing at your branded subdomain:
 
 | Hostname | Type | Value (from your dashboard) | TTL |
 |---|---|---|---|
-| `reports.yourdomain.com` | CNAME | `8cdd7799-reports.custom.lintpdf.com` | 300 |
+| `reports.yourdomain.com` | CNAME | `{slug}-custom.lintpdf.com` | 300 |
 
-LintPDF resolves the CNAME chain at its edge, issues an ACME-backed TLS certificate for your hostname, and handles renewal. You don't need to provision certificates yourself.
+Your CNAME chain resolves via LintPDF's edge → Railway backend, and the cert is issued the first time a request hits the edge. No Let's Encrypt wait on your side; no DNS-01 TXT record to manage.
+
+Contact support@lintpdf.com to enable BYO-domain on your tenant — it requires a one-time ownership verification + plan gating (Scale / Enterprise).
 
 **Always pull the exact target from your dashboard.** Hard-coded `reports.lintpdf.com` / `app.lintpdf.com` targets from older docs no longer work for new custom domains.
 
@@ -68,7 +76,7 @@ Response:
   "verified": false,
   "requested_at": "2026-04-12T14:30:00Z",
   "plan_allows_whitelabel": true,
-  "dns_target": "7c9a4b0e-reports.custom.lintpdf.com"
+  "dns_target": "7c9a4b0e-custom.lintpdf.com"
 }
 ```
 

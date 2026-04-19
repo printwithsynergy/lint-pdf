@@ -1,0 +1,16 @@
+name = "lintpdf-edge"
+main = "src/index.js"
+compatibility_date = "2026-04-19"
+# Targets: wildcard subdomain under our apex zone (lintpdf.com) so a
+# customer's ``{slug}.custom.lintpdf.com`` traffic hits this Worker.
+# Separate routes entry covers any future sub-namespaces.
+routes = [
+  { pattern = "*.custom.lintpdf.com/*", zone_name = "lintpdf.com" },
+]
+
+# No KV / Durable Object / D1 bindings today; the Worker is pure proxy.
+# If we add per-tenant rate-limiting or hostname pinning later, add
+# bindings here.
+
+[vars]
+BUILD_TAG = "dev"

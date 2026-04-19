@@ -192,7 +192,7 @@ export default function ApiBrandingSection() {
   "verified": false,
   "requested_at": "2026-04-12T10:30:00Z",
   "plan_allows_whitelabel": true,
-  "dns_target": "7c9a4b0e-reports.custom.lintpdf.com"
+  "dns_target": "7c9a4b0e-custom.lintpdf.com"
 }`}
       />
       <Endpoint
@@ -210,7 +210,7 @@ export default function ApiBrandingSection() {
   "verified": false,
   "requested_at": "2026-04-12T10:30:00Z",
   "plan_allows_whitelabel": true,
-  "dns_target": "7c9a4b0e-reports.custom.lintpdf.com"
+  "dns_target": "7c9a4b0e-custom.lintpdf.com"
 }`}
       />
       <p className="text-slate-600 text-sm mt-2">

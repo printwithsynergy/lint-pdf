@@ -756,19 +756,26 @@ _ACCEPTABLE_CNAME_TARGETS: tuple[str, ...] = (
     "backboard.railway.app",
 )
 
-# Customers point their DNS at this LintPDF-branded intermediate hostname
-# rather than the raw Railway target. See ``integrations/cloudflare.py``
-# for the alias-provisioning flow. Any subdomain of ``custom.lintpdf.com``
-# is acceptable because we auto-manage them per-tenant.
+# Customers point their DNS at a LintPDF-branded subdomain we manage in
+# Cloudflare: ``{slug}-custom.lintpdf.com`` (flat naming -- one level
+# under our apex so Universal SSL's ``*.lintpdf.com`` cert covers it for
+# free; no Advanced Certificate Manager paywall). The Cloudflare edge
+# Worker (``packages/edge-worker``) path-routes ``/r/*`` + ``/api/v1/*``
+# to Railway's reports service and ``/view/*`` + ``/_next/*`` +
+# ``/dashboard/*`` to Railway's app service.
 #
-# ``.up.railway.app`` is also acceptable: Railway's new Envoy routing
-# generates per-domain backend targets like ``9m9a8ps4.up.railway.app``,
-# and customers who follow older docs may point CNAMEs straight at those.
-# The probe still works -- the alias gets provisioned on top, the mint
-# response returns the new branded alias in ``dns_target``, and the
-# customer can optionally update their DNS when they notice the change.
+# ``-custom.lintpdf.com`` is the canonical new suffix.
+# ``.custom.lintpdf.com`` is the LEGACY 2-level form retained for a
+# migration window -- any tenant CNAMEing to it should continue to
+# resolve once we point the parent records elsewhere.
+# ``.up.railway.app`` is also acceptable: Railway's Envoy routing
+# generates per-domain backend targets like ``9m9a8ps4.up.railway.app``
+# and customers following older docs may have pointed CNAMEs straight
+# there. Those keep working because Railway's own edge handles the
+# cert and routing, bypassing our Worker entirely.
 _ACCEPTABLE_CNAME_SUFFIXES: tuple[str, ...] = (
-    ".custom.lintpdf.com",
+    "-custom.lintpdf.com",
+    ".custom.lintpdf.com",  # legacy, for migration back-compat
     ".up.railway.app",
 )
 
@@ -786,21 +793,45 @@ def _cname_is_acceptable(target: str | None) -> bool:
     return any(target.endswith(s) for s in _ACCEPTABLE_CNAME_SUFFIXES)
 
 
-def _alias_slug(tenant_id: Any, purpose: str) -> str:
-    """Generate the per-tenant, per-purpose alias slug.
+def _alias_slug(tenant_id: Any, purpose: str = "") -> str:
+    """Generate the per-tenant branded subdomain slug.
 
-    Shape: ``{tenant_short}-{purpose}`` where ``tenant_short`` is the
-    first 8 hex chars of the tenant UUID. Purpose is one of ``reports``
-    / ``app`` / ``profile-<short>-reports`` / ``profile-<short>-app``.
+    Shape: ``{tenant_short}-custom`` where ``tenant_short`` is the
+    first 8 hex chars of the tenant UUID. Example: ``8cdd7799-custom``.
 
-    The slug plus ``.custom.lintpdf.com`` fits comfortably inside the
-    63-char DNS label limit even for the longest ``profile-XXXXXXXX-reports``
-    variant (29 chars total).
+    Naming is FLAT (dash-separated, not dot-separated) so the full
+    FQDN ``{slug}.lintpdf.com`` stays inside Cloudflare's Universal
+    SSL single-level wildcard coverage (``*.lintpdf.com``). Nested
+    2-level wildcards like ``*.custom.lintpdf.com`` require Advanced
+    Certificate Manager ($10/mo) we haven't provisioned; the flat
+    shape is free and gives identical UX.
+
+    The ``purpose`` parameter is retained for signature back-compat
+    with earlier callers (probe task's 4 branches) but no longer
+    affects the result -- one branded subdomain per tenant serves
+    BOTH reports and viewer paths via the edge Worker's path routing
+    (see packages/edge-worker/src/index.js). For per-BrandProfile
+    overrides we namespace with the profile short ID:
+
+      tenant-level slug:  8cdd7799-custom
+      profile-level slug: 8cdd7799-p7a9e4b2-custom
+
+    The profile-short is 8 hex chars of the profile UUID, prefixed
+    with ``p`` for readability. All forms fit inside the 63-char
+    DNS label limit.
     """
     import uuid as _uuid
 
     tenant_short = _uuid.UUID(str(tenant_id)).hex[:8]
-    return f"{tenant_short}-{purpose}"
+    if purpose.startswith("profile-"):
+        # ``profile-<8hex>-reports`` / ``profile-<8hex>-app`` from the
+        # legacy 4-branch call sites -- extract just the 8-hex profile
+        # discriminator so both purposes resolve to the same slug per
+        # profile.
+        parts = purpose.split("-")
+        if len(parts) >= 2 and len(parts[1]) == 8:
+            return f"{tenant_short}-p{parts[1]}-custom"
+    return f"{tenant_short}-custom"
 
 
 def _provision_alias(
@@ -821,7 +852,10 @@ def _provision_alias(
     """
     if not required_cname:
         return None, None
-    fqdn = f"{slug}.custom.lintpdf.com"
+    # Flat shape: slug is ``{tenant-short}-custom``, full FQDN is
+    # ``{slug}.lintpdf.com``. Covered by existing Universal SSL
+    # ``*.lintpdf.com`` cert. See _alias_slug for rationale.
+    fqdn = f"{slug}.lintpdf.com"
     try:
         result = cf.upsert_cname(fqdn, required_cname)
     except Exception:  # noqa: BLE001 -- we really do want to swallow here
@@ -921,7 +955,10 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # target anyway, so the "direct CNAME mismatch" isn't a
                 # real misconfiguration. Skip the warning in that case.
                 cname_rstripped = cname.rstrip(".")
-                cname_via_alias = cname_rstripped.endswith(".custom.lintpdf.com")
+                cname_via_alias = any(
+                    cname_rstripped.endswith(s)
+                    for s in ("-custom.lintpdf.com", ".custom.lintpdf.com")
+                )
                 if (
                     outcome.required_cname
                     and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
@@ -996,7 +1033,10 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # target anyway, so the "direct CNAME mismatch" isn't a
                 # real misconfiguration. Skip the warning in that case.
                 cname_rstripped = cname.rstrip(".")
-                cname_via_alias = cname_rstripped.endswith(".custom.lintpdf.com")
+                cname_via_alias = any(
+                    cname_rstripped.endswith(s)
+                    for s in ("-custom.lintpdf.com", ".custom.lintpdf.com")
+                )
                 if (
                     outcome.required_cname
                     and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
@@ -1066,7 +1106,10 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # target anyway, so the "direct CNAME mismatch" isn't a
                 # real misconfiguration. Skip the warning in that case.
                 cname_rstripped = cname.rstrip(".")
-                cname_via_alias = cname_rstripped.endswith(".custom.lintpdf.com")
+                cname_via_alias = any(
+                    cname_rstripped.endswith(s)
+                    for s in ("-custom.lintpdf.com", ".custom.lintpdf.com")
+                )
                 if (
                     outcome.required_cname
                     and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
@@ -1131,7 +1174,10 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # target anyway, so the "direct CNAME mismatch" isn't a
                 # real misconfiguration. Skip the warning in that case.
                 cname_rstripped = cname.rstrip(".")
-                cname_via_alias = cname_rstripped.endswith(".custom.lintpdf.com")
+                cname_via_alias = any(
+                    cname_rstripped.endswith(s)
+                    for s in ("-custom.lintpdf.com", ".custom.lintpdf.com")
+                )
                 if (
                     outcome.required_cname
                     and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
