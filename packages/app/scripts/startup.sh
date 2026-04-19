@@ -313,6 +313,23 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_brand_profiles_custom_domain_unique
 ALTER TABLE brand_profiles
   ADD COLUMN IF NOT EXISTS viewer_config JSONB NULL;
 
+-- Engine: custom_domain_alias columns on tenants + brand_profiles.
+-- Stores the LintPDF-branded intermediate CNAME target ("{slug}.custom.
+-- lintpdf.com") the customer points their DNS at, so "9m9a8ps4.up.railway
+-- .app"-style Railway hostnames never leak into customer zone files.
+-- Populated by ``probe_pending_custom_domains`` after Railway registration
+-- succeeds + the Cloudflare alias is provisioned. NULL for tenants
+-- registered before this shipped (they keep CNAMEing to the shared
+-- service hostname -- still works for back-compat).
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS custom_domain_alias VARCHAR(255) NULL;
+ALTER TABLE tenants
+  ADD COLUMN IF NOT EXISTS app_custom_domain_alias VARCHAR(255) NULL;
+ALTER TABLE brand_profiles
+  ADD COLUMN IF NOT EXISTS custom_domain_alias VARCHAR(255) NULL;
+ALTER TABLE brand_profiles
+  ADD COLUMN IF NOT EXISTS app_custom_domain_alias VARCHAR(255) NULL;
+
 -- One-shot data migration: rewrite any logo URLs still pinned to the dead
 -- reports.lintpdf.com host (never configured in DNS) to the working
 -- api.lintpdf.com host. Safe to run repeatedly — a no-op on fresh rows.

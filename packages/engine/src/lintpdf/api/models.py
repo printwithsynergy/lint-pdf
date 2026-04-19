@@ -129,11 +129,20 @@ class Tenant(Base):
     brand_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # LintPDF-branded intermediate CNAME target for the customer's DNS record.
+    # Stored as the full FQDN (``{slug}-reports.custom.lintpdf.com``) so the
+    # API's ``dns_target`` field can return it verbatim. Populated by the
+    # probe task after Railway registration succeeds + the Cloudflare alias
+    # is provisioned. NULL for tenants registered before the alias layer
+    # shipped (they keep CNAMEing to the shared service hostname -- still
+    # works because Railway accepts both shapes).
+    custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     app_custom_domain_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     app_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    app_custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     brand_hide_footer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     report_default_expiry_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     report_email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -849,11 +858,14 @@ class BrandProfile(Base):
     custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Parallel to ``Tenant.custom_domain_alias`` -- see there for rationale.
+    custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     app_custom_domain_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     app_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    app_custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     viewer_config: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False

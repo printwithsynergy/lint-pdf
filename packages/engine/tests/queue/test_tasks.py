@@ -16,11 +16,13 @@ class TestRunPreflightTask:
 
     @staticmethod
     def test_task_time_limit() -> None:
-        assert run_preflight.time_limit == 300
+        # 600s limit was raised from 300s so AI-heavy jobs have room to
+        # complete when Modal is slow on cold starts.
+        assert run_preflight.time_limit == 600
 
     @staticmethod
     def test_task_soft_time_limit() -> None:
-        assert run_preflight.soft_time_limit == 270
+        assert run_preflight.soft_time_limit == 540
 
 
 class TestDispatchWebhookTask:
@@ -30,4 +32,6 @@ class TestDispatchWebhookTask:
 
     @staticmethod
     def test_task_max_retries() -> None:
-        assert dispatch_webhook.max_retries == 3
+        # Raised from 3 to 10 to ride out long upstream outages (see the
+        # webhook retention + retry-budget work around commit 9634390).
+        assert dispatch_webhook.max_retries == 10

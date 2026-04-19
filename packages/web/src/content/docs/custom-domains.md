@@ -18,21 +18,27 @@ Plus optional **per-BrandProfile** report domains, so a tenant with multiple bra
 
 ## DNS setup
 
-All three domain types point at the same `CNAME` target:
+After you submit your hostname, LintPDF returns a **unique CNAME target for that hostname** in the dashboard (and in the API response's `dns_target` field). Every hostname gets its own target — do not copy examples from this page verbatim.
+
+The target looks like:
 
 ```
-CNAME target: reports.lintpdf.com
+acme-reports.custom.lintpdf.com
 ```
+
+The slug (`acme-reports`) is derived from your tenant ID + the domain's purpose (reports vs. app). The `custom.lintpdf.com` suffix is stable; only the slug varies.
 
 ### Example DNS records
 
-| Hostname | Type | Value | TTL |
-|---|---|---|---|
-| `reports.yourdomain.com` | CNAME | `reports.lintpdf.com` | 300 |
-| `app.yourdomain.com` | CNAME | `reports.lintpdf.com` | 300 |
-| `reports.acme-brand.com` | CNAME | `reports.lintpdf.com` | 300 |
+Given a dashboard-reported target of `8cdd7799-reports.custom.lintpdf.com`, you'd add:
 
-The same edge infrastructure serves every custom hostname — LintPDF routes by `Host` header, issues an ACME-backed TLS certificate for each domain, and handles renewal. You don't need to provision certificates yourself.
+| Hostname | Type | Value (from your dashboard) | TTL |
+|---|---|---|---|
+| `reports.yourdomain.com` | CNAME | `8cdd7799-reports.custom.lintpdf.com` | 300 |
+
+LintPDF resolves the CNAME chain at its edge, issues an ACME-backed TLS certificate for your hostname, and handles renewal. You don't need to provision certificates yourself.
+
+**Always pull the exact target from your dashboard.** Hard-coded `reports.lintpdf.com` / `app.lintpdf.com` targets from older docs no longer work for new custom domains.
 
 ### Blocklisted hostnames
 
@@ -62,16 +68,16 @@ Response:
   "verified": false,
   "requested_at": "2026-04-12T14:30:00Z",
   "plan_allows_whitelabel": true,
-  "dns_target": "reports.lintpdf.com"
+  "dns_target": "7c9a4b0e-reports.custom.lintpdf.com"
 }
 ```
 
 Fields:
 
-- `verified` — flips to `true` once our edge detects the CNAME resolves correctly. Polling interval is ~1 minute; typical end-to-end propagation is 5–30 minutes.
+- `verified` — flips to `true` once our edge detects the CNAME resolves correctly. Polling interval is ~5 minutes; typical end-to-end propagation is 5–30 minutes.
 - `requested_at` — set on every PATCH that changes the domain.
 - `plan_allows_whitelabel` — `false` on tiers below Scale; the domain is stored but not served until you upgrade.
-- `dns_target` — always `reports.lintpdf.com`.
+- `dns_target` — **the exact value to put in your CNAME record's Value field.** Derived from your tenant ID + domain purpose. Stable for the lifetime of this custom domain; changes only if you clear + re-request the domain.
 
 ## Inspect current domain
 
@@ -136,9 +142,10 @@ If a domain was verified at mint but is later invalidated (CNAME removed, plan d
 
 **`verified=false` after >1 hour**
 
-- Double-check the CNAME points at `reports.lintpdf.com` (not `reports.lintpdf.com.` with a trailing dot — most providers accept either but some strip it).
-- Confirm your DNS provider has fully propagated: `dig CNAME reports.yourdomain.com` should return `reports.lintpdf.com.` as the answer.
+- Double-check the CNAME points at the **exact `dns_target` string from your dashboard** (e.g. `{tenant-slug}-reports.custom.lintpdf.com`), not `reports.lintpdf.com` from an older guide.
+- Confirm your DNS provider has fully propagated: `dig CNAME reports.yourdomain.com` should return the `dns_target` value as the answer.
 - Ensure no conflicting A/AAAA record on the same hostname.
+- Let's Encrypt cert issuance happens after the CNAME verifies; allow 5–30 more minutes for the cert to go live once `verified` flips to `true`.
 
 **`409 Conflict` — "Domain already claimed"**
 

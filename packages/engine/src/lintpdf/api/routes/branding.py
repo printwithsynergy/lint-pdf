@@ -80,6 +80,50 @@ def validate_custom_domain(raw: str) -> str:
     return d
 
 
+def _resolve_dns_target(alias: str | None, fallback: str) -> str:
+    """Pick the customer-facing CNAME target to show in the dashboard.
+
+    Prefer the auto-provisioned LintPDF-branded alias
+    (``{slug}.custom.lintpdf.com``) when present. Falls back to the
+    shared service hostname for legacy tenants -- still works, just
+    less branded.
+    """
+    return alias if alias else fallback
+
+
+def _cleanup_alias_best_effort(alias_fqdn: str | None) -> None:
+    """Delete the Cloudflare CNAME record for a cleared custom domain.
+
+    Graceful: never raises. If Cloudflare is unreachable or the token
+    is missing the orphan record stays in the zone, which is harmless
+    (it points at a Railway target that'll 404 for any request that
+    isn't the now-deleted custom domain). Ops can clean up manually
+    later.
+    """
+    if not alias_fqdn:
+        return
+    try:
+        from lintpdf.integrations.cloudflare import CloudflareClient
+
+        cf = CloudflareClient()
+        result = cf.delete_cname(alias_fqdn)
+        if result.status not in ("deleted", "not_found", "disabled"):
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Cloudflare alias cleanup for %s returned %s: %s",
+                alias_fqdn,
+                result.status,
+                result.message,
+            )
+    except Exception:  # noqa: BLE001 -- never block a customer API call
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "Cloudflare alias cleanup crashed for %s", alias_fqdn
+        )
+
+
 def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileResponse:
     """Convert a BrandProfile model to a response schema."""
     return BrandProfileResponse(
@@ -95,6 +139,20 @@ def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileR
         is_default=tenant.default_brand_profile_id == profile.id,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
+        custom_domain=profile.custom_domain,
+        custom_domain_verified=profile.custom_domain_verified,
+        custom_domain_dns_target=_resolve_dns_target(
+            profile.custom_domain_alias, "reports.lintpdf.com"
+        )
+        if profile.custom_domain
+        else None,
+        app_custom_domain=profile.app_custom_domain,
+        app_custom_domain_verified=profile.app_custom_domain_verified,
+        app_custom_domain_dns_target=_resolve_dns_target(
+            profile.app_custom_domain_alias, "app.lintpdf.com"
+        )
+        if profile.app_custom_domain
+        else None,
     )
 
 
@@ -438,6 +496,9 @@ def _tenant_custom_domain_response(tenant: Tenant) -> TenantCustomDomainResponse
         verified=tenant.brand_custom_domain_verified,
         requested_at=tenant.brand_custom_domain_requested_at,
         plan_allows_whitelabel=entitlements.whitelabel_enabled,
+        dns_target=_resolve_dns_target(
+            tenant.custom_domain_alias, "reports.lintpdf.com"
+        ),
     )
 
 
@@ -488,12 +549,19 @@ async def set_tenant_custom_domain(
         )
 
     if request.domain is None or request.domain.strip() == "":
-        # Clearing
+        # Clearing -- remove the CF alias too to avoid orphan records
+        _cleanup_alias_best_effort(tenant.custom_domain_alias)
         tenant.brand_custom_domain = None
         tenant.brand_custom_domain_verified = False
         tenant.brand_custom_domain_requested_at = None
+        tenant.custom_domain_alias = None
     else:
         canonical = validate_custom_domain(request.domain)
+        # If the customer is changing domains, tear down the alias for
+        # the old one so the next probe cycle can provision a fresh alias.
+        if tenant.brand_custom_domain != canonical:
+            _cleanup_alias_best_effort(tenant.custom_domain_alias)
+            tenant.custom_domain_alias = None
         tenant.brand_custom_domain = canonical
         tenant.brand_custom_domain_verified = False
         tenant.brand_custom_domain_requested_at = datetime.now(timezone.utc)
@@ -559,11 +627,16 @@ async def set_brand_profile_custom_domain(
         )
 
     if request.domain is None or request.domain.strip() == "":
+        _cleanup_alias_best_effort(profile.custom_domain_alias)
         profile.custom_domain = None
         profile.custom_domain_verified = False
         profile.custom_domain_requested_at = None
+        profile.custom_domain_alias = None
     else:
         canonical = validate_custom_domain(request.domain)
+        if profile.custom_domain != canonical:
+            _cleanup_alias_best_effort(profile.custom_domain_alias)
+            profile.custom_domain_alias = None
         profile.custom_domain = canonical
         profile.custom_domain_verified = False
         profile.custom_domain_requested_at = datetime.now(timezone.utc)
@@ -590,6 +663,13 @@ class AppCustomDomainResponse(_BaseModel):
     verified: bool = False
     requested_at: str | None = None
     plan_allows_whitelabel: bool = False
+    dns_target: str = "app.lintpdf.com"
+    """The CNAME target customers should point their app subdomain at.
+
+    For tenants with an auto-provisioned branded alias
+    (``{slug}-app.custom.lintpdf.com``), this is the alias FQDN. For
+    legacy tenants without one, falls back to the shared service
+    hostname (``app.lintpdf.com``) -- still works, just less branded."""
 
 
 @router.get(
@@ -614,6 +694,9 @@ async def get_tenant_app_custom_domain(
         if tenant.app_custom_domain_requested_at
         else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
+        dns_target=_resolve_dns_target(
+            tenant.app_custom_domain_alias, "app.lintpdf.com"
+        ),
     )
 
 
@@ -641,11 +724,16 @@ async def set_tenant_app_custom_domain(
         )
 
     if request.domain is None or request.domain.strip() == "":
+        _cleanup_alias_best_effort(tenant.app_custom_domain_alias)
         tenant.app_custom_domain = None
         tenant.app_custom_domain_verified = False
         tenant.app_custom_domain_requested_at = None
+        tenant.app_custom_domain_alias = None
     else:
         canonical = validate_custom_domain(request.domain)
+        if tenant.app_custom_domain != canonical:
+            _cleanup_alias_best_effort(tenant.app_custom_domain_alias)
+            tenant.app_custom_domain_alias = None
         tenant.app_custom_domain = canonical
         tenant.app_custom_domain_verified = False
         tenant.app_custom_domain_requested_at = datetime.now(timezone.utc)
@@ -668,6 +756,9 @@ async def set_tenant_app_custom_domain(
         if tenant.app_custom_domain_requested_at
         else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
+        dns_target=_resolve_dns_target(
+            tenant.app_custom_domain_alias, "app.lintpdf.com"
+        ),
     )
 
 

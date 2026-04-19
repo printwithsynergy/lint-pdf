@@ -756,15 +756,77 @@ _ACCEPTABLE_CNAME_TARGETS: tuple[str, ...] = (
     "backboard.railway.app",
 )
 
+# Customers point their DNS at this LintPDF-branded intermediate hostname
+# rather than the raw Railway target. See ``integrations/cloudflare.py``
+# for the alias-provisioning flow. Any subdomain of ``custom.lintpdf.com``
+# is acceptable because we auto-manage them per-tenant.
+_ACCEPTABLE_CNAME_SUFFIXES: tuple[str, ...] = (".custom.lintpdf.com",)
+
 
 def _cname_is_acceptable(target: str | None) -> bool:
     if not target:
         return False
     target = target.rstrip(".").lower()
-    return any(
+    if any(
         target == t or target.endswith(f".{t}") or target.endswith(t)
         for t in _ACCEPTABLE_CNAME_TARGETS
+    ):
+        return True
+    # Any ``*.custom.lintpdf.com`` target is ours (we provisioned it).
+    return any(target.endswith(s) for s in _ACCEPTABLE_CNAME_SUFFIXES)
+
+
+def _alias_slug(tenant_id: Any, purpose: str) -> str:
+    """Generate the per-tenant, per-purpose alias slug.
+
+    Shape: ``{tenant_short}-{purpose}`` where ``tenant_short`` is the
+    first 8 hex chars of the tenant UUID. Purpose is one of ``reports``
+    / ``app`` / ``profile-<short>-reports`` / ``profile-<short>-app``.
+
+    The slug plus ``.custom.lintpdf.com`` fits comfortably inside the
+    63-char DNS label limit even for the longest ``profile-XXXXXXXX-reports``
+    variant (29 chars total).
+    """
+    import uuid as _uuid
+
+    tenant_short = _uuid.UUID(str(tenant_id)).hex[:8]
+    return f"{tenant_short}-{purpose}"
+
+
+def _provision_alias(
+    cf: Any,
+    slug: str,
+    required_cname: str | None,
+) -> tuple[str | None, Any]:
+    """Create / update the ``{slug}.custom.lintpdf.com`` CNAME via Cloudflare.
+
+    Returns ``(fqdn_on_success, result_object)``. ``fqdn`` is the value
+    we'll persist on the tenant/profile row (the customer-facing target).
+    ``None`` means don't persist -- either CF is disabled, or the call
+    failed; in both cases the caller falls back to the raw Railway target
+    in the admin UI (back-compat).
+
+    Never raises -- graceful degradation only. A CF outage must not take
+    down the whole probe loop.
+    """
+    if not required_cname:
+        return None, None
+    fqdn = f"{slug}.custom.lintpdf.com"
+    try:
+        result = cf.upsert_cname(fqdn, required_cname)
+    except Exception:  # noqa: BLE001 -- we really do want to swallow here
+        logger.exception("Cloudflare upsert crashed for %s", fqdn)
+        return None, None
+    if result.status in ("created", "updated", "already_correct"):
+        return fqdn, result
+    logger.warning(
+        "Cloudflare alias provision for %s returned status=%s (%s) -- "
+        "falling back to raw Railway target in UI",
+        fqdn,
+        result.status,
+        result.message,
     )
+    return None, result
 
 
 @celery_app.task(  # type: ignore[untyped-decorator]
@@ -786,6 +848,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
     """
     from lintpdf.api.database import get_db_session
     from lintpdf.api.models import BrandProfile, Tenant
+    from lintpdf.integrations.cloudflare import CloudflareClient
     from lintpdf.integrations.railway import RailwayClient
 
     result: dict[str, Any] = {
@@ -794,10 +857,12 @@ def probe_pending_custom_domains() -> dict[str, Any]:
         "railway_registered": 0,
         "cname_mismatch": 0,
         "railway_disabled": 0,
+        "alias_provisioned": 0,
         "errors": 0,
     }
 
     client = RailwayClient()
+    cf = CloudflareClient()
     db = get_db_session()
     try:
         pending_tenants: list[Tenant] = (
@@ -850,13 +915,24 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                         outcome.required_cname,
                     )
                 tenant.brand_custom_domain_verified = True
+                # Provision the LintPDF-branded alias so the API's
+                # ``dns_target`` returns e.g. ``8cdd7799-reports.custom
+                # .lintpdf.com`` instead of ``9m9a8ps4.up.railway.app``.
+                if not tenant.custom_domain_alias and outcome.required_cname:
+                    alias_fqdn, _ = _provision_alias(
+                        cf, _alias_slug(tenant.id, "reports"), outcome.required_cname
+                    )
+                    if alias_fqdn:
+                        tenant.custom_domain_alias = alias_fqdn
+                        result["alias_provisioned"] += 1
                 db.commit()
                 result["activated"] += 1
                 logger.info(
-                    "Activated tenant custom domain %s (tenant=%s, railway=%s)",
+                    "Activated tenant custom domain %s (tenant=%s, railway=%s, alias=%s)",
                     domain,
                     tenant.id,
                     outcome.status,
+                    tenant.custom_domain_alias or "-",
                 )
             elif outcome.status == "disabled":
                 result["railway_disabled"] += 1
@@ -904,6 +980,18 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                         outcome.required_cname,
                     )
                 profile.custom_domain_verified = True
+                if not profile.custom_domain_alias and outcome.required_cname:
+                    alias_fqdn, _ = _provision_alias(
+                        cf,
+                        _alias_slug(
+                            profile.tenant_id,
+                            f"profile-{profile.id.hex[:8]}-reports",
+                        ),
+                        outcome.required_cname,
+                    )
+                    if alias_fqdn:
+                        profile.custom_domain_alias = alias_fqdn
+                        result["alias_provisioned"] += 1
                 db.commit()
                 result["activated"] += 1
             elif outcome.status in ("disabled", "unauthorized"):
@@ -952,9 +1040,21 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                         outcome.required_cname,
                     )
                 tenant.app_custom_domain_verified = True
+                if not tenant.app_custom_domain_alias and outcome.required_cname:
+                    alias_fqdn, _ = _provision_alias(
+                        cf, _alias_slug(tenant.id, "app"), outcome.required_cname
+                    )
+                    if alias_fqdn:
+                        tenant.app_custom_domain_alias = alias_fqdn
+                        result["alias_provisioned"] += 1
                 db.commit()
                 result["activated"] += 1
-                logger.info("Activated tenant app domain %s (tenant=%s)", domain, tenant.id)
+                logger.info(
+                    "Activated tenant app domain %s (tenant=%s, alias=%s)",
+                    domain,
+                    tenant.id,
+                    tenant.app_custom_domain_alias or "-",
+                )
             elif outcome.status in ("disabled", "unauthorized"):
                 result["railway_disabled"] += 1
             else:
@@ -995,6 +1095,18 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                         outcome.required_cname,
                     )
                 profile.app_custom_domain_verified = True
+                if not profile.app_custom_domain_alias and outcome.required_cname:
+                    alias_fqdn, _ = _provision_alias(
+                        cf,
+                        _alias_slug(
+                            profile.tenant_id,
+                            f"profile-{profile.id.hex[:8]}-app",
+                        ),
+                        outcome.required_cname,
+                    )
+                    if alias_fqdn:
+                        profile.app_custom_domain_alias = alias_fqdn
+                        result["alias_provisioned"] += 1
                 db.commit()
                 result["activated"] += 1
             elif outcome.status in ("disabled", "unauthorized"):

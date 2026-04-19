@@ -173,10 +173,11 @@ export default function ApiBrandingSection() {
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Custom report domain</h4>
       <p className="text-slate-600 mb-3">
-        White-label reports on <code className="bg-slate-100 px-1 rounded">reports.yourbrand.com</code>. Point
-        a CNAME at the engine&apos;s returned <code className="bg-slate-100 px-1 rounded">dns_target</code> and
-        register the hostname. Scale/Enterprise only — the engine returns 403
-        on lower tiers.
+        White-label reports on <code className="bg-slate-100 px-1 rounded">reports.yourbrand.com</code>. Each
+        domain gets a unique <code className="bg-slate-100 px-1 rounded">dns_target</code> in the form
+        <code className="bg-slate-100 px-1 rounded">{`{slug}-reports.custom.lintpdf.com`}</code> — customers
+        CNAME to <em>that</em> exact target (not the shared LintPDF hostname). Scale/Enterprise only — the
+        engine returns 403 on lower tiers.
       </p>
       <Endpoint
         method="GET"
@@ -191,7 +192,7 @@ export default function ApiBrandingSection() {
   "verified": false,
   "requested_at": "2026-04-12T10:30:00Z",
   "plan_allows_whitelabel": true,
-  "dns_target": "reports.lintpdf.com"
+  "dns_target": "7c9a4b0e-reports.custom.lintpdf.com"
 }`}
       />
       <Endpoint
@@ -209,7 +210,7 @@ export default function ApiBrandingSection() {
   "verified": false,
   "requested_at": "2026-04-12T10:30:00Z",
   "plan_allows_whitelabel": true,
-  "dns_target": "reports.lintpdf.com"
+  "dns_target": "7c9a4b0e-reports.custom.lintpdf.com"
 }`}
       />
       <p className="text-slate-600 text-sm mt-2">

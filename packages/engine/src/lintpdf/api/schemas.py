@@ -703,6 +703,24 @@ class BrandProfileResponse(BaseModel):
     is_default: bool = False
     created_at: datetime
     updated_at: datetime
+    custom_domain: str | None = None
+    custom_domain_verified: bool = False
+    custom_domain_dns_target: str | None = Field(
+        default=None,
+        description=(
+            "CNAME target for this profile's report domain. Surfaced by "
+            "the branding dashboard when a profile-level custom domain is "
+            "set. For profiles with a provisioned alias, this is "
+            "``{slug}.custom.lintpdf.com``; else falls back to the shared "
+            "service hostname."
+        ),
+    )
+    app_custom_domain: str | None = None
+    app_custom_domain_verified: bool = False
+    app_custom_domain_dns_target: str | None = Field(
+        default=None,
+        description="CNAME target for this profile's app/viewer domain.",
+    )
 
 
 class BrandProfileListResponse(BaseModel):
@@ -779,7 +797,14 @@ class TenantCustomDomainResponse(BaseModel):
     plan_allows_whitelabel: bool
     dns_target: str = Field(
         default="reports.lintpdf.com",
-        description="The CNAME target customers should point their subdomain at.",
+        description=(
+            "The CNAME target customers should point their subdomain at. "
+            "For tenants with an auto-provisioned branded alias "
+            "({slug}-reports.custom.lintpdf.com), this is the alias FQDN. "
+            "For legacy tenants without one, falls back to the shared "
+            "service hostname (reports.lintpdf.com) -- still works, just "
+            "less branded."
+        ),
     )
 
 
