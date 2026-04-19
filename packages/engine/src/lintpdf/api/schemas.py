@@ -809,9 +809,15 @@ class TenantCustomDomainResponse(BaseModel):
 
 
 class AdminCustomDomainRow(BaseModel):
-    """Admin view of a tenant-level or profile-level custom domain."""
+    """Admin view of a tenant-level or profile-level custom domain.
 
-    scope: str = Field(description="'tenant' or 'brand_profile'")
+    Surfaces enough context for the admin dashboard to show both the
+    customer-visible hostname AND the CNAME target we've auto-provisioned
+    for them under our zone -- so ops can verify a customer's DNS at a
+    glance without cross-referencing another endpoint.
+    """
+
+    scope: str = Field(description="'tenant', 'tenant_app', 'brand_profile', or 'brand_profile_app'")
     tenant_id: uuid.UUID
     tenant_name: str
     brand_profile_id: uuid.UUID | None = None
@@ -819,6 +825,18 @@ class AdminCustomDomainRow(BaseModel):
     domain: str
     verified: bool
     requested_at: datetime | None
+    dns_target: str | None = Field(
+        default=None,
+        description=(
+            "CNAME target the customer should point their domain at. "
+            "For tenants with an auto-provisioned branded subdomain, this "
+            "is ``{slug}-custom.lintpdf.com`` (one CNAME, cert handled by "
+            "LintPDF edge). For legacy tenants registered before the edge "
+            "layer shipped, falls back to the shared service hostname. "
+            "``None`` when the domain hasn't been processed by the probe "
+            "task yet (e.g., just submitted)."
+        ),
+    )
 
 
 class AdminCustomDomainListResponse(BaseModel):

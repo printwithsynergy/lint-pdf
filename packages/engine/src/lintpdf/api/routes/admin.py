@@ -701,6 +701,7 @@ async def admin_list_custom_domains(
                 domain=t.brand_custom_domain,
                 verified=t.brand_custom_domain_verified,
                 requested_at=t.brand_custom_domain_requested_at,
+                dns_target=t.custom_domain_alias,
             )
             (active if t.brand_custom_domain_verified else pending).append(row)
         # App/viewer domain
@@ -714,6 +715,7 @@ async def admin_list_custom_domains(
                 domain=t.app_custom_domain,
                 verified=t.app_custom_domain_verified,
                 requested_at=t.app_custom_domain_requested_at,
+                dns_target=t.app_custom_domain_alias,
             )
             (active if t.app_custom_domain_verified else pending).append(app_row)
 
@@ -727,6 +729,7 @@ async def admin_list_custom_domains(
             domain=profile.custom_domain or "",
             verified=profile.custom_domain_verified,
             requested_at=profile.custom_domain_requested_at,
+            dns_target=profile.custom_domain_alias,
         )
         (active if profile.custom_domain_verified else pending).append(row)
         if profile.app_custom_domain:
@@ -739,6 +742,7 @@ async def admin_list_custom_domains(
                 domain=profile.app_custom_domain,
                 verified=profile.app_custom_domain_verified,
                 requested_at=profile.app_custom_domain_requested_at,
+                dns_target=profile.app_custom_domain_alias,
             )
             (active if profile.app_custom_domain_verified else pending).append(app_row)
 
