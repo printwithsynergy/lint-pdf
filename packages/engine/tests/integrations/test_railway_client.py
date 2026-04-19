@@ -113,6 +113,51 @@ class TestAddCustomDomain:
         assert result.required_cname == "xyz123.up.railway.app"
 
     @staticmethod
+    def test_txt_ownership_record_surfaced_in_message() -> None:
+        """Future-proofing: if Railway ever returns a TXT ownership record,
+        the probe's WARNING log should include it so ops can update DNS.
+        Today (post-Envoy) only CNAME is returned; this locks in that
+        we don't silently drop non-CNAME records."""
+        response = _FakeResponse(
+            200,
+            {
+                "data": {
+                    "customDomainCreate": {
+                        "id": "cd-1",
+                        "domain": "reports.acme.example",
+                        "status": {
+                            "verified": False,
+                            "certificateStatus": "CERTIFICATE_STATUS_TYPE_VALIDATING_OWNERSHIP",
+                            "dnsRecords": [
+                                {
+                                    "hostlabel": "reports",
+                                    "recordType": "DNS_RECORD_TYPE_CNAME",
+                                    "requiredValue": "xyz123.up.railway.app",
+                                    "purpose": "DNS_RECORD_PURPOSE_TRAFFIC_ROUTE",
+                                    "fqdn": "reports.acme.example",
+                                },
+                                {
+                                    "hostlabel": "_acme-challenge.reports",
+                                    "recordType": "DNS_RECORD_TYPE_TXT",
+                                    "requiredValue": "deadbeef-ownership-token",
+                                    "purpose": "DNS_RECORD_PURPOSE_OWNERSHIP_VERIFICATION",
+                                    "fqdn": "_acme-challenge.reports.acme.example",
+                                },
+                            ],
+                        },
+                    }
+                }
+            },
+        )
+        with _patch_httpx(response):
+            result = _make_client().add_custom_domain("reports.acme.example")
+        assert result.status == "created"
+        assert result.required_cname == "xyz123.up.railway.app"
+        assert "TXT _acme-challenge.reports.acme.example = deadbeef-ownership-token" in (
+            result.message or ""
+        )
+
+    @staticmethod
     def test_already_exists_detected_from_graphql_error() -> None:
         response = _FakeResponse(
             200,

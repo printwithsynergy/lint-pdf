@@ -206,18 +206,41 @@ class RailwayClient:
         st = data.get("status") or {}
         message = f"verified={st.get('verified')}  cert={st.get('certificateStatus')}"
 
-        # Extract the customer-facing CNAME target. There should be exactly
-        # one TRAFFIC_ROUTE record per domain — if the shape shifts under
-        # us (e.g. Railway adds a separate ownership-verification record)
-        # we fall back to the first CNAME with a requiredValue.
+        # Partition the returned DNS records by type. Today Railway's new
+        # Envoy-based flow returns exactly one CNAME (TRAFFIC_ROUTE) per
+        # domain and no TXT — the LE ownership challenge is TLS-ALPN-01
+        # via the custom-hostname listener, so no ownership TXT is
+        # needed. Legacy ``_railway-verify.*`` TXT records on older
+        # Railway projects were from a pre-ACME ownership token flow
+        # that's no longer used for new domains. BUT: if Railway ever
+        # adds a required TXT back (verification, DMARC-style ownership,
+        # etc.), we don't want to silently miss it. Capture ALL records
+        # with a non-empty ``requiredValue`` so probe logs surface them
+        # for any customer that hasn't satisfied one.
         required_cname: str | None = None
+        extra_required: list[str] = []  # "TXT _acme-challenge.foo = bar"
         for rec in st.get("dnsRecords") or []:
-            if rec.get("recordType") == "DNS_RECORD_TYPE_CNAME" and rec.get("requiredValue"):
-                if rec.get("purpose") == "DNS_RECORD_PURPOSE_TRAFFIC_ROUTE":
-                    required_cname = rec["requiredValue"]
-                    break
-                if required_cname is None:
-                    required_cname = rec["requiredValue"]
+            req = rec.get("requiredValue")
+            if not req:
+                continue
+            rtype = (rec.get("recordType") or "").replace("DNS_RECORD_TYPE_", "")
+            purpose = (rec.get("purpose") or "").replace("DNS_RECORD_PURPOSE_", "")
+            if rtype == "CNAME" and purpose == "TRAFFIC_ROUTE":
+                required_cname = req
+            elif rtype == "CNAME" and required_cname is None:
+                # Fallback: some future Railway response shape where
+                # purpose isn't set but a single CNAME is returned.
+                required_cname = req
+            else:
+                # Any other required record (TXT, DMARC-style TXT, etc.).
+                # Surface in the message so the probe WARNING contains
+                # enough context for ops to act.
+                extra_required.append(
+                    f"{rtype} {rec.get('fqdn') or rec.get('hostlabel')} = {req}"
+                )
+
+        if extra_required:
+            message += "  extra_required=[" + "; ".join(extra_required) + "]"
 
         return RailwayDomainResult(
             status="created",
