@@ -92,6 +92,69 @@ class RailwayClient:
             payload: dict[str, Any] = response.json()
             return payload
 
+    def _lookup_existing_required_cname(
+        self, domain: str, service_id: str
+    ) -> str | None:
+        """Fetch the required CNAME target for an already-registered domain.
+
+        Called on ``already_exists`` to recover the per-domain Railway
+        backend hostname so the probe task can provision a matching
+        Cloudflare alias for tenants that were registered before the
+        alias layer shipped. Returns None on any error -- caller
+        treats that as "no alias possible this cycle".
+        """
+        query = """
+        query Domains($projectId: String!, $environmentId: String!, $serviceId: String!) {
+          domains(projectId: $projectId, environmentId: $environmentId, serviceId: $serviceId) {
+            customDomains {
+              domain
+              status {
+                dnsRecords {
+                  recordType
+                  requiredValue
+                  purpose
+                }
+              }
+            }
+          }
+        }
+        """
+        try:
+            payload = self._post(
+                query,
+                {
+                    "projectId": self.project_id,
+                    "environmentId": self.environment_id,
+                    "serviceId": service_id,
+                },
+            )
+        except Exception:  # noqa: BLE001 -- never fail the outer call on this
+            logger.exception("Railway domains() re-query failed for %s", domain)
+            return None
+
+        cds = (
+            (payload.get("data") or {}).get("domains", {}).get("customDomains") or []
+        )
+        for cd in cds:
+            if (cd.get("domain") or "").lower() != domain.lower():
+                continue
+            records = (cd.get("status") or {}).get("dnsRecords") or []
+            for rec in records:
+                if (
+                    rec.get("recordType") == "DNS_RECORD_TYPE_CNAME"
+                    and rec.get("requiredValue")
+                    and rec.get("purpose") == "DNS_RECORD_PURPOSE_TRAFFIC_ROUTE"
+                ):
+                    return rec["requiredValue"]
+            # Fallback: first CNAME with a requiredValue
+            for rec in records:
+                if (
+                    rec.get("recordType") == "DNS_RECORD_TYPE_CNAME"
+                    and rec.get("requiredValue")
+                ):
+                    return rec["requiredValue"]
+        return None
+
     def add_custom_domain(
         self, domain: str, *, service_id: str | None = None
     ) -> RailwayDomainResult:
@@ -184,9 +247,21 @@ class RailwayClient:
             # Railway returns a generic error when the domain already
             # exists; treat that as success for our probe.
             if "already" in msg and "exist" in msg:
+                # Re-query to get the per-domain required CNAME target --
+                # ``customDomainCreate`` doesn't return dnsRecords when
+                # it errors on "already exists", but downstream code
+                # (probe task -> alias provisioner) needs the value to
+                # set up the Cloudflare middle-layer CNAME for existing
+                # tenants. Falls back to None if the re-query fails, in
+                # which case the probe just skips alias provisioning and
+                # the admin UI shows the shared service hostname.
+                req = self._lookup_existing_required_cname(
+                    domain, service_id or self.service_id
+                )
                 return RailwayDomainResult(
                     status="already_exists",
                     message=first.get("message"),
+                    required_cname=req,
                 )
             if "unauthorized" in msg or "permission" in msg:
                 return RailwayDomainResult(
