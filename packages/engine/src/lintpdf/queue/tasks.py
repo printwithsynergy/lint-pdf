@@ -760,7 +760,17 @@ _ACCEPTABLE_CNAME_TARGETS: tuple[str, ...] = (
 # rather than the raw Railway target. See ``integrations/cloudflare.py``
 # for the alias-provisioning flow. Any subdomain of ``custom.lintpdf.com``
 # is acceptable because we auto-manage them per-tenant.
-_ACCEPTABLE_CNAME_SUFFIXES: tuple[str, ...] = (".custom.lintpdf.com",)
+#
+# ``.up.railway.app`` is also acceptable: Railway's new Envoy routing
+# generates per-domain backend targets like ``9m9a8ps4.up.railway.app``,
+# and customers who follow older docs may point CNAMEs straight at those.
+# The probe still works -- the alias gets provisioned on top, the mint
+# response returns the new branded alias in ``dns_target``, and the
+# customer can optionally update their DNS when they notice the change.
+_ACCEPTABLE_CNAME_SUFFIXES: tuple[str, ...] = (
+    ".custom.lintpdf.com",
+    ".up.railway.app",
+)
 
 
 def _cname_is_acceptable(target: str | None) -> bool:
