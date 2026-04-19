@@ -18,6 +18,11 @@ Env vars (all optional):
     LINTPDF_APP_BASE   default https://app.lintpdf.com (for viewer URLs)
     LINTPDF_ADMIN_KEY  REQUIRED — same X-Admin-Key the engine uses
     LINTPDF_KEEP       set to 1 to leave the throwaway tenant in place
+    LINTPDF_USE_DEMO   set to 1 to reuse the persistent "Print With
+                       Synergy (Demo Customer)" tenant from
+                       scripts/.lintpdf-demo-credentials.env instead of
+                       bootstrapping a throwaway. Seed the demo via
+                       packages/engine/scripts/seed_pws_demo.py first.
                        (default: deactivate it after the run)
 
 Stdlib only — no pip install needed.
@@ -553,6 +558,40 @@ def exercise_approval_chain(http: HTTP, api_key: str, job_id: str) -> dict[str, 
 # ---------------------------------------------------------------------------
 
 
+def _load_demo_credentials() -> tuple[str, str] | None:
+    """When ``LINTPDF_USE_DEMO=1``, reuse the persistent "Print With Synergy
+    (Demo Customer)" tenant + key seeded via
+    ``packages/engine/scripts/seed_pws_demo.py``. The seed script writes
+    the creds into ``scripts/.lintpdf-demo-credentials.env`` (gitignored)
+    so this script can bind to the same tenant on every run and show
+    white-labeled URLs (reports.printwithsynergy.lintpdf.com / app.
+    printwithsynergy.lintpdf.com) in the summary.
+
+    Returns ``None`` when the flag isn't set — caller falls back to
+    bootstrapping a throwaway tenant.
+    """
+    if os.environ.get("LINTPDF_USE_DEMO") != "1":
+        return None
+    cred_file = Path(__file__).resolve().parent / ".lintpdf-demo-credentials.env"
+    if not cred_file.exists():
+        sys.exit(
+            "LINTPDF_USE_DEMO=1 but scripts/.lintpdf-demo-credentials.env "
+            "is missing. Run `python3 packages/engine/scripts/seed_pws_demo.py` first."
+        )
+    tid = key = None
+    for line in cred_file.read_text().splitlines():
+        if "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        if k.strip() == "LINTPDF_DEMO_TENANT_ID":
+            tid = v.strip()
+        elif k.strip() == "LINTPDF_DEMO_API_KEY":
+            key = v.strip()
+    if not tid or not key:
+        sys.exit(f"Missing TENANT_ID or API_KEY in {cred_file}")
+    return tid, key
+
+
 def main() -> int:
     if not ADMIN_KEY:
         sys.exit("LINTPDF_ADMIN_KEY env var is required")
@@ -560,7 +599,13 @@ def main() -> int:
     print(f"Using PDF: {pdf}")
     http = HTTP(API_BASE)
 
-    tenant_id, api_key = bootstrap_tenant(http)
+    demo = _load_demo_credentials()
+    if demo is not None:
+        tenant_id, api_key = demo
+        print("\n=== reusing Print With Synergy demo tenant ===")
+        print(f"  tenant_id={tenant_id}  api_key={api_key[:16]}…")
+    else:
+        tenant_id, api_key = bootstrap_tenant(http)
 
     # ----- Variant 1: vanilla submit
     print("\n=== variant 1: vanilla preflight (lintpdf-default profile) ===")

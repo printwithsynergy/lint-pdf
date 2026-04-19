@@ -26,6 +26,9 @@
 .env
 .env.*
 !.env.*.example
+# Demo-tenant credentials written by packages/engine/scripts/seed_pws_demo.py.
+# Contains a live tenant API key; never commit.
+scripts/.lintpdf-demo-credentials.env
 .idea/
 .mypy_cache/
 .next/
