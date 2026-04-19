@@ -244,29 +244,37 @@ class RailwayClient:
         if errors:
             first = errors[0]
             msg = first.get("message", "").lower()
-            # Railway returns a generic error when the domain already
-            # exists; treat that as success for our probe.
-            if "already" in msg and "exist" in msg:
-                # Re-query to get the per-domain required CNAME target --
-                # ``customDomainCreate`` doesn't return dnsRecords when
-                # it errors on "already exists", but downstream code
-                # (probe task -> alias provisioner) needs the value to
-                # set up the Cloudflare middle-layer CNAME for existing
-                # tenants. Falls back to None if the re-query fails, in
-                # which case the probe just skips alias provisioning and
-                # the admin UI shows the shared service hostname.
-                req = self._lookup_existing_required_cname(
-                    domain, service_id or self.service_id
-                )
-                return RailwayDomainResult(
-                    status="already_exists",
-                    message=first.get("message"),
-                    required_cname=req,
-                )
             if "unauthorized" in msg or "permission" in msg:
                 return RailwayDomainResult(
                     status="unauthorized",
                     message=first.get("message"),
+                )
+            # Any other mutation error is AMBIGUOUS:
+            #
+            #   * "domain already exists on another service" -- this was
+            #     the historical message (code still checks for it).
+            #   * "Failed to create custom domain, please try again" --
+            #     Railway's current generic error for duplicates (Envoy
+            #     rewrite). Same meaning, less helpful wording. See
+            #     Worker logs from 2026-04-19 for evidence.
+            #   * Real transient failures (rate-limit, partial outage).
+            #
+            # Distinguishing them from the error message alone is
+            # unreliable. So we probe with a domains() re-query: if the
+            # domain is already attached to this service we get its
+            # required_cname back and treat this as "already_exists"
+            # (downstream probe task persists the alias column from the
+            # required_cname it receives). If the re-query returns
+            # nothing, the domain genuinely didn't register -- surface
+            # as error.
+            req = self._lookup_existing_required_cname(
+                domain, service_id or self.service_id
+            )
+            if req is not None:
+                return RailwayDomainResult(
+                    status="already_exists",
+                    message=first.get("message"),
+                    required_cname=req,
                 )
             logger.warning("Railway GraphQL error for domain %s: %s", domain, first.get("message"))
             return RailwayDomainResult(status="error", message=first.get("message"))
