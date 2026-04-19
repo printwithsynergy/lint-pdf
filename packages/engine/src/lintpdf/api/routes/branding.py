@@ -356,7 +356,17 @@ async def upload_brand_logo(
     storage = get_storage()
     ext = file.filename.rsplit(".", 1)[-1] if file.filename and "." in file.filename else "png"
     file_key = f"brand-logos/{tenant.id}/{profile.id}.{ext}"
-    storage.upload_file(file_key, content, content_type=file.content_type or "image/png")
+    # ``StorageBackend`` exposes ``upload_raw(key, data, content_type, ...)``;
+    # the earlier ``upload_file`` name never existed. This line has been
+    # broken since the brand-logo upload endpoint shipped — any logo-upload
+    # attempt 500s with AttributeError. Caught while setting up the
+    # "Print With Synergy" demo tenant.
+    storage.upload_raw(
+        file_key,
+        content,
+        content_type=file.content_type or "image/png",
+        cache_control="public, max-age=31536000, immutable",
+    )
 
     # Update profile logo URL using the per-tenant resolver — if the tenant
     # has a verified custom domain, logos come from that host too so the
