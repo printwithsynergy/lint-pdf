@@ -991,7 +991,10 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 # Provision the LintPDF-branded alias so the API's
                 # ``dns_target`` returns e.g. ``8cdd7799-reports.custom
                 # .lintpdf.com`` instead of ``9m9a8ps4.up.railway.app``.
-                if not tenant.custom_domain_alias and outcome.required_cname:
+                # Always run provisioning -- upsert_cname is idempotent and
+                # reconciles any stale alias shape (e.g. legacy
+                # ``{slug}-reports.custom.lintpdf.com`` → new ``{slug}-custom.lintpdf.com``).
+                if outcome.required_cname:
                     alias_fqdn, _ = _provision_alias(
                         cf, _alias_slug(tenant.id, "reports"), outcome.required_cname
                     )
@@ -1066,7 +1069,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                         outcome.required_cname,
                     )
                 profile.custom_domain_verified = True
-                if not profile.custom_domain_alias and outcome.required_cname:
+                if outcome.required_cname:  # reconcile on every run
                     alias_fqdn, _ = _provision_alias(
                         cf,
                         _alias_slug(
@@ -1139,7 +1142,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                         outcome.required_cname,
                     )
                 tenant.app_custom_domain_verified = True
-                if not tenant.app_custom_domain_alias and outcome.required_cname:
+                if outcome.required_cname:  # reconcile on every run
                     alias_fqdn, _ = _provision_alias(
                         cf, _alias_slug(tenant.id, "app"), outcome.required_cname
                     )
@@ -1207,7 +1210,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                         outcome.required_cname,
                     )
                 profile.app_custom_domain_verified = True
-                if not profile.app_custom_domain_alias and outcome.required_cname:
+                if outcome.required_cname:  # reconcile on every run
                     alias_fqdn, _ = _provision_alias(
                         cf,
                         _alias_slug(
