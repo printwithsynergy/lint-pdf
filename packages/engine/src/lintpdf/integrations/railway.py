@@ -99,12 +99,23 @@ class RailwayClient:
                 message="Railway client not configured (missing env vars)",
             )
 
+        # Railway's ``customDomainCreate`` used to return ``status`` as a
+        # scalar enum. It's now a ``CustomDomainStatus!`` complex type —
+        # selecting it as a scalar gets rejected by their GraphQL
+        # validator with a 400. We only care about whether Railway
+        # accepted the registration at this stage (the verified flag is
+        # driven by DNS + TLS issuance in the background), so select a
+        # minimal subfield set. ``dnsRecords`` / ``verificationToken`` are
+        # available for richer diagnostics in a future patch.
         query = """
         mutation CustomDomainCreate($input: CustomDomainCreateInput!) {
           customDomainCreate(input: $input) {
             id
             domain
-            status
+            status {
+              verified
+              certificateStatus
+            }
           }
         }
         """
@@ -162,4 +173,10 @@ class RailwayClient:
         if not data:
             return RailwayDomainResult(status="error", message="Empty response from Railway")
 
-        return RailwayDomainResult(status="created", message=data.get("status"))
+        # ``status`` used to be a scalar enum we surfaced as the message;
+        # it's now a dict of verified + certificateStatus so summarize it
+        # into something humans can read in probe logs without exposing
+        # the raw Railway shape to callers.
+        st = data.get("status") or {}
+        message = f"verified={st.get('verified')}  cert={st.get('certificateStatus')}"
+        return RailwayDomainResult(status="created", message=message)
