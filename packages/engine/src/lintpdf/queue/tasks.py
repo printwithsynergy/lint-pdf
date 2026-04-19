@@ -839,7 +839,7 @@ def _provision_alias(
     slug: str,
     required_cname: str | None,
 ) -> tuple[str | None, Any]:
-    """Create / update the ``{slug}.custom.lintpdf.com`` CNAME via Cloudflare.
+    """Create / update the ``{slug}.lintpdf.com`` proxied CNAME via Cloudflare.
 
     Returns ``(fqdn_on_success, result_object)``. ``fqdn`` is the value
     we'll persist on the tenant/profile row (the customer-facing target).
@@ -847,17 +847,33 @@ def _provision_alias(
     failed; in both cases the caller falls back to the raw Railway target
     in the admin UI (back-compat).
 
-    Never raises -- graceful degradation only. A CF outage must not take
-    down the whole probe loop.
+    IMPORTANT: the CNAME target itself is IRRELEVANT because the edge
+    Worker (``packages/edge-worker``) intercepts every request to
+    ``*-custom.lintpdf.com`` before DNS resolution, uses
+    ``cf.resolveOverride`` to pick the right Railway backend per URL
+    path (/r/* vs /view/*), and proxies. The proxied CNAME only exists
+    to (a) make the hostname resolvable so browsers don't 404 DNS and
+    (b) trigger CF's Universal SSL to issue a cert for the subdomain.
+    We point at ``lintpdf.com`` as a stable, self-referential target --
+    it's the apex of our own zone so resolution never fails.
+
+    Using a stable target also means BOTH reports and app probe
+    branches for the same tenant write the SAME (fqdn, target) pair,
+    which means ``upsert_cname`` returns ``already_correct`` on the
+    second call rather than flipping the target back and forth.
+
+    Never raises -- graceful degradation only. A CF outage must not
+    take down the whole probe loop.
     """
     if not required_cname:
+        # Keep the ``required_cname is not None`` guard since the caller
+        # uses it as a "did Railway give us anything?" check, but the
+        # target itself is pinned to our apex below.
         return None, None
-    # Flat shape: slug is ``{tenant-short}-custom``, full FQDN is
-    # ``{slug}.lintpdf.com``. Covered by existing Universal SSL
-    # ``*.lintpdf.com`` cert. See _alias_slug for rationale.
     fqdn = f"{slug}.lintpdf.com"
+    stable_target = "lintpdf.com"
     try:
-        result = cf.upsert_cname(fqdn, required_cname)
+        result = cf.upsert_cname(fqdn, stable_target)
     except Exception:  # noqa: BLE001 -- we really do want to swallow here
         logger.exception("Cloudflare upsert crashed for %s", fqdn)
         return None, None
