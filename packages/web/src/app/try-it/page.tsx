@@ -13,6 +13,13 @@ interface SelectedFile {
 const MAX_FILES = 5;
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
+// Mirrors DANGEROUS_EXTENSIONS in packages/engine/src/lintpdf/api/upload_security.py
+const BLOCKED_EXTENSIONS = new Set([
+  ".php", ".exe", ".sh", ".bat", ".cmd", ".js", ".html", ".htm",
+  ".asp", ".aspx", ".jsp", ".cgi", ".py", ".pl", ".rb", ".msi",
+  ".com", ".scr", ".pif", ".vbs", ".wsf", ".ps1",
+]);
+
 export default function TryItPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -31,9 +38,10 @@ export default function TryItPage() {
     (newFiles: FileList | File[]) => {
       const toAdd: SelectedFile[] = [];
       for (const file of Array.from(newFiles)) {
-        if (file.type !== "application/pdf") {
+        const ext = "." + (file.name.split(".").pop() ?? "").toLowerCase();
+        if (BLOCKED_EXTENSIONS.has(ext)) {
           setErrorMsg(
-            `"${file.name}" is not a PDF. Only PDF files are accepted.`,
+            `"${file.name}" uses a blocked file type (${ext}). Executables and scripts are not accepted.`,
           );
           continue;
         }
@@ -88,7 +96,7 @@ export default function TryItPage() {
       setErrorMsg("");
 
       if (files.length === 0) {
-        setErrorMsg("Please add at least one PDF file.");
+        setErrorMsg("Please add at least one file.");
         setState("idle");
         return;
       }
@@ -290,7 +298,7 @@ export default function TryItPage() {
                 {/* File upload zone */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-1">
-                    PDF Files <span className="text-red-500">*</span>
+                    Files <span className="text-red-500">*</span>
                     <span className="text-slate-400 font-normal ml-1">
                       (max {MAX_FILES} files, 50 MB each)
                     </span>
@@ -320,7 +328,7 @@ export default function TryItPage() {
                       />
                     </svg>
                     <p className="text-sm text-slate-500 mb-2">
-                      Drag & drop PDFs here, or{" "}
+                      Drag & drop files here, or{" "}
                       <button
                         type="button"
                         className="text-brand-600 font-medium hover:text-brand-700 underline underline-offset-2"
@@ -329,11 +337,14 @@ export default function TryItPage() {
                         browse files
                       </button>
                     </p>
-                    <p className="text-xs text-slate-400">PDF files only</p>
+                    <p className="text-xs text-slate-400">
+                      Any file type except executables — every upload is
+                      scanned for malware
+                    </p>
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".pdf,application/pdf"
+                      accept="*/*"
                       multiple
                       className="hidden"
                       onChange={(e) => {

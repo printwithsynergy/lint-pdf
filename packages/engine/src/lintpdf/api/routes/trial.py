@@ -252,7 +252,7 @@ async def submit_trial(
 
     from lintpdf.api.config import get_settings
     from lintpdf.api.storage import get_storage
-    from lintpdf.api.upload_security import PDF_TYPES, validate_upload
+    from lintpdf.api.upload_security import ANY_SAFE_TYPES, validate_upload
 
     settings = get_settings()
     storage = get_storage()
@@ -263,7 +263,7 @@ async def submit_trial(
     for upload_file in files:
         content = await validate_upload(
             upload_file,
-            allowed_types=PDF_TYPES,
+            allowed_types=ANY_SAFE_TYPES,
             max_size_bytes=MAX_TRIAL_FILE_SIZE_BYTES,
             settings=settings,
         )

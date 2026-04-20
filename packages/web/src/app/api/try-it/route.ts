@@ -3,6 +3,18 @@ import { NextResponse } from "next/server";
 const ENGINE_URL = process.env.LINTPDF_ENGINE_URL ?? "http://localhost:8000";
 const TRIAL_SECRET = process.env.LINTPDF_TRIAL_SECRET ?? "";
 
+// Mirrors DANGEROUS_EXTENSIONS in packages/engine/src/lintpdf/api/upload_security.py
+const BLOCKED_EXTENSIONS = new Set([
+  ".php", ".exe", ".sh", ".bat", ".cmd", ".js", ".html", ".htm",
+  ".asp", ".aspx", ".jsp", ".cgi", ".py", ".pl", ".rb", ".msi",
+  ".com", ".scr", ".pif", ".vbs", ".wsf", ".ps1",
+]);
+
+function hasBlockedExtension(name: string): string | null {
+  const ext = "." + (name.split(".").pop() ?? "").toLowerCase();
+  return BLOCKED_EXTENSIONS.has(ext) ? ext : null;
+}
+
 /** Simple time-window rate limit: max 3 submissions per IP per 10 minutes. */
 const rateMap = new Map<string, number[]>();
 const RATE_WINDOW = 10 * 60 * 1000;
@@ -69,9 +81,23 @@ export async function POST(request: Request) {
   const files = formData.getAll("files");
   if (!files.length) {
     return NextResponse.json(
-      { error: "At least one PDF file is required." },
+      { error: "At least one file is required." },
       { status: 400 },
     );
+  }
+
+  for (const file of files) {
+    if (file instanceof File) {
+      const blocked = hasBlockedExtension(file.name);
+      if (blocked) {
+        return NextResponse.json(
+          {
+            error: `"${file.name}" uses a blocked file type (${blocked}). Executables and scripts are not accepted.`,
+          },
+          { status: 400 },
+        );
+      }
+    }
   }
 
   // Build FormData to forward to engine

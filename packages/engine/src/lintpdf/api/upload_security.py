@@ -70,6 +70,12 @@ _XJDF = AllowedFileType(
 # Pre-built registries for endpoints
 PDF_TYPES: frozenset[AllowedFileType] = frozenset({_PDF})
 
+# Sentinel: accept any extension EXCEPT those in DANGEROUS_EXTENSIONS.
+# Used by the public trial endpoint where we want permissive intake but still
+# need to block executables/scripts. Magic-bytes and MIME cross-checks are
+# skipped for this path — ClamAV is the safety net.
+ANY_SAFE_TYPES: frozenset[AllowedFileType] = frozenset()
+
 PRINT_READY_TYPES: frozenset[AllowedFileType] = frozenset(
     {
         _PNG,
@@ -399,52 +405,62 @@ async def validate_upload(
     _, ext = os.path.splitext(clean_name)
     ext_lower = ext.lower()
 
-    matching_types = [t for t in allowed_types if ext_lower in t.extensions]
-    if not matching_types:
-        allowed_exts = sorted({e for t in allowed_types for e in t.extensions})
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"File extension '{ext_lower}' is not allowed. "
-            f"Allowed: {', '.join(allowed_exts)}",
-        )
-
-    # 5. Content detection based on type strategy
     detected_mime: str | None = None
-    matched_type = matching_types[0]
 
-    if matched_type.detection == _DETECTION_FILETYPE:
-        guess = filetype_lib.guess(content)
-        detected_mime = guess.mime if guess else None
-    elif matched_type.detection == _DETECTION_CUSTOM:
-        detected_mime = _detect_custom_mime(content)
-    # _DETECTION_EXTENSION_ONLY: skip content check
-
-    # 6. Verify detected MIME matches an allowed type
-    if matched_type.detection != _DETECTION_EXTENSION_ONLY:
-        if detected_mime is None:
+    if not allowed_types:
+        # ANY_SAFE_TYPES path: reject only DANGEROUS_EXTENSIONS, skip magic-bytes
+        # and MIME cross-checks — we can't cross-check arbitrary formats.
+        if ext_lower in DANGEROUS_EXTENSIONS:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="File content does not match a supported type.",
+                detail=f"File extension '{ext_lower}' is not allowed.",
             )
-
-        allowed_mimes = {t.mime_type for t in allowed_types}
-        if detected_mime not in allowed_mimes:
+    else:
+        matching_types = [t for t in allowed_types if ext_lower in t.extensions]
+        if not matching_types:
+            allowed_exts = sorted({e for t in allowed_types for e in t.extensions})
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail="File content does not match a supported type.",
+                detail=f"File extension '{ext_lower}' is not allowed. "
+                f"Allowed: {', '.join(allowed_exts)}",
             )
 
-        # 7. Cross-check: detected MIME must agree with claimed extension
-        extension_mimes = {t.mime_type for t in matching_types}
-        if detected_mime not in extension_mimes:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"File content ({detected_mime}) does not match extension ({ext_lower}).",
-            )
+        # 5. Content detection based on type strategy
+        matched_type = matching_types[0]
 
-    # 8. SVG safety validation
-    if detected_mime == "image/svg+xml":
-        _validate_svg_safety(content)
+        if matched_type.detection == _DETECTION_FILETYPE:
+            guess = filetype_lib.guess(content)
+            detected_mime = guess.mime if guess else None
+        elif matched_type.detection == _DETECTION_CUSTOM:
+            detected_mime = _detect_custom_mime(content)
+        # _DETECTION_EXTENSION_ONLY: skip content check
+
+        # 6. Verify detected MIME matches an allowed type
+        if matched_type.detection != _DETECTION_EXTENSION_ONLY:
+            if detected_mime is None:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="File content does not match a supported type.",
+                )
+
+            allowed_mimes = {t.mime_type for t in allowed_types}
+            if detected_mime not in allowed_mimes:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="File content does not match a supported type.",
+                )
+
+            # 7. Cross-check: detected MIME must agree with claimed extension
+            extension_mimes = {t.mime_type for t in matching_types}
+            if detected_mime not in extension_mimes:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"File content ({detected_mime}) does not match extension ({ext_lower}).",
+                )
+
+        # 8. SVG safety validation
+        if detected_mime == "image/svg+xml":
+            _validate_svg_safety(content)
 
     # 9. Size limit
     if max_size_bytes is not None and len(content) > max_size_bytes:
