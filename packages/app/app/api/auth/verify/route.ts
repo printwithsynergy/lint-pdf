@@ -14,6 +14,7 @@ import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { getClientInfo } from "@/lib/auth-helpers";
+import { isPrimaryHost } from "@/lib/host-branding";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -42,8 +43,14 @@ export async function GET(req: Request) {
   });
 
   const appConfig = getConfig();
-  const appName = appConfig.appName ?? "LintPDF";
-  const logoUrl = `${env.APP_URL}/logo-dark.svg`;
+  const reqHost = req.headers.get("host");
+  const onPrimary = isPrimaryHost(reqHost);
+  const appName = onPrimary
+    ? (appConfig.appName ?? "LintPDF")
+    : (reqHost?.split(":")[0] ?? "Verified");
+  const logoTag = onPrimary
+    ? `<img src="${env.APP_URL}/logo-dark.svg" alt="${appName}" class="logo" onerror="this.style.display='none'"/>`
+    : "";
 
   const html = `<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
@@ -57,7 +64,7 @@ p{font-size:.875rem;color:#888;line-height:1.5}
 .check svg{width:32px;height:32px;color:#fff}</style></head>
 <body><div class="card">
 <div class="check"><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg></div>
-<img src="${logoUrl}" alt="${appName}" class="logo" onerror="this.style.display='none'"/>
+${logoTag}
 <h1>You're Verified!</h1>
 <p>You can close this tab and return to the original window — you'll be signed in automatically.</p>
 </div></body></html>`;

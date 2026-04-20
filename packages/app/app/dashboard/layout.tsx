@@ -12,6 +12,7 @@ import { ensureRegistry } from "@/lib/plugins";
 import { SuperAdminToolbar } from "@/components/super-admin-toolbar";
 import { ClientProviders } from "@/components/client-providers";
 import { buildBrandingCss, type BrandingColors } from "@/lib/branding-css";
+import { getHostBranding } from "@/lib/host-branding";
 
 export default async function DashboardLayout({
   children,
@@ -42,6 +43,7 @@ export default async function DashboardLayout({
 
   // When impersonating, load the target tenant's branding instead
   const branding = await getBranding(prisma);
+  const { fallbackName, isPrimary } = await getHostBranding();
 
   const brandingCss = buildBrandingCss(branding as BrandingColors);
   const customCss = [brandingCss, branding.customCss]
@@ -55,8 +57,10 @@ export default async function DashboardLayout({
         <DashboardShell
           navItems={navItems}
           user={user}
-          brandName={branding.brandName ?? "LintPDF"}
-          brandLogoUrl={branding.brandLogoUrl ?? "/logo.svg"}
+          brandName={branding.brandName ?? fallbackName}
+          brandLogoUrl={
+            branding.brandLogoUrl ?? (isPrimary ? "/logo.svg" : undefined)
+          }
           customCss={customCss || undefined}
         >
           {children}

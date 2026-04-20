@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { ViewerConfig } from "./types";
 import { useViewerApi } from "./types";
 import { ZoomControls } from "./ZoomControls";
+import { hostFallbackClient } from "@/lib/host-fallback-client";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
@@ -247,7 +248,7 @@ export function MobileDrawer({
           <span className="text-sm font-bold text-white">
             {config.anonymous
               ? "Preflight Report"
-              : config.brand_name || "LintPDF"}
+              : config.brand_name || hostFallbackClient()}
           </span>
           <button
             onClick={onClose}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@thinkneverland/pixie-dust-ui";
 import { PdfViewer } from "@/components/viewer";
+import { hostFallbackClient } from "@/lib/host-fallback-client";
 
 interface JobData {
   jobId: string;
@@ -310,18 +311,26 @@ export default function PublicViewerPage() {
   }
 
   // Render minimal layout with viewer
+  const brandFallback = hostFallbackClient();
+  const isCustomDomain = brandFallback !== "LintPDF";
+  const brandName = jobData.brandName || brandFallback;
+  // On custom domains, suppress the default LintPDF logo entirely — only
+  // show a logo if the tenant set their own. The hostname text still reads.
+  const logoSrc = jobData.logoUrl || (isCustomDomain ? null : "/logo.svg");
   return (
     <div className="flex min-h-screen flex-col">
       {/* Top bar */}
       <header className="flex h-14 items-center justify-between border-b bg-background px-4">
         <div className="flex items-center gap-3">
-          <img
-            src={jobData.logoUrl || "/logo.svg"}
-            alt={jobData.brandName || "LintPDF"}
-            className="h-7 w-auto"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-          />
-          <span className="font-display text-lg font-bold">{jobData.brandName || "LintPDF"}</span>
+          {logoSrc && (
+            <img
+              src={logoSrc}
+              alt={brandName}
+              className="h-7 w-auto"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          )}
+          <span className="font-display text-lg font-bold">{brandName}</span>
           <span className="hidden text-sm text-muted-foreground sm:inline">|</span>
           <span className="hidden text-sm text-muted-foreground truncate max-w-[300px] sm:inline">
             {jobData.fileName}
