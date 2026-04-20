@@ -231,6 +231,26 @@ def run_preflight(
                 logger.error("Job %s not found in database", job_id)
                 return {"job_id": job_id, "status": "failed", "error": "Job not found"}
 
+            # Bail out cleanly on retry redelivery. ``task_acks_late=True``
+            # means Celery returns the task to the queue if a worker
+            # crashes mid-execution, even when a prior attempt already
+            # finished successfully. Re-running unconditionally would
+            # reset ``status`` back to PROCESSING (line below), masking
+            # the COMPLETE/FAILED state and leaving the job looking stuck
+            # until the 20-min reaper cleans up. Terminal states are
+            # final -- skip and ack.
+            if job.status in (JobStatus.COMPLETE, JobStatus.FAILED):
+                logger.info(
+                    "Job %s already in terminal state %s; skipping redelivery",
+                    job_id,
+                    job.status,
+                )
+                return {
+                    "job_id": job_id,
+                    "status": job.status.value if hasattr(job.status, "value") else str(job.status),
+                    "skipped": "redelivery_after_terminal",
+                }
+
             # Mark as processing
             job.status = JobStatus.PROCESSING
             db.commit()
@@ -641,9 +661,13 @@ def reap_stale_jobs() -> dict[str, Any]:
     from lintpdf.api.database import get_db_session
     from lintpdf.api.models import Job, JobStatus
 
-    # Hard timeout (10 min) + 10 min grace. Anything still "processing"
-    # after 20 minutes is definitively dead.
-    stale_after = _dt.timedelta(minutes=20)
+    # Hard timeout (10 min) + 2 min grace. Anything still "processing"
+    # after 12 minutes is definitively dead -- the worker would have
+    # been hard-killed by Celery's time_limit + redelivery would have
+    # short-circuited via the terminal-state guard at the top of
+    # run_preflight. Tighter than the previous 20 min so customers see
+    # a clear "failed" state sooner instead of a stuck dashboard.
+    stale_after = _dt.timedelta(minutes=12)
     cutoff = _dt.datetime.now(_dt.UTC) - stale_after
 
     db = get_db_session()
