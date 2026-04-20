@@ -81,31 +81,31 @@ def validate_custom_domain(raw: str) -> str:
 
 
 def _resolve_dns_target(alias: str | None, fallback: str | None = None) -> str:
-    """Pick the customer-facing CNAME target to show in the dashboard.
+    """Return the CNAME target for a customer's BYO custom domain.
 
-    Preference order:
+    Always ``edge.lintpdf.com`` — our Fly.io Caddy edge that
+    terminates TLS (on-demand Let's Encrypt) and path-routes to the
+    Railway backends. Every BYO customer CNAMEs here regardless of
+    whether they also have an auto-provisioned branded subdomain
+    (``{slug}-custom.lintpdf.com``).
 
-    1. Auto-provisioned LintPDF-branded alias (``{slug}-custom.lintpdf.com``)
-       when present. These resolve through the CF Worker at
-       ``packages/edge-worker`` and are zero-DNS-work for the tenant
-       (they just use the URL directly).
-    2. ``edge.lintpdf.com`` -- the Fly.io Caddy edge. This is the
-       CNAME target for BYO customers who want their own hostname.
-       Caddy issues a Let's Encrypt cert on first request and
-       path-routes to Railway backends.
-    3. An explicit ``fallback`` override if the caller needs a
-       non-default target for a specific response shape.
+    The ``alias`` parameter is ACCEPTED for signature back-compat but
+    no longer used as the CNAME target: the alias represents a
+    separate UX surface (a LintPDF-branded URL the tenant can use
+    directly without any DNS work), NOT a CNAME target for BYO. An
+    alias-bearing tenant who also wants BYO still CNAMEs to
+    ``edge.lintpdf.com`` and adds their branded URL as an additional
+    share option in-product.
 
     Legacy callers passed ``reports.lintpdf.com`` / ``app.lintpdf.com``
     as the fallback -- those were the old "shared service hostname"
-    values from before the Caddy edge existed. Either works in the
-    sense that Railway's edge still serves those hostnames, but the
-    customer's cert wouldn't issue (Railway's per-domain validator
-    won't chase the chain). ``edge.lintpdf.com`` is the correct
-    modern target.
+    values that predate the Caddy edge and don't work for cert
+    issuance anymore (Railway's per-domain validator doesn't chase
+    CNAME chains). ``edge.lintpdf.com`` is the single correct answer.
     """
-    if alias:
-        return alias
+    # Alias intentionally unused; see docstring. Kept in signature so
+    # existing call sites don't need to change.
+    del alias
     return fallback or "edge.lintpdf.com"
 
 
