@@ -275,7 +275,7 @@ export default function PricingClient() {
                   {/* Right: feature checklist */}
                   <div className="md:col-span-3 bg-white p-6 md:p-8">
                     <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">
-                      What's included
+                      What&apos;s included
                     </h4>
                     <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm text-slate-600">
                       {included.map((feature) => (
