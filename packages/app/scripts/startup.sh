@@ -313,19 +313,15 @@ CREATE UNIQUE INDEX IF NOT EXISTS ix_brand_profiles_custom_domain_unique
 ALTER TABLE brand_profiles
   ADD COLUMN IF NOT EXISTS viewer_config JSONB NULL;
 
--- Engine: custom_domain_alias columns on tenants + brand_profiles.
--- Vestigial -- once populated by the legacy CF-Worker branded-subdomain
--- flow. Retained nullable so existing rows don't break model loads;
--- a follow-up migration can drop them once all environments have
--- re-seeded post-consolidation.
-ALTER TABLE tenants
-  ADD COLUMN IF NOT EXISTS custom_domain_alias VARCHAR(255) NULL;
-ALTER TABLE tenants
-  ADD COLUMN IF NOT EXISTS app_custom_domain_alias VARCHAR(255) NULL;
-ALTER TABLE brand_profiles
-  ADD COLUMN IF NOT EXISTS custom_domain_alias VARCHAR(255) NULL;
-ALTER TABLE brand_profiles
-  ADD COLUMN IF NOT EXISTS app_custom_domain_alias VARCHAR(255) NULL;
+-- Engine: drop the legacy custom_domain_alias columns. The CF-Worker
+-- branded-subdomain flow was retired in favor of the Fly.io Caddy edge;
+-- every BYO customer CNAMEs directly at edge.lintpdf.com. DROP COLUMN
+-- IF EXISTS is idempotent, so re-runs on already-migrated environments
+-- are no-ops.
+ALTER TABLE tenants DROP COLUMN IF EXISTS custom_domain_alias;
+ALTER TABLE tenants DROP COLUMN IF EXISTS app_custom_domain_alias;
+ALTER TABLE brand_profiles DROP COLUMN IF EXISTS custom_domain_alias;
+ALTER TABLE brand_profiles DROP COLUMN IF EXISTS app_custom_domain_alias;
 
 -- One-shot data migration: rewrite any logo URLs still pinned to the dead
 -- reports.lintpdf.com host (never configured in DNS) to the working

@@ -129,18 +129,11 @@ class Tenant(Base):
     brand_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    # Vestigial: once held the CF-Worker branded-subdomain alias
-    # (``{slug}-custom.lintpdf.com``). No code reads or writes it anymore;
-    # BYO customers CNAME straight at ``edge.lintpdf.com``. Kept nullable
-    # on the row so existing data doesn't break model loads. A follow-up
-    # migration can drop the column.
-    custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     app_custom_domain_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     app_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    app_custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     brand_hide_footer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     report_default_expiry_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     report_email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -856,14 +849,11 @@ class BrandProfile(Base):
     custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    # Parallel to ``Tenant.custom_domain_alias`` -- see there for rationale.
-    custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     app_custom_domain_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     app_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    app_custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     viewer_config: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
