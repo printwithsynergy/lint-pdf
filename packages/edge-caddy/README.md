@@ -1,15 +1,8 @@
 # LintPDF edge (Caddy on Fly.io)
 
-Self-hosted TLS-terminating reverse proxy for **customer-owned domains** (BYO-domain). Complements the Cloudflare Worker at `packages/edge-worker/` which handles our branded `{slug}-custom.lintpdf.com` subdomains (free on CF Universal SSL).
+Self-hosted TLS-terminating reverse proxy for **customer-owned domains** (BYO-domain). Customers CNAME their hostname at `edge.lintpdf.com`; Caddy mints a Let's Encrypt cert on the first HTTPS request and path-routes to the Railway backends.
 
-## Why this exists alongside the CF Worker
-
-| Path | Traffic | TLS terminator | Cost | When |
-|---|---|---|---|---|
-| `{slug}-custom.lintpdf.com` | Branded subdomain | Cloudflare (Universal SSL covers `*.lintpdf.com`) | $0/mo | Always — zero-DNS-work default for every tenant |
-| `reports.customer.com` | BYO customer domain | **This Caddy on Fly.io** (on-demand Let's Encrypt) | $0/mo (Fly.io free tier) | When customer wants their own hostname |
-
-Cloudflare's **SSL for SaaS** feature would handle the BYO case inside CF, but requires the Business plan ($250/mo). Self-hosting Caddy with `on_demand_tls` gets us the same capability at $0 until Fly.io usage exceeds their free tier.
+Cloudflare's **SSL for SaaS** feature would handle the same case inside CF but requires the Business plan ($250/mo). Self-hosting Caddy with `on_demand_tls` gets us the same capability at $0 until Fly.io usage exceeds their free tier.
 
 ## Architecture
 
@@ -26,8 +19,6 @@ Railway (reports.lintpdf.com / app.lintpdf.com)
 ```
 
 ### Path routing
-
-Same shape as the CF Worker:
 
 | Path prefix | Upstream | Rewritten Host |
 |---|---|---|
@@ -83,4 +74,4 @@ fly deploy --app lintpdf-edge
 
 ## Rollback
 
-Delete the Fly app (`fly apps destroy lintpdf-edge`). Customer CNAMEs pointing at `edge.lintpdf.com` will fail DNS resolution / 502; they can migrate back to direct-Railway-CNAMEs as a fallback.
+Delete the Fly app (`fly apps destroy lintpdf-edge`). Customer CNAMEs pointing at `edge.lintpdf.com` will fail DNS resolution / 502 until the app is restored.

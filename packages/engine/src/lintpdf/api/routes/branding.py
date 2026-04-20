@@ -80,109 +80,13 @@ def validate_custom_domain(raw: str) -> str:
     return d
 
 
-def _resolve_dns_target(alias: str | None, fallback: str | None = None) -> str:
-    """Return the CNAME target for a customer's BYO custom domain.
+EDGE_HOSTNAME = "edge.lintpdf.com"
+"""CNAME target every BYO customer points their hostname at.
 
-    Always ``edge.lintpdf.com`` — our Fly.io Caddy edge that
-    terminates TLS (on-demand Let's Encrypt) and path-routes to the
-    Railway backends. Every BYO customer CNAMEs here regardless of
-    whether they also have an auto-provisioned branded subdomain
-    (``{slug}-custom.lintpdf.com``).
-
-    The ``alias`` parameter is ACCEPTED for signature back-compat but
-    no longer used as the CNAME target: the alias represents a
-    separate UX surface (a LintPDF-branded URL the tenant can use
-    directly without any DNS work), NOT a CNAME target for BYO. An
-    alias-bearing tenant who also wants BYO still CNAMEs to
-    ``edge.lintpdf.com`` and adds their branded URL as an additional
-    share option in-product.
-
-    Legacy callers passed ``reports.lintpdf.com`` / ``app.lintpdf.com``
-    as the fallback -- those were the old "shared service hostname"
-    values that predate the Caddy edge and don't work for cert
-    issuance anymore (Railway's per-domain validator doesn't chase
-    CNAME chains). ``edge.lintpdf.com`` is the single correct answer.
-    """
-    # Alias intentionally unused; see docstring. Kept in signature so
-    # existing call sites don't need to change.
-    del alias
-    return fallback or "edge.lintpdf.com"
-
-
-def _cleanup_alias_best_effort(alias_fqdn: str | None) -> None:
-    """Delete the Cloudflare CNAME record for a cleared custom domain.
-
-    Graceful: never raises. If Cloudflare is unreachable or the token
-    is missing the orphan record stays in the zone, which is harmless
-    (it points at a Railway target that'll 404 for any request that
-    isn't the now-deleted custom domain). Ops can clean up manually
-    later.
-    """
-    if not alias_fqdn:
-        return
-    try:
-        from lintpdf.integrations.cloudflare import CloudflareClient
-
-        cf = CloudflareClient()
-        result = cf.delete_cname(alias_fqdn)
-        if result.status not in ("deleted", "not_found", "disabled"):
-            import logging
-
-            logging.getLogger(__name__).warning(
-                "Cloudflare alias cleanup for %s returned %s: %s",
-                alias_fqdn,
-                result.status,
-                result.message,
-            )
-    except Exception:  # noqa: BLE001 -- never block a customer API call
-        import logging
-
-        logging.getLogger(__name__).exception(
-            "Cloudflare alias cleanup crashed for %s", alias_fqdn
-        )
-
-
-def _provision_alias_sync(tenant_id: Any, purpose: str = "") -> str | None:
-    """Create the Cloudflare DNS record for a customer's branded subdomain NOW.
-
-    Historically this happened asynchronously in the Celery probe task
-    (up to 5-min delay before the customer's dashboard showed the
-    final ``dns_target``). Calling it inline on the admin / tenant
-    PATCH endpoint means customers see the branded target the moment
-    they submit their hostname -- no probe-beat wait.
-
-    Uses the same slug logic as the probe task so repeated calls are
-    idempotent (second call hits the ``already_correct`` branch and
-    returns without a DB or CF write).
-
-    Returns the FQDN on success, or None if CF is unreachable /
-    disabled. Never raises -- a CF outage must not block a tenant's
-    domain submission; the probe task still runs periodically and
-    will fill the column on the next cycle.
-    """
-    try:
-        from lintpdf.integrations.cloudflare import CloudflareClient
-        from lintpdf.queue.tasks import _alias_slug, _provision_alias
-
-        slug = _alias_slug(tenant_id, purpose)
-        cf = CloudflareClient()
-        # We don't have a required_cname here because Railway hasn't
-        # registered the domain yet (that happens async in the probe
-        # task). Pass a sentinel: _provision_alias only uses the arg
-        # as a "did Railway give us anything?" gate, and the CNAME
-        # record target is hardcoded to ``lintpdf.com`` anyway (the
-        # edge Worker intercepts before DNS resolves to any IP).
-        fqdn, _ = _provision_alias(cf, slug, "lintpdf.com")
-        return fqdn
-    except Exception:  # noqa: BLE001 -- never block a customer API call
-        import logging
-
-        logging.getLogger(__name__).exception(
-            "Synchronous alias provision crashed for tenant=%s purpose=%s",
-            tenant_id,
-            purpose,
-        )
-        return None
+Our Fly.io Caddy edge terminates TLS (on-demand Let's Encrypt) and
+path-routes ``/r/*`` + ``/api/v1/*`` to the reports backend and
+``/view/*`` + ``/_next/*`` + ``/dashboard/*`` to the app backend.
+"""
 
 
 def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileResponse:
@@ -202,12 +106,12 @@ def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileR
         updated_at=profile.updated_at,
         custom_domain=profile.custom_domain,
         custom_domain_verified=profile.custom_domain_verified,
-        custom_domain_dns_target=_resolve_dns_target(profile.custom_domain_alias)
+        custom_domain_dns_target=EDGE_HOSTNAME
         if profile.custom_domain
         else None,
         app_custom_domain=profile.app_custom_domain,
         app_custom_domain_verified=profile.app_custom_domain_verified,
-        app_custom_domain_dns_target=_resolve_dns_target(profile.app_custom_domain_alias)
+        app_custom_domain_dns_target=EDGE_HOSTNAME
         if profile.app_custom_domain
         else None,
     )
@@ -553,7 +457,7 @@ def _tenant_custom_domain_response(tenant: Tenant) -> TenantCustomDomainResponse
         verified=tenant.brand_custom_domain_verified,
         requested_at=tenant.brand_custom_domain_requested_at,
         plan_allows_whitelabel=entitlements.whitelabel_enabled,
-        dns_target=_resolve_dns_target(tenant.custom_domain_alias),
+        dns_target=EDGE_HOSTNAME,
     )
 
 
@@ -604,29 +508,14 @@ async def set_tenant_custom_domain(
         )
 
     if request.domain is None or request.domain.strip() == "":
-        # Clearing -- remove the CF alias too to avoid orphan records
-        _cleanup_alias_best_effort(tenant.custom_domain_alias)
         tenant.brand_custom_domain = None
         tenant.brand_custom_domain_verified = False
         tenant.brand_custom_domain_requested_at = None
-        tenant.custom_domain_alias = None
     else:
         canonical = validate_custom_domain(request.domain)
-        # If the customer is changing domains, tear down the alias for
-        # the old one so we provision a fresh alias in the new slug shape.
-        if tenant.brand_custom_domain != canonical:
-            _cleanup_alias_best_effort(tenant.custom_domain_alias)
-            tenant.custom_domain_alias = None
         tenant.brand_custom_domain = canonical
         tenant.brand_custom_domain_verified = False
         tenant.brand_custom_domain_requested_at = datetime.now(timezone.utc)
-        # Provision the branded alias NOW so the dashboard shows the
-        # final dns_target immediately. The probe task still runs on
-        # its 5-min beat to reconcile, but the customer doesn't have
-        # to wait for it -- they get their CNAME target right here.
-        alias = _provision_alias_sync(tenant.id, "reports")
-        if alias:
-            tenant.custom_domain_alias = alias
 
     try:
         db.commit()
@@ -689,24 +578,14 @@ async def set_brand_profile_custom_domain(
         )
 
     if request.domain is None or request.domain.strip() == "":
-        _cleanup_alias_best_effort(profile.custom_domain_alias)
         profile.custom_domain = None
         profile.custom_domain_verified = False
         profile.custom_domain_requested_at = None
-        profile.custom_domain_alias = None
     else:
         canonical = validate_custom_domain(request.domain)
-        if profile.custom_domain != canonical:
-            _cleanup_alias_best_effort(profile.custom_domain_alias)
-            profile.custom_domain_alias = None
         profile.custom_domain = canonical
         profile.custom_domain_verified = False
         profile.custom_domain_requested_at = datetime.now(timezone.utc)
-        alias = _provision_alias_sync(
-            tenant.id, f"profile-{profile.id.hex[:8]}-reports"
-        )
-        if alias:
-            profile.custom_domain_alias = alias
 
     try:
         db.commit()
@@ -763,7 +642,7 @@ async def get_tenant_app_custom_domain(
         if tenant.app_custom_domain_requested_at
         else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
-        dns_target=_resolve_dns_target(tenant.app_custom_domain_alias),
+        dns_target=EDGE_HOSTNAME,
     )
 
 
@@ -791,22 +670,14 @@ async def set_tenant_app_custom_domain(
         )
 
     if request.domain is None or request.domain.strip() == "":
-        _cleanup_alias_best_effort(tenant.app_custom_domain_alias)
         tenant.app_custom_domain = None
         tenant.app_custom_domain_verified = False
         tenant.app_custom_domain_requested_at = None
-        tenant.app_custom_domain_alias = None
     else:
         canonical = validate_custom_domain(request.domain)
-        if tenant.app_custom_domain != canonical:
-            _cleanup_alias_best_effort(tenant.app_custom_domain_alias)
-            tenant.app_custom_domain_alias = None
         tenant.app_custom_domain = canonical
         tenant.app_custom_domain_verified = False
         tenant.app_custom_domain_requested_at = datetime.now(timezone.utc)
-        alias = _provision_alias_sync(tenant.id, "app")
-        if alias:
-            tenant.app_custom_domain_alias = alias
 
     try:
         db.commit()
@@ -826,7 +697,7 @@ async def set_tenant_app_custom_domain(
         if tenant.app_custom_domain_requested_at
         else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
-        dns_target=_resolve_dns_target(tenant.app_custom_domain_alias),
+        dns_target=EDGE_HOSTNAME,
     )
 
 

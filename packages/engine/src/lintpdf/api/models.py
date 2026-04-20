@@ -129,13 +129,11 @@ class Tenant(Base):
     brand_custom_domain_requested_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
-    # LintPDF-branded intermediate CNAME target for the customer's DNS record.
-    # Stored as the full FQDN (``{slug}-reports.custom.lintpdf.com``) so the
-    # API's ``dns_target`` field can return it verbatim. Populated by the
-    # probe task after Railway registration succeeds + the Cloudflare alias
-    # is provisioned. NULL for tenants registered before the alias layer
-    # shipped (they keep CNAMEing to the shared service hostname -- still
-    # works because Railway accepts both shapes).
+    # Vestigial: once held the CF-Worker branded-subdomain alias
+    # (``{slug}-custom.lintpdf.com``). No code reads or writes it anymore;
+    # BYO customers CNAME straight at ``edge.lintpdf.com``. Kept nullable
+    # on the row so existing data doesn't break model loads. A follow-up
+    # migration can drop the column.
     custom_domain_alias: Mapped[str | None] = mapped_column(String(255), nullable=True)
     app_custom_domain: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     app_custom_domain_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

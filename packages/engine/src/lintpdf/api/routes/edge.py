@@ -69,11 +69,9 @@ def on_demand_tls_check(
     brand-profile-level custom domain. Any other response (including
     200-missing-body) tells Caddy to refuse cert issuance.
 
-    Also unconditionally accepts anything under our own managed
-    subdomain space (``*-custom.lintpdf.com`` + ``*.lintpdf.com``)
-    since those come through the CF Worker, not Caddy -- but a
-    defensive match means even a stray DNS slip-up doesn't burn
-    an LE order.
+    Also unconditionally accepts anything under our own zone
+    (``*.lintpdf.com`` + ``lintpdf.com``) so a stray internal hostname
+    doesn't burn an LE order.
     """
     _verify_edge_secret(request)
 

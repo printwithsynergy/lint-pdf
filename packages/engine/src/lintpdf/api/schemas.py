@@ -708,11 +708,9 @@ class BrandProfileResponse(BaseModel):
     custom_domain_dns_target: str | None = Field(
         default=None,
         description=(
-            "CNAME target for this profile's report domain. Surfaced by "
-            "the branding dashboard when a profile-level custom domain is "
-            "set. For profiles with a provisioned alias, this is "
-            "``{slug}.custom.lintpdf.com``; else falls back to the shared "
-            "service hostname."
+            "CNAME target for this profile's report domain. Always "
+            "``edge.lintpdf.com`` -- our Fly.io Caddy edge that "
+            "terminates TLS and path-routes to the right backend."
         ),
     )
     app_custom_domain: str | None = None
@@ -798,25 +796,16 @@ class TenantCustomDomainResponse(BaseModel):
     dns_target: str = Field(
         default="edge.lintpdf.com",
         description=(
-            "The CNAME target customers point their subdomain at. For BYO "
-            "domains, this is always ``edge.lintpdf.com`` -- the Fly.io "
-            "Caddy edge that terminates TLS (via on-demand Let's Encrypt) "
-            "and path-routes to LintPDF's Railway backends. For tenants "
-            "with an auto-provisioned branded subdomain "
-            "(``{slug}-custom.lintpdf.com``), this is the alias itself -- "
-            "zero DNS work needed, they just use the URL directly."
+            "The CNAME target customers point their hostname at. Always "
+            "``edge.lintpdf.com`` -- our Fly.io Caddy edge that terminates "
+            "TLS (via on-demand Let's Encrypt) and path-routes to LintPDF's "
+            "Railway backends. One CNAME, no TXT records, no cert to install."
         ),
     )
 
 
 class AdminCustomDomainRow(BaseModel):
-    """Admin view of a tenant-level or profile-level custom domain.
-
-    Surfaces enough context for the admin dashboard to show both the
-    customer-visible hostname AND the CNAME target we've auto-provisioned
-    for them under our zone -- so ops can verify a customer's DNS at a
-    glance without cross-referencing another endpoint.
-    """
+    """Admin view of a tenant-level or profile-level custom domain."""
 
     scope: str = Field(description="'tenant', 'tenant_app', 'brand_profile', or 'brand_profile_app'")
     tenant_id: uuid.UUID
@@ -830,12 +819,7 @@ class AdminCustomDomainRow(BaseModel):
         default=None,
         description=(
             "CNAME target the customer should point their domain at. "
-            "For tenants with an auto-provisioned branded subdomain, this "
-            "is ``{slug}-custom.lintpdf.com`` (one CNAME, cert handled by "
-            "LintPDF edge). For legacy tenants registered before the edge "
-            "layer shipped, falls back to the shared service hostname. "
-            "``None`` when the domain hasn't been processed by the probe "
-            "task yet (e.g., just submitted)."
+            "Always ``edge.lintpdf.com`` -- the Fly.io Caddy edge."
         ),
     )
 

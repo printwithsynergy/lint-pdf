@@ -745,204 +745,84 @@ def _resolve_cname(hostname: str) -> str | None:
     return None
 
 
-# CNAME targets we consider "correctly pointed at LintPDF". Customers can
-# point at either the engine's primary host or Railway's edge (which is
-# technically what a Railway custom domain resolves to once registered).
+# The only CNAME target we accept for a BYO custom domain is our Fly.io
+# Caddy edge. Caddy terminates TLS via on-demand Let's Encrypt and
+# path-routes ``/r/*`` + ``/api/v1/*`` to the reports backend and
+# ``/view/*`` + ``/_next/*`` + ``/dashboard/*`` to the app backend.
 #
-# ``edge.lintpdf.com`` is the canonical BYO target -- our Fly.io Caddy
-# edge that terminates TLS via on-demand Let's Encrypt and path-routes
-# to Railway. Customers following current docs CNAME here.
-_ACCEPTABLE_CNAME_TARGETS: tuple[str, ...] = (
-    "edge.lintpdf.com",
-    "reports.lintpdf.com",
-    "api.lintpdf.com",
-    "app.lintpdf.com",
-    "lintpdf-production.up.railway.app",
-    "backboard.railway.app",
-)
-
-# Customers point their DNS at a LintPDF-branded subdomain we manage in
-# Cloudflare: ``{slug}-custom.lintpdf.com`` (flat naming -- one level
-# under our apex so Universal SSL's ``*.lintpdf.com`` cert covers it for
-# free; no Advanced Certificate Manager paywall). The Cloudflare edge
-# Worker (``packages/edge-worker``) path-routes ``/r/*`` + ``/api/v1/*``
-# to Railway's reports service and ``/view/*`` + ``/_next/*`` +
-# ``/dashboard/*`` to Railway's app service.
-#
-# ``-custom.lintpdf.com`` is the canonical new suffix.
-# ``.custom.lintpdf.com`` is the LEGACY 2-level form retained for a
-# migration window -- any tenant CNAMEing to it should continue to
-# resolve once we point the parent records elsewhere.
-# ``.up.railway.app`` is also acceptable: Railway's Envoy routing
-# generates per-domain backend targets like ``9m9a8ps4.up.railway.app``
-# and customers following older docs may have pointed CNAMEs straight
-# there. Those keep working because Railway's own edge handles the
-# cert and routing, bypassing our Worker entirely.
-_ACCEPTABLE_CNAME_SUFFIXES: tuple[str, ...] = (
-    "-custom.lintpdf.com",
-    ".custom.lintpdf.com",  # legacy, for migration back-compat
-    ".up.railway.app",
-)
+# Legacy paths (direct-to-Railway ``*.up.railway.app``, CF-Worker
+# ``*-custom.lintpdf.com``) have been retired -- no active tenant uses
+# them and new signups always go through the edge.
+_EDGE_CNAME_TARGET = "edge.lintpdf.com"
 
 
-def _cname_is_acceptable(target: str | None) -> bool:
-    if not target:
-        return False
-    target = target.rstrip(".").lower()
-    if any(
-        target == t or target.endswith(f".{t}") or target.endswith(t)
-        for t in _ACCEPTABLE_CNAME_TARGETS
-    ):
-        return True
-    # Any ``*.custom.lintpdf.com`` target is ours (we provisioned it).
-    return any(target.endswith(s) for s in _ACCEPTABLE_CNAME_SUFFIXES)
-
-
-def _cname_via_edge(target: str | None) -> bool:
-    """``True`` if the customer CNAMEs at our Fly.io Caddy edge.
-
-    Edge-pointed customers don't need Railway-side custom-domain
-    registration -- Caddy mints the LE cert on first request and
-    path-routes to the right backend. Skip the Railway round-trip
-    (and the alias / required_cname machinery that exists only to
-    satisfy Railway's per-domain validator).
-    """
+def _cname_points_at_edge(target: str | None) -> bool:
+    """``True`` if ``target`` resolves to our Fly.io Caddy edge."""
     if not target:
         return False
     t = target.rstrip(".").lower()
-    return t == "edge.lintpdf.com" or t.endswith(".edge.lintpdf.com")
+    return t == _EDGE_CNAME_TARGET or t.endswith(f".{_EDGE_CNAME_TARGET}")
 
 
-def _alias_slug(tenant_id: Any, purpose: str = "") -> str:
-    """Generate the per-tenant branded subdomain slug.
+def _activate_edge_domain(
+    db: Any,
+    row: Any,
+    domain: str,
+    verified_attr: str,
+    scope_label: str,
+    result: dict[str, Any],
+) -> bool:
+    """Flip ``verified=True`` if ``domain`` CNAMEs at our edge.
 
-    Shape: ``{tenant_short}-custom`` where ``tenant_short`` is the
-    first 8 hex chars of the tenant UUID. Example: ``8cdd7799-custom``.
+    Shared by the four probe branches (tenant reports, tenant app,
+    profile reports, profile app) so there's exactly one place that
+    owns the "is this domain live?" check.
 
-    Naming is FLAT (dash-separated, not dot-separated) so the full
-    FQDN ``{slug}.lintpdf.com`` stays inside Cloudflare's Universal
-    SSL single-level wildcard coverage (``*.lintpdf.com``). Nested
-    2-level wildcards like ``*.custom.lintpdf.com`` require Advanced
-    Certificate Manager ($10/mo) we haven't provisioned; the flat
-    shape is free and gives identical UX.
-
-    The ``purpose`` parameter is retained for signature back-compat
-    with earlier callers (probe task's 4 branches) but no longer
-    affects the result -- one branded subdomain per tenant serves
-    BOTH reports and viewer paths via the edge Worker's path routing
-    (see packages/edge-worker/src/index.js). For per-BrandProfile
-    overrides we namespace with the profile short ID:
-
-      tenant-level slug:  8cdd7799-custom
-      profile-level slug: 8cdd7799-p7a9e4b2-custom
-
-    The profile-short is 8 hex chars of the profile UUID, prefixed
-    with ``p`` for readability. All forms fit inside the 63-char
-    DNS label limit.
+    Returns True when the row was activated. On mismatch increments
+    ``result['cname_mismatch']`` and returns False.
     """
-    import uuid as _uuid
-
-    tenant_short = _uuid.UUID(str(tenant_id)).hex[:8]
-    if purpose.startswith("profile-"):
-        # ``profile-<8hex>-reports`` / ``profile-<8hex>-app`` from the
-        # legacy 4-branch call sites -- extract just the 8-hex profile
-        # discriminator so both purposes resolve to the same slug per
-        # profile.
-        parts = purpose.split("-")
-        if len(parts) >= 2 and len(parts[1]) == 8:
-            return f"{tenant_short}-p{parts[1]}-custom"
-    return f"{tenant_short}-custom"
-
-
-def _provision_alias(
-    cf: Any,
-    slug: str,
-    required_cname: str | None,
-) -> tuple[str | None, Any]:
-    """Create / update the ``{slug}.lintpdf.com`` proxied CNAME via Cloudflare.
-
-    Returns ``(fqdn_on_success, result_object)``. ``fqdn`` is the value
-    we'll persist on the tenant/profile row (the customer-facing target).
-    ``None`` means don't persist -- either CF is disabled, or the call
-    failed; in both cases the caller falls back to the raw Railway target
-    in the admin UI (back-compat).
-
-    IMPORTANT: the CNAME target itself is IRRELEVANT because the edge
-    Worker (``packages/edge-worker``) intercepts every request to
-    ``*-custom.lintpdf.com`` before DNS resolution, uses
-    ``cf.resolveOverride`` to pick the right Railway backend per URL
-    path (/r/* vs /view/*), and proxies. The proxied CNAME only exists
-    to (a) make the hostname resolvable so browsers don't 404 DNS and
-    (b) trigger CF's Universal SSL to issue a cert for the subdomain.
-    We point at ``lintpdf.com`` as a stable, self-referential target --
-    it's the apex of our own zone so resolution never fails.
-
-    Using a stable target also means BOTH reports and app probe
-    branches for the same tenant write the SAME (fqdn, target) pair,
-    which means ``upsert_cname`` returns ``already_correct`` on the
-    second call rather than flipping the target back and forth.
-
-    Never raises -- graceful degradation only. A CF outage must not
-    take down the whole probe loop.
-    """
-    if not required_cname:
-        # Keep the ``required_cname is not None`` guard since the caller
-        # uses it as a "did Railway give us anything?" check, but the
-        # target itself is pinned to our apex below.
-        return None, None
-    fqdn = f"{slug}.lintpdf.com"
-    stable_target = "lintpdf.com"
-    try:
-        result = cf.upsert_cname(fqdn, stable_target)
-    except Exception:  # noqa: BLE001 -- we really do want to swallow here
-        logger.exception("Cloudflare upsert crashed for %s", fqdn)
-        return None, None
-    if result.status in ("created", "updated", "already_correct"):
-        return fqdn, result
-    logger.warning(
-        "Cloudflare alias provision for %s returned status=%s (%s) -- "
-        "falling back to raw Railway target in UI",
-        fqdn,
-        result.status,
-        result.message,
-    )
-    return None, result
+    cname = _resolve_cname(domain)
+    if not _cname_points_at_edge(cname):
+        result["cname_mismatch"] += 1
+        logger.info(
+            "%s %s not yet CNAMEd at %s (CNAME=%s)",
+            scope_label,
+            domain,
+            _EDGE_CNAME_TARGET,
+            cname,
+        )
+        return False
+    setattr(row, verified_attr, True)
+    db.commit()
+    result["activated"] += 1
+    logger.info("Activated %s %s via edge", scope_label, domain)
+    return True
 
 
 @celery_app.task(  # type: ignore[untyped-decorator]
     name="lintpdf.queue.tasks.probe_pending_custom_domains",
 )
 def probe_pending_custom_domains() -> dict[str, Any]:
-    """Check every pending custom report domain's CNAME; auto-activate when live.
-
-    For each unverified domain (tenant-level OR brand-profile-level):
-
-      1. Do a CNAME lookup.
-      2. If CNAME points at an acceptable LintPDF host:
-         a. Try to register the domain on Railway via GraphQL.
-         b. If created / already_exists, flip verified=True in the DB.
-      3. If CNAME doesn't match or Railway is disabled, leave pending.
+    """Flip ``verified=True`` on unverified custom domains whose CNAMEs point at our edge.
 
     Runs on a 5-minute Celery beat schedule. Safe to run concurrently
     (commits per-row) and idempotent (verified rows are ignored).
+
+    For each unverified domain -- tenant-level reports/app and
+    brand-profile-level reports/app -- we resolve the customer's CNAME
+    and flip ``verified=True`` if it points at ``edge.lintpdf.com``.
+    Caddy handles cert issuance on first HTTPS request; no Railway
+    round-trip or CF-Worker alias provisioning needed.
     """
     from lintpdf.api.database import get_db_session
     from lintpdf.api.models import BrandProfile, Tenant
-    from lintpdf.integrations.cloudflare import CloudflareClient
-    from lintpdf.integrations.railway import RailwayClient
 
     result: dict[str, Any] = {
         "checked": 0,
         "activated": 0,
-        "railway_registered": 0,
         "cname_mismatch": 0,
-        "railway_disabled": 0,
-        "alias_provisioned": 0,
-        "errors": 0,
     }
 
-    client = RailwayClient()
-    cf = CloudflareClient()
     db = get_db_session()
     try:
         pending_tenants: list[Tenant] = (
@@ -953,6 +833,19 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             )
             .all()
         )
+        for tenant in pending_tenants:
+            result["checked"] += 1
+            if not tenant.brand_custom_domain:
+                continue
+            _activate_edge_domain(
+                db,
+                tenant,
+                tenant.brand_custom_domain,
+                "brand_custom_domain_verified",
+                f"tenant {tenant.id} reports domain",
+                result,
+            )
+
         pending_profiles: list[BrandProfile] = (
             db.query(BrandProfile)
             .filter(
@@ -961,176 +854,19 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             )
             .all()
         )
-
-        for tenant in pending_tenants:
-            result["checked"] += 1
-            domain = tenant.brand_custom_domain
-            if not domain:
-                continue
-            cname = _resolve_cname(domain)
-            if not _cname_is_acceptable(cname):
-                result["cname_mismatch"] += 1
-                logger.info(
-                    "Custom domain %s not yet pointed at LintPDF (CNAME=%s)",
-                    domain,
-                    cname,
-                )
-                continue
-
-            if _cname_via_edge(cname):
-                tenant.brand_custom_domain_verified = True
-                db.commit()
-                result["activated"] += 1
-                logger.info(
-                    "Activated tenant custom domain %s via edge (tenant=%s)",
-                    domain,
-                    tenant.id,
-                )
-                continue
-
-            outcome = client.add_custom_domain(domain)
-            if outcome.status in ("created", "already_exists"):
-                result["railway_registered"] += 1
-                # Surface Railway's per-domain required CNAME target so
-                # admins spot the mismatch in Worker logs -- customers
-                # pointing at the old shared service hostname will have
-                # certs stuck in VALIDATING_OWNERSHIP forever.
-                #
-                # The check is chain-aware: if the customer CNAMEs to an
-                # auto-provisioned alias under ``*.custom.lintpdf.com``,
-                # the full resolver chain ends at Railway's required
-                # target anyway, so the "direct CNAME mismatch" isn't a
-                # real misconfiguration. Skip the warning in that case.
-                cname_rstripped = cname.rstrip(".")
-                cname_via_alias = any(
-                    cname_rstripped.endswith(s)
-                    for s in ("-custom.lintpdf.com", ".custom.lintpdf.com")
-                )
-                if (
-                    outcome.required_cname
-                    and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
-                    and not cname_via_alias
-                ):
-                    logger.warning(
-                        "Domain %s CNAME=%s but Railway requires CNAME=%s — "
-                        "customer must update their DNS for cert to issue",
-                        domain,
-                        cname,
-                        outcome.required_cname,
-                    )
-                tenant.brand_custom_domain_verified = True
-                # Provision the LintPDF-branded alias so the API's
-                # ``dns_target`` returns e.g. ``8cdd7799-reports.custom
-                # .lintpdf.com`` instead of ``9m9a8ps4.up.railway.app``.
-                # Always run provisioning -- upsert_cname is idempotent and
-                # reconciles any stale alias shape (e.g. legacy
-                # ``{slug}-reports.custom.lintpdf.com`` → new ``{slug}-custom.lintpdf.com``).
-                if outcome.required_cname:
-                    alias_fqdn, _ = _provision_alias(
-                        cf, _alias_slug(tenant.id, "reports"), outcome.required_cname
-                    )
-                    if alias_fqdn:
-                        tenant.custom_domain_alias = alias_fqdn
-                        result["alias_provisioned"] += 1
-                db.commit()
-                result["activated"] += 1
-                logger.info(
-                    "Activated tenant custom domain %s (tenant=%s, railway=%s, alias=%s)",
-                    domain,
-                    tenant.id,
-                    outcome.status,
-                    tenant.custom_domain_alias or "-",
-                )
-            elif outcome.status == "disabled":
-                result["railway_disabled"] += 1
-                # Railway auto-registration is off; ops flips verified by hand.
-            elif outcome.status == "unauthorized":
-                result["railway_disabled"] += 1
-                logger.warning(
-                    "Railway rejected domain %s — project token lacks permission; "
-                    "ops must mark it active manually",
-                    domain,
-                )
-            else:
-                result["errors"] += 1
-                logger.warning(
-                    "Railway add_custom_domain failed for %s: %s",
-                    domain,
-                    outcome.message,
-                )
-
         for profile in pending_profiles:
             result["checked"] += 1
-            domain = profile.custom_domain
-            if not domain:
+            if not profile.custom_domain:
                 continue
-            cname = _resolve_cname(domain)
-            if not _cname_is_acceptable(cname):
-                result["cname_mismatch"] += 1
-                continue
+            _activate_edge_domain(
+                db,
+                profile,
+                profile.custom_domain,
+                "custom_domain_verified",
+                f"profile {profile.id} reports domain",
+                result,
+            )
 
-            if _cname_via_edge(cname):
-                profile.custom_domain_verified = True
-                db.commit()
-                result["activated"] += 1
-                continue
-
-            outcome = client.add_custom_domain(domain)
-            if outcome.status in ("created", "already_exists"):
-                result["railway_registered"] += 1
-                # Surface Railway's per-domain required CNAME target so
-                # admins spot the mismatch in Worker logs -- customers
-                # pointing at the old shared service hostname will have
-                # certs stuck in VALIDATING_OWNERSHIP forever.
-                #
-                # The check is chain-aware: if the customer CNAMEs to an
-                # auto-provisioned alias under ``*.custom.lintpdf.com``,
-                # the full resolver chain ends at Railway's required
-                # target anyway, so the "direct CNAME mismatch" isn't a
-                # real misconfiguration. Skip the warning in that case.
-                cname_rstripped = cname.rstrip(".")
-                cname_via_alias = any(
-                    cname_rstripped.endswith(s)
-                    for s in ("-custom.lintpdf.com", ".custom.lintpdf.com")
-                )
-                if (
-                    outcome.required_cname
-                    and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
-                    and not cname_via_alias
-                ):
-                    logger.warning(
-                        "Domain %s CNAME=%s but Railway requires CNAME=%s — "
-                        "customer must update their DNS for cert to issue",
-                        domain,
-                        cname,
-                        outcome.required_cname,
-                    )
-                profile.custom_domain_verified = True
-                if outcome.required_cname:  # reconcile on every run
-                    alias_fqdn, _ = _provision_alias(
-                        cf,
-                        _alias_slug(
-                            profile.tenant_id,
-                            f"profile-{profile.id.hex[:8]}-reports",
-                        ),
-                        outcome.required_cname,
-                    )
-                    if alias_fqdn:
-                        profile.custom_domain_alias = alias_fqdn
-                        result["alias_provisioned"] += 1
-                db.commit()
-                result["activated"] += 1
-            elif outcome.status in ("disabled", "unauthorized"):
-                result["railway_disabled"] += 1
-            else:
-                result["errors"] += 1
-                logger.warning(
-                    "Railway add_custom_domain failed for profile domain %s: %s",
-                    domain,
-                    outcome.message,
-                )
-
-        # ── App/viewer custom domains ──
         pending_app_tenants: list[Tenant] = (
             db.query(Tenant)
             .filter(
@@ -1141,73 +877,16 @@ def probe_pending_custom_domains() -> dict[str, Any]:
         )
         for tenant in pending_app_tenants:
             result["checked"] += 1
-            domain = tenant.app_custom_domain
-            if not domain:
+            if not tenant.app_custom_domain:
                 continue
-            cname = _resolve_cname(domain)
-            if not _cname_is_acceptable(cname):
-                result["cname_mismatch"] += 1
-                continue
-            if _cname_via_edge(cname):
-                tenant.app_custom_domain_verified = True
-                db.commit()
-                result["activated"] += 1
-                logger.info(
-                    "Activated tenant app domain %s via edge (tenant=%s)",
-                    domain,
-                    tenant.id,
-                )
-                continue
-            outcome = client.add_custom_domain(domain, service_id=client.app_service_id)
-            if outcome.status in ("created", "already_exists"):
-                result["railway_registered"] += 1
-                # Surface Railway's per-domain required CNAME target so
-                # admins spot the mismatch in Worker logs -- customers
-                # pointing at the old shared service hostname will have
-                # certs stuck in VALIDATING_OWNERSHIP forever.
-                #
-                # The check is chain-aware: if the customer CNAMEs to an
-                # auto-provisioned alias under ``*.custom.lintpdf.com``,
-                # the full resolver chain ends at Railway's required
-                # target anyway, so the "direct CNAME mismatch" isn't a
-                # real misconfiguration. Skip the warning in that case.
-                cname_rstripped = cname.rstrip(".")
-                cname_via_alias = any(
-                    cname_rstripped.endswith(s)
-                    for s in ("-custom.lintpdf.com", ".custom.lintpdf.com")
-                )
-                if (
-                    outcome.required_cname
-                    and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
-                    and not cname_via_alias
-                ):
-                    logger.warning(
-                        "Domain %s CNAME=%s but Railway requires CNAME=%s — "
-                        "customer must update their DNS for cert to issue",
-                        domain,
-                        cname,
-                        outcome.required_cname,
-                    )
-                tenant.app_custom_domain_verified = True
-                if outcome.required_cname:  # reconcile on every run
-                    alias_fqdn, _ = _provision_alias(
-                        cf, _alias_slug(tenant.id, "app"), outcome.required_cname
-                    )
-                    if alias_fqdn:
-                        tenant.app_custom_domain_alias = alias_fqdn
-                        result["alias_provisioned"] += 1
-                db.commit()
-                result["activated"] += 1
-                logger.info(
-                    "Activated tenant app domain %s (tenant=%s, alias=%s)",
-                    domain,
-                    tenant.id,
-                    tenant.app_custom_domain_alias or "-",
-                )
-            elif outcome.status in ("disabled", "unauthorized"):
-                result["railway_disabled"] += 1
-            else:
-                result["errors"] += 1
+            _activate_edge_domain(
+                db,
+                tenant,
+                tenant.app_custom_domain,
+                "app_custom_domain_verified",
+                f"tenant {tenant.id} app domain",
+                result,
+            )
 
         pending_app_profiles: list[BrandProfile] = (
             db.query(BrandProfile)
@@ -1219,67 +898,16 @@ def probe_pending_custom_domains() -> dict[str, Any]:
         )
         for profile in pending_app_profiles:
             result["checked"] += 1
-            domain = profile.app_custom_domain
-            if not domain:
+            if not profile.app_custom_domain:
                 continue
-            cname = _resolve_cname(domain)
-            if not _cname_is_acceptable(cname):
-                result["cname_mismatch"] += 1
-                continue
-            if _cname_via_edge(cname):
-                profile.app_custom_domain_verified = True
-                db.commit()
-                result["activated"] += 1
-                continue
-            outcome = client.add_custom_domain(domain, service_id=client.app_service_id)
-            if outcome.status in ("created", "already_exists"):
-                result["railway_registered"] += 1
-                # Surface Railway's per-domain required CNAME target so
-                # admins spot the mismatch in Worker logs -- customers
-                # pointing at the old shared service hostname will have
-                # certs stuck in VALIDATING_OWNERSHIP forever.
-                #
-                # The check is chain-aware: if the customer CNAMEs to an
-                # auto-provisioned alias under ``*.custom.lintpdf.com``,
-                # the full resolver chain ends at Railway's required
-                # target anyway, so the "direct CNAME mismatch" isn't a
-                # real misconfiguration. Skip the warning in that case.
-                cname_rstripped = cname.rstrip(".")
-                cname_via_alias = any(
-                    cname_rstripped.endswith(s)
-                    for s in ("-custom.lintpdf.com", ".custom.lintpdf.com")
-                )
-                if (
-                    outcome.required_cname
-                    and not cname_rstripped.endswith(outcome.required_cname.rstrip("."))
-                    and not cname_via_alias
-                ):
-                    logger.warning(
-                        "Domain %s CNAME=%s but Railway requires CNAME=%s — "
-                        "customer must update their DNS for cert to issue",
-                        domain,
-                        cname,
-                        outcome.required_cname,
-                    )
-                profile.app_custom_domain_verified = True
-                if outcome.required_cname:  # reconcile on every run
-                    alias_fqdn, _ = _provision_alias(
-                        cf,
-                        _alias_slug(
-                            profile.tenant_id,
-                            f"profile-{profile.id.hex[:8]}-app",
-                        ),
-                        outcome.required_cname,
-                    )
-                    if alias_fqdn:
-                        profile.app_custom_domain_alias = alias_fqdn
-                        result["alias_provisioned"] += 1
-                db.commit()
-                result["activated"] += 1
-            elif outcome.status in ("disabled", "unauthorized"):
-                result["railway_disabled"] += 1
-            else:
-                result["errors"] += 1
+            _activate_edge_domain(
+                db,
+                profile,
+                profile.app_custom_domain,
+                "app_custom_domain_verified",
+                f"profile {profile.id} app domain",
+                result,
+            )
 
         return result
     finally:
