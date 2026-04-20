@@ -750,6 +750,72 @@ async def admin_list_custom_domains(
     return AdminCustomDomainListResponse(pending=pending, active=active)
 
 
+@router.get("/custom-domains/ask-preview")
+async def admin_ask_preview(
+    hostname: str = Query(..., description="Hostname the ask endpoint would check"),
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """Simulate the on-demand-TLS ask endpoint lookup server-side.
+
+    Returns the same ``ok`` / ``reason`` payload the real ask endpoint
+    would produce for this hostname, but bypasses the shared-secret
+    check. Useful for ops: if this says 404, Caddy is rejecting the
+    hostname and no cert will ever mint; if 200, the hostname is
+    registered correctly and the issue is elsewhere (LE rate limit,
+    ACME challenge reachability, etc.).
+    """
+    from lintpdf.api.models import BrandProfile
+
+    canonical = hostname.strip().lower().rstrip(".")
+    if not canonical:
+        return {"ok": False, "reason": "empty_hostname"}
+
+    if canonical.endswith(".lintpdf.com") or canonical == "lintpdf.com":
+        return {"ok": True, "reason": "lintpdf_owned", "domain": canonical}
+
+    tenant_hit = (
+        db.query(Tenant)
+        .filter(
+            (Tenant.brand_custom_domain == canonical)
+            | (Tenant.app_custom_domain == canonical),
+        )
+        .first()
+    )
+    if tenant_hit is not None:
+        matched_field = (
+            "brand_custom_domain"
+            if tenant_hit.brand_custom_domain == canonical
+            else "app_custom_domain"
+        )
+        return {
+            "ok": True,
+            "reason": "tenant",
+            "domain": canonical,
+            "tenant_id": str(tenant_hit.id),
+            "tenant_name": tenant_hit.name,
+            "matched_field": matched_field,
+        }
+
+    profile_hit = (
+        db.query(BrandProfile)
+        .filter(
+            (BrandProfile.custom_domain == canonical)
+            | (BrandProfile.app_custom_domain == canonical),
+        )
+        .first()
+    )
+    if profile_hit is not None:
+        return {
+            "ok": True,
+            "reason": "brand_profile",
+            "domain": canonical,
+            "brand_profile_id": str(profile_hit.id),
+        }
+
+    return {"ok": False, "reason": "unknown_hostname", "domain": canonical}
+
+
 @router.get("/custom-domains/diagnose")
 async def admin_diagnose_custom_domain(
     hostname: str = Query(..., description="Hostname to handshake against"),
