@@ -79,8 +79,10 @@ export default function PricingPage() {
             </span>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {pricingTiers.map((plan) => {
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {pricingTiers
+              .filter((plan) => plan.name !== "Viewer")
+              .map((plan) => {
               const showYearly =
                 billing === "yearly" && plan.yearlyPrice !== undefined;
               const displayPrice = showYearly
@@ -184,6 +186,98 @@ export default function PricingPage() {
               );
             })}
           </div>
+
+          {(() => {
+            const viewerPlan = pricingTiers.find((p) => p.name === "Viewer");
+            if (!viewerPlan) return null;
+            const showYearly =
+              billing === "yearly" && viewerPlan.yearlyPrice !== undefined;
+            const displayPrice = showYearly
+              ? (viewerPlan.yearlyPrice as string)
+              : viewerPlan.price;
+            const displayPeriod = showYearly
+              ? viewerPlan.yearlyPeriod
+              : viewerPlan.period;
+            const lookupKey = showYearly
+              ? viewerPlan.stripeYearlyLookupKey
+              : viewerPlan.stripeMonthlyLookupKey;
+            const href = lookupKey
+              ? `${viewerPlan.href}${viewerPlan.href.includes("?") ? "&" : "?"}price=${lookupKey}`
+              : viewerPlan.href;
+
+            return (
+              <div className="mt-6 rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-brand-200 transition-all">
+                <div className="flex flex-col md:flex-row md:items-center md:gap-8">
+                  <div className="md:w-1/3 md:border-r md:border-slate-100 md:pr-8">
+                    <h3 className="text-xl font-semibold text-slate-900">
+                      {viewerPlan.name}
+                    </h3>
+                    <div className="mt-3 mb-1">
+                      <span className="text-3xl font-bold text-slate-900">
+                        {displayPrice}
+                      </span>
+                      {displayPeriod && (
+                        <span className="text-sm text-slate-400 ml-1">
+                          {displayPeriod}
+                        </span>
+                      )}
+                    </div>
+                    {showYearly && viewerPlan.yearlyTotal && (
+                      <p className="text-xs text-slate-400 mb-1">
+                        {viewerPlan.yearlyTotal} · {viewerPlan.yearlySavings}
+                      </p>
+                    )}
+                    <p className="text-xs font-medium text-brand-600 mb-1">
+                      {viewerPlan.filesPerMonth}
+                    </p>
+                    <p className="text-sm text-slate-500">
+                      {viewerPlan.description}
+                    </p>
+                  </div>
+
+                  <ul className="mt-6 md:mt-0 md:flex-1 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 text-sm text-slate-600">
+                    {viewerPlan.features.map((feature) => (
+                      <li key={feature} className="flex items-start gap-2">
+                        <svg
+                          className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-6 md:mt-0 md:w-48 md:flex-shrink-0">
+                    {betaMode ? (
+                      <button
+                        type="button"
+                        onClick={() => setWaitlistOpen(true)}
+                        className="block w-full rounded-xl py-2.5 text-center text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200 transition-all"
+                      >
+                        Join the Waitlist
+                      </button>
+                    ) : (
+                      <a
+                        href={href}
+                        className="block w-full rounded-xl py-2.5 text-center text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200 transition-all"
+                      >
+                        {viewerPlan.cta}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </section>
 
