@@ -205,15 +205,37 @@ export default function PricingClient() {
               ? `${viewerPlan.href}${viewerPlan.href.includes("?") ? "&" : "?"}price=${lookupKey}`
               : viewerPlan.href;
 
+            // Split the feature list into included items and "Not included"
+            // caveats (strings starting with "No "). Also drop the
+            // files-per-month duplicate so it only shows once, next to price.
+            const included: string[] = [];
+            const caveats: string[] = [];
+            for (const f of viewerPlan.features) {
+              if (f.toLowerCase().startsWith("no ")) {
+                caveats.push(f);
+              } else if (f === viewerPlan.filesPerMonth) {
+                continue;
+              } else {
+                included.push(f);
+              }
+            }
+
             return (
-              <div className="mt-6 rounded-2xl border-2 border-slate-200 bg-white p-6 shadow-sm hover:shadow-md hover:border-brand-200 transition-all">
-                <div className="flex flex-col md:flex-row md:items-center md:gap-8">
-                  <div className="md:w-1/3 md:border-r md:border-slate-100 md:pr-8">
-                    <h3 className="text-xl font-semibold text-slate-900">
+              <div className="mt-8 overflow-hidden rounded-2xl border-2 border-brand-200 shadow-sm hover:shadow-md transition-all">
+                <div className="grid md:grid-cols-5">
+                  {/* Left: positioning + price + CTA */}
+                  <div className="md:col-span-2 bg-brand-50/60 p-6 md:p-8 flex flex-col">
+                    <span className="inline-flex self-start items-center rounded-full bg-brand-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-700">
+                      Alternative workflow
+                    </span>
+                    <h3 className="mt-4 text-2xl font-bold text-slate-900">
                       {viewerPlan.name}
                     </h3>
-                    <div className="mt-3 mb-1">
-                      <span className="text-3xl font-bold text-slate-900">
+                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                      {viewerPlan.description}
+                    </p>
+                    <div className="mt-6 mb-1">
+                      <span className="text-4xl font-bold text-slate-900">
                         {displayPrice}
                       </span>
                       {displayPeriod && (
@@ -227,51 +249,59 @@ export default function PricingClient() {
                         {viewerPlan.yearlyTotal} · {viewerPlan.yearlySavings}
                       </p>
                     )}
-                    <p className="text-xs font-medium text-brand-600 mb-1">
+                    <p className="text-xs font-medium text-brand-600">
                       {viewerPlan.filesPerMonth}
                     </p>
-                    <p className="text-sm text-slate-500">
-                      {viewerPlan.description}
-                    </p>
+                    <div className="mt-6">
+                      {betaMode ? (
+                        <button
+                          type="button"
+                          onClick={() => setWaitlistOpen(true)}
+                          className="block w-full rounded-xl bg-brand-900 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-800 shadow-md shadow-brand-200 transition-all"
+                        >
+                          Join the Waitlist
+                        </button>
+                      ) : (
+                        <a
+                          href={href}
+                          className="block w-full rounded-xl bg-brand-900 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-800 shadow-md shadow-brand-200 transition-all"
+                        >
+                          {viewerPlan.cta}
+                        </a>
+                      )}
+                    </div>
                   </div>
 
-                  <ul className="mt-6 md:mt-0 md:flex-1 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3 text-sm text-slate-600">
-                    {viewerPlan.features.map((feature) => (
-                      <li key={feature} className="flex items-start gap-2">
-                        <svg
-                          className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-500"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-
-                  <div className="mt-6 md:mt-0 md:w-48 md:flex-shrink-0">
-                    {betaMode ? (
-                      <button
-                        type="button"
-                        onClick={() => setWaitlistOpen(true)}
-                        className="block w-full rounded-xl py-2.5 text-center text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200 transition-all"
-                      >
-                        Join the Waitlist
-                      </button>
-                    ) : (
-                      <a
-                        href={href}
-                        className="block w-full rounded-xl py-2.5 text-center text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-700 border border-slate-200 hover:border-brand-200 transition-all"
-                      >
-                        {viewerPlan.cta}
-                      </a>
+                  {/* Right: feature checklist */}
+                  <div className="md:col-span-3 bg-white p-6 md:p-8">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">
+                      What's included
+                    </h4>
+                    <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm text-slate-600">
+                      {included.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2">
+                          <svg
+                            className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    {caveats.length > 0 && (
+                      <p className="mt-5 pt-4 border-t border-slate-100 text-xs text-slate-500 leading-relaxed">
+                        {caveats.join(". ")}. Upgrade to Starter for full engine
+                        preflight, annotations, and report downloads.
+                      </p>
                     )}
                   </div>
                 </div>
