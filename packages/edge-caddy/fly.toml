@@ -24,13 +24,25 @@ LINTPDF_EDGE_SHARED_SECRET = "rotated-via-fly-secrets"
 source = "caddy_data"
 destination = "/data"
 
-# Public port 443 -> container 443 (TLS termination).
+# Public port 443 -> container 443 (raw TCP pass-through).
+#
+# ``handlers = []`` is CRITICAL: without this, Fly's default for any
+# port-443 service is to inject ``handlers = ["tls"]``, which means
+# Fly's edge terminates TLS itself using Fly-issued certs and forwards
+# plaintext HTTP upstream. Caddy's on-demand TLS never sees the
+# customer SNI and can't mint Let's Encrypt certs for BYO hostnames
+# -- every handshake fails with ``TLSV1_ALERT_INTERNAL_ERROR``.
+#
+# With ``handlers = []`` Fly proxies the raw TCP stream through, so
+# Caddy receives the real ClientHello + SNI and runs on-demand TLS
+# as designed.
 [[services]]
 protocol = "tcp"
 internal_port = 443
 
 [[services.ports]]
 port = 443
+handlers = []
 
 [services.concurrency]
 type = "connections"
