@@ -199,7 +199,7 @@ def bootstrap_tenant(http: HTTP) -> tuple[str, str]:
     assert code in (200, 201) and isinstance(body, dict), body
     api_key = body["raw_key"]
     print(f"  tenant_id={tenant_id}  api_key={api_key[:16]}…")
-    # Enable AI on the tenant so the AI variant + Captain's Log routes
+    # Enable AI on the tenant so the AI variant + AI Review routes
     # actually execute against the analyzer pipeline. Without this they
     # 403 with "AI features are not enabled for this tenant."
     http.request(
@@ -671,14 +671,14 @@ def main() -> int:
     else:
         print("\n  ⚠️  no job reached 'complete' -- skipping report/viewer/share/approval suite")
 
-    # ----- Captain's Log AI interpret on the AI job (if available)
+    # ----- AI Review on the AI job (if available)
     if job_ai:
         http.request(
             "GET",
-            f"/api/v1/captains-log/{job_ai}/interpret",
+            f"/api/v1/ai-review/{job_ai}/interpret",
             headers={"Authorization": f"Bearer {api_key}"},
             expect=(200, 202, 402, 403, 404),
-            note="ai interpret",
+            note="ai review",
         )
 
     # ----- Cleanup (deactivate throwaway tenants only).

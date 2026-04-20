@@ -1,4 +1,4 @@
-"""Natural language report interpretation endpoint."""
+"""AI review endpoint — plain-language interpretation of preflight findings."""
 
 from __future__ import annotations
 
@@ -15,7 +15,18 @@ from lintpdf.api.models import Job, JobFinding, JobStatus, Tenant
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/captains-log", tags=["ai-interpret"])
+# Canonical prefix — non-themed, descriptive.
+router = APIRouter(prefix="/api/v1/ai-review", tags=["ai-review"])
+
+# Deprecated alias kept so tenants with existing integrations don't
+# break overnight. Same handler, same schema, same everything -- just
+# a differently-prefixed router mounted in parallel. Remove after a
+# full release cycle.
+legacy_router = APIRouter(
+    prefix="/api/v1/captains-log",
+    tags=["ai-review"],
+    include_in_schema=False,
+)
 
 _INTERPRET_SYSTEM_PROMPT = """You are a prepress expert explaining PDF preflight findings in plain language.
 
@@ -24,7 +35,8 @@ For each finding, provide:
 2. Why it matters for print production
 3. A practical suggestion for how to fix it
 
-Use simple language. Avoid jargon. The reader may not be a print professional.
+Use simple, professional language. Avoid jargon. The reader may not be a
+print specialist.
 
 Respond as a JSON array where each element has:
 - "inspection_id": the original ID
@@ -36,12 +48,22 @@ Wrap the array in {"interpretations": [...], "summary": "overall summary"}"""
 
 
 @router.get("/{job_id}/interpret", response_model=NLInterpretResponse)
-async def interpret_captains_log(
+@legacy_router.get("/{job_id}/interpret", response_model=NLInterpretResponse)
+async def interpret_findings(
     job_id: str,
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> NLInterpretResponse:
-    """Generate plain language interpretation of Captain's Log findings."""
+    """Generate a plain-language AI review of the job's findings.
+
+    Returns a concise summary plus per-finding interpretation
+    (explanation + why it matters + suggested fix). Intended for non-
+    technical operators who need to understand what the preflight
+    flagged without reading the raw inspection IDs.
+
+    Falls back to a rule-based interpretation if the LLM is
+    unavailable, so the endpoint always returns a useful body.
+    """
     import uuid as uuid_mod
 
     from lintpdf.ai.access import check_ai_access

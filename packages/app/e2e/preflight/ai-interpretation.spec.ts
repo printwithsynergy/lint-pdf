@@ -70,12 +70,12 @@ test.describe("Preflight: AI Interpretation", () => {
     );
   });
 
-  test.describe("Engine direct: captains-log interpret", () => {
-    test("GET /api/v1/captains-log/{job_id}/interpret returns AI interpretation", async ({
+  test.describe("Engine direct: ai-review interpret", () => {
+    test("GET /api/v1/ai-review/{job_id}/interpret returns AI interpretation", async ({
       request,
     }) => {
       const res = await request.get(
-        `${engineBase}/api/v1/captains-log/${jobId}/interpret`,
+        `${engineBase}/api/v1/ai-review/${jobId}/interpret`,
         { headers: { Authorization: `Bearer ${engineApiKey}` } },
       );
 
@@ -97,7 +97,7 @@ test.describe("Preflight: AI Interpretation", () => {
         // Gracefully skip if AI not available
         expect(
           [404, 402, 501, 503].includes(res.status()),
-          `Unexpected status ${res.status()} from captains-log interpret`,
+          `Unexpected status ${res.status()} from ai-review interpret`,
         ).toBe(true);
         test.skip(true, `AI interpretation not available (${res.status()})`);
       }
@@ -107,7 +107,7 @@ test.describe("Preflight: AI Interpretation", () => {
       request,
     }) => {
       const res = await request.get(
-        `${engineBase}/api/v1/captains-log/${jobId}/interpret`,
+        `${engineBase}/api/v1/ai-review/${jobId}/interpret`,
         { headers: { Authorization: `Bearer ${engineApiKey}` } },
       );
 
@@ -138,7 +138,7 @@ test.describe("Preflight: AI Interpretation", () => {
       request,
     }) => {
       const res = await request.get(
-        `${engineBase}/api/v1/captains-log/${jobId}/interpret`,
+        `${engineBase}/api/v1/ai-review/${jobId}/interpret`,
         { headers: { Authorization: `Bearer ${engineApiKey}` } },
       );
 
@@ -172,7 +172,7 @@ test.describe("Preflight: AI Interpretation", () => {
 
     test("non-existent job_id returns 404", async ({ request }) => {
       const res = await request.get(
-        `${engineBase}/api/v1/captains-log/nonexistent-job-id-000/interpret`,
+        `${engineBase}/api/v1/ai-review/nonexistent-job-id-000/interpret`,
         { headers: { Authorization: `Bearer ${engineApiKey}` } },
       );
 
@@ -185,7 +185,7 @@ test.describe("Preflight: AI Interpretation", () => {
 
     test("missing auth returns 401", async ({ request }) => {
       const res = await request.get(
-        `${engineBase}/api/v1/captains-log/${jobId}/interpret`,
+        `${engineBase}/api/v1/ai-review/${jobId}/interpret`,
         { headers: { Authorization: "" } },
       );
 
@@ -309,7 +309,7 @@ test.describe("Preflight: AI Interpretation", () => {
       // in the outer beforeAll). We compare STRUCTURE not data because the
       // two jobs are in different tenants.
       const engineRes = await request.get(
-        `${engineBase}/api/v1/captains-log/${jobId}/interpret`,
+        `${engineBase}/api/v1/ai-review/${jobId}/interpret`,
         { headers: { Authorization: `Bearer ${engineApiKey}` } },
       );
 

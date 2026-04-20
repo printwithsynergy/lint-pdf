@@ -413,7 +413,7 @@ async function globalSetup() {
       }
 
       // Enable AI features for the E2E test tenant so the AI-focused
-      // specs (captains-log interpret, ai-profile-generation,
+      // specs (ai-review interpret, ai-profile-generation,
       // ai-features, ai-presets-coverage, etc.) actually exercise the
       // AI pipeline instead of being silently gated out by the
       // entitlement check. This is idempotent — calling PUT /ai with

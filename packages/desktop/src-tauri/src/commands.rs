@@ -542,22 +542,22 @@ pub struct AiInterpretation {
     pub interpretations: Vec<AiInterpretationItem>,
 }
 
-/// Fetch a plain-language interpretation of a completed job's findings via
-/// `GET /api/v1/captains-log/{job_id}/interpret`. Returns a typed struct so
+/// Fetch a plain-language AI review of a completed job's findings via
+/// `GET /api/v1/ai-review/{job_id}/interpret`. Returns a typed struct so
 /// the UI can render the summary + per-finding explanations.
 #[tauri::command]
 pub async fn get_ai_interpretation(
     state: State<'_, AppState>,
     api_job_id: String,
 ) -> Result<AiInterpretation, String> {
-    require_online(&state, "fetching AI interpretation")?;
+    require_online(&state, "fetching AI review")?;
     let config = state.config_mgr.get();
     if config.api_key.is_empty() {
         return Err("API key not configured".to_string());
     }
 
     let url = format!(
-        "{}/api/v1/captains-log/{}/interpret",
+        "{}/api/v1/ai-review/{}/interpret",
         config.base_url.trim_end_matches('/'),
         api_job_id
     );

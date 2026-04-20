@@ -750,6 +750,82 @@ async def admin_list_custom_domains(
     return AdminCustomDomainListResponse(pending=pending, active=active)
 
 
+@router.get("/custom-domains/diagnose")
+async def admin_diagnose_custom_domain(
+    hostname: str = Query(..., description="Hostname to handshake against"),
+    _key: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """Synchronous TLS + HTTP probe against a customer hostname.
+
+    Runs from the engine pod so the response isn't subject to local
+    sandbox proxies or laptop TLS inspection. Reports:
+
+    - DNS resolution (what A record the hostname resolves to)
+    - TLS handshake result + peer cert subject / issuer / validity
+    - First-byte HTTP status from ``/__edge/health`` (proves the
+      reverse-proxy path to the Caddy edge is live)
+
+    Useful for verifying that a freshly-PATCHed custom domain has a
+    Let's Encrypt cert served by Caddy (issuer will contain
+    ``Let's Encrypt``; if it's missing, the cert hasn't been minted
+    yet -- kick the prewarm endpoint or wait for the first real hit).
+    """
+    import socket
+    import ssl
+    from datetime import datetime, timezone
+
+    canonical = hostname.strip().lower().rstrip(".")
+    result: dict[str, Any] = {"hostname": canonical}
+    try:
+        result["resolved_ip"] = socket.gethostbyname(canonical)
+    except socket.gaierror as exc:
+        result["resolved_ip"] = None
+        result["dns_error"] = str(exc)
+        return result
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    try:
+        with socket.create_connection((canonical, 443), timeout=30) as raw:
+            with ctx.wrap_socket(raw, server_hostname=canonical) as ssock:
+                cert = ssock.getpeercert() or {}
+                subject = {k: v for pair in cert.get("subject", ()) for k, v in pair}
+                issuer = {k: v for pair in cert.get("issuer", ()) for k, v in pair}
+                result["tls"] = {
+                    "cipher": ssock.cipher()[0] if ssock.cipher() else None,
+                    "version": ssock.version(),
+                    "cert_subject": subject,
+                    "cert_issuer": issuer,
+                    "cert_not_before": cert.get("notBefore"),
+                    "cert_not_after": cert.get("notAfter"),
+                    "sans": [v for _, v in cert.get("subjectAltName", ())],
+                }
+                ssock.sendall(
+                    b"GET /__edge/health HTTP/1.1\r\nHost: "
+                    + canonical.encode()
+                    + b"\r\nUser-Agent: lintpdf-diagnose\r\nConnection: close\r\n\r\n"
+                )
+                raw_resp = b""
+                while len(raw_resp) < 2048:
+                    chunk = ssock.recv(2048)
+                    if not chunk:
+                        break
+                    raw_resp += chunk
+                status_line = raw_resp.split(b"\r\n", 1)[0].decode("ascii", errors="replace")
+                result["http"] = {
+                    "status_line": status_line,
+                    "probed_at": datetime.now(timezone.utc).isoformat(),
+                }
+    except ssl.SSLError as exc:
+        result["tls_error"] = f"{type(exc).__name__}: {exc}"
+    except (OSError, socket.timeout) as exc:
+        result["network_error"] = f"{type(exc).__name__}: {exc}"
+    except Exception as exc:  # noqa: BLE001
+        result["error"] = f"{type(exc).__name__}: {exc}"
+    return result
+
+
 @router.post("/custom-domains/prewarm")
 async def admin_prewarm_custom_domains(
     hostname: str | None = Query(

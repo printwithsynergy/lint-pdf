@@ -587,10 +587,10 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       auth: true,
       permission: "preflight:view",
       description:
-        "Get AI interpretation for a job (proxies to engine captains-log)",
+        "Get AI review for a job (proxies to engine ai-review endpoint)",
       handler: (async (req: RouteRequest): Promise<RouteResponse> => {
         const resp = await fetch(
-          engineUrl(`/api/v1/captains-log/${req.params.jobId}/interpret`),
+          engineUrl(`/api/v1/ai-review/${req.params.jobId}/interpret`),
           { headers: authHeaders() },
         );
         if (!resp.ok) {

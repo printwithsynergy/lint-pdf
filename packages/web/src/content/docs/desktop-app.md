@@ -250,8 +250,8 @@ tokens, including expiry, revocation, and tier gating.
 ## AI interpretation
 
 When your plan includes AI features, the Results detail panel shows an
-**Interpret** button on any completed job. Clicking it calls
-`GET /api/v1/captains-log/{job_id}/interpret` and renders the
+**AI Review** button on any completed job. Clicking it calls
+`GET /api/v1/ai-review/{job_id}/interpret` and renders the
 natural-language summary plus per-finding explanations, "why it matters"
 context, and suggestions.
 

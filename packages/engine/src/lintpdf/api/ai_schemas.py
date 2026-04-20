@@ -287,7 +287,7 @@ class NLPreflightProfileResponse(BaseModel):
 
 
 class NLInterpretResponse(BaseModel):
-    """Plain language interpretation of Captain's Log findings."""
+    """Plain-language AI review of a job's preflight findings."""
 
     summary: str
     interpretations: list[dict[str, object]]

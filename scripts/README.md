@@ -53,9 +53,9 @@ Prompts for a PDF path (Enter accepts the default 10-page sample at
   public `/state` mirror with `X-Visitor-Email` header
 * **Approval chain** — attaches a 1-step chain, decides via the
   approver access token (anonymous)
-* **AI interpret** — fires `GET /captains-log/{job_id}/interpret`
+* **AI review** — fires `GET /ai-review/{job_id}/interpret`
   (expects 403 today; passes the test because 403 is in the
-  declared `expect` tuple — Captain's Log requires Pro plan AI tier
+  declared `expect` tuple — AI Review requires Pro plan AI tier
   beyond the basic admin toggle)
 
 **Run it:**
@@ -165,7 +165,7 @@ router (CRUD with the tenant key, admin operations with the admin key).
 
 Both scripts use a per-request `expect=(...)` tuple. A response is
 counted as a pass when its status code is in that tuple, regardless of
-2xx/4xx/5xx. The Captain's Log AI interpret endpoint, for example,
+2xx/4xx/5xx. The AI Review interpret endpoint, for example,
 declares `expect=(200, 202, 402, 403, 404)` — a 403 means "AI
 inspections aren't gated on for this tenant," which is the EXPECTED
 behaviour for the bootstrap path that doesn't grant the per-job AI

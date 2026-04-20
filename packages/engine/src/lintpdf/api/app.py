@@ -153,6 +153,10 @@ def create_app() -> FastAPI:
     app.include_router(ai_presets.router)
     app.include_router(ai_generate.router)
     app.include_router(ai_interpret.router)
+    # Legacy /api/v1/captains-log/* prefix kept as a deprecated alias so
+    # existing integrations keep working after the rebrand. Hidden from
+    # the public OpenAPI schema.
+    app.include_router(ai_interpret.legacy_router)
     # Metered-resource counterparts to the AI credit endpoints.
     app.include_router(file_packs.router)
     # Stripe webhook endpoint handles metered-resource fulfillment

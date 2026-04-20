@@ -1458,10 +1458,10 @@
       ]
     },
     {
-      "name": "ai-interpret",
+      "name": "ai-review",
       "item": [
         {
-          "name": "Interpret Captains Log",
+          "name": "AI Review Interpret",
           "request": {
             "method": "GET",
             "header": [
@@ -1472,14 +1472,14 @@
               }
             ],
             "url": {
-              "raw": "{{BASE_URL}}/api/v1/captains-log/:job_id/interpret",
+              "raw": "{{BASE_URL}}/api/v1/ai-review/:job_id/interpret",
               "host": [
                 "{{BASE_URL}}"
               ],
               "path": [
                 "api",
                 "v1",
-                "captains-log",
+                "ai-review",
                 ":job_id",
                 "interpret"
               ],
@@ -1491,7 +1491,7 @@
                 }
               ]
             },
-            "description": "Generate plain language interpretation of Captain's Log findings.",
+            "description": "Plain-language AI review of a job's preflight findings.",
             "auth": {
               "type": "bearer",
               "bearer": [
