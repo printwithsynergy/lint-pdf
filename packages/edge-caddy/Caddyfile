@@ -42,31 +42,43 @@
   }
 }
 
-# -------- Internal ask-proxy (not published; localhost only) --------
-# Caddy's ``on_demand_tls.ask`` can only do GET with a query string.
-# We forward the GET to the engine's ``/api/v1/internal/on-demand-tls-check``
-# with the shared secret header injected from the ``LINTPDF_EDGE_SHARED_SECRET``
-# env var (set via fly secrets).
+# -------- Internal ask-proxy (localhost only) --------
+# Caddy's ``on_demand_tls.ask`` is answered ENTIRELY LOCALLY — no call
+# over the network to the engine. Why: Railway's Fastly edge
+# intermittently drops traffic from Fly's anycast IPs (observed during
+# rollout: both api.lintpdf.com + reports.lintpdf.com reverse-proxy
+# calls from Caddy would hang indefinitely on TLS read, causing every
+# customer TLS handshake to fail with TLSV1_ALERT_INTERNAL_ERROR
+# because the ask timed out).
 #
-# NOTE: The upstream is ``reports.lintpdf.com`` (not ``api.lintpdf.com``)
-# because Railway's Fastly edge intermittently routes ``api.lintpdf.com``
-# traffic originating from Fly's network to a dead backend, causing
-# TLS or HTTP reads to hang indefinitely. ``reports.lintpdf.com`` hits
-# the same Railway API service (both are CNAMEs for the same Railway
-# deployment) and routes reliably. Observed during the initial
-# Caddy-edge rollout: swapping from api.* to reports.* made the ask
-# flow complete in <200 ms instead of timing out at 20+ s.
+# Strategy: encode the allow-list of registered customer hostnames
+# inline. Adding a new customer means a one-line Caddyfile change + a
+# push (GitHub Actions handles redeploy via edge-caddy-deploy.yml).
+# The engine's prewarm task opens a TLS handshake post-registration
+# so the customer never sees a cold-start cert delay.
+#
+# Matchers:
+# * ``@lintpdf_owned`` — any hostname ending in .lintpdf.com or
+#   exactly lintpdf.com. Covers our own zone + the auto-provisioned
+#   {slug}-custom.lintpdf.com URLs (if any). No abuse risk since
+#   we control DNS for these.
+# * ``@byo_allowed`` — BYO customer hostnames registered on the
+#   engine. Maintained by hand for now; automatable later.
 :8081 {
   handle /ask {
-    rewrite * /api/v1/internal/on-demand-tls-check?{query}
-    reverse_proxy https://reports.lintpdf.com {
-      header_up Host reports.lintpdf.com
-      header_up X-Edge-Shared-Secret {$LINTPDF_EDGE_SHARED_SECRET}
-      transport http {
-        tls
-        tls_server_name reports.lintpdf.com
-      }
+    # Match via CEL expression on the ``domain`` query parameter
+    # (Caddy's simple ``query`` matcher doesn't support wildcards or
+    # multi-value OR). Regex covers our own zone + the specific
+    # customer BYO hostnames registered today. Adding a new customer
+    # means extending this alternation + a redeploy push; the
+    # edge-caddy-deploy.yml GH Actions workflow handles it.
+    @allowed expression `{http.request.uri.query.domain}.matches('^(edge\\.lintpdf\\.com|lintpdf\\.com|.*\\.lintpdf\\.com|reports\\.printwithsynergy\\.com|app\\.printwithsynergy\\.com)$')`
+    handle @allowed {
+      respond "ok" 200
     }
+    # Default: reject. Prevents random hostnames from forcing LE
+    # cert issuance (which burns our per-account rate limit).
+    respond "unknown-hostname" 404
   }
 }
 
