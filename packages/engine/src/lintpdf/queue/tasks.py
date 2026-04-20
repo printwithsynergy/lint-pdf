@@ -748,7 +748,12 @@ def _resolve_cname(hostname: str) -> str | None:
 # CNAME targets we consider "correctly pointed at LintPDF". Customers can
 # point at either the engine's primary host or Railway's edge (which is
 # technically what a Railway custom domain resolves to once registered).
+#
+# ``edge.lintpdf.com`` is the canonical BYO target -- our Fly.io Caddy
+# edge that terminates TLS via on-demand Let's Encrypt and path-routes
+# to Railway. Customers following current docs CNAME here.
 _ACCEPTABLE_CNAME_TARGETS: tuple[str, ...] = (
+    "edge.lintpdf.com",
     "reports.lintpdf.com",
     "api.lintpdf.com",
     "app.lintpdf.com",
@@ -791,6 +796,21 @@ def _cname_is_acceptable(target: str | None) -> bool:
         return True
     # Any ``*.custom.lintpdf.com`` target is ours (we provisioned it).
     return any(target.endswith(s) for s in _ACCEPTABLE_CNAME_SUFFIXES)
+
+
+def _cname_via_edge(target: str | None) -> bool:
+    """``True`` if the customer CNAMEs at our Fly.io Caddy edge.
+
+    Edge-pointed customers don't need Railway-side custom-domain
+    registration -- Caddy mints the LE cert on first request and
+    path-routes to the right backend. Skip the Railway round-trip
+    (and the alias / required_cname machinery that exists only to
+    satisfy Railway's per-domain validator).
+    """
+    if not target:
+        return False
+    t = target.rstrip(".").lower()
+    return t == "edge.lintpdf.com" or t.endswith(".edge.lintpdf.com")
 
 
 def _alias_slug(tenant_id: Any, purpose: str = "") -> str:
@@ -957,6 +977,17 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 )
                 continue
 
+            if _cname_via_edge(cname):
+                tenant.brand_custom_domain_verified = True
+                db.commit()
+                result["activated"] += 1
+                logger.info(
+                    "Activated tenant custom domain %s via edge (tenant=%s)",
+                    domain,
+                    tenant.id,
+                )
+                continue
+
             outcome = client.add_custom_domain(domain)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
@@ -1038,6 +1069,12 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 result["cname_mismatch"] += 1
                 continue
 
+            if _cname_via_edge(cname):
+                profile.custom_domain_verified = True
+                db.commit()
+                result["activated"] += 1
+                continue
+
             outcome = client.add_custom_domain(domain)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
@@ -1111,6 +1148,16 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             if not _cname_is_acceptable(cname):
                 result["cname_mismatch"] += 1
                 continue
+            if _cname_via_edge(cname):
+                tenant.app_custom_domain_verified = True
+                db.commit()
+                result["activated"] += 1
+                logger.info(
+                    "Activated tenant app domain %s via edge (tenant=%s)",
+                    domain,
+                    tenant.id,
+                )
+                continue
             outcome = client.add_custom_domain(domain, service_id=client.app_service_id)
             if outcome.status in ("created", "already_exists"):
                 result["railway_registered"] += 1
@@ -1178,6 +1225,11 @@ def probe_pending_custom_domains() -> dict[str, Any]:
             cname = _resolve_cname(domain)
             if not _cname_is_acceptable(cname):
                 result["cname_mismatch"] += 1
+                continue
+            if _cname_via_edge(cname):
+                profile.app_custom_domain_verified = True
+                db.commit()
+                result["activated"] += 1
                 continue
             outcome = client.add_custom_domain(domain, service_id=client.app_service_id)
             if outcome.status in ("created", "already_exists"):

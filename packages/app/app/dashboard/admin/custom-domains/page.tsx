@@ -91,7 +91,7 @@ export default function AdminCustomDomainsPage() {
       <p className="mt-1 text-sm text-muted-foreground">
         Approve or revoke tenant custom report domains. The DNS probe runs every
         5 minutes and auto-activates pending domains whose CNAME resolves to
-        api.lintpdf.com; use the buttons below to override.
+        edge.lintpdf.com; use the buttons below to override.
       </p>
 
       {error && (
