@@ -77,7 +77,8 @@
       "mcp__railway__check-railway-status",
       "mcp__railway__list-projects",
       "mcp__ctxo__search_symbols",
-      "mcp__railway__list-variables"
+      "mcp__railway__list-variables",
+      "mcp__playwright__browser_resize"
     ]
   },
   "hooks": {
