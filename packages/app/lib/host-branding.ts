@@ -38,7 +38,15 @@ export interface HostBranding {
 }
 
 export async function getHostBranding(): Promise<HostBranding> {
-  const h = normalize((await headers()).get("host"));
+  const hdrs = await headers();
+  // Railway / other edge proxies forward the original public host in
+  // x-forwarded-host; the bare `host` header is the internal container
+  // hostname (e.g. service.railway.internal). Prefer the forwarded value.
+  const raw =
+    hdrs.get("x-forwarded-host") ??
+    hdrs.get("x-original-host") ??
+    hdrs.get("host");
+  const h = normalize(raw);
   const primary = isPrimaryHost(h);
   return {
     host: h,
