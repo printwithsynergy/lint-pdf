@@ -642,16 +642,34 @@ def main() -> int:
             import_jobs[fmt] = jid
 
     # ----- Reports + viewer + share + approval against the vanilla job
-    primary_job = job_vanilla
+    #
+    # Pick the first variant that actually reached ``complete`` -- if the
+    # vanilla job stalled out (worker hiccup, will be rescued by the
+    # 20-minute reaper), fall back to the AI job so the rest of the suite
+    # still exercises the report / viewer / share-link surface against a
+    # real terminal-state job. Without this fallback a single stuck job
+    # cascades into ~13 spurious 409 "Job has not completed yet" failures.
+    primary_job = None
+    for candidate, body in ((job_vanilla, job_vanilla_full), (job_ai, job_ai_full)):
+        if candidate and isinstance(body, dict) and body.get("status") == "complete":
+            primary_job = candidate
+            break
     reports: dict[str, str] = {}
     html_viewer_url: str | None = None
     gated_token: str | None = None
     public_token: str | None = None
     if primary_job:
+        if primary_job != job_vanilla:
+            print(
+                f"\n  ℹ️  vanilla job didn't reach complete; using {primary_job[:8]}… "
+                "for downstream report/viewer/share/approval coverage"
+            )
         reports, html_viewer_url = generate_every_report_format(http, api_key, primary_job)
         exercise_viewer_surface(http, api_key, primary_job)
         gated_token, public_token = exercise_share_link(http, api_key, primary_job)
         exercise_approval_chain(http, api_key, primary_job)
+    else:
+        print("\n  ⚠️  no job reached 'complete' -- skipping report/viewer/share/approval suite")
 
     # ----- Captain's Log AI interpret on the AI job (if available)
     if job_ai:

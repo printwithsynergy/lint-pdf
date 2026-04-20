@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import generate_api_key, hash_api_key, verify_admin_key
 from lintpdf.api.database import get_db
-from lintpdf.api.models import ApiKey, Job, Tenant
+from lintpdf.api.models import ApiKey, Job, JobStatus, Tenant
 from lintpdf.api.routes.branding import EDGE_HOSTNAME
 from lintpdf.api.schemas import (
     AdminCustomDomainListResponse,
@@ -992,14 +992,32 @@ async def revoke_api_key(
 async def list_all_jobs(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=200),
+    status_filter: str | None = Query(
+        None,
+        alias="status",
+        description="Filter by job status (pending, processing, complete, failed)",
+    ),
     db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
 ) -> AdminJobListResponse:
-    """List jobs across all tenants (paginated)."""
-    total = db.query(Job).count()
+    """List jobs across all tenants (paginated, optionally filtered by status)."""
+    base_query = db.query(Job)
+    if status_filter:
+        try:
+            status_enum = JobStatus(status_filter)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Invalid status {status_filter!r}. Must be one of: "
+                    + ", ".join(s.value for s in JobStatus)
+                ),
+            ) from exc
+        base_query = base_query.filter(Job.status == status_enum)
+
+    total = base_query.count()
     jobs = (
-        db.query(Job)
-        .order_by(desc(Job.created_at))
+        base_query.order_by(desc(Job.created_at))
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
