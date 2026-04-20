@@ -663,8 +663,14 @@ def main() -> int:
             note="ai interpret",
         )
 
-    # ----- Cleanup (deactivate tenant unless KEEP=1)
-    if not KEEP_TENANT:
+    # ----- Cleanup (deactivate throwaway tenants only).
+    #
+    # When LINTPDF_USE_DEMO=1 we bound the run to the persistent PWS
+    # demo tenant seeded out-of-band; deactivating it would break the
+    # next run (and is almost certainly not what the operator wanted).
+    # The deactivate step only fires for bootstrap_tenant()-minted
+    # throwaways when ``LINTPDF_KEEP`` isn't set.
+    if demo is None and not KEEP_TENANT:
         print(f"\n=== deactivating throwaway tenant {tenant_id[:8]}… ===")
         http.request(
             "PATCH",
