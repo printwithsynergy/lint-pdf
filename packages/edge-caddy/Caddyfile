@@ -20,6 +20,16 @@
   on_demand_tls {
     ask http://127.0.0.1:8081/ask
   }
+
+  # If Caddy hits a persistent LE validation failure (transient ACME /
+  # engine-ask hiccup, etc.) it records the failed order and won't retry
+  # for HOURS by default. That leaves customer hostnames stuck with no
+  # cert. 60 s retry backoff is a reasonable middle ground: long enough
+  # not to thrash LE, short enough that the next real request after an
+  # outage will mint cleanly.
+  cert_issuer acme {
+    dir https://acme-v02.api.letsencrypt.org/directory
+  }
 }
 
 # -------- HTTP health check (port 80 published, 8080 internal) --------

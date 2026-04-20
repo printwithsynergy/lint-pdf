@@ -1,0 +1,62 @@
+name: Deploy edge-caddy to Fly.io
+
+# Rebuild + redeploy the Fly.io Caddy edge on any change to the
+# edge-caddy package (Caddyfile, Dockerfile, fly.toml, README). Also
+# manually triggerable -- useful when Caddy's on-demand TLS gets stuck
+# in a bad retry state and the only fix is a fresh boot.
+#
+# Requires the repo secret ``FLY_API_TOKEN`` to be set (Settings ->
+# Secrets and variables -> Actions). A scoped "deploy" token from
+# ``fly tokens create deploy --app lintpdf-edge --expiry 0h`` (no
+# expiry) is fine; no need for an org-level token.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/edge-caddy/**"
+      - ".github/workflows/edge-caddy-deploy.yml"
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Optional: why you're forcing a redeploy (for audit)"
+        required: false
+        default: "manual-redeploy"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: edge-caddy-deploy
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy edge-caddy
+        working-directory: packages/edge-caddy
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::error::FLY_API_TOKEN repo secret is not set. See workflow file for instructions."
+            exit 1
+          fi
+          flyctl deploy --remote-only --strategy rolling
+
+      - name: Smoke test
+        run: |
+          # Port 80 is served by Fly's proxy even if Caddy is down, so
+          # test port 443 TLS specifically. edge.lintpdf.com always has
+          # a cert (hit frequently by our own probe task), so it's the
+          # canary.
+          for i in $(seq 1 6); do
+            if curl --max-time 10 --silent --fail --insecure https://edge.lintpdf.com/__edge/health > /dev/null; then
+              echo "edge.lintpdf.com TLS healthy"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::edge.lintpdf.com TLS handshake failing after deploy; check fly logs --app lintpdf-edge"
+          exit 1
