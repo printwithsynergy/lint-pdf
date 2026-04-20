@@ -89,6 +89,40 @@ path-routes ``/r/*`` + ``/api/v1/*`` to the reports backend and
 """
 
 
+def _schedule_cert_prewarm(hostname: str | None) -> None:
+    """Enqueue a Celery task to mint the LE cert for ``hostname`` now.
+
+    Without this, a customer who has just set up their CNAME records
+    and clicks a report link from mobile Safari sees "couldn't
+    establish a secure connection" because the first request hangs on
+    TLS-ALPN-01 cert issuance longer than the default mobile connect
+    timeout. Firing the prewarm right after the PATCH lands (and again
+    on probe verification) means the cert is warm when the first real
+    visitor arrives.
+
+    Graceful on every failure mode: if Celery is unreachable, Redis is
+    down, or the hostname doesn't (yet) resolve to our edge, the PATCH
+    still succeeds; the probe task or the first live request will
+    mint the cert later.
+    """
+    if not hostname:
+        return
+    try:
+        from lintpdf.queue.tasks import prewarm_edge_cert
+
+        # Delay 5 s so DNS caches start honoring any fresh CNAME the
+        # customer just added before we probe.
+        prewarm_edge_cert.apply_async(args=[hostname], countdown=5)
+    except Exception:  # noqa: BLE001 -- never block the PATCH
+        import logging
+
+        logging.getLogger(__name__).warning(
+            "Failed to schedule cert prewarm for %s (non-fatal)",
+            hostname,
+            exc_info=True,
+        )
+
+
 def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileResponse:
     """Convert a BrandProfile model to a response schema."""
     return BrandProfileResponse(
@@ -511,11 +545,13 @@ async def set_tenant_custom_domain(
         tenant.brand_custom_domain = None
         tenant.brand_custom_domain_verified = False
         tenant.brand_custom_domain_requested_at = None
+        prewarm_target: str | None = None
     else:
         canonical = validate_custom_domain(request.domain)
         tenant.brand_custom_domain = canonical
         tenant.brand_custom_domain_verified = False
         tenant.brand_custom_domain_requested_at = datetime.now(timezone.utc)
+        prewarm_target = canonical
 
     try:
         db.commit()
@@ -526,6 +562,7 @@ async def set_tenant_custom_domain(
             detail="That domain is already claimed by another tenant.",
         ) from exc
 
+    _schedule_cert_prewarm(prewarm_target)
     db.refresh(tenant)
     return _tenant_custom_domain_response(tenant)
 
@@ -581,11 +618,13 @@ async def set_brand_profile_custom_domain(
         profile.custom_domain = None
         profile.custom_domain_verified = False
         profile.custom_domain_requested_at = None
+        prewarm_target: str | None = None
     else:
         canonical = validate_custom_domain(request.domain)
         profile.custom_domain = canonical
         profile.custom_domain_verified = False
         profile.custom_domain_requested_at = datetime.now(timezone.utc)
+        prewarm_target = canonical
 
     try:
         db.commit()
@@ -596,6 +635,7 @@ async def set_brand_profile_custom_domain(
             detail="That domain is already claimed by another brand profile.",
         ) from exc
 
+    _schedule_cert_prewarm(prewarm_target)
     db.refresh(profile)
     return _profile_to_response(profile, tenant)
 
@@ -673,11 +713,13 @@ async def set_tenant_app_custom_domain(
         tenant.app_custom_domain = None
         tenant.app_custom_domain_verified = False
         tenant.app_custom_domain_requested_at = None
+        prewarm_target: str | None = None
     else:
         canonical = validate_custom_domain(request.domain)
         tenant.app_custom_domain = canonical
         tenant.app_custom_domain_verified = False
         tenant.app_custom_domain_requested_at = datetime.now(timezone.utc)
+        prewarm_target = canonical
 
     try:
         db.commit()
@@ -688,6 +730,7 @@ async def set_tenant_app_custom_domain(
             detail="That domain is already claimed by another tenant.",
         ) from exc
 
+    _schedule_cert_prewarm(prewarm_target)
     db.refresh(tenant)
     return AppCustomDomainResponse(
         tenant_id=str(tenant.id),

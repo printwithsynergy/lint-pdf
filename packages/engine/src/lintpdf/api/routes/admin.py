@@ -750,6 +750,79 @@ async def admin_list_custom_domains(
     return AdminCustomDomainListResponse(pending=pending, active=active)
 
 
+@router.post("/custom-domains/prewarm")
+async def admin_prewarm_custom_domains(
+    hostname: str | None = Query(
+        None,
+        description=(
+            "Specific hostname to prewarm; if omitted, every registered custom "
+            "domain (tenant reports/app + brand profile reports/app) is enqueued."
+        ),
+    ),
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """Kick Caddy into minting LE certs for registered custom domains.
+
+    Enqueues a ``prewarm_edge_cert`` Celery task per hostname so the
+    first real HTTPS request from a customer's browser doesn't wait
+    5-30 s for TLS-ALPN-01 issuance (which mobile Safari reliably
+    times out on). The normal flow already fires prewarm on PATCH /
+    verification-flip; this endpoint exists for operator repair of
+    older tenants registered before prewarm shipped, and for any
+    hostname whose cert expired / was evicted from Caddy's volume.
+
+    Idempotent — Caddy's ``on_demand_tls`` is a no-op if the cert is
+    already cached. Task failures are logged and swallowed; the
+    response always surfaces the set of hostnames the task was
+    enqueued for.
+    """
+    from lintpdf.api.models import BrandProfile
+    from lintpdf.queue.tasks import prewarm_edge_cert
+
+    hosts: list[str] = []
+    if hostname:
+        hosts.append(hostname.strip().lower().rstrip("."))
+    else:
+        tenant_hosts: list[tuple[str | None, str | None]] = (
+            db.query(Tenant.brand_custom_domain, Tenant.app_custom_domain)
+            .filter(
+                (Tenant.brand_custom_domain.isnot(None))
+                | (Tenant.app_custom_domain.isnot(None))
+            )
+            .all()
+        )
+        for brand, app_ in tenant_hosts:
+            if brand:
+                hosts.append(brand)
+            if app_:
+                hosts.append(app_)
+        profile_hosts: list[tuple[str | None, str | None]] = (
+            db.query(BrandProfile.custom_domain, BrandProfile.app_custom_domain)
+            .filter(
+                (BrandProfile.custom_domain.isnot(None))
+                | (BrandProfile.app_custom_domain.isnot(None))
+            )
+            .all()
+        )
+        for brand, app_ in profile_hosts:
+            if brand:
+                hosts.append(brand)
+            if app_:
+                hosts.append(app_)
+
+    dedup = sorted({h for h in hosts if h})
+    enqueued: list[str] = []
+    for h in dedup:
+        try:
+            prewarm_edge_cert.apply_async(args=[h])
+            enqueued.append(h)
+        except Exception:  # noqa: BLE001
+            # Celery broker unreachable -- report but don't fail the call.
+            continue
+    return {"enqueued": enqueued, "count": len(enqueued)}
+
+
 @router.patch(
     "/tenants/{tenant_id}/custom-domain",
     response_model=AdminTenantResponse,

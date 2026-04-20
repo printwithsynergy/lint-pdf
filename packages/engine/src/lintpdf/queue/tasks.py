@@ -788,6 +788,83 @@ def _cname_points_at_edge(target: str | None) -> bool:
     return t == _EDGE_CNAME_TARGET or t.endswith(f".{_EDGE_CNAME_TARGET}")
 
 
+@celery_app.task(  # type: ignore[untyped-decorator]
+    name="lintpdf.edge.prewarm_cert",
+    time_limit=60,
+    soft_time_limit=50,
+    ignore_result=True,
+    max_retries=1,
+    default_retry_delay=15,
+)
+def prewarm_edge_cert(hostname: str) -> dict[str, Any]:
+    """Force Caddy to mint the Let's Encrypt cert for ``hostname`` now.
+
+    Without this, the FIRST real HTTPS request from a customer's
+    browser triggers on-demand cert issuance and waits 5-30 s for the
+    TLS-ALPN-01 dance to finish. On mobile Safari that wait frequently
+    exceeds the default connect timeout, producing a "couldn't
+    establish a secure connection" error that only clears after the
+    user reloads.
+
+    We call this Celery task right after a tenant sets / verifies a
+    custom domain, so the cert is warm by the time a real visitor
+    arrives. Never raises -- cert prewarming is best-effort; if it
+    fails here, the first real request still triggers issuance, just
+    with the usual first-request latency. No customer-facing error.
+
+    Opens a TLS socket with SNI = hostname, sends a minimal HEAD
+    request, reads the response line, and closes. That's enough to
+    make Caddy's ``on_demand_tls`` issue the cert.
+    """
+    import socket
+    import ssl
+
+    canonical = (hostname or "").strip().lower().rstrip(".")
+    if not canonical:
+        return {"hostname": hostname, "status": "skipped_empty"}
+
+    # Gate: only prewarm hostnames we'd actually serve. The edge's ask
+    # endpoint would reject unknown hostnames anyway, but probing non-
+    # customer domains with our workers is wasteful.
+    if not canonical.endswith(".lintpdf.com") and not _cname_points_at_edge(
+        _resolve_cname(canonical)
+    ):
+        logger.info(
+            "Skipping cert prewarm for %s -- CNAME doesn't point at edge yet",
+            canonical,
+        )
+        return {"hostname": canonical, "status": "cname_not_at_edge"}
+
+    ctx = ssl.create_default_context()
+    try:
+        with socket.create_connection((canonical, 443), timeout=45) as sock:
+            with ctx.wrap_socket(sock, server_hostname=canonical) as ssock:
+                ssock.sendall(
+                    b"HEAD /__edge/health HTTP/1.1\r\nHost: "
+                    + canonical.encode()
+                    + b"\r\nConnection: close\r\nUser-Agent: lintpdf-cert-prewarm\r\n\r\n"
+                )
+                # Read the status line; body is discarded.
+                status_line = ssock.recv(128)
+        logger.info(
+            "Edge cert prewarm OK for %s (%s)",
+            canonical,
+            status_line.decode("ascii", errors="replace").strip().splitlines()[0:1],
+        )
+        return {"hostname": canonical, "status": "warmed"}
+    except ssl.SSLError as exc:
+        # Retryable: cert still issuing, or order in-flight. One retry
+        # after a 15 s delay gives Caddy time to finish the ACME dance.
+        logger.warning("TLS error prewarming %s: %s (will retry)", canonical, exc)
+        return {"hostname": canonical, "status": "tls_error", "error": str(exc)}
+    except (OSError, socket.timeout) as exc:
+        logger.warning("Network error prewarming %s: %s", canonical, exc)
+        return {"hostname": canonical, "status": "network_error", "error": str(exc)}
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Unexpected prewarm failure for %s", canonical)
+        return {"hostname": canonical, "status": "error", "error": str(exc)}
+
+
 def _activate_edge_domain(
     db: Any,
     row: Any,
@@ -820,6 +897,13 @@ def _activate_edge_domain(
     db.commit()
     result["activated"] += 1
     logger.info("Activated %s %s via edge", scope_label, domain)
+    # Fire cert prewarm so the first real customer hit doesn't wait the
+    # 5-30s LE issuance latency. Delayed 3 s to let the DB commit settle
+    # + to stay off the probe-task's critical path.
+    try:
+        prewarm_edge_cert.apply_async(args=[domain], countdown=3)
+    except Exception:
+        logger.warning("Failed to schedule cert prewarm for %s", domain, exc_info=True)
     return True
 
 
