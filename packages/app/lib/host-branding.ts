@@ -39,10 +39,14 @@ export interface HostBranding {
 
 export async function getHostBranding(): Promise<HostBranding> {
   const hdrs = await headers();
-  // Railway / other edge proxies forward the original public host in
-  // x-forwarded-host; the bare `host` header is the internal container
-  // hostname (e.g. service.railway.internal). Prefer the forwarded value.
+  // On custom domains, requests hit edge-caddy first, which rewrites Host
+  // to app.lintpdf.com for Railway's SNI. Railway's own proxy further
+  // rewrites X-Forwarded-Host to the Railway hostname it answered on.
+  //   edge-caddy/Caddyfile sets a custom X-LintPDF-Public-Host that
+  // Railway passes through untouched — that's the only reliable place to
+  // read the actual public hostname the viewer typed.
   const raw =
+    hdrs.get("x-lintpdf-public-host") ??
     hdrs.get("x-forwarded-host") ??
     hdrs.get("x-original-host") ??
     hdrs.get("host");
