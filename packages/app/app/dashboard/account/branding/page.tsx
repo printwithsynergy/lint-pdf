@@ -435,14 +435,18 @@ function CustomReportDomainCard() {
       const resp = await fetch("/api/lintpdf/branding/custom-domain");
       if (!resp.ok) {
         if (resp.status === 403) {
-          // Plan doesn't allow — still show the upsell card
+          // Plan doesn't allow — still show the upsell card.
+          // ``dns_target`` fallback points at the Caddy edge
+          // (``edge.lintpdf.com``) which is where BYO customers CNAME
+          // to. Used only in the locked-out preview; real tenants on
+          // Scale/Enterprise get the live value from the API.
           setState({
             tenant_id: "",
             domain: null,
             verified: false,
             requested_at: null,
             plan_allows_whitelabel: false,
-            dns_target: "api.lintpdf.com",
+            dns_target: "edge.lintpdf.com",
           });
         }
         return;
@@ -557,23 +561,29 @@ function CustomReportDomainCard() {
 
           {state.domain && !state.verified && (
             <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-100">
-              <p className="font-semibold">Next steps to activate</p>
+              <p className="font-semibold">Next step: one DNS record</p>
               <ol className="ml-5 mt-2 list-decimal space-y-1">
                 <li>
-                  In your DNS provider, add a <code>CNAME</code> record:{" "}
-                  <code>{state.domain}</code> &rarr; <code>{state.dns_target}</code>
+                  In your DNS provider, add this CNAME:
+                  <div className="mt-1 rounded bg-amber-100/60 p-2 font-mono text-xs dark:bg-amber-900/30">
+                    {state.domain} &nbsp;CNAME&nbsp; {state.dns_target}
+                  </div>
                 </li>
                 <li>
-                  Wait for DNS to propagate (usually a few minutes).
+                  That&apos;s it. LintPDF&apos;s edge handles TLS, certificate renewal, and
+                  path-routing to the right backend automatically. No ACME TXT records,
+                  no cert installation on your side.
                 </li>
                 <li>
-                  LintPDF checks your CNAME every 5 minutes and will automatically activate the
-                  domain once it resolves. You can also email <code>support@lintpdf.com</code> to
-                  have an operator fast-track verification.
+                  Your first HTTPS request to <code>{state.domain}</code> will take
+                  ~5&ndash;30 seconds while we issue a Let&apos;s Encrypt certificate.
+                  Every request after that is instant.
                 </li>
               </ol>
-              <p className="mt-2">
-                Reports keep using the default LintPDF URL until the check passes.
+              <p className="mt-3">
+                Reports keep using the default LintPDF URL until your DNS propagates
+                (usually 1&ndash;5 minutes). You&apos;ll see <code>verified: true</code> here
+                once the first request has succeeded.
               </p>
             </div>
           )}

@@ -11,52 +11,47 @@
 # ``ask`` endpoint is called by Caddy before each cert issuance.
 
 {
-  # Fly.io gives us IPv4 + IPv6; health check relies on HTTP.
-  # Email is required by ACME + should match a real monitoring inbox.
   email ops@lintpdf.com
 
-  # Rate-limit LE cert requests so a misbehaving customer + a bug in
-  # the ask endpoint can't burn our LE account through rate-limits.
+  # Caddy 2.8+ dropped ``interval`` + ``burst`` from ``on_demand_tls`` --
+  # abuse prevention is now purely the ``ask`` endpoint's responsibility.
+  # Our ask endpoint hits the engine to verify the hostname is registered
+  # on a tenant / brand profile, so unknown hostnames never reach LE.
   on_demand_tls {
-    # Caddy POSTs to this URL with ``?domain=<hostname>``. 200 means
-    # issue; any non-2xx means refuse.
-    ask http://localhost:8081/internal/caddy-ask
-
-    # Back-off so a probe loop can't drive 50 LE requests/minute.
-    interval 5m
-    burst 10
+    ask http://127.0.0.1:8081/ask
   }
 }
 
-# -------- HTTP health check for Fly.io's platform + own diagnostics --------
+# -------- HTTP health check (port 80 published, 8080 internal) --------
 :8080 {
   handle /__edge/health {
     respond "ok" 200
   }
-  # Fallback -- Fly's load balancer probes root every few seconds.
   handle {
     respond "lintpdf-edge" 200
   }
 }
 
-# -------- Internal ask endpoint (only reachable inside the container) ------
-# Implemented in Go via a tiny sidecar -- but Caddy can't call raw POST
-# easily in ``ask``. Simpler: proxy the ask request through to the
-# LintPDF engine, with the shared secret as an auth header.
+# -------- Internal ask-proxy (not published; localhost only) --------
+# Caddy's ``on_demand_tls.ask`` can only do GET with a query string.
+# We forward the GET to the engine's ``/api/v1/internal/on-demand-tls-check``
+# with the shared secret header injected from the ``LINTPDF_EDGE_SHARED_SECRET``
+# env var (set via fly secrets).
 :8081 {
-  handle /internal/caddy-ask {
+  handle /ask {
+    rewrite * /api/v1/internal/on-demand-tls-check?{query}
     reverse_proxy https://api.lintpdf.com {
       header_up Host api.lintpdf.com
-      header_up X-Forwarded-For {remote}
       header_up X-Edge-Shared-Secret {$LINTPDF_EDGE_SHARED_SECRET}
-
-      # Caddy passes ``?domain=...``; rewrite the path for the engine
-      rewrite /api/v1/internal/on-demand-tls-check
+      transport http {
+        tls
+        tls_server_name api.lintpdf.com
+      }
     }
   }
 }
 
-# -------- TLS on 443 -- match ANY hostname, on-demand cert --------------
+# -------- TLS on 443 -- match ANY hostname, on-demand cert --------
 :443 {
   tls {
     on_demand
@@ -103,7 +98,6 @@
     }
   }
 
-  # Structured logs for fly logs.
   log {
     output stdout
     format json

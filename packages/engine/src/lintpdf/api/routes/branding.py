@@ -80,15 +80,33 @@ def validate_custom_domain(raw: str) -> str:
     return d
 
 
-def _resolve_dns_target(alias: str | None, fallback: str) -> str:
+def _resolve_dns_target(alias: str | None, fallback: str | None = None) -> str:
     """Pick the customer-facing CNAME target to show in the dashboard.
 
-    Prefer the auto-provisioned LintPDF-branded alias
-    (``{slug}.custom.lintpdf.com``) when present. Falls back to the
-    shared service hostname for legacy tenants -- still works, just
-    less branded.
+    Preference order:
+
+    1. Auto-provisioned LintPDF-branded alias (``{slug}-custom.lintpdf.com``)
+       when present. These resolve through the CF Worker at
+       ``packages/edge-worker`` and are zero-DNS-work for the tenant
+       (they just use the URL directly).
+    2. ``edge.lintpdf.com`` -- the Fly.io Caddy edge. This is the
+       CNAME target for BYO customers who want their own hostname.
+       Caddy issues a Let's Encrypt cert on first request and
+       path-routes to Railway backends.
+    3. An explicit ``fallback`` override if the caller needs a
+       non-default target for a specific response shape.
+
+    Legacy callers passed ``reports.lintpdf.com`` / ``app.lintpdf.com``
+    as the fallback -- those were the old "shared service hostname"
+    values from before the Caddy edge existed. Either works in the
+    sense that Railway's edge still serves those hostnames, but the
+    customer's cert wouldn't issue (Railway's per-domain validator
+    won't chase the chain). ``edge.lintpdf.com`` is the correct
+    modern target.
     """
-    return alias if alias else fallback
+    if alias:
+        return alias
+    return fallback or "edge.lintpdf.com"
 
 
 def _cleanup_alias_best_effort(alias_fqdn: str | None) -> None:
@@ -184,16 +202,12 @@ def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileR
         updated_at=profile.updated_at,
         custom_domain=profile.custom_domain,
         custom_domain_verified=profile.custom_domain_verified,
-        custom_domain_dns_target=_resolve_dns_target(
-            profile.custom_domain_alias, "reports.lintpdf.com"
-        )
+        custom_domain_dns_target=_resolve_dns_target(profile.custom_domain_alias)
         if profile.custom_domain
         else None,
         app_custom_domain=profile.app_custom_domain,
         app_custom_domain_verified=profile.app_custom_domain_verified,
-        app_custom_domain_dns_target=_resolve_dns_target(
-            profile.app_custom_domain_alias, "app.lintpdf.com"
-        )
+        app_custom_domain_dns_target=_resolve_dns_target(profile.app_custom_domain_alias)
         if profile.app_custom_domain
         else None,
     )
@@ -539,9 +553,7 @@ def _tenant_custom_domain_response(tenant: Tenant) -> TenantCustomDomainResponse
         verified=tenant.brand_custom_domain_verified,
         requested_at=tenant.brand_custom_domain_requested_at,
         plan_allows_whitelabel=entitlements.whitelabel_enabled,
-        dns_target=_resolve_dns_target(
-            tenant.custom_domain_alias, "reports.lintpdf.com"
-        ),
+        dns_target=_resolve_dns_target(tenant.custom_domain_alias),
     )
 
 
@@ -718,13 +730,15 @@ class AppCustomDomainResponse(_BaseModel):
     verified: bool = False
     requested_at: str | None = None
     plan_allows_whitelabel: bool = False
-    dns_target: str = "app.lintpdf.com"
-    """The CNAME target customers should point their app subdomain at.
+    dns_target: str = "edge.lintpdf.com"
+    """The CNAME target customers point their app subdomain at.
 
-    For tenants with an auto-provisioned branded alias
-    (``{slug}-app.custom.lintpdf.com``), this is the alias FQDN. For
-    legacy tenants without one, falls back to the shared service
-    hostname (``app.lintpdf.com``) -- still works, just less branded."""
+    Same semantics as the reports-domain ``dns_target``: either the
+    auto-provisioned ``{slug}-custom.lintpdf.com`` alias, or the Fly.io
+    Caddy edge (``edge.lintpdf.com``) for BYO. Both reports + app paths
+    resolve on the same subdomain via the edge Worker / Caddy's path
+    routing -- separate ``dns_target`` fields are preserved for
+    historical reasons but return the same value per tenant."""
 
 
 @router.get(
@@ -749,9 +763,7 @@ async def get_tenant_app_custom_domain(
         if tenant.app_custom_domain_requested_at
         else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
-        dns_target=_resolve_dns_target(
-            tenant.app_custom_domain_alias, "app.lintpdf.com"
-        ),
+        dns_target=_resolve_dns_target(tenant.app_custom_domain_alias),
     )
 
 
@@ -814,9 +826,7 @@ async def set_tenant_app_custom_domain(
         if tenant.app_custom_domain_requested_at
         else None,
         plan_allows_whitelabel=ent.whitelabel_enabled,
-        dns_target=_resolve_dns_target(
-            tenant.app_custom_domain_alias, "app.lintpdf.com"
-        ),
+        dns_target=_resolve_dns_target(tenant.app_custom_domain_alias),
     )
 
 

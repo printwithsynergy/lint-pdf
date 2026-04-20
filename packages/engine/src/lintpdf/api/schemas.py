@@ -796,14 +796,15 @@ class TenantCustomDomainResponse(BaseModel):
     requested_at: datetime | None
     plan_allows_whitelabel: bool
     dns_target: str = Field(
-        default="reports.lintpdf.com",
+        default="edge.lintpdf.com",
         description=(
-            "The CNAME target customers should point their subdomain at. "
-            "For tenants with an auto-provisioned branded alias "
-            "({slug}-reports.custom.lintpdf.com), this is the alias FQDN. "
-            "For legacy tenants without one, falls back to the shared "
-            "service hostname (reports.lintpdf.com) -- still works, just "
-            "less branded."
+            "The CNAME target customers point their subdomain at. For BYO "
+            "domains, this is always ``edge.lintpdf.com`` -- the Fly.io "
+            "Caddy edge that terminates TLS (via on-demand Let's Encrypt) "
+            "and path-routes to LintPDF's Railway backends. For tenants "
+            "with an auto-provisioned branded subdomain "
+            "(``{slug}-custom.lintpdf.com``), this is the alias itself -- "
+            "zero DNS work needed, they just use the URL directly."
         ),
     )
 
