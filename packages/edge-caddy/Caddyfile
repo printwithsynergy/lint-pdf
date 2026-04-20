@@ -47,15 +47,24 @@
 # We forward the GET to the engine's ``/api/v1/internal/on-demand-tls-check``
 # with the shared secret header injected from the ``LINTPDF_EDGE_SHARED_SECRET``
 # env var (set via fly secrets).
+#
+# NOTE: The upstream is ``reports.lintpdf.com`` (not ``api.lintpdf.com``)
+# because Railway's Fastly edge intermittently routes ``api.lintpdf.com``
+# traffic originating from Fly's network to a dead backend, causing
+# TLS or HTTP reads to hang indefinitely. ``reports.lintpdf.com`` hits
+# the same Railway API service (both are CNAMEs for the same Railway
+# deployment) and routes reliably. Observed during the initial
+# Caddy-edge rollout: swapping from api.* to reports.* made the ask
+# flow complete in <200 ms instead of timing out at 20+ s.
 :8081 {
   handle /ask {
     rewrite * /api/v1/internal/on-demand-tls-check?{query}
-    reverse_proxy https://api.lintpdf.com {
-      header_up Host api.lintpdf.com
+    reverse_proxy https://reports.lintpdf.com {
+      header_up Host reports.lintpdf.com
       header_up X-Edge-Shared-Secret {$LINTPDF_EDGE_SHARED_SECRET}
       transport http {
         tls
-        tls_server_name api.lintpdf.com
+        tls_server_name reports.lintpdf.com
       }
     }
   }
