@@ -96,12 +96,11 @@ export const docSections: DocSection[] = [
       "Brand compliance, regulatory labelling, spell-check, and barcode analysis — all on top of detection.",
     items: [
       {
-        slug: "ai-getting-started",
+        slug: "ai/overview",
         label: "AI overview",
-        description: "What AI preflight is, and when it's worth using.",
+        description:
+          "Enable, configure, submit — the full turn-on walkthrough.",
       },
-      { slug: "ai-setup", label: "Setup" },
-      { slug: "ai-configuration", label: "Configuration" },
       {
         slug: "ai-presets",
         label: "Presets",
@@ -120,8 +119,11 @@ export const docSections: DocSection[] = [
       { slug: "ai-api", label: "AI API reference" },
       { slug: "ai-inspections", label: "Inspections reference" },
       { slug: "ai-examples", label: "Code examples" },
-      { slug: "ai-faq", label: "FAQ" },
-      { slug: "ai-errors", label: "Errors" },
+      {
+        slug: "ai/troubleshooting",
+        label: "Troubleshooting",
+        description: "FAQ + full error-code reference.",
+      },
       {
         slug: "ai-voyage-plans",
         label: "Voyage plans",
@@ -152,16 +154,9 @@ export const docSections: DocSection[] = [
         description: "Teach the engine how to parse your vendor's XML/JSON.",
       },
       {
-        slug: "importing-from-pitstop",
-        label: "Importing from Enfocus PitStop",
-      },
-      {
-        slug: "importing-from-callas",
-        label: "Importing from callas pdfToolbox",
-      },
-      {
-        slug: "importing-from-acrobat",
-        label: "Importing from Adobe Acrobat",
+        slug: "imports/vendors",
+        label: "Importing from PitStop, callas & Acrobat",
+        description: "Flow + field mapping for all three vendors, in one place.",
       },
       {
         slug: "viewer-only-mode",
@@ -222,18 +217,10 @@ export const docSections: DocSection[] = [
         description: "Single-number summary of a PDF's color readiness.",
       },
       {
-        slug: "standards-compliance",
-        label: "PDF/X standards compliance",
-      },
-      {
-        slug: "ecg-readiness",
-        label: "ECG readiness",
-        description: "Expanded-gamut / n-color printing readiness.",
-      },
-      {
-        slug: "epm-readiness",
-        label: "EPM readiness",
-        description: "Enhanced process-mismatch readiness.",
+        slug: "color/standards",
+        label: "Standards & conformance",
+        description:
+          "PDF/X + G7 + ISO 12647, ECG readiness, HP Indigo EPM — consolidated.",
       },
     ],
   },
