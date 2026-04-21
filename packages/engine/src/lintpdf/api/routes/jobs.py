@@ -631,7 +631,19 @@ async def submit_job(  # skipcq: PY-R1000
         if ai_enabled is None:
             ai_enabled = True
 
-    queue_name = "priority" if entitlements.priority_processing else "default"
+    # Queue routing (bulk-files step 3 — queue isolation):
+    #   ai_heavy  → any job where AI is enabled. Dedicated worker
+    #               service (railway.worker-ai.toml) with concurrency
+    #               tuned to Modal's max_containers so AI jobs can't
+    #               starve the deterministic pool.
+    #   priority  → paid-tier non-AI jobs. Served by railway.worker.toml.
+    #   default   → free-tier non-AI jobs. Same worker, lower priority.
+    if ai_enabled:
+        queue_name = "ai_heavy"
+    elif entitlements.priority_processing:
+        queue_name = "priority"
+    else:
+        queue_name = "default"
     task_args = [str(job_id), profile_id, file_key]
     task_kwargs: dict[str, Any] = {}
     if jdf_overrides:

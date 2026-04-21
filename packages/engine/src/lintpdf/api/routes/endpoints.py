@@ -325,7 +325,26 @@ async def submit_to_endpoint(
     from lintpdf.tenants.entitlements import resolve_entitlements
 
     entitlements = resolve_entitlements(tenant)
-    queue_name = "priority" if entitlements.priority_processing else "default"
+
+    # Queue routing (step 3 — queue isolation). Custom-endpoint dispatch
+    # pulls AI enablement from the endpoint's bound profile, same
+    # pattern as routes/batch.py.
+    try:
+        from lintpdf.profiles.registry import ProfileNotFoundError, ProfileRegistry
+
+        profile_ai_enabled = bool(ProfileRegistry().get(ep.profile_id).ai.enabled)
+    except ProfileNotFoundError:
+        profile_ai_enabled = True
+    except Exception:
+        profile_ai_enabled = True
+
+    if profile_ai_enabled:
+        queue_name = "ai_heavy"
+    elif entitlements.priority_processing:
+        queue_name = "priority"
+    else:
+        queue_name = "default"
+
     run_preflight.apply_async(
         args=[str(job_id), ep.profile_id, file_key],
         queue=queue_name,
