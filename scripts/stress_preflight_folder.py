@@ -321,6 +321,10 @@ def poll_job(http: HTTP, api_key: str, rec: JobRecord, timeout_s: int) -> None:
 def mint_reports(http: HTTP, api_key: str, rec: JobRecord) -> None:
     if not rec.job_id or rec.terminal_status != "complete":
         return
+    # Mint signs 4 report tokens + persists them — chunky DB work.
+    # Bump timeout + rely on HTTP.request's internal retry-with-backoff
+    # (transient 429/5xx/timeout) so a burst of mints at the end of
+    # phase 2 doesn't drop 6 / 13 links like tier-1 did.
     code, body = http.request(
         "POST",
         f"/api/v1/jobs/{rec.job_id}/reports",
@@ -331,7 +335,8 @@ def mint_reports(http: HTTP, api_key: str, rec: JobRecord) -> None:
             "allow_annotations": False,
             "require_visitor_email": False,
         },
-        timeout=60,
+        timeout=180,
+        retries=5,
     )
     if code not in (200, 201) or not isinstance(body, dict):
         rec.report_error = f"{code}: {body!r}"[:400]
@@ -366,11 +371,30 @@ def mint_reports(http: HTTP, api_key: str, rec: JobRecord) -> None:
 def sample_metrics(
     http: HTTP, api_key: str, stop: threading.Event, csv_path: Path
 ) -> None:
+    """Authoritative liveness-and-throughput sampler.
+
+    Writes ``/api/v1/status`` + ``/ready`` directly from the client every
+    15 s. THIS is the ground truth for engine liveness during a run —
+    not Railway's log stream. Railway log-tail has been observed lagging
+    real-time by 2-3+ minutes under load during the 2026-04-21 runs,
+    which produced several false "engine is dead" panics when the
+    engine was actually serving /ready + /api/v1/status fine the whole
+    time. CSV columns now include a direct /ready probe + its latency
+    so post-run analysis cross-references liveness, not just log freshness.
+    """
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     with csv_path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(
-            ["iso_ts", "queue_depth_default", "queue_depth_priority", "workers", "status_http"]
+            [
+                "iso_ts",
+                "queue_depth_default",
+                "queue_depth_priority",
+                "workers",
+                "status_http",
+                "ready_http",
+                "ready_ms",
+            ]
         )
         while not stop.is_set():
             code, body = http.request(
@@ -378,6 +402,7 @@ def sample_metrics(
                 "/api/v1/status",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=15,
+                retries=1,  # sampler doesn't retry — single-shot liveness
             )
             default_q = priority_q = workers = -1
             if isinstance(body, dict):
@@ -386,6 +411,16 @@ def sample_metrics(
                     default_q = int(queues.get("default") or 0)
                     priority_q = int(queues.get("priority") or 0)
                 workers = int(body.get("worker_count") or 0)
+            # Separate /ready probe with tight timeout — the authoritative
+            # liveness signal. Decoupled from status RAM-budget noise.
+            ready_t0 = time.time()
+            ready_code, _ = http.request(
+                "GET",
+                "/ready",
+                timeout=8,
+                retries=1,
+            )
+            ready_ms = int((time.time() - ready_t0) * 1000)
             w.writerow(
                 [
                     datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -393,6 +428,8 @@ def sample_metrics(
                     priority_q,
                     workers,
                     code,
+                    ready_code,
+                    ready_ms,
                 ]
             )
             f.flush()
