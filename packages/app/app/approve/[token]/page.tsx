@@ -91,13 +91,13 @@ export default function ApprovePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="flex flex-col items-center gap-3">
-          <svg className="h-10 w-10 animate-spin text-slate-400" fill="none" viewBox="0 0 24 24">
+          <svg className="h-10 w-10 animate-spin text-muted-foreground" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
-          <span className="text-sm text-slate-500">Loading approval details…</span>
+          <span className="text-sm text-muted-foreground">Loading approval details…</span>
         </div>
       </div>
     );
@@ -105,7 +105,7 @@ export default function ApprovePage() {
 
   if (error && !info) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-lg">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
             <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -122,7 +122,7 @@ export default function ApprovePage() {
   if (done) {
     const isApproved = done.decision === "approved";
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-lg">
           <div
             className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full ${
@@ -154,7 +154,7 @@ export default function ApprovePage() {
 
   if (info.status !== "pending") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
         <div className="w-full max-w-md rounded-xl bg-white p-8 text-center shadow-lg">
           <h1 className="mb-2 text-xl font-bold text-slate-900">Chain {info.status}</h1>
           <p className="text-sm text-slate-600">
@@ -173,7 +173,7 @@ export default function ApprovePage() {
   const healthColor = healthScore >= 80 ? "#22c55e" : healthScore >= 70 ? "#f59e0b" : "#ef4444";
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
+    <div className="min-h-screen bg-background py-8 px-4">
       <div className="mx-auto max-w-2xl">
         <div className="rounded-xl bg-white p-6 shadow-lg sm:p-8">
           {/* Header */}
@@ -190,7 +190,7 @@ export default function ApprovePage() {
           </div>
 
           {/* Health summary */}
-          <div className="mb-6 flex items-center gap-4 rounded-lg bg-slate-50 p-4">
+          <div className="mb-6 flex items-center gap-4 rounded-lg bg-background p-4">
             <div
               className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-[5px]"
               style={{ borderColor: healthColor }}
@@ -300,7 +300,7 @@ export default function ApprovePage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowRejectForm(false)}
-                  className="flex-1 rounded-md border border-slate-300 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  className="flex-1 rounded-md border border-slate-300 bg-white px-6 py-2.5 text-sm font-medium text-slate-700 hover:bg-background"
                 >
                   Back
                 </button>
