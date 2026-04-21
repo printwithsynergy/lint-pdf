@@ -18,7 +18,7 @@ import AiInspectionsPage from "@/components/docs/pages/AiInspectionsPage";
 import AiApiPage from "@/components/docs/pages/AiApiPage";
 
 interface Props {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ slug: string[] }>;
 }
 
 const jsxPages: Record<
@@ -73,14 +73,15 @@ export function generateStaticParams() {
   const jsxSlugsArr = Object.keys(jsxPages);
   const groupKeys = Object.keys(docSectionsByKey);
   const all = [...new Set([...mdSlugs, ...jsxSlugsArr, ...groupKeys])];
-  return all.map((slug) => ({ slug }));
+  return all.map((slug) => ({ slug: slug.split("/") }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+  const joined = slug.join("/");
 
   // Group-index pages (/docs/<group-key>)
-  const group = docSectionsByKey[slug];
+  const group = docSectionsByKey[joined];
   if (group) {
     return {
       title: `${group.heading} — LintPDF Docs`,
@@ -88,7 +89,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const jsx = jsxPages[slug];
+  const jsx = jsxPages[joined];
   if (jsx) {
     return {
       title: `${jsx.title} — LintPDF Docs`,
@@ -96,7 +97,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  const doc = await getDocBySlug(slug);
+  const doc = await getDocBySlug(joined);
   if (!doc) return {};
 
   return {
@@ -107,17 +108,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function DocSlugPage({ params }: Props) {
   const { slug } = await params;
+  const joined = slug.join("/");
 
   // Group-index pages (/docs/<group-key>) list every page in the group.
   // Checked before anything else so a group key never gets swallowed by
   // an accidentally-matching jsx/md slug.
-  const group = docSectionsByKey[slug];
+  const group = docSectionsByKey[joined];
   if (group) {
     return <GroupIndexPage section={group} />;
   }
 
   // Find prev/next in canonical order
-  const idx = canonicalOrder.indexOf(slug);
+  const idx = canonicalOrder.indexOf(joined);
   const prevSlug = idx > 0 ? canonicalOrder[idx - 1] : null;
   const nextSlug =
     idx >= 0 && idx < canonicalOrder.length - 1
@@ -125,7 +127,7 @@ export default async function DocSlugPage({ params }: Props) {
       : null;
 
   // Check JSX registry first
-  const jsx = jsxPages[slug];
+  const jsx = jsxPages[joined];
   if (jsx) {
     const JsxComponent = jsx.component;
     return (
@@ -137,7 +139,7 @@ export default async function DocSlugPage({ params }: Props) {
   }
 
   // Fall back to markdown
-  const doc = await getDocBySlug(slug);
+  const doc = await getDocBySlug(joined);
   if (!doc) notFound();
 
   return (
