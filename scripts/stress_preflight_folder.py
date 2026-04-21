@@ -343,8 +343,15 @@ def bulk_mint(http: HTTP, api_key: str, records: list[JobRecord]) -> bool:
         timeout=300,
         retries=3,
     )
-    if code == 404:
-        return False  # old engine; fall back to per-job
+    # Fall back to per-job mint on:
+    #   - 404: endpoint doesn't exist yet on this engine (staging / old)
+    #   - 502/503/504: Railway edge timed the serial-mint response out
+    #     (observed at tier-1 when 15 jobs x 4 formats = 60 mints in
+    #     one HTTP request overran the edge timeout). Per-job loop
+    #     lets the client N-parallelize instead of 1-serial.
+    #   - 0 / -1: client-side transport failure (DNS hiccup, TLS reset)
+    if code in (0, -1, 404, 502, 503, 504):
+        return False  # fall back to per-job mint
     if code not in (200, 201) or not isinstance(body, dict):
         # Engine available but batch call itself failed — mark every
         # record with the error so we still produce a useful report.
