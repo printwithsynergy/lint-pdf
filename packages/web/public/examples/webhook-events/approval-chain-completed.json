@@ -1,0 +1,16 @@
+{
+  "job_id": "d4e5f6a7-1234-4567-89ab-cdef01234567",
+  "chain_id": "c1a2b3c4-5678-4321-abcd-ef1234567890",
+  "status": "approved",
+  "completed_at": "2026-04-18T02:05:00+00:00",
+  "step_history": [
+    {
+      "step_index": 0,
+      "step_name": "Print ops",
+      "approver_email": "ops@example.com",
+      "decision": "approved",
+      "notes": "Bleed and TAC look good. Ship it.",
+      "decided_at": "2026-04-18T02:05:00+00:00"
+    }
+  ]
+}

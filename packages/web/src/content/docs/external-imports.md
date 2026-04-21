@@ -161,13 +161,13 @@ See [Viewer Capabilities & On-Demand Fill-In](/docs/viewer-capabilities) for the
 
 ## Worked examples
 
-Copy-pasteable samples live in the repo's `docs/examples/` directory:
+Copy-pasteable samples are hosted on this site:
 
-- [`pitstop-report.xml`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/pitstop-report.xml)
-- [`callas-report.json`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/callas-report.json), [`callas-report.xml`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/callas-report.xml)
-- [`acrobat-report.xml`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/acrobat-report.xml)
-- [`lintpdf-native.json`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/lintpdf-native.json)
-- [`submit-external.sh`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/submit-external.sh)
+- [`pitstop-report.xml`](https://lintpdf.com/examples/pitstop-report.xml)
+- [`callas-report.json`](https://lintpdf.com/examples/callas-report.json), [`callas-report.xml`](https://lintpdf.com/examples/callas-report.xml)
+- [`acrobat-report.xml`](https://lintpdf.com/examples/acrobat-report.xml)
+- [`lintpdf-native.json`](https://lintpdf.com/examples/lintpdf-native.json)
+- [`submit-external.sh`](https://lintpdf.com/examples/submit-external.sh)
 
 ## Related
 

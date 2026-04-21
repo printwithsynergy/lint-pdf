@@ -13,7 +13,6 @@ export const headerLinks: NavLink[] = [
   { href: "/integrations", label: "Integrations" },
   { href: "/pricing", label: "Pricing" },
   { href: "/docs", label: "Docs" },
-  { href: "/swagger", label: "API" },
   { href: "/about", label: "About" },
 ];
 
@@ -38,8 +37,6 @@ export const footerGroups: FooterGroup[] = [
     links: [
       { href: "/swagger", label: "API Reference" },
       { href: "/docs/postman", label: "Postman Collection" },
-      { href: "/docs/webhooks", label: "Webhooks" },
-      { href: "/docs/job-state", label: "Universal Job State" },
       { href: "/docs/authentication", label: "Authentication" },
     ],
   },
@@ -58,11 +55,6 @@ export const footerGroups: FooterGroup[] = [
       {
         href: "https://thinkneverland.com",
         label: "Think Neverland",
-        external: true,
-      },
-      {
-        href: "https://github.com/thinkneverland/lint-pdf",
-        label: "GitHub",
         external: true,
       },
       { href: "/contact", label: "Contact Us" },

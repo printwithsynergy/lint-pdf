@@ -1,0 +1,9 @@
+{
+  "annotation_id": "a1b2c3d4-1111-2222-3333-444444444444",
+  "comment": {
+    "id": "f5e6d7c8-aaaa-bbbb-cccc-dddddddddddd",
+    "author_email": "reviewer@example.com",
+    "body": "Will re-typeset this block.",
+    "created_at": "2026-04-18T01:56:00+00:00"
+  }
+}

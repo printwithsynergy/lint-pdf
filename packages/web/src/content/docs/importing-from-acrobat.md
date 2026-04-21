@@ -67,7 +67,7 @@ LintPDF's parser is tested against DC (current), Pro 2020, and Pro 2017 XML outp
 
 ## Sample payload
 
-A trimmed Acrobat Preflight XML report ships in the repo at [`docs/examples/acrobat-report.xml`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/acrobat-report.xml).
+A trimmed Acrobat Preflight XML report is available at [`/examples/acrobat-report.xml`](https://lintpdf.com/examples/acrobat-report.xml).
 
 ## Related
 

@@ -181,7 +181,7 @@ The signed body is the raw JSON LintPDF POSTed — keys are sorted alphabeticall
 
 ## Example payloads
 
-Each event has a sample payload under [`docs/examples/webhook-events/`](https://github.com/thinkneverland/lint-pdf/tree/main/docs/examples/webhook-events). Start with `job-state-changed.json` if you're wiring up the umbrella subscription.
+Each event has a sample payload under [`/examples/webhook-events/`](https://lintpdf.com/examples/webhook-events/job-state-changed.json). Start with `job-state-changed.json` if you're wiring up the umbrella subscription.
 
 ## Related
 

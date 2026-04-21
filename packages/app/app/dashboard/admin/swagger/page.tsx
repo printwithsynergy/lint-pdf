@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -31,12 +32,12 @@ export default function AdminSwaggerPage() {
           </p>
         </div>
         <div className="flex gap-2 text-sm">
-          <a
+          <Link
             href="/dashboard/webhooks"
             className="rounded border px-3 py-1 hover:bg-muted"
           >
             Webhooks
-          </a>
+          </Link>
           <a
             href="https://lintpdf.com/docs"
             target="_blank"
@@ -45,12 +46,12 @@ export default function AdminSwaggerPage() {
           >
             Public docs
           </a>
-          <a
+          <Link
             href="/dashboard/admin/postman"
             className="rounded border px-3 py-1 hover:bg-muted"
           >
             Postman (full)
-          </a>
+          </Link>
         </div>
       </div>
 

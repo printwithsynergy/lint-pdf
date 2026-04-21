@@ -1,0 +1,17 @@
+{
+  "job_id": "d4e5f6a7-1234-4567-89ab-cdef01234567",
+  "reports": [
+    {
+      "format": "annotated_pdf",
+      "url": "https://reports.lintpdf.com/r/jvmNUHQfteMndMJKjoSrH4YYCUICGHqcuQ2SJy2pTRg.pdf",
+      "token": "jvmNUHQfteMndMJKjoSrH4YYCUICGHqcuQ2SJy2pTRg",
+      "expires_at": "2026-05-18T02:11:00+00:00"
+    },
+    {
+      "format": "pdf",
+      "url": "https://reports.lintpdf.com/r/h5JxQqwIVsk44aCLqSQsev6Ahn7NVeGQK7A-7QchJKY.pdf",
+      "token": "h5JxQqwIVsk44aCLqSQsev6Ahn7NVeGQK7A-7QchJKY",
+      "expires_at": "2026-05-18T02:11:00+00:00"
+    }
+  ]
+}

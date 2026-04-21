@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  callas pdfToolbox preflight report (XML variant). Auto-detects as callas_xml.
+  Export from pdfToolbox: "Save report as XML" on any Profile run.
+
+  The parser reads <hit> children with:
+    <rule_id>  → inspection_id
+    <severity> → severity
+    <comment>  → message (or <message>)
+    <page>     → page_num
+    <geometry><bbox>x0 y0 x1 y1</bbox></geometry>
+-->
+<preflight_report>
+  <profile>PDF/X-4 (Ghent Workgroup 2022)</profile>
+  <pdfToolboxVersion>14.1.573</pdfToolboxVersion>
+  <hit>
+    <rule_id>CALLAS_IMG_LOWRES</rule_id>
+    <severity>error</severity>
+    <comment>Image resolution 144 dpi is below the 300 dpi threshold</comment>
+    <page>2</page>
+    <geometry>
+      <bbox>72 72 216 216</bbox>
+    </geometry>
+  </hit>
+  <hit>
+    <rule_id>CALLAS_FONT_NOEMBED</rule_id>
+    <severity>warning</severity>
+    <comment>Font Helvetica-Bold is not embedded</comment>
+    <page>1</page>
+  </hit>
+  <hit>
+    <rule_id>CALLAS_COLOR_RGB_IN_CMYK</rule_id>
+    <severity>warning</severity>
+    <comment>RGB color object used in a CMYK-intent job</comment>
+    <page>3</page>
+    <geometry>
+      <bbox>144 300 468 360</bbox>
+    </geometry>
+  </hit>
+  <hit>
+    <rule_id>CALLAS_GEOM_NO_TRIMBOX</rule_id>
+    <severity>error</severity>
+    <comment>Page 4 is missing a TrimBox</comment>
+    <page>4</page>
+  </hit>
+  <hit>
+    <rule_id>CALLAS_COLOR_OVERPRINT_WHITE</rule_id>
+    <severity>info</severity>
+    <comment>White text set to overprint — will disappear on press</comment>
+    <page>2</page>
+    <geometry>
+      <bbox>96 540 300 560</bbox>
+    </geometry>
+  </hit>
+</preflight_report>

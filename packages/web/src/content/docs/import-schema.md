@@ -11,7 +11,7 @@ The LintPDF native import schema is the canonical JSON shape that any preflight 
 
 The authoritative JSON Schema (2020-12) is published at:
 
-- **Machine-readable**: [`docs/import-schema.json`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/import-schema.json)
+- **Machine-readable**: [`import-schema.json`](https://lintpdf.com/schema/import-schema.json)
 - **`$id`**: `https://lintpdf.com/schemas/import/v1.json`
 
 This page is the human-readable companion. Field definitions are authoritative in the JSON Schema file — when the two differ, the schema file wins.

@@ -37,7 +37,7 @@ Default (no `include=`) returns every section.
 
 ## Response shape
 
-See [`docs/examples/job-state-response.json`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/job-state-response.json) for a runnable example. The top-level envelope is:
+See [`/examples/job-state-response.json`](https://lintpdf.com/examples/job-state-response.json) for a runnable example. The top-level envelope is:
 
 ```json
 {

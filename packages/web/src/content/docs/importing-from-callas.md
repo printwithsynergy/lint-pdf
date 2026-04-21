@@ -80,8 +80,8 @@ callas uses consistent English severity tokens (`Error`, `Warning`, `Info`); Lin
 
 ## Sample payloads
 
-- JSON: [`docs/examples/callas-report.json`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/callas-report.json)
-- XML: [`docs/examples/callas-report.xml`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/callas-report.xml)
+- JSON: [`/examples/callas-report.json`](https://lintpdf.com/examples/callas-report.json)
+- XML: [`/examples/callas-report.xml`](https://lintpdf.com/examples/callas-report.xml)
 
 ## Related
 
