@@ -12,7 +12,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@thinkneverland/pixie-dust-fairy-ring": "^1.7.1",
+    "@thinkneverland/pixie-dust-fairy-ring": "^1.7.2",
     "@thinkneverland/pixie-dust-stripe-kit": "^1.4.0",
     "zod": "^3.25.76"
   },
