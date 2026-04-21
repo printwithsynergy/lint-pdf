@@ -186,6 +186,79 @@ class GenerateReportsResponse(BaseModel):
     reports: list[ReportInfo]
 
 
+# ---------------------------------------------------------------------------
+# Bulk report-mint (bulk-files step 5)
+#
+# For N-independent-submissions workloads (100 separate POST /api/v1/jobs,
+# each producing a completed Job that the client then wants reports for),
+# clients previously had to call POST /api/v1/jobs/{id}/reports N times.
+# Today's tier-1 smoke dropped 6 / 13 links because 13 simultaneous mint
+# POSTs from the harness overran default timeouts. A single POST
+# /api/v1/reports:batchMint collapses that into one round trip; the
+# engine dispatches each job through the same per-job pipeline so the
+# minted tokens are indistinguishable from the single-endpoint result.
+# ---------------------------------------------------------------------------
+
+
+class BatchMintRequest(BaseModel):
+    """Request body for POST /api/v1/reports:batchMint.
+
+    Subset of ``GenerateReportsRequest`` — the common bulk-mint knobs.
+    Advanced per-job overrides (idempotency, inline returns, universal
+    overrides envelope, per-call branding) are still only available on
+    the single-job endpoint; callers who need them should stick with
+    POST /api/v1/jobs/{id}/reports.
+    """
+
+    job_ids: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=500,
+        description=(
+            "List of job IDs (UUID strings) owned by the authenticated "
+            "tenant. Each job must be in ``complete`` status; jobs in "
+            "other states return per-item errors rather than failing "
+            "the whole request. Hard-capped at 500 to avoid pathological "
+            "requests; split larger batches client-side."
+        ),
+    )
+    formats: list[str | FormatSpec] = Field(
+        default=["html", "pdf"],
+        validate_default=True,
+        description=(
+            "Formats to mint per job. Identical shape to the single-job "
+            "endpoint — bare strings or FormatSpec objects."
+        ),
+    )
+    expiry_days: int | None = None
+    allow_annotations: bool = False
+    require_visitor_email: bool | None = None
+
+    @field_validator("formats", mode="after")
+    @classmethod
+    def _normalize_formats(cls, v: list[str | FormatSpec]) -> list[FormatSpec]:
+        return _normalize_format_list(v)
+
+
+class BatchMintResult(BaseModel):
+    """Per-job outcome within a batch-mint response."""
+
+    job_id: str
+    status: Literal["ok", "failed"]
+    reports: list[ReportInfo] | None = None
+    error: str | None = None
+
+
+class BatchMintResponse(BaseModel):
+    """Envelope for POST /api/v1/reports:batchMint results."""
+
+    results: list[BatchMintResult]
+    summary: dict[str, int] = Field(
+        default_factory=dict,
+        description="Counts of {'ok': int, 'failed': int} for quick client-side filtering.",
+    )
+
+
 class ReportListItem(BaseModel):
     token: str
     format: str
@@ -598,6 +671,88 @@ async def generate_reports(  # skipcq: PY-R1000
 
     return GenerateReportsResponse(
         reports=[ReportInfo(**r) for r in result.reports],
+    )
+
+
+@router.post(
+    "/api/v1/reports:batchMint",
+    response_model=BatchMintResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def batch_mint_reports(
+    body: BatchMintRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> BatchMintResponse:
+    """Mint report tokens for N completed jobs in a single round trip.
+
+    See ``BatchMintRequest`` for the supported knobs. Each job is
+    dispatched through the same per-job handler the single-endpoint
+    uses, so minted tokens are byte-identical to
+    ``POST /api/v1/jobs/{id}/reports``. Per-job failures (job not
+    found, wrong tenant, job not complete, entitlement denial, etc.)
+    are captured as ``{"status":"failed","error":"..."}`` on the
+    matching result entry — a single bad id in the batch does not
+    drop the rest.
+
+    Serial inside the handler: client saves N HTTP round trips, engine
+    reuses one DB session. Per-job wall clock is unchanged; the
+    throughput gain is the eliminated round-trip overhead and the
+    shared auth/parse cost. True per-job concurrency is a follow-up
+    — SQLAlchemy sessions aren't thread-safe so it requires a session
+    per concurrent task.
+    """
+    # Build a minimal per-job request body from the batch knobs.
+    per_job_body = GenerateReportsRequest(
+        formats=list(body.formats),
+        expiry_days=body.expiry_days,
+        allow_annotations=body.allow_annotations,
+        require_visitor_email=body.require_visitor_email,
+    )
+
+    results: list[BatchMintResult] = []
+    ok_count = 0
+    failed_count = 0
+    for job_id in body.job_ids:
+        try:
+            resp = await generate_reports(
+                job_id=job_id,
+                request=request,
+                body=per_job_body,
+                db=db,
+                tenant=tenant,
+            )
+            results.append(
+                BatchMintResult(
+                    job_id=job_id,
+                    status="ok",
+                    reports=list(resp.reports),
+                )
+            )
+            ok_count += 1
+        except HTTPException as exc:
+            results.append(
+                BatchMintResult(
+                    job_id=job_id,
+                    status="failed",
+                    error=f"{exc.status_code}: {exc.detail}"[:400],
+                )
+            )
+            failed_count += 1
+        except Exception as exc:  # noqa: BLE001 — we *want* to report any downstream blow-up per-job
+            results.append(
+                BatchMintResult(
+                    job_id=job_id,
+                    status="failed",
+                    error=f"unexpected error: {type(exc).__name__}: {exc}"[:400],
+                )
+            )
+            failed_count += 1
+
+    return BatchMintResponse(
+        results=results,
+        summary={"ok": ok_count, "failed": failed_count},
     )
 
 
