@@ -36,14 +36,14 @@ importers:
         specifier: workspace:*
         version: link:../plugin
       '@thinkneverland/pixie-dust-api-keys':
-        specifier: ^1.2.0
-        version: 1.2.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^1.2.1
+        version: 1.2.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@thinkneverland/pixie-dust-auth':
         specifier: ^1.10.0
         version: 1.10.0(typescript@5.9.3)
       '@thinkneverland/pixie-dust-boilerplate':
-        specifier: ^1.2.11
-        version: 1.2.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^1.2.12
+        version: 1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@thinkneverland/pixie-dust-config':
         specifier: ^1.2.10
         version: 1.2.10
@@ -54,8 +54,8 @@ importers:
         specifier: ^1.2.11
         version: 1.2.11(typescript@5.9.3)
       '@thinkneverland/pixie-dust-dashboard':
-        specifier: ^1.18.0
-        version: 1.18.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^1.18.1
+        version: 1.18.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@thinkneverland/pixie-dust-database':
         specifier: ^2.4.0
         version: 2.4.0(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
@@ -81,14 +81,14 @@ importers:
         specifier: ^4.0.13
         version: 4.0.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@thinkneverland/pixie-dust-usage':
-        specifier: ^1.1.0
-        version: 1.1.0(react@19.2.4)
+        specifier: ^1.1.1
+        version: 1.1.1(react@19.2.4)
       '@thinkneverland/pixie-dust-waitlist':
-        specifier: ^1.2.0
-        version: 1.2.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^1.2.1
+        version: 1.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@thinkneverland/pixie-dust-webhooks':
-        specifier: ^1.1.0
-        version: 1.1.0(react@19.2.4)
+        specifier: ^1.1.1
+        version: 1.1.1(react@19.2.4)
       '@trpc/client':
         specifier: ^11.16.0
         version: 11.16.0(@trpc/server@11.16.0(typescript@5.9.3))(typescript@5.9.3)
@@ -212,8 +212,8 @@ importers:
   packages/plugin:
     dependencies:
       '@thinkneverland/pixie-dust-dashboard':
-        specifier: ^1.18.0
-        version: 1.18.0(lucide-react@0.577.0(react@19.2.4))(next@15.5.14(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        specifier: ^1.18.1
+        version: 1.18.1(lucide-react@0.577.0(react@19.2.4))(next@15.5.14(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@thinkneverland/pixie-dust-email':
         specifier: ^1.6.0
         version: 1.6.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2518,16 +2518,16 @@ packages:
     peerDependencies:
       react: ^18 || ^19
 
-  '@thinkneverland/pixie-dust-api-keys@1.2.0':
-    resolution: {integrity: sha512-dvaXV6XO2CGOAJSWsTraFhjBDv+nwg2CAuZgl8DU1U12RnHLQuyK4KcWwVCOGM90O04ByPUyBnp219ZgAlhf/g==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-api-keys/1.2.0/03084376d69e452862807f30ec4b479511bc11c1}
+  '@thinkneverland/pixie-dust-api-keys@1.2.1':
+    resolution: {integrity: sha512-9pLE1KCy/glJ1Jyo9eWFACX89nHJ2wnTCjYsha67q1v4OuIAAYvsjWkkoYBb2SQRnQbVo6Y2v5Pit5BJRfU3/Q==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-api-keys/1.2.1/7d928b151df06083d90dfa34dfcff4d051025209}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
   '@thinkneverland/pixie-dust-auth@1.10.0':
     resolution: {integrity: sha512-eD5OYvhGw4uR+XScF/XDDb5X0eTzRkFWvo7t3m4MIxSoXlEvnG+8AhWioaTtdXu/qAbjmNcNFYymWut5Vh3auA==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-auth/1.10.0/95e3d5413222db20a8dbf77fb14d57478938a2aa}
 
-  '@thinkneverland/pixie-dust-boilerplate@1.2.11':
-    resolution: {integrity: sha512-W2UqgSgTVn0XjjhJ6emk6FRlX48aj+bX2Wi7nYMJIfWz2UQM6V2SFV8fbaPJuRi74MPs4UZyHJWgys+huRctug==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-boilerplate/1.2.11/5f8fc86ab9e9257cf010611456e18ee2cfeeb910}
+  '@thinkneverland/pixie-dust-boilerplate@1.2.12':
+    resolution: {integrity: sha512-K80GXRTeemPblwwQZQ5s0o6jeqgxivqCQfIRI1m7KzdcsbjvVfuguKx3ZBuAI1Zk7RHyM6Q3bkXIyu48hepY0A==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-boilerplate/1.2.12/f8e0f96478f21a9f800b13d6c81d528ae2f8be17}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
@@ -2542,8 +2542,8 @@ packages:
   '@thinkneverland/pixie-dust-core@1.2.11':
     resolution: {integrity: sha512-Y7A9tV4FrPTTzrvL+sntCguMea6Ac9H+NYGWZomYwdycwx7Xe+ndGA7DwBj4Qc3rlvlSho31ZXtLauRJIIS5Zg==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-core/1.2.11/9f196e173072185530e12505b8dc87e23884f8cd}
 
-  '@thinkneverland/pixie-dust-dashboard@1.18.0':
-    resolution: {integrity: sha512-rF2qM/M+YzcvM3jxpP7ex39T0iNk1emlEafB4x7+cFXXJuaU/16T0mfoKJfcuexCO7nuD/mFhkTfBJQpaUy12A==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-dashboard/1.18.0/7cef1c70fdb0a264fc211b838990c5baa06afbc2}
+  '@thinkneverland/pixie-dust-dashboard@1.18.1':
+    resolution: {integrity: sha512-5hWpy0hgj4sYzilp8paJG35jG2oxDC/ZhFldAMrpNi1SUpa+tMtWtYVnonpO6ALyimChx5uqU2BYaIW65aNUKw==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-dashboard/1.18.1/8548504994e3a381fb08017464de097e94ff9d70}
     peerDependencies:
       lucide-react: '>=0.300.0'
       next: '>=14.0.0'
@@ -2578,16 +2578,16 @@ packages:
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
-  '@thinkneverland/pixie-dust-usage@1.1.0':
-    resolution: {integrity: sha512-JvOsCbh8hldcJ8vsF0kwQRik9B4qJJ7AA7JrSf47LHlVBKFhe6wr2cAomsnG0M63wgveUGPoYz0bPi0JXkAJoA==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-usage/1.1.0/f0072c999a9a30237b648e1d204db1d914c61475}
+  '@thinkneverland/pixie-dust-usage@1.1.1':
+    resolution: {integrity: sha512-VKynD1wjeEOssuF13GLOABqnTpnSChIxk8dc89Un61OKuiapY2JNfTFd4WAuFo/V5yVZr+QHAQ0MGcs+U4ymgA==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-usage/1.1.1/90360e6ac99bacd21c395f151a3b61dee2fb53eb}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
-  '@thinkneverland/pixie-dust-waitlist@1.2.0':
-    resolution: {integrity: sha512-ZJ4J8mbzHX97hjVByMlBjzO50/tDLXVqUQSiVAnuxoZ9R7X1TrnfM/NdzAhPkFttU+6CJUyLfECwVg8fxUBvhg==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-waitlist/1.2.0/66776d9190a0f6f47425f4efc52a867015c06f0e}
+  '@thinkneverland/pixie-dust-waitlist@1.2.1':
+    resolution: {integrity: sha512-azAJnIzalhn8l+nyeR5IFR3wNyyCaf2RTfPJMLIeKRiHtGXrcbUFHvrgffulL8i6HwQlhxeZcZQ5SyS09HVP8Q==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-waitlist/1.2.1/144f881915aa8debddbc91e520a05e9d8ddc042f}
 
-  '@thinkneverland/pixie-dust-webhooks@1.1.0':
-    resolution: {integrity: sha512-aIEgFxFy4T37K2czRv8YgYqPwSg87Z5GWyrP66IcDLEEhup37yw57VB83X1MOq+fWkmLxLZbpi42lXmC1VjAKw==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-webhooks/1.1.0/ee7b8224185cc7107ac63aa5d9e412afeda9820d}
+  '@thinkneverland/pixie-dust-webhooks@1.1.1':
+    resolution: {integrity: sha512-hrYfKExrSnnQYDv2dPHO4NSlR09cEwVRQdl6H2iLudTDaUdaS9GUqywWf5lws8o6wRgrn1KdJNHA3S110xL1yQ==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-webhooks/1.1.1/b1376c457f9f69ad2cd6c6972984a3c99570fe5a}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
 
@@ -8424,7 +8424,7 @@ snapshots:
       '@tanstack/query-core': 5.96.2
       react: 19.2.4
 
-  '@thinkneverland/pixie-dust-api-keys@1.2.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@thinkneverland/pixie-dust-api-keys@1.2.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.1
       '@thinkneverland/pixie-dust-ui': 4.0.13(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -8442,7 +8442,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@thinkneverland/pixie-dust-boilerplate@1.2.11(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
+  '@thinkneverland/pixie-dust-boilerplate@1.2.12(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
     dependencies:
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.1
       '@thinkneverland/pixie-dust-stripe-kit': 1.4.0(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
@@ -8477,7 +8477,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@thinkneverland/pixie-dust-dashboard@1.18.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@thinkneverland/pixie-dust-dashboard@1.18.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.1
       '@thinkneverland/pixie-dust-theme-default': 1.2.8
@@ -8490,7 +8490,7 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@thinkneverland/pixie-dust-dashboard@1.18.0(lucide-react@0.577.0(react@19.2.4))(next@15.5.14(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
+  '@thinkneverland/pixie-dust-dashboard@1.18.1(lucide-react@0.577.0(react@19.2.4))(next@15.5.14(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)':
     dependencies:
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.1
       '@thinkneverland/pixie-dust-theme-default': 1.2.8
@@ -8662,12 +8662,12 @@ snapshots:
       - '@types/react-dom'
       - react-dom
 
-  '@thinkneverland/pixie-dust-usage@1.1.0(react@19.2.4)':
+  '@thinkneverland/pixie-dust-usage@1.1.1(react@19.2.4)':
     dependencies:
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.1
       react: 19.2.4
 
-  '@thinkneverland/pixie-dust-waitlist@1.2.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
+  '@thinkneverland/pixie-dust-waitlist@1.2.1(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
     dependencies:
       '@thinkneverland/pixie-dust-auth': 1.10.0(typescript@5.9.3)
       '@thinkneverland/pixie-dust-config': 1.2.10
@@ -8678,7 +8678,7 @@ snapshots:
       - react-dom
       - typescript
 
-  '@thinkneverland/pixie-dust-webhooks@1.1.0(react@19.2.4)':
+  '@thinkneverland/pixie-dust-webhooks@1.1.1(react@19.2.4)':
     dependencies:
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.1
       react: 19.2.4
