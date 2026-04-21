@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 
-import { requestMagicLink } from "@thinkneverland/pixie-dust-auth";
+import { getBranding, requestMagicLink } from "@thinkneverland/pixie-dust-auth";
 import {
   env,
   RATE_LIMIT_MAGIC_LINK_PER_EMAIL,
@@ -8,7 +8,10 @@ import {
 } from "@thinkneverland/pixie-dust-config";
 import { checkRateLimit } from "@thinkneverland/pixie-dust-core";
 import { prisma } from "@thinkneverland/pixie-dust-database/server";
-import { sendMagicLinkEmail } from "@thinkneverland/pixie-dust-email/server";
+import {
+  buildEmailBranding,
+  sendMagicLinkEmail,
+} from "@thinkneverland/pixie-dust-email/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -63,7 +66,12 @@ export async function POST(req: Request) {
     }
 
     const magicLinkUrl = `${env.APP_URL}/api/auth/verify?token=${result.token}`;
-    await sendMagicLinkEmail(email, magicLinkUrl, result.code);
+    // Thread tenant branding through to the email render so the CTA
+    // button color + brand name + logo match AppSettings instead of
+    // Pixie Dust defaults.
+    const branding = await getBranding(prisma);
+    const emailBranding = buildEmailBranding(branding, env.APP_URL);
+    await sendMagicLinkEmail(email, magicLinkUrl, result.code, emailBranding);
 
     return NextResponse.json({
       success: true,
