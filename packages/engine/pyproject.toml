@@ -41,6 +41,10 @@ dependencies = [
     "Pillow>=10.0.0",
     "pdf2image>=1.17.0",
     "numpy>=1.26.0",
+    # Structured logging with JSON output + request-scoped context vars.
+    # Wraps stdlib logging so existing logger.info/warning/exception calls
+    # continue to work but emit JSON with a request_id field automatically.
+    "structlog>=24.1.0",
 ]
 
 [project.optional-dependencies]
@@ -124,6 +128,8 @@ module = [
     "pydantic.*",
     "pydantic_settings",
     "pydantic_settings.*",
+    "structlog",
+    "structlog.*",
     "fastapi",
     "fastapi.*",
     "sqlalchemy",

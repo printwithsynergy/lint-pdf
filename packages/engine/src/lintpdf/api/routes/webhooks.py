@@ -340,6 +340,8 @@ class WebhookDeliveryResponse(BaseModel):
     last_error: str | None = None
     created_at: str
     delivered_at: str | None = None
+    is_dead: bool = False
+    replay_count: int = 0
 
 
 class WebhookDeliveryDetail(WebhookDeliveryResponse):
@@ -367,6 +369,8 @@ def _row_to_summary(d: WebhookDelivery) -> WebhookDeliveryResponse:
         last_error=d.last_error,
         created_at=d.created_at.isoformat(),
         delivered_at=d.delivered_at.isoformat() if d.delivered_at else None,
+        is_dead=bool(d.is_dead),
+        replay_count=int(d.replay_count or 0),
     )
 
 
@@ -375,6 +379,7 @@ async def list_deliveries(
     webhook_id: str | None = None,
     event: str | None = None,
     success: bool | None = None,
+    dead: bool | None = None,
     page: int = 1,
     page_size: int = 50,
     db: Session = Depends(get_db),
@@ -382,9 +387,12 @@ async def list_deliveries(
 ) -> WebhookDeliveryListResponse:
     """List webhook delivery attempts for the authenticated tenant.
 
-    Newest first. Filter by ``webhook_id``, ``event``, or
-    ``success=false`` to narrow in on failures. Paginates via
-    ``?page=`` + ``?page_size=`` (default 50, capped at 200).
+    Newest first. Filter by ``webhook_id``, ``event``, ``success=false``,
+    or ``dead=true`` to narrow in on failures. Paginates via ``?page=`` +
+    ``?page_size=`` (default 50, capped at 200).
+
+    ``dead=true`` returns only the dead-letter queue (deliveries whose
+    retries have been exhausted). Use this to power the admin DLQ view.
     """
     if page < 1:
         page = 1
@@ -405,6 +413,8 @@ async def list_deliveries(
         query = query.filter(WebhookDelivery.event == event)
     if success is not None:
         query = query.filter(WebhookDelivery.success.is_(success))
+    if dead is not None:
+        query = query.filter(WebhookDelivery.is_dead.is_(dead))
 
     total = query.count()
     rows = (
@@ -508,6 +518,11 @@ async def replay_delivery(
         success=False,
     )
     db.add(new_row)
+    # Clear the dead-letter flag on the original row and bump its replay
+    # counter. We keep the original row around for the audit trail; the
+    # newly-created ``new_row`` receives the fresh dispatch attempts.
+    original.is_dead = False
+    original.replay_count = int(original.replay_count or 0) + 1
     db.commit()
     db.refresh(new_row)
 

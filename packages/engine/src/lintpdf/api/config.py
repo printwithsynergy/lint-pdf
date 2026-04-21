@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +33,17 @@ class Settings(BaseSettings):
 
     # Upload limits
     max_upload_size_mb: int = 1024
+
+    # Upload stream chunk size (MB) — smaller values detect oversized uploads
+    # sooner at the cost of more read() syscalls. 1 MB gives sub-second 413s
+    # on multi-GB probes while keeping well-formed small uploads fast.
+    max_upload_stream_chunk_mb: int = 1
+
+    # Burst rate limit — per-tenant requests-per-minute ceiling. Enforced in
+    # addition to the daily ``rate_limit_daily`` quota so a misbehaving
+    # client can't exhaust a tenant's budget in 10 seconds. Set to 0 to
+    # disable the burst check.
+    burst_rate_per_minute: int = 100
 
     # Email (Resend)
     resend_api_key: str | None = None
@@ -107,15 +120,42 @@ class Settings(BaseSettings):
     def max_upload_size_bytes(self) -> int:
         return self.max_upload_size_mb * 1024 * 1024
 
+    @property
+    def max_upload_stream_chunk_bytes(self) -> int:
+        return self.max_upload_stream_chunk_mb * 1024 * 1024
+
+
+@lru_cache(maxsize=1)
+def _cached_settings() -> Settings:
+    return Settings()
+
 
 def get_settings() -> Settings:
-    """Get cached settings instance."""
+    """Return the process-wide Settings singleton.
+
+    The environment is immutable for the life of a production process,
+    so computing the pydantic model once (instead of per call) removes a
+    measurable amount of work from every route, Celery task, and CLI
+    entry point. Under pytest the environment flips between tests (via
+    ``monkeypatch.setenv``) so we bypass the cache when
+    ``PYTEST_CURRENT_TEST`` is set, giving tests fresh values without
+    requiring them to know about the cache.
+    """
+    import os
     import warnings
 
-    settings = Settings()
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        settings = Settings()
+    else:
+        settings = _cached_settings()
+
     if settings.secret_key == "change-me-in-production":
         warnings.warn(
             "Using default LINTPDF_SECRET_KEY — set a strong random value in production",
             stacklevel=2,
         )
     return settings
+
+
+# Backwards compat: older tests call ``get_settings.cache_clear()``.
+get_settings.cache_clear = _cached_settings.cache_clear  # type: ignore[attr-defined]

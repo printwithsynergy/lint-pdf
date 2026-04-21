@@ -22,6 +22,7 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy import text as sa_text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from lintpdf.tenants.models import TenantPlan
@@ -186,7 +187,10 @@ class Job(Base):
     """Preflight job record."""
 
     __tablename__ = "jobs"
-    __table_args__ = (Index("ix_jobs_tenant_created", "tenant_id", "created_at"),)
+    __table_args__ = (
+        Index("ix_jobs_tenant_created", "tenant_id", "created_at"),
+        Index("ix_jobs_tenant_status", "tenant_id", "status"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     tenant_id: Mapped[uuid.UUID] = mapped_column(
@@ -373,6 +377,15 @@ class WebhookDelivery(Base):
         Index("ix_webhook_deliveries_endpoint_created", "webhook_id", "created_at"),
         Index("ix_webhook_deliveries_tenant_created", "tenant_id", "created_at"),
         Index("ix_webhook_deliveries_event_created", "event", "created_at"),
+        # Partial index for the admin "dead letters" view — most rows
+        # will never flip to is_dead=true so a partial index keeps the
+        # lookup fast without paying to index every delivery.
+        Index(
+            "ix_webhook_deliveries_dead",
+            "tenant_id",
+            "created_at",
+            postgresql_where=sa_text("is_dead = true"),
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -408,6 +421,18 @@ class WebhookDelivery(Base):
     )
     delivered_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    # Dead-letter flag: set to True once the dispatcher gives up (max
+    # retries exhausted). Operators replay via
+    # ``POST /api/v1/webhooks/deliveries/{id}/replay``; a successful
+    # replay flips this back to False.
+    is_dead: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=sa_text("false"), default=False
+    )
+    # Count of manual replay attempts kicked off from the admin UI.
+    # Useful for detecting chronic-failing endpoints.
+    replay_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=sa_text("0"), default=0
     )
 
 

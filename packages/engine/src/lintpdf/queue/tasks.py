@@ -931,6 +931,12 @@ def probe_pending_custom_domains() -> dict[str, Any]:
         "cname_mismatch": 0,
     }
 
+    # Cap how many unverified rows we pull per beat tick. The DNS probes
+    # are cheap but a spam wave of signups can otherwise load tens of
+    # thousands of rows into memory at once; we'll catch the leftovers on
+    # the next 5-minute tick.
+    _PROBE_BATCH_LIMIT = 500
+
     db = get_db_session()
     try:
         pending_tenants: list[Tenant] = (
@@ -939,6 +945,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 Tenant.brand_custom_domain.isnot(None),
                 Tenant.brand_custom_domain_verified.is_(False),
             )
+            .limit(_PROBE_BATCH_LIMIT)
             .all()
         )
         for tenant in pending_tenants:
@@ -960,6 +967,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 BrandProfile.custom_domain.isnot(None),
                 BrandProfile.custom_domain_verified.is_(False),
             )
+            .limit(_PROBE_BATCH_LIMIT)
             .all()
         )
         for profile in pending_profiles:
@@ -981,6 +989,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 Tenant.app_custom_domain.isnot(None),
                 Tenant.app_custom_domain_verified.is_(False),
             )
+            .limit(_PROBE_BATCH_LIMIT)
             .all()
         )
         for tenant in pending_app_tenants:
@@ -1002,6 +1011,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 BrandProfile.app_custom_domain.isnot(None),
                 BrandProfile.app_custom_domain_verified.is_(False),
             )
+            .limit(_PROBE_BATCH_LIMIT)
             .all()
         )
         for profile in pending_app_profiles:
@@ -1230,8 +1240,30 @@ def dispatch_webhook(
             "attempt_count": attempt,
         }
 
-    logger.warning(
-        "Webhook delivery to %s failed after %d attempts: %s",
+    # Retries exhausted (or the failure was non-retryable): mark the
+    # audit row as dead so the admin /webhooks/deliveries?dead=true view
+    # can surface it and an operator can trigger a replay later.
+    if delivery_id:
+        session = SessionLocal()
+        try:
+            row = (
+                session.query(WebhookDelivery)
+                .filter(WebhookDelivery.id == uuid_mod.UUID(delivery_id))
+                .first()
+            )
+            if row is not None and not row.is_dead:
+                row.is_dead = True
+                session.commit()
+        except Exception:
+            logger.exception(
+                "Webhook dead-letter: failed to flag delivery %s", delivery_id
+            )
+            session.rollback()
+        finally:
+            session.close()
+
+    logger.error(
+        "Webhook delivery to %s dead after %d attempts: %s",
         webhook_url,
         attempt,
         last_error,
@@ -1241,6 +1273,7 @@ def dispatch_webhook(
         "url": webhook_url,
         "event": event,
         "error": last_error,
+        "is_dead": True,
     }
 
 

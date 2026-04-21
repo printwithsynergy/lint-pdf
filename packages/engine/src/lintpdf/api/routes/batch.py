@@ -25,7 +25,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.config import get_settings
 from lintpdf.api.database import get_db
-from lintpdf.api.middleware import check_rate_limit, get_redis_client
+from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit, get_redis_client
 from lintpdf.api.models import Job, JobStatus, Tenant
 from lintpdf.api.storage import get_storage
 from lintpdf.api.upload_security import PDF_TYPES, validate_upload
@@ -253,6 +253,7 @@ async def submit_batch(
 
     for upload in files:
         # Each file counts against the rate limit individually.
+        check_burst_rate_limit(tenant)
         check_rate_limit(tenant)
 
         content = await validate_upload(

@@ -9,12 +9,12 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session  # noqa: TC002
+from sqlalchemy.orm import Session, selectinload  # noqa: TC002
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.config import get_settings
 from lintpdf.api.database import get_db
-from lintpdf.api.middleware import check_rate_limit
+from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit
 from lintpdf.api.models import (
     BrandProfile,
     Job,
@@ -283,6 +283,7 @@ async def submit_job(  # skipcq: PY-R1000
     # and returns 402 Payment Required once the pool is empty (unless
     # overage billing is on). The two checks compose — rate_limit_daily
     # rejects traffic bursts, file_quota rejects over-consumption.
+    check_burst_rate_limit(tenant)
     usage = check_rate_limit(tenant)
 
     from lintpdf.billing.file_quota import check_and_consume_file_quota
@@ -679,7 +680,17 @@ async def get_job(
             detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
         ) from exc
 
-    job: Job | None = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
+    # Eager-load findings in a single round trip instead of issuing a
+    # separate ``SELECT ... FROM job_findings WHERE job_id = ?`` below.
+    # ``selectinload`` issues one extra query for the collection (not
+    # per-row), so a job with 10k findings still emits exactly two
+    # queries instead of 10k + 1.
+    job: Job | None = (
+        db.query(Job)
+        .options(selectinload(Job.findings))
+        .filter(Job.id == uid, Job.tenant_id == tenant.id)
+        .first()
+    )
     if job is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -712,7 +723,7 @@ async def get_job(
             file_size_bytes=summary.get("file_size_bytes", 0),
         )
 
-        findings: list[JobFinding] = db.query(JobFinding).filter(JobFinding.job_id == uid).all()
+        findings: list[JobFinding] = job.findings
         response.findings = [
             FindingResponse(
                 inspection_id=f.inspection_id,

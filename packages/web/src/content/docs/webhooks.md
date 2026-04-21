@@ -96,6 +96,23 @@ Every delivery is recorded in a `webhook_deliveries` audit table. For each event
 3. On 2xx response → row marked `success = true`, no more attempts.
 4. On 5xx / timeout / network error → Celery `self.retry()` is invoked with exponential backoff until `max_retries` is hit. Every retry updates the SAME row, so `attempt_count` reflects the total tries.
 5. On 4xx → row marked `success = false`, **no retry** (the caller's endpoint rejected the payload shape; retrying the same body won't fix it).
+6. When retries are exhausted → row flipped to `is_dead = true` so the dead-letter view surfaces it. A successful replay clears the flag and bumps `replay_count` on the original row.
+
+### Dead-letter queue
+
+Once `max_retries` is exhausted the delivery is flagged `is_dead = true`. Operators pull the list from the admin UI (`/dashboard/admin/webhooks`) or directly:
+
+```sh
+# Tenant-scoped: show dead deliveries for the authenticated tenant.
+curl "https://api.lintpdf.com/api/v1/webhooks/deliveries?dead=true" \
+  -H "Authorization: Bearer ${LINTPDF_API_KEY}"
+
+# Platform-wide (admin API key): every tenant's dead letters.
+curl "https://api.lintpdf.com/api/v1/admin/webhooks/deliveries?dead=true" \
+  -H "X-Admin-Key: ${LINTPDF_ADMIN_API_KEY}"
+```
+
+Dead deliveries stay on the `webhook_deliveries` table subject to the configured retention sweep — replaying one creates a NEW row and clears the dead flag on the original.
 
 ### Retry config
 

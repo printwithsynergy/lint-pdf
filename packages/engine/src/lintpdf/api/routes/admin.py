@@ -1374,9 +1374,16 @@ def _profile_summary_from_custom(row: Any, fp: Any) -> AdminProfileSummary:
 async def list_all_profiles(
     db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(200, ge=1, le=1000),
 ) -> AdminProfileListResponse:
     """List all preflight profiles (system + per-tenant custom) for the
-    site-admin Rulesets page."""
+    site-admin Rulesets page.
+
+    Pagination applies to the custom-profile slice only; the system-profile
+    list is always included in full because it's bounded by the profile
+    registry (<20 entries).
+    """
     from lintpdf.api.models import CustomProfile
     from lintpdf.profiles.registry import ProfileRegistry
     from lintpdf.profiles.schema import PreflightProfile
@@ -1386,7 +1393,13 @@ async def list_all_profiles(
         _profile_summary_from_builtin(pid, registry.get(pid)) for pid in registry.list_profiles()
     ]
 
-    custom_rows = db.query(CustomProfile).all()
+    custom_rows = (
+        db.query(CustomProfile)
+        .order_by(CustomProfile.tenant_id, CustomProfile.id)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
     tenants = {
         t.id: t
         for t in db.query(Tenant).filter(Tenant.id.in_({r.tenant_id for r in custom_rows})).all()
@@ -2695,4 +2708,186 @@ async def refresh_imported_report_presigned_url(
     url, expires_at = _presign_with_expiry(row.raw_blob_key)
     return AdminPresignedBlob(
         presigned_url=url, expires_at=expires_at, size_bytes=row.raw_size_bytes
+    )
+
+
+# ============================================================================
+# Webhook dead-letter admin
+# ============================================================================
+
+
+class AdminWebhookDeliveryRow(BaseModel):
+    id: str
+    tenant_id: str
+    webhook_id: str
+    event: str
+    url: str
+    attempt_count: int
+    final_status_code: int
+    success: bool
+    is_dead: bool
+    replay_count: int
+    last_error: str | None = None
+    created_at: str
+    delivered_at: str | None = None
+
+
+class AdminWebhookDeliveryListResponse(BaseModel):
+    deliveries: list[AdminWebhookDeliveryRow]
+    total: int
+    page: int
+    page_size: int
+
+
+@router.get(
+    "/webhooks/deliveries",
+    response_model=AdminWebhookDeliveryListResponse,
+)
+async def admin_list_webhook_deliveries(
+    dead: bool | None = Query(None, description="Filter to dead-letter rows only."),
+    tenant_id: str | None = Query(None, description="Restrict to one tenant."),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminWebhookDeliveryListResponse:
+    """Cross-tenant webhook delivery view for operators.
+
+    The tenant-scoped ``/api/v1/webhooks/deliveries`` already serves the
+    self-service replay flow; this endpoint is the platform-wide
+    equivalent so site admins can page through every dead delivery in
+    the system without impersonating a tenant.
+    """
+    from lintpdf.api.models import WebhookDelivery
+
+    query = db.query(WebhookDelivery)
+    if dead is not None:
+        query = query.filter(WebhookDelivery.is_dead.is_(dead))
+    if tenant_id:
+        try:
+            tid = uuid_mod.UUID(tenant_id)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Invalid tenant_id UUID.",
+            ) from None
+        query = query.filter(WebhookDelivery.tenant_id == tid)
+
+    total = query.count()
+    rows = (
+        query.order_by(desc(WebhookDelivery.created_at))
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return AdminWebhookDeliveryListResponse(
+        deliveries=[
+            AdminWebhookDeliveryRow(
+                id=str(r.id),
+                tenant_id=str(r.tenant_id),
+                webhook_id=str(r.webhook_id),
+                event=r.event,
+                url=r.url,
+                attempt_count=r.attempt_count,
+                final_status_code=r.final_status_code,
+                success=r.success,
+                is_dead=bool(r.is_dead),
+                replay_count=int(r.replay_count or 0),
+                last_error=r.last_error,
+                created_at=r.created_at.isoformat(),
+                delivered_at=r.delivered_at.isoformat() if r.delivered_at else None,
+            )
+            for r in rows
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.post(
+    "/webhooks/deliveries/{delivery_id}/replay",
+    response_model=AdminWebhookDeliveryRow,
+    status_code=status.HTTP_201_CREATED,
+)
+async def admin_replay_webhook_delivery(
+    delivery_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminWebhookDeliveryRow:
+    """Replay a dead-letter webhook delivery as a site admin.
+
+    Mirrors the tenant-scoped replay endpoint but bypasses the tenant
+    filter so operators can recover from a tenant's misconfiguration
+    without first having to impersonate them.
+    """
+    from lintpdf.api.models import WebhookDelivery, WebhookEndpoint
+
+    try:
+        did = uuid_mod.UUID(delivery_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Delivery not found.",
+        ) from None
+
+    original = db.query(WebhookDelivery).filter(WebhookDelivery.id == did).first()
+    if original is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Delivery not found.",
+        )
+
+    endpoint = (
+        db.query(WebhookEndpoint)
+        .filter(WebhookEndpoint.id == original.webhook_id)
+        .first()
+    )
+    if endpoint is None or not endpoint.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot replay: webhook endpoint is inactive or deleted.",
+        )
+
+    new_row = WebhookDelivery(
+        id=uuid_mod.uuid4(),
+        webhook_id=endpoint.id,
+        tenant_id=original.tenant_id,
+        event=original.event,
+        payload=original.payload,
+        url=endpoint.url,
+        attempt_count=0,
+        final_status_code=0,
+        success=False,
+    )
+    db.add(new_row)
+    original.is_dead = False
+    original.replay_count = int(original.replay_count or 0) + 1
+    db.commit()
+    db.refresh(new_row)
+
+    from lintpdf.queue.tasks import dispatch_webhook
+
+    dispatch_webhook.delay(  # type: ignore[attr-defined]
+        webhook_url=endpoint.url,
+        webhook_secret=endpoint.secret,
+        event=original.event,
+        payload=original.payload,
+        delivery_id=str(new_row.id),
+    )
+
+    return AdminWebhookDeliveryRow(
+        id=str(new_row.id),
+        tenant_id=str(new_row.tenant_id),
+        webhook_id=str(new_row.webhook_id),
+        event=new_row.event,
+        url=new_row.url,
+        attempt_count=new_row.attempt_count,
+        final_status_code=new_row.final_status_code,
+        success=new_row.success,
+        is_dead=False,
+        replay_count=0,
+        last_error=new_row.last_error,
+        created_at=new_row.created_at.isoformat(),
+        delivered_at=None,
     )

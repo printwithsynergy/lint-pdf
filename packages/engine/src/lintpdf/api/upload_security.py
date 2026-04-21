@@ -387,8 +387,47 @@ async def validate_upload(
     HTTPException
         422 for validation failures, 413 for size limit exceeded.
     """
-    # 1. Read content and reject empty files
-    content = await file.read()
+    # 1. Fast size reject — before we read the body into memory.
+    #
+    # Starlette's ``UploadFile.size`` is populated from Content-Length on
+    # multipart uploads; when the client honestly declares a 2 GB file
+    # for a 10 MB-cap tenant, we 413 in a few milliseconds without
+    # buffering anything. A malicious client that lies about its size
+    # (or omits the header) still hits the streaming guard below.
+    declared_size = getattr(file, "size", None)
+    if (
+        max_size_bytes is not None
+        and declared_size is not None
+        and declared_size > max_size_bytes
+    ):
+        max_mb = max_size_bytes / (1024 * 1024)
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds maximum size of {max_mb:.0f} MB.",
+        )
+
+    # 2. Stream the body in bounded chunks; abort the moment we exceed
+    # ``max_size_bytes``. This caps peak memory at ``max_size_bytes``
+    # even when the client lied about (or omitted) Content-Length.
+    from lintpdf.api.config import get_settings as _get_upload_settings
+
+    chunk_size = _get_upload_settings().max_upload_stream_chunk_bytes
+    buffer = bytearray()
+    total = 0
+    while True:
+        chunk = await file.read(chunk_size)
+        if not chunk:
+            break
+        total += len(chunk)
+        if max_size_bytes is not None and total > max_size_bytes:
+            max_mb = max_size_bytes / (1024 * 1024)
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File exceeds maximum size of {max_mb:.0f} MB.",
+            )
+        buffer.extend(chunk)
+    content = bytes(buffer)
+
     if len(content) == 0:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -462,13 +501,8 @@ async def validate_upload(
         if detected_mime == "image/svg+xml":
             _validate_svg_safety(content)
 
-    # 9. Size limit
-    if max_size_bytes is not None and len(content) > max_size_bytes:
-        max_mb = max_size_bytes / (1024 * 1024)
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"File exceeds maximum size of {max_mb:.0f} MB.",
-        )
+    # 9. Size limit is enforced during the streaming read above; no
+    # additional post-hoc check is required.
 
     # 10. ClamAV malware scan (if configured)
     if settings is not None:

@@ -22,6 +22,20 @@ else
 fi
 echo "Using prisma CLI: $PRISMA"
 
+# Guarantee Prisma's connection pool stays inside our shared-Postgres
+# budget (see CLAUDE.md "Connection budget"). When DATABASE_URL doesn't
+# already carry ``connection_limit`` we append the defaults so a
+# vanilla Railway env (``postgresql://...``) still deploys safely. If
+# the operator set their own value we leave it alone.
+if [ -n "$DATABASE_URL" ] && ! printf '%s' "$DATABASE_URL" | grep -q 'connection_limit='; then
+  if printf '%s' "$DATABASE_URL" | grep -q '?'; then
+    export DATABASE_URL="${DATABASE_URL}&connection_limit=15&pool_timeout=20"
+  else
+    export DATABASE_URL="${DATABASE_URL}?connection_limit=15&pool_timeout=20"
+  fi
+  echo "DATABASE_URL augmented with pool params (connection_limit=15, pool_timeout=20)."
+fi
+
 # Step 0: Regenerate the Prisma client against the app's own schema so
 # LintPDF-specific columns (Tenant.engineTenantId, Session.impersonatingTenantId,
 # etc.) are known to the runtime client. Without this, pnpm's hoisted
@@ -264,6 +278,7 @@ CREATE TABLE IF NOT EXISTS "Annotation" (
 );
 CREATE INDEX IF NOT EXISTS "Annotation_jobId_pageNum_idx" ON "Annotation"("jobId", "pageNum");
 CREATE INDEX IF NOT EXISTS "Annotation_tenantId_idx" ON "Annotation"("tenantId");
+CREATE INDEX IF NOT EXISTS "Annotation_tenantId_createdAt_idx" ON "Annotation"("tenantId", "createdAt");
 
 -- ReportView table for tracking who viewed shared reports
 CREATE TABLE IF NOT EXISTS "ReportView" (

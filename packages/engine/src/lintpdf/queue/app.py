@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from celery import Celery
+from celery.signals import task_postrun, task_prerun, worker_process_init
 
 
 def create_celery_app(broker_url: str) -> Celery:
@@ -18,6 +21,12 @@ def create_celery_app(broker_url: str) -> Celery:
 
     app.conf.update(
         result_backend=broker_url,
+        # Job status is the source of truth in Postgres; Celery results are
+        # only ever polled indirectly (never via AsyncResult.get). Keeping
+        # the meta rows beyond an hour just bloats Redis — this caps them at
+        # one hour (3600s) to match the worst-case hard task_time_limit with
+        # headroom for a single retry window.
+        result_expires=3600,
         task_serializer="json",
         result_serializer="json",
         accept_content=["json"],
@@ -83,3 +92,37 @@ import os as _os  # noqa: E402
 
 _broker = _os.environ.get("LINTPDF_REDIS_URL") or _os.environ.get("REDIS_URL") or "memory://"
 celery_app = create_celery_app(broker_url=_broker)
+
+
+# ---------------------------------------------------------------------------
+# Structured logging context for workers
+# ---------------------------------------------------------------------------
+
+
+@worker_process_init.connect  # type: ignore[misc]
+def _configure_worker_logging(**_: Any) -> None:
+    """Install the structlog JSON renderer inside every worker process."""
+    from lintpdf.api.logging_config import configure_logging
+
+    configure_logging()
+
+
+@task_prerun.connect  # type: ignore[misc]
+def _bind_task_context(
+    task_id: str | None = None, task: Any = None, **_: Any
+) -> None:
+    """Bind ``task_id`` / ``task_name`` into structlog contextvars for the task."""
+    from structlog.contextvars import bind_contextvars
+
+    bind_contextvars(
+        task_id=task_id,
+        task_name=getattr(task, "name", None) if task is not None else None,
+    )
+
+
+@task_postrun.connect  # type: ignore[misc]
+def _unbind_task_context(**_: Any) -> None:
+    """Clear task-scoped contextvars so the next task starts clean."""
+    from structlog.contextvars import unbind_contextvars
+
+    unbind_contextvars("task_id", "task_name")

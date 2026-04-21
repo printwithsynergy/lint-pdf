@@ -43,9 +43,12 @@ COPY packages/engine/src/ src/
 COPY packages/engine/pyproject.toml .
 COPY packages/engine/alembic/ alembic/
 COPY packages/engine/alembic.ini .
+COPY packages/engine/scripts/entrypoint.sh /usr/local/bin/lintpdf-entrypoint.sh
 
-# Install the package itself and create non-root user
+# Install the package itself, normalise the entrypoint, and create the
+# non-root runtime user.
 RUN pip install --no-cache-dir --no-deps . && \
+    chmod +x /usr/local/bin/lintpdf-entrypoint.sh && \
     useradd --create-home lintpdf
 USER lintpdf
 
@@ -53,7 +56,7 @@ EXPOSE 8000
 ENV PORT=8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready')" || exit 1
 
-# Default: run API server (Railway sets $PORT dynamically)
-CMD ["sh", "-c", "uvicorn lintpdf.api.app:create_app --host 0.0.0.0 --port ${PORT} --factory"]
+# Default: run migrations then the API server (Railway sets $PORT dynamically).
+CMD ["/usr/local/bin/lintpdf-entrypoint.sh"]
