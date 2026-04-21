@@ -76,6 +76,44 @@ class StorageBackend:
         )
         return key
 
+    def upload_pdf_stream(
+        self,
+        tenant_id: str,
+        job_id: str,
+        fileobj: Any,
+    ) -> str:
+        """Upload a PDF file from a readable file-like object.
+
+        Unlike :py:meth:`upload_pdf` which takes the full body as ``bytes``,
+        this streams the upload directly to S3 via ``upload_fileobj``
+        (which internally uses multipart chunks) so the worker never
+        holds more than a few MB in memory at once. This is the hot
+        path for bulk-file ingest; see the 2026-04-21 engine-down
+        incident where byte-resident upload bodies OOM'd the container.
+
+        The caller is responsible for seeking ``fileobj`` back to
+        position 0 before invoking this method.
+
+        Args:
+            tenant_id: Tenant UUID string.
+            job_id: Job UUID string.
+            fileobj: A readable, seekable file-like object positioned
+                at the start of the PDF body (e.g. a
+                ``tempfile.SpooledTemporaryFile``).
+
+        Returns:
+            The storage key (path) where the file was stored.
+        """
+        key = f"{tenant_id}/{job_id}/input.pdf"
+        client = self._get_client()
+        client.upload_fileobj(
+            Fileobj=fileobj,
+            Bucket=self._bucket_name,
+            Key=key,
+            ExtraArgs={"ContentType": "application/pdf"},
+        )
+        return key
+
     def download_pdf(self, file_key: str) -> bytes:
         """Download a PDF file from storage.
 
@@ -307,6 +345,12 @@ class InMemoryStorage(StorageBackend):
     def upload_pdf(self, tenant_id: str, job_id: str, pdf_bytes: bytes) -> str:
         key = f"{tenant_id}/{job_id}/input.pdf"
         self._files[key] = pdf_bytes
+        return key
+
+    def upload_pdf_stream(self, tenant_id: str, job_id: str, fileobj: Any) -> str:
+        """Streaming equivalent of upload_pdf for test compatibility."""
+        key = f"{tenant_id}/{job_id}/input.pdf"
+        self._files[key] = fileobj.read()
         return key
 
     def download_pdf(self, file_key: str) -> bytes:

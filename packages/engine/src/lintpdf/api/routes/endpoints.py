@@ -29,7 +29,7 @@ from lintpdf.api.schemas import (
     JobCreateResponse,
 )
 from lintpdf.api.storage import get_storage
-from lintpdf.api.upload_security import PDF_TYPES, validate_upload
+from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
 from lintpdf.profiles.registry import ProfileRegistry
 
 logger = logging.getLogger(__name__)
@@ -282,7 +282,7 @@ async def submit_to_endpoint(
     check_burst_rate_limit(tenant)
     check_rate_limit(tenant)
 
-    content = await validate_upload(
+    spool, file_size = await validate_upload_streaming(
         file,
         allowed_types=PDF_TYPES,
         max_size_bytes=tenant.max_file_size_mb * 1024 * 1024,
@@ -292,13 +292,19 @@ async def submit_to_endpoint(
     job_id = uuid_mod.uuid4()
     storage = get_storage()
     loop = asyncio.get_running_loop()
-    file_key = await loop.run_in_executor(
-        None,
-        storage.upload_pdf,
-        str(tenant.id),
-        str(job_id),
-        content,
-    )
+    try:
+        file_key = await loop.run_in_executor(
+            None,
+            storage.upload_pdf_stream,
+            str(tenant.id),
+            str(job_id),
+            spool,
+        )
+    finally:
+        try:
+            spool.close()
+        except Exception:
+            pass
 
     job = Job(
         id=job_id,
@@ -307,18 +313,13 @@ async def submit_to_endpoint(
         profile_id=ep.profile_id,
         file_key=file_key,
         file_name=file.filename,
-        file_size=len(content),
+        file_size=file_size,
     )
     db.add(job)
     db.commit()
 
-    # Cache PDF in Redis so the worker can fetch it even if storage is slow
-    try:
-        redis = get_redis_client()
-        if redis is not None:
-            redis.set(f"pdf_cache:{file_key}", content, ex=600)
-    except Exception:
-        logger.debug("Failed to cache PDF in Redis — worker will use storage")
+    # Redis pdf_cache write deliberately removed — see routes/jobs.py
+    # for the bulk-scale rationale. Workers fall back to R2.
 
     from lintpdf.queue.tasks import run_preflight
     from lintpdf.tenants.entitlements import resolve_entitlements
