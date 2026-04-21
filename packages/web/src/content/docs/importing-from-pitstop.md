@@ -77,7 +77,7 @@ If your PitStop export is highly customized — renamed elements, non-English se
 
 ## Sample payload
 
-A trimmed but realistic PitStop XML report ships in the repo at [`docs/examples/pitstop-report.xml`](https://github.com/thinkneverland/lint-pdf/blob/main/docs/examples/pitstop-report.xml).
+A trimmed but realistic PitStop XML report is available at [`/examples/pitstop-report.xml`](https://lintpdf.com/examples/pitstop-report.xml).
 
 ## Related
 

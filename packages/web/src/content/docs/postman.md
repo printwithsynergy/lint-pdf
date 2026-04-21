@@ -8,8 +8,8 @@ order: 38
 # Postman collection
 
 Both collections are auto-generated from the engine's OpenAPI spec and
-published under [`docs/postman/`](https://github.com/thinkneverland/lint-pdf/tree/main/docs/postman)
-in the public repo. Re-generate anytime with:
+hosted as static assets on this site. Re-generate locally (repo access
+required) with:
 
 ```sh
 python tools/generate_postman.py \
@@ -21,8 +21,8 @@ python tools/generate_postman.py \
 
 | Collection | Download | Use when |
 |---|---|---|
-| **Tenant** (recommended) | [`lintpdf-tenant.postman_collection.json`](https://raw.githubusercontent.com/thinkneverland/lint-pdf/main/docs/postman/lintpdf-tenant.postman_collection.json) | You're a customer with an `lpdf_live_...` API key. Excludes admin + trial-submit routes. |
-| **All** (admin / ops) | [`lintpdf-all.postman_collection.json`](https://raw.githubusercontent.com/thinkneverland/lint-pdf/main/docs/postman/lintpdf-all.postman_collection.json) | Ops or integration work that needs the admin surface too. Requires `X-Admin-Key`. |
+| **Tenant** (recommended) | [`lintpdf-tenant.postman_collection.json`](https://lintpdf.com/postman/lintpdf-tenant.postman_collection.json) | You're a customer with an `lpdf_live_...` API key. Excludes admin + trial-submit routes. |
+| **All** (admin / ops) | [`lintpdf-all.postman_collection.json`](https://lintpdf.com/postman/lintpdf-all.postman_collection.json) | Ops or integration work that needs the admin surface too. Requires `X-Admin-Key`. |
 
 ## Quick start
 
@@ -36,10 +36,10 @@ python tools/generate_postman.py \
 
 ```sh
 # Tenant
-curl -O https://raw.githubusercontent.com/thinkneverland/lint-pdf/main/docs/postman/lintpdf-tenant.postman_collection.json
+curl -O https://lintpdf.com/postman/lintpdf-tenant.postman_collection.json
 
 # All (admin)
-curl -O https://raw.githubusercontent.com/thinkneverland/lint-pdf/main/docs/postman/lintpdf-all.postman_collection.json
+curl -O https://lintpdf.com/postman/lintpdf-all.postman_collection.json
 ```
 
 ## Live Swagger alternative

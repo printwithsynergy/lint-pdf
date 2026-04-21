@@ -145,7 +145,7 @@ export default function AdminWebhookDlqPage() {
       )}
 
       {loading ? (
-        <SkeletonDashboard />
+        <SkeletonDashboard type="table" />
       ) : rows.length === 0 ? (
         <p className="mt-6 text-sm text-muted-foreground">
           {showAll

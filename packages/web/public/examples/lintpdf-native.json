@@ -1,0 +1,69 @@
+{
+  "$schema": "https://lintpdf.com/schemas/import/v1.json",
+  "schema_version": "1",
+  "source": {
+    "tool": "Acme In-House Preflight",
+    "version": "3.2.1",
+    "profile": "PDF/X-4 Sheetfed"
+  },
+  "capabilities": {
+    "findings": true,
+    "separations": false,
+    "tac": false,
+    "fonts": true,
+    "images": true,
+    "layers": false
+  },
+  "findings": [
+    {
+      "inspection_id": "img-lowres",
+      "severity": "error",
+      "message": "Image resolution 144 dpi is below the 300 dpi threshold",
+      "page_num": 2,
+      "bbox": [72, 72, 216, 216],
+      "object_id": "Im42",
+      "object_type": "image",
+      "category": "images",
+      "iso_clause": null,
+      "details": {
+        "resolution_dpi": 144,
+        "threshold_dpi": 300,
+        "color_space": "DeviceCMYK"
+      }
+    },
+    {
+      "inspection_id": "font-noembed",
+      "severity": "warning",
+      "message": "Font Helvetica-Bold is not embedded",
+      "page_num": 1,
+      "object_id": "Helvetica-Bold",
+      "object_type": "font",
+      "category": "fonts"
+    },
+    {
+      "inspection_id": "color-rgb-in-cmyk-job",
+      "severity": "warning",
+      "message": "RGB color object used in a CMYK-intent job",
+      "page_num": 3,
+      "bbox": [144, 300, 468, 360],
+      "category": "color",
+      "iso_clause": "PDF/X-4:2010 6.2.2"
+    },
+    {
+      "inspection_id": "page-no-trimbox",
+      "severity": "error",
+      "message": "Page 4 is missing a TrimBox",
+      "page_num": 4,
+      "object_type": "page",
+      "category": "geometry"
+    },
+    {
+      "inspection_id": "overprint-white",
+      "severity": "advisory",
+      "message": "White text set to overprint — will disappear on press",
+      "page_num": 2,
+      "bbox": [96, 540, 300, 560],
+      "category": "color"
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Adobe Acrobat Preflight report (XML). Auto-detects as acrobat_xml.
+  Export from Acrobat Pro: Preflight panel > hamburger menu > Save Report > XML.
+
+  The parser reads <Hit> (or <Problem>) elements inside <Hits>, with severity
+  and page carried as attributes and children:
+    severity="Error|Warning|Info"
+    page="<n>"
+    <Description> → message
+    <Rule>        → inspection_id
+    <BBox>        → bbox (space-separated)
+    <ObjectId>    → object_id
+-->
+<Preflight>
+  <Status>Error</Status>
+  <Summary>
+    <Profile>Prepress (PDF/X-4 compliance)</Profile>
+    <ReportDate>2026-03-14T09:12:44Z</ReportDate>
+    <FileName>brochure.pdf</FileName>
+  </Summary>
+  <Hits>
+    <Hit severity="Error" page="2">
+      <Description>Image resolution 144 dpi is below the 300 dpi threshold</Description>
+      <Rule>ACR_IMG_LOWRES</Rule>
+      <BBox>72 72 216 216</BBox>
+      <ObjectId>Im42</ObjectId>
+    </Hit>
+    <Hit severity="Warning" page="1">
+      <Description>Font Helvetica-Bold is not embedded</Description>
+      <Rule>ACR_FONT_NOEMBED</Rule>
+      <ObjectId>Helvetica-Bold</ObjectId>
+    </Hit>
+    <Hit severity="Warning" page="3">
+      <Description>RGB color object used in a CMYK-intent job</Description>
+      <Rule>ACR_COLOR_RGB_IN_CMYK</Rule>
+      <BBox>144 300 468 360</BBox>
+    </Hit>
+    <Hit severity="Error" page="4">
+      <Description>Page 4 is missing a TrimBox</Description>
+      <Rule>ACR_GEOM_NO_TRIMBOX</Rule>
+    </Hit>
+    <Hit severity="Info" page="2">
+      <Description>White text set to overprint — will disappear on press</Description>
+      <Rule>ACR_COLOR_OVERPRINT_WHITE</Rule>
+      <BBox>96 540 300 560</BBox>
+    </Hit>
+  </Hits>
+</Preflight>

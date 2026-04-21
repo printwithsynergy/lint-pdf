@@ -2,9 +2,35 @@ import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
 import { remark } from "remark";
-import rehypeSanitize from "rehype-sanitize";
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
 import remarkRehype from "remark-rehype";
 import rehypeStringify from "rehype-stringify";
+
+// rehype-sanitize's default schema strips GFM table tags in some combinations.
+// Extend it to explicitly allow the table surface so remark-gfm's output
+// survives sanitisation.
+const gfmSchema = {
+  ...defaultSchema,
+  tagNames: [
+    ...(defaultSchema.tagNames ?? []),
+    "table",
+    "thead",
+    "tbody",
+    "tfoot",
+    "tr",
+    "th",
+    "td",
+    "caption",
+    "colgroup",
+    "col",
+  ],
+  attributes: {
+    ...(defaultSchema.attributes ?? {}),
+    th: [...((defaultSchema.attributes ?? {}).th ?? []), "align", "scope"],
+    td: [...((defaultSchema.attributes ?? {}).td ?? []), "align"],
+  },
+};
 
 const DOCS_DIR = path.join(process.cwd(), "src/content/docs");
 
@@ -50,8 +76,9 @@ export async function getDocBySlug(slug: string): Promise<DocPage | null> {
 
   const doc = parseDoc(`${slug}.md`);
   const result = await remark()
+    .use(remarkGfm)
     .use(remarkRehype)
-    .use(rehypeSanitize)
+    .use(rehypeSanitize, gfmSchema)
     .use(rehypeStringify)
     .process(doc.content);
   doc.htmlContent = result.toString();
