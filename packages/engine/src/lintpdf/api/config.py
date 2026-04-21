@@ -144,10 +144,7 @@ def get_settings() -> Settings:
     import os
     import warnings
 
-    if os.environ.get("PYTEST_CURRENT_TEST"):
-        settings = Settings()
-    else:
-        settings = _cached_settings()
+    settings = Settings() if os.environ.get("PYTEST_CURRENT_TEST") else _cached_settings()
 
     if settings.secret_key == "change-me-in-production":
         warnings.warn(

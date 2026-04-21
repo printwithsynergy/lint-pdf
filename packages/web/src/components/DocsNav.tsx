@@ -10,8 +10,8 @@ export function DocsNav() {
   const currentSlug = pathname.replace("/docs/", "").replace("/docs", "");
   const pillBarRef = useRef<HTMLDivElement>(null);
   const activePillRef = useRef<HTMLButtonElement>(null);
+  const activeLinkRef = useRef<HTMLAnchorElement>(null);
 
-  // Find which section contains the current page
   function sectionForSlug(slug: string) {
     for (const section of docSections) {
       if (section.items.some((item) => item.slug === slug)) {
@@ -21,23 +21,33 @@ export function DocsNav() {
     return null;
   }
 
+  // Single-open accordion: which section is currently expanded on both
+  // mobile + desktop. Initialises to the section that contains the
+  // current page so a user landing on any doc sees their context without
+  // having to click anything.
   const [activeSection, setActiveSection] = useState<string | null>(
     sectionForSlug(currentSlug),
   );
 
-  // Update active section and scroll pill into view on route change
+  // Route change → auto-expand the group containing the new page.
   useEffect(() => {
     const section = sectionForSlug(currentSlug);
     setActiveSection(section);
   }, [currentSlug]);
 
+  // Mobile: centre the active pill in the horizontal scroller.
+  // Desktop: ensure the active link is visible inside the sidebar scroller.
   useEffect(() => {
     activePillRef.current?.scrollIntoView({
       inline: "center",
       block: "nearest",
       behavior: "smooth",
     });
-  }, [activeSection]);
+    activeLinkRef.current?.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth",
+    });
+  }, [activeSection, currentSlug]);
 
   function toggleSection(heading: string) {
     setActiveSection((prev) => (prev === heading ? null : heading));
@@ -47,13 +57,13 @@ export function DocsNav() {
     ? (docSections.find((s) => s.heading === activeSection)?.items ?? [])
     : [];
 
-  function navLink(slug: string, label: string) {
+  function navLink(slug: string, label: string, refActiveLink = false) {
     const isActive = currentSlug === slug;
     return (
       <Link
         key={slug}
         href={`/docs/${slug}`}
-        onClick={() => setActiveSection(null)}
+        ref={isActive && refActiveLink ? activeLinkRef : undefined}
         className={`block rounded-md px-3 py-1.5 text-sm transition-colors ${
           isActive
             ? "bg-brand-50 text-brand-700 font-medium"
@@ -64,21 +74,6 @@ export function DocsNav() {
       </Link>
     );
   }
-
-  const nav = (
-    <>
-      {docSections.map((section) => (
-        <div key={section.heading} className="mb-4">
-          <h4 className="px-3 mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            {section.heading}
-          </h4>
-          <div className="space-y-0.5">
-            {section.items.map((item) => navLink(item.slug, item.label))}
-          </div>
-        </div>
-      ))}
-    </>
-  );
 
   return (
     <>
@@ -122,10 +117,49 @@ export function DocsNav() {
         </nav>
       </div>
 
-      {/* Desktop sidebar */}
-      <nav className="hidden lg:block sticky top-24 w-56 flex-shrink-0 self-start max-h-[calc(100vh-8rem)] overflow-y-auto">
-        {nav}
+      {/* Desktop sidebar — accordion, single-open */}
+      <nav className="hidden lg:block sticky top-24 w-56 flex-shrink-0 self-start max-h-[calc(100vh-8rem)] overflow-y-auto pb-8">
+        {docSections.map((section) => {
+          const isOpen = activeSection === section.heading;
+          return (
+            <div key={section.heading} className="mb-1">
+              <button
+                type="button"
+                onClick={() => toggleSection(section.heading)}
+                aria-expanded={isOpen}
+                className="flex w-full items-center justify-between rounded-md px-3 py-1.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-700"
+              >
+                <span>{section.heading}</span>
+                <Chevron open={isOpen} />
+              </button>
+              {isOpen && (
+                <div className="mt-0.5 mb-3 space-y-0.5">
+                  {section.items.map((item) =>
+                    navLink(item.slug, item.label, true),
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
     </>
+  );
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      className={`h-3 w-3 shrink-0 text-slate-400 transition-transform ${
+        open ? "rotate-90" : ""
+      }`}
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4 3l4 3-4 3" />
+    </svg>
   );
 }

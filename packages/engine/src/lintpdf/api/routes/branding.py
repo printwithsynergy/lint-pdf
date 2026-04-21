@@ -113,7 +113,7 @@ def _schedule_cert_prewarm(hostname: str | None) -> None:
         # Delay 5 s so DNS caches start honoring any fresh CNAME the
         # customer just added before we probe.
         prewarm_edge_cert.apply_async(args=[hostname], countdown=5)
-    except Exception:  # noqa: BLE001 -- never block the PATCH
+    except Exception:
         import logging
 
         logging.getLogger(__name__).warning(
@@ -140,14 +140,10 @@ def _profile_to_response(profile: BrandProfile, tenant: Tenant) -> BrandProfileR
         updated_at=profile.updated_at,
         custom_domain=profile.custom_domain,
         custom_domain_verified=profile.custom_domain_verified,
-        custom_domain_dns_target=EDGE_HOSTNAME
-        if profile.custom_domain
-        else None,
+        custom_domain_dns_target=EDGE_HOSTNAME if profile.custom_domain else None,
         app_custom_domain=profile.app_custom_domain,
         app_custom_domain_verified=profile.app_custom_domain_verified,
-        app_custom_domain_dns_target=EDGE_HOSTNAME
-        if profile.app_custom_domain
-        else None,
+        app_custom_domain_dns_target=EDGE_HOSTNAME if profile.app_custom_domain else None,
     )
 
 
@@ -325,7 +321,8 @@ async def update_brand_profile(
     db.commit()
     db.refresh(profile)
 
-    from lintpdf.api.cache import brand_profile_key, invalidate as cache_invalidate
+    from lintpdf.api.cache import brand_profile_key
+    from lintpdf.api.cache import invalidate as cache_invalidate
 
     cache_invalidate(brand_profile_key(str(tenant.id), str(uid)))
 
@@ -362,7 +359,8 @@ async def delete_brand_profile(
             detail="Brand profile not found.",
         )
 
-    from lintpdf.api.cache import brand_profile_key, invalidate as cache_invalidate
+    from lintpdf.api.cache import brand_profile_key
+    from lintpdf.api.cache import invalidate as cache_invalidate
 
     cache_invalidate(brand_profile_key(str(tenant.id), str(uid)))
 
@@ -462,7 +460,8 @@ async def upload_brand_logo(
     db.commit()
     db.refresh(profile)
 
-    from lintpdf.api.cache import brand_profile_key, invalidate as cache_invalidate
+    from lintpdf.api.cache import brand_profile_key
+    from lintpdf.api.cache import invalidate as cache_invalidate
 
     cache_invalidate(brand_profile_key(str(tenant.id), str(profile.id)))
 

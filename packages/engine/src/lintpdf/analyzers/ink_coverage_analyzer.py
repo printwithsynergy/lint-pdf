@@ -194,9 +194,7 @@ class InkCoverageAnalyzer(BaseAnalyzer):
             # which matches how a prepress reviewer would mark the spot.
             max_bbox = max_entry.get("bbox")
             bbox_tuple = (
-                tuple(float(v) for v in max_bbox)
-                if max_bbox and len(max_bbox) == 4
-                else None
+                tuple(float(v) for v in max_bbox) if max_bbox and len(max_bbox) == 4 else None
             )
 
             findings.append(

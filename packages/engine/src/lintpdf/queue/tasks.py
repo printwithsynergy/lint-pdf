@@ -560,13 +560,9 @@ def run_preflight(
             try:
                 from lintpdf.webhooks.events import fire_job_state_changed
 
-                fire_job_state_changed(
-                    db, job, job.tenant_id, reason="job.completed"
-                )
+                fire_job_state_changed(db, job, job.tenant_id, reason="job.completed")
             except Exception:
-                logger.exception(
-                    "job.state_changed emit failed for job %s", job_id
-                )
+                logger.exception("job.state_changed emit failed for job %s", job_id)
 
             # Auto-generate HTML + PDF reports so they're ready immediately.
             # Callers get report URLs from GET /api/v1/jobs/{id} without a
@@ -837,15 +833,17 @@ def prewarm_edge_cert(hostname: str) -> dict[str, Any]:
 
     ctx = ssl.create_default_context()
     try:
-        with socket.create_connection((canonical, 443), timeout=45) as sock:
-            with ctx.wrap_socket(sock, server_hostname=canonical) as ssock:
-                ssock.sendall(
-                    b"HEAD /__edge/health HTTP/1.1\r\nHost: "
-                    + canonical.encode()
-                    + b"\r\nConnection: close\r\nUser-Agent: lintpdf-cert-prewarm\r\n\r\n"
-                )
-                # Read the status line; body is discarded.
-                status_line = ssock.recv(128)
+        with (
+            socket.create_connection((canonical, 443), timeout=45) as sock,
+            ctx.wrap_socket(sock, server_hostname=canonical) as ssock,
+        ):
+            ssock.sendall(
+                b"HEAD /__edge/health HTTP/1.1\r\nHost: "
+                + canonical.encode()
+                + b"\r\nConnection: close\r\nUser-Agent: lintpdf-cert-prewarm\r\n\r\n"
+            )
+            # Read the status line; body is discarded.
+            status_line = ssock.recv(128)
         logger.info(
             "Edge cert prewarm OK for %s (%s)",
             canonical,
@@ -857,10 +855,10 @@ def prewarm_edge_cert(hostname: str) -> dict[str, Any]:
         # after a 15 s delay gives Caddy time to finish the ACME dance.
         logger.warning("TLS error prewarming %s: %s (will retry)", canonical, exc)
         return {"hostname": canonical, "status": "tls_error", "error": str(exc)}
-    except (OSError, socket.timeout) as exc:
+    except (TimeoutError, OSError) as exc:
         logger.warning("Network error prewarming %s: %s", canonical, exc)
         return {"hostname": canonical, "status": "network_error", "error": str(exc)}
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         logger.exception("Unexpected prewarm failure for %s", canonical)
         return {"hostname": canonical, "status": "error", "error": str(exc)}
 
@@ -935,7 +933,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
     # are cheap but a spam wave of signups can otherwise load tens of
     # thousands of rows into memory at once; we'll catch the leftovers on
     # the next 5-minute tick.
-    _PROBE_BATCH_LIMIT = 500
+    probe_batch_limit = 500
 
     db = get_db_session()
     try:
@@ -945,7 +943,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 Tenant.brand_custom_domain.isnot(None),
                 Tenant.brand_custom_domain_verified.is_(False),
             )
-            .limit(_PROBE_BATCH_LIMIT)
+            .limit(probe_batch_limit)
             .all()
         )
         for tenant in pending_tenants:
@@ -967,7 +965,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 BrandProfile.custom_domain.isnot(None),
                 BrandProfile.custom_domain_verified.is_(False),
             )
-            .limit(_PROBE_BATCH_LIMIT)
+            .limit(probe_batch_limit)
             .all()
         )
         for profile in pending_profiles:
@@ -989,7 +987,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 Tenant.app_custom_domain.isnot(None),
                 Tenant.app_custom_domain_verified.is_(False),
             )
-            .limit(_PROBE_BATCH_LIMIT)
+            .limit(probe_batch_limit)
             .all()
         )
         for tenant in pending_app_tenants:
@@ -1011,7 +1009,7 @@ def probe_pending_custom_domains() -> dict[str, Any]:
                 BrandProfile.app_custom_domain.isnot(None),
                 BrandProfile.app_custom_domain_verified.is_(False),
             )
-            .limit(_PROBE_BATCH_LIMIT)
+            .limit(probe_batch_limit)
             .all()
         )
         for profile in pending_app_profiles:
@@ -1176,9 +1174,7 @@ def dispatch_webhook(
                 row.delivered_at = _dt.datetime.now(_dt.timezone.utc)
                 session.commit()
         except Exception:
-            logger.exception(
-                "Webhook audit: failed to update WebhookDelivery %s", delivery_id
-            )
+            logger.exception("Webhook audit: failed to update WebhookDelivery %s", delivery_id)
             session.rollback()
         finally:
             session.close()
@@ -1255,9 +1251,7 @@ def dispatch_webhook(
                 row.is_dead = True
                 session.commit()
         except Exception:
-            logger.exception(
-                "Webhook dead-letter: failed to flag delivery %s", delivery_id
-            )
+            logger.exception("Webhook dead-letter: failed to flag delivery %s", delivery_id)
             session.rollback()
         finally:
             session.close()
@@ -1312,11 +1306,7 @@ def sweep_webhook_deliveries() -> dict[str, Any]:
             if default_days is None and not overrides:
                 continue
 
-            rows = (
-                db.query(WebhookDelivery)
-                .filter(WebhookDelivery.webhook_id == endpoint.id)
-                .all()
-            )
+            rows = db.query(WebhookDelivery).filter(WebhookDelivery.webhook_id == endpoint.id).all()
             deleted_here = 0
             for row in rows:
                 # Longest-glob wins so ``billing.file_quota.low`` is
@@ -1620,9 +1610,7 @@ def _run_external_preflight(
         "findings": [
             {
                 "inspection_id": f.inspection_id,
-                "severity": (
-                    f.severity.value if hasattr(f.severity, "value") else str(f.severity)
-                ),
+                "severity": (f.severity.value if hasattr(f.severity, "value") else str(f.severity)),
                 "message": f.message,
                 "page_num": f.page_num,
                 "bbox": list(f.bbox) if f.bbox else None,

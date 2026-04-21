@@ -807,7 +807,9 @@ class TenantCustomDomainResponse(BaseModel):
 class AdminCustomDomainRow(BaseModel):
     """Admin view of a tenant-level or profile-level custom domain."""
 
-    scope: str = Field(description="'tenant', 'tenant_app', 'brand_profile', or 'brand_profile_app'")
+    scope: str = Field(
+        description="'tenant', 'tenant_app', 'brand_profile', or 'brand_profile_app'"
+    )
     tenant_id: uuid.UUID
     tenant_name: str
     brand_profile_id: uuid.UUID | None = None

@@ -565,6 +565,7 @@ class ReportService:
             viewer_base = viewer_base_url.rstrip("/")
         else:
             from lintpdf.api.config import get_settings as _get_settings
+
             viewer_base = _get_settings().app_base_url.rstrip("/")
 
         if "html" in tokens:
@@ -628,9 +629,7 @@ class ReportService:
             if existing is not None and not needs_inline:
                 # Pure URL reuse — no body work.
                 url = f"{report_base_url}/r/{existing.token}{_suffix_by_format.get(fmt, '')}"
-                viewer_url = (
-                    f"{viewer_base}/view/{existing.token}" if fmt == "html" else None
-                )
+                viewer_url = f"{viewer_base}/view/{existing.token}" if fmt == "html" else None
                 report_result.reports.append(
                     {
                         "format": fmt,
@@ -856,7 +855,7 @@ class ReportService:
             .all()
         )
 
-        import uuid as uuid_mod
+        import uuid as uuid_mod  # noqa: TC003  # runtime use: uuid_mod.uuid4() / UUID casts
 
         count = 0
         expired_snapshots: list[tuple[uuid_mod.UUID, uuid_mod.UUID, str, str]] = []
@@ -871,9 +870,7 @@ class ReportService:
 
             # Snapshot what we need for the webhook BEFORE the delete
             # expires the ORM row.
-            expired_snapshots.append(
-                (record.tenant_id, record.job_id, record.token, record.format)
-            )
+            expired_snapshots.append((record.tenant_id, record.job_id, record.token, record.format))
             self._db.delete(record)
             count += 1
 

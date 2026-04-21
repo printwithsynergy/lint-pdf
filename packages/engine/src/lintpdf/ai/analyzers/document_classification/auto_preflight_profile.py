@@ -100,7 +100,7 @@ class AutoPreflightProfileAnalyzer(BaseAIAnalyzer):
         try:
             result = gpu.classify_document(first_page_png)
         except (GPUServiceNotConfiguredError, GPUServiceRateLimitedError):
-            logger.debug("auto_voyage_plan: GPU service not configured, skipping")
+            logger.debug("auto_preflight_profile: GPU service not configured, skipping")
             return []
         except GPUServiceUnavailableError as exc:
             return [

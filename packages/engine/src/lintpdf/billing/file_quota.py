@@ -25,6 +25,8 @@ if TYPE_CHECKING:
 
     from sqlalchemy.orm import Session
 
+    from lintpdf.api.models import Tenant
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,7 +68,7 @@ def get_file_quota_balance(tenant_id: uuid.UUID, db: Session) -> FileQuotaBalanc
 
 
 def check_and_consume_file_quota(
-    tenant: object,
+    tenant: Tenant,
     files_requested: int,
     db: Session,
 ) -> FileQuotaBalance:
@@ -88,7 +90,7 @@ def check_and_consume_file_quota(
     # errors surface here) even though we don't need the current
     # monthly_files_included value on the fall-through path.
     resolve_entitlements(tenant)
-    tenant_id = tenant.id if hasattr(tenant, "id") else tenant  # type: ignore[union-attr]
+    tenant_id: uuid.UUID = tenant.id
 
     # No metered-resource packs for this tenant yet — either their plan
     # allots 0 files, or invoice.paid hasn't fired since the feature
@@ -192,12 +194,9 @@ def _has_active_file_packs(tenant_id: uuid.UUID, db: Session) -> bool:
     from lintpdf.api.models import TenantAICreditPackage
 
     now = datetime.now(timezone.utc)
-    q = (
-        db.query(TenantAICreditPackage)
-        .filter(
-            TenantAICreditPackage.tenant_id == tenant_id,
-            TenantAICreditPackage.kind == "files",
-            TenantAICreditPackage.credits_remaining > 0,
-        )
+    q = db.query(TenantAICreditPackage).filter(
+        TenantAICreditPackage.tenant_id == tenant_id,
+        TenantAICreditPackage.kind == "files",
+        TenantAICreditPackage.credits_remaining > 0,
     )
     return any((p.expires_at is None or p.expires_at > now) for p in q)

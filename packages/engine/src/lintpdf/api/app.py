@@ -220,9 +220,7 @@ def create_app() -> FastAPI:
 
         full = app.openapi()
         slim = deepcopy(full)
-        slim["paths"] = {
-            p: body for p, body in full["paths"].items() if _is_tenant_route(p)
-        }
+        slim["paths"] = {p: body for p, body in full["paths"].items() if _is_tenant_route(p)}
         slim.setdefault("info", {})
         slim["info"]["title"] = f"{slim['info'].get('title', 'LintPDF')} (Tenant API)"
         slim["info"]["description"] = (

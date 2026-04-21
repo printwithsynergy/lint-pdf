@@ -96,9 +96,7 @@ class TestGPUInferenceClient:
     @staticmethod
     def test_assess_image_quality() -> None:
         with patch("httpx.Client") as mock_client_cls:
-            mock_response = TestGPUInferenceClient._ok_response(
-                {"score": 72.5, "model": "musiq"}
-            )
+            mock_response = TestGPUInferenceClient._ok_response({"score": 72.5, "model": "musiq"})
             mock_client_cls.return_value.request.return_value = mock_response
 
             client = GPUInferenceClient("http://gpu:8080")

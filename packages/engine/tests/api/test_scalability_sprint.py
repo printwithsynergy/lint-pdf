@@ -102,7 +102,7 @@ class TestBurstRateLimit:
 
 class TestReadyEndpoint:
     @staticmethod
-    def test_ready_ok_when_deps_available(client: "TestClient") -> None:
+    def test_ready_ok_when_deps_available(client: TestClient) -> None:
         mock_engine = MagicMock()
         mock_redis = MagicMock()
         mock_redis.ping.return_value = True
@@ -118,7 +118,7 @@ class TestReadyEndpoint:
         assert body["redis"] == "connected"
 
     @staticmethod
-    def test_ready_503_when_database_errors(client: "TestClient") -> None:
+    def test_ready_503_when_database_errors(client: TestClient) -> None:
         mock_engine = MagicMock()
         mock_engine.connect.side_effect = Exception("boom")
         with patch("lintpdf.api.database.get_engine", return_value=mock_engine):
@@ -134,13 +134,13 @@ class TestReadyEndpoint:
 
 class TestRequestIdMiddleware:
     @staticmethod
-    def test_generates_id_when_missing(client: "TestClient") -> None:
+    def test_generates_id_when_missing(client: TestClient) -> None:
         resp = client.get("/health")
-        assert "x-request-id" in {k.lower() for k in resp.headers.keys()}
+        assert "x-request-id" in {k.lower() for k in resp.headers}
         assert len(resp.headers["x-request-id"]) >= 16
 
     @staticmethod
-    def test_propagates_inbound_id(client: "TestClient") -> None:
+    def test_propagates_inbound_id(client: TestClient) -> None:
         supplied = "req-abc123"
         resp = client.get("/health", headers={"X-Request-ID": supplied})
         assert resp.headers["x-request-id"] == supplied
@@ -151,7 +151,9 @@ class TestRequestIdMiddleware:
 # ---------------------------------------------------------------------------
 
 
-def _upload(content: bytes, filename: str = "x.pdf", declared_size: int | None = None) -> UploadFile:
+def _upload(
+    content: bytes, filename: str = "x.pdf", declared_size: int | None = None
+) -> UploadFile:
     f = UploadFile(filename=filename, file=io.BytesIO(content))
     # Starlette populates size from headers; override for the test.
     if declared_size is not None:
@@ -191,12 +193,13 @@ class TestUploadStreaming:
 class TestWebhookDeadLetter:
     @staticmethod
     def test_is_dead_default_false(db_session) -> None:
+        import uuid
+
         from lintpdf.api.models import (
             Tenant,
             WebhookDelivery,
             WebhookEndpoint,
         )
-        import uuid
 
         tenant = db_session.query(Tenant).first()
         endpoint = WebhookEndpoint(

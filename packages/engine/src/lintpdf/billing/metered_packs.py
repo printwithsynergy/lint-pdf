@@ -88,9 +88,7 @@ def resolve_price_id(pack_key: str, *, sandbox: bool = False) -> str:
     env_name = f"LINTPDF_STRIPE_PRICE_{defn.kind.upper()}_{defn.size}"
     if sandbox:
         env_name += "_SANDBOX"
-    return os.environ.get(env_name) or (
-        defn.price_id_sandbox if sandbox else defn.price_id_live
-    )
+    return os.environ.get(env_name) or (defn.price_id_sandbox if sandbox else defn.price_id_live)
 
 
 def list_packs(kind: PackKind) -> list[PackDef]:

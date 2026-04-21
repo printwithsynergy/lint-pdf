@@ -152,9 +152,7 @@ class CreditTopupRequest(BaseModel):
     until the ``checkout.session.completed`` webhook fires.
     """
 
-    pack: Literal["500", "2000", "10000"] = Field(
-        ..., description="Credit pack size."
-    )
+    pack: Literal["500", "2000", "10000"] = Field(..., description="Credit pack size.")
 
 
 class CreditTopupResponse(BaseModel):
@@ -169,9 +167,7 @@ class CreditTopupResponse(BaseModel):
 class FileTopupRequest(BaseModel):
     """Purchase one of the fixed file packs."""
 
-    pack: Literal["500", "2500", "10000"] = Field(
-        ..., description="File pack size."
-    )
+    pack: Literal["500", "2500", "10000"] = Field(..., description="File pack size.")
 
 
 class FileTopupResponse(BaseModel):

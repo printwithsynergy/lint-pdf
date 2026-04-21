@@ -351,9 +351,7 @@ class WebhookEndpoint(Base):
     # ``{"billing.*": 365, "annotation.*": 7}``. Keys are fnmatch globs
     # matched against the event name; longest-match wins. Events that
     # don't match any key use ``delivery_retention_days``.
-    retention_overrides: Mapped[dict[str, int] | None] = mapped_column(
-        JSON, nullable=True
-    )
+    retention_overrides: Mapped[dict[str, int] | None] = mapped_column(JSON, nullable=True)
 
     # Relationships
     tenant: Mapped[Tenant] = relationship(back_populates="webhook_endpoints")
@@ -419,9 +417,7 @@ class WebhookDelivery(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-    delivered_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Dead-letter flag: set to True once the dispatcher gives up (max
     # retries exhausted). Operators replay via
     # ``POST /api/v1/webhooks/deliveries/{id}/replay``; a successful

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
@@ -52,13 +51,19 @@ class TestAllocateMonthly:
 
         tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         first = allocate_monthly(
-            tenant, "credits", db_session,
-            billing_period_start=_period(), source_event="invoice.paid",
+            tenant,
+            "credits",
+            db_session,
+            billing_period_start=_period(),
+            source_event="invoice.paid",
         )
         db_session.commit()
         second = allocate_monthly(
-            tenant, "credits", db_session,
-            billing_period_start=_period(), source_event="invoice.paid",
+            tenant,
+            "credits",
+            db_session,
+            billing_period_start=_period(),
+            source_event="invoice.paid",
         )
         db_session.commit()
         assert first is not None and second is not None
@@ -84,12 +89,18 @@ class TestAllocateMonthly:
 
         tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         c = allocate_monthly(
-            tenant, "credits", db_session,
-            billing_period_start=_period(), source_event="invoice.paid",
+            tenant,
+            "credits",
+            db_session,
+            billing_period_start=_period(),
+            source_event="invoice.paid",
         )
         f = allocate_monthly(
-            tenant, "files", db_session,
-            billing_period_start=_period(), source_event="invoice.paid",
+            tenant,
+            "files",
+            db_session,
+            billing_period_start=_period(),
+            source_event="invoice.paid",
         )
         db_session.commit()
         assert c is not None and f is not None
@@ -105,8 +116,11 @@ class TestAllocateMonthly:
         tenant.plan = TenantPlan.FREE  # FREE has monthly_ai_credits=0
         db_session.commit()
         result = allocate_monthly(
-            tenant, "credits", db_session,
-            billing_period_start=_period(), source_event="invoice.paid",
+            tenant,
+            "credits",
+            db_session,
+            billing_period_start=_period(),
+            source_event="invoice.paid",
         )
         assert result is None
 
@@ -119,8 +133,11 @@ class TestAllocateMonthly:
         tenant.monthly_ai_credits_override = 750
         db_session.commit()
         result = allocate_monthly(
-            tenant, "credits", db_session,
-            billing_period_start=_period(), source_event="invoice.paid",
+            tenant,
+            "credits",
+            db_session,
+            billing_period_start=_period(),
+            source_event="invoice.paid",
         )
         db_session.commit()
         assert result is not None

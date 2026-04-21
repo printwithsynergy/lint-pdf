@@ -395,11 +395,7 @@ async def validate_upload(
     # buffering anything. A malicious client that lies about its size
     # (or omits the header) still hits the streaming guard below.
     declared_size = getattr(file, "size", None)
-    if (
-        max_size_bytes is not None
-        and declared_size is not None
-        and declared_size > max_size_bytes
-    ):
+    if max_size_bytes is not None and declared_size is not None and declared_size > max_size_bytes:
         max_mb = max_size_bytes / (1024 * 1024)
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,

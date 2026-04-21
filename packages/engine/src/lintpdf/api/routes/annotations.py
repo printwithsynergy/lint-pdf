@@ -117,7 +117,7 @@ class _AnnotationSnapshot:
     the delete has landed.
     """
 
-    __slots__ = ("id", "tenant_id", "job_id", "page_num")
+    __slots__ = ("id", "job_id", "page_num", "tenant_id")
 
     def __init__(
         self,

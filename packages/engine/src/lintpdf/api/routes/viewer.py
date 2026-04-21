@@ -2173,7 +2173,9 @@ async def public_verdict(token: str, db: Session = Depends(get_db)) -> dict:
 
 
 @router.get("/public/{token}/state")
-async def public_state(token: str, include: str | None = None, db: Session = Depends(get_db)) -> dict:
+async def public_state(
+    token: str, include: str | None = None, db: Session = Depends(get_db)
+) -> dict:
     """Public share-link mirror of ``/api/v1/jobs/{id}/state``.
 
     Returns the same shape the tenant-authenticated digest does **minus**
@@ -2251,9 +2253,7 @@ async def public_state(token: str, include: str | None = None, db: Session = Dep
         }
 
     if "approval_chain" in wanted:
-        chain = (
-            db.query(ApprovalChain).filter(ApprovalChain.job_id == job.id).first()
-        )
+        chain = db.query(ApprovalChain).filter(ApprovalChain.job_id == job.id).first()
         if chain is None:
             out["approval_chain"] = None
         else:

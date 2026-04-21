@@ -85,7 +85,9 @@ class LogoDetectionAnalyzer(BaseAIAnalyzer):
                 # retry budget on HTTP 429s — both are transient/infra
                 # conditions that no reviewer can act on. Skip silently;
                 # the circuit-breaker metrics cover the ops dashboard.
-                logger.debug("logo_detection: GPU service unavailable (unconfigured or rate-limited), skipping")
+                logger.debug(
+                    "logo_detection: GPU service unavailable (unconfigured or rate-limited), skipping"
+                )
                 return findings
             except GPUServiceUnavailableError as exc:
                 findings.append(

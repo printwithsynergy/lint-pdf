@@ -277,11 +277,11 @@
 | 23  | Symbol           | ProcessingStepsFallbackAnalyzer   | `ai/analyzers/symbol_detection/processing_steps_fallback.py`  |
 | 24  | File Comparison  | VersionDiffAnalyzer               | `ai/analyzers/file_comparison/version_diff.py`                |
 | 25  | Classification   | FileClassificationAnalyzer        | `ai/analyzers/document_classification/file_classification.py` |
-| 26  | Classification   | AutoPreflightProfileAnalyzer      | `ai/analyzers/document_classification/auto_voyage_plan.py`    |
+| 26  | Classification   | AutoPreflightProfileAnalyzer      | `ai/analyzers/document_classification/auto_preflight_profile.py` |
 | 27  | Trend Analysis   | SubmissionQualitySPCAnalyzer      | `ai/analyzers/trend_analysis/submission_quality_spc.py`       |
 | 28  | Spatial          | SafeZoneViolationsAnalyzer        | `ai/analyzers/spatial_analysis/safe_zone_violations.py`       |
 | 29  | Text             | TextAsOutlinesAnalyzer            | `ai/analyzers/text_analysis/text_as_outlines.py`              |
-| 30  | NLP              | NLPreflightProfileAnalyzer        | `ai/analyzers/nlp_interfaces/nl_voyage_plan.py`               |
+| 30  | NLP              | NLPreflightProfileAnalyzer        | `ai/analyzers/nlp_interfaces/nl_preflight_profile.py`         |
 | 31  | NLP              | NLReportInterpretAnalyzer         | `ai/analyzers/nlp_interfaces/nl_report_interpret.py`          |
 | 32  | NLP              | MultiLanguageReportsAnalyzer      | `ai/analyzers/nlp_interfaces/multi_language.py`               |
 
