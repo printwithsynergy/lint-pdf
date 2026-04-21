@@ -87,12 +87,31 @@ def _run_migrations(database_url: str) -> None:
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan: initialize and tear down resources."""
+    import asyncio
+    import os as _os
+    from concurrent.futures import ThreadPoolExecutor
+
     from lintpdf.api.config import get_settings
     from lintpdf.api.logging_config import configure_logging
 
     # Install the structlog JSON renderer before anything else so the
     # migrations + rate-limiter setup log lines are already structured.
     configure_logging()
+
+    # Bump the asyncio default-executor pool from the Python default
+    # (min(32, cpu_count+4) ≈ 6 on a 2-vCPU Railway container) to a
+    # value sized for the upload-to-R2 hot path. Every call to
+    # ``loop.run_in_executor(None, storage.upload_pdf_stream, ...)``
+    # borrows a thread from this pool; if it saturates, incoming
+    # requests block waiting for a thread and /ready goes dark.
+    # Overridable via LINTPDF_ASYNCIO_EXECUTOR_WORKERS.
+    executor_workers = int(_os.environ.get("LINTPDF_ASYNCIO_EXECUTOR_WORKERS", "32"))
+    asyncio.get_event_loop().set_default_executor(
+        ThreadPoolExecutor(
+            max_workers=executor_workers,
+            thread_name_prefix="lintpdf-io",
+        )
+    )
 
     settings = get_settings()
 
