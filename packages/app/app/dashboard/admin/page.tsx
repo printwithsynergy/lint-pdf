@@ -67,6 +67,16 @@ export default function AdminPage() {
             them against the current endpoint.
           </p>
         </Link>
+        <Link
+          href="/dashboard/admin/docs"
+          className="rounded-lg border border-brand-200 bg-brand-50/30 p-4 hover:bg-brand-50/60 transition-colors"
+        >
+          <h2 className="text-lg font-semibold">Admin Documentation</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Guides for every admin panel, the admin API surface, and ops
+            runbooks. Super-admin only.
+          </p>
+        </Link>
       </div>
     </>
   );
