@@ -45,6 +45,11 @@ dependencies = [
     # Wraps stdlib logging so existing logger.info/warning/exception calls
     # continue to work but emit JSON with a request_id field automatically.
     "structlog>=24.1.0",
+    # Bulk-files step 11 — Prometheus metrics for the /metrics endpoint.
+    # prometheus_client has no runtime deps beyond stdlib and adds ~10ms
+    # to cold-start; kept in the base deps so observability is on by
+    # default even for non-AI deploys.
+    "prometheus-client>=0.20.0",
 ]
 
 [project.optional-dependencies]
