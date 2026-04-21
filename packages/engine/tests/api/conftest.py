@@ -79,6 +79,22 @@ def _disable_lifespan_services(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _reset_settings_cache():
+    """Clear the ``get_settings`` lru_cache between tests.
+
+    The singleton speeds up production hot paths but creates cross-test
+    bleed: a test that ``monkeypatch.setenv("LINTPDF_ADMIN_API_KEY", …)``
+    would otherwise see the stale value baked by a prior test that
+    imported the module first.
+    """
+    from lintpdf.api.config import get_settings
+
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
+@pytest.fixture(autouse=True)
 def _mock_clamav_clean(monkeypatch, request):
     """Return a 'clean' ClamAV result by default so upload tests pass.
 

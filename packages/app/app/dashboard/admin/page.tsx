@@ -57,6 +57,16 @@ export default function AdminPage() {
             Check engine, database, Redis, and worker status.
           </p>
         </Link>
+        <Link
+          href="/dashboard/admin/webhooks"
+          className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+        >
+          <h2 className="text-lg font-semibold">Webhook Dead Letters</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Review deliveries whose retries have been exhausted and replay
+            them against the current endpoint.
+          </p>
+        </Link>
       </div>
     </>
   );

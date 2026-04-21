@@ -209,6 +209,40 @@ When in doubt, grep the docs for the concept name before merging — if there's 
 
 ---
 
+## Connection budget
+
+Railway's managed Postgres ships with `max_connections=100` by default
+and that budget is shared across **every** service that talks to the
+database: the Next.js app (Prisma), the FastAPI engine (SQLAlchemy),
+Celery workers, Alembic migrations running inside the engine
+entrypoint, and raw psql calls in `startup.sh`. Exceeding the ceiling
+produces `FATAL: sorry, too many clients already` and Railway responds
+by restart-looping the offender.
+
+Current allocation (keep the sum under ~90 to leave headroom):
+
+| Consumer | Pool size | Notes |
+|---|---|---|
+| App (Prisma) | 15 | Set via `?connection_limit=15&pool_timeout=20` query params on `DATABASE_URL`. 1–2 replicas. |
+| Engine (SQLAlchemy) | 15 | Default 5 pool + 10 overflow. One replica. |
+| Celery workers | ~20 | 5 per worker × 4 workers; tune with `worker_max_tasks_per_child`. |
+| Alembic / `startup.sh` | ~10 | Brief bursts during boot. |
+| **Total** | **~60** | Leaves ~40 connections of headroom for spikes. |
+
+To raise the ceiling, run on the Railway Postgres service:
+```sql
+ALTER SYSTEM SET max_connections = 200;
+```
+then restart the Postgres deployment. Bump the app's `connection_limit`
+to ~25 at the same time.
+
+**Do not** remove the query params from `DATABASE_URL` — Prisma will
+open "as many as it needs" (usually `num_cpus × 2 + 1`) which in a
+2-vCPU Railway container means a single replica can happily grab 5 more
+connections than expected and blow the budget.
+
+---
+
 ## Git & Deploy
 
 - Push to `main` for deployment
@@ -216,3 +250,8 @@ When in doubt, grep the docs for the concept name before merging — if there's 
 - `railway.toml` configs are in each package directory
 - App Dockerfile has `noCache = true` to always pull latest Pixie Dust
 - Engine Dockerfile includes `poppler-utils` and `ghostscript` for PDF rendering
+- Engine `CMD` runs `alembic upgrade head` before uvicorn (see
+  `packages/engine/scripts/entrypoint.sh`); no separate migration step
+  needed during Railway deploys
+- App healthcheck: `/api/health`; engine healthcheck: `/ready`
+  (exercises DB + Redis, returns 503 when a dependency is down)

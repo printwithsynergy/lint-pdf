@@ -88,6 +88,11 @@ def _run_migrations(database_url: str) -> None:
 async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan: initialize and tear down resources."""
     from lintpdf.api.config import get_settings
+    from lintpdf.api.logging_config import configure_logging
+
+    # Install the structlog JSON renderer before anything else so the
+    # migrations + rate-limiter setup log lines are already structured.
+    configure_logging()
 
     settings = get_settings()
 
@@ -128,6 +133,14 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         lifespan=_lifespan,
     )
+
+    # Request-ID middleware must run outside auth/idempotency so the
+    # bound ``request_id`` contextvar is available to every downstream
+    # logger. Adding via ``add_middleware`` puts it at the *outside* of
+    # the ASGI stack (inner middleware wraps the user handler).
+    from lintpdf.api.middleware import RequestIdMiddleware
+
+    app.add_middleware(RequestIdMiddleware)
 
     # Mount routers
     app.include_router(health.router)

@@ -264,6 +264,7 @@ CREATE TABLE IF NOT EXISTS "Annotation" (
 );
 CREATE INDEX IF NOT EXISTS "Annotation_jobId_pageNum_idx" ON "Annotation"("jobId", "pageNum");
 CREATE INDEX IF NOT EXISTS "Annotation_tenantId_idx" ON "Annotation"("tenantId");
+CREATE INDEX IF NOT EXISTS "Annotation_tenantId_createdAt_idx" ON "Annotation"("tenantId", "createdAt");
 
 -- ReportView table for tracking who viewed shared reports
 CREATE TABLE IF NOT EXISTS "ReportView" (

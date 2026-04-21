@@ -229,7 +229,14 @@ async def get_brand_profile(
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> BrandProfileResponse:
-    """Get a brand profile by ID."""
+    """Get a brand profile by ID.
+
+    Hot path — the viewer + report renderer both call this on every
+    request, and the response is effectively immutable between the
+    occasional ``PATCH /brand-profiles/{id}``. We back the response
+    with a 5-minute Redis cache keyed by ``brand_profile:{tenant}:{id}``
+    and invalidate explicitly on mutation.
+    """
     try:
         uid = uuid_mod.UUID(profile_id)
     except ValueError as exc:
@@ -237,6 +244,13 @@ async def get_brand_profile(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="Invalid profile ID format.",
         ) from exc
+
+    from lintpdf.api.cache import brand_profile_key, get_json, set_json
+
+    cache_key = brand_profile_key(str(tenant.id), str(uid))
+    cached = get_json(cache_key)
+    if cached is not None:
+        return BrandProfileResponse.model_validate(cached)
 
     profile = (
         db.query(BrandProfile)
@@ -249,7 +263,9 @@ async def get_brand_profile(
             detail="Brand profile not found.",
         )
 
-    return _profile_to_response(profile, tenant)
+    response = _profile_to_response(profile, tenant)
+    set_json(cache_key, response.model_dump(mode="json"))
+    return response
 
 
 @router.put(
@@ -309,6 +325,10 @@ async def update_brand_profile(
     db.commit()
     db.refresh(profile)
 
+    from lintpdf.api.cache import brand_profile_key, invalidate as cache_invalidate
+
+    cache_invalidate(brand_profile_key(str(tenant.id), str(uid)))
+
     return _profile_to_response(profile, tenant)
 
 
@@ -341,6 +361,10 @@ async def delete_brand_profile(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Brand profile not found.",
         )
+
+    from lintpdf.api.cache import brand_profile_key, invalidate as cache_invalidate
+
+    cache_invalidate(brand_profile_key(str(tenant.id), str(uid)))
 
     # Clear default if this was the default profile
     if tenant.default_brand_profile_id == uid:
@@ -437,6 +461,10 @@ async def upload_brand_logo(
 
     db.commit()
     db.refresh(profile)
+
+    from lintpdf.api.cache import brand_profile_key, invalidate as cache_invalidate
+
+    cache_invalidate(brand_profile_key(str(tenant.id), str(profile.id)))
 
     return _profile_to_response(profile, tenant)
 

@@ -262,6 +262,7 @@ model Annotation {
 
   @@index([jobId, pageNum])
   @@index([tenantId])
+  @@index([tenantId, createdAt])
 }
 
 // ============================================

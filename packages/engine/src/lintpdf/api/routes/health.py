@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from fastapi import APIRouter
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from lintpdf.api.schemas import HealthResponse, StatusResponse
 
@@ -22,8 +22,32 @@ async def root_redirect() -> RedirectResponse:
 
 @router.get("/health", response_model=HealthResponse, tags=["health"])
 async def health_check() -> HealthResponse:
-    """Basic health check — always returns ok if the service is running."""
+    """Liveness probe — returns ``ok`` as long as the process is running.
+
+    Use ``/ready`` for readiness checks that actually exercise dependencies.
+    """
     return HealthResponse(status="ok")
+
+
+@router.get("/ready", tags=["health"])
+async def readiness_check() -> JSONResponse:
+    """Readiness probe — 200 iff all hard dependencies respond.
+
+    Railway (and any k8s-style orchestrator) should point its healthcheck
+    at this endpoint instead of ``/health``. When the DB or Redis goes
+    away we return 503 so the load balancer drains traffic to a healthy
+    instance instead of serving 500s at the edge.
+    """
+    db_status = _probe_database()
+    redis_status = _probe_redis()
+
+    payload = {"status": "ok", "database": db_status, "redis": redis_status}
+    # ``not_configured`` is treated as "fine" — e.g. during local dev when
+    # Redis isn't wired up. Only hard ``error`` states fail the check.
+    if db_status == "error" or redis_status == "error":
+        payload["status"] = "unavailable"
+        return JSONResponse(status_code=503, content=payload)
+    return JSONResponse(status_code=200, content=payload)
 
 
 def _probe_database() -> str:

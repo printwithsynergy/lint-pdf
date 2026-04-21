@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.config import get_settings
 from lintpdf.api.database import get_db
-from lintpdf.api.middleware import check_rate_limit, get_redis_client
+from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit, get_redis_client
 from lintpdf.api.models import (
     CustomEndpoint,
     CustomProfile,
@@ -279,6 +279,7 @@ async def submit_to_endpoint(
             detail=f"Endpoint '{identifier}' not found.",
         )
 
+    check_burst_rate_limit(tenant)
     check_rate_limit(tenant)
 
     content = await validate_upload(
