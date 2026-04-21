@@ -161,6 +161,13 @@ def create_app() -> FastAPI:
 
     app.add_middleware(RequestIdMiddleware)
 
+    # Prometheus metrics (bulk-files step 11) — /metrics endpoint +
+    # per-request duration/count instrumentation. Mounted unconditionally
+    # so the control-plane-only service also exposes metrics.
+    from lintpdf.api.metrics import mount_metrics
+
+    mount_metrics(app)
+
     # Control-plane mode (bulk-files step 8).
     #
     # When LINTPDF_CONTROL_PLANE_ONLY=1 the process serves ONLY a
