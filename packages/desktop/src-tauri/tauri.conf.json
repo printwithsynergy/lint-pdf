@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicnacnic/tauri-v2-schema/main/tauri.conf.schema.json",
   "productName": "LintPDF Hot Folders",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "identifier": "com.lintpdf.desktop",
   "build": {
     "frontendDist": "../dist",

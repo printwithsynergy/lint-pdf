@@ -229,7 +229,7 @@ export default function AdminJobsPage() {
           role="dialog"
           aria-modal="true"
           aria-label="Job detail"
-          className="fixed inset-y-0 right-0 z-50 flex w-full max-w-xl flex-col border-l bg-background shadow-xl"
+          className="fixed right-0 top-14 bottom-0 z-50 flex w-full max-w-xl flex-col border-l bg-background shadow-xl md:top-16"
         >
           <header className="flex items-center justify-between border-b p-4">
             <div>

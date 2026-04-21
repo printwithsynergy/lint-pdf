@@ -58,6 +58,16 @@ export default function AdminPage() {
           </p>
         </Link>
         <Link
+          href="/dashboard/rulesets"
+          className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+        >
+          <h2 className="text-lg font-semibold">Rulesets</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Inspect and manage preflight rulesets across every tenant,
+            grouped by tenant. Built-in rulesets are read-only templates.
+          </p>
+        </Link>
+        <Link
           href="/dashboard/admin/webhooks"
           className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
         >
