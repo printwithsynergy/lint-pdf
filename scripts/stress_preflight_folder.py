@@ -56,6 +56,11 @@ class HTTP:
     def __init__(self, base: str) -> None:
         self.base = base.rstrip("/")
 
+    # Status codes / transport failures that warrant a retry. Covers
+    # transient sandbox-proxy "503 DNS cache overflow" hiccups (which
+    # are not real engine errors) and upstream 5xx / 429 back-pressure.
+    _TRANSIENT = (0, -1, 429, 502, 503, 504)
+
     def request(
         self,
         method: str,
@@ -66,6 +71,7 @@ class HTTP:
         raw_body: bytes | None = None,
         content_type: str | None = None,
         timeout: int = 120,
+        retries: int = 3,
     ) -> tuple[int, Any]:
         url = path if path.startswith("http") else self.base + path
         h = {"Accept": "application/json"}
@@ -77,25 +83,39 @@ class HTTP:
             h["Content-Type"] = "application/json"
         elif content_type:
             h["Content-Type"] = content_type
-        req = urllib.request.Request(url, data=body, method=method.upper(), headers=h)
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw = resp.read()
-                code = resp.status
-        except urllib.error.HTTPError as exc:
-            raw = exc.read() if hasattr(exc, "read") else b""
-            code = exc.code
-        except urllib.error.URLError as exc:
-            return 0, {"error": str(exc.reason)}
-        except Exception as exc:  # noqa: BLE001 — network fuzz during stress
-            return -1, {"error": repr(exc)}
-        result: Any = raw
-        try:
-            if raw and raw[:1] in (b"{", b"["):
-                result = json.loads(raw.decode("utf-8"))
-        except Exception:
-            result = raw
-        return code, result
+
+        last_code: int = 0
+        last_result: Any = None
+        for attempt in range(1, retries + 1):
+            req = urllib.request.Request(url, data=body, method=method.upper(), headers=h)
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    raw = resp.read()
+                    code = resp.status
+            except urllib.error.HTTPError as exc:
+                raw = exc.read() if hasattr(exc, "read") else b""
+                code = exc.code
+            except urllib.error.URLError as exc:
+                code = 0
+                raw = {"error": str(exc.reason)}
+            except Exception as exc:  # noqa: BLE001 — network fuzz during stress
+                code = -1
+                raw = {"error": repr(exc)}
+            result: Any = raw
+            if isinstance(raw, bytes):
+                try:
+                    if raw and raw[:1] in (b"{", b"["):
+                        result = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    result = raw
+            last_code, last_result = code, result
+            # Success: 2xx/202-class or 4xx (client error, not transient).
+            if code not in self._TRANSIENT:
+                return code, result
+            if attempt < retries:
+                # Exponential backoff 2s, 4s, 8s, 16s (capped at 15s).
+                time.sleep(min(2 ** attempt, 15))
+        return last_code, last_result
 
 
 # ---------------------------------------------------------------------------
@@ -237,6 +257,9 @@ def submit_job(
     last_code = 0
     last_resp: Any = None
     for attempt in range(1, max_retries + 1):
+        # Disable inner HTTP retries — submit_job runs its own
+        # retry loop so we don't end up with N×N attempts on a
+        # 50 MB multipart body.
         code, resp = http.request(
             "POST",
             "/api/v1/jobs",
@@ -244,6 +267,7 @@ def submit_job(
             raw_body=body,
             content_type=ctype,
             timeout=upload_timeout_s,
+            retries=1,
         )
         last_code, last_resp = code, resp
         if code in (200, 201, 202) and isinstance(resp, dict) and resp.get("job_id"):
