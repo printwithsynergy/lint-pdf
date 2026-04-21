@@ -78,24 +78,35 @@ export default function SwaggerPage() {
       />
       <Script id="swagger-boot" strategy="afterInteractive">
         {`
-          window.addEventListener('load', function () {
-            if (!window.SwaggerUIBundle) {
-              // Give the CDN script one more tick.
-              setTimeout(arguments.callee, 50);
-              return;
+          (function boot() {
+            // The 'afterInteractive' strategy may run before OR after the
+            // CDN bundle finishes, and 'load' may have fired already, so
+            // neither window.addEventListener('load', ...) nor a one-shot
+            // check is reliable. Poll with a bounded retry count until
+            // SwaggerUIBundle is available, then init once.
+            var tries = 0;
+            function tryInit() {
+              if (window.__lintpdfSwaggerInited__) return;
+              if (!window.SwaggerUIBundle) {
+                if (tries++ < 200) { setTimeout(tryInit, 50); return; }
+                console.error('SwaggerUIBundle failed to load from CDN');
+                return;
+              }
+              window.__lintpdfSwaggerInited__ = true;
+              window.SwaggerUIBundle({
+                url: 'https://api.lintpdf.com/openapi.tenant.json',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                displayOperationId: false,
+                defaultModelsExpandDepth: 0,
+                docExpansion: 'list',
+                filter: true,
+                tryItOutEnabled: true,
+                persistAuthorization: true
+              });
             }
-            window.SwaggerUIBundle({
-              url: 'https://api.lintpdf.com/openapi.tenant.json',
-              dom_id: '#swagger-ui',
-              deepLinking: true,
-              displayOperationId: false,
-              defaultModelsExpandDepth: 0,
-              docExpansion: 'list',
-              filter: true,
-              tryItOutEnabled: true,
-              persistAuthorization: true
-            });
-          });
+            tryInit();
+          })();
         `}
       </Script>
     </main>

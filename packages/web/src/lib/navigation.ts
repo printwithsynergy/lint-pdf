@@ -35,7 +35,9 @@ export const footerGroups: FooterGroup[] = [
   {
     title: "Developers",
     links: [
-      { href: "/swagger", label: "API Reference" },
+      // /swagger is intentionally not listed here — Docs owns the single
+      // discovery surface for everything API-related, and the /docs landing
+      // hero + docs-nav both link to the live Swagger UI directly.
       { href: "/docs/postman", label: "Postman Collection" },
       { href: "/docs/authentication", label: "Authentication" },
     ],
