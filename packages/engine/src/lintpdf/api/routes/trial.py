@@ -252,7 +252,7 @@ async def submit_trial(
 
     from lintpdf.api.config import get_settings
     from lintpdf.api.storage import get_storage
-    from lintpdf.api.upload_security import ANY_SAFE_TYPES, validate_upload
+    from lintpdf.api.upload_security import ANY_SAFE_TYPES, validate_upload_streaming
 
     settings = get_settings()
     storage = get_storage()
@@ -261,7 +261,7 @@ async def submit_trial(
     trial_files: list[TrialFile] = []
 
     for upload_file in files:
-        content = await validate_upload(
+        spool, file_size = await validate_upload_streaming(
             upload_file,
             allowed_types=ANY_SAFE_TYPES,
             max_size_bytes=MAX_TRIAL_FILE_SIZE_BYTES,
@@ -272,22 +272,28 @@ async def submit_trial(
         file_key = f"trial/{submission_id}/{file_id}.pdf"
 
         loop = asyncio.get_running_loop()
-        await loop.run_in_executor(
-            None,
-            lambda k=file_key, c=content: storage._get_client().put_object(
-                Bucket=storage._bucket_name,
-                Key=k,
-                Body=c,
-                ContentType="application/pdf",
-            ),
-        )
+        try:
+            await loop.run_in_executor(
+                None,
+                lambda k=file_key, s=spool: storage._get_client().upload_fileobj(
+                    Fileobj=s,
+                    Bucket=storage._bucket_name,
+                    Key=k,
+                    ExtraArgs={"ContentType": "application/pdf"},
+                ),
+            )
+        finally:
+            try:
+                spool.close()
+            except Exception:
+                pass
 
         trial_files.append(
             TrialFile(
                 id=file_id,
                 submission_id=submission_id,
                 file_name=upload_file.filename or "unnamed.pdf",
-                file_size=len(content),
+                file_size=file_size,
                 file_key=file_key,
                 scan_clean=True,
             )
