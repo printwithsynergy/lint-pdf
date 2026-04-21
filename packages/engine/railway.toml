@@ -1,13 +1,18 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "packages/engine/Dockerfile"
-# Only redeploy when engine or inference source actually changes. Without
-# this filter Railway redeploys the API on every main push (docs tweaks,
-# stress-test scripts, root-level gitignore edits, etc.), which kills
-# in-flight requests — including every stress-test run in this session.
+# Only redeploy when the engine (or its direct Python deps) actually
+# changes. Without this filter Railway redeploys the API on every main
+# push (docs tweaks, stress-test scripts, root gitignore edits, etc.),
+# which kills in-flight requests — including every stress-test run.
+#
+# `packages/inference/**` is intentionally EXCLUDED: inference code runs
+# on Modal (see packages/inference/src/inference_service/modal_deploy.py)
+# not on this Railway service, so a Modal-only change should never
+# rebuild the API container. Keeping it in watchPatterns previously
+# wedged a live tier-1 run when a Modal `max_containers` bump pushed.
 watchPatterns = [
     "packages/engine/**",
-    "packages/inference/**",
     "pnpm-workspace.yaml",
     "package.json",
 ]
