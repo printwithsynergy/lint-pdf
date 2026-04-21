@@ -70,10 +70,10 @@ export default function DocsPage() {
               <ArrowRight />
             </Link>
             <Link
-              href="/docs/api"
+              href="/swagger"
               className="inline-flex items-center gap-2 rounded-lg border border-brand-200 bg-white px-5 py-3 text-sm font-semibold text-brand-700 transition-colors hover:bg-brand-50"
             >
-              Jump to API reference
+              Try the API live (Swagger)
               <ArrowRight />
             </Link>
           </div>
