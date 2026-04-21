@@ -1,6 +1,16 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "packages/engine/Dockerfile"
+# Only redeploy when engine or inference source actually changes. Without
+# this filter Railway redeploys the API on every main push (docs tweaks,
+# stress-test scripts, root-level gitignore edits, etc.), which kills
+# in-flight requests — including every stress-test run in this session.
+watchPatterns = [
+    "packages/engine/**",
+    "packages/inference/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
 
 [deploy]
 numReplicas = 1
