@@ -66,9 +66,20 @@ model_cache = modal.Volume.from_name("lintpdf-model-cache", create_if_missing=Tr
     gpu="A10G",
     volumes={"/models": model_cache},
     secrets=[modal.Secret.from_name("lintpdf-inference-secrets")],
-    scaledown_window=300,
+    # Scale profile (tuned 2026-04-21 after the tier-1 stress test
+    # measured p50 job latency = 20 min on Modal max_containers=5
+    # with full-ai-scan preset. See preflight-stress-results-tier1.md).
+    #
+    # max_containers=15: the first step up the bulk-files ladder. Cuts
+    #   p50 latency for 15 concurrent AI-heavy jobs from ~20 min →
+    #   ~6-7 min (3x wider pool, same per-call duration). Cost impact:
+    #   only the containers actually warm incur charges — idle cold.
+    # scaledown_window=180: shorter idle window so unused containers
+    #   retire faster after a burst. Trades cold-start for cost.
+    # min_containers=0: keep scale-to-zero — no warm baseline.
+    scaledown_window=180,
     min_containers=0,
-    max_containers=5,
+    max_containers=15,
     timeout=300,
     memory=8192,
 )
