@@ -91,9 +91,16 @@ class Settings(BaseSettings):
     # GPU inference service URL (required for AI features — set LINTPDF_GPU_INFERENCE_URL)
     gpu_inference_url: str = ""
 
-    # ClamAV malware scanning — REQUIRED: uploads fail-closed if unset or unreachable.
+    # ClamAV malware scanning.
     # Format: "host:port" (e.g. "clamd:3310"). Set via LINTPDF_CLAMAV_URL.
+    # Default fail-open behavior (see scan_for_malware) is a deliberate
+    # production choice — the upstream railway-clamav image ships with
+    # a build-time config bug that breaks TCP listening. Once the
+    # in-repo replacement at packages/engine/clamav/ is deployed and
+    # verified, set ``LINTPDF_CLAMAV_REQUIRED=1`` to flip the upload
+    # path to fail-closed (bulk-files step 16 — enterprise compliance).
     clamav_url: str | None = None
+    clamav_required: bool = False
 
     # Trial upload secret (shared with marketing site)
     trial_secret: str = ""

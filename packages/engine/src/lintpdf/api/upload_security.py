@@ -306,11 +306,28 @@ def _scan_with_clamd(scan_input: "BytesIO | IO[bytes]", settings: Settings) -> N
 
     ``scan_input`` is anything ``clamd.instream`` accepts (BytesIO or a
     seekable file-like). Raises HTTPException(422) only on a positive
-    detection; every other failure is logged and allows the upload
-    through (fail-open) so a broken ClamAV sidecar never takes down
-    production. See CLAUDE.md for the fail-open rationale.
+    detection by default; every other failure is logged and the upload
+    is allowed through (fail-open) so a broken ClamAV sidecar never
+    takes down production. See CLAUDE.md for the upstream-image bug
+    that made fail-open the default.
+
+    Bulk-files step 16 — fail-closed is gated behind
+    ``settings.clamav_required`` (``LINTPDF_CLAMAV_REQUIRED=1``). Once
+    the in-repo ClamAV replacement at packages/engine/clamav/ is
+    deployed and green, flip the env var on to enforce scanning (HTTP
+    503 on unreachable, HTTP 422 on positive detection). No code
+    change needed to flip back.
     """
+    strict = bool(getattr(settings, "clamav_required", False))
     if not settings.clamav_url:
+        if strict:
+            logger.error(
+                "ClamAV is REQUIRED but LINTPDF_CLAMAV_URL is unset — rejecting upload"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Malware scanner is not configured.",
+            )
         logger.warning(
             "ClamAV is not configured (LINTPDF_CLAMAV_URL is unset) — "
             "skipping virus scan (fail-open)"
@@ -325,6 +342,16 @@ def _scan_with_clamd(scan_input: "BytesIO | IO[bytes]", settings: Settings) -> N
     except HTTPException:
         raise
     except Exception:
+        if strict:
+            logger.error(
+                "ClamAV scan failed — service unreachable at %s; REQUIRED=true, rejecting upload",
+                settings.clamav_url,
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Malware scanner is unreachable.",
+            ) from None
         logger.warning(
             "ClamAV scan failed — service unreachable at %s; allowing upload (fail-open)",
             settings.clamav_url,
