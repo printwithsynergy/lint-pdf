@@ -1,0 +1,39 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "packages/engine/Dockerfile"
+watchPatterns = [
+    "packages/engine/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
+
+[deploy]
+# Bulk-files step 8 — isolated operational plane.
+#
+# This service runs the SAME engine image as the main API but with
+# ``LINTPDF_CONTROL_PLANE_ONLY=1`` set in its env vars. That flag tells
+# create_app() to skip every upload / report / viewer / trial / batch
+# router and mount only the operational plane: /ready, /api/v1/status,
+# /api/v1/admin/*, /api/v1/usage, /api/v1/profiles, /api/v1/webhooks,
+# /api/v1/edge, /api/v1/branding.
+#
+# Ops dashboards + Railway health checks + alerting should point here.
+# Tenant traffic continues to hit the main API (``railway.toml``).
+# Both services share Postgres / Redis / R2 — they're literally the
+# same binary with a routing flag flipped, so drift between them is
+# impossible.
+#
+# Small footprint: 2 replicas so the operational plane is HA, each
+# sized for JSON-only traffic.
+numReplicas = 2
+healthcheckPath = "/ready"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+overlapSeconds = 30
+drainingSeconds = 30
+gracefulShutdownTimeoutSec = 45
+# This service has to set LINTPDF_CONTROL_PLANE_ONLY=1 in its variables
+# section on the Railway side — the railway.toml schema doesn't carry
+# env vars, they live on the serviceInstance. See Worker-AI in the
+# project for a working example of provisioning via the Railway API.
