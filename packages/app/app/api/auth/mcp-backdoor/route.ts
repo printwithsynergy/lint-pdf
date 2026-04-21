@@ -16,10 +16,12 @@ import { getClientInfo } from "@/lib/auth-helpers";
 
 // Local Prisma schema adds ``engineTenantId`` on Tenant and
 // ``impersonatingTenantId`` on Session; the Pixie Dust PrismaClient
-// type doesn't expose them. Runtime columns are guaranteed by
-// startup.sh. Cast through ``any`` to bridge the type gap.
-
-const db = prisma as any;
+// bundled in ``@thinkneverland/pixie-dust-database/server`` doesn't
+// know about those columns, so typed calls that reference them throw
+// ``PrismaClientValidationError`` at runtime. The columns themselves
+// are guaranteed to exist in Postgres by ``packages/app/scripts/startup.sh``
+// — using ``$executeRaw`` / ``$queryRaw`` bypasses the client's field
+// validator.
 
 const requestSchema = z.object({
   email: z.string().email(),
@@ -83,53 +85,67 @@ export async function POST(req: Request) {
     let tenantId: string | null = null;
     try {
       if (tenantSlug) {
-        // Find or create tenant by slug
+        // Find or create tenant by slug. The create path + the later
+        // "ensure engineTenantId is set" branch both touch
+        // ``Tenant.engineTenantId`` which the bundled client doesn't
+        // know about, so both go through raw SQL.
         let tenant = await prisma.tenant.findUnique({
           where: { slug: tenantSlug },
         });
         if (!tenant) {
-          tenant = await db.tenant.create({
-            data: {
-              name: tenantSlug,
-              slug: tenantSlug,
-              engineTenantId: process.env.ENGINE_ADMIN_TENANT_ID ?? null,
-            },
+          const newId = cuidIsh();
+          const engineTenantId = process.env.ENGINE_ADMIN_TENANT_ID ?? null;
+          await prisma.$executeRaw`
+            INSERT INTO "Tenant" (id, name, slug, "engineTenantId", "createdAt", "updatedAt")
+            VALUES (${newId}, ${tenantSlug}, ${tenantSlug}, ${engineTenantId}, NOW(), NOW())
+          `;
+          tenant = await prisma.tenant.findUnique({
+            where: { id: newId },
           });
         }
         if (!tenant) {
-          // Defensive: create() always resolves to a row, but TS can't
-          // narrow through the earlier findUnique chain without help.
           throw new Error("Failed to resolve tenant");
         }
         tenantId = tenant.id;
 
-        // Ensure engineTenantId is set on existing tenants
-        const tenantAny = tenant as { engineTenantId?: string | null; id: string };
-        if (!tenantAny.engineTenantId && process.env.ENGINE_ADMIN_TENANT_ID) {
-          await db.tenant.update({
-            where: { id: tenantAny.id },
-            data: { engineTenantId: process.env.ENGINE_ADMIN_TENANT_ID },
-          });
+        // Backfill engineTenantId on existing tenants that were created
+        // before the column was wired up.
+        if (process.env.ENGINE_ADMIN_TENANT_ID) {
+          const engineRows = await prisma.$queryRaw<
+            { engineTenantId: string | null }[]
+          >`SELECT "engineTenantId" FROM "Tenant" WHERE id = ${tenant.id} LIMIT 1`;
+          if (!engineRows[0]?.engineTenantId) {
+            await prisma.$executeRaw`
+              UPDATE "Tenant" SET "engineTenantId" = ${process.env.ENGINE_ADMIN_TENANT_ID}
+              WHERE id = ${tenant.id}
+            `;
+          }
         }
 
-        // Upsert tenant membership with requested role
+        // Upsert tenant membership with requested role.
+        //
+        // Our zod schema accepts OPERATOR + VIEWER in addition to
+        // the bundled Pixie Dust ``TenantRole`` enum's three values;
+        // the role string ends up in the database verbatim either
+        // way, so cast through ``any`` to satisfy the narrower typed
+        // surface while preserving the wider runtime accept-set.
         const memberRole = role ?? "MEMBER";
         const existing = await prisma.tenantUser.findUnique({
           where: { userId_tenantId: { userId: user.id, tenantId: tenant.id } },
         });
         if (existing) {
           if (existing.role !== memberRole) {
-            await db.tenantUser.update({
+            await prisma.tenantUser.update({
               where: { id: existing.id },
-              data: { role: memberRole },
+              data: { role: memberRole as never },
             });
           }
         } else {
-          await db.tenantUser.create({
+          await prisma.tenantUser.create({
             data: {
               userId: user.id,
               tenantId: tenant.id,
-              role: memberRole,
+              role: memberRole as never,
             },
           });
         }
@@ -147,10 +163,10 @@ export async function POST(req: Request) {
 
       // Set impersonatingTenantId on the session so plugin routes have tenant context
       if (tenantId) {
-        await db.session.update({
-          where: { token: session.token },
-          data: { impersonatingTenantId: tenantId },
-        });
+        await prisma.$executeRaw`
+          UPDATE "Session" SET "impersonatingTenantId" = ${tenantId}
+          WHERE token = ${session.token}
+        `;
       }
     } catch {
       // Column may not exist yet — skip silently
@@ -175,4 +191,21 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
+}
+
+/** cuid-ish random id for rows we insert via raw SQL.
+ *
+ * Prisma's ``cuid()`` default only runs on typed ``.create()`` — when
+ * we insert through ``$executeRaw`` we need to supply the id ourselves.
+ */
+function cuidIsh(): string {
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
+  let s = "c";
+  for (const b of bytes) {
+    // eslint-disable-next-line security/detect-object-injection
+    s += alphabet[b % alphabet.length];
+  }
+  return s;
 }

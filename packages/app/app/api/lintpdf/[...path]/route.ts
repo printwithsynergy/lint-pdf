@@ -141,17 +141,16 @@ async function handleRequest(
         .find((c: string) => c.startsWith(`${cookieName}=`))
         ?.split("=")[1];
       if (sessionToken) {
-        // See app/api/auth/me/route.ts: ``impersonatingTenantId`` is a
-        // local-schema extension the PD PrismaClient doesn't know
-        // about. Runtime column is guaranteed by startup.sh.
-        
-        const dbAny = prisma as any;
-        const dbSession = (await dbAny.session.findUnique({
-          where: { token: sessionToken },
-          select: { impersonatingTenantId: true },
-        })) as { impersonatingTenantId: string | null } | null;
-        if (dbSession?.impersonatingTenantId) {
-          tenantId = dbSession.impersonatingTenantId;
+        // ``Session.impersonatingTenantId`` is a local-schema extension
+        // the bundled Pixie Dust PrismaClient doesn't know about. Going
+        // through ``$queryRaw`` bypasses the client's field validator;
+        // the column itself is guaranteed to exist at runtime by
+        // packages/app/scripts/startup.sh.
+        const rows = await prisma.$queryRaw<
+          { impersonatingTenantId: string | null }[]
+        >`SELECT "impersonatingTenantId" FROM "Session" WHERE token = ${sessionToken} LIMIT 1`;
+        if (rows[0]?.impersonatingTenantId) {
+          tenantId = rows[0].impersonatingTenantId;
         }
       }
     }

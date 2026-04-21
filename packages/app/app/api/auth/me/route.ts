@@ -49,15 +49,17 @@ export async function GET(req: Request) {
     if (sessionToken) {
       // ``impersonatingTenantId`` lives in the local Prisma schema
       // (packages/app/prisma/schema/base.prisma) but the Pixie Dust
-      // PrismaClient type we import doesn't know about it. The
-      // startup.sh raw-SQL migration ensures the column exists at
-      // runtime; the ``as any`` cast bridges the type gap.
-      
-      const dbAny = prisma as any;
-      const session = (await dbAny.session.findUnique({
-        where: { token: sessionToken },
-        select: { impersonatingTenantId: true },
-      })) as { impersonatingTenantId: string | null } | null;
+      // PrismaClient bundled in ``@thinkneverland/pixie-dust-database/server``
+      // doesn't know about the column — typed calls fail at runtime
+      // with ``PrismaClientValidationError: Unknown field
+      // 'impersonatingTenantId'``. The column itself is guaranteed to
+      // exist in Postgres by ``packages/app/scripts/startup.sh``; using
+      // ``$queryRaw`` bypasses the client's field validator and goes
+      // straight to the database.
+      const rows = await prisma.$queryRaw<
+        { impersonatingTenantId: string | null }[]
+      >`SELECT "impersonatingTenantId" FROM "Session" WHERE token = ${sessionToken} LIMIT 1`;
+      const session = rows[0] ?? null;
 
       if (session?.impersonatingTenantId) {
         const targetTenant = await prisma.tenant.findUnique({
