@@ -405,7 +405,22 @@ def run_preflight(
                     exc_info=True,
                 )
 
-            # Run preflight orchestrator
+            # Run preflight orchestrator.
+            #
+            # Bulk-files step 17 — soft-timeout guard.
+            #
+            # Celery's SoftTimeLimitExceeded fires at ``soft_time_limit``
+            # (540s, 10 % under the 600s hard SIGKILL). Without this
+            # guard, a long AI run that overshoots leaves the Job row
+            # stuck in PROCESSING until the 20-minute reaper noticed it;
+            # customers saw a job that appeared hung. We catch here,
+            # mark it FAILED with a structured reason, and re-raise so
+            # Celery's accounting (retries, DLQ, etc.) still records
+            # the timeout. Partial-findings persistence is queued as a
+            # follow-up — it requires the orchestrator to yield findings
+            # incrementally, which is a bigger surgery.
+            from celery.exceptions import SoftTimeLimitExceeded
+
             from lintpdf.profiles.orchestrator import PreflightOrchestrator
 
             orchestrator = PreflightOrchestrator(
@@ -415,7 +430,38 @@ def run_preflight(
                 pdf_bytes=pdf_bytes,
                 custom_pantone_overrides=custom_pantone,
             )
-            result = orchestrator.run(pdf_bytes)
+            try:
+                result = orchestrator.run(pdf_bytes)
+            except SoftTimeLimitExceeded:
+                import datetime
+
+                partial_ms = int((time.monotonic() - start) * 1000)
+                logger.warning(
+                    "Job %s hit soft_time_limit (%dms elapsed); marking FAILED before SIGKILL",
+                    job_id,
+                    partial_ms,
+                )
+                job.status = JobStatus.FAILED
+                job.result_json = {
+                    "summary": {
+                        "total_findings": 0,
+                        "error_count": 0,
+                        "warning_count": 0,
+                        "advisory_count": 0,
+                        "passed": False,
+                        "page_count": None,
+                        "file_size_bytes": job.file_size,
+                    },
+                    "metadata": {
+                        "timeout": "soft_time_limit",
+                        "elapsed_ms": partial_ms,
+                    },
+                    "findings": [],
+                }
+                job.duration_ms = partial_ms
+                job.completed_at = datetime.datetime.now(datetime.UTC)
+                db.commit()
+                raise
 
             duration_ms = int((time.monotonic() - start) * 1000)
 
