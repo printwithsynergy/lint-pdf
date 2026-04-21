@@ -1,12 +1,13 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Login Page", () => {
-  test("renders the login page", async ({ page }) => {
+  test("renders the login page with tenant branding", async ({ page }) => {
     await page.goto("/auth/login");
 
-    // Default heading when no custom branding is set
+    // Branding is injected by app/auth/layout.tsx reading AppSettings.
+    // Seed populates loginHeading="Sign in to LintPDF".
     await expect(
-      page.getByRole("heading", { name: /welcome back/i }).first(),
+      page.getByRole("heading", { name: /sign in to lintpdf/i }).first(),
     ).toBeVisible();
   });
 
@@ -30,8 +31,8 @@ test.describe("Login Page", () => {
   test("shows branding", async ({ page }) => {
     await page.goto("/auth/login");
 
-    // Default branding shows "Powered by Pixie Dust" tagline
-    await expect(page.getByText(/powered by pixie dust/i)).toBeVisible();
+    // LintPDF brand name + tagline from seeded AppSettings.
+    await expect(page.getByText(/lintpdf/i).first()).toBeVisible();
   });
 
   test("shows no-password message", async ({ page }) => {
