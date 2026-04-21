@@ -337,8 +337,11 @@ export default function WebhooksPage() {
                         </div>
                       )}
                     </div>
-                    <div className="ml-4 flex shrink-0 gap-1">
-                      <Link href={`/dashboard/webhooks/${wh.id}/deliveries`}>
+                    <div className="ml-4 flex shrink-0 items-center gap-1">
+                      <Link
+                        href={`/dashboard/webhooks/${wh.id}/deliveries`}
+                        className="inline-flex"
+                      >
                         <Button variant="secondary" size="sm">
                           Deliveries
                         </Button>
