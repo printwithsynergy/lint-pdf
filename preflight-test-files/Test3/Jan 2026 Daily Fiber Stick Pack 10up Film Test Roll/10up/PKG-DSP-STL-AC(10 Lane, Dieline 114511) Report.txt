@@ -1,0 +1,61 @@
+Package Report
+
+-----------------------------------------------------------------------------
+Document:
+Name: PKG-DSP-STL-AC(10 Lane, Dieline 114511).ai
+Color Mode: CMYK color
+Color Profile: none
+Ruler Units: pixels
+Artboard Dimensions: 2600.1282 px x 756.0116 px
+Show Images in Outline Mode: OFF
+Highlight Substituted Fonts: OFF
+Highlight Substituted Glyphs: OFF
+Preserve Text Editability
+Simulate Colored Paper: OFF
+
+-----------------------------------------------------------------------------
+Spot Color Objects:
+Black Black (CMYK)
+Foil (CMYK)
+Pantone 205 C (CMYK)
+Pantone 211 C (CMYK)
+Pantone 705 C (CMYK)
+White Base (CMYK)
+dieline (CMYK)
+techinfo (CMYK)
+
+-----------------------------------------------------------------------------
+Missing Fonts:NONE
+
+-----------------------------------------------------------------------------
+Protected Fonts that were not packaged:NONE
+
+-----------------------------------------------------------------------------
+Fonts:
+Arial (OTF)
+Arial Bold (OTF)
+Acumin Variable Concept Bold Italic (OTF)
+Bagoss Condensed SemiBold (OTF)
+Bagoss Extended Medium (OTF)
+Bagoss Standard Regular (OTF)
+Bagoss Standard SemiBold (OTF)
+Acumin Variable Concept Condensed Bold (OTF)
+Acumin Variable Concept Condensed Black (OTF)
+Acumin Variable Concept Bold (OTF)
+Acumin Variable Concept Condensed Semibold (OTF)
+Acumin Variable Concept Condensed Medium (OTF)
+Acumin Variable Concept Condensed Italic (OTF)
+Acumin Variable Concept Condensed (OTF)
+Acumin Variable Concept Medium (OTF)
+
+-----------------------------------------------------------------------------
+Embedded Fonts:
+NONE
+
+-----------------------------------------------------------------------------
+Missing Links:
+NONE
+
+-----------------------------------------------------------------------------
+Linked Images:
+NONE
