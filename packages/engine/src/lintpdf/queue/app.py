@@ -108,9 +108,7 @@ def _configure_worker_logging(**_: Any) -> None:
 
 
 @task_prerun.connect  # type: ignore[misc]
-def _bind_task_context(
-    task_id: str | None = None, task: Any = None, **_: Any
-) -> None:
+def _bind_task_context(task_id: str | None = None, task: Any = None, **_: Any) -> None:
     """Bind ``task_id`` / ``task_name`` into structlog contextvars for the task."""
     from structlog.contextvars import bind_contextvars
 

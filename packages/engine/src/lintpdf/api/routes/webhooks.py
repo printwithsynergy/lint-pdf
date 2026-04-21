@@ -129,9 +129,7 @@ async def list_webhooks(
     endpoints: list[WebhookEndpoint] = (
         db.query(WebhookEndpoint).filter(WebhookEndpoint.tenant_id == tenant.id).all()
     )
-    return WebhookListResponse(
-        webhooks=[_webhook_to_response(e) for e in endpoints]
-    )
+    return WebhookListResponse(webhooks=[_webhook_to_response(e) for e in endpoints])
 
 
 @router.patch("/{webhook_id}", response_model=WebhookResponse)
@@ -495,11 +493,7 @@ async def replay_delivery(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Delivery not found.",
         )
-    endpoint = (
-        db.query(WebhookEndpoint)
-        .filter(WebhookEndpoint.id == original.webhook_id)
-        .first()
-    )
+    endpoint = db.query(WebhookEndpoint).filter(WebhookEndpoint.id == original.webhook_id).first()
     if endpoint is None or not endpoint.is_active:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

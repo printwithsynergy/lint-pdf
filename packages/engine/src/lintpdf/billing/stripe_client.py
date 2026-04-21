@@ -101,7 +101,9 @@ def _request(
 ) -> dict[str, Any]:
     cfg = config or load_config()
     if not cfg.api_key:
-        raise StripeError("Stripe API key not configured (STRIPE_SECRET_KEY / STRIPE_SDB_SECRET_KEY).")
+        raise StripeError(
+            "Stripe API key not configured (STRIPE_SECRET_KEY / STRIPE_SDB_SECRET_KEY)."
+        )
     body = _encode(data) if data else None
     url = f"https://api.stripe.com/v1{path}"
     req = urllib.request.Request(url, data=body, method=method)
@@ -110,7 +112,8 @@ def _request(
         req.add_header("Content-Type", "application/x-www-form-urlencoded")
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read())
+            payload: dict[str, Any] = json.loads(resp.read())
+            return payload
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")[:500]
         raise StripeError(f"Stripe {method} {path} → {exc.code}: {detail}") from exc
@@ -162,7 +165,8 @@ def create_checkout_session(
     req.add_header("Content-Type", "application/x-www-form-urlencoded")
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
-            return json.loads(resp.read())
+            response: dict[str, Any] = json.loads(resp.read())
+            return response
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")[:500]
         raise StripeError(f"Stripe checkout.create → {exc.code}: {detail}") from exc
@@ -190,7 +194,7 @@ def verify_webhook_signature(
     if not signature_header:
         raise StripeError("Missing Stripe-Signature header.")
 
-    parts = {}
+    parts: dict[str, list[str]] = {}
     for chunk in signature_header.split(","):
         if "=" in chunk:
             k, v = chunk.split("=", 1)
@@ -206,9 +210,7 @@ def verify_webhook_signature(
         raise StripeError("No v1 signatures in Stripe-Signature header.")
 
     signed_payload = f"{timestamp}.".encode() + payload
-    expected = hmac.new(
-        cfg.webhook_secret.encode(), signed_payload, hashlib.sha256
-    ).hexdigest()
+    expected = hmac.new(cfg.webhook_secret.encode(), signed_payload, hashlib.sha256).hexdigest()
 
     if not any(hmac.compare_digest(expected, sig) for sig in v1_signatures):
         raise StripeError("Stripe webhook signature mismatch.")

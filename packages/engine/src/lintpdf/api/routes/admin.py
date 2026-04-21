@@ -432,9 +432,7 @@ async def update_tenant_plan(
     if previous_plan != str(new_plan):
         from lintpdf.webhooks.events import fire_tenant_plan_changed
 
-        fire_tenant_plan_changed(
-            db, tenant.id, previous_plan=previous_plan, new_plan=str(new_plan)
-        )
+        fire_tenant_plan_changed(db, tenant.id, previous_plan=previous_plan, new_plan=str(new_plan))
         db.commit()
 
     return AdminTenantResponse(id=str(tenant.id), name=tenant.name, plan=tenant.plan, updated=True)
@@ -777,8 +775,7 @@ async def admin_ask_preview(
     tenant_hit = (
         db.query(Tenant)
         .filter(
-            (Tenant.brand_custom_domain == canonical)
-            | (Tenant.app_custom_domain == canonical),
+            (Tenant.brand_custom_domain == canonical) | (Tenant.app_custom_domain == canonical),
         )
         .first()
     )
@@ -853,41 +850,61 @@ async def admin_diagnose_custom_domain(
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     try:
-        with socket.create_connection((canonical, 443), timeout=30) as raw:
-            with ctx.wrap_socket(raw, server_hostname=canonical) as ssock:
-                cert = ssock.getpeercert() or {}
-                subject = {k: v for pair in cert.get("subject", ()) for k, v in pair}
-                issuer = {k: v for pair in cert.get("issuer", ()) for k, v in pair}
-                result["tls"] = {
-                    "cipher": ssock.cipher()[0] if ssock.cipher() else None,
-                    "version": ssock.version(),
-                    "cert_subject": subject,
-                    "cert_issuer": issuer,
-                    "cert_not_before": cert.get("notBefore"),
-                    "cert_not_after": cert.get("notAfter"),
-                    "sans": [v for _, v in cert.get("subjectAltName", ())],
-                }
-                ssock.sendall(
-                    b"GET /__edge/health HTTP/1.1\r\nHost: "
-                    + canonical.encode()
-                    + b"\r\nUser-Agent: lintpdf-diagnose\r\nConnection: close\r\n\r\n"
-                )
-                raw_resp = b""
-                while len(raw_resp) < 2048:
-                    chunk = ssock.recv(2048)
-                    if not chunk:
-                        break
-                    raw_resp += chunk
-                status_line = raw_resp.split(b"\r\n", 1)[0].decode("ascii", errors="replace")
-                result["http"] = {
-                    "status_line": status_line,
-                    "probed_at": datetime.now(timezone.utc).isoformat(),
-                }
+        with (
+            socket.create_connection((canonical, 443), timeout=30) as raw,
+            ctx.wrap_socket(raw, server_hostname=canonical) as ssock,
+        ):
+            cert = ssock.getpeercert() or {}
+
+            # cert["subject"] / cert["issuer"] come back as
+            # Tuple[Tuple[Tuple[str, str], ...], ...]. Typeshed widens
+            # the inner tuple to Any | str so unpack via a helper
+            # that handles the two-tuple shape explicitly.
+            def _flatten_rdn(rdns: object) -> dict[str, str]:
+                out: dict[str, str] = {}
+                for pair in rdns or ():  # type: ignore[union-attr]
+                    for item in pair:  # type: ignore[union-attr]
+                        if isinstance(item, tuple) and len(item) == 2:
+                            k, v = item
+                            out[str(k)] = str(v)
+                return out
+
+            subject = _flatten_rdn(cert.get("subject"))
+            issuer = _flatten_rdn(cert.get("issuer"))
+            sans: list[str] = []
+            for san in cert.get("subjectAltName", ()) or ():
+                if isinstance(san, tuple) and len(san) == 2:
+                    sans.append(str(san[1]))
+            result["tls"] = {
+                "cipher": ssock.cipher()[0] if ssock.cipher() else None,
+                "version": ssock.version(),
+                "cert_subject": subject,
+                "cert_issuer": issuer,
+                "cert_not_before": cert.get("notBefore"),
+                "cert_not_after": cert.get("notAfter"),
+                "sans": sans,
+            }
+            ssock.sendall(
+                b"GET /__edge/health HTTP/1.1\r\nHost: "
+                + canonical.encode()
+                + b"\r\nUser-Agent: lintpdf-diagnose\r\nConnection: close\r\n\r\n"
+            )
+            raw_resp = b""
+            while len(raw_resp) < 2048:
+                chunk = ssock.recv(2048)
+                if not chunk:
+                    break
+                raw_resp += chunk
+            status_line = raw_resp.split(b"\r\n", 1)[0].decode("ascii", errors="replace")
+            result["http"] = {
+                "status_line": status_line,
+                "probed_at": datetime.now(timezone.utc).isoformat(),
+            }
     except ssl.SSLError as exc:
         result["tls_error"] = f"{type(exc).__name__}: {exc}"
-    except (OSError, socket.timeout) as exc:
+    except (TimeoutError, OSError) as exc:
         result["network_error"] = f"{type(exc).__name__}: {exc}"
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         result["error"] = f"{type(exc).__name__}: {exc}"
     return result
 
@@ -929,8 +946,7 @@ async def admin_prewarm_custom_domains(
         tenant_hosts: list[tuple[str | None, str | None]] = (
             db.query(Tenant.brand_custom_domain, Tenant.app_custom_domain)
             .filter(
-                (Tenant.brand_custom_domain.isnot(None))
-                | (Tenant.app_custom_domain.isnot(None))
+                (Tenant.brand_custom_domain.isnot(None)) | (Tenant.app_custom_domain.isnot(None))
             )
             .all()
         )
@@ -959,7 +975,7 @@ async def admin_prewarm_custom_domains(
         try:
             prewarm_edge_cert.apply_async(args=[h])
             enqueued.append(h)
-        except Exception:  # noqa: BLE001
+        except Exception:
             # Celery broker unreachable -- report but don't fail the call.
             continue
     return {"enqueued": enqueued, "count": len(enqueued)}
@@ -2838,11 +2854,7 @@ async def admin_replay_webhook_delivery(
             detail="Delivery not found.",
         )
 
-    endpoint = (
-        db.query(WebhookEndpoint)
-        .filter(WebhookEndpoint.id == original.webhook_id)
-        .first()
-    )
+    endpoint = db.query(WebhookEndpoint).filter(WebhookEndpoint.id == original.webhook_id).first()
     if endpoint is None or not endpoint.is_active:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

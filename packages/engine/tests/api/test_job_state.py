@@ -208,9 +208,7 @@ def test_state_404_on_unknown_job(client: TestClient) -> None:
     assert resp.status_code == 404
 
 
-def test_state_404_on_cross_tenant_job(
-    client: TestClient, db_session: Session
-) -> None:
+def test_state_404_on_cross_tenant_job(client: TestClient, db_session: Session) -> None:
     """A job belonging to another tenant must not leak via /state."""
     other_tenant = Tenant(
         id=uuid.uuid4(),
@@ -280,9 +278,7 @@ def test_annotations_include_comments_embeds_thread(
     assert [c["body"] for c in rich[0]["comments"]] == ["first", "second"]
 
 
-def test_annotations_include_rejects_unknown_key(
-    client: TestClient, db_session: Session
-) -> None:
+def test_annotations_include_rejects_unknown_key(client: TestClient, db_session: Session) -> None:
     job = _seed_complete_job(db_session)
     resp = client.get(
         f"/api/v1/viewer/jobs/{job.id}/annotations",

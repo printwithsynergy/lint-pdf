@@ -266,6 +266,7 @@ def get_storage() -> StorageBackend:
                 from lintpdf.api.config import get_settings
 
                 settings = get_settings()
+
                 # Strip whitespace from every S3 setting because Railway
                 # (and some docker-compose envs) silently preserve leading
                 # or trailing spaces around the value, and botocore's

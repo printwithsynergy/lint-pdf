@@ -79,13 +79,9 @@ def _seed_complete_job(db: Session) -> Job:
 
 
 class TestEmitEventPersistsDelivery:
-    def test_one_row_per_subscribed_endpoint(
-        self, client: TestClient, db_session: Session
-    ) -> None:
+    def test_one_row_per_subscribed_endpoint(self, client: TestClient, db_session: Session) -> None:
         ep1 = _seed_webhook(db_session)
-        ep2 = _seed_webhook(
-            db_session, events=["job.completed"]
-        )  # only subscribes to one
+        ep2 = _seed_webhook(db_session, events=["job.completed"])  # only subscribes to one
         _seed_webhook(db_session, events=["approval.chain.started"])  # should skip
 
         from lintpdf.webhooks.events import emit_event
@@ -106,9 +102,7 @@ class TestEmitEventPersistsDelivery:
             assert r.success is False  # not yet delivered
             assert r.attempt_count == 0
 
-    def test_no_subscribers_persists_nothing(
-        self, client: TestClient, db_session: Session
-    ) -> None:
+    def test_no_subscribers_persists_nothing(self, client: TestClient, db_session: Session) -> None:
         from lintpdf.webhooks.events import emit_event
 
         emit_event(db_session, PLACEHOLDER_TENANT_ID, "verdict.changed", {"x": 1})
@@ -145,11 +139,7 @@ class TestJobStateChangedEvent:
         fire_job_state_changed(db_session, job, job.tenant_id, reason="unit-test")
         db_session.commit()
 
-        rows = (
-            db_session.query(WebhookDelivery)
-            .filter(WebhookDelivery.webhook_id == ep.id)
-            .all()
-        )
+        rows = db_session.query(WebhookDelivery).filter(WebhookDelivery.webhook_id == ep.id).all()
         assert len(rows) == 1
         payload = rows[0].payload
         assert payload["reason"] == "unit-test"
@@ -170,9 +160,7 @@ class TestReplayDelivery:
         emit_event(db_session, PLACEHOLDER_TENANT_ID, "verdict.changed", {"k": "v"})
         db_session.commit()
         original = (
-            db_session.query(WebhookDelivery)
-            .filter(WebhookDelivery.webhook_id == ep.id)
-            .first()
+            db_session.query(WebhookDelivery).filter(WebhookDelivery.webhook_id == ep.id).first()
         )
         assert original is not None
 
@@ -184,9 +172,7 @@ class TestReplayDelivery:
         assert new["payload"] == original.payload
 
         all_rows = (
-            db_session.query(WebhookDelivery)
-            .filter(WebhookDelivery.webhook_id == ep.id)
-            .all()
+            db_session.query(WebhookDelivery).filter(WebhookDelivery.webhook_id == ep.id).all()
         )
         assert len(all_rows) == 2  # audit log grew, original preserved
 
@@ -194,17 +180,15 @@ class TestReplayDelivery:
         resp = client.post(f"/api/v1/webhooks/deliveries/{uuid.uuid4()}/replay")
         assert resp.status_code == 404
 
-    def test_replay_409_on_inactive_endpoint(
-        self, client: TestClient, db_session: Session
-    ) -> None:
+    def test_replay_409_on_inactive_endpoint(self, client: TestClient, db_session: Session) -> None:
         ep = _seed_webhook(db_session)
         from lintpdf.webhooks.events import emit_event
 
         emit_event(db_session, PLACEHOLDER_TENANT_ID, "verdict.changed", {"k": 1})
         db_session.commit()
-        delivery = db_session.query(WebhookDelivery).filter(
-            WebhookDelivery.webhook_id == ep.id
-        ).first()
+        delivery = (
+            db_session.query(WebhookDelivery).filter(WebhookDelivery.webhook_id == ep.id).first()
+        )
         assert delivery is not None
 
         ep.is_active = False
@@ -215,11 +199,9 @@ class TestReplayDelivery:
 
 
 class TestListDeliveries:
-    def test_filters_by_webhook_and_event(
-        self, client: TestClient, db_session: Session
-    ) -> None:
+    def test_filters_by_webhook_and_event(self, client: TestClient, db_session: Session) -> None:
         ep_a = _seed_webhook(db_session)
-        ep_b = _seed_webhook(db_session)
+        _seed_webhook(db_session)
         from lintpdf.webhooks.events import emit_event
 
         # 3 events for ep_a, 1 for ep_b
@@ -234,23 +216,17 @@ class TestListDeliveries:
         assert resp.json()["total"] == 6
 
         # Filter by webhook_id
-        resp = client.get(
-            "/api/v1/webhooks/deliveries", params={"webhook_id": str(ep_a.id)}
-        )
+        resp = client.get("/api/v1/webhooks/deliveries", params={"webhook_id": str(ep_a.id)})
         assert resp.status_code == 200
         assert resp.json()["total"] == 3
 
         # Filter by event
-        resp = client.get(
-            "/api/v1/webhooks/deliveries", params={"event": "verdict.changed"}
-        )
+        resp = client.get("/api/v1/webhooks/deliveries", params={"event": "verdict.changed"})
         assert resp.status_code == 200
         assert resp.json()["total"] == 4
 
     def test_invalid_webhook_id_uuid_422s(self, client: TestClient) -> None:
-        resp = client.get(
-            "/api/v1/webhooks/deliveries", params={"webhook_id": "not-a-uuid"}
-        )
+        resp = client.get("/api/v1/webhooks/deliveries", params={"webhook_id": "not-a-uuid"})
         assert resp.status_code == 422
 
 
@@ -285,9 +261,7 @@ class TestKnownEventsCatalog:
 
 
 class TestPerEndpointRetryConfig:
-    def test_create_persists_and_echoes_new_fields(
-        self, client: TestClient
-    ) -> None:
+    def test_create_persists_and_echoes_new_fields(self, client: TestClient) -> None:
         resp = client.post(
             "/api/v1/webhooks",
             json={
@@ -308,9 +282,7 @@ class TestPerEndpointRetryConfig:
         assert body["delivery_retention_days"] == 7
         assert body["retention_overrides"] == {"billing.*": 365}
 
-    def test_patch_updates_retry_fields(
-        self, client: TestClient, db_session: Session
-    ) -> None:
+    def test_patch_updates_retry_fields(self, client: TestClient, db_session: Session) -> None:
         ep = _seed_webhook(db_session)
         resp = client.patch(
             f"/api/v1/webhooks/{ep.id}",
@@ -373,11 +345,11 @@ class TestRetentionSweep:
         fresh_id = fresh.id
         old_id = old.id
         # Backdate the `old` row manually (server_default ignored on update).
-        db_session.query(WebhookDelivery).filter(
-            WebhookDelivery.id == old_id
-        ).update(
-            {WebhookDelivery.created_at: _dt.datetime.now(_dt.timezone.utc)
-             - _dt.timedelta(days=30)}
+        db_session.query(WebhookDelivery).filter(WebhookDelivery.id == old_id).update(
+            {
+                WebhookDelivery.created_at: _dt.datetime.now(_dt.timezone.utc)
+                - _dt.timedelta(days=30)
+            }
         )
         db_session.commit()
 
@@ -437,9 +409,7 @@ class TestRetentionSweep:
         # Both backdated 30 days. Billing override = 365d (keeps),
         # annotation falls under default 7d (deletes).
         for row_id in (old_billing.id, old_annotation.id):
-            db_session.query(WebhookDelivery).filter(
-                WebhookDelivery.id == row_id
-            ).update(
+            db_session.query(WebhookDelivery).filter(WebhookDelivery.id == row_id).update(
                 {WebhookDelivery.created_at: now - _dt.timedelta(days=30)}
             )
         db_session.commit()
@@ -500,11 +470,7 @@ class TestTestPingAudit:
         assert sig.startswith("sha256="), sig
 
         # A WebhookDelivery row was persisted
-        rows = (
-            db_session.query(WebhookDelivery)
-            .filter(WebhookDelivery.webhook_id == ep.id)
-            .all()
-        )
+        rows = db_session.query(WebhookDelivery).filter(WebhookDelivery.webhook_id == ep.id).all()
         assert len(rows) == 1
         assert rows[0].event == "test.ping"
         assert rows[0].success is True

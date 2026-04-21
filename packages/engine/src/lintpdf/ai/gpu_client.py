@@ -61,7 +61,7 @@ class CircuitBreaker:
     But a 429 that keeps reappearing AFTER the retry budget is exhausted
     does count as one failure. Persistent upstream rate-limiting (what
     you see when Modal throttles every call for minutes at a time) would
-    otherwise burn 3 retries × N analyzers × M pages of wall-clock time
+    otherwise burn 3 retries x N analyzers x M pages of wall-clock time
     before giving up on each job — driving job completion well past
     timeout. Counting exhausted-budget 429s lets the breaker open after
     ``failure_threshold`` such events, so subsequent calls fast-fail

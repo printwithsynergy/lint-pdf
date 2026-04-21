@@ -100,12 +100,17 @@ export async function getDocBySlug(slug: string): Promise<DocPage | null> {
   if (!fs.existsSync(resolved)) return null;
 
   const doc = parseDocAt(resolved, safeSlug);
+  // The renderer shows a hero block (title + description from frontmatter)
+  // before the body, so drop the markdown's leading `# …` heading when
+  // present to avoid a duplicate title. A regex-based strip is fine — the
+  // pattern anchors at the start of the file and matches one heading line.
+  const body = doc.content.replace(/^\s*#\s+[^\n]+\n+/, "");
   const result = await remark()
     .use(remarkGfm)
     .use(remarkRehype)
     .use(rehypeSanitize, gfmSchema)
     .use(rehypeStringify)
-    .process(doc.content);
+    .process(body);
   doc.htmlContent = result.toString();
   return doc;
 }

@@ -15,12 +15,15 @@ from __future__ import annotations
 
 import logging
 import os
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
 
 from lintpdf.api.database import get_db
 from lintpdf.api.models import BrandProfile, Tenant
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -90,8 +93,7 @@ def on_demand_tls_check(
     tenant_hit = (
         db.query(Tenant)
         .filter(
-            (Tenant.brand_custom_domain == canonical)
-            | (Tenant.app_custom_domain == canonical),
+            (Tenant.brand_custom_domain == canonical) | (Tenant.app_custom_domain == canonical),
         )
         .first()
     )

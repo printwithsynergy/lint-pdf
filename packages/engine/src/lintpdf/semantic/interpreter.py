@@ -617,6 +617,7 @@ class ContentStreamInterpreter:
             return None
         tm = self.state.text_matrix
         m = self.state.ctm
+
         # Anchor in text space is (0, 0); end-of-line anchor we'll treat as
         # (size, size) — a conservative square box. This is just an
         # annotation hint, not a measurement.

@@ -5,6 +5,7 @@ Also provides idempotency key middleware and rate limit response headers.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import threading
@@ -368,10 +369,8 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
         finally:
             if unbind_contextvars is not None:
-                try:
+                with contextlib.suppress(Exception):
                     unbind_contextvars("request_id")
-                except Exception:
-                    pass
 
         response.headers[_REQUEST_ID_HEADER] = request_id
         return response

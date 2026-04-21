@@ -25,6 +25,7 @@ Design choices:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 from typing import Any
@@ -53,10 +54,8 @@ def get_json(key: str) -> Any | None:
         return json.loads(raw)
     except Exception:
         logger.warning("cache.get corrupt payload for key=%s — deleting", key)
-        try:
+        with contextlib.suppress(Exception):
             client.delete(key)
-        except Exception:
-            pass
         return None
 
 

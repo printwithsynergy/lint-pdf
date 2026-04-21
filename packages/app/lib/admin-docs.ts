@@ -94,12 +94,16 @@ export async function getAdminDocBySlug(
   if (!fs.existsSync(resolved)) return null;
 
   const doc = parseFile(resolved, safeSlug);
+  // The renderer shows a hero block (title + description from frontmatter)
+  // before the body, so drop the markdown's leading `# …` heading when
+  // present to avoid a duplicate title.
+  const body = doc.content.replace(/^\s*#\s+[^\n]+\n+/, "");
   const result = await remark()
     .use(remarkGfm)
     .use(remarkRehype)
     .use(rehypeSanitize, gfmSchema)
     .use(rehypeStringify)
-    .process(doc.content);
+    .process(body);
   doc.htmlContent = result.toString();
   return doc;
 }

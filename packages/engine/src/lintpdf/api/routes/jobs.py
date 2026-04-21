@@ -9,7 +9,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
-from sqlalchemy.orm import Session, selectinload  # noqa: TC002
+from sqlalchemy.orm import Session, selectinload
 
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.config import get_settings
@@ -917,9 +917,7 @@ async def get_job_state(
             verdict=job_row.verdict if job_row else None,
             auto_passed=auto_passed,
             verdict_by=job_row.verdict_by if job_row else None,
-            verdict_at=job_row.verdict_at.isoformat()
-            if job_row and job_row.verdict_at
-            else None,
+            verdict_at=job_row.verdict_at.isoformat() if job_row and job_row.verdict_at else None,
             notes=job_row.verdict_notes if job_row else None,
         )
 

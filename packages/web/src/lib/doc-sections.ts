@@ -125,9 +125,10 @@ export const docSections: DocSection[] = [
         description: "FAQ + full error-code reference.",
       },
       {
-        slug: "ai-voyage-plans",
-        label: "Voyage plans",
-        description: "Long-running AI workflows you can compose.",
+        slug: "ai-in-rulesets",
+        label: "AI in rulesets",
+        description:
+          "Use AI presets, add AI categories to custom rulesets, or override per-request.",
       },
     ],
   },

@@ -629,9 +629,7 @@ class TestViewerUrlField:
         service = ReportService(storage, db_session)
 
         with (
-            patch.object(
-                ReportService, "_generate_format", return_value=b"<html></html>"
-            ),
+            patch.object(ReportService, "_generate_format", return_value=b"<html></html>"),
             patch.object(ReportService, "_fetch_original_pdf", return_value=None),
         ):
             result = service.generate_and_store(
@@ -656,9 +654,7 @@ class TestViewerUrlField:
         service = ReportService(storage, db_session)
 
         with (
-            patch.object(
-                ReportService, "_generate_format", return_value=b'{"findings":[]}'
-            ),
+            patch.object(ReportService, "_generate_format", return_value=b'{"findings":[]}'),
             patch.object(ReportService, "_fetch_original_pdf", return_value=None),
         ):
             result = service.generate_and_store(
@@ -683,9 +679,7 @@ class TestViewerUrlField:
         service = ReportService(storage, db_session)
 
         with (
-            patch.object(
-                ReportService, "_generate_format", return_value=b"<html></html>"
-            ),
+            patch.object(ReportService, "_generate_format", return_value=b"<html></html>"),
             patch.object(ReportService, "_fetch_original_pdf", return_value=None),
         ):
             result = service.generate_and_store(

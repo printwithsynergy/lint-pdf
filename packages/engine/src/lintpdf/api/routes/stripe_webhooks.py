@@ -59,11 +59,7 @@ def _find_tenant(
             if t is not None:
                 return t
     if stripe_customer_id:
-        t = (
-            db.query(Tenant)
-            .filter(Tenant.stripe_customer_id == stripe_customer_id)
-            .first()
-        )
+        t = db.query(Tenant).filter(Tenant.stripe_customer_id == stripe_customer_id).first()
         if t is not None:
             return t
     return None
@@ -124,9 +120,7 @@ async def stripe_webhook(
             client_reference_id=data_object.get("client_reference_id"),
         )
         if tenant is None:
-            logger.error(
-                "checkout.session.completed: tenant not resolved session=%s", session_id
-            )
+            logger.error("checkout.session.completed: tenant not resolved session=%s", session_id)
             # Returning 200 so Stripe stops retrying, but the ops alert is logged.
             return {"received": True, "handled": False, "reason": "tenant_not_found"}
 
@@ -179,9 +173,7 @@ async def stripe_webhook(
                     source_event="invoice.paid",
                 )
             except Exception:
-                logger.exception(
-                    "allocate_monthly failed tenant=%s kind=%s", tenant.id, kind
-                )
+                logger.exception("allocate_monthly failed tenant=%s kind=%s", tenant.id, kind)
                 continue
             if allocation is not None:
                 grants.append(

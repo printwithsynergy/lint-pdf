@@ -283,9 +283,7 @@ def build_job_state_payload(db: Session, job: Any, tenant_id: uuid_mod.UUID) -> 
     if ann_rows:
         comment_rows = (
             db.query(ViewerAnnotationComment)
-            .filter(
-                ViewerAnnotationComment.annotation_id.in_([r.id for r in ann_rows])
-            )
+            .filter(ViewerAnnotationComment.annotation_id.in_([r.id for r in ann_rows]))
             .order_by(ViewerAnnotationComment.created_at.asc())
             .all()
         )
@@ -409,9 +407,7 @@ def fire_comment_created(db: Session, comment: Any) -> None:
                     "id": str(comment.id),
                     "author_email": comment.author_email,
                     "body": comment.body,
-                    "created_at": comment.created_at.isoformat()
-                    if comment.created_at
-                    else None,
+                    "created_at": comment.created_at.isoformat() if comment.created_at else None,
                 },
             }
         ),
@@ -469,9 +465,7 @@ def fire_report_expired(
         db,
         tenant_id,
         "report.expired",
-        _ensure_json_safe(
-            {"job_id": str(job_id), "token": token, "format": format}
-        ),
+        _ensure_json_safe({"job_id": str(job_id), "token": token, "format": format}),
     )
 
 
