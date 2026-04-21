@@ -318,6 +318,71 @@ def poll_job(http: HTTP, api_key: str, rec: JobRecord, timeout_s: int) -> None:
     rec.poll_error = f"timeout after {timeout_s}s"
 
 
+def bulk_mint(http: HTTP, api_key: str, records: list[JobRecord]) -> bool:
+    """Single-shot mint across all completed jobs via the bulk endpoint.
+
+    Returns True if the endpoint was available + processed the batch
+    (per-job failures captured on ``rec.report_error``). Returns False
+    if the endpoint isn't implemented on this engine (HTTP 404),
+    signalling the caller to fall back to per-job minting.
+    """
+    if not records:
+        return True
+    payload = {
+        "job_ids": [r.job_id for r in records if r.job_id],
+        "formats": ["html", "pdf", "json", "annotated_pdf"],
+        "expiry_days": 7,
+        "allow_annotations": False,
+        "require_visitor_email": False,
+    }
+    code, body = http.request(
+        "POST",
+        "/api/v1/reports:batchMint",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json_body=payload,
+        timeout=300,
+        retries=3,
+    )
+    if code == 404:
+        return False  # old engine; fall back to per-job
+    if code not in (200, 201) or not isinstance(body, dict):
+        # Engine available but batch call itself failed — mark every
+        # record with the error so we still produce a useful report.
+        err = f"{code}: {body!r}"[:400]
+        for r in records:
+            r.report_error = err
+        return True
+    by_id = {r.job_id: r for r in records if r.job_id}
+    for entry in body.get("results", []) or []:
+        job_id = entry.get("job_id")
+        rec = by_id.get(job_id)
+        if rec is None:
+            continue
+        if entry.get("status") != "ok":
+            rec.report_error = str(entry.get("error") or "unknown")[:400]
+            continue
+        for r in entry.get("reports", []) or []:
+            fmt = r.get("format")
+            url = r.get("url", "")
+            viewer = r.get("viewer_url", "")
+            if fmt == "html":
+                rec.html_url = url
+                rec.viewer_url = viewer or rec.viewer_url
+            elif fmt == "pdf":
+                rec.pdf_url = url
+            elif fmt == "json":
+                rec.json_url = url
+            elif fmt == "annotated_pdf" and not rec.pdf_url:
+                rec.pdf_url = url
+        if not rec.viewer_url:
+            for r in entry.get("reports", []) or []:
+                tok = r.get("token")
+                if tok:
+                    rec.viewer_url = f"{APP_BASE}/view/{tok}"
+                    break
+    return True
+
+
 def mint_reports(http: HTTP, api_key: str, rec: JobRecord) -> None:
     if not rec.job_id or rec.terminal_status != "complete":
         return
@@ -615,12 +680,19 @@ def run(args: argparse.Namespace) -> int:
     finished = sum(1 for r in records if r.terminal_status)
     print(f"[preflight]   terminal: {finished}/{submitted}")
 
-    # Phase 3: mint report tokens in parallel.
-    print("[preflight] phase 3: minting report tokens …")
-    with ThreadPoolExecutor(max_workers=min(args.workers, 20)) as pool:
-        futures = [pool.submit(mint_reports, http, api_key, r) for r in records]
-        for _ in as_completed(futures):
-            pass
+    # Phase 3: mint report tokens in ONE bulk call (step 5 — the
+    # POST /api/v1/reports:batchMint endpoint added in PR #XXX collapses
+    # the previous N-mint-requests-from-the-client fan-out into a single
+    # round trip. Falls back to per-job mint on a 404 so the harness
+    # still works against older engine versions.
+    print("[preflight] phase 3: minting report tokens (bulk) …")
+    complete_jobs = [r for r in records if r.job_id and r.terminal_status == "complete"]
+    if not bulk_mint(http, api_key, complete_jobs):
+        print("[preflight]   bulk mint endpoint unavailable — falling back to per-job")
+        with ThreadPoolExecutor(max_workers=min(args.workers, 20)) as pool:
+            futures = [pool.submit(mint_reports, http, api_key, r) for r in records]
+            for _ in as_completed(futures):
+                pass
     with_links = sum(1 for r in records if r.viewer_url)
     print(f"[preflight]   reports minted: {with_links}/{finished}")
 
