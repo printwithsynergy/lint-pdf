@@ -53,14 +53,14 @@ const PACKS: { size: "500" | "2000" | "10000"; usd: number; label: string; perCr
 
 export default function CreditsBillingPage() {
   return (
-    <Suspense fallback={<SkeletonDashboard />}>
+    <Suspense fallback={<SkeletonDashboard type="cards" />}>
       <CreditsBillingPageInner />
     </Suspense>
   );
 }
 
 function CreditsBillingPageInner() {
-  const toast = useToast();
+  const { toast } = useToast();
   const [balance, setBalance] = useState<CreditBalance | null>(null);
   const [history, setHistory] = useState<MeteredPackage[]>([]);
   const [usage, setUsage] = useState<UsagePoint[]>([]);
@@ -94,11 +94,10 @@ function CreditsBillingPageInner() {
         );
       }
     } catch (e) {
-      toast({
-        title: "Couldn't load balance",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
+      toast(
+        `Couldn't load balance: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
     } finally {
       setLoading(false);
     }
@@ -108,16 +107,12 @@ function CreditsBillingPageInner() {
     void fetchBalance();
     const params = new URLSearchParams(window.location.search);
     if (params.get("checkout") === "success") {
-      toast({
-        title: "Payment received",
-        description:
-          "Credits land in your account within ~10 seconds after Stripe confirms.",
-      });
+      toast(
+        "Payment received — credits land within ~10s after Stripe confirms.",
+        "success",
+      );
     } else if (params.get("checkout") === "cancelled") {
-      toast({
-        title: "Purchase cancelled",
-        description: "Your balance is unchanged.",
-      });
+      toast("Purchase cancelled — your balance is unchanged.");
     }
   }, [fetchBalance, toast]);
 
@@ -137,16 +132,15 @@ function CreditsBillingPageInner() {
       if (!checkout_url) throw new Error("No checkout URL returned");
       window.location.href = checkout_url;
     } catch (e) {
-      toast({
-        title: "Couldn't start checkout",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
+      toast(
+        `Couldn't start checkout: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
       setBuyingSize(null);
     }
   }
 
-  if (loading) return <SkeletonDashboard />;
+  if (loading) return <SkeletonDashboard type="cards" />;
 
   return (
     <div className="space-y-8">
