@@ -224,14 +224,22 @@ Current allocation (keep the sum under ~90 to leave headroom):
 | Consumer | Pool size | Notes |
 |---|---|---|
 | App (Prisma) | 15 | Set via `?connection_limit=15&pool_timeout=20` query params on `DATABASE_URL`. 1–2 replicas. |
-| Engine (SQLAlchemy) | 15 | Default 5 pool + 10 overflow. One replica. |
-| Celery workers | ~20 | 5 per worker × 4 workers; tune with `worker_max_tasks_per_child`. |
+| API (SQLAlchemy) | 45 | Default 5 pool + 10 overflow × 3 replicas (step 10 numReplicas=3). |
+| API-Control-Plane (SQLAlchemy) | 30 | 2 replicas × 15 pool. Operational plane only, light DB use. |
+| Worker (Celery) | 16 | `CELERY_DEFAULT_CONCURRENCY=8` × 2 prefork slots. |
+| Worker-AI (Celery) | 16 | `CELERY_AI_CONCURRENCY=8` × 2 prefork slots. |
 | Alembic / `startup.sh` | ~10 | Brief bursts during boot. |
-| **Total** | **~60** | Leaves ~40 connections of headroom for spikes. |
+| **Total** | **~130** | **Exceeds the default 100 ceiling** — either raise `max_connections`, enable PgBouncer (step 7), or tune per-service pools down. |
 
-To raise the ceiling, run on the Railway Postgres service:
+**PgBouncer sidecar** (spun up today — service id `a633ad21-…`) fixes
+the overshoot. Once `DATABASE_URL` on API + Workers is rewritten to
+`pgbouncer.railway.internal:6432`, the backend pool collapses to
+~30 connections regardless of how many API / Worker clients attach.
+
+To raise the Postgres ceiling directly (if not using PgBouncer), run
+on the Railway Postgres service:
 ```sql
-ALTER SYSTEM SET max_connections = 200;
+ALTER SYSTEM SET max_connections = 500;
 ```
 then restart the Postgres deployment. Bump the app's `connection_limit`
 to ~25 at the same time.
