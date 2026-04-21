@@ -1,0 +1,13 @@
+#!/bin/sh
+# Mint shareable reports for multiple completed jobs in one round trip.
+# See ApiReportsSection.tsx "Bulk report-mint" and
+# packages/engine/src/lintpdf/api/routes/reports.py for the handler.
+
+set -eu
+: "${LINTPDF_API_KEY:?Set LINTPDF_API_KEY=lpdf_live_... first}"
+: "${LINTPDF_API_BASE:=https://api.lintpdf.com}"
+
+curl -sS -X POST "${LINTPDF_API_BASE}/api/v1/reports:batchMint" \
+  -H "Authorization: Bearer ${LINTPDF_API_KEY}" \
+  -H "Content-Type: application/json" \
+  -d @docs/examples/reports-batch-mint.json

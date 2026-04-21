@@ -379,6 +379,12 @@ export const docSections: DocSection[] = [
         label: "Glossary",
         description: "LintPDF terminology in one place.",
       },
+      {
+        slug: "bulk-files-operations",
+        label: "Bulk files — operations guide",
+        description:
+          "Service map, queue routing, env-var knobs, observability, and escalation triggers for large-file-count workloads.",
+      },
     ],
   },
 ];

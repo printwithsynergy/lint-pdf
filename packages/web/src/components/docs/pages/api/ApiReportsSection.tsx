@@ -220,6 +220,56 @@ Content-Disposition: attachment; filename="report.pdf"`}
         {" "}<code className="bg-slate-100 px-1 rounded">config</code>, and
         {" "}<code className="bg-slate-100 px-1 rounded">verdict</code> (read-only GET).
       </p>
+
+      <h4 id="reports-batch-mint" className="text-lg font-semibold text-slate-900 mt-10 mb-3">
+        Bulk report-mint
+      </h4>
+      <p className="text-slate-600 mb-4">
+        When a client has completed many independent jobs and needs
+        share links for all of them, the single-endpoint approach is
+        one HTTP round trip per job. At bulk scale (hundreds of jobs)
+        that N-request storm is a common source of dropped mints.
+        <code className="bg-slate-100 px-1 rounded">POST /api/v1/reports:batchMint</code>
+        collapses the fan-out into a single request. Minted tokens are
+        byte-identical to the single-endpoint output; the only
+        behavioral difference is that advanced per-call knobs
+        (universal overrides envelope, inline returns, idempotency-key)
+        live only on the single endpoint. Hard-capped at 500 job_ids
+        per call.
+      </p>
+      <Endpoint
+        method="POST"
+        path="/api/v1/reports:batchMint"
+        description="Mint reports for up to 500 completed jobs in one round trip. Returns 200 with a per-job result array; a single failure does not drop the rest of the batch."
+        auth
+        request={`curl -X POST https://api.lintpdf.com/api/v1/reports:batchMint \\
+  -H "Authorization: Bearer lpdf_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "job_ids": ["d4e5f6a7-...", "a1b2c3d4-...", "e5f6a7b8-..."],
+    "formats": ["html", "pdf", "json"],
+    "expiry_days": 7,
+    "allow_annotations": false,
+    "require_visitor_email": false
+  }'`}
+        response={`{
+  "results": [
+    { "job_id": "d4e5f6a7-...", "status": "ok",
+      "reports": [
+        { "format": "html", "token": "rpt_01HXY...",
+          "url": "https://reports.lintpdf.com/r/rpt_01HXY...",
+          "viewer_url": "https://app.lintpdf.com/view/rpt_01HXY...",
+          "expires_at": "2026-04-28T10:30:00Z" },
+        { "format": "pdf", "token": "rpt_01HXZ...", ... },
+        { "format": "json", "token": "rpt_01HXA...", ... }
+      ]
+    },
+    { "job_id": "a1b2c3d4-...", "status": "failed",
+      "error": "404: Job not found" }
+  ],
+  "summary": { "ok": 1, "failed": 1 }
+}`}
+      />
     </section>
   );
 }
