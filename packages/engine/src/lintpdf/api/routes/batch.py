@@ -241,7 +241,27 @@ async def submit_batch(
     from lintpdf.tenants.entitlements import resolve_entitlements
 
     entitlements = resolve_entitlements(tenant)
-    queue_name = "priority" if entitlements.priority_processing else "default"
+
+    # Queue routing (step 3 — queue isolation). Batch dispatch doesn't
+    # take a per-file ai_enabled override, so we resolve it once from
+    # the profile. Built-in profiles live in memory; custom profiles
+    # would require a DB hit — in that case we fall back to the
+    # priority/default pool rather than add a round-trip here.
+    try:
+        from lintpdf.profiles.registry import ProfileNotFoundError, ProfileRegistry
+
+        profile_ai_enabled = bool(ProfileRegistry().get(profile_id).ai.enabled)
+    except ProfileNotFoundError:
+        profile_ai_enabled = True  # default profile has AI on; conservative route
+    except Exception:
+        profile_ai_enabled = True
+
+    if profile_ai_enabled:
+        queue_name = "ai_heavy"
+    elif entitlements.priority_processing:
+        queue_name = "priority"
+    else:
+        queue_name = "default"
 
     job_infos: list[BatchJobInfo] = []
     job_ids: list[str] = []
