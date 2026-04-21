@@ -44,10 +44,8 @@ export interface DocPage {
   htmlContent?: string;
 }
 
-function parseDoc(fileName: string): DocPage {
-  const slug = fileName.replace(/\.md$/, "");
-  const filePath = path.join(DOCS_DIR, fileName);
-  const fileContents = fs.readFileSync(filePath, "utf8");
+function parseDocAt(fullPath: string, slug: string): DocPage {
+  const fileContents = fs.readFileSync(fullPath, "utf8");
   const { data, content } = matter(fileContents);
 
   return {
@@ -60,10 +58,31 @@ function parseDoc(fileName: string): DocPage {
   };
 }
 
-export function getAllDocs(): DocPage[] {
+/**
+ * Walk ``content/docs`` recursively and collect every ``.md`` file.
+ * Slugs include the directory prefix: ``panels/api-keys``, etc.
+ */
+function walkDocs(): DocPage[] {
   if (!fs.existsSync(DOCS_DIR)) return [];
-  const files = fs.readdirSync(DOCS_DIR).filter((f) => f.endsWith(".md"));
-  return files.map(parseDoc).sort((a, b) => a.order - b.order);
+  const out: DocPage[] = [];
+  function walk(dir: string, prefix: string) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full, prefix ? `${prefix}/${entry.name}` : entry.name);
+      } else if (entry.isFile() && entry.name.endsWith(".md")) {
+        const base = entry.name.replace(/\.md$/, "");
+        const slug = prefix ? `${prefix}/${base}` : base;
+        out.push(parseDocAt(full, slug));
+      }
+    }
+  }
+  walk(DOCS_DIR, "");
+  return out;
+}
+
+export function getAllDocs(): DocPage[] {
+  return walkDocs().sort((a, b) => a.order - b.order);
 }
 
 export function getDocsBySection(section: string): DocPage[] {
@@ -71,10 +90,16 @@ export function getDocsBySection(section: string): DocPage[] {
 }
 
 export async function getDocBySlug(slug: string): Promise<DocPage | null> {
-  const filePath = path.join(DOCS_DIR, `${slug}.md`);
-  if (!fs.existsSync(filePath)) return null;
+  // Path traversal guard: reject any slug that would escape DOCS_DIR.
+  const safeSlug = slug.replace(/^\/+|\/+$/g, "");
+  if (safeSlug.includes("..")) return null;
 
-  const doc = parseDoc(`${slug}.md`);
+  const fullPath = path.join(DOCS_DIR, `${safeSlug}.md`);
+  const resolved = path.resolve(fullPath);
+  if (!resolved.startsWith(path.resolve(DOCS_DIR))) return null;
+  if (!fs.existsSync(resolved)) return null;
+
+  const doc = parseDocAt(resolved, safeSlug);
   const result = await remark()
     .use(remarkGfm)
     .use(remarkRehype)
@@ -86,9 +111,5 @@ export async function getDocBySlug(slug: string): Promise<DocPage | null> {
 }
 
 export function getAllDocSlugs(): string[] {
-  if (!fs.existsSync(DOCS_DIR)) return [];
-  return fs
-    .readdirSync(DOCS_DIR)
-    .filter((f) => f.endsWith(".md"))
-    .map((f) => f.replace(/\.md$/, ""));
+  return walkDocs().map((d) => d.slug);
 }

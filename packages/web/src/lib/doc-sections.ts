@@ -294,6 +294,94 @@ export const docSections: DocSection[] = [
     ],
   },
   {
+    key: "panels",
+    heading: "Tenant dashboard",
+    blurb:
+      "Every screen in the LintPDF dashboard — what it does, who can use it, and which API backs it.",
+    items: [
+      {
+        slug: "panels/overview",
+        label: "Dashboard overview",
+        description: "The /dashboard landing page at a glance.",
+      },
+      {
+        slug: "panels/preflight",
+        label: "Preflight",
+        description: "Drag-and-drop single-file preflight.",
+      },
+      {
+        slug: "panels/reports",
+        label: "Reports",
+        description: "Search, filter, and re-run every past job.",
+      },
+      {
+        slug: "panels/rulesets",
+        label: "Rulesets",
+        description: "Pick or clone a preflight profile.",
+      },
+      {
+        slug: "panels/profile",
+        label: "Brand profile",
+        description: "Logo, colours, custom domain.",
+      },
+      {
+        slug: "panels/endpoints",
+        label: "Custom endpoints",
+        description: "Vanity submission URLs scoped to a profile + brand.",
+      },
+      {
+        slug: "panels/approvals",
+        label: "Approvals",
+        description: "Review chains with audit-trail PDFs.",
+      },
+      {
+        slug: "panels/api-keys",
+        label: "API keys",
+        description: "Mint, rotate, and revoke Bearer tokens.",
+      },
+      {
+        slug: "panels/api-reference",
+        label: "API reference (in-app)",
+        description: "Interactive Swagger inside the dashboard.",
+      },
+      {
+        slug: "panels/webhooks",
+        label: "Webhooks",
+        description: "Register endpoints, inspect deliveries, replay dead letters.",
+      },
+      {
+        slug: "panels/billing",
+        label: "Billing",
+        description: "Plan + invoices + payment method.",
+      },
+      {
+        slug: "panels/usage",
+        label: "Usage",
+        description: "Consumption charts for jobs, AI credits, file packs.",
+      },
+      {
+        slug: "panels/team",
+        label: "Team",
+        description: "Invite, promote, demote, remove teammates.",
+      },
+      {
+        slug: "panels/account",
+        label: "Account",
+        description: "Personal profile, password, MFA, sessions.",
+      },
+      {
+        slug: "panels/downloads",
+        label: "Downloads",
+        description: "Desktop app, CLI, SDK binaries.",
+      },
+      {
+        slug: "panels/waitlist",
+        label: "Waitlist",
+        description: "Pre-launch feature sign-ups.",
+      },
+    ],
+  },
+  {
     key: "reference",
     heading: "Reference",
     blurb: "Glossary and canonical definitions.",

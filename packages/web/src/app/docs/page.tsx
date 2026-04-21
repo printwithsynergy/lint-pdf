@@ -40,7 +40,7 @@ const taskCards: { label: string; href: string; description: string }[] = [
   },
   {
     label: "Browse every dashboard panel",
-    href: "/docs/start",
+    href: "/docs/panels",
     description:
       "What every screen in the LintPDF dashboard does, top to bottom.",
   },
