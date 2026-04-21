@@ -1,0 +1,27 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "packages/engine/Dockerfile"
+watchPatterns = [
+    "packages/engine/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
+
+[deploy]
+# Dedicated Celery worker for report generation (HTML→PDF via
+# wkhtmltopdf/chromium, annotated-PDF overlays, XML/JSON serialisers).
+# At bulk scale the per-report render is the next CPU hog once ingest
+# isn't the bottleneck — today's tier-1 showed deterministic jobs
+# completing in ~20s but report mint taking noticeable extra time
+# under N-concurrent-jobs pressure.
+#
+# Currently queue-less: reports generate inline inside run_preflight.
+# Moving to a dedicated `reports` queue (follow-up code change —
+# dispatch mint via generate_report_async.apply_async(queue="reports"))
+# lets this worker absorb burst render load without stealing Celery
+# slots from deterministic / AI preflight.
+numReplicas = 1
+startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --loglevel=info --queues=reports --concurrency=${CELERY_REPORTS_CONCURRENCY:-4}'"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+gracefulShutdownTimeoutSec = 660
