@@ -301,19 +301,14 @@ def _detect_custom_mime(content: bytes) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def scan_for_malware(content: bytes, settings: Settings) -> None:
-    """Scan file bytes with ClamAV.
+def _scan_with_clamd(scan_input: "BytesIO | IO[bytes]", settings: Settings) -> None:
+    """Shared body for both the bytes and streaming scan variants.
 
-    Best-effort, fail-open: if ``LINTPDF_CLAMAV_URL`` is unset or clamd is
-    unreachable, logs a warning and allows the upload to proceed. This
-    prevents a broken ClamAV sidecar from blocking all production uploads.
-
-    Raises ``HTTPException(422)`` only when clamd *positively* detects
-    malware — that is always enforced.
-
-    Once the ClamAV sidecar (``packages/engine/clamav/``) is deployed on
-    Railway and confirmed reachable, this can optionally be tightened back
-    to fail-closed.
+    ``scan_input`` is anything ``clamd.instream`` accepts (BytesIO or a
+    seekable file-like). Raises HTTPException(422) only on a positive
+    detection; every other failure is logged and allows the upload
+    through (fail-open) so a broken ClamAV sidecar never takes down
+    production. See CLAUDE.md for the fail-open rationale.
     """
     if not settings.clamav_url:
         logger.warning(
@@ -321,15 +316,12 @@ def scan_for_malware(content: bytes, settings: Settings) -> None:
             "skipping virus scan (fail-open)"
         )
         return
-
     try:
         host, _, port_str = settings.clamav_url.rpartition(":")
         port = int(port_str) if port_str else 3310
-        # Strip brackets from IPv6 or any leading/trailing whitespace
         host = host.strip().strip("[]") or "localhost"
-
         scanner = _clamd_mod.ClamdNetworkSocket(host=host, port=port, timeout=30)
-        result = scanner.instream(BytesIO(content))
+        result = scanner.instream(scan_input)
     except HTTPException:
         raise
     except Exception:
@@ -339,7 +331,6 @@ def scan_for_malware(content: bytes, settings: Settings) -> None:
             exc_info=True,
         )
         return
-
     if result and result.get("stream", ("OK",))[0] == "FOUND":
         virus_name = result["stream"][1]
         logger.warning("Malware detected in upload: %s", virus_name)
@@ -347,6 +338,30 @@ def scan_for_malware(content: bytes, settings: Settings) -> None:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="File rejected: potential malware detected.",
         )
+
+
+def scan_for_malware(content: bytes, settings: Settings) -> None:
+    """Scan raw file bytes with ClamAV. See ``_scan_with_clamd`` for semantics."""
+    _scan_with_clamd(BytesIO(content), settings)
+
+
+def scan_for_malware_stream(fileobj: "IO[bytes]", settings: Settings) -> None:
+    """Scan a seekable file-like with ClamAV.
+
+    Avoids the ~50 MB-per-scan RSS spike that ``scan_for_malware`` takes
+    when handed a bytes copy of a big PDF spool. ``clamd.instream``
+    natively reads the stream in 64 KB chunks. Caller is responsible
+    for seeking ``fileobj`` to byte 0 before and (if they want to reuse
+    it) after the call.
+    """
+    pos = fileobj.tell()
+    try:
+        _scan_with_clamd(fileobj, settings)
+    finally:
+        try:
+            fileobj.seek(pos)
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -680,15 +695,15 @@ async def validate_upload_streaming(
                 spool.seek(0)
                 _validate_svg_safety(svg_bytes)
 
-        # 8. ClamAV malware scan reads from the spool (may spill to
-        # disk temp) rather than holding the body in RAM. ClamAV itself
-        # still receives bytes today — full streaming support is a
-        # separate follow-up.
+        # 8. ClamAV scan reads the spool in 64 KB chunks via
+        # clamd.instream — zero full-body materialization. This is
+        # the hot-path fix for the tier-1 wedge on 2026-04-21 where
+        # a 50 MB PDF buffered here spiked worker RSS enough to
+        # starve /ready health checks.
         if settings is not None:
             spool.seek(0)
-            scan_bytes = spool.read()
+            scan_for_malware_stream(spool, settings)
             spool.seek(0)
-            scan_for_malware(scan_bytes, settings)
 
         # 9. Hand back a seek-to-0 spool plus the size.
         spool.seek(0)
