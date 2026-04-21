@@ -72,14 +72,14 @@ const PLAN_DEFAULTS: Record<string, { credits: number; files: number }> = {
 
 export default function AdminBillingPage() {
   return (
-    <Suspense fallback={<SkeletonDashboard />}>
+    <Suspense fallback={<SkeletonDashboard type="form" />}>
       <AdminBillingPageInner />
     </Suspense>
   );
 }
 
 function AdminBillingPageInner() {
-  const toast = useToast();
+  const { toast } = useToast();
   const [tenants, setTenants] = useState<TenantSummary[]>([]);
   const [tenantId, setTenantId] = useState<string>("");
   const [tenantQuery, setTenantQuery] = useState<string>("");
@@ -111,11 +111,10 @@ function AdminBillingPageInner() {
       const data = await resp.json();
       setTenants(data.tenants ?? []);
     } catch (e) {
-      toast({
-        title: "Failed to load tenants",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
+      toast(
+        `Failed to load tenants: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
     } finally {
       setLoadingTenants(false);
     }
@@ -135,11 +134,10 @@ function AdminBillingPageInner() {
       const data = await resp.json();
       setPackages(data.packages ?? []);
     } catch (e) {
-      toast({
-        title: "Failed to load packages",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
+      toast(
+        `Failed to load packages: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
     } finally {
       setLoadingPackages(false);
     }
@@ -157,10 +155,9 @@ function AdminBillingPageInner() {
     [tenants, tenantId],
   );
 
-  const planDefaults =
-    tenant && PLAN_DEFAULTS[tenant.plan.toLowerCase()]
-      ? PLAN_DEFAULTS[tenant.plan.toLowerCase()]
-      : { credits: 0, files: 0 };
+  const planDefaults = (tenant
+    ? PLAN_DEFAULTS[tenant.plan.toLowerCase()]
+    : undefined) ?? { credits: 0, files: 0 };
 
   const creditsEffective =
     tenant?.monthly_ai_credits_override ?? planDefaults.credits;
@@ -193,19 +190,18 @@ function AdminBillingPageInner() {
         body: JSON.stringify({ credits: value }),
       });
       if (!resp.ok) throw new Error(await resp.text());
-      toast({
-        title: `${kind === "credits" ? "AI credits" : "Files"} override ${
+      toast(
+        `${kind === "credits" ? "AI credits" : "Files"} override ${
           value === null ? "cleared" : `set to ${value.toLocaleString()}`
-        }`,
-        description: "Takes effect at next invoice.paid for this tenant.",
-      });
+        } — takes effect at next invoice.paid for this tenant.`,
+        "success",
+      );
       await fetchTenants();
     } catch (e) {
-      toast({
-        title: "Override failed",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
+      toast(
+        `Override failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
     }
   }
 
@@ -223,17 +219,16 @@ function AdminBillingPageInner() {
         body: JSON.stringify(body),
       });
       if (!resp.ok) throw new Error(await resp.text());
-      toast({
-        title: `Granted +${amount.toLocaleString()} ${kind}`,
-        description: "Package is active immediately; no Stripe charge created.",
-      });
+      toast(
+        `Granted +${amount.toLocaleString()} ${kind} — package is active immediately; no Stripe charge created.`,
+        "success",
+      );
       await fetchPackages();
     } catch (e) {
-      toast({
-        title: "Grant failed",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
+      toast(
+        `Grant failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
     }
   }
 
@@ -244,26 +239,26 @@ function AdminBillingPageInner() {
         { method: "DELETE" },
       );
       if (!resp.ok && resp.status !== 204) throw new Error(await resp.text());
-      toast({
-        title: "Package revoked",
-        description:
+      toast(
+        `Package revoked — ${
           pkg.source === "purchase"
-            ? "Reminder: issue a Stripe refund separately if appropriate."
-            : "Plan-monthly packages regrant on the next invoice.paid.",
-      });
+            ? "issue a Stripe refund separately if appropriate."
+            : "plan-monthly packages regrant on the next invoice.paid."
+        }`,
+        "success",
+      );
       await fetchPackages();
     } catch (e) {
-      toast({
-        title: "Revoke failed",
-        description: e instanceof Error ? e.message : String(e),
-        variant: "destructive",
-      });
+      toast(
+        `Revoke failed: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
     } finally {
       setPendingRevoke(null);
     }
   }
 
-  if (loadingTenants) return <SkeletonDashboard />;
+  if (loadingTenants) return <SkeletonDashboard type="table" />;
 
   return (
     <div className="space-y-8">
@@ -469,7 +464,7 @@ function AdminBillingPageInner() {
 
       <ConfirmDialog
         open={pendingRevoke !== null}
-        onOpenChange={(open) => !open && setPendingRevoke(null)}
+        onClose={() => setPendingRevoke(null)}
         title="Revoke package?"
         description={
           pendingRevoke
@@ -560,7 +555,7 @@ function OverrideRow({
   return (
     <FormField
       label={label}
-      hint={
+      helpText={
         currentValue == null
           ? "Currently: plan default"
           : `Currently: ${currentValue.toLocaleString()} (override)`
@@ -600,7 +595,7 @@ function GrantRow({
   return (
     <FormField
       label={`Grant ${label.toLowerCase()}`}
-      hint="Inserts a package immediately. No Stripe charge. Use responsibly."
+      helpText="Inserts a package immediately. No Stripe charge. Use responsibly."
     >
       <div className="flex gap-2">
         <Input
