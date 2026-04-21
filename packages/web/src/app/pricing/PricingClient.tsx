@@ -221,65 +221,65 @@ export default function PricingClient() {
             }
 
             return (
-              <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all">
+              <div className="mt-8 overflow-hidden rounded-2xl border-2 border-brand-200 shadow-sm hover:shadow-md transition-all">
                 <div className="grid md:grid-cols-5">
                   {/* Left: positioning + price + CTA */}
-                  <div className="md:col-span-2 p-5 md:p-6 md:border-r md:border-slate-100 flex flex-col">
-                    <span className="inline-flex self-start items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
-                      Alternative workflow
-                    </span>
-                    <div className="mt-3 flex items-baseline gap-3 flex-wrap">
-                      <h3 className="text-base font-semibold text-slate-900">
+                  <div className="md:col-span-2 bg-brand-50/60 p-4 md:p-5 flex flex-col">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-700">
+                        Alternative workflow
+                      </span>
+                      <h3 className="text-lg font-bold text-slate-900">
                         {viewerPlan.name}
                       </h3>
-                      <div>
-                        <span className="text-xl font-bold text-slate-900">
-                          {displayPrice}
+                    </div>
+                    <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+                      <span className="text-3xl font-bold text-slate-900 leading-none">
+                        {displayPrice}
+                      </span>
+                      {displayPeriod && (
+                        <span className="text-xs text-slate-400">
+                          {displayPeriod}
                         </span>
-                        {displayPeriod && (
-                          <span className="text-xs text-slate-400 ml-1">
-                            {displayPeriod}
-                          </span>
-                        )}
-                      </div>
+                      )}
                       <span className="text-xs font-medium text-brand-600">
-                        {viewerPlan.filesPerMonth}
+                        · {viewerPlan.filesPerMonth}
                       </span>
                     </div>
                     {showYearly && viewerPlan.yearlyTotal && (
-                      <p className="mt-1 text-xs text-slate-400">
+                      <p className="mt-0.5 text-[11px] text-slate-400">
                         {viewerPlan.yearlyTotal} · {viewerPlan.yearlySavings}
                       </p>
                     )}
-                    <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                    <p className="mt-2 text-xs text-slate-600 leading-snug">
                       {viewerPlan.description}
                     </p>
-                    <div className="mt-4">
+                    <div className="mt-3">
                       {betaMode ? (
                         <button
                           type="button"
                           onClick={() => setWaitlistOpen(true)}
-                          className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-all"
+                          className="block w-full rounded-lg bg-brand-900 py-2 text-center text-xs font-semibold text-white hover:bg-brand-800 shadow-sm shadow-brand-200 transition-all"
                         >
-                          Join the Waitlist →
+                          Join the Waitlist
                         </button>
                       ) : (
                         <a
                           href={href}
-                          className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-all"
+                          className="block w-full rounded-lg bg-brand-900 py-2 text-center text-xs font-semibold text-white hover:bg-brand-800 shadow-sm shadow-brand-200 transition-all"
                         >
-                          {viewerPlan.cta} →
+                          {viewerPlan.cta}
                         </a>
                       )}
                     </div>
                   </div>
 
                   {/* Right: feature checklist */}
-                  <div className="md:col-span-3 p-5 md:p-6 bg-slate-50/40">
-                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-3">
+                  <div className="md:col-span-3 bg-white p-4 md:p-5">
+                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
                       What&apos;s included
                     </h4>
-                    <ul className="grid gap-x-5 gap-y-2 sm:grid-cols-2 text-xs text-slate-600">
+                    <ul className="grid gap-x-5 gap-y-1.5 sm:grid-cols-2 text-xs text-slate-600">
                       {included.map((feature) => (
                         <li key={feature} className="flex items-start gap-1.5">
                           <svg
@@ -300,7 +300,7 @@ export default function PricingClient() {
                       ))}
                     </ul>
                     {caveats.length > 0 && (
-                      <p className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400 leading-relaxed">
+                      <p className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-400 leading-snug">
                         {caveats.join(". ")}. Upgrade to Starter for full engine
                         preflight, annotations, and report downloads.
                       </p>
