@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDocBySlug, getAllDocSlugs } from "@/lib/docs";
-import { allDocSlugs } from "@/lib/doc-sections";
+import {
+  allDocSlugs,
+  docSectionsByKey,
+  type DocSection,
+} from "@/lib/doc-sections";
 
 // JSX page components (too complex for markdown)
 import ApiReferencePage from "@/components/docs/pages/ApiReferencePage";
@@ -67,12 +71,22 @@ const canonicalOrder = allDocSlugs;
 export function generateStaticParams() {
   const mdSlugs = getAllDocSlugs();
   const jsxSlugsArr = Object.keys(jsxPages);
-  const all = [...new Set([...mdSlugs, ...jsxSlugsArr])];
+  const groupKeys = Object.keys(docSectionsByKey);
+  const all = [...new Set([...mdSlugs, ...jsxSlugsArr, ...groupKeys])];
   return all.map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
+
+  // Group-index pages (/docs/<group-key>)
+  const group = docSectionsByKey[slug];
+  if (group) {
+    return {
+      title: `${group.heading} — LintPDF Docs`,
+      description: group.blurb,
+    };
+  }
 
   const jsx = jsxPages[slug];
   if (jsx) {
@@ -93,6 +107,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function DocSlugPage({ params }: Props) {
   const { slug } = await params;
+
+  // Group-index pages (/docs/<group-key>) list every page in the group.
+  // Checked before anything else so a group key never gets swallowed by
+  // an accidentally-matching jsx/md slug.
+  const group = docSectionsByKey[slug];
+  if (group) {
+    return <GroupIndexPage section={group} />;
+  }
 
   // Find prev/next in canonical order
   const idx = canonicalOrder.indexOf(slug);
@@ -132,6 +154,36 @@ export default async function DocSlugPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: doc.htmlContent ?? "" }}
       />
       <PrevNextNav prevSlug={prevSlug} nextSlug={nextSlug} />
+    </article>
+  );
+}
+
+function GroupIndexPage({ section }: { section: DocSection }) {
+  return (
+    <article>
+      <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+        {section.heading}
+      </h1>
+      <p className="text-slate-500 mb-8">{section.blurb}</p>
+      <ul className="grid gap-4 sm:grid-cols-2">
+        {section.items.map((item) => (
+          <li key={item.slug}>
+            <Link
+              href={`/docs/${item.slug}`}
+              className="block rounded-xl border border-slate-200 p-4 hover:border-brand-200 hover:bg-brand-50/40 transition-all h-full"
+            >
+              <span className="block text-sm font-semibold text-slate-800">
+                {item.label}
+              </span>
+              {item.description ? (
+                <span className="mt-1 block text-sm text-slate-500">
+                  {item.description}
+                </span>
+              ) : null}
+            </Link>
+          </li>
+        ))}
+      </ul>
     </article>
   );
 }
