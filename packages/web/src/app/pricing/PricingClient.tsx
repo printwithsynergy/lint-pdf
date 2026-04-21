@@ -221,67 +221,69 @@ export default function PricingClient() {
             }
 
             return (
-              <div className="mt-8 overflow-hidden rounded-2xl border-2 border-brand-200 shadow-sm hover:shadow-md transition-all">
+              <div className="mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white hover:border-slate-300 transition-all">
                 <div className="grid md:grid-cols-5">
                   {/* Left: positioning + price + CTA */}
-                  <div className="md:col-span-2 bg-brand-50/60 p-6 md:p-8 flex flex-col">
-                    <span className="inline-flex self-start items-center rounded-full bg-brand-100 px-3 py-1 text-xs font-bold uppercase tracking-wider text-brand-700">
+                  <div className="md:col-span-2 p-5 md:p-6 md:border-r md:border-slate-100 flex flex-col">
+                    <span className="inline-flex self-start items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
                       Alternative workflow
                     </span>
-                    <h3 className="mt-4 text-2xl font-bold text-slate-900">
-                      {viewerPlan.name}
-                    </h3>
-                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-                      {viewerPlan.description}
-                    </p>
-                    <div className="mt-6 mb-1">
-                      <span className="text-4xl font-bold text-slate-900">
-                        {displayPrice}
-                      </span>
-                      {displayPeriod && (
-                        <span className="text-sm text-slate-400 ml-1">
-                          {displayPeriod}
+                    <div className="mt-3 flex items-baseline gap-3 flex-wrap">
+                      <h3 className="text-base font-semibold text-slate-900">
+                        {viewerPlan.name}
+                      </h3>
+                      <div>
+                        <span className="text-xl font-bold text-slate-900">
+                          {displayPrice}
                         </span>
-                      )}
+                        {displayPeriod && (
+                          <span className="text-xs text-slate-400 ml-1">
+                            {displayPeriod}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs font-medium text-brand-600">
+                        {viewerPlan.filesPerMonth}
+                      </span>
                     </div>
                     {showYearly && viewerPlan.yearlyTotal && (
-                      <p className="text-xs text-slate-400 mb-1">
+                      <p className="mt-1 text-xs text-slate-400">
                         {viewerPlan.yearlyTotal} · {viewerPlan.yearlySavings}
                       </p>
                     )}
-                    <p className="text-xs font-medium text-brand-600">
-                      {viewerPlan.filesPerMonth}
+                    <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                      {viewerPlan.description}
                     </p>
-                    <div className="mt-6">
+                    <div className="mt-4">
                       {betaMode ? (
                         <button
                           type="button"
                           onClick={() => setWaitlistOpen(true)}
-                          className="block w-full rounded-xl bg-brand-900 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-800 shadow-md shadow-brand-200 transition-all"
+                          className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-all"
                         >
-                          Join the Waitlist
+                          Join the Waitlist →
                         </button>
                       ) : (
                         <a
                           href={href}
-                          className="block w-full rounded-xl bg-brand-900 py-2.5 text-center text-sm font-semibold text-white hover:bg-brand-800 shadow-md shadow-brand-200 transition-all"
+                          className="inline-flex items-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200 transition-all"
                         >
-                          {viewerPlan.cta}
+                          {viewerPlan.cta} →
                         </a>
                       )}
                     </div>
                   </div>
 
                   {/* Right: feature checklist */}
-                  <div className="md:col-span-3 bg-white p-6 md:p-8">
-                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-4">
+                  <div className="md:col-span-3 p-5 md:p-6 bg-slate-50/40">
+                    <h4 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-3">
                       What&apos;s included
                     </h4>
-                    <ul className="grid gap-x-6 gap-y-3 sm:grid-cols-2 text-sm text-slate-600">
+                    <ul className="grid gap-x-5 gap-y-2 sm:grid-cols-2 text-xs text-slate-600">
                       {included.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2">
+                        <li key={feature} className="flex items-start gap-1.5">
                           <svg
-                            className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-500"
+                            className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-brand-500"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -298,7 +300,7 @@ export default function PricingClient() {
                       ))}
                     </ul>
                     {caveats.length > 0 && (
-                      <p className="mt-5 pt-4 border-t border-slate-100 text-xs text-slate-500 leading-relaxed">
+                      <p className="mt-3 pt-3 border-t border-slate-100 text-[11px] text-slate-400 leading-relaxed">
                         {caveats.join(". ")}. Upgrade to Starter for full engine
                         preflight, annotations, and report downloads.
                       </p>
