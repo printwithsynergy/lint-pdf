@@ -5,23 +5,25 @@ import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { NextResponse } from "next/server";
 import { parseSessionCookie } from "@/lib/auth-helpers";
 
-// The Pixie Dust PrismaClient type doesn't know about fields the local
-// LintPDF schema adds (``Tenant.engineTenantId``,
-// ``Session.impersonatingTenantId``, ``AuditLog.impersonatedBy``).
-// Those columns are guaranteed to exist at runtime by
-// packages/app/scripts/startup.sh and the matching local Prisma
-// schema in packages/app/prisma/schema/. We cast through this
-// permissive alias to bridge the type gap without losing the rest of
-// the typed surface.
-
-const db = prisma as any;
+// The Pixie Dust PrismaClient bundled in
+// ``@thinkneverland/pixie-dust-database/server`` doesn't know about the
+// fields the local LintPDF schema adds:
+//   * ``Tenant.engineTenantId``
+//   * ``Session.impersonatingTenantId``
+//   * ``AuditLog.impersonatedBy``
+// The columns themselves are guaranteed to exist in Postgres at
+// runtime by ``packages/app/scripts/startup.sh``. Typed calls that
+// reference those fields throw ``PrismaClientValidationError`` before
+// ever hitting the database — so every impersonation-related query in
+// this file goes through ``$queryRaw`` / ``$executeRaw``, bypassing
+// the client's field validator.
 
 /**
  * POST /api/auth/impersonate
  *
  * Allows a super admin to start "assisting" a customer tenant.
  * This is NOT true impersonation — the session still belongs to the super admin,
- * and all audit logs will record the super admin's real user ID plus an
+ * and all audit logs record the super admin's real user ID plus an
  * `impersonatedBy` marker.
  *
  * Body: { tenantId: string } — the tenant to assist
@@ -35,7 +37,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 
-  // Verify the user is a super admin
   const user = await prisma.user.findUnique({
     where: { id: auth.userId },
     select: { id: true, isSuperAdmin: true },
@@ -51,36 +52,36 @@ export async function POST(req: Request) {
   const body = await req.json();
   const targetTenantId: string | null = body.tenantId ?? null;
 
-  // Validate the target tenant exists (if starting impersonation)
   if (targetTenantId) {
-    // Try looking up by Prisma ID first, then by engine tenant ID
-    let tenant = await prisma.tenant.findUnique({
-      where: { id: targetTenantId },
-      select: { id: true, name: true, slug: true },
-    });
+    // Try Prisma ID first, then the engine-tenant-id fallback. Both go
+    // through raw SQL because the latter references ``engineTenantId``
+    // which the bundled client doesn't know about, and keeping the
+    // two lookups symmetric is simpler than mixing typed + raw here.
+    const byId = await prisma.$queryRaw<
+      { id: string; name: string; slug: string }[]
+    >`SELECT id, name, slug FROM "Tenant" WHERE id = ${targetTenantId} LIMIT 1`;
+    let tenant = byId[0] ?? null;
     if (!tenant) {
-      tenant = await db.tenant.findFirst({
-        where: { engineTenantId: targetTenantId },
-        select: { id: true, name: true, slug: true },
-      });
+      const byEngine = await prisma.$queryRaw<
+        { id: string; name: string; slug: string }[]
+      >`SELECT id, name, slug FROM "Tenant" WHERE "engineTenantId" = ${targetTenantId} LIMIT 1`;
+      tenant = byEngine[0] ?? null;
     }
 
     if (!tenant) {
       return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
     }
 
-    // Update the session to set the impersonation target
     const sessionCookie = parseSessionCookie(cookieHeader);
 
     if (sessionCookie) {
-      // Store the Prisma tenant ID (not the engine UUID) for session impersonation
-      await db.session.updateMany({
-        where: { token: sessionCookie, userId: user.id },
-        data: { impersonatingTenantId: tenant.id },
-      });
+      await prisma.$executeRaw`
+        UPDATE "Session"
+        SET "impersonatingTenantId" = ${tenant.id}
+        WHERE token = ${sessionCookie} AND "userId" = ${user.id}
+      `;
     }
 
-    // Audit log
     await prisma.auditLog.create({
       data: {
         tenantId: tenant.id,
@@ -102,28 +103,30 @@ export async function POST(req: Request) {
   const sessionCookie = parseSessionCookie(cookieHeader);
 
   if (sessionCookie) {
-    // Get current impersonation target for audit log
-    const session = await db.session.findUnique({
-      where: { token: sessionCookie },
-      select: { impersonatingTenantId: true },
-    });
+    const rows = await prisma.$queryRaw<
+      { impersonatingTenantId: string | null }[]
+    >`SELECT "impersonatingTenantId" FROM "Session" WHERE token = ${sessionCookie} LIMIT 1`;
+    const previousTargetId = rows[0]?.impersonatingTenantId ?? null;
 
-    await db.session.updateMany({
-      where: { token: sessionCookie, userId: user.id },
-      data: { impersonatingTenantId: null },
-    });
+    await prisma.$executeRaw`
+      UPDATE "Session"
+      SET "impersonatingTenantId" = NULL
+      WHERE token = ${sessionCookie} AND "userId" = ${user.id}
+    `;
 
-    if (session?.impersonatingTenantId) {
-      await db.auditLog.create({
-        data: {
-          tenantId: session.impersonatingTenantId,
-          userId: user.id,
-          action: "admin.impersonation.ended",
-          entity: "Tenant",
-          entityId: session.impersonatingTenantId,
-          impersonatedBy: user.id,
-        },
-      });
+    if (previousTargetId) {
+      // AuditLog.impersonatedBy is a local-schema column the bundled
+      // client doesn't know about, so write via raw SQL.
+      const auditId = randomId();
+      await prisma.$executeRaw`
+        INSERT INTO "AuditLog"
+          (id, "tenantId", "userId", action, entity, "entityId", metadata,
+           "impersonatedBy", "createdAt")
+        VALUES
+          (${auditId}, ${previousTargetId}, ${user.id},
+           ${"admin.impersonation.ended"}, ${"Tenant"}, ${previousTargetId},
+           '{}'::jsonb, ${user.id}, NOW())
+      `;
     }
   }
 
@@ -158,17 +161,17 @@ export async function GET(req: Request) {
     return NextResponse.json({ impersonating: false, tenant: null });
   }
 
-  const session = await db.session.findUnique({
-    where: { token: sessionCookie },
-    select: { impersonatingTenantId: true },
-  });
+  const rows = await prisma.$queryRaw<
+    { impersonatingTenantId: string | null }[]
+  >`SELECT "impersonatingTenantId" FROM "Session" WHERE token = ${sessionCookie} LIMIT 1`;
+  const impersonatingTenantId = rows[0]?.impersonatingTenantId ?? null;
 
-  if (!session?.impersonatingTenantId) {
+  if (!impersonatingTenantId) {
     return NextResponse.json({ impersonating: false, tenant: null });
   }
 
   const tenant = await prisma.tenant.findUnique({
-    where: { id: session.impersonatingTenantId },
+    where: { id: impersonatingTenantId },
     select: { id: true, name: true, slug: true },
   });
 
@@ -176,4 +179,24 @@ export async function GET(req: Request) {
     impersonating: true,
     tenant,
   });
+}
+
+/** cuid-ish random id suitable for the AuditLog pk column.
+ *
+ * The table's default is ``cuid()`` via Prisma; when we insert with raw
+ * SQL the default doesn't run, so mint an id here. Uses
+ * ``crypto.getRandomValues`` so the id is unpredictable and short enough
+ * to fit the existing column (no length constraint, but historically
+ * cuids are ~25 chars).
+ */
+function randomId(): string {
+  const bytes = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(bytes);
+  const alphabet = "0123456789abcdefghijklmnopqrstuvwxyz";
+  let s = "c";
+  for (const b of bytes) {
+    // eslint-disable-next-line security/detect-object-injection
+    s += alphabet[b % alphabet.length];
+  }
+  return s;
 }
