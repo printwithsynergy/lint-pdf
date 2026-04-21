@@ -18,8 +18,27 @@ watchPatterns = [
 ]
 
 [deploy]
-numReplicas = 1
+# Horizontal scale (bulk-files step 10): 3 replicas so a single hung
+# container never takes the API down, and burst traffic (e.g. 100
+# concurrent file uploads, your stated bulk-files shape) is spread
+# across three containers instead of queued behind one. Each replica
+# runs LINTPDF_WORKERS (8) Uvicorn workers → 24 workers total.
+numReplicas = 3
 healthcheckPath = "/ready"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+# Graceful rolling deploys (step 15): keep the old replica serving
+# traffic for `overlapSeconds` after the new one is healthy, and give
+# the draining replica `drainingSeconds` to finish in-flight requests
+# before SIGTERM. This stops the mid-upload kill pattern we saw on
+# every redeploy during the tier-1 stress tests today.
+#
+# 60 s overlap matches Railway's recommended default for HTTP services
+# and is well above p99 upload latency observed in tier-1 (~2 s per
+# 20 MB PDF over the engine with streaming uploads).
+overlapSeconds = 60
+drainingSeconds = 120
+# API uses the same Celery time_limit rationale as worker.toml — 600 s
+# hard cap on any sync-ish handler. 660 s grace gives a 10 % buffer.
+gracefulShutdownTimeoutSec = 660
