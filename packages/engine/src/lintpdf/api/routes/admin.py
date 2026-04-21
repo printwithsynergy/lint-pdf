@@ -12,7 +12,14 @@ from sqlalchemy.orm import Session  # noqa: TC002
 
 from lintpdf.api.auth import generate_api_key, hash_api_key, verify_admin_key
 from lintpdf.api.database import get_db
-from lintpdf.api.models import ApiKey, Job, JobStatus, Tenant
+from lintpdf.api.models import (
+    ApiKey,
+    Job,
+    JobStatus,
+    ReportToken,
+    Tenant,
+    WebhookEndpoint,
+)
 from lintpdf.api.routes.branding import EDGE_HOSTNAME
 from lintpdf.api.schemas import (
     AdminCustomDomainListResponse,
@@ -2902,4 +2909,383 @@ async def admin_replay_webhook_delivery(
         last_error=new_row.last_error,
         created_at=new_row.created_at.isoformat(),
         delivered_at=None,
+    )
+
+
+# ── Cross-tenant admin resources: API keys, webhook endpoints, report tokens ──
+#
+# Each endpoint mirrors the shape of /audit/jobs — same group_by bucket, same
+# pagination, same filter semantics — so the admin UI can reuse its GroupSection
+# accordion component verbatim. Rows carry tenant_id + tenant_name so the
+# frontend can render "ORG NAME (23 items)" headers without a second round trip.
+
+
+class AdminApiKeyRow(BaseModel):
+    """One API key row in the cross-tenant admin list."""
+
+    id: str
+    tenant_id: str
+    tenant_name: str | None = None
+    label: str
+    key_prefix: str
+    is_active: bool
+    last_used_at: str | None = None
+    created_at: str
+
+
+class AdminApiKeyGroup(BaseModel):
+    key: str = Field(description="Machine key (tenant UUID when group_by=tenant).")
+    label: str
+    count: int
+    items: list[AdminApiKeyRow]
+
+
+class AdminApiKeyListResponse(BaseModel):
+    groups: list[AdminApiKeyGroup]
+    total: int
+    page: int
+    page_size: int
+    group_by: str
+
+
+class AdminWebhookEndpointRow(BaseModel):
+    """One webhook-endpoint row in the cross-tenant admin list."""
+
+    id: str
+    tenant_id: str
+    tenant_name: str | None = None
+    url: str
+    events: list[str]
+    is_active: bool
+    max_retries: int | None = None
+    retry_base_delay_seconds: int | None = None
+    retry_max_delay_seconds: int | None = None
+    delivery_retention_days: int | None = None
+    created_at: str
+
+
+class AdminWebhookEndpointGroup(BaseModel):
+    key: str
+    label: str
+    count: int
+    items: list[AdminWebhookEndpointRow]
+
+
+class AdminWebhookEndpointListResponse(BaseModel):
+    groups: list[AdminWebhookEndpointGroup]
+    total: int
+    page: int
+    page_size: int
+    group_by: str
+
+
+class AdminReportTokenRow(BaseModel):
+    """One report-token row in the cross-tenant admin list."""
+
+    id: str
+    tenant_id: str
+    tenant_name: str | None = None
+    job_id: str
+    token: str
+    format: str
+    brand_mode: str | None = None
+    allow_annotations: bool
+    accessed_count: int
+    last_accessed_at: str | None = None
+    expires_at: str | None = None
+    created_at: str
+
+
+class AdminReportTokenGroup(BaseModel):
+    key: str
+    label: str
+    count: int
+    items: list[AdminReportTokenRow]
+
+
+class AdminReportTokenListResponse(BaseModel):
+    groups: list[AdminReportTokenGroup]
+    total: int
+    page: int
+    page_size: int
+    group_by: str
+
+
+def _bucket_by_tenant(
+    rows: list[Any],
+    tenant_names: dict[Any, str],
+) -> tuple[list[str], dict[str, list[Any]]]:
+    """Group an already-sorted list of rows into per-tenant buckets.
+
+    Preserves the input order — the first time a tenant_id is seen, that's
+    where its bucket header lands. Returns (order, buckets) so the caller can
+    materialise Group objects without re-sorting.
+    """
+    buckets: dict[str, list[Any]] = {}
+    order: list[str] = []
+    for row in rows:
+        gkey = row.tenant_id
+        if gkey not in buckets:
+            buckets[gkey] = []
+            order.append(gkey)
+        buckets[gkey].append(row)
+    return order, buckets
+
+
+@router.get("/api-keys", response_model=AdminApiKeyListResponse)
+async def list_admin_api_keys(
+    q: str | None = Query(
+        None,
+        description="Substring match against label or key prefix (case-insensitive).",
+    ),
+    tenant_id: str | None = Query(None, description="Filter by tenant UUID."),
+    is_active: bool | None = Query(None, description="Filter by active status."),
+    group_by: str = Query("tenant", description="Group key. Only 'tenant' is supported."),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminApiKeyListResponse:
+    """Cross-tenant API key list, grouped by tenant.
+
+    View-only; revocation stays per-tenant on ``/api/v1/admin/tenants/{id}/keys``.
+    Never surfaces ``key_hash`` — only the ``key_prefix`` (first 12 chars, safe
+    for display).
+    """
+    if group_by != "tenant":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="group_by must be 'tenant' for this endpoint.",
+        )
+
+    query = db.query(ApiKey)
+    if tenant_id:
+        try:
+            query = query.filter(ApiKey.tenant_id == uuid_mod.UUID(tenant_id))
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid tenant_id: {tenant_id}",
+            ) from exc
+    if is_active is not None:
+        query = query.filter(ApiKey.is_active == is_active)
+    if q:
+        like = f"%{q}%"
+        query = query.filter((ApiKey.label.ilike(like)) | (ApiKey.key_prefix.ilike(like)))
+
+    total = query.count()
+    keys: list[ApiKey] = (
+        query.order_by(ApiKey.tenant_id, desc(ApiKey.created_at))
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    tenant_ids = {k.tenant_id for k in keys}
+    tenant_names: dict[Any, str] = {
+        t.id: t.name for t in db.query(Tenant).filter(Tenant.id.in_(tenant_ids)).all()
+    }
+
+    rows = [
+        AdminApiKeyRow(
+            id=str(k.id),
+            tenant_id=str(k.tenant_id),
+            tenant_name=tenant_names.get(k.tenant_id),
+            label=k.label,
+            key_prefix=k.key_prefix,
+            is_active=k.is_active,
+            last_used_at=_iso(k.last_used_at),
+            created_at=k.created_at.isoformat(),
+        )
+        for k in keys
+    ]
+
+    order, buckets = _bucket_by_tenant(rows, tenant_names)
+    groups = [
+        AdminApiKeyGroup(
+            key=gkey,
+            label=_group_label("tenant", gkey, tenant_names),
+            count=len(buckets[gkey]),
+            items=buckets[gkey],
+        )
+        for gkey in order
+    ]
+    return AdminApiKeyListResponse(
+        groups=groups, total=total, page=page, page_size=page_size, group_by=group_by
+    )
+
+
+@router.get("/webhook-endpoints", response_model=AdminWebhookEndpointListResponse)
+async def list_admin_webhook_endpoints(
+    q: str | None = Query(
+        None,
+        description="Substring match against url (case-insensitive).",
+    ),
+    tenant_id: str | None = Query(None, description="Filter by tenant UUID."),
+    is_active: bool | None = Query(None, description="Filter by active status."),
+    group_by: str = Query("tenant", description="Group key. Only 'tenant' is supported."),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminWebhookEndpointListResponse:
+    """Cross-tenant webhook endpoint list, grouped by tenant.
+
+    Note: this lists *endpoint registrations* across tenants. Delivery audit
+    data (DLQ, per-attempt rows) still lives on the existing
+    ``/api/v1/admin/webhook-deliveries`` endpoint and its admin page.
+    """
+    if group_by != "tenant":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="group_by must be 'tenant' for this endpoint.",
+        )
+
+    query = db.query(WebhookEndpoint)
+    if tenant_id:
+        try:
+            query = query.filter(WebhookEndpoint.tenant_id == uuid_mod.UUID(tenant_id))
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid tenant_id: {tenant_id}",
+            ) from exc
+    if is_active is not None:
+        query = query.filter(WebhookEndpoint.is_active == is_active)
+    if q:
+        query = query.filter(WebhookEndpoint.url.ilike(f"%{q}%"))
+
+    total = query.count()
+    hooks: list[WebhookEndpoint] = (
+        query.order_by(WebhookEndpoint.tenant_id, desc(WebhookEndpoint.created_at))
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    tenant_ids = {h.tenant_id for h in hooks}
+    tenant_names: dict[Any, str] = {
+        t.id: t.name for t in db.query(Tenant).filter(Tenant.id.in_(tenant_ids)).all()
+    }
+
+    rows = [
+        AdminWebhookEndpointRow(
+            id=str(h.id),
+            tenant_id=str(h.tenant_id),
+            tenant_name=tenant_names.get(h.tenant_id),
+            url=h.url,
+            events=list(h.events or []),
+            is_active=h.is_active,
+            max_retries=h.max_retries,
+            retry_base_delay_seconds=h.retry_base_delay_seconds,
+            retry_max_delay_seconds=h.retry_max_delay_seconds,
+            delivery_retention_days=h.delivery_retention_days,
+            created_at=h.created_at.isoformat(),
+        )
+        for h in hooks
+    ]
+
+    order, buckets = _bucket_by_tenant(rows, tenant_names)
+    groups = [
+        AdminWebhookEndpointGroup(
+            key=gkey,
+            label=_group_label("tenant", gkey, tenant_names),
+            count=len(buckets[gkey]),
+            items=buckets[gkey],
+        )
+        for gkey in order
+    ]
+    return AdminWebhookEndpointListResponse(
+        groups=groups, total=total, page=page, page_size=page_size, group_by=group_by
+    )
+
+
+@router.get("/report-tokens", response_model=AdminReportTokenListResponse)
+async def list_admin_report_tokens(
+    q: str | None = Query(
+        None,
+        description="Substring match against token or format (case-insensitive).",
+    ),
+    tenant_id: str | None = Query(None, description="Filter by tenant UUID."),
+    format_filter: str | None = Query(
+        None,
+        alias="format",
+        description="Filter by token format (html/pdf/json/xml/...).",
+    ),
+    group_by: str = Query("tenant", description="Group key. Only 'tenant' is supported."),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminReportTokenListResponse:
+    """Cross-tenant report-token list, grouped by tenant.
+
+    Lists every share-link token so super-admins can audit what's been minted.
+    Tokens themselves are surfaced verbatim — they're meant to be used publicly
+    and ship inside the URL the recipient received.
+    """
+    if group_by != "tenant":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="group_by must be 'tenant' for this endpoint.",
+        )
+
+    query = db.query(ReportToken)
+    if tenant_id:
+        try:
+            query = query.filter(ReportToken.tenant_id == uuid_mod.UUID(tenant_id))
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid tenant_id: {tenant_id}",
+            ) from exc
+    if format_filter:
+        query = query.filter(ReportToken.format == format_filter)
+    if q:
+        like = f"%{q}%"
+        query = query.filter((ReportToken.token.ilike(like)) | (ReportToken.format.ilike(like)))
+
+    total = query.count()
+    tokens: list[ReportToken] = (
+        query.order_by(ReportToken.tenant_id, desc(ReportToken.created_at))
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    tenant_ids = {t.tenant_id for t in tokens}
+    tenant_names: dict[Any, str] = {
+        t.id: t.name for t in db.query(Tenant).filter(Tenant.id.in_(tenant_ids)).all()
+    }
+
+    rows = [
+        AdminReportTokenRow(
+            id=str(tok.id),
+            tenant_id=str(tok.tenant_id),
+            tenant_name=tenant_names.get(tok.tenant_id),
+            job_id=str(tok.job_id),
+            token=tok.token,
+            format=tok.format,
+            brand_mode=tok.brand_mode,
+            allow_annotations=bool(tok.allow_annotations),
+            accessed_count=tok.accessed_count,
+            last_accessed_at=_iso(tok.last_accessed_at),
+            expires_at=_iso(tok.expires_at),
+            created_at=tok.created_at.isoformat(),
+        )
+        for tok in tokens
+    ]
+
+    order, buckets = _bucket_by_tenant(rows, tenant_names)
+    groups = [
+        AdminReportTokenGroup(
+            key=gkey,
+            label=_group_label("tenant", gkey, tenant_names),
+            count=len(buckets[gkey]),
+            items=buckets[gkey],
+        )
+        for gkey in order
+    ]
+    return AdminReportTokenListResponse(
+        groups=groups, total=total, page=page, page_size=page_size, group_by=group_by
     )

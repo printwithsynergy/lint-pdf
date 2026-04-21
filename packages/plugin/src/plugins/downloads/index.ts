@@ -79,9 +79,11 @@ export const lintpdfDownloadsPlugin: PixieDustPlugin = {
           const tenantId = req.auth?.tenantId;
           const isSuperAdmin = req.auth?.isSuperAdmin ?? false;
 
-          // Super admins without a tenant context (no impersonation) get
-          // the admin manifest directly — useful for previews and QA.
-          if (isSuperAdmin && !tenantId) {
+          // Super admins always get the admin manifest — bypass the per-tenant
+          // desktop_app_enabled entitlement gate so ops can download/QA even
+          // when the tenant they belong to (or are impersonating) doesn't
+          // have the desktop add-on enabled.
+          if (isSuperAdmin) {
             const resp = await adminFetch(
               `/api/v1/admin/downloads/desktop/manifest`,
             );

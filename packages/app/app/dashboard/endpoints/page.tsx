@@ -197,7 +197,7 @@ export default function EndpointsPage() {
               <select
                 value={newProfileId}
                 onChange={(e) => setNewProfileId(e.target.value)}
-                className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
+                className="mt-1 h-10 w-full rounded-md border px-3 py-2 text-sm"
               >
                 <option value="">Select a profile...</option>
                 {profiles.map((p) => (
@@ -249,7 +249,7 @@ export default function EndpointsPage() {
                   <select
                     value={editProfileId}
                     onChange={(e) => setEditProfileId(e.target.value)}
-                    className="w-full rounded-md border px-3 py-2 text-sm"
+                    className="h-10 w-full rounded-md border px-3 py-2 text-sm"
                   >
                     {profiles.map((p) => (
                       <option key={p.profile_id} value={p.profile_id}>

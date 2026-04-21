@@ -106,7 +106,7 @@ function AdminBillingPageInner() {
   const fetchTenants = useCallback(async () => {
     setLoadingTenants(true);
     try {
-      const resp = await fetch("/api/lintpdf/admin/tenants?page=1&page_size=500");
+      const resp = await fetch("/api/lintpdf/admin/tenants?page=1&page_size=200");
       if (!resp.ok) throw new Error(`Failed to load tenants (${resp.status})`);
       const data = await resp.json();
       setTenants(data.tenants ?? []);

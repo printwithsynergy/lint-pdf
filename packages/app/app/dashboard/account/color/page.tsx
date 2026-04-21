@@ -322,7 +322,7 @@ export default function ColorConfigPage() {
         <select
           value={outputCondition}
           onChange={(e) => setOutputCondition(e.target.value)}
-          className="mt-2 w-full rounded-md border px-3 py-2 text-sm"
+          className="mt-2 h-10 w-full rounded-md border px-3 py-2 text-sm"
         >
           <option value="">None (no gamut checking)</option>
           {conditions.map((c) => (
