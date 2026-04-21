@@ -221,7 +221,6 @@ export default function ApiKeysPage() {
               </div>
               <Button
                 variant="destructive"
-                size="sm"
                 onClick={() => {
                   setConfirmTarget(key.id);
                   setConfirmOpen(true);

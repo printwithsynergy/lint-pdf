@@ -131,6 +131,46 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       order: 46,
       requiredRole: "SUPER_ADMIN",
     });
+    // Cross-tenant views — group by tenant, grant super-admin access to
+    // every tenant's API keys, webhook endpoints, and report tokens.
+    ctx.addNavItem({
+      label: "API Keys (All)",
+      href: "/dashboard/admin/api-keys",
+      icon: "lock",
+      section: "admin",
+      order: 50,
+      requiredRole: "SUPER_ADMIN",
+    });
+    ctx.addNavItem({
+      label: "Webhooks (All)",
+      href: "/dashboard/admin/webhook-endpoints",
+      icon: "bell",
+      section: "admin",
+      order: 51,
+      requiredRole: "SUPER_ADMIN",
+    });
+    ctx.addNavItem({
+      label: "Reports (All)",
+      href: "/dashboard/admin/reports",
+      icon: "file-text",
+      section: "admin",
+      order: 52,
+      requiredRole: "SUPER_ADMIN",
+    });
+    // Admin documentation — landing + per-chapter rendering lives at
+    // /dashboard/admin/docs and /dashboard/admin/docs/{slug}, backed by
+    // packages/app/content/docs-admin/.
+    // Admin documentation lives under the same "admin" sidebar section (PD's
+    // NavItem.section enum is "main" | "admin" | "tenant" | "global" — no
+    // custom keys), rendered at the bottom of the group via a high order.
+    ctx.addNavItem({
+      label: "Documentation",
+      href: "/dashboard/admin/docs",
+      icon: "book-open",
+      section: "admin",
+      order: 100,
+      requiredRole: "SUPER_ADMIN",
+    });
     ctx.addPage({
       path: "/dashboard/admin/billing",
       title: "Metered Resources — Admin",
@@ -176,6 +216,26 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     ctx.addPage({
       path: "/dashboard/admin/branding",
       title: "Branding",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/api-keys",
+      title: "API Keys (All Tenants)",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/webhook-endpoints",
+      title: "Webhooks (All Tenants)",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/reports",
+      title: "Reports (All Tenants)",
+      layout: "dashboard",
+    });
+    ctx.addPage({
+      path: "/dashboard/admin/docs",
+      title: "Admin Documentation",
       layout: "dashboard",
     });
 
@@ -687,6 +747,82 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
           }
           const data = await resp.json();
           return { status: 200, body: data };
+        }) as RouteHandler,
+      },
+      // ── Cross-tenant admin lists (grouped by tenant) ─────────
+      {
+        method: "GET" as HttpMethod,
+        path: "/api-keys",
+        auth: true,
+        permission: "site-admin:access",
+        description: "List API keys across all tenants, grouped by tenant",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams(
+            Object.entries(req.query).reduce<Record<string, string>>(
+              (acc, [k, v]) => {
+                if (v !== undefined && v !== null) acc[k] = String(v);
+                return acc;
+              },
+              {},
+            ),
+          );
+          const resp = await adminFetch(`/api/v1/admin/api-keys?${qs}`);
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/webhook-endpoints",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "List webhook endpoints across all tenants, grouped by tenant",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams(
+            Object.entries(req.query).reduce<Record<string, string>>(
+              (acc, [k, v]) => {
+                if (v !== undefined && v !== null) acc[k] = String(v);
+                return acc;
+              },
+              {},
+            ),
+          );
+          const resp = await adminFetch(
+            `/api/v1/admin/webhook-endpoints?${qs}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/report-tokens",
+        auth: true,
+        permission: "site-admin:access",
+        description: "List report tokens across all tenants, grouped by tenant",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams(
+            Object.entries(req.query).reduce<Record<string, string>>(
+              (acc, [k, v]) => {
+                if (v !== undefined && v !== null) acc[k] = String(v);
+                return acc;
+              },
+              {},
+            ),
+          );
+          const resp = await adminFetch(`/api/v1/admin/report-tokens?${qs}`);
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
         }) as RouteHandler,
       },
     ];

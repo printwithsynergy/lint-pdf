@@ -342,13 +342,10 @@ export default function WebhooksPage() {
                         href={`/dashboard/webhooks/${wh.id}/deliveries`}
                         className="inline-flex"
                       >
-                        <Button variant="secondary" size="sm">
-                          Deliveries
-                        </Button>
+                        <Button variant="secondary">Deliveries</Button>
                       </Link>
                       <Button
                         variant="secondary"
-                        size="sm"
                         onClick={() => handleTest(wh.id)}
                         loading={testingId === wh.id}
                       >
@@ -356,7 +353,6 @@ export default function WebhooksPage() {
                       </Button>
                       <Button
                         variant="secondary"
-                        size="sm"
                         onClick={() => {
                           setEditingId(wh.id);
                           setEditUrl(wh.url);
@@ -367,14 +363,12 @@ export default function WebhooksPage() {
                       </Button>
                       <Button
                         variant="secondary"
-                        size="sm"
                         onClick={() => handleToggle(wh.id, wh.is_active)}
                       >
                         {wh.is_active ? "Disable" : "Enable"}
                       </Button>
                       <Button
                         variant="destructive"
-                        size="sm"
                         onClick={() => {
                           setConfirmTarget(wh.id);
                           setConfirmOpen(true);

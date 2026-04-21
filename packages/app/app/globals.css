@@ -37,3 +37,18 @@
     display: flex !important;
   }
 }
+
+/*
+ * Give the DashboardSidebar nav scroll container bottom breathing room so the
+ * last nav item isn't flush against the viewport bottom / footer border. The
+ * PD component (inside node_modules) renders `<nav class="flex-1 space-y-6
+ * overflow-y-auto px-3 py-4">…`; override adds ~16px of padding-bottom.
+ */
+aside[aria-label*="sidebar" i] nav.overflow-y-auto,
+aside[data-sidebar] nav.overflow-y-auto,
+[data-pd-sidebar] nav.overflow-y-auto,
+.pd-sidebar nav.overflow-y-auto,
+[class*="DashboardSidebar" i] nav.overflow-y-auto,
+[class*="dashboard-sidebar" i] nav.overflow-y-auto {
+  padding-bottom: 1.5rem;
+}
