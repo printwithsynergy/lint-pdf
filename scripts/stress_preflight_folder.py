@@ -240,16 +240,23 @@ def submit_job(
     profile_id: str,
     ai_preset: str,
     *,
+    ai_enabled: bool = True,
     upload_timeout_s: int = 600,
     max_retries: int = 3,
 ) -> None:
     pdf_bytes = rec.pdf_path.read_bytes()
-    fields = {
-        "profile_id": profile_id,
-        "ai_enabled": "true",
-        "ai_categories": "all",
-        "ai_preset": ai_preset,
-    }
+    fields: dict[str, str] = {"profile_id": profile_id}
+    if ai_enabled:
+        fields["ai_enabled"] = "true"
+        fields["ai_categories"] = "all"
+        fields["ai_preset"] = ai_preset
+    else:
+        # Explicitly disable AI for this job so it skips the GPU path
+        # regardless of what the profile defaults to. Needed for the
+        # deterministic-only stress tier where the goal is measuring
+        # LPDF_*/PDFX4_* throughput on CPU workers without Modal in
+        # the loop.
+        fields["ai_enabled"] = "false"
     body, ctype = encode_multipart(
         fields, {"file": (rec.submit_name, pdf_bytes, "application/pdf")}
     )
@@ -667,7 +674,15 @@ def run(args: argparse.Namespace) -> int:
         futures = []
         for r in records:
             futures.append(
-                pool.submit(submit_job, http, api_key, r, args.profile, args.ai_preset)
+                pool.submit(
+                    submit_job,
+                    http,
+                    api_key,
+                    r,
+                    args.profile,
+                    args.ai_preset,
+                    ai_enabled=not args.no_ai,
+                )
             )
             time.sleep(stagger_ms / 1000.0)
         for _ in as_completed(futures):
@@ -726,6 +741,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--workers", type=int, default=50, help="max concurrent workers (default: 50)")
     p.add_argument("--profile", default="lintpdf-default")
     p.add_argument("--ai-preset", default="full-ai-scan")
+    p.add_argument(
+        "--no-ai",
+        action="store_true",
+        help="Submit every job with ai_enabled=false. Skips the Modal GPU "
+        "path entirely — useful for measuring CPU-only (deterministic) "
+        "throughput and for the <5 min tier-2 target without AI.",
+    )
     p.add_argument("--timeout-s", type=int, default=1800, help="per-job poll timeout (default: 30min)")
     p.add_argument(
         "--ramp-up-s",
