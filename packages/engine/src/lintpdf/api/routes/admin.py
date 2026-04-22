@@ -123,6 +123,12 @@ class UpdateEntitlementsRequest(BaseModel):
     report_default_expiry_days: int | None = None
     overage_rate_cents: int | None = None
     desktop_app_enabled: bool | None = None
+    # Scale + Enterprise plans set this to True by default via
+    # PLAN_LIMITS; the override is mostly for pilot tenants on lower
+    # plans ("force ON for this Growth tenant during the beta") or
+    # for cost-control suppressions on Enterprise
+    # ("force OFF while we budget the audit spend").
+    ai_audit_enabled: bool | None = None
 
 
 class EntitlementOverridesResponse(BaseModel):

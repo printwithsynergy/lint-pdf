@@ -79,14 +79,18 @@ export default function AdminTenantsPage() {
     }
   }
 
-  async function handleDesktopToggle(tenantId: string, enabled: boolean) {
+  async function handleEntitlementToggle(
+    tenantId: string,
+    key: "desktop_app_enabled" | "ai_audit_enabled",
+    enabled: boolean,
+  ) {
     try {
       const resp = await fetch(
         `/api/lintpdf/admin/tenants/${tenantId}/entitlements`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ desktop_app_enabled: enabled }),
+          body: JSON.stringify({ [key]: enabled }),
         },
       );
       if (!resp.ok) {
@@ -95,10 +99,15 @@ export default function AdminTenantsPage() {
       await fetchTenants();
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Failed to update desktop access",
+        e instanceof Error ? e.message : `Failed to update ${key}`,
       );
     }
   }
+
+  const handleDesktopToggle = (tenantId: string, enabled: boolean) =>
+    handleEntitlementToggle(tenantId, "desktop_app_enabled", enabled);
+  const handleAuditToggle = (tenantId: string, enabled: boolean) =>
+    handleEntitlementToggle(tenantId, "ai_audit_enabled", enabled);
 
   async function handleAssist(tenantId: string) {
     try {
@@ -144,6 +153,7 @@ export default function AdminTenantsPage() {
                   <th className="pb-2 font-medium">Status</th>
                   <th className="pb-2 font-medium">Daily Limit</th>
                   <th className="pb-2 font-medium">Desktop App</th>
+                  <th className="pb-2 font-medium">AI Audit</th>
                   <th className="pb-2 font-medium">Created</th>
                   <th className="pb-2 font-medium"></th>
                 </tr>
@@ -203,6 +213,34 @@ export default function AdminTenantsPage() {
                           }
                         />
                         <span>Enabled</span>
+                      </label>
+                    </td>
+                    <td className="py-2">
+                      <label
+                        className="inline-flex items-center gap-2 text-xs"
+                        title={
+                          // Default-on when the plan (Scale / Enterprise)
+                          // sets `ai_audit_enabled: true` and the tenant
+                          // hasn't overridden it. Checkbox state reflects
+                          // the override only — unchecked for Scale means
+                          // "inherit plan default (ON)", checked
+                          // for Growth means "force ON despite the plan".
+                          "Per-tenant override. Leave unchecked to inherit the plan default (Scale + Enterprise = on). Check to force ON regardless of plan."
+                        }
+                      >
+                        <input
+                          type="checkbox"
+                          checked={Boolean(
+                            (t.entitlement_overrides as
+                              | { ai_audit_enabled?: boolean }
+                              | null
+                              | undefined)?.ai_audit_enabled,
+                          )}
+                          onChange={(e) =>
+                            handleAuditToggle(t.id, e.target.checked)
+                          }
+                        />
+                        <span>Override</span>
                       </label>
                     </td>
                     <td className="py-2 text-xs text-muted-foreground">
