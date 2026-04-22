@@ -56,6 +56,24 @@ venv/
 preflight_report*.html
 report_*.png
 
+# Stress-harness output — per-run CSV/MD artifacts are local to the
+# machine that ran scripts/stress_preflight_folder.py. The committed
+# preflight-stress-results.md / -smoke.md / -smoke-metrics.csv capture
+# the canonical tier-1 findings; everything else from subsequent
+# tier-1 reruns, tier-2 sweeps, PgBouncer smokes, retry probes, etc.
+# is ignored. Mirrors PR #142 on main.
+preflight-stress-*-metrics.csv
+preflight-stress-*-results.md
+preflight-stress-results-*.md
+preflight-stress-tier*.csv
+preflight-stress-tier*.md
+preflight-stress-rerun-*.csv
+preflight-stress-rerun-*.md
+preflight-stress-1file-*.csv
+preflight-stress-1file-*.md
+preflight-stress-pgbouncer-*.csv
+preflight-stress-pgbouncer-*.md
+
 # Local engine storage (runtime data from seed_and_serve.py)
 .local-storage/
 
