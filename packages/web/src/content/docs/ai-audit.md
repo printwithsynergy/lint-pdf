@@ -72,6 +72,49 @@ Rolled into the Scale / Enterprise AI credit budget. Each audited finding consum
 - Audits are best-effort: a Modal cold-start timeout leaves the verdict field `null` so the viewer renders nothing, rather than writing an `error` row that would need retry handling on your side.
 - Findings with no `page_num` (document-level findings like PDF version errors) get audited against the full page set; the model judges them off finding text + page previews.
 
+## Re-auditing a completed job
+
+Need to refresh verdicts without resubmitting the PDF? `POST /api/v1/jobs/{job_id}/audit:rerun` runs the customer auditor against the findings already on the job and updates the `audit` field on each row. Useful when:
+
+- The audit model has been tuned since the original run.
+- Modal was down during the original preflight — the `audit` fields are `null` and you want them filled in now that the endpoint is healthy.
+- A pilot tenant just had `ai_audit_enabled` flipped on and wants to backfill verdicts on its historical jobs.
+
+```bash
+curl -X POST https://api.lintpdf.com/api/v1/jobs/<job-id>/audit:rerun \
+  -H "Authorization: Bearer lpdf_live_..."
+```
+
+```json
+{
+  "job_id": "48276823-644c-419f-bb07-f3649c9f8368",
+  "findings_updated": 275,
+  "model": "modal:qwen2-vl-7b"
+}
+```
+
+The rerun endpoint deliberately bypasses the `ai_audit_enabled` entitlement check — flipping a pilot tenant on for a window and then refreshing their back-catalogue is the whole point. It still requires `LINTPDF_AUDIT_MODAL_URL` to be configured server-side; without that the endpoint returns `findings_updated: 0` with no error (the job is left as-is).
+
+- `200 OK` → `{job_id, findings_updated, model}`
+- `404 Not Found` → job doesn't exist or isn't in your tenant
+- `409 Conflict` → job isn't in `complete` state (can't audit a pending / failed job)
+- `502 Bad Gateway` → Modal auditor itself errored (timeout, 5xx, parse failure). Retry after the Modal dashboard shows a healthy endpoint.
+
+Super-admins have a separate mirror at `POST /api/v1/admin/jobs/{id}/audit-rerun` (hyphen, not colon) that auths with `X-Admin-Key` and works across tenants — also reachable from the Re-audit button in the admin jobs drawer.
+
+## Manually overriding a verdict
+
+Sometimes the AI gets one wrong — "disputes" a finding that's actually correct, or "confirms" a false positive. Super-admins can flip the verdict directly:
+
+```bash
+curl -X PATCH https://api.lintpdf.com/api/v1/admin/findings/<finding-id>/audit \
+  -H "X-Admin-Key: $LINTPDF_ADMIN_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"status": "confirmed", "rationale": "Confirmed by hand — AI missed the embedded font reference on page 3."}'
+```
+
+Manual overrides set `audit_model` to `manual:<admin-email>` so they're visually distinct from AI verdicts in the viewer + audit reports. There's no UI surface for this yet; use the API directly.
+
 ## Related
 
 - [Preflight Modes](/docs/preflight-modes)

@@ -15,6 +15,7 @@ from lintpdf.api.database import get_db
 from lintpdf.api.models import (
     ApiKey,
     Job,
+    JobFinding,
     JobStatus,
     PlanLimitOverride,
     ReportToken,
@@ -1944,6 +1945,124 @@ async def admin_rerun_audit(
     return AdminAuditRerunResponse(
         job_id=str(job.id),
         findings_updated=changed,
+    )
+
+
+class ManualAuditOverrideRequest(BaseModel):
+    """PATCH body for ``/admin/findings/{id}/audit``.
+
+    Lets super-admins overwrite a per-finding verdict when the AI
+    got one wrong. The engine tags these with ``audit_model``
+    prefixed by ``manual:`` so the viewer can render them
+    differently from AI-produced rows. Setting ``status=null``
+    clears the verdict entirely (useful for "untouched by a
+    future re-audit pass").
+    """
+
+    status: str | None = Field(
+        default=None,
+        description=(
+            "One of ``confirmed`` / ``disputed`` / ``needs_context`` "
+            "/ ``error``, or null to clear."
+        ),
+    )
+    rationale: str | None = Field(
+        default=None,
+        description="Free-text explanation surfaced in the viewer tooltip.",
+    )
+    admin_email: str | None = Field(
+        default=None,
+        description=(
+            "Optional identifier of the operator making the change. "
+            "Written into ``audit_model`` as ``manual:<email>`` so "
+            "the verdict is traceable."
+        ),
+    )
+
+
+class ManualAuditOverrideResponse(BaseModel):
+    finding_id: str
+    job_id: str
+    audit_status: str | None
+    audit_rationale: str | None
+    audit_model: str | None
+
+
+_ALLOWED_MANUAL_STATUSES = frozenset(
+    {"confirmed", "disputed", "needs_context", "error"}
+)
+
+
+@router.patch(
+    "/findings/{finding_id}/audit",
+    response_model=ManualAuditOverrideResponse,
+)
+async def set_manual_audit_verdict(
+    finding_id: str,
+    body: ManualAuditOverrideRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> ManualAuditOverrideResponse:
+    """Overwrite a finding's AI audit verdict by hand.
+
+    Intended for the "the AI got this wrong" case — disputed
+    findings the engine is actually right about, or confirmed
+    findings that are false positives. Writes ``audit_model`` as
+    ``manual:<admin_email>`` (or ``manual:super-admin`` if none
+    provided) so the viewer chip can visually distinguish a human
+    override from a machine verdict.
+
+    ``status=null`` clears the row entirely so a future re-audit
+    pass repopulates it from the AI.
+    """
+    try:
+        fid = uuid_mod.UUID(finding_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid finding id: '{finding_id}' is not a valid UUID.",
+        ) from exc
+
+    finding = db.query(JobFinding).filter(JobFinding.id == fid).first()
+    if finding is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Finding '{finding_id}' not found.",
+        )
+
+    new_status = body.status
+    if new_status is not None and new_status not in _ALLOWED_MANUAL_STATUSES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"audit_status must be one of "
+                f"{sorted(_ALLOWED_MANUAL_STATUSES)} or null, "
+                f"got {new_status!r}."
+            ),
+        )
+
+    if new_status is None:
+        finding.audit_status = None
+        finding.audit_rationale = None
+        finding.audit_model = None
+        finding.audit_at = None
+    else:
+        from datetime import UTC, datetime
+
+        finding.audit_status = new_status
+        finding.audit_rationale = body.rationale
+        admin_tag = body.admin_email or "super-admin"
+        finding.audit_model = f"manual:{admin_tag}"
+        finding.audit_at = datetime.now(UTC)
+
+    db.commit()
+
+    return ManualAuditOverrideResponse(
+        finding_id=str(finding.id),
+        job_id=str(finding.job_id),
+        audit_status=finding.audit_status,
+        audit_rationale=finding.audit_rationale,
+        audit_model=finding.audit_model,
     )
 
 
