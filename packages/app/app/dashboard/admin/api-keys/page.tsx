@@ -1,14 +1,16 @@
 "use client";
 
 /**
- * Admin "API Keys (All Tenants)" page — super-admin-only cross-tenant view.
+ * Admin "API Keys (All Tenants)" page — super-admin cross-tenant CRUD.
  *
- * Fetches /api/lintpdf/admin/api-keys (proxied to the engine's
- * /api/v1/admin/api-keys), renders one accordion section per tenant.
- * View-only; revocation stays on the per-tenant /dashboard/api-keys page.
+ * Lists every API key across tenants (grouped by tenant) and lets
+ * super admins mint a new key for a tenant or revoke an existing one.
+ * Proxies through /api/lintpdf/admin/api-keys (list) and
+ * /api/lintpdf/admin/tenants/:tenantId/keys{,/:keyId} for CRUD.
  */
 
 import { useCallback, useEffect, useState } from "react";
+import { Button } from "@thinkneverland/pixie-dust-ui";
 import { SkeletonDashboard } from "@/components/skeleton";
 
 interface ApiKeyRow {
@@ -45,6 +47,13 @@ export default function AdminApiKeysPage() {
   const [q, setQ] = useState("");
   const pageSize = 100;
 
+  const [mintFor, setMintFor] = useState<{ tenantId: string; tenantName: string } | null>(null);
+  const [mintLabel, setMintLabel] = useState("");
+  const [mintBusy, setMintBusy] = useState(false);
+  const [mintedKey, setMintedKey] = useState<string | null>(null);
+
+  const [revokeBusy, setRevokeBusy] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -73,15 +82,65 @@ export default function AdminApiKeysPage() {
     load();
   }, [load]);
 
+  async function mintKey() {
+    if (!mintFor) return;
+    setMintBusy(true);
+    setError("");
+    try {
+      const resp = await fetch(
+        `/api/lintpdf/admin/tenants/${mintFor.tenantId}/keys`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ label: mintLabel || "Admin-minted" }),
+        },
+      );
+      if (!resp.ok) {
+        const body = (await resp.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Failed (${resp.status})`);
+      }
+      const created = (await resp.json()) as { key?: string };
+      setMintedKey(created.key ?? null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to mint API key");
+    } finally {
+      setMintBusy(false);
+    }
+  }
+
+  async function revokeKey(tenantId: string, keyId: string, label: string) {
+    if (!window.confirm(`Revoke API key "${label}"? The tenant will have to re-authenticate any caller using it.`)) {
+      return;
+    }
+    setRevokeBusy(keyId);
+    setError("");
+    try {
+      const resp = await fetch(
+        `/api/lintpdf/admin/tenants/${tenantId}/keys/${keyId}`,
+        { method: "DELETE" },
+      );
+      if (!resp.ok && resp.status !== 204) {
+        const body = (await resp.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `Failed (${resp.status})`);
+      }
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to revoke API key");
+    } finally {
+      setRevokeBusy(null);
+    }
+  }
+
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <>
+    <div className="max-w-7xl">
       <h1 className="font-display text-2xl font-bold">API Keys — All Tenants</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Read-only cross-tenant view of every API key ever minted. Revocation
-        stays on the per-tenant dashboard.
+        Cross-tenant view with mint + revoke. Use this to help a tenant
+        rotate a key they&apos;ve lost access to.
       </p>
 
       <div className="mt-4 flex items-center gap-2">
@@ -106,13 +165,80 @@ export default function AdminApiKeysPage() {
         </div>
       )}
 
+      {mintedKey && (
+        <div className="mt-4 rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm">
+          <div className="font-semibold text-emerald-800">New key minted</div>
+          <p className="mt-1 text-emerald-700">
+            Copy it now — it&apos;s shown only once and cannot be retrieved later.
+          </p>
+          <code className="mt-2 block break-all rounded bg-white p-2 font-mono text-xs">
+            {mintedKey}
+          </code>
+          <button
+            type="button"
+            className="mt-2 text-xs text-emerald-800 underline"
+            onClick={() => setMintedKey(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {mintFor && (
+        <div className="mt-4 rounded-md border bg-card p-3">
+          <div className="text-sm font-semibold">
+            Mint API key for{" "}
+            <span className="font-mono">{mintFor.tenantName}</span>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <input
+              type="text"
+              value={mintLabel}
+              placeholder="Label (optional)"
+              onChange={(e) => setMintLabel(e.target.value)}
+              className="h-9 flex-1 rounded-md border px-3 text-sm"
+              disabled={mintBusy}
+            />
+            <Button
+              size="sm"
+              onClick={mintKey}
+              loading={mintBusy}
+              disabled={mintBusy}
+            >
+              Mint
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setMintFor(null);
+                setMintLabel("");
+              }}
+              disabled={mintBusy}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <SkeletonDashboard type="table" />
       ) : (
         <>
           <div className="mt-6 space-y-4">
             {data?.groups.map((group) => (
-              <GroupSection key={group.key} group={group} />
+              <GroupSection
+                key={group.key}
+                group={group}
+                onMint={(tenantId, tenantName) => {
+                  setMintFor({ tenantId, tenantName });
+                  setMintLabel("");
+                  setMintedKey(null);
+                }}
+                onRevoke={revokeKey}
+                revokeBusyKeyId={revokeBusy}
+              />
             ))}
             {(!data || data.groups.length === 0) && (
               <p className="py-8 text-center text-sm text-muted-foreground">
@@ -123,60 +249,85 @@ export default function AdminApiKeysPage() {
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="h-10 rounded-md border px-3 text-sm disabled:opacity-50"
               >
                 Previous
-              </button>
+              </Button>
               <span className="text-sm text-muted-foreground">
                 Page {page} of {totalPages}
               </span>
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="h-10 rounded-md border px-3 text-sm disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           )}
         </>
       )}
-    </>
+    </div>
   );
 }
 
-function GroupSection({ group }: { group: Group }) {
+function GroupSection({
+  group,
+  onMint,
+  onRevoke,
+  revokeBusyKeyId,
+}: {
+  group: Group;
+  onMint: (tenantId: string, tenantName: string) => void;
+  onRevoke: (tenantId: string, keyId: string, label: string) => void;
+  revokeBusyKeyId: string | null;
+}) {
   const [expanded, setExpanded] = useState(true);
+  const first = group.items[0];
+  const tenantId = first?.tenant_id ?? group.key;
+  const tenantName = first?.tenant_name ?? group.label;
+
   return (
     <div className="overflow-hidden rounded-lg border bg-card">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-3 border-b p-3 text-left hover:bg-muted/30"
-      >
-        <span className="truncate font-medium">{group.label}</span>
-        <span className="text-xs text-muted-foreground">
-          {group.count} key{group.count === 1 ? "" : "s"}
-        </span>
-        <svg
-          className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${
-            expanded ? "rotate-180" : ""
-          }`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
+      <div className="flex w-full items-center gap-3 border-b p-3">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex flex-1 items-center gap-3 text-left hover:bg-muted/30"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
+          <span className="truncate font-medium">{group.label}</span>
+          <span className="text-xs text-muted-foreground">
+            {group.count} key{group.count === 1 ? "" : "s"}
+          </span>
+          <svg
+            className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${
+              expanded ? "rotate-180" : ""
+            }`}
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+        <Button
+          size="sm"
+          variant="secondary"
+          onClick={() => onMint(tenantId, tenantName)}
+        >
+          Mint key
+        </Button>
+      </div>
       {expanded && (
         <table className="w-full text-sm">
           <thead>
@@ -186,6 +337,7 @@ function GroupSection({ group }: { group: Group }) {
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium">Last used</th>
               <th className="px-3 py-2 font-medium">Created</th>
+              <th className="px-3 py-2 font-medium"></th>
             </tr>
           </thead>
           <tbody>
@@ -213,6 +365,19 @@ function GroupSection({ group }: { group: Group }) {
                 </td>
                 <td className="px-3 py-2 text-xs text-muted-foreground">
                   {new Date(k.created_at).toLocaleDateString()}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  {k.is_active && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => onRevoke(k.tenant_id, k.id, k.label)}
+                      loading={revokeBusyKeyId === k.id}
+                      disabled={revokeBusyKeyId === k.id}
+                    >
+                      Revoke
+                    </Button>
+                  )}
                 </td>
               </tr>
             ))}
