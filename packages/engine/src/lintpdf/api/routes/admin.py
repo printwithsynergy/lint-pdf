@@ -1876,6 +1876,77 @@ async def reset_plan_limit(
     return _plan_limit_response(db, plan_enum.value)
 
 
+# ── Admin-key mirror of the tenant-scoped audit:rerun endpoint ──
+
+
+class AdminAuditRerunResponse(BaseModel):
+    job_id: str
+    findings_updated: int
+    model: str = "modal:qwen2-vl-7b"
+
+
+@router.post(
+    "/jobs/{job_id}/audit-rerun",
+    response_model=AdminAuditRerunResponse,
+)
+async def admin_rerun_audit(
+    job_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminAuditRerunResponse:
+    """Mirror of ``POST /api/v1/jobs/{id}/audit:rerun`` that auths
+    with the admin key instead of a tenant bearer.
+
+    The admin surface needs this because the tenant-scoped endpoint
+    uses ``get_current_tenant`` — super-admins don't carry a tenant
+    bearer when they're poking at other orgs' jobs. Both paths
+    delegate to the same underlying ``run_customer_audit(force=True)``
+    helper, so behaviour is identical — only the auth story changes.
+
+    The colon path (``audit:rerun``) is fine in the customer API
+    (FastAPI routes it; URL spec allows it), but Next.js on the
+    app side plays better with a plain hyphen segment, so the
+    admin mirror uses ``audit-rerun``.
+    """
+    try:
+        uid = uuid_mod.UUID(job_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
+        ) from exc
+
+    job = db.query(Job).filter(Job.id == uid).first()
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job '{job_id}' not found.",
+        )
+    if job.status != JobStatus.COMPLETE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Job '{job_id}' is {job.status}; can only re-audit "
+                "complete jobs."
+            ),
+        )
+
+    from lintpdf.queue.tasks import run_customer_audit
+
+    try:
+        changed = run_customer_audit(db, job, str(job.id), force=True)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Audit re-run failed: {exc!s}",
+        ) from exc
+
+    return AdminAuditRerunResponse(
+        job_id=str(job.id),
+        findings_updated=changed,
+    )
+
+
 # ── Helpers ──────────────────────────────────────────────────
 
 

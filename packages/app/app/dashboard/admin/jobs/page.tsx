@@ -49,6 +49,8 @@ export default function AdminJobsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState("");
   const [detailTab, setDetailTab] = useState<DetailTab>("jobs");
+  const [rerunBusy, setRerunBusy] = useState(false);
+  const [rerunMsg, setRerunMsg] = useState("");
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -107,7 +109,40 @@ export default function AdminJobsPage() {
     setSelectedId(null);
     setDetail(null);
     setDetailError("");
+    setRerunMsg("");
   }, []);
+
+  const rerunAudit = useCallback(async () => {
+    if (!detail || detail.status !== "complete") return;
+    setRerunBusy(true);
+    setRerunMsg("");
+    try {
+      // Proxied via /api/lintpdf/admin/jobs/{id}/audit-rerun → engine
+      // POST /api/v1/jobs/{id}/audit:rerun. Colon-paths route fine
+      // through Next/Railway but we prefer a safer hyphen segment
+      // on the internal app proxy.
+      const resp = await fetch(
+        `/api/lintpdf/admin/jobs/${detail.id}/audit-rerun`,
+        { method: "POST" },
+      );
+      const body = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(
+          (body as { detail?: string; error?: string }).detail ??
+            (body as { error?: string }).error ??
+            `HTTP ${resp.status}`,
+        );
+      }
+      const updated = (body as { findings_updated?: number }).findings_updated ?? 0;
+      setRerunMsg(`Audit re-run complete — ${updated} finding(s) updated.`);
+    } catch (e) {
+      setRerunMsg(
+        "Audit re-run failed: " + (e instanceof Error ? e.message : String(e)),
+      );
+    } finally {
+      setRerunBusy(false);
+    }
+  }, [detail]);
 
   const totalPages = Math.ceil(total / pageSize);
 
@@ -240,10 +275,33 @@ export default function AdminJobsPage() {
                 {detail?.tenant_name ?? detail?.tenant_id ?? selectedId}
               </p>
             </div>
-            <Button variant="secondary" size="sm" onClick={closeDetail}>
-              Close
-            </Button>
+            <div className="flex items-center gap-2">
+              {detail?.status === "complete" && (
+                <Button
+                  size="sm"
+                  onClick={rerunAudit}
+                  disabled={rerunBusy}
+                  title="Re-run the AI Accuracy Audit against this job's findings. Works on any complete job, regardless of the tenant's entitlement — useful after a Modal prompt tune or for back-catalogue refresh on a newly-pilot tenant."
+                >
+                  {rerunBusy ? "Auditing…" : "Re-audit"}
+                </Button>
+              )}
+              <Button variant="secondary" size="sm" onClick={closeDetail}>
+                Close
+              </Button>
+            </div>
           </header>
+          {rerunMsg && (
+            <p
+              className={`border-b px-4 py-2 text-xs ${
+                rerunMsg.startsWith("Audit re-run failed")
+                  ? "bg-destructive/10 text-destructive"
+                  : "bg-emerald-500/10 text-emerald-500"
+              }`}
+            >
+              {rerunMsg}
+            </p>
+          )}
 
           <nav className="flex gap-1 border-b px-4">
             {(["jobs", "logs", "links"] as DetailTab[]).map((tab) => (
