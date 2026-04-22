@@ -301,8 +301,14 @@ export default function PricingClient() {
                     </ul>
                     {caveats.length > 0 && (
                       <p className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-400 leading-snug">
-                        {caveats.join(". ")}. Upgrade to Starter for full engine
-                        preflight, annotations, and report downloads.
+                        {caveats.join(". ")}. The same Viewer workflow is{" "}
+                        <span className="font-medium text-slate-500">
+                          included in every paid plan above
+                        </span>{" "}
+                        — pick this tier only if you don&apos;t need engine
+                        preflight. Need more than 150 files / mo? Buy a top-up
+                        file pack (see Metered Resources below) or enable
+                        per-file overage billing at $0.10 / file.
                       </p>
                     )}
                   </div>
@@ -698,7 +704,9 @@ export default function PricingClient() {
                 preflight, capability fill-in, annotations, and report
                 downloads are not available on this tier — bring your own
                 preflight report (PitStop, callas, Acrobat, LintPDF JSON) or
-                upgrade to Starter.
+                upgrade to Starter. The same Viewer (BYO-report) workflow is
+                included in every paid plan, so Starter+ subscribers get it
+                bundled at no additional cost.
               </li>
               <li>
                 <span className="font-medium text-slate-600">

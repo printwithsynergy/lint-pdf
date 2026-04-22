@@ -197,8 +197,14 @@ export function PricingSection() {
                   </ul>
                   {caveats.length > 0 && (
                     <p className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-400 leading-snug">
-                      {caveats.join(". ")}. Upgrade to Starter for full engine
-                      preflight, annotations, and report downloads.
+                      {caveats.join(". ")}. The same Viewer workflow is{" "}
+                      <span className="font-medium text-slate-500">
+                        included in every paid plan above
+                      </span>{" "}
+                      — pick this tier only if you don&apos;t need engine
+                      preflight. Need more than 150 files / mo? Buy a top-up
+                      file pack or enable per-file overage billing at $0.10 /
+                      file (paid plans only; Free is blocked at the limit).
                     </p>
                   )}
                 </div>
@@ -206,6 +212,22 @@ export function PricingSection() {
             </div>
           );
         })()}
+
+        <p className="mt-8 text-center text-xs text-slate-500 max-w-3xl mx-auto leading-relaxed">
+          Need more files than your plan includes? Every paid tier (including
+          Viewer) can buy{" "}
+          <span className="font-medium text-slate-700">top-up file packs</span>{" "}
+          that roll over for 12 months, or opt into{" "}
+          <span className="font-medium text-slate-700">
+            per-file overage billing at $0.10 / file
+          </span>{" "}
+          with a configurable monthly cap. Free plan submissions are blocked at
+          the limit. See{" "}
+          <a href="/pricing" className="text-brand-700 hover:underline">
+            full pricing
+          </a>{" "}
+          for AI credit packs and the metered-resource breakdown.
+        </p>
       </div>
 
       <WaitlistModal
