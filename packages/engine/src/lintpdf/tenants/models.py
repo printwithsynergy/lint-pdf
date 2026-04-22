@@ -144,6 +144,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "desktop_app_enabled": False,
         "monthly_ai_credits": 2000,
         "monthly_files_included": 10000,
+        "ai_audit_enabled": True,
     },
     TenantPlan.ENTERPRISE: {
         "rate_limit_daily": 100000,
@@ -174,6 +175,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "desktop_app_enabled": False,
         "monthly_ai_credits": 10000,
         "monthly_files_included": 100000,
+        "ai_audit_enabled": True,
     },
 }
 

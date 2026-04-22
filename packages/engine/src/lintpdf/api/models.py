@@ -315,6 +315,19 @@ class JobFinding(Base):
     object_id: Mapped[str | None] = mapped_column(String(100), nullable=True)
     object_type: Mapped[str | None] = mapped_column(String(20), nullable=True)
 
+    # AI accuracy audit verdict (WS3 — Alembic 034).
+    # Populated by ``lintpdf.audit.internal.InternalAuditor`` during
+    # dev/QA runs and by ``lintpdf.audit.customer.CustomerAuditor``
+    # during Scale/Enterprise production runs when the tenant has
+    # ``ai_audit_enabled``. Left NULL otherwise; the viewer's
+    # ``<AuditChip/>`` renders nothing when the whole block is NULL.
+    audit_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    audit_rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
+    audit_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    audit_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # Relationships
     job: Mapped[Job] = relationship(back_populates="findings")
 

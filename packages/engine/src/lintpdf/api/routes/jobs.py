@@ -751,6 +751,22 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
             file_size_bytes=summary.get("file_size_bytes", 0),
         )
 
+        from lintpdf.api.schemas import AuditVerdict
+
+        def _audit_for(f: JobFinding) -> AuditVerdict | None:
+            # Surface the AI accuracy-audit verdict when the auditor
+            # has written one. Keeping the whole field ``None`` (rather
+            # than a status-less stub) lets the viewer cheaply decide
+            # "no audit ran → render no chip" with a single null check.
+            if not f.audit_status:
+                return None
+            return AuditVerdict(
+                status=f.audit_status,
+                rationale=f.audit_rationale,
+                model=f.audit_model,
+                at=f.audit_at,
+            )
+
         findings: list[JobFinding] = job.findings
         response.findings = [
             FindingResponse(
@@ -766,6 +782,7 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
                 else None,
                 object_id=f.object_id,
                 object_type=f.object_type,
+                audit=_audit_for(f),
             )
             for f in findings
         ]

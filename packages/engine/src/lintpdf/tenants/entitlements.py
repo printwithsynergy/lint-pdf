@@ -40,6 +40,13 @@ class TenantEntitlements:
     # of this monthly cap.
     monthly_ai_credits: int = 0
     monthly_files_included: int = 0
+    # AI accuracy audit — when True the customer-facing Modal auditor
+    # runs after every preflight and writes per-finding verdicts to
+    # JobFinding.audit_*. Gated to Scale + Enterprise by default; ops
+    # can flip it on any tenant via ``entitlement_overrides`` for
+    # pilots. Internal Opus harness runs regardless of this flag —
+    # it's operator-side, not customer-visible.
+    ai_audit_enabled: bool = False
 
 
 def resolve_entitlements(tenant: Any) -> TenantEntitlements:
@@ -114,4 +121,5 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
         desktop_app_enabled=merged.get("desktop_app_enabled", False),
         monthly_ai_credits=int(merged.get("monthly_ai_credits", 0) or 0),
         monthly_files_included=int(merged.get("monthly_files_included", 0) or 0),
+        ai_audit_enabled=bool(merged.get("ai_audit_enabled", False)),
     )

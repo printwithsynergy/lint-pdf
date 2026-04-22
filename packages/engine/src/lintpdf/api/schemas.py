@@ -18,6 +18,57 @@ class JobCreateResponse(BaseModel):
     message: str = "Job submitted successfully"
 
 
+class AuditVerdict(BaseModel):
+    """AI accuracy audit verdict for a single finding.
+
+    Populated when the tenant has ``ai_audit_enabled`` (Scale +
+    Enterprise) and the run included a customer-facing Modal audit,
+    or when the internal Opus harness has been run against the job
+    (dev / QA only — customer-facing jobs never see the internal
+    auditor's output).
+
+    ``status`` values:
+      * ``confirmed``     — the AI agrees with the engine's finding.
+      * ``disputed``      — the AI disagrees; ``rationale`` explains why.
+      * ``needs_context`` — the AI can't decide without a JDF sidecar,
+        brand profile, or customer spec; surfaces a prompt to the user
+        to re-submit with that context.
+      * ``error``         — the audit call failed (Modal timeout,
+        Anthropic 5xx, etc.); retryable.
+    """
+
+    status: str = Field(
+        ...,
+        description=(
+            "One of `confirmed`, `disputed`, `needs_context`, `error`. "
+            "`null` (i.e. the whole `audit` field is absent) means the "
+            "finding was not audited — either the tenant's plan doesn't "
+            "include `ai_audit`, the AI category was disabled on this "
+            "request, or audit has not yet been run."
+        ),
+    )
+    rationale: str | None = Field(
+        default=None,
+        description=(
+            "One-sentence explanation. Viewer tooltips surface this "
+            "verbatim, so keep it short and referenceable to what the "
+            "rendered PDF page shows."
+        ),
+    )
+    model: str | None = Field(
+        default=None,
+        description=(
+            "Identifier of the auditor that produced the verdict. "
+            "Examples: `claude-opus-4-7` (internal harness), "
+            "`modal:qwen2-vl-7b` (customer), `modal:llama-3.2-11b-vision`."
+        ),
+    )
+    at: datetime | None = Field(
+        default=None,
+        description="UTC timestamp of the audit verdict (ISO 8601).",
+    )
+
+
 class FindingResponse(BaseModel):
     """A single preflight finding."""
 
@@ -81,6 +132,16 @@ class FindingResponse(BaseModel):
         default=None,
         description=(
             "Target object classifier. One of: `image`, `text`, `path`, `font`, `page`, `document`."
+        ),
+    )
+    audit: AuditVerdict | None = Field(
+        default=None,
+        description=(
+            "AI accuracy audit verdict when the tenant opted into the "
+            "`ai_audit` category (Scale + Enterprise entitlement). "
+            "`null` means the finding was never audited — most tenants "
+            "will never see this field. See `AuditVerdict` for the "
+            "shape and the `status` enum."
         ),
     )
 
