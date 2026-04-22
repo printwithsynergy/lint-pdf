@@ -118,11 +118,11 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       requiredRole: "SUPER_ADMIN",
     });
     ctx.addNavItem({
-      label: "Metered Billing",
+      label: "Metered Resources",
       href: "/dashboard/admin/billing",
       icon: "credit-card",
       section: "admin",
-      group: "Platform",
+      group: "Operations",
       order: 45,
       requiredRole: "SUPER_ADMIN",
     });

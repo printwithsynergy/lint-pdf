@@ -1,4 +1,44 @@
 @import "@thinkneverland/pixie-dust-theme-default/globals.css";
+@plugin "@tailwindcss/typography";
+
+/*
+ * Tailwind v4 Preflight dropped the automatic `cursor: pointer` that v3
+ * applied to <button>. Restore it so every button in LintPDF (and the
+ * dashboard shell, which cascades from the theme-default import above)
+ * shows the hand cursor on hover. `[role="button"]` covers shadcn-style
+ * interactive divs used by the Pixie Dust UI components.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+/*
+ * Destructive-variant buttons (Revoke / Delete / etc.) must show white
+ * text on the red fill. The Pixie Dust UI Button component's
+ * destructive variant was rendering dark text on some AppSettings
+ * branding combinations, which failed AA contrast and read as
+ * illegible black-on-red. Force white inside every destructive surface.
+ */
+@layer components {
+  .bg-destructive,
+  button.bg-destructive,
+  [data-variant="destructive"],
+  [data-slot="dialog-confirm"][data-variant="destructive"] {
+    color: hsl(0 0% 100%);
+  }
+  .bg-destructive *,
+  button.bg-destructive *,
+  [data-variant="destructive"] * {
+    color: inherit;
+  }
+}
 
 /*
  * Desktop-width fallback for DashboardShell from

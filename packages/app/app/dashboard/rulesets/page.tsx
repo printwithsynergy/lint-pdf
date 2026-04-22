@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
@@ -82,6 +82,21 @@ export default function RulesetsPage() {
   const [selectedProfile, setSelectedProfile] = useState<ProfileDetail | null>(
     null,
   );
+
+  // Anchor for the editor/viewer panels so View / Clone / New Ruleset can
+  // scroll the user up to the panel instead of leaving it below the fold.
+  const editorAnchorRef = useRef<HTMLDivElement | null>(null);
+  const scrollToEditor = useCallback(() => {
+    // rAF + setTimeout so the scroll happens after React commits the panel.
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        editorAnchorRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 50);
+    });
+  }, []);
 
   // Create/edit form
   const [showCreate, setShowCreate] = useState(false);
@@ -175,6 +190,7 @@ export default function RulesetsPage() {
         const data: ProfileDetail = await resp.json();
         setSelectedOwner(owner);
         setSelectedProfile(data);
+        scrollToEditor();
       } catch (e) {
         toast(
           e instanceof Error ? e.message : "Failed to load profile",
@@ -182,18 +198,22 @@ export default function RulesetsPage() {
         );
       }
     },
-    [toast],
+    [toast, scrollToEditor],
   );
 
-  const openCreate = useCallback((owner: OwnerKey) => {
-    setEditingOwner(owner);
-    setNewProfileId("");
-    setNewName("");
-    setNewDescription("");
-    setNewWorkflow("CMYK");
-    setNewConformance("");
-    setShowCreate(true);
-  }, []);
+  const openCreate = useCallback(
+    (owner: OwnerKey) => {
+      setEditingOwner(owner);
+      setNewProfileId("");
+      setNewName("");
+      setNewDescription("");
+      setNewWorkflow("CMYK");
+      setNewConformance("");
+      setShowCreate(true);
+      scrollToEditor();
+    },
+    [scrollToEditor],
+  );
 
   const cloneProfile = useCallback(
     async (owner: OwnerKey, profile: ProfileSummary, targetOwner: OwnerKey) => {
@@ -216,8 +236,9 @@ export default function RulesetsPage() {
         }));
       }
       setShowCreate(true);
+      scrollToEditor();
     },
-    [toast],
+    [toast, scrollToEditor],
   );
 
   async function handleCreate() {
@@ -336,6 +357,9 @@ export default function RulesetsPage() {
           </button>
         </div>
       )}
+
+      {/* Editor anchor — View / Clone / New Ruleset scroll here. */}
+      <div ref={editorAnchorRef} aria-hidden="true" />
 
       {showCreate && (
         <CreateForm

@@ -67,6 +67,7 @@
     "@playwright/test": "1.56.1",
     "@prisma/client": "^7.6.0",
     "@tailwindcss/postcss": "^4.0.0",
+    "@tailwindcss/typography": "^0.5.19",
     "@thinkneverland/pixie-dust-tsconfig": "^1.0.2",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.14",
