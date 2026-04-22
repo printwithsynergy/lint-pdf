@@ -119,6 +119,8 @@ A job passes when `error_count` is 0.
 | EFI Pace    | Direct (API) or indirect (JDF/Fiery)          | [EFI Pace](/docs/integrations-efi-pace)       |
 | Tharstern   | Indirect (AE) or direct (web services)        | [Tharstern](/docs/integrations-tharstern)     |
 | PrintVis    | Direct (D365 APIs / Power Automate)           | [PrintVis](/docs/integrations-printvis)       |
+| Radius      | Indirect (JDF via AE/CLOUDFLOW) or middleware | [Radius](/docs/integrations-radius)           |
+| NetSuite    | Direct (SuiteScript Restlets) or middleware   | [NetSuite](/docs/integrations-netsuite)       |
 
 ### Desktop & Automation Tools
 
