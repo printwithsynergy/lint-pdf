@@ -28,6 +28,18 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
+    # CORS — origins allowed to hit the HTTP API from a browser.
+    # The marketing Swagger UI on https://lintpdf.com/swagger fetches
+    # /openapi.tenant.json from here, and the dashboard at
+    # https://app.lintpdf.com is a first-party SPA client; both need
+    # Access-Control-Allow-Origin to be set. The engine uses bearer-
+    # token auth (no cookies), so ``allow_credentials=False`` is safe
+    # and the allowlist is the real access gate.
+    #
+    # Override via LINTPDF_CORS_ALLOW_ORIGINS="https://a.com,https://b.com".
+    # Use "*" for a fully open API (not recommended for production).
+    cors_allow_origins: str = "https://lintpdf.com,https://app.lintpdf.com"
+
     # Auth
     secret_key: str = "change-me-in-production"
 

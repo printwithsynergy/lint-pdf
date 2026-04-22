@@ -21,48 +21,56 @@ export const metadata: Metadata = {
  */
 export default function SwaggerPage() {
   return (
-    <main className="min-h-screen bg-white">
-      <div className="mx-auto max-w-screen-2xl px-4 py-6">
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              LintPDF Tenant API
-            </h1>
-            <p className="text-sm text-slate-600">
-              Live OpenAPI reference for every endpoint your API key can
-              call. Admin-only routes are excluded —{" "}
-              <Link className="text-blue-600 underline" href="/docs/webhooks">
-                webhooks
-              </Link>
-              ,{" "}
-              <Link className="text-blue-600 underline" href="/docs/job-state">
-                job state
-              </Link>
-              , and{" "}
-              <a
-                className="text-blue-600 underline"
-                href="https://app.lintpdf.com/dashboard/api-keys"
+    <main className="min-h-screen bg-gradient-to-b from-brand-50/60 to-white pb-24">
+      <div className="mx-auto max-w-6xl px-6 pt-16 sm:pt-24">
+        <section className="mb-10 sm:mb-12">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="max-w-3xl">
+              <h1 className="text-3xl font-bold text-slate-900 sm:text-4xl">
+                LintPDF Tenant API
+              </h1>
+              <p className="mt-4 text-lg text-slate-600">
+                Live OpenAPI reference for every endpoint your API key can
+                call. Admin-only routes are excluded —{" "}
+                <Link
+                  className="text-brand-700 underline hover:text-brand-900"
+                  href="/docs/webhooks"
+                >
+                  webhooks
+                </Link>
+                ,{" "}
+                <Link
+                  className="text-brand-700 underline hover:text-brand-900"
+                  href="/docs/job-state"
+                >
+                  job state
+                </Link>
+                , and{" "}
+                <a
+                  className="text-brand-700 underline hover:text-brand-900"
+                  href="https://app.lintpdf.com/dashboard/api-keys"
+                >
+                  API keys
+                </a>{" "}
+                are the usual starting points.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-sm">
+              <Link
+                href="/docs/postman"
+                className="inline-flex items-center rounded-lg border border-brand-200 bg-white px-4 py-2 font-semibold text-brand-700 transition-colors hover:bg-brand-50"
               >
-                API keys
-              </a>{" "}
-              are the usual starting points.
-            </p>
+                Postman collection
+              </Link>
+              <Link
+                href="/docs"
+                className="inline-flex items-center rounded-lg border border-brand-200 bg-white px-4 py-2 font-semibold text-brand-700 transition-colors hover:bg-brand-50"
+              >
+                Docs home
+              </Link>
+            </div>
           </div>
-          <div className="flex gap-2 text-sm">
-            <Link
-              href="/docs/postman"
-              className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-50"
-            >
-              Postman collection
-            </Link>
-            <Link
-              href="/docs"
-              className="rounded border border-slate-300 px-3 py-1 hover:bg-slate-50"
-            >
-              Docs home
-            </Link>
-          </div>
-        </div>
+        </section>
       </div>
 
       {/* Swagger UI injects its own stylesheet via the CDN link below. */}
@@ -71,7 +79,10 @@ export default function SwaggerPage() {
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css"
       />
-      <div id="swagger-ui" />
+      <div
+        id="swagger-ui"
+        className="mx-auto max-w-7xl rounded-2xl border border-slate-200 bg-white shadow-sm"
+      />
       <Script
         src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"
         strategy="afterInteractive"

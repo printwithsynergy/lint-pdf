@@ -161,6 +161,31 @@ def create_app() -> FastAPI:
 
     app.add_middleware(RequestIdMiddleware)
 
+    # CORS — allow browser clients on the marketing site (for
+    # /swagger → /openapi.tenant.json) and the dashboard SPA to call
+    # the tenant API. Added after RequestIdMiddleware so CORS sits
+    # outermost in the ASGI stack and can respond to preflight
+    # OPTIONS requests without running auth. Origins come from
+    # LINTPDF_CORS_ALLOW_ORIGINS (comma-separated); "*" means any
+    # origin. The API uses bearer-token auth only, no cookies, so
+    # allow_credentials stays False.
+    from fastapi.middleware.cors import CORSMiddleware
+
+    from lintpdf.api.config import get_settings
+
+    cors_origins = [
+        origin.strip()
+        for origin in get_settings().cors_allow_origins.split(",")
+        if origin.strip()
+    ]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=False,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     # Prometheus metrics (bulk-files step 11) — /metrics endpoint +
     # per-request duration/count instrumentation. Mounted unconditionally
     # so the control-plane-only service also exposes metrics.
