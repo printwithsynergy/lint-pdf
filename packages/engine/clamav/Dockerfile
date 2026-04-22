@@ -25,12 +25,27 @@ FROM clamav/clamav:stable
 # listener directly so there's no runtime env-var dependency. The trailing
 # grep -q assertions fail the build if the append didn't land, catching
 # any future base-image layout changes immediately.
+#
+# StreamMaxLength 1G: the upstream clamd default + the Railway sidecar's
+# default both leave this unset / set to 0, which in clamd's INSTREAM
+# protocol means "reject every stream" (observed in production logs as
+# "INSTREAM: Size limit reached, (requested: 1024, max: 0)"). Every
+# scan fails, the engine fail-opens, and setting LINTPDF_CLAMAV_REQUIRED=1
+# would 503 every upload. Baking 1G here matches the engine's per-tenant
+# max_file_size_mb ceiling with plenty of headroom.
+#
+# MaxFileSize / MaxScanSize keep the individual-file / per-scan memory
+# caps aligned so clamd doesn't OOM its container on a pathologically
+# large upload.
 RUN set -eux; \
     CONF=/etc/clamav/clamd.conf; \
     test -f "$CONF"; \
-    printf '\n# LintPDF: TCP listener baked in by Dockerfile\nTCPSocket 3310\nTCPAddr 0.0.0.0\n' >> "$CONF"; \
+    printf '\n# LintPDF: TCP listener + INSTREAM caps baked in by Dockerfile\nTCPSocket 3310\nTCPAddr 0.0.0.0\nStreamMaxLength 1G\nMaxFileSize 1G\nMaxScanSize 1G\n' >> "$CONF"; \
     grep -q '^TCPSocket 3310' "$CONF"; \
-    grep -q '^TCPAddr 0.0.0.0' "$CONF"
+    grep -q '^TCPAddr 0.0.0.0' "$CONF"; \
+    grep -q '^StreamMaxLength 1G' "$CONF"; \
+    grep -q '^MaxFileSize 1G' "$CONF"; \
+    grep -q '^MaxScanSize 1G' "$CONF"
 
 EXPOSE 3310
 
