@@ -75,3 +75,8 @@ preflight-stress-results-*.md
 preflight-stress-rerun-metrics.csv
 preflight-stress-tier*-*.md
 preflight-stress-tier*-*.csv
+# Generic catch-all for any ad-hoc stress-harness run (e.g. the
+# pgbouncer-smoke, step-6 benches, etc.) so we don't accumulate
+# untracked files after every QA.
+preflight-stress-*-metrics.csv
+preflight-stress-*-results.md
