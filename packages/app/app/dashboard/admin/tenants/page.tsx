@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { SkeletonDashboard } from "@/components/skeleton";
 import { Button } from "@thinkneverland/pixie-dust-ui";
 
@@ -247,13 +248,22 @@ export default function AdminTenantsPage() {
                       {new Date(t.created_at).toLocaleDateString()}
                     </td>
                     <td className="py-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleAssist(t.id)}
-                        className="bg-violet-600 text-white hover:bg-violet-500"
-                      >
-                        Assist
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/dashboard/admin/tenants/${t.id}`}
+                          className="rounded border px-2 py-1 text-xs hover:bg-muted"
+                          title="Edit every entitlement for this tenant"
+                        >
+                          Edit
+                        </Link>
+                        <Button
+                          size="sm"
+                          onClick={() => handleAssist(t.id)}
+                          className="bg-violet-600 text-white hover:bg-violet-500"
+                        >
+                          Assist
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -122,13 +122,41 @@ class UpdateEntitlementsRequest(BaseModel):
     report_storage_mb: int | None = None
     report_default_expiry_days: int | None = None
     overage_rate_cents: int | None = None
+    # Monthly metered allotments (see billing/metered_packs.py). These
+    # are also settable via the dedicated Tenant columns
+    # ``monthly_ai_credits_override`` / ``monthly_files_override``, which
+    # the resolver reads with higher priority than this JSON blob.
+    monthly_ai_credits: int | None = None
+    monthly_files_included: int | None = None
+    # Feature gates — all bool, all inherit from PLAN_LIMITS if NULL.
+    # Setting True forces-on regardless of plan; setting False
+    # forces-off even on Enterprise. Deleting the key (via the
+    # clear-overrides endpoint) reverts to the plan default.
     desktop_app_enabled: bool | None = None
-    # Scale + Enterprise plans set this to True by default via
-    # PLAN_LIMITS; the override is mostly for pilot tenants on lower
-    # plans ("force ON for this Growth tenant during the beta") or
-    # for cost-control suppressions on Enterprise
-    # ("force OFF while we budget the audit spend").
     ai_audit_enabled: bool | None = None
+    ai_enabled: bool | None = None
+    webhooks_enabled: bool | None = None
+    whitelabel_enabled: bool | None = None
+    priority_processing: bool | None = None
+    custom_integrations: bool | None = None
+    custom_profiles: bool | None = None
+    annotations_enabled: bool | None = None
+    capability_fillin_enabled: bool | None = None
+    approval_chains_enabled: bool | None = None
+    # Bounded-count limits. ``None`` in the typed request means
+    # "don't change"; to clear a limit entirely use the dedicated
+    # reset-overrides endpoint. ``max_approval_templates=None`` in
+    # the resolver means "unlimited", so passing a literal null here
+    # would be ambiguous — callers set it explicitly to an integer.
+    max_webhooks: int | None = None
+    max_custom_profiles: int | None = None
+    max_approval_templates: int | None = None
+    # List-valued gates. Entries are validated loosely — the engine
+    # trusts admin UI to send the right shape because admin-key auth
+    # is the gate. If an unknown entry slips in it simply doesn't
+    # match any feature check.
+    allowed_report_formats: list[str] | None = None
+    allowed_preflight_sources: list[str] | None = None
 
 
 class EntitlementOverridesResponse(BaseModel):
