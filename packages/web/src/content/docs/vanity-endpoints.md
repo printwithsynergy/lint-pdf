@@ -20,7 +20,8 @@ curl -X POST https://api.lintpdf.com/api/v1/endpoints \
   -d '{
     "slug": "trade-show-packaging",
     "profile_id": "pdf-x-4p",
-    "description": "Trade-show booth PDFs go through PDF/X-4"
+    "description": "Trade-show booth PDFs go through PDF/X-4",
+    "response_mode": "async"
   }'
 ```
 
@@ -33,9 +34,33 @@ Response:
   "profile_id": "pdf-x-4p",
   "description": "Trade-show booth PDFs go through PDF/X-4",
   "is_active": true,
+  "response_mode": "async",
   "created_at": "2026-04-12T14:30:00Z"
 }
 ```
+
+### `response_mode`
+
+Controls what the submit route returns:
+
+- `async` *(default)* — returns `202 Accepted` plus `{job_id}`; the caller polls `GET /api/v1/jobs/{job_id}` until the job is `complete` or `failed`. This is the right default for hot-folder integrations, hundreds-of-files batches, and anything that can orchestrate a retry loop.
+- `sync` — the submit request **blocks** until the job reaches a terminal state (up to `LINTPDF_SYNC_MAX_WAIT_S`, default 120 s) and returns `200 OK` with the full `JobResponse` inline (summary, findings, report URLs). If the server-side wait elapses first, the handler falls back to the standard `202` so the caller can keep polling. This is aimed at integrations that can't orchestrate polling — Zapier, n8n, Make.com, lightweight webhook consumers.
+
+Callers can override per request via `?wait=<seconds>` on the submit URL:
+
+```bash
+# Force sync behavior on an async-mode endpoint
+curl -X POST "https://api.lintpdf.com/api/v1/endpoints/trade-show-packaging/submit?wait=60" \
+  -H "Authorization: Bearer lpdf_live_..." \
+  -F file=@booth-01.pdf
+
+# Force async on a sync-mode endpoint
+curl -X POST "https://api.lintpdf.com/api/v1/endpoints/trade-show-packaging/submit?wait=0" \
+  -H "Authorization: Bearer lpdf_live_..." \
+  -F file=@booth-01.pdf
+```
+
+The same `?wait=<seconds>` query param also works on plain `POST /api/v1/jobs` — useful when you want inline results without minting a vanity endpoint.
 
 ### Slug rules
 
@@ -64,7 +89,7 @@ curl -X PATCH https://api.lintpdf.com/api/v1/endpoints/{endpoint_id} \
   -d '{"profile_id": "gwg-sheetfed"}'
 ```
 
-Updatable fields: `slug`, `profile_id`, `description`, `is_active`. Inactive endpoints reject submissions with `404` (same behavior as unknown slugs — avoids leaking endpoint-existence information).
+Updatable fields: `slug`, `profile_id`, `description`, `is_active`, `response_mode`. Inactive endpoints reject submissions with `404` (same behavior as unknown slugs — avoids leaking endpoint-existence information).
 
 ## Delete
 

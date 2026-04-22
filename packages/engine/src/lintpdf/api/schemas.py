@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid  # noqa: TC003
 from datetime import datetime  # noqa: TC003
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # --- Job schemas ---
 
@@ -508,6 +508,9 @@ class WebhookListResponse(BaseModel):
 # --- Custom endpoint schemas ---
 
 
+ENDPOINT_RESPONSE_MODES = ("async", "sync")
+
+
 class EndpointCreateRequest(BaseModel):
     """Request to create a custom API endpoint."""
 
@@ -519,6 +522,25 @@ class EndpointCreateRequest(BaseModel):
     )
     profile_id: str = Field(description="Profile ID to bind this endpoint to.")
     description: str = Field(default="", max_length=1024)
+    response_mode: str = Field(
+        default="async",
+        description=(
+            "Default response behavior for this endpoint. ``async`` (default) "
+            "returns 202 + job id and the caller polls; ``sync`` blocks the "
+            "submit request until the job reaches a terminal state (up to "
+            "``LINTPDF_SYNC_MAX_WAIT_S``, default 120s) and returns the "
+            "full JobResponse inline."
+        ),
+    )
+
+    @field_validator("response_mode")
+    @classmethod
+    def _validate_response_mode(cls, v: str) -> str:
+        if v not in ENDPOINT_RESPONSE_MODES:
+            raise ValueError(
+                f"response_mode must be one of {ENDPOINT_RESPONSE_MODES}, got {v!r}"
+            )
+        return v
 
 
 class EndpointResponse(BaseModel):
@@ -529,6 +551,7 @@ class EndpointResponse(BaseModel):
     profile_id: str
     description: str
     is_active: bool
+    response_mode: str
     created_at: datetime
 
 
@@ -539,6 +562,16 @@ class EndpointUpdateRequest(BaseModel):
     profile_id: str | None = None
     description: str | None = None
     is_active: bool | None = None
+    response_mode: str | None = None
+
+    @field_validator("response_mode")
+    @classmethod
+    def _validate_response_mode(cls, v: str | None) -> str | None:
+        if v is not None and v not in ENDPOINT_RESPONSE_MODES:
+            raise ValueError(
+                f"response_mode must be one of {ENDPOINT_RESPONSE_MODES}, got {v!r}"
+            )
+        return v
 
 
 class EndpointListResponse(BaseModel):

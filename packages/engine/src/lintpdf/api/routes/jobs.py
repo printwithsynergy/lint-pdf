@@ -7,7 +7,7 @@ import logging
 import uuid as uuid_mod
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session, selectinload
 
@@ -221,13 +221,28 @@ async def submit_job(  # skipcq: PY-R1000
     brand: str | None = _brand_param,
     unbranded: bool | None = _unbranded_param,
     overrides: str | None = _overrides_param,
+    wait: float | None = Query(
+        default=None,
+        ge=0,
+        description=(
+            "If set, block the response until the job reaches a terminal "
+            "state (``complete`` / ``failed``) or this many seconds have "
+            "elapsed, whichever comes first. Omit (default) for the "
+            "standard async 202 + job_id response. Server-side ceiling "
+            "is ``LINTPDF_SYNC_MAX_WAIT_S`` (default 120s) — values above "
+            "that are clamped. On timeout the handler falls back to the "
+            "202 response so the caller can keep polling via "
+            "``GET /api/v1/jobs/{job_id}``."
+        ),
+    ),
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> JSONResponse:
     """Submit a PDF for preflight checking.
 
-    The job is processed asynchronously. Use GET /api/v1/jobs/{job_id}
-    to check status and retrieve results.
+    The job is processed asynchronously by default (202 + job_id). Pass
+    ``?wait=<seconds>`` to block for inline results; see the ``wait``
+    parameter for semantics.
     """
     # Parse the overrides envelope (JSON string in a multipart form —
     # Pydantic can't natively nest JSON through FastAPI's Form). Empty
@@ -649,9 +664,9 @@ async def submit_job(  # skipcq: PY-R1000
     if usage is not None and (usage.warning or usage.in_overage):
         _send_rate_warning_if_needed(tenant, usage)
 
-    # Build response with rate limit headers
-    response_data = JobCreateResponse(job_id=job_id).model_dump(mode="json")
-    headers = {}
+    # Build rate-limit headers once — they apply to both the async 202
+    # and the sync 200 variants below.
+    headers: dict[str, str] = {}
     if usage is not None:
         headers["X-RateLimit-Limit"] = str(usage.limit)
         headers["X-RateLimit-Remaining"] = str(usage.remaining_included)
@@ -662,41 +677,36 @@ async def submit_job(  # skipcq: PY-R1000
             headers["X-RateLimit-Overage-Cost-Cents"] = str(usage.overage_cost_cents)
             headers["X-RateLimit-Overage-Rate-Cents"] = str(usage.overage_rate_cents)
 
+    # Sync mode: block for terminal state up to ``wait`` seconds, bounded
+    # by the server-side ceiling. On timeout fall through to the standard
+    # 202 response so the caller can keep polling.
+    if wait is not None and wait > 0:
+        effective_wait = min(wait, get_settings().sync_max_wait_s)
+        job_response = await poll_job_until_terminal(
+            job_id=job_id,
+            tenant_id=tenant.id,
+            db=db,
+            max_wait_s=effective_wait,
+        )
+        if job_response is not None:
+            return JSONResponse(
+                content=job_response.model_dump(mode="json"),
+                status_code=status.HTTP_200_OK,
+                headers=headers,
+            )
+
+    response_data = JobCreateResponse(job_id=job_id).model_dump(mode="json")
     return JSONResponse(content=response_data, status_code=202, headers=headers)
 
 
-@router.get("/{job_id}", response_model=JobResponse)
-async def get_job(
-    job_id: str,
-    db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
-) -> JobResponse:
-    """Get job status and results."""
-    try:
-        uid = uuid_mod.UUID(job_id)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
-        ) from exc
+def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
+    """Build a full ``JobResponse`` for a loaded ``Job`` row.
 
-    # Eager-load findings in a single round trip instead of issuing a
-    # separate ``SELECT ... FROM job_findings WHERE job_id = ?`` below.
-    # ``selectinload`` issues one extra query for the collection (not
-    # per-row), so a job with 10k findings still emits exactly two
-    # queries instead of 10k + 1.
-    job: Job | None = (
-        db.query(Job)
-        .options(selectinload(Job.findings))
-        .filter(Job.id == uid, Job.tenant_id == tenant.id)
-        .first()
-    )
-    if job is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Job '{job_id}' not found.",
-        )
-
+    Shared between ``GET /api/v1/jobs/{id}`` and the sync ``?wait``
+    path on ``POST /api/v1/jobs`` / ``POST /api/v1/endpoints/{id}/submit``
+    — both need the same summary + findings + reports hydration once the
+    job reaches a terminal state.
+    """
     response = JobResponse(
         job_id=job.id,
         status=job.status.value if hasattr(job.status, "value") else str(job.status),
@@ -742,23 +752,128 @@ async def get_job(
             for f in findings
         ]
 
-        # Include auto-generated report URLs if available
+        # Include auto-generated report URLs if available. Resolve the
+        # base URL through the whitelabel-aware resolver so tenants with a
+        # verified ``brand_custom_domain`` (or a verified per-profile
+        # ``custom_domain``) see their own domain in the URLs returned by
+        # both ``GET /api/v1/jobs/{id}`` and the sync ``?wait=`` path —
+        # otherwise whitelabel customers would get back
+        # ``https://reports.lintpdf.com/r/<token>`` even though their
+        # minted reports are served from their custom domain.
         from lintpdf.api.config import get_settings as _get_settings
-        from lintpdf.api.models import ReportToken
+        from lintpdf.api.models import BrandProfile, ReportToken, Tenant
+        from lintpdf.reports.service import resolve_report_base_url
+        from lintpdf.tenants.entitlements import resolve_entitlements
 
         report_tokens = (
             db.query(ReportToken)
-            .filter(ReportToken.job_id == uid, ReportToken.tenant_id == tenant.id)
+            .filter(ReportToken.job_id == job.id, ReportToken.tenant_id == job.tenant_id)
             .all()
         )
         if report_tokens:
-            base_url = _get_settings().report_base_url
+            settings = _get_settings()
+            tenant = (
+                db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+            )
+            base_url = settings.report_base_url
+            if tenant is not None:
+                entitlements = resolve_entitlements(tenant)
+                active_profile: BrandProfile | None = None
+                if entitlements.whitelabel_enabled and tenant.default_brand_profile_id:
+                    active_profile = (
+                        db.query(BrandProfile)
+                        .filter(
+                            BrandProfile.id == tenant.default_brand_profile_id,
+                            BrandProfile.tenant_id == tenant.id,
+                        )
+                        .first()
+                    )
+                base_url = resolve_report_base_url(
+                    tenant, active_profile, entitlements, settings
+                )
             response.reports = {
                 t.format: f"{base_url}/r/{t.token}{'.pdf' if t.format == 'pdf' else ''}"
                 for t in report_tokens
             }
 
     return response
+
+
+async def poll_job_until_terminal(
+    job_id: uuid_mod.UUID,
+    tenant_id: uuid_mod.UUID,
+    db: Session,
+    max_wait_s: float,
+    poll_interval_s: float = 0.5,
+) -> JobResponse | None:
+    """Poll the ``jobs`` row every ``poll_interval_s`` until terminal.
+
+    Returns a fully-hydrated :class:`JobResponse` the moment the job
+    reaches ``complete`` or ``failed``. If ``max_wait_s`` elapses first
+    the coroutine returns ``None`` so the caller can fall back to the
+    regular 202 + job_id response (caller can then poll client-side
+    via ``GET /api/v1/jobs/{id}``).
+
+    The function issues a fresh ``SELECT`` each loop so it sees writes
+    committed by the worker process on the other side of the
+    transaction boundary.
+    """
+    deadline = asyncio.get_event_loop().time() + max(0.0, max_wait_s)
+    while True:
+        # Re-query on every tick. ``db.expire_all()`` drops cached
+        # identity-map state so the follow-up query re-fetches the
+        # row freshly from Postgres instead of handing back the
+        # stale ``pending`` version from when the row was inserted.
+        db.expire_all()
+        job: Job | None = (
+            db.query(Job)
+            .options(selectinload(Job.findings))
+            .filter(Job.id == job_id, Job.tenant_id == tenant_id)
+            .first()
+        )
+        if job is None:
+            # Row was deleted mid-wait (tenant purge, admin cancel).
+            return None
+        if job.status in (JobStatus.COMPLETE, JobStatus.FAILED):
+            return _hydrate_job_response(db, job)
+        if asyncio.get_event_loop().time() >= deadline:
+            return None
+        await asyncio.sleep(poll_interval_s)
+
+
+@router.get("/{job_id}", response_model=JobResponse)
+async def get_job(
+    job_id: str,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> JobResponse:
+    """Get job status and results."""
+    try:
+        uid = uuid_mod.UUID(job_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
+        ) from exc
+
+    # Eager-load findings in a single round trip instead of issuing a
+    # separate ``SELECT ... FROM job_findings WHERE job_id = ?`` below.
+    # ``selectinload`` issues one extra query for the collection (not
+    # per-row), so a job with 10k findings still emits exactly two
+    # queries instead of 10k + 1.
+    job: Job | None = (
+        db.query(Job)
+        .options(selectinload(Job.findings))
+        .filter(Job.id == uid, Job.tenant_id == tenant.id)
+        .first()
+    )
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job '{job_id}' not found.",
+        )
+
+    return _hydrate_job_response(db, job)
 
 
 # ---------------------------------------------------------------------------

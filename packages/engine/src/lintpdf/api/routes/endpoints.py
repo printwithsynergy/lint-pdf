@@ -6,7 +6,7 @@ import asyncio
 import logging
 import uuid as uuid_mod
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session  # noqa: TC002
 
@@ -93,6 +93,7 @@ async def create_endpoint(
         profile_id=request.profile_id,
         description=request.description,
         is_active=True,
+        response_mode=request.response_mode,
     )
     db.add(endpoint)
     db.commit()
@@ -104,6 +105,7 @@ async def create_endpoint(
         profile_id=endpoint.profile_id,
         description=endpoint.description,
         is_active=endpoint.is_active,
+        response_mode=endpoint.response_mode,
         created_at=endpoint.created_at,
     )
 
@@ -123,6 +125,7 @@ async def list_endpoints(
                 profile_id=e.profile_id,
                 description=e.description,
                 is_active=e.is_active,
+                response_mode=e.response_mode,
                 created_at=e.created_at,
             )
             for e in endpoints
@@ -189,6 +192,9 @@ async def update_endpoint(
     if request.is_active is not None:
         ep.is_active = request.is_active
 
+    if request.response_mode is not None:
+        ep.response_mode = request.response_mode
+
     db.commit()
     db.refresh(ep)
 
@@ -198,6 +204,7 @@ async def update_endpoint(
         profile_id=ep.profile_id,
         description=ep.description,
         is_active=ep.is_active,
+        response_mode=ep.response_mode,
         created_at=ep.created_at,
     )
 
@@ -264,6 +271,17 @@ def _find_endpoint(identifier: str, db: Session, tenant_id: uuid_mod.UUID) -> Cu
 async def submit_to_endpoint(
     identifier: str,
     file: UploadFile = File(..., description="PDF file to preflight"),
+    wait: float | None = Query(
+        default=None,
+        ge=0,
+        description=(
+            "Override this endpoint's configured ``response_mode`` for a "
+            "single request. Set to any positive value to block for "
+            "inline results (bounded by ``LINTPDF_SYNC_MAX_WAIT_S``), or "
+            "``0`` to force async 202 even on a ``sync``-mode endpoint. "
+            "When unset, the endpoint's own ``response_mode`` decides."
+        ),
+    ),
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> JSONResponse:
@@ -329,6 +347,32 @@ async def submit_to_endpoint(
         args=[str(job_id), ep.profile_id, file_key],
         queue=queue_name,
     )
+
+    # Resolve sync behavior. The ``?wait`` query param, when present,
+    # always wins so callers can force-async a sync endpoint (``wait=0``)
+    # or probe a particular deadline. When absent, ``response_mode=sync``
+    # implies a wait up to the server ceiling.
+    settings_obj = get_settings()
+    effective_wait: float = 0.0
+    if wait is not None:
+        effective_wait = min(wait, settings_obj.sync_max_wait_s)
+    elif ep.response_mode == "sync":
+        effective_wait = settings_obj.sync_max_wait_s
+
+    if effective_wait > 0:
+        from lintpdf.api.routes.jobs import poll_job_until_terminal
+
+        job_response = await poll_job_until_terminal(
+            job_id=job_id,
+            tenant_id=tenant.id,
+            db=db,
+            max_wait_s=effective_wait,
+        )
+        if job_response is not None:
+            return JSONResponse(
+                content=job_response.model_dump(mode="json"),
+                status_code=status.HTTP_200_OK,
+            )
 
     return JSONResponse(
         content=JobCreateResponse(job_id=job_id).model_dump(mode="json"),

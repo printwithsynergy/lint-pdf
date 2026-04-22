@@ -469,6 +469,13 @@ class CustomEndpoint(Base):
     profile_id: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(1024), nullable=False, default="")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # ``async`` (default): submit returns 202 + job id, caller polls.
+    # ``sync``: submit blocks until the job is terminal (bounded by
+    # ``LINTPDF_SYNC_MAX_WAIT_S``) and returns the full JobResponse.
+    # Postgres-side CHECK constraint enforces the enum; see Alembic 033.
+    response_mode: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="async", default="async"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

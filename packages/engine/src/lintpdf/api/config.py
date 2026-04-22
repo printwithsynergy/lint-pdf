@@ -45,6 +45,16 @@ class Settings(BaseSettings):
     # disable the burst check.
     burst_rate_per_minute: int = 100
 
+    # Sync submit mode — maximum time a ``?wait=<seconds>`` / endpoint
+    # ``response_mode=sync`` request is allowed to block on job completion
+    # before the handler falls back to the 202 + job_id async response.
+    # Client callers can request a shorter wait via ?wait=N but the
+    # server-side ceiling still applies. Keep this well under the
+    # frontend / edge proxy read timeout (Railway defaults ~300s) so a
+    # slow job never produces a 502 mid-response. 120s comfortably covers
+    # the p90 of an engine-mode preflight on a <50 MB PDF.
+    sync_max_wait_s: float = 120.0
+
     # Email (Resend)
     resend_api_key: str | None = None
     email_from_address: str = "LintPDF <noreply@thinkneverland.com>"

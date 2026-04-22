@@ -108,12 +108,19 @@ export default function ApiJobsSection() {
             type: "boolean",
             description: "Convenience alias: when true, equivalent to brand=anonymous.",
           },
+          {
+            name: "wait",
+            type: "float (query param)",
+            description:
+              "If set, block the response up to this many seconds for the job to reach a terminal state. On success the handler returns 200 + the full JobResponse; on timeout it falls back to the 202 + job_id response so you can keep polling. Server-side ceiling is LINTPDF_SYNC_MAX_WAIT_S (default 120s).",
+          },
         ]}
       />
 
       <h4 className="font-semibold text-slate-900 mt-6 mb-2">Status codes</h4>
       <FieldTable
         rows={[
+          { name: "200", type: "OK", description: "Only when ?wait= was set and the job reached a terminal state inline. Body is the full JobResponse." },
           { name: "202", type: "Accepted", description: "Job queued; poll GET /jobs/{id} for completion." },
           { name: "401", type: "Unauthorized", description: "Missing or invalid bearer token." },
           { name: "403", type: "Forbidden", description: "Valid key, but you lack permission — e.g. cross-tenant mapping_id, or plan doesn't include the requested feature." },
@@ -268,16 +275,50 @@ export default function ApiJobsSection() {
       <p className="text-slate-600 mb-3">
         Growth-tier customers can mint vanity slugs and give customers a branded
         submission URL instead of <code className="bg-slate-100 px-1 rounded">/api/v1/jobs</code>.
+        Each endpoint has a <code className="bg-slate-100 px-1 rounded">response_mode</code>
+        {" "}setting: <code className="bg-slate-100 px-1 rounded">async</code> (default) returns
+        {" "}202 + job_id so the caller polls <code className="bg-slate-100 px-1 rounded">GET /api/v1/jobs/{"{id}"}</code>;
+        {" "}<code className="bg-slate-100 px-1 rounded">sync</code> blocks the submit request until
+        the job is terminal and returns the full JobResponse inline. A per-request
+        {" "}<code className="bg-slate-100 px-1 rounded">?wait=</code> query param can override either way
+        (useful for integrations like Zapier / n8n / Make.com that can&apos;t orchestrate a polling loop).
       </p>
       <Endpoint
         method="POST"
         path="/api/v1/endpoints/{slug}/submit"
-        description="Submit a file against a vanity endpoint. The endpoint's bound profile, brand, and permissions apply."
+        description="Submit a file against a vanity endpoint. The endpoint's bound profile, brand, response_mode, and permissions apply. Pass ?wait=<seconds> to override response_mode for a single call."
         auth
-        request={`curl -X POST https://api.lintpdf.com/api/v1/endpoints/acme-proofs/submit \\
+        request={`# Async (default)
+curl -X POST https://api.lintpdf.com/api/v1/endpoints/acme-proofs/submit \\
+  -H "Authorization: Bearer lpdf_live_..." \\
+  -F file=@brochure.pdf
+
+# Sync (wait inline for the verdict)
+curl -X POST "https://api.lintpdf.com/api/v1/endpoints/acme-proofs/submit?wait=60" \\
   -H "Authorization: Bearer lpdf_live_..." \\
   -F file=@brochure.pdf`}
-        response={`{ "job_id": "d4e5f6a7-...", "status": "pending", "message": "Job submitted successfully" }`}
+        response={`# 202 Accepted (async)
+{ "job_id": "d4e5f6a7-...", "status": "pending", "message": "Job submitted successfully" }
+
+# 200 OK (sync, reached terminal within wait budget)
+{ "job_id": "d4e5f6a7-...", "status": "complete", "summary": { ... }, "findings": [ ... ], "reports": { ... } }`}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">Endpoint fields</h4>
+      <FieldTable
+        rows={[
+          { name: "slug", type: "string", required: true, description: "Lowercase kebab-case URL slug, unique per tenant (2-255 chars)." },
+          { name: "profile_id", type: "string", required: true, description: "Profile this endpoint is bound to. Built-in or tenant-owned." },
+          { name: "description", type: "string", description: "Free-text label shown in the dashboard (max 1024 chars)." },
+          { name: "is_active", type: "boolean", default: "true", description: "Disable to 404 the submit URL without deleting the slug." },
+          {
+            name: "response_mode",
+            type: '"async" | "sync"',
+            default: "async",
+            description:
+              "Default response behavior for this endpoint. async = 202 + job_id (caller polls). sync = block for terminal state and return full JobResponse. Server-side ceiling is LINTPDF_SYNC_MAX_WAIT_S (default 120s). Callers can override per-request via ?wait= on the submit route.",
+          },
+        ]}
       />
     </section>
   );
