@@ -1,10 +1,52 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "packages/engine/Dockerfile"
+# Only redeploy when engine code, build inputs, or deploy config
+# actually change. The previous `packages/engine/**` glob was too
+# broad — it matched .env.example, CLAUDE.md, and any markdown edit
+# under the engine directory, triggering an API redeploy that killed
+# in-flight stress runs (observed 2026-04-21 during tier-2 when
+# PR #136 bumped .env.example + CLAUDE.md).
+#
+# `packages/inference/**` is intentionally NOT listed: inference runs
+# on Modal via the dedicated modal-deploy GH Action, not on Railway.
+watchPatterns = [
+    "packages/engine/src/**",
+    "packages/engine/scripts/**",
+    "packages/engine/Dockerfile",
+    "packages/engine/pyproject.toml",
+    "packages/engine/railway.toml",
+    "packages/engine/alembic.ini",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
 
 [deploy]
+# Single-replica scale-to-zero (bursty-usage profile).
+#
+# The original step-10 config kept 3 replicas always-on for HA. Usage
+# is bursty (hundreds of uploads during occasional stress runs, $0 the
+# rest of the time), so we flipped to 1 replica with sleepApplication
+# to drop idle cost from ~$120/mo → ~$0 when no traffic hits the API.
+# Cold-start on first request after idle is ~2-5 s; acceptable for
+# low-volume workloads. HA is intentionally off — if the single
+# container crashes, Railway's ON_FAILURE restart brings it back in
+# a few seconds and sleepApplication compensates for idle downtime.
+#
+# Each active instance runs LINTPDF_WORKERS (8) Uvicorn workers, so
+# total concurrency is 8 × LINTPDF_CONCURRENCY_PER_WORKER (8 × 8 = 64
+# in-flight async handlers per replica). Plenty for typical bursts.
 numReplicas = 1
+sleepApplication = true
 healthcheckPath = "/ready"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
+# Graceful deploys still matter even at 1 replica — the container
+# draining during a redeploy keeps finishing in-flight requests
+# before SIGTERM. 120 s covers a 50 MB streaming upload + R2 write.
+overlapSeconds = 60
+drainingSeconds = 120
+# API uses the same Celery time_limit rationale as worker.toml — 600 s
+# hard cap on any sync-ish handler. 660 s grace gives a 10 % buffer.
+gracefulShutdownTimeoutSec = 660

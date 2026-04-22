@@ -87,12 +87,31 @@ def _run_migrations(database_url: str) -> None:
 @asynccontextmanager
 async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan: initialize and tear down resources."""
+    import asyncio
+    import os as _os
+    from concurrent.futures import ThreadPoolExecutor
+
     from lintpdf.api.config import get_settings
     from lintpdf.api.logging_config import configure_logging
 
     # Install the structlog JSON renderer before anything else so the
     # migrations + rate-limiter setup log lines are already structured.
     configure_logging()
+
+    # Bump the asyncio default-executor pool from the Python default
+    # (min(32, cpu_count+4) ≈ 6 on a 2-vCPU Railway container) to a
+    # value sized for the upload-to-R2 hot path. Every call to
+    # ``loop.run_in_executor(None, storage.upload_pdf_stream, ...)``
+    # borrows a thread from this pool; if it saturates, incoming
+    # requests block waiting for a thread and /ready goes dark.
+    # Overridable via LINTPDF_ASYNCIO_EXECUTOR_WORKERS.
+    executor_workers = int(_os.environ.get("LINTPDF_ASYNCIO_EXECUTOR_WORKERS", "32"))
+    asyncio.get_event_loop().set_default_executor(
+        ThreadPoolExecutor(
+            max_workers=executor_workers,
+            thread_name_prefix="lintpdf-io",
+        )
+    )
 
     settings = get_settings()
 
@@ -142,50 +161,83 @@ def create_app() -> FastAPI:
 
     app.add_middleware(RequestIdMiddleware)
 
+    # Prometheus metrics (bulk-files step 11) — /metrics endpoint +
+    # per-request duration/count instrumentation. Mounted unconditionally
+    # so the control-plane-only service also exposes metrics.
+    from lintpdf.api.metrics import mount_metrics
+
+    mount_metrics(app)
+
+    # Control-plane mode (bulk-files step 8).
+    #
+    # When LINTPDF_CONTROL_PLANE_ONLY=1 the process serves ONLY a
+    # narrow operational router set — /ready, /api/v1/status,
+    # /api/v1/admin/*, /api/v1/usage, /docs (schema). Upload/job/report
+    # endpoints are not mounted. Point Railway's health check + the
+    # operator dashboards at this service so an overloaded main API
+    # (during a bulk-files burst, e.g. 100 concurrent uploads) can't
+    # drag the operational plane down with it.
+    #
+    # Default (flag unset or "0"): behavior is unchanged — the single
+    # container mounts every router. White-label tenant domains
+    # continue to hit the full API with no routing change required.
+    import os as _os
+    control_plane_only = _os.environ.get("LINTPDF_CONTROL_PLANE_ONLY", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+
     # Mount routers
-    app.include_router(health.router)
-    app.include_router(jobs.router)
+    app.include_router(health.router)  # /ready, /health — always mounted
+    if not control_plane_only:
+        app.include_router(jobs.router)
     app.include_router(profiles.router)
     app.include_router(webhooks.router)
     app.include_router(usage.router)
-    app.include_router(reports.router)
+    if not control_plane_only:
+        app.include_router(reports.router)
     app.include_router(admin.router)
     app.include_router(admin_warming.router)
-    app.include_router(trial.router)
+    if not control_plane_only:
+        app.include_router(trial.router)
     app.include_router(edge.router)
-    app.include_router(viewer.router)
+    if not control_plane_only:
+        app.include_router(viewer.router)
     app.include_router(branding.router)
-    app.include_router(approvals.router)
-    app.include_router(annotations.router, prefix="/api/v1/viewer")
-    app.include_router(import_mappings.router)
+    if not control_plane_only:
+        app.include_router(approvals.router)
+        app.include_router(annotations.router, prefix="/api/v1/viewer")
+        app.include_router(import_mappings.router)
 
-    # AI feature routers
-    app.include_router(ai_config.router)
-    app.include_router(ai_credits.router)
-    app.include_router(ai_usage.router)
-    app.include_router(ai_presets.router)
-    app.include_router(ai_generate.router)
-    app.include_router(ai_interpret.router)
-    # Legacy /api/v1/captains-log/* prefix kept as a deprecated alias so
-    # existing integrations keep working after the rebrand. Hidden from
-    # the public OpenAPI schema.
-    app.include_router(ai_interpret.legacy_router)
-    # Metered-resource counterparts to the AI credit endpoints.
-    app.include_router(file_packs.router)
-    # Stripe webhook endpoint handles metered-resource fulfillment
-    # (checkout.session.completed) and plan-monthly grants (invoice.paid).
-    app.include_router(stripe_webhooks.router)
+    # AI feature routers — admin-visible, skipped in control-plane-only.
+    if not control_plane_only:
+        app.include_router(ai_config.router)
+        app.include_router(ai_credits.router)
+        app.include_router(ai_usage.router)
+        app.include_router(ai_presets.router)
+        app.include_router(ai_generate.router)
+        app.include_router(ai_interpret.router)
+        # Legacy /api/v1/captains-log/* prefix kept as a deprecated alias so
+        # existing integrations keep working after the rebrand. Hidden from
+        # the public OpenAPI schema.
+        app.include_router(ai_interpret.legacy_router)
+        # Metered-resource counterparts to the AI credit endpoints.
+        app.include_router(file_packs.router)
+        # Stripe webhook endpoint handles metered-resource fulfillment
+        # (checkout.session.completed) and plan-monthly grants (invoice.paid).
+        app.include_router(stripe_webhooks.router)
 
-    # Batch submission
-    app.include_router(batch.router)
+        # Batch submission
+        app.include_router(batch.router)
 
-    # Custom endpoints, color config & user AI access routers
-    app.include_router(endpoints.router)
-    app.include_router(color_config.router, prefix="/api/v1")
-    app.include_router(user_ai_access.router, prefix="/api/v1")
+        # Custom endpoints, color config & user AI access routers
+        app.include_router(endpoints.router)
+        app.include_router(color_config.router, prefix="/api/v1")
+        app.include_router(user_ai_access.router, prefix="/api/v1")
 
-    # Desktop app downloads (R2-backed)
-    app.include_router(downloads.router)
+        # Desktop app downloads (R2-backed)
+        app.include_router(downloads.router)
 
     # Dev auth (impersonation) — only when explicitly enabled
     from lintpdf.api.config import get_settings

@@ -4,6 +4,13 @@ import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { buildBrandingCss, type BrandingColors } from "@/lib/branding-css";
 import { getHostBranding } from "@/lib/host-branding";
 
+// Force server-side rendering at request time — NOT at build time.
+// Prerendering would try to call getBranding(prisma) during `next build`,
+// which fails because the build environment has no DATABASE_URL wired up.
+// That took down 31 consecutive App deploys today (first failure was
+// immediately after PR #112 added this layout) until this flag landed.
+export const dynamic = "force-dynamic";
+
 /**
  * Wraps every route under /auth/* so the Pixie Dust LoginPage renders
  * with tenant branding (logo, colors, heading) from AppSettings.

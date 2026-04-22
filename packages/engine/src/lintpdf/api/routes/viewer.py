@@ -37,7 +37,7 @@ router = APIRouter(prefix="/api/v1/viewer", tags=["viewer"])
 
 class SeparationChannel(BaseModel):
     name: str
-    type: str  # "process" or "spot"
+    type: str  # "process" (CMYK) | "spot" | "rgb" (R/G/B) | "gray"
 
 
 class SeparationsResponse(BaseModel):
@@ -561,6 +561,23 @@ async def get_separation_channel(
 ) -> Response:
     """Render a single ink channel as a grayscale PNG."""
     from lintpdf.reports.separation_renderer import render_separation_channel
+
+    # Ghostscript's tiffsep device only decomposes CMYK + spot colors.
+    # For pure-RGB / pure-Gray PDFs, ``list_separations`` now correctly
+    # reports those channels as ``type="rgb"`` / ``"gray"``, but the
+    # separation renderer has no equivalent. Return 422 for now so the
+    # viewer can surface "preview not available" instead of silently
+    # producing a misleading CMYK-derived image.
+    if channel_name in ("Red", "Green", "Blue", "Gray"):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Channel '{channel_name}' is a display channel, not a "
+                "separation ink. LintPDF renders separations from CMYK "
+                "and spot color spaces only; RGB/Gray previews are a "
+                "roadmap item."
+            ),
+        )
 
     job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
     _validate_page_num(pdf_bytes, page_num)

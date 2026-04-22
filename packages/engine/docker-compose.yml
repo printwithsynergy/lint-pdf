@@ -61,6 +61,27 @@ services:
       verapdf:
         condition: service_started
 
+  worker-ai:
+    build: .
+    # Dedicated worker for AI-enabled jobs. Concurrency tracks Modal's
+    # max_containers. Isolated so AI backlog can't head-of-line-block
+    # deterministic jobs. Mirrors packages/engine/railway.worker-ai.toml.
+    command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=ai_heavy --concurrency=${CELERY_AI_CONCURRENCY:-6}
+    env_file: .env
+    environment:
+      - LINTPDF_DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - DATABASE_URL=postgresql://lintpdf:lintpdf@postgres:5432/lintpdf
+      - LINTPDF_REDIS_URL=redis://redis:6379/0
+      - REDIS_URL=redis://redis:6379/0
+      - LINTPDF_VERAPDF_URL=http://verapdf:8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      verapdf:
+        condition: service_started
+
   worker-webhooks:
     build: .
     command: celery -A lintpdf.queue.worker worker --loglevel=info --queues=webhooks --concurrency=${CELERY_WEBHOOK_CONCURRENCY:-4}

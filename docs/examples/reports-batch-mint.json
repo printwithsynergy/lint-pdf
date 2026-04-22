@@ -1,0 +1,11 @@
+{
+  "job_ids": [
+    "d4e5f6a7-0000-0000-0000-000000000001",
+    "d4e5f6a7-0000-0000-0000-000000000002",
+    "d4e5f6a7-0000-0000-0000-000000000003"
+  ],
+  "formats": ["html", "pdf", "json", "annotated_pdf"],
+  "expiry_days": 7,
+  "allow_annotations": false,
+  "require_visitor_email": false
+}

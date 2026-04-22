@@ -66,9 +66,24 @@ model_cache = modal.Volume.from_name("lintpdf-model-cache", create_if_missing=Tr
     gpu="A10G",
     volumes={"/models": model_cache},
     secrets=[modal.Secret.from_name("lintpdf-inference-secrets")],
-    scaledown_window=300,
+    # Scale profile (tuned 2026-04-21 session 2 — tier-1 measured
+    # p50 job latency = 20 min on max_containers=5 with full-ai-scan;
+    # 1.18.2 bumped to 15; this bump to 100 lets a 100-file burst
+    # finish in one wave instead of seven.
+    #
+    # max_containers=100: burst ceiling, NOT a baseline. With
+    #   min_containers=0 and scale-to-zero, Modal only charges for
+    #   actual warm-container time — so raising the cap from 15 to
+    #   100 costs zero until a workload actually fans out that wide.
+    #   A 100-file burst consumes ~700 container-minutes either way;
+    #   this bump changes wall clock from ~45 min → ~7 min at the
+    #   same spend.
+    # scaledown_window=180: unchanged — idle containers retire in
+    #   3 min, keeping cost close to zero between bursts.
+    # min_containers=0: unchanged — pure scale-to-zero, no baseline cost.
+    scaledown_window=180,
     min_containers=0,
-    max_containers=5,
+    max_containers=100,
     timeout=300,
     memory=8192,
 )

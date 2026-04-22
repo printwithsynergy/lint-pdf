@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import uuid
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -173,12 +173,14 @@ class TestAdminTrialsConfigEndpoint:
 
 
 def _mock_s3_storage(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Patch InMemoryStorage._get_client so trial submit's direct put_object works.
+    """Patch InMemoryStorage._get_client so trial submit's direct S3 calls work.
 
-    The trial submit handler stores files under a custom key path via
-    storage._get_client().put_object(...), which is a no-op on InMemoryStorage.
-    We stub it with a MagicMock that accepts put_object calls and persists the
-    body into the in-memory _files dict so downstream download_pdf works.
+    The trial submit handler stores files under a custom key path by
+    reaching through ``storage._get_client()`` — previously a ``put_object``
+    call (pre-streaming), now ``upload_fileobj`` (post bulk-files step 1
+    streaming upload rewrite). We stub both on the fake client so the
+    bytes land in ``InMemoryStorage._files`` and downstream
+    ``download_pdf`` resolves the same key.
     """
     from lintpdf.api.storage import get_storage
 
@@ -187,8 +189,18 @@ def _mock_s3_storage(monkeypatch: pytest.MonkeyPatch) -> None:
     def put_object(Bucket: str, Key: str, Body: bytes, ContentType: str) -> None:  # noqa: N803
         storage._files[Key] = Body  # type: ignore[attr-defined]
 
+    def upload_fileobj(
+        Fileobj: Any,  # noqa: N803
+        Bucket: str,  # noqa: N803
+        Key: str,  # noqa: N803
+        ExtraArgs: dict[str, Any] | None = None,  # noqa: N803, ARG001
+    ) -> None:
+        Fileobj.seek(0)
+        storage._files[Key] = Fileobj.read()  # type: ignore[attr-defined]
+
     fake_client = MagicMock()
     fake_client.put_object.side_effect = put_object
+    fake_client.upload_fileobj.side_effect = upload_fileobj
     monkeypatch.setattr(storage, "_get_client", lambda: fake_client)
 
 

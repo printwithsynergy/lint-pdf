@@ -50,11 +50,16 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     // role-gated to SUPER_ADMIN by Pixie Dust). Previously used section: "global"
     // which the DashboardSidebar filters into the normal "Menu" group, leaking
     // super-admin routes to tenant users.
+    // Admin nav items — subgroups rendered by pixie-dust-dashboard
+    // ≥1.18.3 via SerializedNavItem.group. Items without a group
+    // (e.g. Documentation at the bottom) render flat at the section
+    // root per the backward-compat path.
     ctx.addNavItem({
       label: "All Tenants",
       href: "/dashboard/admin/tenants",
       icon: "building-2",
       section: "admin",
+      group: "Operations",
       order: 10,
       requiredRole: "SUPER_ADMIN",
     });
@@ -63,6 +68,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/jobs",
       icon: "inbox",
       section: "admin",
+      group: "Operations",
       order: 20,
       requiredRole: "SUPER_ADMIN",
     });
@@ -71,6 +77,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/audit",
       icon: "search",
       section: "admin",
+      group: "Operations",
       order: 25,
       requiredRole: "SUPER_ADMIN",
     });
@@ -79,6 +86,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/health",
       icon: "zap",
       section: "admin",
+      group: "Platform",
       order: 30,
       requiredRole: "SUPER_ADMIN",
     });
@@ -87,6 +95,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/warming",
       icon: "map",
       section: "admin",
+      group: "Platform",
       order: 35,
       requiredRole: "SUPER_ADMIN",
     });
@@ -95,6 +104,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/appearance",
       icon: "palette",
       section: "admin",
+      group: "Branding",
       order: 40,
       requiredRole: "SUPER_ADMIN",
     });
@@ -103,6 +113,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/branding",
       icon: "paintbrush",
       section: "admin",
+      group: "Branding",
       order: 41,
       requiredRole: "SUPER_ADMIN",
     });
@@ -111,6 +122,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/billing",
       icon: "credit-card",
       section: "admin",
+      group: "Platform",
       order: 45,
       requiredRole: "SUPER_ADMIN",
     });
@@ -128,6 +140,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/swagger",
       icon: "code",
       section: "admin",
+      group: "API & Integrations",
       order: 46,
       requiredRole: "SUPER_ADMIN",
     });
@@ -138,6 +151,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/api-keys",
       icon: "lock",
       section: "admin",
+      group: "API & Integrations",
       order: 50,
       requiredRole: "SUPER_ADMIN",
     });
@@ -146,6 +160,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/webhook-endpoints",
       icon: "bell",
       section: "admin",
+      group: "API & Integrations",
       order: 51,
       requiredRole: "SUPER_ADMIN",
     });
@@ -154,6 +169,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       href: "/dashboard/admin/reports",
       icon: "file-text",
       section: "admin",
+      group: "API & Integrations",
       order: 52,
       requiredRole: "SUPER_ADMIN",
     });

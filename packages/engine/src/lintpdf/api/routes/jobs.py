@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import uuid as uuid_mod
 from typing import Any
@@ -40,7 +41,7 @@ from lintpdf.api.schemas import (
     JobSummaryResponse,
 )
 from lintpdf.api.storage import get_storage
-from lintpdf.api.upload_security import PDF_TYPES, validate_upload
+from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
 from lintpdf.tenants.models import RATE_LIMIT_WARN_THRESHOLD
 
 logger = logging.getLogger(__name__)
@@ -516,7 +517,12 @@ async def submit_job(  # skipcq: PY-R1000
         # LintPDF" edge case we surface the explicit param as a query
         # string on the report URL, so persisting it is unnecessary.
 
-    content = await validate_upload(
+    # Stream upload body into a spooled temp file so worker RSS stays
+    # bounded regardless of PDF size — the first stress test (2026-04-21)
+    # wedged the engine when 15 concurrent 30-47 MB uploads materialized
+    # their bodies as ``bytes`` in the event loop. See
+    # ``validate_upload_streaming`` docstring for details.
+    spool, file_size = await validate_upload_streaming(
         file,
         allowed_types=PDF_TYPES,
         max_size_bytes=tenant.max_file_size_mb * 1024 * 1024,
@@ -525,16 +531,19 @@ async def submit_job(  # skipcq: PY-R1000
 
     job_id = uuid_mod.uuid4()
 
-    # Upload PDF to storage (run in thread to avoid blocking event loop)
     storage = get_storage()
     loop = asyncio.get_running_loop()
-    file_key = await loop.run_in_executor(
-        None,
-        storage.upload_pdf,
-        str(tenant.id),
-        str(job_id),
-        content,
-    )
+    try:
+        file_key = await loop.run_in_executor(
+            None,
+            storage.upload_pdf_stream,
+            str(tenant.id),
+            str(job_id),
+            spool,
+        )
+    finally:
+        with contextlib.suppress(Exception):
+            spool.close()
 
     # Parse JDF sidecar if provided
     jdf_overrides = None
@@ -555,7 +564,7 @@ async def submit_job(  # skipcq: PY-R1000
         profile_id=profile_id,
         file_key=file_key,
         file_name=file.filename,
-        file_size=len(content),
+        file_size=file_size,
         jdf_overrides=jdf_overrides,
         preflight_source=source_enum,
         external_format=resolved_external_format,
@@ -603,16 +612,13 @@ async def submit_job(  # skipcq: PY-R1000
 
     entitlements = resolve_entitlements(tenant)
 
-    # Cache PDF in Redis so the worker can fetch it even if R2 is unreachable
-    try:
-        from lintpdf.api.middleware import get_redis_client
-
-        redis = get_redis_client()
-        if redis is not None:
-            cache_key = f"pdf_cache:{file_key}"
-            redis.set(cache_key, content, ex=600)  # 10 min TTL
-    except Exception:
-        logger.debug("Failed to cache PDF in Redis — worker will use R2")
+    # Redis PDF hot-cache (``pdf_cache:{file_key}``) was previously
+    # populated here as a latency optimisation for the worker. At
+    # bulk-file scale it just moves the RAM pressure from the engine to
+    # the Redis server (100 × 50 MB bodies = 5 GB Redis RSS) for a
+    # marginal round-trip saving. The worker already falls back to R2
+    # on cache miss; we skip the cache entirely now so streaming
+    # uploads actually pay off.
 
     # Expand an ``ai_preset`` into its feature list. A preset implicitly
     # enables AI (``ai_enabled=true``) unless the caller already supplied
@@ -639,7 +645,19 @@ async def submit_job(  # skipcq: PY-R1000
         if ai_enabled is None:
             ai_enabled = True
 
-    queue_name = "priority" if entitlements.priority_processing else "default"
+    # Queue routing (bulk-files step 3 — queue isolation):
+    #   ai_heavy  → any job where AI is enabled. Dedicated worker
+    #               service (railway.worker-ai.toml) with concurrency
+    #               tuned to Modal's max_containers so AI jobs can't
+    #               starve the deterministic pool.
+    #   priority  → paid-tier non-AI jobs. Served by railway.worker.toml.
+    #   default   → free-tier non-AI jobs. Same worker, lower priority.
+    if ai_enabled:
+        queue_name = "ai_heavy"
+    elif entitlements.priority_processing:
+        queue_name = "priority"
+    else:
+        queue_name = "default"
     task_args = [str(job_id), profile_id, file_key]
     task_kwargs: dict[str, Any] = {}
     if jdf_overrides:

@@ -521,6 +521,10 @@ class TestClamAVScanning:
         """Unset ``clamav_url`` → scan is skipped, upload proceeds."""
         settings = MagicMock()
         settings.clamav_url = None
+        # MagicMock attribute access returns a truthy MagicMock by default,
+        # which would flip the code into fail-closed (``strict=True``) mode.
+        # Pin to False so we actually exercise the default fail-open path.
+        settings.clamav_required = False
         upload = _make_upload(MINIMAL_PDF, "clean.pdf")
         content = await validate_upload(upload, allowed_types=PDF_TYPES, settings=settings)
         assert content == MINIMAL_PDF
@@ -562,6 +566,7 @@ class TestClamAVScanning:
         """ClamAV unreachable → log + skip, upload proceeds (fail-open)."""
         settings = MagicMock()
         settings.clamav_url = "unreachable:3310"
+        settings.clamav_required = False
 
         with patch("lintpdf.api.upload_security._clamd_mod") as mock_clamd:
             mock_clamd.ClamdNetworkSocket.side_effect = ConnectionError("unreachable")
@@ -574,6 +579,7 @@ class TestClamAVScanning:
         """Unexpected errors from ``instream`` are swallowed (fail-open)."""
         settings = MagicMock()
         settings.clamav_url = "localhost:3310"
+        settings.clamav_required = False
 
         mock_scanner = MagicMock()
         mock_scanner.instream.side_effect = TimeoutError("clamd hung")

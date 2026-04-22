@@ -9,10 +9,11 @@ from __future__ import annotations
 import logging
 import os
 import re
+import tempfile
 import unicodedata
 from dataclasses import dataclass
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import IO, TYPE_CHECKING
 
 import clamd as _clamd_mod
 import defusedxml.ElementTree as DefusedET
@@ -300,45 +301,63 @@ def _detect_custom_mime(content: bytes) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def scan_for_malware(content: bytes, settings: Settings) -> None:
-    """Scan file bytes with ClamAV.
+def _scan_with_clamd(scan_input: "BytesIO | IO[bytes]", settings: Settings) -> None:
+    """Shared body for both the bytes and streaming scan variants.
 
-    Best-effort, fail-open: if ``LINTPDF_CLAMAV_URL`` is unset or clamd is
-    unreachable, logs a warning and allows the upload to proceed. This
-    prevents a broken ClamAV sidecar from blocking all production uploads.
+    ``scan_input`` is anything ``clamd.instream`` accepts (BytesIO or a
+    seekable file-like). Raises HTTPException(422) only on a positive
+    detection by default; every other failure is logged and the upload
+    is allowed through (fail-open) so a broken ClamAV sidecar never
+    takes down production. See CLAUDE.md for the upstream-image bug
+    that made fail-open the default.
 
-    Raises ``HTTPException(422)`` only when clamd *positively* detects
-    malware — that is always enforced.
-
-    Once the ClamAV sidecar (``packages/engine/clamav/``) is deployed on
-    Railway and confirmed reachable, this can optionally be tightened back
-    to fail-closed.
+    Bulk-files step 16 — fail-closed is gated behind
+    ``settings.clamav_required`` (``LINTPDF_CLAMAV_REQUIRED=1``). Once
+    the in-repo ClamAV replacement at packages/engine/clamav/ is
+    deployed and green, flip the env var on to enforce scanning (HTTP
+    503 on unreachable, HTTP 422 on positive detection). No code
+    change needed to flip back.
     """
+    strict = bool(getattr(settings, "clamav_required", False))
     if not settings.clamav_url:
+        if strict:
+            logger.error(
+                "ClamAV is REQUIRED but LINTPDF_CLAMAV_URL is unset — rejecting upload"
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Malware scanner is not configured.",
+            )
         logger.warning(
             "ClamAV is not configured (LINTPDF_CLAMAV_URL is unset) — "
             "skipping virus scan (fail-open)"
         )
         return
-
     try:
         host, _, port_str = settings.clamav_url.rpartition(":")
         port = int(port_str) if port_str else 3310
-        # Strip brackets from IPv6 or any leading/trailing whitespace
         host = host.strip().strip("[]") or "localhost"
-
         scanner = _clamd_mod.ClamdNetworkSocket(host=host, port=port, timeout=30)
-        result = scanner.instream(BytesIO(content))
+        result = scanner.instream(scan_input)
     except HTTPException:
         raise
     except Exception:
+        if strict:
+            logger.error(
+                "ClamAV scan failed — service unreachable at %s; REQUIRED=true, rejecting upload",
+                settings.clamav_url,
+                exc_info=True,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Malware scanner is unreachable.",
+            ) from None
         logger.warning(
             "ClamAV scan failed — service unreachable at %s; allowing upload (fail-open)",
             settings.clamav_url,
             exc_info=True,
         )
         return
-
     if result and result.get("stream", ("OK",))[0] == "FOUND":
         virus_name = result["stream"][1]
         logger.warning("Malware detected in upload: %s", virus_name)
@@ -346,6 +365,30 @@ def scan_for_malware(content: bytes, settings: Settings) -> None:
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="File rejected: potential malware detected.",
         )
+
+
+def scan_for_malware(content: bytes, settings: Settings) -> None:
+    """Scan raw file bytes with ClamAV. See ``_scan_with_clamd`` for semantics."""
+    _scan_with_clamd(BytesIO(content), settings)
+
+
+def scan_for_malware_stream(fileobj: "IO[bytes]", settings: Settings) -> None:
+    """Scan a seekable file-like with ClamAV.
+
+    Avoids the ~50 MB-per-scan RSS spike that ``scan_for_malware`` takes
+    when handed a bytes copy of a big PDF spool. ``clamd.instream``
+    natively reads the stream in 64 KB chunks. Caller is responsible
+    for seeking ``fileobj`` to byte 0 before and (if they want to reuse
+    it) after the call.
+    """
+    pos = fileobj.tell()
+    try:
+        _scan_with_clamd(fileobj, settings)
+    finally:
+        try:
+            fileobj.seek(pos)
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -505,3 +548,212 @@ async def validate_upload(
         scan_for_malware(content, settings)
 
     return content
+
+
+# ---------------------------------------------------------------------------
+# Streaming variant — spools to disk so we never hold 30-50 MB bodies in RAM.
+# Used by the PDF upload hot path (routes/jobs.py, batch.py, trial.py,
+# endpoints.py). The legacy ``validate_upload`` stays for small-file routes
+# (logo upload, branding icons) where the body already fits in a few KB.
+# ---------------------------------------------------------------------------
+
+
+# Spool-in-RAM threshold before spilling to disk.
+#
+# Lowered from 4 MB → 512 KB after the 2026-04-21 tier-2 run
+# wedged the engine ~90s in with 100 concurrent uploads. Even though
+# each spool was capped at 4 MB RAM, the aggregate (100 concurrent
+# bodies × 4 MB × 3 replicas) approached the Railway container RSS
+# ceiling and triggered OOM-adjacent thrashing. 512 KB keeps the
+# fast-path for small PDFs (<512 KB stays in RAM) while large files
+# spill to disk immediately, capping total in-RAM upload bytes at
+# roughly ``N_workers × 512 KB`` instead of ``N_workers × 4 MB``.
+_SPOOL_RAM_THRESHOLD_BYTES = 512 * 1024
+
+
+async def validate_upload_streaming(
+    file: UploadFile,
+    *,
+    allowed_types: frozenset[AllowedFileType],
+    max_size_bytes: int | None = None,
+    settings: Settings | None = None,
+) -> tuple[IO[bytes], int]:
+    """Validate an uploaded file and return a spooled handle + its size.
+
+    Same validation chain as :py:func:`validate_upload` but the body is
+    streamed into a :py:class:`tempfile.SpooledTemporaryFile` rather
+    than a :py:class:`bytearray`. Small uploads (under the 4 MB spool
+    threshold) stay in RAM; larger ones spill to the container's
+    ephemeral disk. Either way peak process RSS is bounded by the
+    threshold — N concurrent 50 MB uploads no longer OOM the container.
+
+    The caller gets a file-like object, positioned at byte 0, ready to
+    hand directly to :py:meth:`StorageBackend.upload_pdf_stream`, plus
+    the validated byte length. The caller MUST close the handle
+    (``fileobj.close()``) once the upload is queued.
+
+    Validation steps 2-9 that previously operated on the full ``bytes``
+    buffer (filename sanitization, magic-bytes detection, SVG safety)
+    now read a single head chunk out of the spool and seek back. Full
+    content is only re-read for the ClamAV scan (which is still
+    bytes-based upstream); in practice the ClamAV read is against the
+    on-disk spool so it too avoids RSS pressure.
+
+    Parameters
+    ----------
+    file:
+        The FastAPI ``UploadFile`` from the request.
+    allowed_types:
+        Set of ``AllowedFileType`` definitions that this endpoint accepts.
+    max_size_bytes:
+        Maximum file size in bytes. ``None`` to skip the size check.
+    settings:
+        Application settings (used for ClamAV URL). ``None`` to skip scanning.
+
+    Returns
+    -------
+    tuple[IO[bytes], int]
+        The spooled file handle (positioned at 0) and the total byte count.
+
+    Raises
+    ------
+    HTTPException
+        422 for validation failures, 413 for size limit exceeded.
+    """
+    # 1. Fast size reject on the declared Content-Length.
+    declared_size = getattr(file, "size", None)
+    if max_size_bytes is not None and declared_size is not None and declared_size > max_size_bytes:
+        max_mb = max_size_bytes / (1024 * 1024)
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File exceeds maximum size of {max_mb:.0f} MB.",
+        )
+
+    # 2. Stream into a spool; abort the moment we exceed max_size_bytes.
+    from lintpdf.api.config import get_settings as _get_upload_settings
+
+    chunk_size = _get_upload_settings().max_upload_stream_chunk_bytes
+    spool: IO[bytes] = tempfile.SpooledTemporaryFile(
+        max_size=_SPOOL_RAM_THRESHOLD_BYTES,
+        mode="w+b",
+    )
+    total = 0
+    try:
+        while True:
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            total += len(chunk)
+            if max_size_bytes is not None and total > max_size_bytes:
+                max_mb = max_size_bytes / (1024 * 1024)
+                spool.close()
+                raise HTTPException(
+                    status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                    detail=f"File exceeds maximum size of {max_mb:.0f} MB.",
+                )
+            spool.write(chunk)
+
+        if total == 0:
+            spool.close()
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Uploaded file is empty.",
+            )
+
+        # 3. Sanitize filename
+        clean_name = sanitize_filename(file.filename)
+
+        # 4. Double-extension attack detection
+        _check_double_extension(clean_name)
+
+        # 5. Extension validation
+        _, ext = os.path.splitext(clean_name)
+        ext_lower = ext.lower()
+
+        detected_mime: str | None = None
+
+        if not allowed_types:
+            if ext_lower in DANGEROUS_EXTENSIONS:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"File extension '{ext_lower}' is not allowed.",
+                )
+        else:
+            matching_types = [t for t in allowed_types if ext_lower in t.extensions]
+            if not matching_types:
+                allowed_exts = sorted({e for t in allowed_types for e in t.extensions})
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"File extension '{ext_lower}' is not allowed. "
+                    f"Allowed: {', '.join(allowed_exts)}",
+                )
+
+            matched_type = matching_types[0]
+
+            # 6. Content detection — only the first 8 KB is needed for
+            # magic-bytes / custom-MIME sniffing on PDFs + SVGs; reading
+            # the full spool here would re-load the body we just tried
+            # to keep off-heap.
+            head_size = 8 * 1024
+            spool.seek(0)
+            head = spool.read(head_size)
+            spool.seek(0)
+
+            if matched_type.detection == _DETECTION_FILETYPE:
+                guess = filetype_lib.guess(head)
+                detected_mime = guess.mime if guess else None
+            elif matched_type.detection == _DETECTION_CUSTOM:
+                detected_mime = _detect_custom_mime(head)
+
+            if matched_type.detection != _DETECTION_EXTENSION_ONLY:
+                if detected_mime is None:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="File content does not match a supported type.",
+                    )
+                allowed_mimes = {t.mime_type for t in allowed_types}
+                if detected_mime not in allowed_mimes:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail="File content does not match a supported type.",
+                    )
+                extension_mimes = {t.mime_type for t in matching_types}
+                if detected_mime not in extension_mimes:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=f"File content ({detected_mime}) does not match extension ({ext_lower}).",
+                    )
+
+            # 7. SVG safety — SVGs are small; if we see one, read the
+            # full spool for the defusedxml parse. PDFs skip this branch.
+            if detected_mime == "image/svg+xml":
+                spool.seek(0)
+                svg_bytes = spool.read()
+                spool.seek(0)
+                _validate_svg_safety(svg_bytes)
+
+        # 8. ClamAV scan reads the spool in 64 KB chunks via
+        # clamd.instream — zero full-body materialization. This is
+        # the hot-path fix for the tier-1 wedge on 2026-04-21 where
+        # a 50 MB PDF buffered here spiked worker RSS enough to
+        # starve /ready health checks.
+        if settings is not None:
+            spool.seek(0)
+            scan_for_malware_stream(spool, settings)
+            spool.seek(0)
+
+        # 9. Hand back a seek-to-0 spool plus the size.
+        spool.seek(0)
+        return spool, total
+    except HTTPException:
+        try:
+            spool.close()
+        except Exception:
+            pass
+        raise
+    except Exception:
+        try:
+            spool.close()
+        except Exception:
+            pass
+        raise

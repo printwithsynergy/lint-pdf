@@ -1,0 +1,48 @@
+[build]
+# Build from the in-repo Dockerfile. The Railway serviceInstance has
+# ``rootDirectory = "packages/infra/pgbouncer"`` configured, so
+# ``dockerfilePath`` here is relative to that subdirectory — NOT the
+# repo root. Using a repo-root-relative path here caused the first
+# deploy attempt at 2026-04-21T21:14 to fail with
+# "Deployment does not have an associated build".
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+watchPatterns = [
+    "packages/infra/pgbouncer/**",
+]
+
+[deploy]
+# Bulk-files step 7 — connection pooling in front of Railway Postgres.
+#
+# Railway Postgres ships with max_connections=100 (can be raised via
+# ALTER SYSTEM — see CLAUDE.md \"Connection budget\"). At bulk scale
+# (100+ concurrent uploads → API workers + Celery tasks + Alembic
+# boots + raw psql in startup.sh) the shared budget is 60-80 already;
+# one more replica or a burst pushes us over and we get `FATAL: sorry,
+# too many clients already`.
+#
+# PgBouncer in TRANSACTION pooling mode multiplexes many short-lived
+# client connections onto a much smaller backend pool against
+# Postgres. Typical savings: 3-5× effective connection headroom with
+# no schema or query changes.
+#
+# This toml is a staged config — service isn't created yet. Spin-up
+# pattern (same flow as Worker-AI / control-plane):
+#   serviceCreate(input: { projectId, name: \"PgBouncer\",
+#     source: { image: \"edoburu/pgbouncer:latest\" } })
+#   variableCollectionUpsert(... serviceId, variables: {
+#     DATABASE_URL: \"<internal-postgres-url>\",
+#     POOL_MODE: \"transaction\",
+#     MAX_CLIENT_CONN: \"500\",
+#     DEFAULT_POOL_SIZE: \"30\",
+#     LISTEN_PORT: \"6432\",
+#     AUTH_TYPE: \"scram-sha-256\",
+#   })
+# Then rewrite DATABASE_URL on the API + Worker services to point at
+# the bouncer's private-network endpoint (pgbouncer.railway.internal:6432)
+# keeping the same Postgres credentials.
+numReplicas = 2
+healthcheckPath = \"/\"
+healthcheckTimeout = 30
+restartPolicyType = \"ON_FAILURE\"
+restartPolicyMaxRetries = 3

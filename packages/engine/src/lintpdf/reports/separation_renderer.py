@@ -206,36 +206,72 @@ def get_cmyk_channels(
 
 
 def list_separations(pdf_bytes: bytes) -> list[dict]:
-    """Return all ink channels present in a PDF.
+    """Return the ink channels actually present in the PDF.
 
-    Enumerates color spaces across all pages using pikepdf to find both
-    process (CMYK) and spot color channels.
+    Scans every page's ``/ColorSpace`` resource dict (plus nested
+    XObject forms, Shading, and Pattern dicts) and derives the set of
+    channels that have real content:
+
+    - ``DeviceCMYK`` / ``ICCBased`` with 4-component CMYK profile →
+      emits Cyan / Magenta / Yellow / Black as ``type="process"``.
+    - ``DeviceRGB`` / ``CalRGB`` / ``ICCBased`` with 3-component RGB
+      profile → emits Red / Green / Blue as ``type="rgb"``. The viewer
+      cannot render these as grayscale separations today (ghostscript
+      ``tiffsep`` only decomposes CMYK), so they're surfaced as
+      inventory only — the renderer returns 422 for non-CMYK channels.
+    - ``DeviceGray`` / ``CalGray`` / ``ICCBased``-1-comp → ``Gray``.
+    - ``/Separation`` and ``/DeviceN`` → each non-process component
+      emitted as ``type="spot"`` (``All``/``None`` skipped).
+
+    Previously this function unconditionally returned the four CMYK
+    process channels regardless of whether the PDF used CMYK, so a
+    pure-RGB or pure-spot file falsely reported CMYK separations and
+    hid the actual inventory.
 
     Returns:
-        List of dicts: ``[{"name": "Cyan", "type": "process"}, ...]``
+        List of dicts: ``[{"name": "Cyan", "type": "process"}, ...]``.
+        Preserves first-seen order so process channels (when present)
+        come before spots.
     """
     channels: list[dict] = []
     seen_names: set[str] = set()
+    families: set[str] = set()  # "cmyk" | "rgb" | "gray"
 
-    # Always include CMYK process channels
-    for name in PROCESS_CHANNEL_ORDER:
-        channels.append({"name": name, "type": "process"})
-        seen_names.add(name)
-
-    # Scan all pages for Separation and DeviceN color spaces
+    # Scan all pages for ink-bearing color spaces.
     with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
         for page in pdf.pages:
-            _scan_page_colorspaces(page, seen_names, channels)
+            _scan_page_colorspaces(page, seen_names, channels, families)
 
-    return channels
+    # Emit process channels based on what the PDF actually uses. Order:
+    # CMYK → RGB → Gray → spots (spots were appended during the scan).
+    prefix: list[dict] = []
+    if "cmyk" in families:
+        for name in PROCESS_CHANNEL_ORDER:
+            prefix.append({"name": name, "type": "process"})
+    if "rgb" in families:
+        for name in ("Red", "Green", "Blue"):
+            prefix.append({"name": name, "type": "rgb"})
+    if "gray" in families and "cmyk" not in families and "rgb" not in families:
+        # Only emit Gray when the file is actually grayscale-only —
+        # otherwise the gray channel is implied by the CMYK K plate or
+        # RGB composite and duplicating it in the viewer is noise.
+        prefix.append({"name": "Gray", "type": "gray"})
+
+    return prefix + channels
 
 
 def _scan_page_colorspaces(
     page: pikepdf.Page,
     seen_names: set[str],
     channels: list[dict],
+    families: set[str],
 ) -> None:
-    """Recursively scan a page's resources for spot color declarations."""
+    """Recursively scan a page's resources for color-space declarations.
+
+    Tracks both spot-color declarations AND which device/ICCBased
+    families are used on the page. ``families`` accumulates the
+    strings ``"cmyk"`` / ``"rgb"`` / ``"gray"`` for the caller.
+    """
     resources = page.get("/Resources")
     if resources is None:
         return
@@ -246,26 +282,38 @@ def _scan_page_colorspaces(
         try:
             cs_obj = pikepdf.Object.parse(cs_dict) if not isinstance(cs_dict, dict) else cs_dict
             for _key, cs_value in dict(cs_obj).items():
-                _extract_spot_from_cs(cs_value, seen_names, channels)
+                _extract_spot_from_cs(cs_value, seen_names, channels, families)
         except Exception:
             pass
 
-    # Also scan XObject forms recursively
+    # Image XObjects declare a ColorSpace directly on their stream —
+    # a DeviceCMYK / DeviceRGB image won't appear in the page-level
+    # /Resources/ColorSpace dict.
     xobjects = resources.get("/XObject")
     if xobjects is not None:
         try:
             for _key, xobj in dict(xobjects).items():
                 xobj_resolved = xobj
-                if hasattr(xobj_resolved, "get"):
-                    sub_resources = xobj_resolved.get("/Resources")
-                    if sub_resources is not None:
-                        sub_cs = sub_resources.get("/ColorSpace")
-                        if sub_cs is not None:
-                            try:
-                                for _k2, cs_val in dict(sub_cs).items():
-                                    _extract_spot_from_cs(cs_val, seen_names, channels)
-                            except Exception:
-                                pass
+                if not hasattr(xobj_resolved, "get"):
+                    continue
+
+                # Image XObject: its /ColorSpace is its pixel colorspace.
+                subtype = xobj_resolved.get("/Subtype")
+                if subtype is not None and str(subtype) == "/Image":
+                    img_cs = xobj_resolved.get("/ColorSpace")
+                    if img_cs is not None:
+                        _extract_spot_from_cs(img_cs, seen_names, channels, families)
+
+                # Form XObject: recurse into its Resources.
+                sub_resources = xobj_resolved.get("/Resources")
+                if sub_resources is not None:
+                    sub_cs = sub_resources.get("/ColorSpace")
+                    if sub_cs is not None:
+                        try:
+                            for _k2, cs_val in dict(sub_cs).items():
+                                _extract_spot_from_cs(cs_val, seen_names, channels, families)
+                        except Exception:
+                            pass
         except Exception:
             pass
 
@@ -274,31 +322,91 @@ def _extract_spot_from_cs(
     cs_value: object,
     seen_names: set[str],
     channels: list[dict],
+    families: set[str],
 ) -> None:
-    """Extract spot color name from a Separation or DeviceN color space array."""
+    """Extract color family + spot name from a colorspace declaration.
+
+    Accepts either a bare name (``/DeviceCMYK``) or an array
+    (``[/ICCBased <stream>]``, ``[/Separation /PANTONE ...]``,
+    ``[/DeviceN [/Cyan /Magenta ...] ...]``). Mutates ``families`` +
+    ``channels`` + ``seen_names`` as side effects.
+    """
     try:
-        cs_array = list(cs_value) if hasattr(cs_value, "__iter__") else []
-        if len(cs_array) < 2:
+        # Bare-name colorspaces used directly in content streams.
+        if not hasattr(cs_value, "__iter__") or isinstance(cs_value, (str, bytes)):
+            cs_type = str(cs_value)
+            if cs_type == "/DeviceCMYK":
+                families.add("cmyk")
+            elif cs_type == "/DeviceRGB":
+                families.add("rgb")
+            elif cs_type == "/DeviceGray":
+                families.add("gray")
+            return
+
+        cs_array = list(cs_value)
+        if not cs_array:
             return
 
         cs_type = str(cs_array[0])
 
-        if cs_type == "/Separation":
-            name = str(cs_array[1]).lstrip("/")
-            if name not in seen_names and name != "All" and name != "None":
-                seen_names.add(name)
-                channels.append({"name": name, "type": "spot"})
-
-        elif cs_type == "/DeviceN":
-            names_array = cs_array[1]
-            for n in names_array:
-                name = str(n).lstrip("/")
-                if name not in seen_names and name != "All" and name != "None":
-                    # Check if it's a known process channel
-                    if name in PROCESS_CHANNEL_COLORS:
-                        continue  # already included
+        if cs_type == "/DeviceCMYK":
+            families.add("cmyk")
+        elif cs_type == "/DeviceRGB" or cs_type == "/CalRGB":
+            families.add("rgb")
+        elif cs_type == "/DeviceGray" or cs_type == "/CalGray":
+            families.add("gray")
+        elif cs_type == "/ICCBased":
+            # [/ICCBased <stream>] — stream's /N = component count:
+            # 1 = gray, 3 = RGB/Lab, 4 = CMYK. The /Alternate entry
+            # tells us which for 3-comp (Lab still emits RGB channel
+            # set visually — we don't split Lab here).
+            if len(cs_array) >= 2:
+                stream = cs_array[1]
+                n = None
+                try:
+                    n = int(stream.get("/N", 0)) if hasattr(stream, "get") else 0
+                except Exception:
+                    n = 0
+                if n == 4:
+                    families.add("cmyk")
+                elif n == 3:
+                    families.add("rgb")
+                elif n == 1:
+                    families.add("gray")
+        elif cs_type == "/Lab":
+            # Lab viewer behaviour is out of scope; treat as RGB family
+            # so we at least emit SOMETHING rather than dropping the
+            # page silently.
+            families.add("rgb")
+        elif cs_type == "/Indexed":
+            # [/Indexed <base> <hival> <lookup>] — recurse on base.
+            if len(cs_array) >= 2:
+                _extract_spot_from_cs(cs_array[1], seen_names, channels, families)
+        elif cs_type == "/Pattern":
+            # [/Pattern <base>] — recurse if a base is specified
+            # (uncoloured tiling pattern carries through the base cs).
+            if len(cs_array) >= 2:
+                _extract_spot_from_cs(cs_array[1], seen_names, channels, families)
+        elif cs_type == "/Separation":
+            if len(cs_array) >= 2:
+                name = str(cs_array[1]).lstrip("/")
+                if name not in seen_names and name not in ("All", "None"):
                     seen_names.add(name)
                     channels.append({"name": name, "type": "spot"})
+        elif cs_type == "/DeviceN":
+            if len(cs_array) >= 2:
+                names_array = cs_array[1]
+                for n_obj in names_array:
+                    name = str(n_obj).lstrip("/")
+                    if name in ("All", "None"):
+                        continue
+                    if name in PROCESS_CHANNEL_COLORS:
+                        # DeviceN declaring CMYK components as process.
+                        families.add("cmyk")
+                        continue
+                    if name not in seen_names:
+                        seen_names.add(name)
+                        channels.append({"name": name, "type": "spot"})
     except Exception:
         pass
 

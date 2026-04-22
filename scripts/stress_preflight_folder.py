@@ -56,6 +56,11 @@ class HTTP:
     def __init__(self, base: str) -> None:
         self.base = base.rstrip("/")
 
+    # Status codes / transport failures that warrant a retry. Covers
+    # transient sandbox-proxy "503 DNS cache overflow" hiccups (which
+    # are not real engine errors) and upstream 5xx / 429 back-pressure.
+    _TRANSIENT = (0, -1, 429, 502, 503, 504)
+
     def request(
         self,
         method: str,
@@ -66,6 +71,7 @@ class HTTP:
         raw_body: bytes | None = None,
         content_type: str | None = None,
         timeout: int = 120,
+        retries: int = 3,
     ) -> tuple[int, Any]:
         url = path if path.startswith("http") else self.base + path
         h = {"Accept": "application/json"}
@@ -77,25 +83,39 @@ class HTTP:
             h["Content-Type"] = "application/json"
         elif content_type:
             h["Content-Type"] = content_type
-        req = urllib.request.Request(url, data=body, method=method.upper(), headers=h)
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                raw = resp.read()
-                code = resp.status
-        except urllib.error.HTTPError as exc:
-            raw = exc.read() if hasattr(exc, "read") else b""
-            code = exc.code
-        except urllib.error.URLError as exc:
-            return 0, {"error": str(exc.reason)}
-        except Exception as exc:  # noqa: BLE001 — network fuzz during stress
-            return -1, {"error": repr(exc)}
-        result: Any = raw
-        try:
-            if raw and raw[:1] in (b"{", b"["):
-                result = json.loads(raw.decode("utf-8"))
-        except Exception:
-            result = raw
-        return code, result
+
+        last_code: int = 0
+        last_result: Any = None
+        for attempt in range(1, retries + 1):
+            req = urllib.request.Request(url, data=body, method=method.upper(), headers=h)
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    raw = resp.read()
+                    code = resp.status
+            except urllib.error.HTTPError as exc:
+                raw = exc.read() if hasattr(exc, "read") else b""
+                code = exc.code
+            except urllib.error.URLError as exc:
+                code = 0
+                raw = {"error": str(exc.reason)}
+            except Exception as exc:  # noqa: BLE001 — network fuzz during stress
+                code = -1
+                raw = {"error": repr(exc)}
+            result: Any = raw
+            if isinstance(raw, bytes):
+                try:
+                    if raw and raw[:1] in (b"{", b"["):
+                        result = json.loads(raw.decode("utf-8"))
+                except Exception:
+                    result = raw
+            last_code, last_result = code, result
+            # Success: 2xx/202-class or 4xx (client error, not transient).
+            if code not in self._TRANSIENT:
+                return code, result
+            if attempt < retries:
+                # Exponential backoff 2s, 4s, 8s, 16s (capped at 15s).
+                time.sleep(min(2 ** attempt, 15))
+        return last_code, last_result
 
 
 # ---------------------------------------------------------------------------
@@ -220,16 +240,23 @@ def submit_job(
     profile_id: str,
     ai_preset: str,
     *,
+    ai_enabled: bool = True,
     upload_timeout_s: int = 600,
     max_retries: int = 3,
 ) -> None:
     pdf_bytes = rec.pdf_path.read_bytes()
-    fields = {
-        "profile_id": profile_id,
-        "ai_enabled": "true",
-        "ai_categories": "all",
-        "ai_preset": ai_preset,
-    }
+    fields: dict[str, str] = {"profile_id": profile_id}
+    if ai_enabled:
+        fields["ai_enabled"] = "true"
+        fields["ai_categories"] = "all"
+        fields["ai_preset"] = ai_preset
+    else:
+        # Explicitly disable AI for this job so it skips the GPU path
+        # regardless of what the profile defaults to. Needed for the
+        # deterministic-only stress tier where the goal is measuring
+        # LPDF_*/PDFX4_* throughput on CPU workers without Modal in
+        # the loop.
+        fields["ai_enabled"] = "false"
     body, ctype = encode_multipart(
         fields, {"file": (rec.submit_name, pdf_bytes, "application/pdf")}
     )
@@ -237,6 +264,9 @@ def submit_job(
     last_code = 0
     last_resp: Any = None
     for attempt in range(1, max_retries + 1):
+        # Disable inner HTTP retries — submit_job runs its own
+        # retry loop so we don't end up with N×N attempts on a
+        # 50 MB multipart body.
         code, resp = http.request(
             "POST",
             "/api/v1/jobs",
@@ -244,6 +274,7 @@ def submit_job(
             raw_body=body,
             content_type=ctype,
             timeout=upload_timeout_s,
+            retries=1,
         )
         last_code, last_resp = code, resp
         if code in (200, 201, 202) and isinstance(resp, dict) and resp.get("job_id"):
@@ -294,9 +325,85 @@ def poll_job(http: HTTP, api_key: str, rec: JobRecord, timeout_s: int) -> None:
     rec.poll_error = f"timeout after {timeout_s}s"
 
 
+def bulk_mint(http: HTTP, api_key: str, records: list[JobRecord]) -> bool:
+    """Single-shot mint across all completed jobs via the bulk endpoint.
+
+    Returns True if the endpoint was available + processed the batch
+    (per-job failures captured on ``rec.report_error``). Returns False
+    if the endpoint isn't implemented on this engine (HTTP 404),
+    signalling the caller to fall back to per-job minting.
+    """
+    if not records:
+        return True
+    payload = {
+        "job_ids": [r.job_id for r in records if r.job_id],
+        "formats": ["html", "pdf", "json", "annotated_pdf"],
+        "expiry_days": 7,
+        "allow_annotations": False,
+        "require_visitor_email": False,
+    }
+    code, body = http.request(
+        "POST",
+        "/api/v1/reports:batchMint",
+        headers={"Authorization": f"Bearer {api_key}"},
+        json_body=payload,
+        timeout=300,
+        retries=3,
+    )
+    # Fall back to per-job mint on:
+    #   - 404: endpoint doesn't exist yet on this engine (staging / old)
+    #   - 502/503/504: Railway edge timed the serial-mint response out
+    #     (observed at tier-1 when 15 jobs x 4 formats = 60 mints in
+    #     one HTTP request overran the edge timeout). Per-job loop
+    #     lets the client N-parallelize instead of 1-serial.
+    #   - 0 / -1: client-side transport failure (DNS hiccup, TLS reset)
+    if code in (0, -1, 404, 502, 503, 504):
+        return False  # fall back to per-job mint
+    if code not in (200, 201) or not isinstance(body, dict):
+        # Engine available but batch call itself failed — mark every
+        # record with the error so we still produce a useful report.
+        err = f"{code}: {body!r}"[:400]
+        for r in records:
+            r.report_error = err
+        return True
+    by_id = {r.job_id: r for r in records if r.job_id}
+    for entry in body.get("results", []) or []:
+        job_id = entry.get("job_id")
+        rec = by_id.get(job_id)
+        if rec is None:
+            continue
+        if entry.get("status") != "ok":
+            rec.report_error = str(entry.get("error") or "unknown")[:400]
+            continue
+        for r in entry.get("reports", []) or []:
+            fmt = r.get("format")
+            url = r.get("url", "")
+            viewer = r.get("viewer_url", "")
+            if fmt == "html":
+                rec.html_url = url
+                rec.viewer_url = viewer or rec.viewer_url
+            elif fmt == "pdf":
+                rec.pdf_url = url
+            elif fmt == "json":
+                rec.json_url = url
+            elif fmt == "annotated_pdf" and not rec.pdf_url:
+                rec.pdf_url = url
+        if not rec.viewer_url:
+            for r in entry.get("reports", []) or []:
+                tok = r.get("token")
+                if tok:
+                    rec.viewer_url = f"{APP_BASE}/view/{tok}"
+                    break
+    return True
+
+
 def mint_reports(http: HTTP, api_key: str, rec: JobRecord) -> None:
     if not rec.job_id or rec.terminal_status != "complete":
         return
+    # Mint signs 4 report tokens + persists them — chunky DB work.
+    # Bump timeout + rely on HTTP.request's internal retry-with-backoff
+    # (transient 429/5xx/timeout) so a burst of mints at the end of
+    # phase 2 doesn't drop 6 / 13 links like tier-1 did.
     code, body = http.request(
         "POST",
         f"/api/v1/jobs/{rec.job_id}/reports",
@@ -307,7 +414,8 @@ def mint_reports(http: HTTP, api_key: str, rec: JobRecord) -> None:
             "allow_annotations": False,
             "require_visitor_email": False,
         },
-        timeout=60,
+        timeout=180,
+        retries=5,
     )
     if code not in (200, 201) or not isinstance(body, dict):
         rec.report_error = f"{code}: {body!r}"[:400]
@@ -342,11 +450,30 @@ def mint_reports(http: HTTP, api_key: str, rec: JobRecord) -> None:
 def sample_metrics(
     http: HTTP, api_key: str, stop: threading.Event, csv_path: Path
 ) -> None:
+    """Authoritative liveness-and-throughput sampler.
+
+    Writes ``/api/v1/status`` + ``/ready`` directly from the client every
+    15 s. THIS is the ground truth for engine liveness during a run —
+    not Railway's log stream. Railway log-tail has been observed lagging
+    real-time by 2-3+ minutes under load during the 2026-04-21 runs,
+    which produced several false "engine is dead" panics when the
+    engine was actually serving /ready + /api/v1/status fine the whole
+    time. CSV columns now include a direct /ready probe + its latency
+    so post-run analysis cross-references liveness, not just log freshness.
+    """
     csv_path.parent.mkdir(parents=True, exist_ok=True)
     with csv_path.open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
         w.writerow(
-            ["iso_ts", "queue_depth_default", "queue_depth_priority", "workers", "status_http"]
+            [
+                "iso_ts",
+                "queue_depth_default",
+                "queue_depth_priority",
+                "workers",
+                "status_http",
+                "ready_http",
+                "ready_ms",
+            ]
         )
         while not stop.is_set():
             code, body = http.request(
@@ -354,6 +481,7 @@ def sample_metrics(
                 "/api/v1/status",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=15,
+                retries=1,  # sampler doesn't retry — single-shot liveness
             )
             default_q = priority_q = workers = -1
             if isinstance(body, dict):
@@ -362,6 +490,16 @@ def sample_metrics(
                     default_q = int(queues.get("default") or 0)
                     priority_q = int(queues.get("priority") or 0)
                 workers = int(body.get("worker_count") or 0)
+            # Separate /ready probe with tight timeout — the authoritative
+            # liveness signal. Decoupled from status RAM-budget noise.
+            ready_t0 = time.time()
+            ready_code, _ = http.request(
+                "GET",
+                "/ready",
+                timeout=8,
+                retries=1,
+            )
+            ready_ms = int((time.time() - ready_t0) * 1000)
             w.writerow(
                 [
                     datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -369,6 +507,8 @@ def sample_metrics(
                     priority_q,
                     workers,
                     code,
+                    ready_code,
+                    ready_ms,
                 ]
             )
             f.flush()
@@ -534,7 +674,15 @@ def run(args: argparse.Namespace) -> int:
         futures = []
         for r in records:
             futures.append(
-                pool.submit(submit_job, http, api_key, r, args.profile, args.ai_preset)
+                pool.submit(
+                    submit_job,
+                    http,
+                    api_key,
+                    r,
+                    args.profile,
+                    args.ai_preset,
+                    ai_enabled=not args.no_ai,
+                )
             )
             time.sleep(stagger_ms / 1000.0)
         for _ in as_completed(futures):
@@ -554,12 +702,19 @@ def run(args: argparse.Namespace) -> int:
     finished = sum(1 for r in records if r.terminal_status)
     print(f"[preflight]   terminal: {finished}/{submitted}")
 
-    # Phase 3: mint report tokens in parallel.
-    print("[preflight] phase 3: minting report tokens …")
-    with ThreadPoolExecutor(max_workers=min(args.workers, 20)) as pool:
-        futures = [pool.submit(mint_reports, http, api_key, r) for r in records]
-        for _ in as_completed(futures):
-            pass
+    # Phase 3: mint report tokens in ONE bulk call (step 5 — the
+    # POST /api/v1/reports:batchMint endpoint added in PR #XXX collapses
+    # the previous N-mint-requests-from-the-client fan-out into a single
+    # round trip. Falls back to per-job mint on a 404 so the harness
+    # still works against older engine versions.
+    print("[preflight] phase 3: minting report tokens (bulk) …")
+    complete_jobs = [r for r in records if r.job_id and r.terminal_status == "complete"]
+    if not bulk_mint(http, api_key, complete_jobs):
+        print("[preflight]   bulk mint endpoint unavailable — falling back to per-job")
+        with ThreadPoolExecutor(max_workers=min(args.workers, 20)) as pool:
+            futures = [pool.submit(mint_reports, http, api_key, r) for r in records]
+            for _ in as_completed(futures):
+                pass
     with_links = sum(1 for r in records if r.viewer_url)
     print(f"[preflight]   reports minted: {with_links}/{finished}")
 
@@ -586,6 +741,13 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--workers", type=int, default=50, help="max concurrent workers (default: 50)")
     p.add_argument("--profile", default="lintpdf-default")
     p.add_argument("--ai-preset", default="full-ai-scan")
+    p.add_argument(
+        "--no-ai",
+        action="store_true",
+        help="Submit every job with ai_enabled=false. Skips the Modal GPU "
+        "path entirely — useful for measuring CPU-only (deterministic) "
+        "throughput and for the <5 min tier-2 target without AI.",
+    )
     p.add_argument("--timeout-s", type=int, default=1800, help="per-job poll timeout (default: 30min)")
     p.add_argument(
         "--ramp-up-s",

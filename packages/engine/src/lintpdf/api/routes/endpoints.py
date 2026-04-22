@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import uuid as uuid_mod
 
@@ -13,7 +14,7 @@ from sqlalchemy.orm import Session  # noqa: TC002
 from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.config import get_settings
 from lintpdf.api.database import get_db
-from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit, get_redis_client
+from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit
 from lintpdf.api.models import (
     CustomEndpoint,
     CustomProfile,
@@ -29,7 +30,7 @@ from lintpdf.api.schemas import (
     JobCreateResponse,
 )
 from lintpdf.api.storage import get_storage
-from lintpdf.api.upload_security import PDF_TYPES, validate_upload
+from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
 from lintpdf.profiles.registry import ProfileRegistry
 
 logger = logging.getLogger(__name__)
@@ -300,7 +301,7 @@ async def submit_to_endpoint(
     check_burst_rate_limit(tenant)
     check_rate_limit(tenant)
 
-    content = await validate_upload(
+    spool, file_size = await validate_upload_streaming(
         file,
         allowed_types=PDF_TYPES,
         max_size_bytes=tenant.max_file_size_mb * 1024 * 1024,
@@ -310,13 +311,17 @@ async def submit_to_endpoint(
     job_id = uuid_mod.uuid4()
     storage = get_storage()
     loop = asyncio.get_running_loop()
-    file_key = await loop.run_in_executor(
-        None,
-        storage.upload_pdf,
-        str(tenant.id),
-        str(job_id),
-        content,
-    )
+    try:
+        file_key = await loop.run_in_executor(
+            None,
+            storage.upload_pdf_stream,
+            str(tenant.id),
+            str(job_id),
+            spool,
+        )
+    finally:
+        with contextlib.suppress(Exception):
+            spool.close()
 
     job = Job(
         id=job_id,
@@ -325,24 +330,38 @@ async def submit_to_endpoint(
         profile_id=ep.profile_id,
         file_key=file_key,
         file_name=file.filename,
-        file_size=len(content),
+        file_size=file_size,
     )
     db.add(job)
     db.commit()
 
-    # Cache PDF in Redis so the worker can fetch it even if storage is slow
-    try:
-        redis = get_redis_client()
-        if redis is not None:
-            redis.set(f"pdf_cache:{file_key}", content, ex=600)
-    except Exception:
-        logger.debug("Failed to cache PDF in Redis — worker will use storage")
+    # Redis pdf_cache write deliberately removed — see routes/jobs.py
+    # for the bulk-scale rationale. Workers fall back to R2.
 
     from lintpdf.queue.tasks import run_preflight
     from lintpdf.tenants.entitlements import resolve_entitlements
 
     entitlements = resolve_entitlements(tenant)
-    queue_name = "priority" if entitlements.priority_processing else "default"
+
+    # Queue routing (step 3 — queue isolation). Custom-endpoint dispatch
+    # pulls AI enablement from the endpoint's bound profile, same
+    # pattern as routes/batch.py.
+    try:
+        from lintpdf.profiles.registry import ProfileNotFoundError, ProfileRegistry
+
+        profile_ai_enabled = bool(ProfileRegistry().get(ep.profile_id).ai.enabled)
+    except ProfileNotFoundError:
+        profile_ai_enabled = True
+    except Exception:
+        profile_ai_enabled = True
+
+    if profile_ai_enabled:
+        queue_name = "ai_heavy"
+    elif entitlements.priority_processing:
+        queue_name = "priority"
+    else:
+        queue_name = "default"
+
     run_preflight.apply_async(
         args=[str(job_id), ep.profile_id, file_key],
         queue=queue_name,
