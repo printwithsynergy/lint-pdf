@@ -24,7 +24,9 @@ export function PricingSection() {
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-          {pricingTiers.map((plan) => (
+          {pricingTiers
+            .filter((plan) => plan.name !== "Viewer")
+            .map((plan) => (
             <div
               key={plan.name}
               className={`relative rounded-2xl border-2 p-6 flex flex-col transition-all hover:-translate-y-1 ${
@@ -104,6 +106,106 @@ export function PricingSection() {
             </div>
           ))}
         </div>
+
+        {(() => {
+          const viewerPlan = pricingTiers.find((p) => p.name === "Viewer");
+          if (!viewerPlan) return null;
+
+          const included: string[] = [];
+          const caveats: string[] = [];
+          for (const f of viewerPlan.features) {
+            if (f.toLowerCase().startsWith("no ")) {
+              caveats.push(f);
+            } else if (f === viewerPlan.filesPerMonth) {
+              continue;
+            } else {
+              included.push(f);
+            }
+          }
+
+          return (
+            <div className="mt-8 overflow-hidden rounded-2xl border-2 border-brand-200 shadow-sm hover:shadow-md transition-all">
+              <div className="grid md:grid-cols-5">
+                <div className="md:col-span-2 bg-brand-50/60 p-4 md:p-5 flex flex-col">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-brand-700">
+                      Alternative workflow
+                    </span>
+                    <h3 className="text-lg font-bold text-slate-900">
+                      {viewerPlan.name}
+                    </h3>
+                  </div>
+                  <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+                    <span className="text-3xl font-bold text-slate-900 leading-none">
+                      {viewerPlan.price}
+                    </span>
+                    {viewerPlan.period && (
+                      <span className="text-xs text-slate-400">
+                        {viewerPlan.period}
+                      </span>
+                    )}
+                    <span className="text-xs font-medium text-brand-600">
+                      · {viewerPlan.filesPerMonth}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-600 leading-snug">
+                    {viewerPlan.description}
+                  </p>
+                  <div className="mt-3">
+                    {betaMode ? (
+                      <button
+                        type="button"
+                        onClick={() => setWaitlistOpen(true)}
+                        className="block w-full rounded-lg bg-brand-900 py-2 text-center text-xs font-semibold text-white hover:bg-brand-800 shadow-sm shadow-brand-200 transition-all"
+                      >
+                        Join the Waitlist
+                      </button>
+                    ) : (
+                      <a
+                        href={viewerPlan.href}
+                        className="block w-full rounded-lg bg-brand-900 py-2 text-center text-xs font-semibold text-white hover:bg-brand-800 shadow-sm shadow-brand-200 transition-all"
+                      >
+                        {viewerPlan.cta}
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div className="md:col-span-3 bg-white p-4 md:p-5">
+                  <h4 className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                    What&apos;s included
+                  </h4>
+                  <ul className="grid gap-x-5 gap-y-1.5 sm:grid-cols-2 text-xs text-slate-600">
+                    {included.map((feature) => (
+                      <li key={feature} className="flex items-start gap-1.5">
+                        <svg
+                          className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-brand-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                  {caveats.length > 0 && (
+                    <p className="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-400 leading-snug">
+                      {caveats.join(". ")}. Upgrade to Starter for full engine
+                      preflight, annotations, and report downloads.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       <WaitlistModal
