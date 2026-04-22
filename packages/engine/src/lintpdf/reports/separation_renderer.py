@@ -260,6 +260,13 @@ def list_separations(pdf_bytes: bytes) -> list[dict]:
     return prefix + channels
 
 
+# Maximum recursion depth for nested Form XObjects. Illustrator-exported
+# packaging PDFs have been observed at 4–6 levels deep for sticker /
+# label artwork; 12 gives plenty of headroom without risking a runaway
+# walk on a maliciously self-referencing file.
+_MAX_XOBJECT_DEPTH = 12
+
+
 def _scan_page_colorspaces(
     page: pikepdf.Page,
     seen_names: set[str],
@@ -275,47 +282,134 @@ def _scan_page_colorspaces(
     resources = page.get("/Resources")
     if resources is None:
         return
+    _scan_resources_dict(
+        resources,
+        seen_names,
+        channels,
+        families,
+        visited=set(),
+        depth=0,
+    )
 
-    # Check ColorSpace resource dictionary
-    cs_dict = resources.get("/ColorSpace")
-    if cs_dict is not None:
+
+def _scan_resources_dict(
+    resources: object,
+    seen_names: set[str],
+    channels: list[dict],
+    families: set[str],
+    visited: set[int],
+    depth: int,
+) -> None:
+    """Walk a ``/Resources`` dict + every Form XObject it references.
+
+    Packaging PDFs from Illustrator / Esko nest Form XObjects many
+    levels deep — each Form brings its own ``/Resources/ColorSpace``
+    where spot colors are actually declared. The previous scanner
+    only looked one level deep, so a nine-spot wine label (Amalgam
+    Catalyst) surfaced zero channels in the viewer even though the
+    analyzers saw all nine. This helper recurses up to
+    :data:`_MAX_XOBJECT_DEPTH` levels and dedups via ``visited`` so
+    cyclic references can't loop forever.
+
+    Also scans ``/Pattern`` and ``/Shading`` resource entries since
+    they can declare their own colorspaces (tinting patterns carry
+    the stencil's colorspace, shadings may reference DeviceN).
+    """
+    if depth > _MAX_XOBJECT_DEPTH or resources is None:
+        return
+
+    # ColorSpace dict — the canonical spot-color declaration spot.
+    # pikepdf Dictionary objects are already dict-like (dict(obj) works),
+    # so we iterate directly. An earlier version called
+    # ``pikepdf.Object.parse`` here, which silently raised a TypeError
+    # on every saved-and-reopened PDF (``parse()`` takes bytes, not an
+    # Object) — the outer ``except Exception: pass`` hid the failure and
+    # left the channel list empty, which is exactly what the Amalgam
+    # viewer surfaced.
+    cs_dict = _safe_get(resources, "/ColorSpace")
+    if cs_dict is not None and hasattr(cs_dict, "keys"):
         try:
-            cs_obj = pikepdf.Object.parse(cs_dict) if not isinstance(cs_dict, dict) else cs_dict
-            for _key, cs_value in dict(cs_obj).items():
+            for _key, cs_value in dict(cs_dict).items():
                 _extract_spot_from_cs(cs_value, seen_names, channels, families)
         except Exception:
             pass
 
-    # Image XObjects declare a ColorSpace directly on their stream —
-    # a DeviceCMYK / DeviceRGB image won't appear in the page-level
-    # /Resources/ColorSpace dict.
-    xobjects = resources.get("/XObject")
-    if xobjects is not None:
+    # Pattern resources — colored patterns inline a paint colorspace.
+    pattern_dict = _safe_get(resources, "/Pattern")
+    if pattern_dict is not None:
         try:
-            for _key, xobj in dict(xobjects).items():
-                xobj_resolved = xobj
-                if not hasattr(xobj_resolved, "get"):
-                    continue
-
-                # Image XObject: its /ColorSpace is its pixel colorspace.
-                subtype = xobj_resolved.get("/Subtype")
-                if subtype is not None and str(subtype) == "/Image":
-                    img_cs = xobj_resolved.get("/ColorSpace")
-                    if img_cs is not None:
-                        _extract_spot_from_cs(img_cs, seen_names, channels, families)
-
-                # Form XObject: recurse into its Resources.
-                sub_resources = xobj_resolved.get("/Resources")
-                if sub_resources is not None:
-                    sub_cs = sub_resources.get("/ColorSpace")
-                    if sub_cs is not None:
-                        try:
-                            for _k2, cs_val in dict(sub_cs).items():
-                                _extract_spot_from_cs(cs_val, seen_names, channels, families)
-                        except Exception:
-                            pass
+            for _key, pat in dict(pattern_dict).items():
+                if hasattr(pat, "get"):
+                    pat_cs = pat.get("/Resources")
+                    if pat_cs is not None:
+                        _scan_resources_dict(
+                            pat_cs, seen_names, channels, families, visited, depth + 1,
+                        )
         except Exception:
             pass
+
+    # Shading resources — function-based shadings can declare a
+    # DeviceN / Separation colorspace directly.
+    shading_dict = _safe_get(resources, "/Shading")
+    if shading_dict is not None:
+        try:
+            for _key, sh in dict(shading_dict).items():
+                if hasattr(sh, "get"):
+                    sh_cs = sh.get("/ColorSpace")
+                    if sh_cs is not None:
+                        _extract_spot_from_cs(sh_cs, seen_names, channels, families)
+        except Exception:
+            pass
+
+    # XObjects — Images carry their own ColorSpace; Forms carry a
+    # full Resources dict that we recurse into.
+    xobjects = _safe_get(resources, "/XObject")
+    if xobjects is None:
+        return
+    try:
+        for _key, xobj in dict(xobjects).items():
+            if not hasattr(xobj, "get"):
+                continue
+            obj_id = id(xobj)
+            if obj_id in visited:
+                continue
+            visited.add(obj_id)
+
+            subtype = xobj.get("/Subtype")
+            subtype_str = str(subtype) if subtype is not None else ""
+
+            if subtype_str == "/Image":
+                img_cs = xobj.get("/ColorSpace")
+                if img_cs is not None:
+                    _extract_spot_from_cs(img_cs, seen_names, channels, families)
+                continue
+
+            # Form XObject — recurse into nested resources. Without
+            # this, anything inside a Form (which is how Illustrator
+            # exports the bulk of vector artwork) was invisible to
+            # the separations scanner.
+            sub_resources = xobj.get("/Resources")
+            if sub_resources is not None:
+                _scan_resources_dict(
+                    sub_resources,
+                    seen_names,
+                    channels,
+                    families,
+                    visited,
+                    depth + 1,
+                )
+    except Exception:
+        pass
+
+
+def _safe_get(obj: object, key: str) -> object | None:
+    """``obj.get(key)`` but tolerant of non-dict-like inputs."""
+    if obj is None or not hasattr(obj, "get"):
+        return None
+    try:
+        return obj.get(key)
+    except Exception:
+        return None
 
 
 def _extract_spot_from_cs(
@@ -393,20 +487,19 @@ def _extract_spot_from_cs(
                 if name not in seen_names and name not in ("All", "None"):
                     seen_names.add(name)
                     channels.append({"name": name, "type": "spot"})
-        elif cs_type == "/DeviceN":
-            if len(cs_array) >= 2:
-                names_array = cs_array[1]
-                for n_obj in names_array:
-                    name = str(n_obj).lstrip("/")
-                    if name in ("All", "None"):
-                        continue
-                    if name in PROCESS_CHANNEL_COLORS:
-                        # DeviceN declaring CMYK components as process.
-                        families.add("cmyk")
-                        continue
-                    if name not in seen_names:
-                        seen_names.add(name)
-                        channels.append({"name": name, "type": "spot"})
+        elif cs_type == "/DeviceN" and len(cs_array) >= 2:
+            names_array = cs_array[1]
+            for n_obj in names_array:
+                name = str(n_obj).lstrip("/")
+                if name in ("All", "None"):
+                    continue
+                if name in PROCESS_CHANNEL_COLORS:
+                    # DeviceN declaring CMYK components as process.
+                    families.add("cmyk")
+                    continue
+                if name not in seen_names:
+                    seen_names.add(name)
+                    channels.append({"name": name, "type": "spot"})
     except Exception:
         pass
 
