@@ -29,22 +29,17 @@ export const footerGroups: FooterGroup[] = [
       { href: "/integrations", label: "Integrations" },
       { href: "/pricing", label: "Pricing" },
       { href: "/try-it", label: "Free PDF Test" },
-      { href: "/docs", label: "Docs" },
-    ],
-  },
-  {
-    title: "Developers",
-    links: [
-      // /swagger is intentionally not listed here — Docs owns the single
-      // discovery surface for everything API-related, and the /docs landing
-      // hero + docs-nav both link to the live Swagger UI directly.
-      { href: "/docs/postman", label: "Postman Collection" },
-      { href: "/docs/authentication", label: "Authentication" },
     ],
   },
   {
     title: "Resources",
     links: [
+      // /swagger is intentionally not listed here — Docs owns the single
+      // discovery surface for everything API-related, and the /docs landing
+      // hero + docs-nav both link to the live Swagger UI directly.
+      { href: "/docs", label: "Docs" },
+      { href: "/docs/postman", label: "Postman Collection" },
+      { href: "/docs/authentication", label: "Authentication" },
       { href: "/blog", label: "Blog" },
       { href: "/changelog", label: "Changelog" },
       { href: "/status", label: "Status" },
