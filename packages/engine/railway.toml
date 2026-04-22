@@ -22,25 +22,29 @@ watchPatterns = [
 ]
 
 [deploy]
-# Horizontal scale (bulk-files step 10): 3 replicas so a single hung
-# container never takes the API down, and burst traffic (e.g. 100
-# concurrent file uploads, your stated bulk-files shape) is spread
-# across three containers instead of queued behind one. Each replica
-# runs LINTPDF_WORKERS (8) Uvicorn workers → 24 workers total.
-numReplicas = 3
+# Single-replica scale-to-zero (bursty-usage profile).
+#
+# The original step-10 config kept 3 replicas always-on for HA. Usage
+# is bursty (hundreds of uploads during occasional stress runs, $0 the
+# rest of the time), so we flipped to 1 replica with sleepApplication
+# to drop idle cost from ~$120/mo → ~$0 when no traffic hits the API.
+# Cold-start on first request after idle is ~2-5 s; acceptable for
+# low-volume workloads. HA is intentionally off — if the single
+# container crashes, Railway's ON_FAILURE restart brings it back in
+# a few seconds and sleepApplication compensates for idle downtime.
+#
+# Each active instance runs LINTPDF_WORKERS (8) Uvicorn workers, so
+# total concurrency is 8 × LINTPDF_CONCURRENCY_PER_WORKER (8 × 8 = 64
+# in-flight async handlers per replica). Plenty for typical bursts.
+numReplicas = 1
+sleepApplication = true
 healthcheckPath = "/ready"
 healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-# Graceful rolling deploys (step 15): keep the old replica serving
-# traffic for `overlapSeconds` after the new one is healthy, and give
-# the draining replica `drainingSeconds` to finish in-flight requests
-# before SIGTERM. This stops the mid-upload kill pattern we saw on
-# every redeploy during the tier-1 stress tests today.
-#
-# 60 s overlap matches Railway's recommended default for HTTP services
-# and is well above p99 upload latency observed in tier-1 (~2 s per
-# 20 MB PDF over the engine with streaming uploads).
+# Graceful deploys still matter even at 1 replica — the container
+# draining during a redeploy keeps finishing in-flight requests
+# before SIGTERM. 120 s covers a 50 MB streaming upload + R2 write.
 overlapSeconds = 60
 drainingSeconds = 120
 # API uses the same Celery time_limit rationale as worker.toml — 600 s

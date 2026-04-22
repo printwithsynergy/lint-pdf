@@ -23,9 +23,12 @@ watchPatterns = [
 # same binary with a routing flag flipped, so drift between them is
 # impossible.
 #
-# Small footprint: 2 replicas so the operational plane is HA, each
-# sized for JSON-only traffic.
-numReplicas = 2
+# Single-replica scale-to-zero. Control-plane traffic is entirely
+# human-operator-driven (admin UI clicks, metrics scrapes) so bursty
+# by nature — 1 replica with sleepApplication keeps idle cost at $0.
+# HA intentionally off for the cost-constrained profile.
+numReplicas = 1
+sleepApplication = true
 healthcheckPath = "/ready"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
