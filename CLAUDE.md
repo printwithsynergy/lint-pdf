@@ -219,30 +219,52 @@ entrypoint, and raw psql calls in `startup.sh`. Exceeding the ceiling
 produces `FATAL: sorry, too many clients already` and Railway responds
 by restart-looping the offender.
 
-Current allocation (keep the sum under ~90 to leave headroom):
+**Current production state** (2026-04-22 — post scaling-sprint merge):
+
+- `max_connections = 200` on the Railway Postgres service, set via
+  `postgresql.auto.conf` at `/var/lib/postgresql/data/pgdata/postgresql.auto.conf`
+  (survives restarts because auto.conf lives on the data volume).
+  Restart the Postgres service after editing auto.conf for the bump
+  to take effect.
+- **Every** data-plane service that talks to Postgres routes through
+  PgBouncer (`pgbouncer.railway.internal:6432`) — App, API, API-Control-Plane,
+  Worker, Worker-AI. The App uses `?pgbouncer=true` in its
+  `DATABASE_URL` to force Prisma to skip prepared statements (required
+  for PgBouncer transaction pooling).
+- Direct access to `postgres.railway.internal:5432` is reserved for
+  Postgres-restart operations (ALTER SYSTEM, pg_stat_activity inspection).
+
+Current allocation (keep the sum under ~180 to leave headroom under the
+new 200 ceiling):
 
 | Consumer | Pool size | Notes |
 |---|---|---|
-| App (Prisma) | 15 | Set via `?connection_limit=15&pool_timeout=20` query params on `DATABASE_URL`. 1–2 replicas. |
-| API (SQLAlchemy) | 45 | Default 5 pool + 10 overflow × 3 replicas (step 10 numReplicas=3). |
-| API-Control-Plane (SQLAlchemy) | 30 | 2 replicas × 15 pool. Operational plane only, light DB use. |
-| Worker (Celery) | 16 | `CELERY_DEFAULT_CONCURRENCY=8` × 2 prefork slots. |
-| Worker-AI (Celery) | 16 | `CELERY_AI_CONCURRENCY=8` × 2 prefork slots. |
+| App (Prisma) | 15 | Set via `?connection_limit=15&pool_timeout=20` query params on `DATABASE_URL`. `?pgbouncer=true` also required so Prisma disables prepared statements. 1–2 replicas. |
+| API (SQLAlchemy) | 45 | Default 5 pool + 10 overflow × 3 replicas (step 10 numReplicas=3). Routes through PgBouncer. |
+| API-Control-Plane (SQLAlchemy) | 30 | 2 replicas × 15 pool. Operational plane only, light DB use. Routes through PgBouncer. |
+| Worker (Celery) | 16 | `CELERY_DEFAULT_CONCURRENCY=8` × 2 prefork slots. Routes through PgBouncer. |
+| Worker-AI (Celery) | 16 | `CELERY_AI_CONCURRENCY=8` × 2 prefork slots. Routes through PgBouncer. |
 | Alembic / `startup.sh` | ~10 | Brief bursts during boot. |
-| **Total** | **~130** | **Exceeds the default 100 ceiling** — either raise `max_connections`, enable PgBouncer (step 7), or tune per-service pools down. |
+| **Total (logical clients)** | **~130** | PgBouncer multiplexes these onto ~30–50 backend connections, so real Postgres pressure stays well under 200. |
 
-**PgBouncer sidecar** (spun up today — service id `a633ad21-…`) fixes
-the overshoot. Once `DATABASE_URL` on API + Workers is rewritten to
-`pgbouncer.railway.internal:6432`, the backend pool collapses to
-~30 connections regardless of how many API / Worker clients attach.
+**PgBouncer sidecar** is the shared backend collapse point. If `DATABASE_URL`
+for any service slips back to `postgres.railway.internal:5432` direct, that
+service's connections stop being pooled — a single burst (e.g. App startup
+running `prisma db push` + seed) can blow the budget even with 200 slots.
+When adding a new service, always point `DATABASE_URL` at
+`pgbouncer.railway.internal:6432`.
 
-To raise the Postgres ceiling directly (if not using PgBouncer), run
-on the Railway Postgres service:
-```sql
-ALTER SYSTEM SET max_connections = 500;
+To raise the Postgres ceiling further (if we ever outgrow 200), write to
+`postgresql.auto.conf` inside the Postgres container:
+```sh
+railway ssh --service Postgres \
+  'printf "max_connections = 400\n" >> /var/lib/postgresql/data/pgdata/postgresql.auto.conf'
+railway redeploy --service Postgres -y
 ```
-then restart the Postgres deployment. Bump the app's `connection_limit`
-to ~25 at the same time.
+Postgres reads `auto.conf` on every boot; the value persists across
+restarts because the data directory is on a Railway volume. `ALTER
+SYSTEM SET max_connections` also writes to the same file (use it
+whenever a psql session is available).
 
 **Do not** remove the query params from `DATABASE_URL` — Prisma will
 open "as many as it needs" (usually `num_cpus × 2 + 1`) which in a

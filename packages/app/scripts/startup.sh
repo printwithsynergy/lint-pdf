@@ -36,6 +36,22 @@ if [ -n "$DATABASE_URL" ] && ! printf '%s' "$DATABASE_URL" | grep -q 'connection
   echo "DATABASE_URL augmented with pool params (connection_limit=15, pool_timeout=20)."
 fi
 
+# Loud warning if DATABASE_URL bypasses PgBouncer. Every data-plane
+# service in this project is supposed to route through the
+# ``pgbouncer.railway.internal:6432`` sidecar (see CLAUDE.md
+# "Connection budget"). Direct ``postgres.railway.internal:5432``
+# access on the App service is what took prod login down on
+# 2026-04-22 — App alone was holding enough stale connections
+# during its boot (ALTER TABLE + prisma db push + seed) to exhaust
+# the default 100-slot Postgres ceiling and starve every other
+# service, including PgBouncer's own backend pool.
+if [ -n "$DATABASE_URL" ] && printf '%s' "$DATABASE_URL" | grep -q 'postgres\.railway\.internal'; then
+  echo "WARNING: DATABASE_URL points at postgres.railway.internal directly."
+  echo "         The app should talk to pgbouncer.railway.internal:6432 with"
+  echo "         ?pgbouncer=true so Prisma skips prepared statements. Edit the"
+  echo "         App service variables in Railway — see CLAUDE.md \"Connection budget\"."
+fi
+
 # Step 0: Regenerate the Prisma client against the app's own schema so
 # LintPDF-specific columns (Tenant.engineTenantId, Session.impersonatingTenantId,
 # etc.) are known to the runtime client. Without this, pnpm's hoisted
