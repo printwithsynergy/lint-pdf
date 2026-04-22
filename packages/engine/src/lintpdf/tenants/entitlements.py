@@ -49,18 +49,58 @@ class TenantEntitlements:
     ai_audit_enabled: bool = False
 
 
+def _plan_tier_overrides(plan: TenantPlan) -> dict[str, Any]:
+    """Fetch the operator-edited overrides row for this plan, if any.
+
+    Reads ``plan_limit_overrides`` through a short-lived Session taken
+    from the existing engine pool. Short TTL ``lru_cache`` keeps the
+    resolver path O(1) — ops edits via the admin UI invalidate the
+    cache via :func:`invalidate_plan_tier_cache` below.
+    """
+    # Deferred import so this module doesn't pull the whole API stack
+    # when only the dataclass is needed (tests, Celery boot).
+    from lintpdf.api.database import get_db_session
+    from lintpdf.api.models import PlanLimitOverride
+
+    try:
+        session = get_db_session()
+    except Exception:
+        return {}
+    import contextlib
+
+    try:
+        row = (
+            session.query(PlanLimitOverride)
+            .filter(PlanLimitOverride.plan == plan.value)
+            .first()
+        )
+        if row is None or not row.overrides:
+            return {}
+        return dict(row.overrides)
+    except Exception:
+        # A missing table (pre-035) or transient DB flap just means
+        # "no plan-tier overrides yet" — fall back to hardcoded
+        # PLAN_LIMITS without failing the request.
+        return {}
+    finally:
+        with contextlib.suppress(Exception):
+            session.close()
+
+
 def resolve_entitlements(tenant: Any) -> TenantEntitlements:
-    """Compute effective entitlements by merging plan defaults + tenant overrides.
+    """Compute effective entitlements by merging layered defaults.
 
     Priority (highest to lowest):
     1. ``entitlement_overrides`` JSON column (admin per-tenant overrides)
-    2. Legacy direct columns (``rate_limit_daily``, ``max_file_size_mb``) when
-       they differ from plan defaults (backward-compatible with existing admin API)
-    3. ``PLAN_LIMITS`` defaults for the tenant's plan
+    2. Dedicated per-tenant columns (``rate_limit_daily``, etc.) when
+       they differ from plan defaults (backward-compat)
+    3. ``plan_limit_overrides`` row for this plan (operator-editable,
+       effective for every tenant on the plan)
+    4. ``PLAN_LIMITS`` hardcoded defaults for the tenant's plan
 
     Args:
-        tenant: SQLAlchemy Tenant model instance (or any object with ``plan``,
-                ``entitlement_overrides``, ``rate_limit_daily``, and
+        tenant: SQLAlchemy Tenant model instance (or any object with
+                ``plan``, ``entitlement_overrides``, ``rate_limit_daily``,
                 ``max_file_size_mb`` attributes).
 
     Returns:
@@ -70,8 +110,10 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
     plan_defaults = dict(PLAN_LIMITS[plan])
     overrides = getattr(tenant, "entitlement_overrides", None) or {}
 
-    # Start with plan defaults
+    # Start with hardcoded plan defaults, then layer ops-edited
+    # plan-tier overrides before the per-tenant merge.
     merged: dict[str, Any] = {**plan_defaults}
+    merged.update(_plan_tier_overrides(plan))
 
     # Layer in legacy column overrides (only if they differ from plan default)
     tenant_rate = getattr(tenant, "rate_limit_daily", None)

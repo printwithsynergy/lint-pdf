@@ -500,6 +500,30 @@ class CustomEndpoint(Base):
     tenant: Mapped[Tenant] = relationship()
 
 
+class PlanLimitOverride(Base):
+    """Operator-editable defaults applied to every tenant on a plan.
+
+    Sits between hardcoded ``PLAN_LIMITS`` (the baseline) and
+    ``Tenant.entitlement_overrides`` (the per-tenant delta). Ops flip
+    an entry here to shift ceilings globally — e.g. "every Scale
+    tenant now gets ``ai_audit_enabled=True``" — without a code-ship
+    cycle. Per-tenant overrides still win; see
+    :func:`lintpdf.tenants.entitlements.resolve_entitlements` for the
+    three-layer merge order.
+    """
+
+    __tablename__ = "plan_limit_overrides"
+
+    plan: Mapped[str] = mapped_column(String(32), primary_key=True)
+    overrides: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class ApiKey(Base):
     """API key for tenant programmatic access. Supports multiple keys per tenant."""
 

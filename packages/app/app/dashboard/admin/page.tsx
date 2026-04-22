@@ -21,6 +21,16 @@ export default function AdminPage() {
           </p>
         </Link>
         <Link
+          href="/dashboard/admin/plans"
+          className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+        >
+          <h2 className="text-lg font-semibold">Plan defaults</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Edit the baseline entitlements for each plan tier without
+            a code deploy. Per-tenant overrides still win.
+          </p>
+        </Link>
+        <Link
           href="/dashboard/admin/jobs"
           className="rounded-lg border p-4 hover:bg-muted/50 transition-colors"
         >

@@ -16,6 +16,7 @@ from lintpdf.api.models import (
     ApiKey,
     Job,
     JobStatus,
+    PlanLimitOverride,
     ReportToken,
     Tenant,
     WebhookEndpoint,
@@ -1724,6 +1725,155 @@ async def reset_tenant_entitlements(
         entitlement_overrides=None,
         updated=True,
     )
+
+
+# ── Plan-tier entitlement defaults ──────────────────────────
+
+
+class PlanLimitResponse(BaseModel):
+    """One plan's combined entitlement view.
+
+    ``baseline`` is the hardcoded ``PLAN_LIMITS`` entry (the
+    code-shipped default). ``overrides`` is the operator-edited
+    JSON stored in ``plan_limit_overrides``. ``effective`` is
+    ``baseline | overrides`` — what the resolver actually hands
+    back to the request path when no per-tenant override is set.
+    """
+
+    plan: str
+    baseline: dict[str, Any]
+    overrides: dict[str, Any]
+    effective: dict[str, Any]
+
+
+class PlanLimitListResponse(BaseModel):
+    plans: list[PlanLimitResponse]
+
+
+class UpdatePlanLimitRequest(BaseModel):
+    """PATCH body for ``/admin/plans/{plan}``.
+
+    Accepts a free-form JSON blob that is merged into the existing
+    plan-tier overrides. Shape matches ``UpdateEntitlementsRequest``
+    semantically but is kept loose (``dict[str, Any]``) so ops can
+    add new entitlements here the moment the resolver knows about
+    them — no code change required to surface a new toggle.
+    """
+
+    overrides: dict[str, Any] = Field(default_factory=dict)
+
+
+def _load_plan_overrides_row(db: Session, plan: str) -> dict[str, Any]:
+    row = db.query(PlanLimitOverride).filter(PlanLimitOverride.plan == plan).first()
+    return dict(row.overrides) if row and row.overrides else {}
+
+
+def _plan_limit_response(db: Session, plan: str) -> PlanLimitResponse:
+    from lintpdf.tenants.models import PLAN_LIMITS, TenantPlan
+
+    try:
+        plan_enum = TenantPlan(plan)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unknown plan: {plan!r}",
+        ) from exc
+    baseline = dict(PLAN_LIMITS[plan_enum])
+    overrides = _load_plan_overrides_row(db, plan_enum.value)
+    effective = {**baseline, **overrides}
+    return PlanLimitResponse(
+        plan=plan_enum.value,
+        baseline=baseline,
+        overrides=overrides,
+        effective=effective,
+    )
+
+
+@router.get("/plans", response_model=PlanLimitListResponse)
+async def list_plan_limits(
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> PlanLimitListResponse:
+    """List every plan with its baseline + ops-edited overrides."""
+    from lintpdf.tenants.models import TenantPlan
+
+    return PlanLimitListResponse(
+        plans=[_plan_limit_response(db, p.value) for p in TenantPlan],
+    )
+
+
+@router.get("/plans/{plan}", response_model=PlanLimitResponse)
+async def get_plan_limit(
+    plan: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> PlanLimitResponse:
+    return _plan_limit_response(db, plan)
+
+
+@router.patch("/plans/{plan}", response_model=PlanLimitResponse)
+async def update_plan_limit(
+    plan: str,
+    body: UpdatePlanLimitRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> PlanLimitResponse:
+    """Merge ``body.overrides`` into this plan's DB-level override row.
+
+    Only provided keys are written. To clear a key that has drifted,
+    use the DELETE endpoint (wipes ALL overrides for this plan) and
+    then re-PATCH with the fields you want to keep.
+    """
+    from lintpdf.tenants.models import TenantPlan
+
+    try:
+        plan_enum = TenantPlan(plan)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unknown plan: {plan!r}",
+        ) from exc
+
+    row = (
+        db.query(PlanLimitOverride)
+        .filter(PlanLimitOverride.plan == plan_enum.value)
+        .first()
+    )
+    current = dict(row.overrides) if row and row.overrides else {}
+    current.update(body.overrides)
+
+    if row is None:
+        row = PlanLimitOverride(plan=plan_enum.value, overrides=current)
+        db.add(row)
+    else:
+        row.overrides = current
+    db.commit()
+
+    return _plan_limit_response(db, plan_enum.value)
+
+
+@router.delete("/plans/{plan}", response_model=PlanLimitResponse)
+async def reset_plan_limit(
+    plan: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> PlanLimitResponse:
+    """Drop all DB overrides for this plan (revert to baseline code)."""
+    from lintpdf.tenants.models import TenantPlan
+
+    try:
+        plan_enum = TenantPlan(plan)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Unknown plan: {plan!r}",
+        ) from exc
+
+    db.query(PlanLimitOverride).filter(
+        PlanLimitOverride.plan == plan_enum.value
+    ).delete()
+    db.commit()
+    return _plan_limit_response(db, plan_enum.value)
 
 
 # ── Helpers ──────────────────────────────────────────────────
