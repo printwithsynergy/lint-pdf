@@ -1,11 +1,12 @@
 [build]
-# Use the upstream PgBouncer image directly — we don't need a custom
-# Dockerfile. Railway's `image` source pulls straight from Docker Hub
-# (or any registry) so the service builds in seconds.
+# Build from the in-repo Dockerfile. The Railway serviceInstance has
+# ``rootDirectory = "packages/infra/pgbouncer"`` configured, so
+# ``dockerfilePath`` here is relative to that subdirectory — NOT the
+# repo root. Using a repo-root-relative path here caused the first
+# deploy attempt at 2026-04-21T21:14 to fail with
+# "Deployment does not have an associated build".
 builder = "DOCKERFILE"
-# No in-repo Dockerfile; Railway's image-source path below takes over
-# at build time. Left here for ``watchPatterns`` compatibility only.
-dockerfilePath = "packages/infra/pgbouncer/Dockerfile"
+dockerfilePath = "Dockerfile"
 watchPatterns = [
     "packages/infra/pgbouncer/**",
 ]
