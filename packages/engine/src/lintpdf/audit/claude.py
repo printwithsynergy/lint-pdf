@@ -48,7 +48,10 @@ logger = logging.getLogger(__name__)
 _DEFAULT_MODEL = os.environ.get("LINTPDF_AUDIT_MODEL", "claude-haiku-4-5")
 _MAX_FINDINGS_PER_CALL = 25
 _PAGE_DPI = 150
-_CACHE_TTL_SECONDS = 3600
+# Anthropic prompt-caching TTL. Must be one of the API's supported
+# shorthand strings — today ``"5m"`` or ``"1h"``. Passing an integer
+# seconds value returns 400 ``Input should be '5m' or '1h'``.
+_CACHE_TTL = "1h"
 
 
 _SYSTEM_PROMPT = (
@@ -136,7 +139,7 @@ def _image_block(png: bytes, *, cache: bool) -> dict[str, Any]:
     if cache:
         block["cache_control"] = {
             "type": "ephemeral",
-            "ttl": _CACHE_TTL_SECONDS,
+            "ttl": _CACHE_TTL,
         }
     return block
 
@@ -256,7 +259,7 @@ class ClaudeAuditor:
                     "text": _SYSTEM_PROMPT,
                     "cache_control": {
                         "type": "ephemeral",
-                        "ttl": _CACHE_TTL_SECONDS,
+                        "ttl": _CACHE_TTL,
                     },
                 }
             ],
