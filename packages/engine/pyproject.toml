@@ -50,6 +50,11 @@ dependencies = [
     # to cold-start; kept in the base deps so observability is on by
     # default even for non-AI deploys.
     "prometheus-client>=0.20.0",
+    # Claude Haiku 4.5 is the primary customer AI accuracy auditor
+    # (see lintpdf.audit.claude). Small SDK (~1 MB); keeping it in
+    # the base deps so the audit path works without the heavy ``ai``
+    # extra being installed.
+    "anthropic>=0.30.0",
 ]
 
 [project.optional-dependencies]
