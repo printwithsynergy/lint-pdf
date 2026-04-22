@@ -161,6 +161,16 @@ def create_app() -> FastAPI:
 
     app.add_middleware(RequestIdMiddleware)
 
+    # Wake-on-need middleware — inspects the incoming path and fires
+    # fire-and-forget warm-up probes at scale-to-zero dependencies
+    # that this endpoint is about to touch. By the time the handler
+    # starts running (e.g. queuing a Celery task + reading from R2),
+    # Modal / engine containers are already booting in parallel with
+    # the handler's own work.
+    from lintpdf.api.middleware_warming import WakeOnNeedMiddleware
+
+    app.add_middleware(WakeOnNeedMiddleware)
+
     # CORS — allow browser clients on the marketing site (for
     # /swagger → /openapi.tenant.json) and the dashboard SPA to call
     # the tenant API. Added after RequestIdMiddleware so CORS sits

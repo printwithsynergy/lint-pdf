@@ -301,6 +301,20 @@ def run_preflight(
     start = time.monotonic()
     logger.info("Starting preflight job %s with profile %s", job_id, profile_id)
 
+    # Wake-on-need: kick cold-start warmers for every downstream
+    # dependency this task could touch *before* we spend 5+ minutes
+    # on the deterministic engine phase. Fire-and-forget, so Modal /
+    # engine containers boot in parallel with work we'd do anyway.
+    # If a dep isn't configured on this deployment (URL env var
+    # unset) the warmer silently skips — no noise in the logs.
+    try:
+        from lintpdf.warming import ensure_warm
+
+        _warm_targets: list[str] = ["inference", "audit"]
+        ensure_warm(_warm_targets)
+    except Exception:  # pragma: no cover — warmers never fail the task
+        logger.exception("warm: ensure_warm threw; continuing")
+
     try:
         # Get DB session
         import uuid as uuid_mod
