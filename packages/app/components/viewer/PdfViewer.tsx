@@ -60,6 +60,29 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     typeof window !== "undefined" ? window.innerWidth < 768 : false,
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  // Desktop findings drawer. Hidden on first paint so the PDF fills the
+  // viewport — matches the mobile UX the user asked to mirror onto
+  // desktop. Persisted per-device via localStorage so a reader who
+  // opens it stays opened on refresh.
+  const [desktopSidebarOpen, setDesktopSidebarOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("lintpdf.viewer.sidebarOpen") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        "lintpdf.viewer.sidebarOpen",
+        desktopSidebarOpen ? "1" : "0",
+      );
+    } catch {
+      /* storage quota / privacy mode — not worth blocking the UI */
+    }
+  }, [desktopSidebarOpen]);
   const [shareOpen, setShareOpen] = useState(false);
   const [bottomSheetSnap, setBottomSheetSnap] = useState<SnapPosition>("collapsed");
   const [hasChain, setHasChain] = useState(false);
@@ -942,6 +965,8 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         onOpenShare={publicToken ? () => setShareOpen(true) : undefined}
         hasChain={hasChain}
         onCapabilityFillStarted={handleCapabilityFillStarted}
+        onToggleSidebar={() => setDesktopSidebarOpen((v) => !v)}
+        sidebarOpen={desktopSidebarOpen}
       />
 
       {/* Annotation toolbar (hidden in read-only / public mode) */}
@@ -961,16 +986,35 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         </div>
       )}
 
-      {/* Main content: LEFT panel | RIGHT canvas */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* LEFT: Findings / context panel (desktop only) */}
+      {/* Main content: full-width canvas + overlay findings drawer.
+          Desktop used to have an always-on 280 px sidebar here; the
+          user asked to match mobile's UX (PDF full-screen first,
+          hamburger to reveal). The drawer renders as a fixed overlay
+          with a backdrop so the canvas width stays stable when the
+          drawer toggles — no layout shift on every open/close. */}
+      <div className="relative flex flex-1 overflow-hidden">
         {!isMobile && (
-          <div className="flex w-[280px] shrink-0 flex-col border-r border-slate-700 bg-slate-900 overflow-hidden">
-            {renderLeftPanel()}
-          </div>
+          <>
+            <div
+              className={`absolute inset-0 z-[55] bg-black/40 transition-opacity duration-200 ${
+                desktopSidebarOpen ? "opacity-100" : "pointer-events-none opacity-0"
+              }`}
+              onClick={() => setDesktopSidebarOpen(false)}
+              aria-hidden="true"
+            />
+            <aside
+              className={`absolute inset-y-0 left-0 z-[60] flex w-[320px] flex-col border-r border-slate-700 bg-slate-900 shadow-2xl transition-transform duration-200 ease-out ${
+                desktopSidebarOpen ? "translate-x-0" : "-translate-x-full"
+              }`}
+              aria-label="Findings panel"
+              aria-hidden={!desktopSidebarOpen}
+            >
+              {renderLeftPanel()}
+            </aside>
+          </>
         )}
 
-        {/* RIGHT: Page canvas */}
+        {/* Page canvas */}
         <div ref={scrollRef} className="flex-1 overflow-auto bg-neutral-800 p-4">
           <div className="flex justify-center">
             {currentPageInfo && (

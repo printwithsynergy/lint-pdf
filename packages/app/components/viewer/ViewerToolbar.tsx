@@ -40,6 +40,10 @@ interface ViewerToolbarProps {
    * flips from "Load …" to live once Celery completes.
    */
   onCapabilityFillStarted?: (capability: ViewerCapabilityKey) => void;
+  /** Toggle the findings sidebar (desktop overlay drawer). Undefined hides the button. */
+  onToggleSidebar?: () => void;
+  /** Current open/closed state of the sidebar; drives the button's aria-pressed + active styling. */
+  sidebarOpen?: boolean;
   // Legacy props for backward compat
   separationMode?: boolean;
   onToggleSeparationMode?: () => void;
@@ -156,6 +160,8 @@ export function ViewerToolbar({
   onOpenShare,
   hasChain,
   onCapabilityFillStarted,
+  onToggleSidebar,
+  sidebarOpen = false,
 }: ViewerToolbarProps) {
   const { apiBase, readOnly } = useViewerApi();
   const { inflight, fill } = useCapabilityFill(apiBase, onCapabilityFillStarted);
@@ -182,6 +188,29 @@ export function ViewerToolbar({
       className="flex items-center gap-2 overflow-x-auto px-3 py-1.5 text-white scrollbar-none"
       style={{ backgroundColor: bgColor, WebkitOverflowScrolling: "touch" }}
     >
+      {/* Findings drawer toggle. Desktop's answer to mobile's
+          hamburger — the drawer itself is hidden by default so the
+          PDF fills the viewport on first paint; clicking slides the
+          findings panel in as an overlay. Only rendered when the
+          parent wires a handler, so the mobile top bar (which has
+          its own hamburger) isn't double-stamped. */}
+      {onToggleSidebar && (
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          aria-label={sidebarOpen ? "Close findings panel" : "Open findings panel"}
+          aria-pressed={sidebarOpen}
+          className={`shrink-0 rounded p-1.5 transition-colors ${
+            sidebarOpen ? "bg-white/20 text-white" : "text-slate-300 hover:bg-white/10 hover:text-white"
+          }`}
+          title="Toggle findings panel"
+        >
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" />
+          </svg>
+        </button>
+      )}
+
       {/* Logo — suppressed entirely in anonymous mode so the viewer
           frame leaks no broker OR LintPDF identity. */}
       {!config.anonymous &&

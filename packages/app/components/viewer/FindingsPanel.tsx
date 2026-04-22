@@ -115,7 +115,7 @@ export function FindingsPanel({
   return (
     <div className="flex h-full flex-col bg-slate-900 text-slate-200">
       {/* Search box */}
-      <div className="shrink-0 border-b border-slate-800/40 px-3 py-2">
+      <div className="shrink-0 border-b border-slate-800/20 px-3 py-2">
         <div className="relative">
           <svg
             className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"
@@ -138,7 +138,7 @@ export function FindingsPanel({
       </div>
 
       {/* Severity filter tabs */}
-      <div className="flex shrink-0 border-b border-slate-800/40">
+      <div className="flex shrink-0 border-b border-slate-800/20">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -172,7 +172,7 @@ export function FindingsPanel({
       </div>
 
       {/* Page scope toggle — segmented control */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-slate-800/40 px-3 py-1.5">
+      <div className="flex shrink-0 items-center gap-2 border-b border-slate-800/20 px-3 py-1.5">
         <div className="inline-flex rounded-md bg-slate-800/50 p-0.5">
           <button
             onClick={() => setFilterScope("all")}
@@ -272,7 +272,7 @@ export function FindingsPanel({
                           <button
                             key={`page-${f.inspection_id}-${f.page_num}-${i}`}
                             onClick={() => onSelectFinding(f)}
-                            className={`w-full border-b border-slate-800/30 px-3 py-2.5 text-left transition-colors hover:bg-slate-800/80 ${
+                            className={`w-full px-3 py-2.5 text-left transition-colors hover:bg-slate-800/80 ${
                               isSelected
                                 ? `border-l-[3px] ${SEVERITY_BORDER[f.severity]} ${SEVERITY_SELECTED_BG[f.severity]}`
                                 : "border-l-[3px] border-l-transparent"
