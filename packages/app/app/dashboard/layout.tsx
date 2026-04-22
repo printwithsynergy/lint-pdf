@@ -52,20 +52,18 @@ export default async function DashboardLayout({
 
   return (
     <ClientProviders>
-      <div className="flex min-h-screen flex-col">
-        {user.isSuperAdmin && <SuperAdminToolbar />}
-        <DashboardShell
-          navItems={navItems}
-          user={user}
-          brandName={branding.brandName ?? fallbackName}
-          brandLogoUrl={
-            branding.brandLogoUrl ?? (isPrimary ? "/logo.svg" : undefined)
-          }
-          customCss={customCss || undefined}
-        >
-          {children}
-        </DashboardShell>
-      </div>
+      <DashboardShell
+        navItems={navItems}
+        user={user}
+        brandName={branding.brandName ?? fallbackName}
+        brandLogoUrl={
+          branding.brandLogoUrl ?? (isPrimary ? "/logo.svg" : undefined)
+        }
+        customCss={customCss || undefined}
+        topSlot={user.isSuperAdmin ? <SuperAdminToolbar /> : undefined}
+      >
+        {children}
+      </DashboardShell>
     </ClientProviders>
   );
 }

@@ -221,22 +221,16 @@ export const lintpdfPlugin: PixieDustPlugin = {
       requiredPermission: "account:manage",
     });
 
-    // Tenant-facing API reference. Points at ``/dashboard/api-reference``,
-    // which embeds Swagger UI reading ``/openapi.tenant.json`` so customers
-    // see every route they can actually call + can try them out in-browser.
+    // Tenant-facing API reference. The page still exists at
+    // ``/dashboard/api-reference`` (inline Swagger UI reading
+    // ``/openapi.tenant.json``) so deep links keep working, but the nav
+    // entry was intentionally removed — the public marketing Swagger UI at
+    // ``https://lintpdf.com/swagger`` and the Docs section own the
+    // discovery surface, and an extra menu item just adds click-through.
     ctx.addPage({
       path: "/dashboard/api-reference",
       title: "API Reference",
       layout: "dashboard",
-    });
-    ctx.addNavItem({
-      label: "API Reference",
-      href: "/dashboard/api-reference",
-      icon: "code",
-      section: "main",
-      order: 70,
-      // No permission gate -- every authenticated tenant user should
-      // be able to read the API docs for their account.
     });
 
     // ── Public paths (HMAC-authenticated, not session-authenticated) ──
