@@ -3,6 +3,10 @@ import { prisma } from "@thinkneverland/pixie-dust-database/server";
 
 import { buildBrandingCss, type BrandingColors } from "@/lib/branding-css";
 
+// Runtime-only rendering; see packages/app/app/auth/layout.tsx for the
+// same reason — getBranding(prisma) needs a live DATABASE_URL.
+export const dynamic = "force-dynamic";
+
 /**
  * Public approval-chain route. Injects AppSettings branding so the
  * page's `bg-background` / `text-foreground` / `text-primary`
