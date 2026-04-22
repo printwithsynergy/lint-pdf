@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import io
 import logging
+import os
+import shutil
+import subprocess
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,30 @@ try:
 except ImportError:
     _HAS_PIL = False
     _PILImage = None  # type: ignore[assignment]
+
+
+# Ghostscript availability — required for overprint-faithful previews of
+# spot-color / packaging artwork. The engine Dockerfile installs
+# ``ghostscript`` alongside ``poppler-utils``; fall back to poppler when
+# ``gs`` is missing (dev laptops, CI without GS) at the cost of losing
+# overprint simulation in the preview tile.
+_gs_checked = False
+_has_gs = False
+
+
+def _has_ghostscript() -> bool:
+    global _gs_checked, _has_gs
+    if _gs_checked:
+        return _has_gs
+    _gs_checked = True
+    _has_gs = shutil.which("gs") is not None
+    if not _has_gs:
+        logger.warning(
+            "Ghostscript ('gs') not on PATH — preview tiles will use pdftoppm "
+            "without overprint simulation. Spot-color artwork will render "
+            "incorrectly. Install ghostscript for faithful previews.",
+        )
+    return _has_gs
 
 
 class OCGError(ValueError):
@@ -120,12 +148,80 @@ def _apply_ocg_overrides(
         return buf.getvalue()
 
 
+def _render_page_via_ghostscript(
+    pdf_bytes: bytes,
+    page_num: int,
+    dpi: int,
+) -> bytes:
+    """Rasterize one page with Ghostscript + overprint simulation on.
+
+    Packaging PDFs routinely combine spot inks with overprint set true
+    (``/OP true`` / ``/op true``) — the result is the classic ink
+    stack-up where a yellow "AMALGAM" on top of a blue splatter actually
+    blends rather than knocking out. pdftoppm (poppler) ignores
+    overprint in RGB mode, so a 9-spot label renders as a single tinted
+    page, which is what surfaced on the Amalgam_Catalyst viewer tile.
+
+    Ghostscript's ``png16m`` device + ``-dSimulateOverprint=true``
+    (falling back to ``-dOverprint=/simulate`` on older builds) honours
+    overprint against the intended process/spot stack, so the preview
+    matches what would actually print. Slightly slower than pdftoppm on
+    simple CMYK (roughly 1.5-2x), but the tile cache absorbs the extra
+    cost - this only runs on cache miss.
+    """
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = os.path.join(tmpdir, "input.pdf")
+        png_path = os.path.join(tmpdir, "page.png")
+        with open(pdf_path, "wb") as fh:
+            fh.write(pdf_bytes)
+
+        # ``-dSimulateOverprint=true`` is the current flag; older GS
+        # builds (9.x) only honour ``-dOverprint=/simulate``. Passing
+        # both is safe — unknown flags are ignored.
+        cmd = [
+            "gs",
+            "-q",
+            "-dNOPAUSE",
+            "-dBATCH",
+            "-dSAFER",
+            "-sDEVICE=png16m",
+            "-dSimulateOverprint=true",
+            "-dOverprint=/simulate",
+            "-dTextAlphaBits=4",
+            "-dGraphicsAlphaBits=4",
+            f"-r{dpi}",
+            f"-dFirstPage={page_num}",
+            f"-dLastPage={page_num}",
+            f"-sOutputFile={png_path}",
+            pdf_path,
+        ]
+        try:
+            proc = subprocess.run(cmd, capture_output=True, timeout=120)
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(
+                f"Ghostscript render timed out for page {page_num}",
+            ) from exc
+        if proc.returncode != 0:
+            stderr = proc.stderr.decode(errors="replace")[:500]
+            raise RuntimeError(
+                f"Ghostscript render failed (rc={proc.returncode}): {stderr}"
+            )
+        if not os.path.exists(png_path):
+            raise RuntimeError(
+                f"Ghostscript produced no output for page {page_num}"
+            )
+        with open(png_path, "rb") as fh:
+            return fh.read()
+
+
 def render_page_to_image(
     pdf_bytes: bytes,
     page_num: int,
     dpi: int = 300,
     ocg_on: list[int] | None = None,
     ocg_off: list[int] | None = None,
+    *,
+    simulate_overprint: bool = True,
 ) -> bytes:
     """Render a single PDF page to PNG image bytes.
 
@@ -137,6 +233,12 @@ def render_page_to_image(
             pre-processed via :func:`_apply_ocg_overrides` so poppler
             honours the override at render time.
         ocg_off: Optional OCG indices to force hidden.
+        simulate_overprint: When True (default), use Ghostscript's
+            ``-dSimulateOverprint=true`` so spot-color / overprinting
+            artwork renders the way it would print. Falls through to
+            pdftoppm when Ghostscript isn't installed. Set False to
+            force the legacy pdftoppm path (e.g. in unit tests that
+            can't rely on GS being present).
 
     Returns:
         PNG image bytes.
@@ -146,9 +248,22 @@ def render_page_to_image(
         OCGError: ``ocg_on`` / ``ocg_off`` cannot be applied
             (non-layered PDF, index out of range, or conflict).
     """
+    if ocg_on or ocg_off:
+        pdf_bytes = _apply_ocg_overrides(pdf_bytes, ocg_on, ocg_off)
+
+    if simulate_overprint and _has_ghostscript():
+        try:
+            return _render_page_via_ghostscript(pdf_bytes, page_num, dpi)
+        except RuntimeError:
+            # Don't give up entirely — fall back to pdftoppm so the
+            # viewer still shows *something* even if GS hiccuped on a
+            # single page. Overprint fidelity is better than a 500.
+            logger.exception(
+                "Ghostscript render failed; falling back to pdftoppm for page %d",
+                page_num,
+            )
+
     if _HAS_PDF2IMAGE:
-        if ocg_on or ocg_off:
-            pdf_bytes = _apply_ocg_overrides(pdf_bytes, ocg_on, ocg_off)
         images = _convert_from_bytes(
             pdf_bytes,
             first_page=page_num,

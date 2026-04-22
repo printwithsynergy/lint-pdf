@@ -230,6 +230,15 @@ def _ocg_cache_suffix(ocg_on: list[int] | None, ocg_off: list[int] | None) -> st
     return f"_ocg-{hashlib.sha256(raw).hexdigest()[:12]}"
 
 
+# Tile render format version. Bump whenever the renderer's output
+# changes in a way that would make a previously-cached PNG look wrong
+# (e.g. the 2026-04-22 switch from pdftoppm to Ghostscript with
+# ``-dSimulateOverprint=true`` for spot-color / packaging PDFs — tiles
+# warmed pre-fix rendered overprinting artwork flat, which is exactly
+# what the Amalgam_Catalyst wine label surfaced on the viewer).
+_TILE_RENDER_VERSION = 2
+
+
 def _tile_cache_key(
     tenant_id: str,
     job_id: str,
@@ -238,9 +247,19 @@ def _tile_cache_key(
     ocg_on: list[int] | None = None,
     ocg_off: list[int] | None = None,
 ) -> str:
-    """S3 key for a cached tile."""
+    """S3 key for a cached tile.
+
+    The ``_rvN`` token in the key lets us invalidate the global tile
+    cache without a mass-delete: bumping ``_TILE_RENDER_VERSION`` makes
+    every subsequent read miss on old keys, so the next request
+    re-renders through the new pipeline and the stale PNGs age out of
+    R2 on their own lifecycle rule.
+    """
     suffix = _ocg_cache_suffix(ocg_on, ocg_off)
-    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}{suffix}.png"
+    return (
+        f"{tenant_id}/{job_id}/tiles/"
+        f"p{page_num}_d{dpi}_rv{_TILE_RENDER_VERSION}{suffix}.png"
+    )
 
 
 def _channel_cache_key(

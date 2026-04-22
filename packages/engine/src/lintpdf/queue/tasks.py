@@ -1929,8 +1929,16 @@ def _tile_warm_tenant_cap() -> int:
 
 
 def _tile_s3_key(tenant_id: str, job_id: str, page_num: int, dpi: int) -> str:
-    """S3 key for a rendered page tile (mirrors ``viewer.py::_tile_cache_key``)."""
-    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}.png"
+    """S3 key for a rendered page tile (mirrors ``viewer.py::_tile_cache_key``).
+
+    Imports ``_TILE_RENDER_VERSION`` from the viewer module so the warm
+    task and the read path always agree on the current tile format —
+    otherwise the warmer would write to ``_rv2`` keys while the reader
+    still tried to serve ``_rv1``.
+    """
+    from lintpdf.api.routes.viewer import _TILE_RENDER_VERSION
+
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_rv{_TILE_RENDER_VERSION}.png"
 
 
 def _warm_status_payload(
