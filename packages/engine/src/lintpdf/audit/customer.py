@@ -177,8 +177,12 @@ class CustomerAuditor:
             ],
         }
         body = json.dumps(payload).encode("utf-8")
+        # ``LINTPDF_AUDIT_MODAL_URL`` already points at the function's
+        # full ``@modal.fastapi_endpoint(label="audit")`` URL — Modal
+        # web endpoints serve at the function root, not a sub-path, so
+        # we POST to the URL verbatim rather than appending ``/audit``.
         req = urllib.request.Request(
-            f"{self._url}/audit",
+            self._url,
             data=body,
             method="POST",
             headers={"Content-Type": "application/json"},
