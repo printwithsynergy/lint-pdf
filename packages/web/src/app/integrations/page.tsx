@@ -66,6 +66,18 @@ const erpIntegrations: Integration[] = [
       "Direct via Microsoft Dynamics 365 APIs and Power Automate — no code required.",
     href: "/docs/integrations-printvis",
   },
+  {
+    title: "Radius",
+    description:
+      "Indirect via JDF through Esko AE / CLOUDFLOW, or direct middleware.",
+    href: "/docs/integrations-radius",
+  },
+  {
+    title: "NetSuite",
+    description:
+      "Direct via SuiteScript Restlets and SuiteTalk REST, or polling middleware.",
+    href: "/docs/integrations-netsuite",
+  },
 ];
 
 const genericIntegrations: Integration[] = [
