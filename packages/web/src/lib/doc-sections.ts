@@ -243,6 +243,8 @@ export const docSections: DocSection[] = [
       { slug: "integrations-efi-pace", label: "EFI Pace" },
       { slug: "integrations-tharstern", label: "Tharstern" },
       { slug: "integrations-printvis", label: "PrintVis" },
+      { slug: "integrations-radius", label: "Radius" },
+      { slug: "integrations-netsuite", label: "NetSuite" },
       {
         slug: "integrations-zapier-make-n8n",
         label: "Zapier, Make & n8n",

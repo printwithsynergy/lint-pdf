@@ -2,7 +2,7 @@
 title: "Zapier, Make & n8n Integration"
 description: "Connect LintPDF to Zapier, Make (Integromat), and n8n using webhooks and HTTP modules."
 section: "integrations"
-order: 10
+order: 12
 ---
 
 # Zapier, Make & n8n Integration

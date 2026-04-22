@@ -2,7 +2,7 @@
 title: "Hot Folder Integration"
 description: "Automatically preflight files by dropping them into a watched directory. Choose the desktop app for a visual experience or the CLI for headless servers."
 section: "integrations"
-order: 11
+order: 13
 ---
 
 # Hot Folder Integration
