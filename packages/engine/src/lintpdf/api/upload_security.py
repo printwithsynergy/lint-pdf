@@ -558,7 +558,17 @@ async def validate_upload(
 # ---------------------------------------------------------------------------
 
 
-_SPOOL_RAM_THRESHOLD_BYTES = 4 * 1024 * 1024  # 4 MB spills to disk past this.
+# Spool-in-RAM threshold before spilling to disk.
+#
+# Lowered from 4 MB → 512 KB after the 2026-04-21 tier-2 run
+# wedged the engine ~90s in with 100 concurrent uploads. Even though
+# each spool was capped at 4 MB RAM, the aggregate (100 concurrent
+# bodies × 4 MB × 3 replicas) approached the Railway container RSS
+# ceiling and triggered OOM-adjacent thrashing. 512 KB keeps the
+# fast-path for small PDFs (<512 KB stays in RAM) while large files
+# spill to disk immediately, capping total in-RAM upload bytes at
+# roughly ``N_workers × 512 KB`` instead of ``N_workers × 4 MB``.
+_SPOOL_RAM_THRESHOLD_BYTES = 512 * 1024
 
 
 async def validate_upload_streaming(
