@@ -34,6 +34,22 @@ body {
 }
 
 /*
+ * Tailwind v4 Preflight dropped v3's automatic `cursor: pointer` on
+ * <button>. Restore it so every button on the marketing site shows the
+ * hand cursor. `[role="button"]` covers shadcn-style interactive divs.
+ */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
+/*
  * Hero section gradient — uses a plain sRGB gradient to avoid
  * WebKit rendering artifacts from Tailwind v4's "in oklab"
  * gradient interpolation, which can cause black compositing
