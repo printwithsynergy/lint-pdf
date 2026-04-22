@@ -105,6 +105,53 @@ class TestWorkerInit:
 
         assert app is not None
 
+    @staticmethod
+    def test_reset_db_state_drops_engine() -> None:
+        """``reset_db_state`` must null out the cached engine + session factory.
+
+        Regression guard for the 2026-04-22 prod stall: without this reset
+        inside ``worker_process_init``, each forked Celery worker
+        inherits the parent's psycopg2 sockets and silently dies on its
+        first query (no Soft/Hard TimeLimit — just missing heartbeats).
+        """
+        from unittest.mock import MagicMock, patch
+
+        from lintpdf.api import database as db_module
+
+        # Swap the real engine out for a MagicMock; ``init_db`` uses
+        # Postgres-only pool kwargs that SQLite's SingletonThreadPool
+        # rejects, so we mock at the create_engine layer instead of
+        # pointing at a real URL.
+        fake_engine = MagicMock()
+        with patch("lintpdf.api.database.create_engine", return_value=fake_engine):
+            db_module.reset_db_state()  # start clean
+            db_module.init_db("postgresql://fake@host/db")
+            assert db_module._db_state["engine"] is fake_engine
+            assert db_module._db_state["session_local"] is not None
+
+            db_module.reset_db_state()
+            assert db_module._db_state["engine"] is None
+            assert db_module._db_state["session_local"] is None
+
+        # ``dispose(close=False)`` is the critical call — ``close=True``
+        # would shut down sockets shared with the parent process.
+        fake_engine.dispose.assert_called_once_with(close=False)
+
+    @staticmethod
+    def test_worker_process_init_hook_resets_db_state() -> None:
+        """The Celery worker-fork signal handler must call reset_db_state."""
+        from unittest.mock import patch
+
+        from lintpdf.queue.app import _configure_worker_process
+
+        with (
+            patch("lintpdf.api.database.reset_db_state") as mock_reset,
+            patch("lintpdf.api.logging_config.configure_logging") as mock_log,
+        ):
+            _configure_worker_process()
+            mock_log.assert_called_once()
+            mock_reset.assert_called_once()
+
 
 class TestRunPreflightTask:
     """Tests for the run_preflight Celery task."""

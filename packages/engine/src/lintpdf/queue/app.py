@@ -100,11 +100,33 @@ celery_app = create_celery_app(broker_url=_broker)
 
 
 @worker_process_init.connect  # type: ignore[misc]
-def _configure_worker_logging(**_: Any) -> None:
-    """Install the structlog JSON renderer inside every worker process."""
+def _configure_worker_process(**_: Any) -> None:
+    """Set up each forked Celery worker process.
+
+    Two jobs:
+
+    1. Install the structlog JSON renderer so worker logs match the
+       FastAPI process's format.
+    2. **Drop the DB engine the child inherited from the parent** via
+       ``fork()``. Without this, every prefork worker shares the
+       parent's psycopg2 sockets — the first query in the child corrupts
+       the underlying TCP state (the kernel sees two processes reading
+       the same fd), Postgres terminates the connection, and SQLAlchemy
+       surfaces the classic ``OperationalError: server closed the
+       connection unexpectedly``. The task then silently abandons
+       without firing a Soft/Hard TimeLimit warning, which is exactly
+       the heartbeat-miss / ``task received ... (no further logs)``
+       pattern we caught on Worker-AI on 2026-04-22.
+
+    The API process calls ``init_db()`` on startup; the first task to
+    land on this worker will re-init against the same DATABASE_URL but
+    with a fresh engine owned entirely by the child.
+    """
+    from lintpdf.api.database import reset_db_state
     from lintpdf.api.logging_config import configure_logging
 
     configure_logging()
+    reset_db_state()
 
 
 @task_prerun.connect  # type: ignore[misc]

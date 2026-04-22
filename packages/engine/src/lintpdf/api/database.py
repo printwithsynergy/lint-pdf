@@ -26,12 +26,60 @@ def init_db(database_url: str) -> None:
     with _db_lock:
         if _db_state["engine"] is not None:
             return
+        # ``pool_pre_ping`` catches dropped connections (Postgres restarts,
+        # PgBouncer reassignments) and issues ``SELECT 1`` before every
+        # checkout, avoiding the ``OperationalError: server closed the
+        # connection unexpectedly`` that otherwise cascades into
+        # SQLAlchemy ``InvalidRequestError: Can't reconnect until invalid
+        # transaction is rolled back`` (sqlalche.me/e/20/e3q8). We saw
+        # this in prod after the 2026-04-22 Postgres restart wiped every
+        # server session, leaving worker pools full of dead sockets that
+        # only manifested under load as silent Celery task stalls.
+        #
+        # ``pool_recycle=300`` proactively drops idle connections so
+        # PgBouncer transaction-pool reassignments don't hand back a
+        # stale 5-minute-old socket. Aligns with PgBouncer's default
+        # ``server_idle_timeout`` and the worker's 25-task child recycle.
         _db_state["engine"] = create_engine(
-            database_url, pool_pre_ping=True, pool_size=5, max_overflow=10
+            database_url,
+            pool_pre_ping=True,
+            pool_recycle=300,
+            pool_size=5,
+            max_overflow=10,
         )
         _db_state["session_local"] = sessionmaker(
             bind=_db_state["engine"], autocommit=False, autoflush=False
         )
+
+
+def reset_db_state() -> None:
+    """Drop the cached engine so the next call to ``init_db`` rebuilds it.
+
+    Celery ``prefork`` workers inherit the parent process's engine across
+    ``fork()``. The child then holds references to TCP sockets that the
+    parent is also using, which psycopg2 detects as corrupted connections
+    the moment the child tries to execute a query — manifesting as silent
+    worker deaths (``missed heartbeat from celery@...``) with no
+    Soft/Hard TimeLimit warnings because the task never gets far enough
+    to progress. Disposing + resetting in the child's
+    ``worker_process_init`` signal handler forces each prefork slot to
+    build its own engine with its own socket pool.
+
+    ``dispose(close=False)`` releases the engine's pool WITHOUT calling
+    ``close()`` on the inherited sockets — closing them in the child
+    would also shut them down for the parent, breaking the parent's
+    beat/scheduler pool. ``close=False`` lets each process manage only
+    its own copy.
+    """
+    import contextlib
+
+    with _db_lock:
+        engine = _db_state["engine"]
+        if engine is not None:
+            with contextlib.suppress(Exception):
+                engine.dispose(close=False)
+        _db_state["engine"] = None
+        _db_state["session_local"] = None
 
 
 def get_engine() -> Any:
