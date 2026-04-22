@@ -117,7 +117,7 @@ export default function AdminJobsPage() {
   }, [detail?.report_token]);
 
   return (
-    <>
+    <div className="max-w-7xl">
       <h1 className="font-display text-2xl font-bold">All Jobs</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         {total} total jobs across all tenants
@@ -279,7 +279,7 @@ export default function AdminJobsPage() {
           </div>
         </aside>
       )}
-    </>
+    </div>
   );
 }
 
