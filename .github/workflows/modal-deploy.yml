@@ -39,10 +39,23 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install modal
 
-      - name: Deploy to Modal
+      - name: Deploy inference app
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
         working-directory: packages/inference
         run: |
           modal deploy src/inference_service/modal_deploy.py
+
+      # Separate Modal app for the customer AI accuracy audit
+      # (Qwen2-VL-7B-Instruct on A10G). Kept apart from the main
+      # inference image because the vision-LLM weights (~17 GB) dwarf
+      # the narrow inspection models and the scale / batch profile is
+      # fundamentally different. See packages/inference/src/inference_service/modal_audit.py.
+      - name: Deploy audit app
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        working-directory: packages/inference
+        run: |
+          modal deploy src/inference_service/modal_audit.py
