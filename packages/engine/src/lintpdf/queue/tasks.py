@@ -13,72 +13,88 @@ from lintpdf.queue.app import celery_app
 logger = logging.getLogger(__name__)
 
 
-def _maybe_run_customer_audit(db: Any, job: Any, job_id: str) -> None:
-    """Run the customer-facing AI audit if the tenant has it entitled.
+def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -> int:
+    """Run the customer-facing AI audit against a job's findings.
 
     Loads findings fresh from the DB (they have IDs post-commit),
     fetches the PDF bytes, invokes
     ``lintpdf.audit.customer.CustomerAuditor``, writes verdicts
-    back to each row's ``audit_*`` columns, and commits. Every
-    failure path is logged + swallowed because audit is a
-    best-effort accuracy pass — it must never fail the preflight
-    job that already succeeded.
-    """
-    try:
-        from lintpdf.api.models import JobFinding, Tenant
-        from lintpdf.api.storage import get_storage
-        from lintpdf.audit.customer import CustomerAuditor
-        from lintpdf.tenants.entitlements import resolve_entitlements
+    back to each row's ``audit_*`` columns, and commits.
 
-        tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
-        if tenant is None:
-            return
+    When ``force=False`` (the default — used by the post-preflight
+    hook), the call is gated on ``entitlements.ai_audit_enabled``
+    so non-entitled tenants never spend audit credits.
+
+    When ``force=True`` (used by the ``POST /jobs/{id}/audit:rerun``
+    admin endpoint), the entitlement gate is bypassed so ops can
+    re-audit any job — typically after a prompt tune or a Modal
+    redeploy — without needing to flip the entitlement flag first.
+
+    Returns the count of findings updated with a verdict. Every
+    failure path is logged + swallowed when called from the
+    post-preflight hook; the rerun endpoint re-raises so the caller
+    surfaces a useful error.
+    """
+    from lintpdf.api.models import JobFinding, Tenant
+    from lintpdf.api.storage import get_storage
+    from lintpdf.audit.customer import CustomerAuditor
+    from lintpdf.tenants.entitlements import resolve_entitlements
+
+    tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+    if tenant is None:
+        return 0
+    if not force:
         entitlements = resolve_entitlements(tenant)
         if not getattr(entitlements, "ai_audit_enabled", False):
-            return
+            return 0
 
-        if not os.environ.get("LINTPDF_AUDIT_MODAL_URL"):
-            logger.info(
-                "audit: LINTPDF_AUDIT_MODAL_URL unset; skipping customer audit for %s",
-                job_id,
-            )
-            return
-
-        findings = db.query(JobFinding).filter(JobFinding.job_id == job.id).all()
-        if not findings:
-            return
-
-        storage = get_storage()
-        try:
-            pdf_bytes = storage.download_pdf(job.file_key)
-        except Exception:
-            logger.exception(
-                "audit: could not fetch PDF %s for audit of job %s",
-                job.file_key,
-                job_id,
-            )
-            return
-
-        auditor = CustomerAuditor()
-        verdicts = auditor.audit(pdf_bytes, findings)
-
-        changed = 0
-        for finding, verdict in zip(findings, verdicts, strict=False):
-            if verdict is None:
-                continue
-            finding.audit_status = verdict.status
-            finding.audit_rationale = verdict.rationale
-            finding.audit_model = verdict.model
-            finding.audit_at = verdict.at
-            changed += 1
-        if changed:
-            db.commit()
+    if not os.environ.get("LINTPDF_AUDIT_MODAL_URL"):
         logger.info(
-            "audit: wrote %d/%d verdicts for job %s via CustomerAuditor",
-            changed,
-            len(findings),
+            "audit: LINTPDF_AUDIT_MODAL_URL unset; skipping customer audit for %s",
             job_id,
         )
+        return 0
+
+    findings = db.query(JobFinding).filter(JobFinding.job_id == job.id).all()
+    if not findings:
+        return 0
+
+    storage = get_storage()
+    pdf_bytes = storage.download_pdf(job.file_key)
+
+    auditor = CustomerAuditor()
+    verdicts = auditor.audit(pdf_bytes, findings)
+
+    changed = 0
+    for finding, verdict in zip(findings, verdicts, strict=False):
+        if verdict is None:
+            continue
+        finding.audit_status = verdict.status
+        finding.audit_rationale = verdict.rationale
+        finding.audit_model = verdict.model
+        finding.audit_at = verdict.at
+        changed += 1
+    if changed:
+        db.commit()
+    logger.info(
+        "audit: wrote %d/%d verdicts for job %s via CustomerAuditor (force=%s)",
+        changed,
+        len(findings),
+        job_id,
+        force,
+    )
+    return changed
+
+
+def _maybe_run_customer_audit(db: Any, job: Any, job_id: str) -> None:
+    """Gated, best-effort wrapper used by the post-preflight hook.
+
+    Wraps :func:`run_customer_audit` so exceptions don't fail the
+    job. The rerun endpoint calls the unwrapped function directly
+    so 5xx / auditor errors are visible to the caller.
+    """
+    try:
+        run_customer_audit(db, job, job_id, force=False)
     except Exception:
         logger.exception("audit: customer audit failed for job %s", job_id)
 

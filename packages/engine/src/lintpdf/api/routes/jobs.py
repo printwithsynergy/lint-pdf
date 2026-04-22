@@ -10,6 +10,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, selectinload
 
 from lintpdf.api.auth import get_current_tenant
@@ -1196,3 +1197,94 @@ async def delete_job(
 
     db.delete(job)
     db.commit()
+
+
+class RerunAuditResponse(BaseModel):
+    """Response shape for ``POST /api/v1/jobs/{job_id}/audit:rerun``."""
+
+    job_id: uuid_mod.UUID
+    findings_updated: int = Field(
+        ...,
+        description=(
+            "How many ``JobFinding`` rows received a fresh "
+            "verdict. Zero is a valid outcome — it means the "
+            "Modal auditor returned all-null verdicts (transport "
+            "error on every batch) or the job has no findings. "
+            "Not an error."
+        ),
+    )
+    model: str = Field(
+        ...,
+        description="Auditor model used (e.g. ``modal:qwen2-vl-7b``).",
+    )
+
+
+@router.post(
+    "/{job_id}/audit:rerun",
+    response_model=RerunAuditResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def rerun_audit(
+    job_id: str,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> RerunAuditResponse:
+    """Re-run the customer AI audit against an already-complete job.
+
+    The normal audit runs inline at ``run_preflight`` completion;
+    this endpoint is for the cases it isn't useful to resubmit the
+    whole PDF:
+
+      * A Modal prompt tune dropped; ops wants to refresh verdicts
+        on historical jobs.
+      * The Modal endpoint was down when the job originally ran;
+        the verdicts are all NULL and the customer wants them
+        refreshed once service recovers.
+      * An admin toggled ``ai_audit_enabled`` on mid-flight for
+        a pilot tenant and wants to populate the audit field on
+        their back-catalogue.
+
+    Bypasses the entitlement gate (so pilots work), but still
+    requires ``LINTPDF_AUDIT_MODAL_URL`` to be set — otherwise
+    the helper logs + returns zero updates. Requires the caller
+    to own the job (the normal ``get_current_tenant`` dependency
+    scopes the lookup to the tenant).
+    """
+    try:
+        uid = uuid_mod.UUID(job_id)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid job id: '{job_id}' is not a valid UUID.",
+        ) from exc
+
+    job = db.query(Job).filter(Job.id == uid, Job.tenant_id == tenant.id).first()
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job '{job_id}' not found.",
+        )
+    if job.status != JobStatus.COMPLETE:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Job '{job_id}' is {job.status}; can only re-audit "
+                "complete jobs."
+            ),
+        )
+
+    from lintpdf.queue.tasks import run_customer_audit
+
+    try:
+        changed = run_customer_audit(db, job, str(job.id), force=True)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Audit re-run failed: {exc!s}",
+        ) from exc
+
+    return RerunAuditResponse(
+        job_id=job.id,
+        findings_updated=changed,
+        model="modal:qwen2-vl-7b",
+    )
