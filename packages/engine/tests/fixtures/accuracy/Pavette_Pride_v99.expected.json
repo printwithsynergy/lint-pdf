@@ -1,0 +1,14 @@
+{
+  "description": "Pavette Pride v99 wine / spirits label. Similar class to Amalgam (packaging with brand artwork) but we haven't run a reference preflight yet — treat this as a coverage-only entry. Once the first CLI run lands, hand-curate expected_inspection_ids + known_disputed from the report.",
+
+  "expected_inspection_ids": [],
+
+  "expected_summary": {
+    "passed": false
+  },
+
+  "class": "wine-spirits-label",
+
+  "known_disputed": [],
+  "known_missing": []
+}

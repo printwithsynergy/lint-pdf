@@ -210,17 +210,33 @@ def _write_report(out_path: Path, runs: list[dict]) -> None:
 
     for run in runs:
         lines.append(f"## {run['pdf'].name}")
+        cls = run["expected"].get("class")
+        if cls:
+            lines.append(f"- **Class:** `{cls}`")
         expected = set(run["expected"].get("expected_inspection_ids", []))
         emitted = {r["inspection_id"] for r in run["rows"]}
-        missing_from_emit = sorted(expected - emitted)
-        lines.append(
-            f"- **Expected inspection IDs:** {len(expected)}  **Emitted:** {len(emitted)}",
-        )
-        if missing_from_emit:
+        if not expected:
+            # Coverage-only fixture — we haven't hand-curated an
+            # expected inspection-id set yet. Surface the emitted list
+            # so the operator can paste it straight into
+            # `expected_inspection_ids` to harden the fixture for the
+            # next run.
             lines.append(
-                f"- **MISSING from emit** (engine regression suspected): "
-                f"{', '.join(missing_from_emit)}",
+                "- **Coverage-only** (no expected_inspection_ids in"
+                " fixture yet). Emitted on this run: "
+                + ", ".join(sorted(emitted) or ["(none)"]),
             )
+        else:
+            missing_from_emit = sorted(expected - emitted)
+            lines.append(
+                f"- **Expected inspection IDs:** {len(expected)}  "
+                f"**Emitted:** {len(emitted)}",
+            )
+            if missing_from_emit:
+                lines.append(
+                    f"- **MISSING from emit** (engine regression suspected): "
+                    f"{', '.join(missing_from_emit)}",
+                )
         lines.append("")
         for row in run["rows"]:
             status = row["status"]

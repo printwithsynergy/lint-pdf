@@ -1,0 +1,14 @@
+{
+  "description": "Daily Fiber Stick Pack 10-up film test roll (PKG-DSP-STL-AC). Coverage-only seed — hand-curate expected_inspection_ids from the first full Opus harness run.",
+
+  "expected_inspection_ids": [],
+
+  "expected_summary": {
+    "passed": false
+  },
+
+  "class": "stickpack-film-multiup",
+
+  "known_disputed": [],
+  "known_missing": []
+}

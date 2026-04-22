@@ -1,0 +1,14 @@
+{
+  "description": "Nutrops 10ct Pouch LS dieline (structural / cut). Coverage-only seed — hand-curate expected_inspection_ids from the first full Opus harness run.",
+
+  "expected_inspection_ids": [],
+
+  "expected_summary": {
+    "passed": false
+  },
+
+  "class": "pouch-dieline",
+
+  "known_disputed": [],
+  "known_missing": []
+}
