@@ -254,6 +254,20 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       title: "Admin Documentation",
       layout: "dashboard",
     });
+    ctx.addPage({
+      path: "/dashboard/admin/rulesets",
+      title: "Rulesets (All Tenants)",
+      layout: "dashboard",
+    });
+    ctx.addNavItem({
+      label: "Rulesets",
+      href: "/dashboard/admin/rulesets",
+      icon: "book-open",
+      section: "admin",
+      group: "Operations",
+      order: 48,
+      requiredRole: "SUPER_ADMIN",
+    });
 
     // Routes
     const routes: RouteDefinition[] = [
@@ -839,6 +853,68 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
             return { status: resp.status, body: { error: detail } };
           }
           return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      // ── Admin CRUD actions ───────────────────────────────────
+      {
+        method: "GET" as HttpMethod,
+        path: "/profiles",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "List all preflight profiles (system + per-tenant custom)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams(
+            Object.entries(req.query).reduce<Record<string, string>>(
+              (acc, [k, v]) => {
+                if (v !== undefined && v !== null) acc[k] = String(v);
+                return acc;
+              },
+              {},
+            ),
+          );
+          const resp = await adminFetch(`/api/v1/admin/profiles?${qs}`);
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "POST" as HttpMethod,
+        path: "/tenants/:tenantId/keys",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Mint an API key on behalf of a tenant",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/keys`,
+            { method: "POST", body: JSON.stringify(req.body) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 201, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "DELETE" as HttpMethod,
+        path: "/tenants/:tenantId/keys/:keyId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Revoke an API key on behalf of a tenant",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/keys/${req.params.keyId}`,
+            { method: "DELETE" },
+          );
+          if (!resp.ok && resp.status !== 204) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 204, body: null };
         }) as RouteHandler,
       },
     ];
