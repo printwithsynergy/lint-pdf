@@ -4,12 +4,83 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from typing import Any
 
 from lintpdf.queue.app import celery_app
 
 logger = logging.getLogger(__name__)
+
+
+def _maybe_run_customer_audit(db: Any, job: Any, job_id: str) -> None:
+    """Run the customer-facing AI audit if the tenant has it entitled.
+
+    Loads findings fresh from the DB (they have IDs post-commit),
+    fetches the PDF bytes, invokes
+    ``lintpdf.audit.customer.CustomerAuditor``, writes verdicts
+    back to each row's ``audit_*`` columns, and commits. Every
+    failure path is logged + swallowed because audit is a
+    best-effort accuracy pass — it must never fail the preflight
+    job that already succeeded.
+    """
+    try:
+        from lintpdf.api.models import JobFinding, Tenant
+        from lintpdf.api.storage import get_storage
+        from lintpdf.audit.customer import CustomerAuditor
+        from lintpdf.tenants.entitlements import resolve_entitlements
+
+        tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
+        if tenant is None:
+            return
+        entitlements = resolve_entitlements(tenant)
+        if not getattr(entitlements, "ai_audit_enabled", False):
+            return
+
+        if not os.environ.get("LINTPDF_AUDIT_MODAL_URL"):
+            logger.info(
+                "audit: LINTPDF_AUDIT_MODAL_URL unset; skipping customer audit for %s",
+                job_id,
+            )
+            return
+
+        findings = db.query(JobFinding).filter(JobFinding.job_id == job.id).all()
+        if not findings:
+            return
+
+        storage = get_storage()
+        try:
+            pdf_bytes = storage.download_pdf(job.file_key)
+        except Exception:
+            logger.exception(
+                "audit: could not fetch PDF %s for audit of job %s",
+                job.file_key,
+                job_id,
+            )
+            return
+
+        auditor = CustomerAuditor()
+        verdicts = auditor.audit(pdf_bytes, findings)
+
+        changed = 0
+        for finding, verdict in zip(findings, verdicts, strict=False):
+            if verdict is None:
+                continue
+            finding.audit_status = verdict.status
+            finding.audit_rationale = verdict.rationale
+            finding.audit_model = verdict.model
+            finding.audit_at = verdict.at
+            changed += 1
+        if changed:
+            db.commit()
+        logger.info(
+            "audit: wrote %d/%d verdicts for job %s via CustomerAuditor",
+            changed,
+            len(findings),
+            job_id,
+        )
+    except Exception:
+        logger.exception("audit: customer audit failed for job %s", job_id)
 
 
 def _auto_generate_reports(
@@ -584,6 +655,15 @@ def run_preflight(
                     logger.exception("Failed to deduct AI credits for job %s", job_id)
 
             db.commit()
+
+            # AI accuracy audit — runs after the initial findings commit
+            # when the tenant opted into ``ai_audit_enabled`` (Scale +
+            # Enterprise). Writes verdicts back to each JobFinding row's
+            # ``audit_*`` columns via a second commit. Best-effort: any
+            # exception here is logged and swallowed so an auditor hiccup
+            # never fails the preflight job itself — the viewer just
+            # renders no chip on that finding.
+            _maybe_run_customer_audit(db, job, job_id)
 
             logger.info("Completed preflight job %s in %dms", job_id, duration_ms)
 

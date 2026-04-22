@@ -46,6 +46,20 @@ export interface PageInfo {
   rotation: number;
 }
 
+/**
+ * AI accuracy-audit verdict attached to a finding when the tenant
+ * has ``ai_audit_enabled`` (Scale + Enterprise plans) and the job's
+ * preflight included the customer Modal audit pass. `null` (or the
+ * whole `audit` field absent) means the finding was never audited
+ * — the viewer renders no chip.
+ */
+export interface AuditVerdict {
+  status: "confirmed" | "disputed" | "needs_context" | "error";
+  rationale: string | null;
+  model: string | null;
+  at: string | null;
+}
+
 export interface ViewerFinding {
   inspection_id: string;
   severity: "error" | "warning" | "advisory";
@@ -57,6 +71,7 @@ export interface ViewerFinding {
   object_type: string | null;
   source: string;
   category: string | null;
+  audit?: AuditVerdict | null;
 }
 
 export interface ViewerState {

@@ -167,7 +167,13 @@ export default function ApiJobsSection() {
       "object_id": "Font12",
       "object_type": "font",
       "category": "fonts",
-      "source": "engine"
+      "source": "engine",
+      "audit": {
+        "status": "confirmed",
+        "rationale": "Helvetica glyph references with no matching /FontFile entry.",
+        "model": "modal:qwen2-vl-7b",
+        "at": "2026-04-22T18:05:34Z"
+      }
     }
   ],
   "reports": {

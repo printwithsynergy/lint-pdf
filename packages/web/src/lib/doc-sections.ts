@@ -120,6 +120,12 @@ export const docSections: DocSection[] = [
       { slug: "ai-inspections", label: "Inspections reference" },
       { slug: "ai-examples", label: "Code examples" },
       {
+        slug: "ai-audit",
+        label: "Accuracy audit",
+        description:
+          "Opt-in AI verification of engine findings — confirmed / disputed / needs_context verdicts on every row.",
+      },
+      {
         slug: "ai/troubleshooting",
         label: "Troubleshooting",
         description: "FAQ + full error-code reference.",

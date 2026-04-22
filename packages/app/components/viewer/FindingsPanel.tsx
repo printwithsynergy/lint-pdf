@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AuditChip } from "./AuditChip";
 import type { PreflightSourceMode, ViewerFinding } from "./types";
 import { UpgradePrompt } from "./UpgradePrompt";
 
@@ -280,6 +281,7 @@ export function FindingsPanel({
                           >
                             <div className="flex items-center gap-2">
                               <span className={`h-2 w-2 shrink-0 rounded-full ${SEVERITY_DOT[f.severity]}`} />
+                              <AuditChip verdict={f.audit ?? null} />
                               <code className="text-[10px] font-mono text-slate-500">{f.inspection_id}</code>
                               {f.page_num ? (
                                 <span className="ml-auto shrink-0 rounded bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-400">
