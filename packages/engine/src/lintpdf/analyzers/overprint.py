@@ -65,6 +65,13 @@ class OverprintAnalyzer(BaseAnalyzer):
         # LPDF_OVER_007: Track current non-stroking color for text knockout check
         non_stroking_color_values: tuple[float, ...] = ()
 
+        # WS-14 per-page aggregation for LPDF_OVER_007. On a 10-up
+        # repeat layout the per-glyph knockout warning fires ~940
+        # times; collapse into one aggregate per page with count +
+        # sample bboxes, matching the LPDF_COLOR_009 / LPDF_COLOR_010
+        # pattern from WS-7.
+        over007_agg: dict[int, dict[str, object]] = {}
+
         for event in events:
             if isinstance(event, OverprintChangedEvent):
                 if event.overprint_stroking is not None:
@@ -240,7 +247,8 @@ class OverprintAnalyzer(BaseAnalyzer):
                             )
 
             elif isinstance(event, TextRenderedEvent):
-                # LPDF_OVER_007: Small text knockout detection
+                # LPDF_OVER_007: accumulate small knockout-black text
+                # per page; emit one aggregate at the end.
                 if (
                     not overprint_active
                     and non_stroking_cs == "DeviceCMYK"
@@ -249,25 +257,24 @@ class OverprintAnalyzer(BaseAnalyzer):
                     and event.font_size < 12
                     and event.font_size > 0
                 ):
-                    findings.append(
-                        Finding(
-                            inspection_id="LPDF_OVER_007",
-                            severity=Severity.WARNING,
-                            message=(
-                                f"Small black text ({event.font_size:.1f}pt) "
-                                f"in knockout mode on page {event.page_num} "
-                                f"(overprint not active — risk of misregistration)"
-                            ),
-                            page_num=event.page_num,
-                            details={
-                                "font_size": event.font_size,
-                                "k_value": non_stroking_color_values[3],
-                                "color_space": non_stroking_cs,
-                                "overprint_active": False,
-                            },
-                            object_type="text",
-                        )
+                    bucket = over007_agg.setdefault(
+                        event.page_num,
+                        {
+                            "count": 0,
+                            "bboxes": [],
+                            "min_font_size": event.font_size,
+                            "max_k_value": non_stroking_color_values[3],
+                            "color_space": non_stroking_cs,
+                        },
                     )
+                    bucket["count"] = int(bucket["count"]) + 1  # type: ignore[arg-type]
+                    bboxes = bucket["bboxes"]
+                    if isinstance(bboxes, list) and len(bboxes) < 5 and getattr(event, "bbox", None):
+                        bboxes.append(list(event.bbox))
+                    if event.font_size < float(bucket["min_font_size"]):  # type: ignore[arg-type]
+                        bucket["min_font_size"] = event.font_size
+                    if non_stroking_color_values[3] > float(bucket["max_k_value"]):  # type: ignore[arg-type]
+                        bucket["max_k_value"] = non_stroking_color_values[3]
 
             elif isinstance(event, OpacityChangedEvent):
                 if event.stroking_alpha is not None and event.stroking_alpha < 1.0:
@@ -276,6 +283,39 @@ class OverprintAnalyzer(BaseAnalyzer):
                     has_transparency = True
                 if event.blend_mode and event.blend_mode != "Normal":
                     has_transparency = True
+
+        # LPDF_OVER_007: emit one aggregate per page with count +
+        # representative bboxes. Matches the LPDF_COLOR_009 /
+        # LPDF_COLOR_010 shape so the viewer's findings panel renders
+        # a single row with object_count in details.
+        for page_num in sorted(over007_agg):
+            bucket = over007_agg[page_num]
+            count = int(bucket["count"])  # type: ignore[arg-type]
+            if count <= 0:
+                continue
+            min_size = float(bucket["min_font_size"])  # type: ignore[arg-type]
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_OVER_007",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"{count} small black text instance"
+                        f"{'s' if count != 1 else ''} (min {min_size:.1f}pt) "
+                        f"in knockout mode on page {page_num} "
+                        f"(overprint not active — risk of misregistration)"
+                    ),
+                    page_num=page_num,
+                    details={
+                        "object_count": count,
+                        "min_font_size": min_size,
+                        "max_k_value": float(bucket["max_k_value"]),  # type: ignore[arg-type]
+                        "color_space": bucket.get("color_space"),
+                        "overprint_active": False,
+                        "representative_bboxes": bucket["bboxes"],
+                    },
+                    object_type="text",
+                )
+            )
 
         # LPDF_OVER_005: Overprint inventory (post-loop summary)
         if overprint_inventory:
