@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import ClassVar
 
 from lintpdf.analyzers.art_size import ArtSizeMM, compute_art_size
-from lintpdf.analyzers.dieline import _name_matches
+from lintpdf.analyzers.dieline import _name_matches, detect_dieline
 from lintpdf.analyzers.legend import classify_swatches
 
 
@@ -48,6 +48,74 @@ class TestNameMatches:
     @staticmethod
     def test_embedded_match_still_hits() -> None:
         assert _name_matches("Brand_CutContour_layer") is True
+
+
+class TestDielineSpotNameWalk:
+    """``detect_dieline`` must find spot colours that live inside
+    Form XObjects (not just direct page /Resources). Real press-
+    ready packaging PDFs put the Separation array in a shared
+    XObject and reference it from every page, so the direct-page
+    walk missed it entirely."""
+
+    @staticmethod
+    def test_dieline_in_form_xobject_is_detected() -> None:
+        import pikepdf
+
+        pdf = pikepdf.Pdf.new()
+        pdf.add_blank_page(page_size=(612, 792))
+
+        # Build a Separation colour space with the name "Dieline".
+        sep_cs = pikepdf.Array(
+            [
+                pikepdf.Name("/Separation"),
+                pikepdf.Name("/Dieline"),
+                pikepdf.Name("/DeviceCMYK"),
+                pikepdf.Dictionary(
+                    {
+                        "/FunctionType": 2,
+                        "/Domain": [0, 1],
+                        "/C0": [0, 0, 0, 0],
+                        "/C1": [0, 0, 0, 1],
+                        "/N": 1,
+                    }
+                ),
+            ]
+        )
+
+        # Put it inside a Form XObject's Resources — NOT the page's
+        # direct /Resources/ColorSpace. The old walk only looked at
+        # the page, so this would be invisible.
+        form_xobj = pikepdf.Stream(
+            pdf,
+            b"q\nQ\n",
+            Type=pikepdf.Name("/XObject"),
+            Subtype=pikepdf.Name("/Form"),
+            BBox=[0, 0, 100, 100],
+            Resources=pikepdf.Dictionary(
+                {
+                    "/ColorSpace": pikepdf.Dictionary({"/CS_Die": sep_cs}),
+                }
+            ),
+        )
+
+        page = pdf.pages[0]
+        page.obj["/Resources"] = pikepdf.Dictionary(
+            {"/XObject": pikepdf.Dictionary({"/Fm1": form_xobj})}
+        )
+
+        import io
+
+        buf = io.BytesIO()
+        pdf.save(buf)
+        pdf_bytes = buf.getvalue()
+
+        result = detect_dieline(pdf_bytes)
+        assert result.source == "name", (
+            f"expected source='name' for a /Dieline spot in a Form XObject; "
+            f"got {result.source!r}"
+        )
+        assert result.spot_name is not None
+        assert "die" in result.spot_name.lower()
 
 
 class TestArtSize:

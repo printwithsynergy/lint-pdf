@@ -94,55 +94,146 @@ class DielineResult:
 def _collect_spot_names(pdf: Any) -> list[str]:
     """Collect every Separation / DeviceN spot name in the PDF.
 
-    Walks every page's ``/Resources/ColorSpace`` entries and pulls
-    the subtype-specific name out of Separation + DeviceN arrays.
-    Dedupes case-insensitively.
+    Walks the **entire** indirect-object graph, not just direct page
+    ``/Resources/ColorSpace`` entries. Press-ready packaging PDFs
+    routinely declare spot colours inside Form XObjects, patterns,
+    or nested resource dictionaries, and the old direct-page walk
+    missed all of them — so a PDF containing a ``Dieline`` spot
+    colour would still report ``source='missing'``.
     """
-    names: list[str] = []
     try:
-        from pikepdf import Name as PikeName
-        from pikepdf import Object as PikeObject  # noqa: F401
+        import pikepdf
+    except ImportError:
+        return []
 
+    names: list[str] = []
+    seen_ids: set[int] = set()
+
+    def _is_array(obj: Any) -> bool:
+        # Treat Python lists and pikepdf.Array as arrays. Strings,
+        # Names, and Dictionaries must NOT land here (pikepdf.Array
+        # exposes both ``__iter__`` and ``items``, which made the
+        # earlier hasattr check ambiguous).
+        return isinstance(obj, list) or isinstance(obj, pikepdf.Array)
+
+    def _is_dictlike(obj: Any) -> bool:
+        return isinstance(obj, (pikepdf.Dictionary, pikepdf.Stream)) or (
+            hasattr(obj, "items") and not _is_array(obj)
+        )
+
+    def _collect(obj: Any, depth: int) -> None:
+        if depth > 10:
+            return
+        try:
+            obj_id = id(obj)
+        except Exception:
+            obj_id = 0
+        if obj_id in seen_ids:
+            return
+        seen_ids.add(obj_id)
+
+        # Separation / DeviceN arrays:
+        #   [/Separation  <name>  <alternate>  <tintTransform>]
+        #   [/DeviceN    [<name> <name> ...]  <alternate>  <tintTransform>]
+        if _is_array(obj):
+            try:
+                arr = [obj[i] for i in range(len(obj))]
+            except Exception:
+                arr = list(obj)
+            if len(arr) >= 2:
+                subtype = str(arr[0])
+                if subtype in ("/Separation", "Separation"):
+                    try:
+                        names.append(str(arr[1]).lstrip("/"))
+                    except Exception:
+                        pass
+                elif subtype in ("/DeviceN", "DeviceN"):
+                    comp = arr[1]
+                    if _is_array(comp):
+                        for n in comp:
+                            try:
+                                names.append(str(n).lstrip("/"))
+                            except Exception:
+                                continue
+            for item in arr:
+                _collect(item, depth + 1)
+            return
+
+        if _is_dictlike(obj):
+            try:
+                for _k, v in obj.items():
+                    _collect(v, depth + 1)
+            except Exception:
+                pass
+            return
+
+    def _walk_resources(res: Any, depth: int) -> None:
+        """Walk a /Resources dict: its /ColorSpace, then recurse into
+        /XObject /Form and /Pattern entries (which each have their
+        own /Resources where a spot colour can live)."""
+        if res is None or not _is_dictlike(res):
+            return
+        try:
+            cs = res.get("/ColorSpace")
+        except Exception:
+            cs = None
+        if cs is not None:
+            _collect(cs, depth)
+
+        for child_key in ("/XObject", "/Pattern"):
+            try:
+                child = res.get(child_key)
+            except Exception:
+                continue
+            if child is None or not _is_dictlike(child):
+                continue
+            try:
+                for _k, ref in child.items():
+                    if not _is_dictlike(ref):
+                        continue
+                    try:
+                        inner = ref.get("/Resources")
+                    except Exception:
+                        inner = None
+                    if inner is not None and depth < 10:
+                        _walk_resources(inner, depth + 1)
+            except Exception:
+                continue
+
+    try:
+        # Every page's /Resources, recursively through Form XObjects
+        # and Patterns. This is the path that matters in real PDFs —
+        # a spot colour defined once inside a shared Form XObject is
+        # reachable from the page via /Resources/XObject/<name>.
         for page in pdf.pages:
-            res = page.get("/Resources") or {}
-            cs = res.get("/ColorSpace") or {}
-            if hasattr(cs, "items"):
-                for _key, val in cs.items():
-                    try:
-                        if isinstance(val, list) and len(val) >= 2:
-                            subtype = val[0]
-                            name_obj = val[1]
-                            if str(subtype) in ("/Separation", "Separation"):
-                                names.append(str(name_obj).lstrip("/"))
-                            elif (
-                                str(subtype) in ("/DeviceN", "DeviceN")
-                                and isinstance(name_obj, list)
-                            ):
-                                # DeviceN's second entry is an array of names.
-                                for n in name_obj:
-                                    names.append(str(n).lstrip("/"))
-                    except Exception:
-                        continue
-                    # Optional: follow indirect refs.
-                    try:
-                        arr = val
-                        if hasattr(arr, "get"):
-                            inner = arr.get(PikeName.N)  # type: ignore[attr-defined]
-                            if inner is not None:
-                                names.append(str(inner).lstrip("/"))
-                    except Exception:
-                        continue
+            try:
+                _walk_resources(page.get("/Resources"), 0)
+            except Exception:
+                continue
+
+        # Belt + braces: iterate every indirect object in the xref so
+        # we also catch spot colours that live in orphaned or
+        # unusual object graphs (patterns referenced from resource
+        # dictionaries we haven't traversed yet, etc.).
+        try:
+            for obj in pdf.objects:
+                _collect(obj, 0)
+        except Exception:
+            logger.debug("dieline: pdf.objects iteration unavailable")
     except Exception:
         logger.exception("dieline: spot-name walk failed")
-    # Dedupe, preserve order.
-    seen = set()
+
+    # Dedupe case-insensitively, preserve first-seen casing for display.
+    seen: set[str] = set()
     out: list[str] = []
     for n in names:
-        key = n.lower()
-        if key in seen:
+        key = n.strip().lower()
+        if not key or key in seen:
             continue
         seen.add(key)
         out.append(n)
+    if out:
+        logger.info("dieline: collected %d spot name(s): %s", len(out), out)
     return out
 
 
