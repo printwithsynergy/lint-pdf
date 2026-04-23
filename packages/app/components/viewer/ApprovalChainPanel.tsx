@@ -94,7 +94,7 @@ export function ApprovalChainPanel({ onRefresh: _onRefresh }: { onRefresh?: () =
   return (
     <div className="flex flex-col gap-3 p-3 text-slate-200">
       {/* Overall status */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-800/50 p-3">
+      <div className="flex items-center justify-between rounded-lg border border-white/[0.06] bg-slate-800/50 p-3">
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
             Chain Status
@@ -140,7 +140,7 @@ export function ApprovalChainPanel({ onRefresh: _onRefresh }: { onRefresh?: () =
               className={`rounded-lg border p-3 ${
                 isCurrent
                   ? "border-blue-500/50 bg-blue-500/10"
-                  : "border-slate-700 bg-slate-800/30"
+                  : "border-white/[0.06] bg-slate-800/30"
               }`}
             >
               <div className="mb-1 flex items-center gap-2">
@@ -177,7 +177,7 @@ export function ApprovalChainPanel({ onRefresh: _onRefresh }: { onRefresh?: () =
                       ? "border-green-500"
                       : h.decision === "rejected"
                         ? "border-red-500"
-                        : "border-slate-600"
+                        : "border-white/10"
                   }`}
                 >
                   <div className="flex items-center gap-2">

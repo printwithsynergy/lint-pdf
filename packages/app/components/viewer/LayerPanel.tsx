@@ -67,13 +67,13 @@ export function LayerPanel({
         <div className="flex gap-1">
           <button
             onClick={() => onSetAllLayers(true)}
-            className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
+            className="rounded border border-white/10 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
           >
             All On
           </button>
           <button
             onClick={() => onSetAllLayers(false)}
-            className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
+            className="rounded border border-white/10 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
           >
             All Off
           </button>
@@ -90,9 +90,9 @@ export function LayerPanel({
               type="checkbox"
               checked={enabledLayers.has(layer.ocg_index)}
               onChange={() => onToggleLayer(layer.ocg_index)}
-              className="rounded border-slate-600"
+              className="rounded border-white/10"
             />
-            <span className="inline-block h-3 w-3 shrink-0 rounded border border-slate-600 bg-violet-400/40" />
+            <span className="inline-block h-3 w-3 shrink-0 rounded border border-white/10 bg-violet-400/40" />
             <span className="truncate text-xs">{layer.name}</span>
           </label>
         ))}

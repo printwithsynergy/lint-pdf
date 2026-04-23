@@ -132,7 +132,7 @@ function useCapabilityFill(
 }
 
 function Divider() {
-  return <span className="mx-1 h-5 w-px bg-white/20" />;
+  return <span className="mx-1 h-5 w-px bg-white/[0.08]" />;
 }
 
 export function ViewerToolbar({
@@ -258,7 +258,7 @@ export function ViewerToolbar({
               const p = Number(e.target.value);
               if (p >= 1 && p <= pageCount) onPageChange(p);
             }}
-            className="w-10 rounded border border-white/20 bg-white/10 px-1 py-0.5 text-center text-xs text-white outline-none focus:border-white/40"
+            className="w-10 rounded border border-white/10 bg-white/[0.04] px-1 py-0.5 text-center text-xs text-white outline-none focus:border-white/20"
           />
           <span className="ml-1 text-slate-400">/ {pageCount}</span>
         </span>

@@ -116,7 +116,7 @@ export function FindingsPanel({
   return (
     <div className="flex h-full flex-col bg-slate-900 text-slate-200">
       {/* Search box */}
-      <div className="shrink-0 border-b border-slate-800/20 px-3 py-2">
+      <div className="shrink-0 border-b border-white/[0.06] px-3 py-2">
         <div className="relative">
           <svg
             className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500"
@@ -133,13 +133,13 @@ export function FindingsPanel({
             placeholder="Search findings..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-md border border-slate-700 bg-slate-800 py-1.5 pl-8 pr-3 text-xs text-slate-200 placeholder-slate-500 outline-none focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+            className="w-full rounded-md border border-white/10 bg-slate-800 py-1.5 pl-8 pr-3 text-xs text-slate-200 placeholder-slate-500 outline-none focus:border-white/20 focus:ring-1 focus:ring-white/20"
           />
         </div>
       </div>
 
       {/* Severity filter tabs */}
-      <div className="flex shrink-0 border-b border-slate-800/20">
+      <div className="flex shrink-0 border-b border-white/[0.06]">
         {tabs.map((tab) => (
           <button
             key={tab.key}
@@ -173,7 +173,7 @@ export function FindingsPanel({
       </div>
 
       {/* Page scope toggle — segmented control */}
-      <div className="flex shrink-0 items-center gap-2 border-b border-slate-800/20 px-3 py-1.5">
+      <div className="flex shrink-0 items-center gap-2 border-b border-white/[0.06] px-3 py-1.5">
         <div className="inline-flex rounded-md bg-slate-800/50 p-0.5">
           <button
             onClick={() => setFilterScope("all")}

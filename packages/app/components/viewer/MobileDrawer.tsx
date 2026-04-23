@@ -244,7 +244,7 @@ export function MobileDrawer({
         }`}
       >
         {/* Header */}
-        <div className="flex h-12 items-center justify-between border-b border-slate-700 px-4">
+        <div className="flex h-12 items-center justify-between border-b border-white/[0.06] px-4">
           <span className="text-sm font-bold text-white">
             {config.anonymous
               ? "Preflight Report"
@@ -262,7 +262,7 @@ export function MobileDrawer({
 
         <div className="overflow-y-auto" style={{ height: "calc(100% - 48px)" }}>
           {/* Findings summary */}
-          <div className="border-b border-slate-700 px-4 py-3">
+          <div className="border-b border-white/[0.06] px-4 py-3">
             {fileName && (
               <div className="mb-1 truncate text-xs text-slate-400">{fileName}</div>
             )}

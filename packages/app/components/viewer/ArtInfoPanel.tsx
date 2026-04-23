@@ -191,7 +191,7 @@ export function ArtInfoPanel({
           type="button"
           onClick={toggleDieline}
           disabled={!dieline || dieline.source === "missing"}
-          className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+          className="rounded border border-white/[0.06] px-2 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-40"
         >
           {dielineVisible ? "Hide" : "Show"}
         </button>
@@ -213,7 +213,7 @@ export function ArtInfoPanel({
           type="button"
           onClick={toggleTextLayer}
           disabled={ocrBlockCount === 0}
-          className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-40"
+          className="rounded border border-white/[0.06] px-2 py-1 text-xs text-slate-200 hover:bg-slate-800 disabled:opacity-40"
         >
           {textLayerVisible ? "Hide" : "Show"}
         </button>
@@ -233,7 +233,7 @@ export function ArtInfoPanel({
               return (
                 <li
                   key={sw.spot_name}
-                  className="flex items-center justify-between gap-2 rounded border border-slate-800 bg-slate-900/40 px-2 py-1"
+                  className="flex items-center justify-between gap-2 rounded border border-white/[0.06] bg-slate-900/40 px-2 py-1"
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <span
@@ -254,7 +254,7 @@ export function ArtInfoPanel({
                   <button
                     type="button"
                     onClick={() => toggleSwatch(sw.spot_name)}
-                    className="rounded border border-slate-700 px-1.5 py-0.5 text-[10px] text-slate-300 hover:bg-slate-800"
+                    className="rounded border border-white/[0.06] px-1.5 py-0.5 text-[10px] text-slate-300 hover:bg-slate-800"
                   >
                     {isHidden ? "Show" : "Hide"}
                   </button>
