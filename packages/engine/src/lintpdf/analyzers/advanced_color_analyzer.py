@@ -53,12 +53,19 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         rich_black_y: float = 40.0,
         rich_black_k: float = 100.0,
         spectral_delta_e_threshold: float = 2.0,
+        *,
+        brand_palette_present: bool = False,
     ) -> None:
         self.rich_black_c = rich_black_c
         self.rich_black_m = rich_black_m
         self.rich_black_y = rich_black_y
         self.rich_black_k = rich_black_k
         self._spectral_delta_e_threshold = spectral_delta_e_threshold
+        # See ColorAnalyzer for the rationale -- the LPDF_ADV_005
+        # "large area pure K fill" advisory is ambiguous without a
+        # brand rich-black spec; suppress when the tenant hasn't
+        # declared one.
+        self.brand_palette_present = brand_palette_present
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -463,6 +470,13 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         rich_black_count = 0
         registration_count = 0
         non_standard_count = 0
+        # WS-7 per-page aggregator for the large-area pure-K
+        # advisory. Old emit fires one finding per matching
+        # PathPaintingEvent; on vector-dense artwork that explodes
+        # to 1,256 findings on a single page. Collect hits into
+        # {page_num: {count, max_k_percent, bboxes}} and emit one
+        # aggregate after the event loop.
+        large_k_agg: dict[int, dict[str, object]] = {}
 
         for event in events:
             cmyk_samples: list[tuple[tuple[float, ...], str, int, float | None]] = []
@@ -540,28 +554,64 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                         )
                 elif classification == "pure_k":
                     pure_k_count += 1
-                    # Large area pure K advisory (path fills only)
-                    if obj_type == "path" and k_pct > 80.0:
-                        findings.append(
-                            Finding(
-                                inspection_id="LPDF_ADV_005",
-                                severity=Severity.ADVISORY,
-                                message=(
-                                    f"Large area pure K fill ({k_pct:.0f}% K) "
-                                    f"on page {page_num} (may appear gray "
-                                    f"without rich black support)"
-                                ),
-                                page_num=page_num,
-                                details={
-                                    "color_values": list(vals),
-                                    "classification": "pure_k",
-                                    "k_percent": k_pct,
-                                },
-                                object_type="path",
-                            )
-                        )
+                    # Large area pure K advisory (path fills only).
+                    # WS-7: accumulate per page; emit one aggregate
+                    # at the end instead of one per object. Skip
+                    # entirely when no brand palette is configured
+                    # -- the rule is ambiguous without one.
+                    if (
+                        obj_type == "path"
+                        and k_pct > 80.0
+                        and self.brand_palette_present
+                    ):
+                        bucket = large_k_agg.get(page_num)
+                        if bucket is None:
+                            bucket = {
+                                "count": 0,
+                                "max_k_percent": 0.0,
+                                "bboxes": [],
+                            }
+                            large_k_agg[page_num] = bucket
+                        bucket["count"] = int(bucket["count"]) + 1  # type: ignore[arg-type]
+                        if k_pct > float(bucket["max_k_percent"]):  # type: ignore[arg-type]
+                            bucket["max_k_percent"] = k_pct
+                        bboxes = bucket["bboxes"]
+                        if isinstance(bboxes, list) and len(bboxes) < 5:
+                            bbox = getattr(event, "bbox", None)
+                            if bbox:
+                                bboxes.append(list(bbox))
                 elif classification == "non_standard":
                     non_standard_count += 1
+
+        # WS-7: emit one LPDF_ADV_005 large-K advisory per page that
+        # collected any hits, with object_count + max_k_percent +
+        # representative bboxes on the finding's details so callers
+        # can still drill in without drowning the viewer.
+        for page_num in sorted(large_k_agg):
+            bucket = large_k_agg[page_num]
+            count = int(bucket["count"])  # type: ignore[arg-type]
+            if count <= 0:
+                continue
+            max_k = float(bucket["max_k_percent"])  # type: ignore[arg-type]
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_ADV_005",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"{count} large-area pure K fill{'s' if count != 1 else ''} "
+                        f"(max {max_k:.0f}% K) on page {page_num} "
+                        f"(may appear gray without rich black support)"
+                    ),
+                    page_num=page_num,
+                    details={
+                        "classification": "pure_k",
+                        "object_count": count,
+                        "max_k_percent": max_k,
+                        "representative_bboxes": bucket["bboxes"],
+                    },
+                    object_type="path",
+                )
+            )
 
         # Composition summary
         total = pure_k_count + rich_black_count + registration_count + non_standard_count
