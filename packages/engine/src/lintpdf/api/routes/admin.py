@@ -3814,3 +3814,422 @@ async def admin_test_webhook_for_tenant(
 
     tenant = _get_tenant_or_404(db, tenant_id)
     return test_webhook_for_tenant(db, tenant, webhook_id)
+
+
+# ── System preset authoring, visibility, clone, tenant default ──
+
+
+class AdminSystemProfileSummary(BaseModel):
+    """One row in the site-admin system-preset table."""
+
+    profile_id: str
+    name: str
+    description: str | None = None
+    conformance: str | None = None
+    workflow: str | None = None
+    source: str  # 'bundled' | 'admin'
+    bundled_version: str | None = None
+    visibility_mode: str
+    min_plan: str | None = None
+    visible_tenant_ids: list[str] = []
+    created_at: str
+    updated_at: str
+
+
+class AdminSystemProfileDetail(AdminSystemProfileSummary):
+    """Per-preset detail — same fields as the summary plus the full
+    ``PreflightProfile`` JSON blob so the admin UI can round-trip
+    edits without re-fetching."""
+
+    preflight_profile: dict
+
+
+class AdminSystemProfileListResponse(BaseModel):
+    profiles: list[AdminSystemProfileSummary]
+
+
+class AdminSystemProfileUpsertRequest(BaseModel):
+    preflight_profile: dict
+
+
+class AdminSystemProfileVisibilityRequest(BaseModel):
+    mode: str  # 'all' | 'plan' | 'tenants' | 'plan_and_tenants'
+    min_plan: str | None = None
+    visible_tenant_ids: list[str] = []
+
+
+class AdminCloneToTenantRequest(BaseModel):
+    new_profile_id: str | None = None
+    new_name: str | None = None
+
+
+class AdminSetTenantDefaultProfileRequest(BaseModel):
+    profile_id: str | None = None
+
+
+class AdminTenantDefaultProfileResponse(BaseModel):
+    tenant_id: str
+    default_profile_id: str | None
+
+
+_VALID_VISIBILITY_MODES = {"all", "plan", "tenants", "plan_and_tenants"}
+
+
+def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:  # noqa: ANN001
+    from lintpdf.profiles.schema import PreflightProfile
+
+    try:
+        fp = PreflightProfile.model_validate(sp.preflight_profile_json)
+        name = fp.name
+        description = fp.description
+        conformance = fp.conformance
+        workflow = fp.workflow
+    except Exception:  # noqa: BLE001
+        name = sp.profile_id
+        description = None
+        conformance = None
+        workflow = None
+    return AdminSystemProfileSummary(
+        profile_id=sp.profile_id,
+        name=name,
+        description=description,
+        conformance=conformance,
+        workflow=workflow,
+        source=sp.source,
+        bundled_version=sp.bundled_version,
+        visibility_mode=sp.visibility_mode,
+        min_plan=sp.min_plan,
+        visible_tenant_ids=[str(u) for u in (sp.visible_tenant_ids or [])],
+        created_at=sp.created_at.isoformat(),
+        updated_at=sp.updated_at.isoformat(),
+    )
+
+
+@router.get("/system-profiles", response_model=AdminSystemProfileListResponse)
+async def list_admin_system_profiles(
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminSystemProfileListResponse:
+    """List every system preset — admin view is unfiltered by visibility."""
+    from lintpdf.api.models import SystemProfile
+
+    rows = db.query(SystemProfile).order_by(SystemProfile.profile_id).all()
+    return AdminSystemProfileListResponse(
+        profiles=[_system_profile_row_to_summary(r) for r in rows]
+    )
+
+
+@router.get(
+    "/system-profiles/{profile_id}",
+    response_model=AdminSystemProfileDetail,
+)
+async def get_admin_system_profile(
+    profile_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminSystemProfileDetail:
+    from lintpdf.api.models import SystemProfile
+
+    row: SystemProfile | None = (
+        db.query(SystemProfile).filter(SystemProfile.profile_id == profile_id).first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"System profile '{profile_id}' not found.",
+        )
+    summary = _system_profile_row_to_summary(row)
+    return AdminSystemProfileDetail(
+        **summary.model_dump(),
+        preflight_profile=dict(row.preflight_profile_json),
+    )
+
+
+@router.post(
+    "/system-profiles",
+    response_model=AdminSystemProfileDetail,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_admin_system_profile(
+    profile_id: str,
+    body: AdminSystemProfileUpsertRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminSystemProfileDetail:
+    """Create a new admin-authored system preset.
+
+    ``profile_id`` is passed as a query param so the URL is the same
+    shape as the PATCH endpoint — admin can paste the preset into a
+    form and commit to the chosen ID in one round-trip. Collides with
+    an existing row? 409.
+    """
+    from lintpdf.api.models import SystemProfile
+    from lintpdf.profiles.schema import PreflightProfile
+
+    try:
+        fp = PreflightProfile.model_validate(body.preflight_profile)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid PreflightProfile payload: {exc}",
+        ) from exc
+
+    existing: SystemProfile | None = (
+        db.query(SystemProfile).filter(SystemProfile.profile_id == profile_id).first()
+    )
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"System profile '{profile_id}' already exists.",
+        )
+
+    row = SystemProfile(
+        profile_id=profile_id,
+        preflight_profile_json=fp.model_dump(mode="json"),
+        source="admin",
+        visibility_mode="all",
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return AdminSystemProfileDetail(
+        **_system_profile_row_to_summary(row).model_dump(),
+        preflight_profile=dict(row.preflight_profile_json),
+    )
+
+
+@router.patch(
+    "/system-profiles/{profile_id}",
+    response_model=AdminSystemProfileDetail,
+)
+async def update_admin_system_profile(
+    profile_id: str,
+    body: AdminSystemProfileUpsertRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminSystemProfileDetail:
+    """Overwrite the ``preflight_profile_json`` on an existing row.
+
+    First edit of a ``source='bundled'`` row flips ``source`` to
+    ``'admin'`` so the insert-if-absent seed never reconsiders it —
+    admin intent is sacred after this point.
+    """
+    from lintpdf.api.models import SystemProfile
+    from lintpdf.profiles.schema import PreflightProfile
+
+    row: SystemProfile | None = (
+        db.query(SystemProfile).filter(SystemProfile.profile_id == profile_id).first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"System profile '{profile_id}' not found.",
+        )
+
+    try:
+        fp = PreflightProfile.model_validate(body.preflight_profile)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid PreflightProfile payload: {exc}",
+        ) from exc
+
+    row.preflight_profile_json = fp.model_dump(mode="json")
+    if row.source == "bundled":
+        row.source = "admin"
+    db.commit()
+    db.refresh(row)
+    return AdminSystemProfileDetail(
+        **_system_profile_row_to_summary(row).model_dump(),
+        preflight_profile=dict(row.preflight_profile_json),
+    )
+
+
+@router.delete(
+    "/system-profiles/{profile_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_admin_system_profile(
+    profile_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> None:
+    """Remove a system preset from the DB.
+
+    Bundled rows won't regenerate on this deployment (insert-if-absent
+    semantics at seed), but a pristine DB boot of the same engine
+    version would recreate them — intentional, treat delete as a hard
+    opt-out for THIS installation.
+    """
+    from lintpdf.api.models import SystemProfile
+
+    row: SystemProfile | None = (
+        db.query(SystemProfile).filter(SystemProfile.profile_id == profile_id).first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"System profile '{profile_id}' not found.",
+        )
+    db.delete(row)
+    db.commit()
+
+
+@router.patch(
+    "/system-profiles/{profile_id}/visibility",
+    response_model=AdminSystemProfileSummary,
+)
+async def update_admin_system_profile_visibility(
+    profile_id: str,
+    body: AdminSystemProfileVisibilityRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminSystemProfileSummary:
+    from lintpdf.api.models import SystemProfile
+
+    if body.mode not in _VALID_VISIBILITY_MODES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"Invalid visibility_mode '{body.mode}'. "
+                f"Expected one of: {sorted(_VALID_VISIBILITY_MODES)}"
+            ),
+        )
+
+    row: SystemProfile | None = (
+        db.query(SystemProfile).filter(SystemProfile.profile_id == profile_id).first()
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"System profile '{profile_id}' not found.",
+        )
+
+    # Validate tenant UUIDs up front so the error surfaces in one 422
+    # rather than a mid-commit IntegrityError.
+    parsed_ids: list[uuid_mod.UUID] = []
+    for raw in body.visible_tenant_ids:
+        try:
+            parsed_ids.append(uuid_mod.UUID(raw))
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid tenant UUID '{raw}'.",
+            ) from exc
+
+    row.visibility_mode = body.mode
+    row.min_plan = body.min_plan
+    row.visible_tenant_ids = parsed_ids or None
+    db.commit()
+    db.refresh(row)
+    return _system_profile_row_to_summary(row)
+
+
+@router.post(
+    "/system-profiles/{profile_id}/clone-to/{tenant_id}",
+    status_code=status.HTTP_201_CREATED,
+)
+async def clone_system_profile_to_tenant(
+    profile_id: str,
+    tenant_id: str,
+    body: AdminCloneToTenantRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+):
+    """Copy a system preset into ``tenant``'s ``custom_profiles`` table.
+
+    One-shot hand-off — after the clone, the tenant owns + edits the
+    copy through their normal ``/dashboard/rulesets`` UI; edits to
+    the source system preset do not propagate. If ``new_profile_id`` is
+    omitted, derives one as ``{source}-custom``.
+    """
+    from lintpdf.api.models import CustomProfile, SystemProfile
+
+    tenant = _get_tenant(db, tenant_id)
+    sys_row: SystemProfile | None = (
+        db.query(SystemProfile).filter(SystemProfile.profile_id == profile_id).first()
+    )
+    if sys_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"System profile '{profile_id}' not found.",
+        )
+
+    new_id = body.new_profile_id or f"{profile_id}-custom"
+
+    # Uniqueness guard inside the tenant's namespace.
+    existing: CustomProfile | None = (
+        db.query(CustomProfile)
+        .filter(CustomProfile.tenant_id == tenant.id, CustomProfile.profile_id == new_id)
+        .first()
+    )
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Tenant already has a custom profile with id '{new_id}'. "
+                "Pass a different new_profile_id."
+            ),
+        )
+
+    payload = dict(sys_row.preflight_profile_json)
+    if body.new_name:
+        payload["name"] = body.new_name
+
+    row = CustomProfile(
+        id=uuid_mod.uuid4(),
+        tenant_id=tenant.id,
+        profile_id=new_id,
+        preflight_profile_json=payload,
+    )
+    db.add(row)
+    db.commit()
+    db.refresh(row)
+    return {
+        "tenant_id": str(tenant.id),
+        "profile_id": row.profile_id,
+        "source_system_profile_id": profile_id,
+    }
+
+
+@router.patch(
+    "/tenants/{tenant_id}/default-profile",
+    response_model=AdminTenantDefaultProfileResponse,
+)
+async def set_tenant_default_profile(
+    tenant_id: str,
+    body: AdminSetTenantDefaultProfileRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminTenantDefaultProfileResponse:
+    """Set the soft-default preset for ``tenant``.
+
+    Requires the target profile to be visible to the tenant
+    (system with matching visibility, or one of the tenant's own
+    customs). Pass ``{profile_id: null}`` to clear it and fall back
+    to the hardcoded ``lintpdf-default``.
+    """
+    from lintpdf.profiles.resolver import profile_exists_for_tenant
+
+    tenant = _get_tenant(db, tenant_id)
+
+    if body.profile_id is None:
+        tenant.default_profile_id = None
+    else:
+        if not profile_exists_for_tenant(db, tenant, body.profile_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=(
+                    f"Profile '{body.profile_id}' is not visible to tenant "
+                    f"{tenant_id}. Scope the preset to include this tenant "
+                    "first or pick a different profile."
+                ),
+            )
+        tenant.default_profile_id = body.profile_id
+
+    db.commit()
+    db.refresh(tenant)
+    return AdminTenantDefaultProfileResponse(
+        tenant_id=str(tenant.id),
+        default_profile_id=tenant.default_profile_id,
+    )

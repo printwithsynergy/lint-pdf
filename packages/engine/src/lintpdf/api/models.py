@@ -23,6 +23,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy import text as sa_text
+from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from lintpdf.tenants.models import TenantPlan
@@ -148,6 +149,13 @@ class Tenant(Base):
     share_email_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     report_storage_used_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     default_brand_profile_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+    # Soft-default preflight profile — used when a job is submitted
+    # without an explicit ``profile_id``. Set by site-admins via
+    # ``PATCH /api/v1/admin/tenants/{id}/default-profile``. NULL falls
+    # back to the hardcoded ``lintpdf-default``. No FK — can reference
+    # either a system profile or one of this tenant's custom profiles
+    # (validation happens at the admin route).
+    default_profile_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     # Default output branding — when true, viewer config + reports default to
     # the ``none`` brand profile type (stripped LintPDF branding). Per-request
     # override still applies via ``brand`` query param or ``brand_profile_id``
@@ -466,6 +474,50 @@ class CustomProfile(Base):
     # Unique constraint: one profile_id per tenant
     __table_args__ = (
         Index("ix_custom_profiles_tenant_profile", "tenant_id", "profile_id", unique=True),
+    )
+
+
+class SystemProfile(Base):
+    """System-wide preflight profile.
+
+    Runtime-editable replacement for the bundled-JSON-only
+    ``ProfileRegistry``. Seeded from
+    ``packages/engine/src/lintpdf/profiles/builtin/*.json`` on first
+    boot with ``source='bundled'``. Admins can PATCH any row — the
+    first edit flips ``source`` to ``'admin'`` so future re-seed
+    passes skip it.
+
+    Visibility:
+      * ``all`` — every tenant sees this preset (default).
+      * ``plan`` — only tenants whose plan is ``>= min_plan`` (plan
+        hierarchy resolver) see it.
+      * ``tenants`` — only tenants whose id appears in
+        ``visible_tenant_ids`` see it.
+      * ``plan_and_tenants`` — both gates apply.
+    """
+
+    __tablename__ = "system_profiles"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    profile_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    preflight_profile_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    source: Mapped[str] = mapped_column(
+        String(16), nullable=False, server_default="bundled"
+    )
+    bundled_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    visibility_mode: Mapped[str] = mapped_column(
+        String(32), nullable=False, server_default="all"
+    )
+    min_plan: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    visible_tenant_ids: Mapped[list[uuid.UUID] | None] = mapped_column(
+        PG_ARRAY(Uuid), nullable=True
+    )
+    created_by_admin_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
 

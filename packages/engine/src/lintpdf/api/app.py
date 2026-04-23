@@ -125,6 +125,29 @@ async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
         init_db(database_url)
         _run_migrations(database_url)
 
+        # Seed system_profiles from the bundled JSON directory. Runs
+        # after migrations so the table always exists. Insert-if-absent
+        # semantics mean admin edits + deletes persist across deploys.
+        try:
+            from lintpdf.api.database import get_db_session
+            from lintpdf.profiles.seed import (
+                seed_system_profiles_from_bundled,
+            )
+
+            _seed_db = get_db_session()
+            try:
+                seed_system_profiles_from_bundled(_seed_db)
+            finally:
+                _seed_db.close()
+        except Exception:  # noqa: BLE001
+            import logging
+
+            logging.getLogger(__name__).exception(
+                "seed_system_profiles_from_bundled failed at startup — "
+                "the bundled presets will not appear in /api/v1/profiles "
+                "until this is resolved.",
+            )
+
     # Initialize rate limiter with Redis
     redis_url = os.environ.get("LINTPDF_REDIS_URL", settings.redis_url)
     if redis_url:

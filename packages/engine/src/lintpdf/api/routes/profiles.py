@@ -21,6 +21,11 @@ from lintpdf.api.schemas import (  # noqa: E402
     ProfileSummaryResponse,
 )
 from lintpdf.profiles.registry import ProfileRegistry  # noqa: E402
+from lintpdf.profiles.resolver import (  # noqa: E402
+    get_custom_profile,
+    get_visible_system_profile,
+    list_visible_system_profiles,
+)
 from lintpdf.profiles.schema import PreflightProfile  # noqa: E402
 
 router = APIRouter(prefix="/api/v1/profiles", tags=["profiles"])
@@ -44,16 +49,36 @@ async def list_profiles(
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> ProfileListResponse:
-    """List all available preflight profiles (builtins + tenant's custom)."""
-    registry = get_registry()
+    """List all preflight profiles visible to ``tenant``.
+
+    Source of truth is the ``system_profiles`` table (seeded from the
+    bundled JSON at first boot) filtered by per-row visibility +
+    the tenant's ``custom_profiles`` rows. On a collision between a
+    tenant's custom ``profile_id`` and a system one, the custom wins
+    inside that tenant's own view — the reverse of the pre-DB
+    registry's behavior. This matches the expected "tenant can
+    override a system preset by cloning + editing" UX.
+    """
+    custom_rows = _load_custom_profiles_from_db(db, tenant.id)
+    custom_ids = {row.profile_id for row in custom_rows}
+
     profiles: list[ProfileSummaryResponse] = []
 
-    # Add built-in profiles
-    for profile_id in registry.list_profiles():
-        fp = registry.get(profile_id)
+    for sp in list_visible_system_profiles(db, tenant):
+        if sp.profile_id in custom_ids:
+            # Tenant has shadowed this system preset with a custom of
+            # their own — emit only the custom.
+            continue
+        try:
+            fp = PreflightProfile.model_validate(sp.preflight_profile_json)
+        except Exception:
+            logger.warning(
+                "Skipping malformed system profile: %s", sp.profile_id, exc_info=True
+            )
+            continue
         profiles.append(
             ProfileSummaryResponse(
-                profile_id=profile_id,
+                profile_id=sp.profile_id,
                 name=fp.name,
                 description=fp.description,
                 conformance=fp.conformance,
@@ -62,8 +87,6 @@ async def list_profiles(
             )
         )
 
-    # Add tenant's custom profiles from DB
-    custom_rows = _load_custom_profiles_from_db(db, tenant.id)
     for row in custom_rows:
         try:
             fp = PreflightProfile.model_validate(row.preflight_profile_json)
@@ -78,7 +101,9 @@ async def list_profiles(
                 )
             )
         except Exception:
-            logger.warning("Skipping malformed custom profile: %s", fp.name, exc_info=True)
+            logger.warning(
+                "Skipping malformed custom profile: %s", row.profile_id, exc_info=True
+            )
 
     return ProfileListResponse(profiles=profiles)
 
@@ -89,12 +114,13 @@ async def get_profile(
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> ProfileDetailResponse:
-    """Get detailed profile configuration."""
-    registry = get_registry()
+    """Get detailed profile configuration.
 
-    # Check built-in profiles first
-    if registry.has(profile_id):
-        fp = registry.get(profile_id)
+    Custom-over-system precedence matches ``list_profiles``.
+    """
+    custom = get_custom_profile(db, tenant, profile_id)
+    if custom is not None:
+        fp = PreflightProfile.model_validate(custom.preflight_profile_json)
         return ProfileDetailResponse(
             profile_id=profile_id,
             name=fp.name,
@@ -104,22 +130,17 @@ async def get_profile(
             workflow=fp.workflow,
             checks=fp.checks.model_dump(),
             thresholds=fp.thresholds.model_dump(),
-            is_builtin=True,
+            is_builtin=False,
         )
 
-    # Check tenant's custom profiles in DB
-    row: CustomProfile | None = (
-        db.query(CustomProfile)
-        .filter(CustomProfile.tenant_id == tenant.id, CustomProfile.profile_id == profile_id)
-        .first()
-    )
-    if row is None:
+    sp = get_visible_system_profile(db, tenant, profile_id)
+    if sp is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Profile '{profile_id}' not found.",
         )
 
-    fp = PreflightProfile.model_validate(row.preflight_profile_json)
+    fp = PreflightProfile.model_validate(sp.preflight_profile_json)
     return ProfileDetailResponse(
         profile_id=profile_id,
         name=fp.name,
@@ -129,7 +150,7 @@ async def get_profile(
         workflow=fp.workflow,
         checks=fp.checks.model_dump(),
         thresholds=fp.thresholds.model_dump(),
-        is_builtin=False,
+        is_builtin=True,
     )
 
 
