@@ -23,6 +23,7 @@ Check IDs:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from lintpdf.analyzers.base import BaseAnalyzer
@@ -31,6 +32,69 @@ from lintpdf.analyzers.finding import Finding, Severity
 if TYPE_CHECKING:
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
+
+logger = logging.getLogger(__name__)
+
+# WS-8: pixel threshold for the "is the declared pure-K fill
+# actually visible on the rendered page?" gate. A composited
+# grayscale render at 72 DPI is thresholded at ``<= 15`` (roughly
+# 94% dark). If less than 2% of the page pixels are that dark,
+# the declared pure-K objects aren't contributing visible ink
+# and the advisory is suppressed. Calibrated against the
+# 2026-04-23 Opus audit's Pink-Slush false positives where 1,256
+# declared pure-K events produced no visible dark patch.
+_WS8_DARK_THRESHOLD = 15
+_WS8_MIN_DARK_FRACTION = 0.02
+_WS8_RENDER_DPI = 72
+
+
+def _dark_ink_fraction(pdf_bytes: bytes | None, page_num: int) -> float | None:
+    """Return the fraction of rendered pixels that are nearly
+    black (grayscale <= ``_WS8_DARK_THRESHOLD``), or ``None`` when
+    the render / analysis can't run (no bytes supplied, renderer
+    missing, PIL / numpy unavailable, exception). Callers treat
+    ``None`` as "unknown -> emit the advisory anyway" so the
+    pixel gate degrades gracefully.
+    """
+    if pdf_bytes is None or page_num <= 0:
+        return None
+    try:
+        from io import BytesIO
+
+        from PIL import Image
+
+        from lintpdf.ai.rendering import render_page_to_image
+    except Exception:
+        logger.debug("WS-8 pixel gate disabled: rendering stack unavailable")
+        return None
+    try:
+        import numpy as np
+    except Exception:
+        logger.debug("WS-8 pixel gate disabled: numpy unavailable")
+        return None
+    try:
+        png = render_page_to_image(
+            pdf_bytes, page_num, dpi=_WS8_RENDER_DPI, simulate_overprint=True
+        )
+    except Exception:
+        logger.debug(
+            "WS-8 pixel gate: render_page_to_image failed for page %d",
+            page_num,
+        )
+        return None
+    try:
+        img = Image.open(BytesIO(png)).convert("L")
+        arr = np.asarray(img, dtype=np.uint8)
+    except Exception:
+        logger.debug("WS-8 pixel gate: image decode failed for page %d", page_num)
+        return None
+    if arr.size == 0:
+        return None
+    dark_mask = arr <= _WS8_DARK_THRESHOLD
+    # ``.mean()`` on a boolean array returns the fraction of True
+    # entries, which is exactly the "fraction of dark pixels"
+    # metric the gate wants.
+    return float(dark_mask.mean())
 
 
 class AdvancedColorAnalyzer(BaseAnalyzer):
@@ -55,6 +119,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         spectral_delta_e_threshold: float = 2.0,
         *,
         brand_palette_present: bool = False,
+        pdf_bytes: bytes | None = None,
     ) -> None:
         self.rich_black_c = rich_black_c
         self.rich_black_m = rich_black_m
@@ -66,6 +131,14 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         # brand rich-black spec; suppress when the tenant hasn't
         # declared one.
         self.brand_palette_present = brand_palette_present
+        # WS-8: pixel-composited large-K gate. When the page render
+        # shows < 2% dark coverage the declared pure-K fills aren't
+        # actually contributing visible ink (covered / knocked out
+        # by other artwork), so the advisory is false-positive for
+        # this page. ``pdf_bytes`` is threaded through by the
+        # orchestrator; analyzers run outside the pipeline (tests)
+        # pass ``None`` and get the vector-only behaviour.
+        self._pdf_bytes = pdf_bytes
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -587,12 +660,38 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         # collected any hits, with object_count + max_k_percent +
         # representative bboxes on the finding's details so callers
         # can still drill in without drowning the viewer.
+        # WS-8: before emitting, re-check each candidate page against
+        # the composited render. Declared pure-K fills may be
+        # knocked out or covered by other artwork -- if the rendered
+        # page shows < 2% dark-ink coverage there's no visible K
+        # patch for the customer to act on. Gracefully degrade to
+        # the vector-only emit when the pixel check isn't available
+        # (no pdf_bytes, Ghostscript / pdftoppm missing, render
+        # error), since over-reporting is better than silent misses.
         for page_num in sorted(large_k_agg):
             bucket = large_k_agg[page_num]
             count = int(bucket["count"])  # type: ignore[arg-type]
             if count <= 0:
                 continue
             max_k = float(bucket["max_k_percent"])  # type: ignore[arg-type]
+            rendered_dark_fraction = _dark_ink_fraction(self._pdf_bytes, page_num)
+            if (
+                rendered_dark_fraction is not None
+                and rendered_dark_fraction < _WS8_MIN_DARK_FRACTION
+            ):
+                # Pixel check says the declared fills aren't
+                # visibly dark on the final page. Suppress.
+                continue
+            details: dict[str, object] = {
+                "classification": "pure_k",
+                "object_count": count,
+                "max_k_percent": max_k,
+                "representative_bboxes": bucket["bboxes"],
+            }
+            if rendered_dark_fraction is not None:
+                details["rendered_dark_fraction"] = round(
+                    rendered_dark_fraction, 4
+                )
             findings.append(
                 Finding(
                     inspection_id="LPDF_ADV_005",
@@ -603,12 +702,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                         f"(may appear gray without rich black support)"
                     ),
                     page_num=page_num,
-                    details={
-                        "classification": "pure_k",
-                        "object_count": count,
-                        "max_k_percent": max_k,
-                        "representative_bboxes": bucket["bboxes"],
-                    },
+                    details=details,
                     object_type="path",
                 )
             )

@@ -495,6 +495,11 @@ class PreflightOrchestrator:
                 rich_black_y=t.rich_black_y,
                 rich_black_k=t.rich_black_k,
                 brand_palette_present=brand_palette_present,
+                # WS-8: hand the raw PDF bytes to the analyzer so
+                # the pixel gate on LPDF_ADV_005 can re-check the
+                # composited render. ``self._pdf_bytes`` was
+                # stashed in ``run()`` on first entry.
+                pdf_bytes=self._pdf_bytes,
             ),
         ]
 
