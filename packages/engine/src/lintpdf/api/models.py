@@ -833,7 +833,6 @@ class AIUsageLog(Base):
     __table_args__ = (
         Index("ix_ai_usage_logs_tenant_created", "tenant_id", "created_at"),
         Index("ix_ai_usage_logs_job", "job_id"),
-        Index("ix_ai_usage_logs_tenant_month", "tenant_id", "created_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)

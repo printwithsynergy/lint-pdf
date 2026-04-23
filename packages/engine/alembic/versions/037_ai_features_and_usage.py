@@ -68,11 +68,12 @@ def upgrade() -> None:
     op.add_column(
         "ai_usage_logs", sa.Column("cost_cents", sa.Integer, nullable=True)
     )
-    op.create_index(
-        "ix_ai_usage_logs_tenant_month",
-        "ai_usage_logs",
-        ["tenant_id", sa.text("date_trunc('month', created_at)")],
-    )
+    # Monthly quota aggregation reuses the pre-existing
+    # ``ix_ai_usage_logs_tenant_created`` index (tenant_id, created_at)
+    # via ``WHERE created_at >= date_trunc('month', now())``. Attempting
+    # to index ``date_trunc('month', created_at)`` directly fails because
+    # ``date_trunc`` on a timestamptz is STABLE, not IMMUTABLE, and
+    # Postgres requires index-expression functions to be IMMUTABLE.
 
     # Rescale existing monthly_ai_credits from whole dollars to cents.
     # Column type stays int — only the UNIT changes. Every $5 becomes 500.
@@ -127,7 +128,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_ai_usage_logs_tenant_month", table_name="ai_usage_logs")
     op.drop_column("ai_usage_logs", "cost_cents")
     op.drop_column("ai_usage_logs", "cache_write_tokens")
     op.drop_column("ai_usage_logs", "cache_read_tokens")
