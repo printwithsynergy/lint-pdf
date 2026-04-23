@@ -14,11 +14,11 @@ Every preflight finding the engine produces is a claim about the PDF — "this f
 | `confirmed` | The AI agrees — the issue is visible in the rendered pixels. |
 | `disputed` | The AI disagrees — describe what you see instead. Engine got it wrong. |
 | `needs_context` | Can't decide without a JDF sidecar / brand profile / customer spec. Re-submit with that context and the verdict changes. |
-| `error` | The audit call failed (Modal timeout, rate limit). Retry the job. |
+| `pending_retry` | Audit is still retrying after a transient Claude failure (async back-off). Retries run for up to 24 h in the background; no action needed. |
 
 ## Who gets it
 
-**Scale** and **Enterprise** plans only, via the `ai_audit_enabled` entitlement. No configuration required on the tenant side once the plan tier allows it — audit runs automatically after every preflight.
+**Growth**, **Scale**, and **Enterprise** plans by default, via the `audit` entry in the tenant's `ai_features` grant list. Admins can flip `audit` on or off for any tenant at `/dashboard/admin/tenants/[id]` without changing the plan. The resolver gates every call on `ai_enabled AND "audit" in ai_features` — both must be true.
 
 ## Where the verdict lives
 
@@ -33,8 +33,8 @@ Each finding in the `findings` array of the job response carries an optional `au
   "audit": {
     "status": "confirmed",
     "rationale": "Yellow splatter overprints the navy band; rendered preview matches.",
-    "model": "modal:qwen2-vl-7b",
-    "at": "2026-04-22T18:05:34Z"
+    "model": "claude-haiku-4-5",
+    "at": "2026-04-23T18:05:34Z"
   }
 }
 ```

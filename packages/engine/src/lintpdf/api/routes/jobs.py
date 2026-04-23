@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import os
 import uuid as uuid_mod
 from typing import Any
 
@@ -241,6 +242,16 @@ async def submit_job(  # skipcq: PY-R1000
             "that are clamped. On timeout the handler falls back to the "
             "202 response so the caller can keep polling via "
             "``GET /api/v1/jobs/{job_id}``."
+        ),
+    ),
+    ocr: str | None = Query(
+        default=None,
+        description=(
+            "WS-C opt-in for Claude OCR on outlined PDFs. "
+            "``?ocr=force`` runs the OCR pass on every page regardless "
+            "of the extractable-char heuristic. Omit (default) for "
+            "the standard auto-trigger: OCR only when a page has "
+            "< 5 extractable characters."
         ),
     ),
     db: Session = Depends(get_db),
@@ -591,6 +602,9 @@ async def submit_job(  # skipcq: PY-R1000
         # config endpoint, and any subsequent mint call all see the
         # exact envelope the caller sent — no re-parsing, no drift.
         overrides=overrides_as_dict,
+        # WS-C: ``?ocr=force`` forces Claude OCR on every page
+        # regardless of the extractable-char heuristic.
+        ocr_force=(ocr == "force"),
     )
     db.add(job)
 
@@ -1224,14 +1238,14 @@ class RerunAuditResponse(BaseModel):
         description=(
             "How many ``JobFinding`` rows received a fresh "
             "verdict. Zero is a valid outcome — it means the "
-            "Modal auditor returned all-null verdicts (transport "
+            "Claude auditor returned all-null verdicts (transport "
             "error on every batch) or the job has no findings. "
             "Not an error."
         ),
     )
     model: str = Field(
         ...,
-        description="Auditor model used (e.g. ``modal:qwen2-vl-7b``).",
+        description="Auditor model used (e.g. ``claude-haiku-4-5``).",
     )
 
 
@@ -1247,24 +1261,24 @@ async def rerun_audit(
 ) -> RerunAuditResponse:
     """Re-run the customer AI audit against an already-complete job.
 
-    The normal audit runs inline at ``run_preflight`` completion;
-    this endpoint is for the cases it isn't useful to resubmit the
-    whole PDF:
+    The normal audit runs async at ``run_preflight`` completion
+    via ``audit_findings_async``; this endpoint is for the cases
+    it isn't useful to resubmit the whole PDF:
 
-      * A Modal prompt tune dropped; ops wants to refresh verdicts
+      * A Claude prompt tune dropped; ops wants to refresh verdicts
         on historical jobs.
-      * The Modal endpoint was down when the job originally ran;
-        the verdicts are all NULL and the customer wants them
-        refreshed once service recovers.
-      * An admin toggled ``ai_audit_enabled`` on mid-flight for
-        a pilot tenant and wants to populate the audit field on
-        their back-catalogue.
+      * Anthropic was down when the async audit first ran and the
+        24h retry ceiling expired; the verdicts are all NULL and
+        the customer wants them refreshed once service recovers.
+      * An admin toggled ``"audit"`` into a tenant's ``ai_features``
+        mid-flight for a pilot and wants to populate the audit
+        columns on their back-catalogue.
 
     Bypasses the entitlement gate (so pilots work), but still
-    requires ``LINTPDF_AUDIT_MODAL_URL`` to be set — otherwise
-    the helper logs + returns zero updates. Requires the caller
-    to own the job (the normal ``get_current_tenant`` dependency
-    scopes the lookup to the tenant).
+    requires ``ANTHROPIC_API_KEY`` to be set — otherwise the helper
+    logs + returns zero updates. Requires the caller to own the
+    job (the normal ``get_current_tenant`` dependency scopes the
+    lookup to the tenant).
     """
     try:
         uid = uuid_mod.UUID(job_id)
@@ -1302,5 +1316,5 @@ async def rerun_audit(
     return RerunAuditResponse(
         job_id=job.id,
         findings_updated=changed,
-        model="modal:qwen2-vl-7b",
+        model=os.environ.get("LINTPDF_AUDIT_MODEL", "claude-haiku-4-5"),
     )

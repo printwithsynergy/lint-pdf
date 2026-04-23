@@ -74,6 +74,46 @@ export interface ViewerFinding {
   audit?: AuditVerdict | null;
 }
 
+/**
+ * WS-D dieline detection verdict. ``source`` is:
+ * - ``"name"``  — name-match heuristic (CutContour, Dieline, etc.)
+ * - ``"vision"`` — Sonnet 4.6 spatial-reasoning fallback
+ * - ``"missing"`` — no dieline found; ``LPDF_DIE_MISSING`` warning emitted
+ */
+export interface DielineResult {
+  source: "name" | "vision" | "missing";
+  polylines: number[][][];
+  spot_name: string | null;
+  confidence: number;
+}
+
+/** WS-D art size derived from the dieline centerline. */
+export interface ArtSizeMM {
+  width_mm: number;
+  height_mm: number;
+}
+
+/** WS-D per-swatch legend/art classification. */
+export interface SwatchClassification {
+  spot_name: string;
+  bbox: [number, number, number, number];
+  kind: "legend" | "art" | "unknown";
+  source: "position" | "vision" | "position_only";
+  confidence: number;
+}
+
+/** WS-C recovered OCR text block for outlined PDFs. */
+export interface OCRTextBlock {
+  text: string;
+  bbox: [number, number, number, number];
+  confidence: number;
+}
+
+export interface OCRPage {
+  page_num: number;
+  blocks: OCRTextBlock[];
+}
+
 export interface ViewerState {
   currentPage: number;
   zoom: number;

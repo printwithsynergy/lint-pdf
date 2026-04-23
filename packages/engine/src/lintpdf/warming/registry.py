@@ -47,7 +47,8 @@ class WarmSpec:
       and the caller's fire-and-forget thread dangles longer than
       necessary.
     * ``enabled`` — flip to False when the dep is disabled by env
-      (e.g. `LINTPDF_AUDIT_MODAL_URL` unset → audit warmer skipped).
+      (e.g. `LINTPDF_SIMILARITY_MODAL_URL` unset → similarity
+      warmer skipped).
     """
 
     name: str
@@ -62,28 +63,14 @@ class WarmSpec:
     resolve: Callable[[], WarmSpec | None] | None = field(default=None, compare=False)
 
 
-def _audit_spec() -> WarmSpec | None:
-    url = os.environ.get("LINTPDF_AUDIT_MODAL_URL")
+def _similarity_spec() -> WarmSpec | None:
+    # The one Modal survivor after the wholesale Claude pivot:
+    # OpenCLIP embedding for the duplicate-detector inspector.
+    url = os.environ.get("LINTPDF_SIMILARITY_MODAL_URL")
     if not url:
         return None
     return WarmSpec(
-        name="audit",
-        probe_url=url,
-        method="POST",
-        wake_payload=b'{"findings": []}',
-        timeout_s=3.0,
-    )
-
-
-def _inference_spec() -> WarmSpec | None:
-    url = os.environ.get("LINTPDF_GPU_INFERENCE_URL")
-    if not url:
-        return None
-    # The inference app exposes ``/ready`` on the ASGI root — lighter
-    # than firing a full classify call. If it's ever moved, a GET at
-    # the root still returns 200 once FastAPI is up.
-    return WarmSpec(
-        name="inference",
+        name="similarity",
         probe_url=url.rstrip("/") + "/ready",
         method="GET",
         timeout_s=3.0,
@@ -109,7 +96,7 @@ def _engine_spec() -> WarmSpec | None:
 
 def _initial_registry() -> dict[str, WarmSpec]:
     out: dict[str, WarmSpec] = {}
-    for factory in (_audit_spec, _inference_spec, _engine_spec):
+    for factory in (_similarity_spec, _engine_spec):
         spec = factory()
         if spec is not None:
             out[spec.name] = spec
