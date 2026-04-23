@@ -12,6 +12,7 @@ from fastapi import FastAPI
 
 from lintpdf.api.routes import (
     admin,
+    admin_health,
     admin_warming,
     ai_config,
     ai_credits,
@@ -258,6 +259,7 @@ def create_app() -> FastAPI:
     if not control_plane_only:
         app.include_router(reports.router)
     app.include_router(admin.router)
+    app.include_router(admin_health.router)
     app.include_router(admin_warming.router)
     if not control_plane_only:
         app.include_router(trial.router)
