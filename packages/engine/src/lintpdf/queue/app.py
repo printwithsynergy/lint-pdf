@@ -84,17 +84,12 @@ def create_celery_app(broker_url: str) -> Celery:
         },
     )
 
-    # Auto-discover tasks in the queue package.
-    # ``autodiscover_tasks`` only looks for ``tasks.py`` in each package
-    # — it does NOT pick up sibling modules like ``audit_tasks.py``.
-    # Eager-import every task module here so all ``@celery_app.task``
-    # decorators run at worker-startup (not lazily on first use). Without
-    # this, a preflight task that does ``from lintpdf.queue.audit_tasks
-    # import audit_findings_async`` triggers mid-flight task registration
-    # inside a forked child and the worker's receive loop deadlocks —
-    # the "Task received, no further logs" pattern we hit on 2026-04-23.
+    # Auto-discover tasks in the queue package. (Eager import of
+    # ``audit_tasks`` happens below after ``celery_app`` is assigned
+    # at module scope — doing it inside this function hits a circular
+    # import because audit_tasks does ``from lintpdf.queue.app import
+    # celery_app`` before this function has returned.)
     app.autodiscover_tasks(["lintpdf.queue"])
-    import lintpdf.queue.audit_tasks  # noqa: F401 — force decorator run
 
     return app
 
@@ -222,3 +217,16 @@ def _unbind_task_context(**_: Any) -> None:
     from structlog.contextvars import unbind_contextvars
 
     unbind_contextvars("task_id", "task_name")
+
+
+# Eager-import the task modules that ``autodiscover_tasks`` misses
+# (it only looks for ``tasks.py``). Placed at the bottom of the module
+# so ``celery_app`` is fully assigned before audit_tasks does its
+# ``from lintpdf.queue.app import celery_app`` — avoids the circular
+# import that the first attempt triggered.
+#
+# Without these eager imports a forked child that does
+# ``from lintpdf.queue.audit_tasks import audit_findings_async`` would
+# register tasks mid-flight and the worker receive-loop deadlocks
+# ("Task received, no further logs" — the 2026-04-23 outage).
+from lintpdf.queue import audit_tasks as _eager_audit_tasks  # noqa: E402, F401
