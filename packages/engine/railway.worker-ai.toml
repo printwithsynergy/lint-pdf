@@ -14,7 +14,7 @@ dockerfilePath = "packages/engine/Dockerfile"
 # Modal today is 5; we pick 6 so one worker slot can be queuing while
 # the other five are executing. Raise once Modal is scaled up too.
 numReplicas = 1
-startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --loglevel=info --queues=ai_heavy --concurrency=${CELERY_AI_CONCURRENCY:-6}'"
+startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --loglevel=info --queues=ai_heavy --pool=threads --concurrency=${CELERY_AI_CONCURRENCY:-6}'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 # Match other worker services — Celery task time_limit is 600s, give
