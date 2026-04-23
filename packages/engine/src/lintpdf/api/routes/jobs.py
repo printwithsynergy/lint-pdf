@@ -767,6 +767,15 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
         completed_at=job.completed_at,
         duration_ms=job.duration_ms,
         error_message=job.error_message,
+        # WS-C/WS-D — dieline, art size, legend swatches and OCR text
+        # layer were declared on the DB model but never on the Pydantic
+        # response, so GET /jobs/{id} was silently dropping them. The
+        # viewer's share-link config endpoint worked because that path
+        # reads these columns directly; the public API did not.
+        dieline=job.dieline,
+        art_size_mm=job.art_size_mm,
+        legend_swatches=job.legend_swatches,
+        ocr_text_layer=job.ocr_text_layer,
     )
 
     if job.status == JobStatus.COMPLETE and job.result_json:
