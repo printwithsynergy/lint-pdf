@@ -480,25 +480,10 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
         }) as RouteHandler,
       },
       // ── Cross-tenant profile (ruleset) management ────────────
-      {
-        method: "GET" as HttpMethod,
-        path: "/profiles",
-        auth: true,
-        permission: "site-admin:access",
-        description: "List all profiles grouped by system + tenant (super admin)",
-        handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
-          const resp = await adminFetch(`/api/v1/admin/profiles`);
-          if (!resp.ok) {
-            const detail = await resp.text();
-            console.error(
-              `[lintpdf] GET /admin/profiles engine error ${resp.status}: ${detail}`,
-            );
-            return { status: resp.status, body: { error: detail } };
-          }
-          const data = await resp.json();
-          return { status: 200, body: data };
-        }) as RouteHandler,
-      },
+      // NB: the ``GET /profiles`` handler lives further down alongside
+      // the admin CRUD routes (PR #155). An earlier duplicate sat
+      // here and caused the App to crash at boot with
+      // ``Route GET /api/lintpdf/admin/profiles already registered``.
       {
         method: "GET" as HttpMethod,
         path: "/tenants/:tenantId/profiles/:profileId",
