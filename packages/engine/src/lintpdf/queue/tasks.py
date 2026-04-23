@@ -410,10 +410,12 @@ def run_preflight(
         Dict with job results including findings and summary.
     """
     start = time.monotonic()
-    # Diagnostic trace — the post-pivot prod deploy had preflight tasks
-    # hang silently between "Task received" and the first real log.
-    # Each line is a stage marker; if the logs show [STAGE 3] but not
-    # [STAGE 4], the culprit sits between them.
+    # Diagnostic trace — bypass the logging stack entirely with bare
+    # ``print`` to sys.stderr + flush. If even PFPRINT doesn't emit,
+    # the hang is in Celery's task dispatch, not my code. flush=True
+    # to avoid stdout buffering swallowing us if a crash follows.
+    import sys
+    print(f"[PFPRINT 0] task entered job_id={job_id}", file=sys.stderr, flush=True)
     logger.warning("[PFDIAG 0] task entered job_id=%s", job_id)
     logger.info("Starting preflight job %s with profile %s", job_id, profile_id)
 
