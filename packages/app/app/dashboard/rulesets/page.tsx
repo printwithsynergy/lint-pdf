@@ -393,6 +393,15 @@ export default function RulesetsPage() {
             setSelectedProfile(null);
             setSelectedOwner(null);
           }}
+          onSaved={async () => {
+            // Re-fetch both the list and the currently-open detail
+            // so the UI reflects the persisted state (and clears
+            // the dirty indicator).
+            await fetchProfiles();
+            if (selectedOwner) {
+              await viewProfile(selectedOwner, selectedProfile.profile_id);
+            }
+          }}
         />
       )}
 
@@ -635,12 +644,74 @@ function ProfileRow({
 
 function ProfileDetailPanel({
   profile,
+  owner,
   onClose,
+  onSaved,
 }: {
   profile: ProfileDetail;
   owner: OwnerKey;
   onClose: () => void;
+  onSaved?: () => void;
 }) {
+  // WS-16 editable panel. The RulesEditor was introduced as
+  // read-only in WS-12 ("backend PATCH path that doesn't exist
+  // yet"). Every path it needs is actually already live:
+  //   - tenant self-edit: POST /api/v1/profiles (upsert)
+  //   - admin-writes-for-tenant: PUT /api/v1/admin/tenants/{id}/profiles/{id}
+  //   - built-ins: still clone-only, same as the create flow.
+  const baseline = profile as unknown as RulesProfile;
+  const [edited, setEdited] = useState<RulesProfile>(baseline);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
+
+  // Reset the draft whenever the parent swaps the loaded profile
+  // (e.g. the user picks a different row, or we reload after save).
+  useEffect(() => {
+    setEdited(profile as unknown as RulesProfile);
+    setSaveError(null);
+    setSavedMessage(null);
+  }, [profile]);
+
+  const isBuiltIn = owner === "system" || profile.is_builtin;
+  const isDirty = JSON.stringify(edited) !== JSON.stringify(baseline);
+
+  async function handleSave() {
+    if (isBuiltIn || !isDirty) return;
+    setSaving(true);
+    setSaveError(null);
+    setSavedMessage(null);
+    try {
+      const url =
+        owner === "self"
+          ? "/api/lintpdf/profiles"
+          : `/api/lintpdf/admin/tenants/${owner}/profiles/${profile.profile_id}`;
+      const method = owner === "self" ? "POST" : "PUT";
+      const body =
+        owner === "self"
+          ? {
+              profile_id: profile.profile_id,
+              preflight_profile: edited,
+            }
+          : { preflight_profile: edited };
+      const resp = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const detail = await readErrorDetail(resp, "Save failed");
+        throw new Error(`(${resp.status}) ${detail}`);
+      }
+      setSavedMessage("Changes saved. New preflight jobs using this ruleset will pick them up.");
+      onSaved?.();
+    } catch (e) {
+      setSaveError(e instanceof Error ? e.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="mt-6 rounded-lg border p-4">
       <div className="flex items-center justify-between">
@@ -681,19 +752,42 @@ function ProfileDetailPanel({
             </div>
           </div>
         )}
-      {/* WS-12: Structured rules view. Editing is gated on a
-          backend PATCH path that doesn't exist yet; until it
-          ships the editor is read-only so admins and tenants
-          still get the grouped catalog view, search, JSON
-          inspection, and diff against an empty baseline. */}
       <div className="mt-4">
-        <h3 className="text-sm font-semibold">Rules</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold">Rules</h3>
+          {!isBuiltIn && (
+            <div className="flex items-center gap-2">
+              {isDirty && (
+                <span className="text-xs text-amber-500">Unsaved changes</span>
+              )}
+              <Button
+                size="sm"
+                variant="primary"
+                disabled={!isDirty || saving}
+                onClick={handleSave}
+              >
+                {saving ? "Saving…" : "Save changes"}
+              </Button>
+            </div>
+          )}
+        </div>
+        {isBuiltIn && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Built-in rulesets are read-only. Use the Clone button on the
+            list above to create an editable copy.
+          </p>
+        )}
+        {saveError && (
+          <p className="mt-2 text-xs text-red-500">{saveError}</p>
+        )}
+        {savedMessage && (
+          <p className="mt-2 text-xs text-emerald-500">{savedMessage}</p>
+        )}
         <RulesEditor
-          profile={profile as unknown as RulesProfile}
-          onChange={() => {
-            /* read-only until PATCH path lands */
-          }}
-          readOnly
+          profile={edited}
+          baseline={baseline}
+          onChange={setEdited}
+          readOnly={isBuiltIn}
         />
       </div>
     </div>
