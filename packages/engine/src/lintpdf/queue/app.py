@@ -84,8 +84,17 @@ def create_celery_app(broker_url: str) -> Celery:
         },
     )
 
-    # Auto-discover tasks in the queue package
+    # Auto-discover tasks in the queue package.
+    # ``autodiscover_tasks`` only looks for ``tasks.py`` in each package
+    # — it does NOT pick up sibling modules like ``audit_tasks.py``.
+    # Eager-import every task module here so all ``@celery_app.task``
+    # decorators run at worker-startup (not lazily on first use). Without
+    # this, a preflight task that does ``from lintpdf.queue.audit_tasks
+    # import audit_findings_async`` triggers mid-flight task registration
+    # inside a forked child and the worker's receive loop deadlocks —
+    # the "Task received, no further logs" pattern we hit on 2026-04-23.
     app.autodiscover_tasks(["lintpdf.queue"])
+    import lintpdf.queue.audit_tasks  # noqa: F401 — force decorator run
 
     return app
 
