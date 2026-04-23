@@ -15,7 +15,9 @@
     "db:seed": "npx tsx prisma/seed.ts",
     "test:e2e": "playwright test",
     "test:api": "playwright test --project=api-tests",
-    "test:ui": "playwright test --project=ui-tests"
+    "test:ui": "playwright test --project=ui-tests",
+    "catalog:generate": "python3 ../engine/scripts/export_check_catalog.py --out lib/rules/check-catalog.json",
+    "catalog:check": "pnpm catalog:generate && git diff --exit-code lib/rules/check-catalog.json"
   },
   "dependencies": {
     "@lintpdf/stripe": "workspace:*",

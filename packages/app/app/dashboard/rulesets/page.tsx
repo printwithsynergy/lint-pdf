@@ -5,6 +5,8 @@ import { SkeletonDashboard } from "@/components/skeleton";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
 import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
 import { Button, Input, Select, FormField } from "@thinkneverland/pixie-dust-ui";
+import { RulesEditor } from "@/components/rules/RulesEditor";
+import type { Profile as RulesProfile } from "@/lib/rules/profile-utils";
 
 interface ProfileSummary {
   profile_id: string;
@@ -679,6 +681,21 @@ function ProfileDetailPanel({
             </div>
           </div>
         )}
+      {/* WS-12: Structured rules view. Editing is gated on a
+          backend PATCH path that doesn't exist yet; until it
+          ships the editor is read-only so admins and tenants
+          still get the grouped catalog view, search, JSON
+          inspection, and diff against an empty baseline. */}
+      <div className="mt-4">
+        <h3 className="text-sm font-semibold">Rules</h3>
+        <RulesEditor
+          profile={profile as unknown as RulesProfile}
+          onChange={() => {
+            /* read-only until PATCH path lands */
+          }}
+          readOnly
+        />
+      </div>
     </div>
   );
 }

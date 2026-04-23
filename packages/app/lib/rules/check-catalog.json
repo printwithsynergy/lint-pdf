@@ -1,0 +1,1141 @@
+{
+  "version": 1,
+  "generated_by": "packages/engine/scripts/export_check_catalog.py",
+  "total_checks": 142,
+  "categories": [
+    {
+      "id": "image",
+      "label": "Image quality",
+      "checks": [
+        {
+          "id": "LPDF_IMG_001",
+          "name": "Low Image Resolution",
+          "description": "An image doesn't have enough detail for sharp printing.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_002",
+          "name": "Excessive Resolution",
+          "description": "An image has far more detail than needed, increasing file size unnecessarily.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_003",
+          "name": "Wrong Color Mode",
+          "description": "An image uses screen colors (RGB) instead of print colors (CMYK).",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_004",
+          "name": "No Image Compression",
+          "description": "An image isn't compressed, making the file unnecessarily large.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_005",
+          "name": "Inline Image",
+          "description": "A small image is embedded directly in the page stream instead of as a resource.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_006",
+          "name": "Upscaled Image",
+          "description": "An image has been stretched beyond its actual size, causing visible blur.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_007",
+          "name": "LZW Compression",
+          "description": "Image uses LZW compression which is prohibited in some print standards.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_008",
+          "name": "JPEG2000 Format",
+          "description": "Uses JPEG2000 format which may not be supported by all RIPs.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_009",
+          "name": "16-Bit Image",
+          "description": "Image uses 16-bit color depth, unusual for standard print workflows.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_010",
+          "name": "OPI Reference",
+          "description": "References an external high-res image that must be available at print time.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_011",
+          "name": "Alternate Image",
+          "description": "Contains alternate images that should be stripped before printing.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_012",
+          "name": "OPI in Resources",
+          "description": "OPI reference found in page resources.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_013",
+          "name": "Alternate in Resources",
+          "description": "Alternate image reference found in page resources.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_014",
+          "name": "Sheared Image",
+          "description": "Image has a non-orthogonal transform applied (skewed).",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_015",
+          "name": "Rotated Image",
+          "description": "Image is rotated at a non-standard angle.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_016",
+          "name": "Flipped Image",
+          "description": "Image appears to be mirrored horizontally or vertically.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_017",
+          "name": "Extreme Scaling",
+          "description": "Image is scaled to an extreme percentage of its original size.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "color",
+      "label": "Colour",
+      "checks": [
+        {
+          "id": "LPDF_COLOR_001",
+          "name": "Device-Dependent Color",
+          "description": "Color is specified without a profile, so output will vary by device.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_002",
+          "name": "Spot Color Without Fallback",
+          "description": "A spot color has no process color fallback for proofing.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_003",
+          "name": "Lab Color Used",
+          "description": "CIE Lab color used \u2014 may require special handling at the RIP.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_004",
+          "name": "Ink Coverage Too High",
+          "description": "Total ink exceeds the maximum for this paper type, risking smearing or drying issues.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_005",
+          "name": "Registration Color",
+          "description": "All inks at 100% \u2014 only for registration marks, never for artwork.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_006",
+          "name": "No Output Intent",
+          "description": "No color profile is specified \u2014 colors may shift unpredictably during printing.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_007",
+          "name": "Mixed Color Spaces",
+          "description": "Different color spaces used on the same page may cause inconsistency.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_008",
+          "name": "CalRGB Color",
+          "description": "Calibrated RGB color used \u2014 should be converted to CMYK for print.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_009",
+          "name": "CalGray Color",
+          "description": "Calibrated gray color used \u2014 should use DeviceGray for consistency.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_010",
+          "name": "Indexed Color",
+          "description": "Indexed/palette color used \u2014 limited color range.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_011",
+          "name": "Pattern Color Space",
+          "description": "Pattern-based color used \u2014 may render differently across RIPs.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_012",
+          "name": "Separation Color",
+          "description": "Separation color space detected.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_013",
+          "name": "DeviceN Color",
+          "description": "Multi-channel DeviceN color detected.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_014",
+          "name": "Color Space Inventory",
+          "description": "Summary of color space types used in the document.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_015",
+          "name": "ICC Profile Mismatch",
+          "description": "Embedded ICC profile doesn't match the output intent.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_016",
+          "name": "RGB in CMYK Workflow",
+          "description": "RGB color found in a CMYK-targeted workflow.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_017",
+          "name": "Impure Black",
+          "description": "Black areas use unnecessary color inks, risking visible misregistration.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_018",
+          "name": "Untagged Color",
+          "description": "Color space used without an associated ICC profile.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_019",
+          "name": "Wide Gamut Color",
+          "description": "Color is outside the typical print gamut.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_020",
+          "name": "Overink Warning",
+          "description": "Multiple color operations accumulate high ink levels.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_COLOR_021",
+          "name": "Rich Black Text",
+          "description": "Text uses more than one CMYK ink \u2014 pure K (100/0/0/0) is recommended at every size to avoid misregistration.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "color_management",
+      "label": "Colour management",
+      "checks": [
+        {
+          "id": "LPDF_ICC_001",
+          "name": "No ICC Profile",
+          "description": "No ICC color profile embedded for color-managed output.",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_ICC_002",
+          "name": "Invalid ICC Profile",
+          "description": "The embedded ICC profile is corrupt or invalid.",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_ICC_003",
+          "name": "ICC Version Mismatch",
+          "description": "ICC profile version doesn't match the PDF specification.",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_ICC_004",
+          "name": "Wrong ICC Device Class",
+          "description": "ICC profile device class doesn't match usage context.",
+          "default_severity": "error"
+        }
+      ]
+    },
+    {
+      "id": "ink_coverage",
+      "label": "Ink coverage",
+      "checks": [
+        {
+          "id": "LPDF_INK_001",
+          "name": "TAC Heatmap",
+          "description": "Total Area Coverage data for this page.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_INK_002",
+          "name": "Ink Separation Data",
+          "description": "Per-channel ink usage statistics.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_INK_003",
+          "name": "Ink Channel Inventory",
+          "description": "Summary of all ink channels used in the document.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "spot_colors",
+      "label": "Spot colours",
+      "checks": [
+        {
+          "id": "LPDF_SPOT_001",
+          "name": "Unknown Spot Color",
+          "description": "A spot color is used that isn't in a standard color book.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_002",
+          "name": "Spot Color Fallback Issue",
+          "description": "The process color fallback for a spot color may not be accurate.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_003",
+          "name": "Similar Spot Names",
+          "description": "Multiple spot colors have very similar names \u2014 may be duplicates.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "overprint",
+      "label": "Overprint",
+      "checks": [
+        {
+          "id": "LPDF_OVER_001",
+          "name": "Overprint On",
+          "description": "Overprint is enabled \u2014 colors will mix where they overlap instead of knocking out.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_OVER_002",
+          "name": "Overprint Off for Spot",
+          "description": "Overprint is disabled for a spot color, which may cause unexpected knockouts.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_OVER_003",
+          "name": "Overprint Mode Mismatch",
+          "description": "Overprint mode setting is inconsistent.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "transparency",
+      "label": "Transparency",
+      "checks": [
+        {
+          "id": "LPDF_TRANS_001",
+          "name": "Transparency Used",
+          "description": "Page uses transparency which must be flattened for older workflows.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_TRANS_002",
+          "name": "Non-Standard Blend Mode",
+          "description": "A blend mode other than Normal is used, which may flatten unpredictably.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_TRANS_003",
+          "name": "Soft Mask",
+          "description": "Image uses a soft mask, increasing rendering complexity.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_TRANS_004",
+          "name": "Low Opacity",
+          "description": "Content has very low opacity and may be nearly invisible in print.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_TRANS_005",
+          "name": "Transparency Group",
+          "description": "A transparency group is defined on this page.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "fonts",
+      "label": "Fonts",
+      "checks": [
+        {
+          "id": "LPDF_FONT_001",
+          "name": "Missing Font",
+          "description": "A font is not embedded \u2014 text may display incorrectly at the printer.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_002",
+          "name": "Full Font Embedded",
+          "description": "The entire font is embedded instead of just the characters used, increasing file size.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_003",
+          "name": "System Font Used",
+          "description": "A standard system font is used which may render differently on other devices.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_004",
+          "name": "Type 3 Font",
+          "description": "User-drawn Type 3 font detected \u2014 quality may vary across RIPs.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_005",
+          "name": "Missing ToUnicode",
+          "description": "CID font is missing a ToUnicode map \u2014 text search and copy may not work.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_006",
+          "name": "Missing CIDSystemInfo",
+          "description": "CID font is missing system information needed for correct rendering.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_007",
+          "name": "No Font Encoding",
+          "description": "Font lacks encoding information \u2014 characters may map incorrectly.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_008",
+          "name": "TrueType Not Embedded",
+          "description": "A TrueType font is referenced but not embedded in the file.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_009",
+          "name": "OpenType Not Embedded",
+          "description": "An OpenType/CFF font is referenced but not embedded.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_010",
+          "name": "Incomplete Font",
+          "description": "Font descriptor is present but the actual font data is missing.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_011",
+          "name": "Multiple Master Font",
+          "description": "Multiple Master font detected \u2014 limited RIP support.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_012",
+          "name": "Faux Bold",
+          "description": "Software-simulated bold detected \u2014 may not print as expected.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_013",
+          "name": "Faux Italic",
+          "description": "Software-simulated italic detected \u2014 may not print as expected.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_014",
+          "name": "Damaged Font",
+          "description": "The font program appears corrupt or has a type mismatch.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "text",
+      "label": "Text",
+      "checks": [
+        {
+          "id": "LPDF_TEXT_001",
+          "name": "Small Text",
+          "description": "Text is below the minimum readable size for print.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_TEXT_004",
+          "name": "White Text",
+          "description": "White text detected \u2014 verify it's intentional and not hidden content.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "hairlines",
+      "label": "Hairlines",
+      "checks": [
+        {
+          "id": "LPDF_HAIR_001",
+          "name": "Hairline Stroke",
+          "description": "A very thin line may disappear or print inconsistently.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_HAIR_002",
+          "name": "Small Text on Thin Stroke",
+          "description": "Thin stroked text may be hard to read at small sizes.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "strokes",
+      "label": "Strokes",
+      "checks": [
+        {
+          "id": "LPDF_STROKE_003",
+          "name": "Butt Cap on Thin Line",
+          "description": "A butt line cap on a thin stroke may cause visible gaps \u2014 round cap recommended.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_STROKE_007",
+          "name": "Rich Black Stroke",
+          "description": "A thin stroke (0.5-1.0pt) uses more than one CMYK ink - pure K or a single spot is recommended on fine line work.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "paths",
+      "label": "Paths & vectors",
+      "checks": [
+        {
+          "id": "LPDF_PATH_002",
+          "name": "White Fill Path",
+          "description": "A white-filled path may knock out background content unintentionally.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "page_geometry",
+      "label": "Page geometry",
+      "checks": [
+        {
+          "id": "LPDF_BOX_001",
+          "name": "Missing Trim/Bleed Box",
+          "description": "Page boundaries needed for cutting and bleed are not defined.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_002",
+          "name": "Box Hierarchy Violated",
+          "description": "Page boxes (Media, Crop, Bleed, Trim) are not properly nested.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_003",
+          "name": "Insufficient Bleed",
+          "description": "Not enough image extends past the trim edge \u2014 white edges may show after cutting.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_004",
+          "name": "Empty Page",
+          "description": "Page has no visible content.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_005",
+          "name": "Content in Safety Margin",
+          "description": "Important content is too close to the trim edge and may be cut off.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_006",
+          "name": "Content Beyond Bleed",
+          "description": "Content extends outside the bleed box and will be clipped.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_007",
+          "name": "UserUnit Scaling",
+          "description": "Non-standard page scaling detected which may confuse imposition.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_008",
+          "name": "Non-Standard Orientation",
+          "description": "Page has an unusual rotation or orientation.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_009",
+          "name": "Inconsistent Page Sizes",
+          "description": "Pages have different dimensions which may cause printing issues.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "document",
+      "label": "Document structure",
+      "checks": [
+        {
+          "id": "LPDF_DOC_001",
+          "name": "Multiple Page Sizes",
+          "description": "Document contains pages of different sizes which may complicate imposition.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "structure",
+      "label": "Tagged structure",
+      "checks": [
+        {
+          "id": "LPDF_STRUCT_001",
+          "name": "JavaScript Found",
+          "description": "Document contains JavaScript which is not allowed in print workflows.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_002",
+          "name": "Form Fields Present",
+          "description": "Interactive form fields detected \u2014 these won't print as expected.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_003",
+          "name": "PDF Layers Detected",
+          "description": "Optional content layers (OCGs) are present.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_004",
+          "name": "Embedded Files",
+          "description": "Document contains embedded file attachments.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "metadata",
+      "label": "Metadata",
+      "checks": [
+        {
+          "id": "LPDF_META_001",
+          "name": "No XMP Metadata",
+          "description": "XMP metadata stream is missing \u2014 may be required by some standards.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "annotations",
+      "label": "Annotations",
+      "checks": [
+        {
+          "id": "LPDF_ANNOT_001",
+          "name": "Printable Annotation",
+          "description": "A printable annotation is inside the trim area and will appear in output.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ANNOT_003",
+          "name": "Link Annotation",
+          "description": "A clickable link annotation is present on this page.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "accessibility",
+      "label": "Accessibility",
+      "checks": [
+        {
+          "id": "LPDF_ACCESS_001",
+          "name": "Not Tagged",
+          "description": "Document has no structure tree \u2014 it's not accessible to screen readers.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_002",
+          "name": "No Language Set",
+          "description": "Document language is not specified, reducing accessibility.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_004",
+          "name": "Missing Document Language",
+          "description": "The /Lang entry is missing from the document catalog.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_012",
+          "name": "No Output Intent for Contrast",
+          "description": "Cannot verify text-background contrast for accessibility without an output intent.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "barcodes",
+      "label": "Barcodes",
+      "checks": [
+        {
+          "id": "LPDF_BARCODE_001",
+          "name": "Barcode Detected",
+          "description": "A potential barcode pattern was identified on this page.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_025",
+          "name": "Low Barcode Resolution",
+          "description": "The barcode area resolution is below the minimum for reliable scanning.",
+          "default_severity": "warning"
+        }
+      ]
+    },
+    {
+      "id": "packaging",
+      "label": "Packaging",
+      "checks": [
+        {
+          "id": "LPDF_PKG_001",
+          "name": "Dieline Detected",
+          "description": "A die line layer was identified in this packaging file.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_002",
+          "name": "Missing Dieline",
+          "description": "No die line detected \u2014 expected for packaging artwork.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "advanced",
+      "label": "Advanced print production",
+      "checks": [
+        {
+          "id": "LPDF_ADV_002",
+          "name": "Ink Savings Estimate",
+          "description": "Analysis of potential ink savings through GCR optimization.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_004",
+          "name": "No Spectral Data",
+          "description": "No CxF spectral measurement data found in output intents.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_005",
+          "name": "Black Composition",
+          "description": "Breakdown of how black is built (pure K, rich black, registration).",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "standards",
+      "label": "Standards compliance",
+      "checks": [
+        {
+          "id": "LPDF_STD_001",
+          "name": "G7 Compliance",
+          "description": "G7 process control readiness assessment.",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_STD_002",
+          "name": "GRACoL Compliance",
+          "description": "GRACoL 2006 compliance validation.",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_STD_003",
+          "name": "ISO 12647 Compliance",
+          "description": "ISO 12647 standard compliance check.",
+          "default_severity": "error"
+        }
+      ]
+    },
+    {
+      "id": "ai:brand",
+      "label": "AI \u2014 brand",
+      "checks": [
+        {
+          "id": "AI_BRAND_001",
+          "name": "No Brand Palette",
+          "description": "No brand color palette is configured for compliance checking.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_BRAND_002",
+          "name": "Brand Color Deviation",
+          "description": "A color deviates from the configured brand palette.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:cosmetics",
+      "label": "AI \u2014 cosmetics",
+      "checks": [
+        {
+          "id": "AI_COSM_001",
+          "name": "Cosmetics Label Issue",
+          "description": "Required cosmetics labeling elements may be missing.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:fda",
+      "label": "AI \u2014 FDA labelling",
+      "checks": [
+        {
+          "id": "AI_FDA_001",
+          "name": "Calories Font Too Small",
+          "description": "The Calories declaration may be below the FDA's minimum font size requirement.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_FDA_002",
+          "name": "NFP Text Too Small",
+          "description": "Nutrition Facts text is below the minimum readable size required by FDA.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_FDA_003",
+          "name": "Missing Bold in NFP",
+          "description": "Required bold formatting is missing from Nutrition Facts headings.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_FDA_004",
+          "name": "Missing Nutrients",
+          "description": "Required nutrients may be missing from the Nutrition Facts panel.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_FDA_005",
+          "name": "FDA Label Warning",
+          "description": "A potential FDA labeling compliance issue was detected.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:ghs",
+      "label": "AI \u2014 GHS / CLP",
+      "checks": [
+        {
+          "id": "AI_GHS_001",
+          "name": "Missing GHS Elements",
+          "description": "Required GHS hazard label elements may be missing.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:pharma",
+      "label": "AI \u2014 pharma",
+      "checks": [
+        {
+          "id": "AI_PHARMA_001",
+          "name": "Pharma Font Too Small",
+          "description": "Text is below the minimum size required for pharmaceutical labeling.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:alcohol",
+      "label": "AI \u2014 alcohol",
+      "checks": [
+        {
+          "id": "AI_ALC_001",
+          "name": "Alcohol Label Issue",
+          "description": "Required alcohol labeling elements may be missing.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:cannabis",
+      "label": "AI \u2014 cannabis",
+      "checks": [
+        {
+          "id": "AI_CANN_001",
+          "name": "Cannabis Warning Missing",
+          "description": "Required cannabis warning symbols or statements may be missing.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:afp",
+      "label": "AI \u2014 anti-forgery",
+      "checks": [
+        {
+          "id": "AI_AFP_001",
+          "name": "Auto Profile Suggestion",
+          "description": "An automatic preflight profile recommendation was generated.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:fibre",
+      "label": "AI \u2014 fibre classification",
+      "checks": [
+        {
+          "id": "AI_FCLASS_001",
+          "name": "Document Classification",
+          "description": "The document type has been automatically classified.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:logo",
+      "label": "AI \u2014 logo matching",
+      "checks": [
+        {
+          "id": "AI_LOGO_001",
+          "name": "Logo Not Found",
+          "description": "Expected logo was not detected on this page.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:spelling",
+      "label": "AI \u2014 spelling & grammar",
+      "checks": [
+        {
+          "id": "AI_SPELL_001",
+          "name": "Misspelled Word",
+          "description": "A potentially misspelled word was detected in the document text.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:language",
+      "label": "AI \u2014 language",
+      "checks": [
+        {
+          "id": "AI_LANG_001",
+          "name": "Language Detected",
+          "description": "The document language has been identified.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:duplication",
+      "label": "AI \u2014 duplication",
+      "checks": [
+        {
+          "id": "AI_DUP_001",
+          "name": "Duplicate Content",
+          "description": "Duplicate or near-duplicate content detected across pages.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:nsfw",
+      "label": "AI \u2014 NSFW",
+      "checks": [
+        {
+          "id": "AI_NSFW_001",
+          "name": "Content Safety Flag",
+          "description": "Potentially inappropriate content was flagged for review.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:image_quality",
+      "label": "AI \u2014 image quality",
+      "checks": [
+        {
+          "id": "AI_IQ_001",
+          "name": "Image Quality Issue",
+          "description": "An image quality concern was detected (blur, noise, or artifacts).",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:scan_quality",
+      "label": "AI \u2014 scan quality",
+      "checks": [
+        {
+          "id": "AI_SCAN_001",
+          "name": "AI Scan Complete",
+          "description": "Summary of the AI analysis pipeline run.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:processing_steps",
+      "label": "AI \u2014 processing steps",
+      "checks": [
+        {
+          "id": "AI_PSTEP_001",
+          "name": "Processing Steps",
+          "description": "Processing step layer or instruction detected.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:recycling_symbols",
+      "label": "AI \u2014 recycling symbols",
+      "checks": [
+        {
+          "id": "AI_RSYM_001",
+          "name": "Missing Regulatory Symbol",
+          "description": "A required regulatory symbol may be missing from the artwork.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:safe_zones",
+      "label": "AI \u2014 safe zones",
+      "checks": [
+        {
+          "id": "AI_SZ_001",
+          "name": "Safe Zone Violation",
+          "description": "Content is placed in a restricted bleed or safety zone area.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:similarity",
+      "label": "AI \u2014 similarity",
+      "checks": [
+        {
+          "id": "AI_SIM_001",
+          "name": "Similar Images",
+          "description": "Very similar or duplicate images detected in the document.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:visual_diff",
+      "label": "AI \u2014 visual diff",
+      "checks": [
+        {
+          "id": "AI_VDIFF_001",
+          "name": "No Reference File",
+          "description": "No reference file provided for version comparison.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:tao",
+      "label": "AI \u2014 TAO inspection",
+      "checks": [
+        {
+          "id": "AI_TAO_001",
+          "name": "Text Not Outlined",
+          "description": "Text has not been converted to outlines for guaranteed rendering.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:dieline",
+      "label": "AI \u2014 dieline",
+      "checks": [
+        {
+          "id": "AI_DIE_003",
+          "name": "No Dieline Found",
+          "description": "No die line detected \u2014 file does not appear to be packaging artwork.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "ai:orgmetric",
+      "label": "AI \u2014 organisation metric",
+      "checks": [
+        {
+          "id": "AI_ORG_001",
+          "name": "Organic Seal Issue",
+          "description": "Organic certification mark may be missing or incorrectly placed.",
+          "default_severity": "advisory"
+        }
+      ]
+    },
+    {
+      "id": "other",
+      "label": "Other",
+      "checks": [
+        {
+          "id": "AI_EU1169_001",
+          "name": "EU Font Size Violation",
+          "description": "Text is below the minimum x-height required by EU Regulation 1169/2011.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_EU1169_002",
+          "name": "Allergen Not Emphasized",
+          "description": "An allergen may not be properly emphasized as required by EU food labeling rules.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_EU1169_003",
+          "name": "EU Nutrition Format",
+          "description": "Nutrition information format doesn't comply with EU FIR 1169/2011.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_WCAG_001",
+          "name": "Low Color Contrast",
+          "description": "Text doesn't have enough contrast against its background for comfortable reading.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_WCAG_002",
+          "name": "Below WCAG AA",
+          "description": "Text-background contrast is below the WCAG AA accessibility standard.",
+          "default_severity": "advisory"
+        }
+      ]
+    }
+  ]
+}
