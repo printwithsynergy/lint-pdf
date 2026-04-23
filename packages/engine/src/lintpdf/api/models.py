@@ -231,6 +231,18 @@ class Job(Base):
     page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     result_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # WS-C — Claude OCR recovered text layer. List[OCRPage]-shaped
+    # JSONB: [{page_num, blocks: [{text, bbox, confidence}, ...]}, ...].
+    # NULL when OCR didn't run (text-extraction succeeded, or the
+    # tenant doesn't have the ``ocr`` AI feature).
+    ocr_text_layer: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    # Opt-in override from ``POST /jobs?ocr=force``. When True the
+    # OCR async task runs regardless of the extractable-char check.
+    ocr_force: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=sa_text("false")
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

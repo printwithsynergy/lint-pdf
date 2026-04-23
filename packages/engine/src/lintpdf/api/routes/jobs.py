@@ -244,6 +244,16 @@ async def submit_job(  # skipcq: PY-R1000
             "``GET /api/v1/jobs/{job_id}``."
         ),
     ),
+    ocr: str | None = Query(
+        default=None,
+        description=(
+            "WS-C opt-in for Claude OCR on outlined PDFs. "
+            "``?ocr=force`` runs the OCR pass on every page regardless "
+            "of the extractable-char heuristic. Omit (default) for "
+            "the standard auto-trigger: OCR only when a page has "
+            "< 5 extractable characters."
+        ),
+    ),
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> JSONResponse:
@@ -592,6 +602,9 @@ async def submit_job(  # skipcq: PY-R1000
         # config endpoint, and any subsequent mint call all see the
         # exact envelope the caller sent — no re-parsing, no drift.
         overrides=overrides_as_dict,
+        # WS-C: ``?ocr=force`` forces Claude OCR on every page
+        # regardless of the extractable-char heuristic.
+        ocr_force=(ocr == "force"),
     )
     db.add(job)
 

@@ -797,18 +797,22 @@ def run_preflight(
 
             db.commit()
 
-            # AI accuracy audit — enqueued on a separate Celery task so
-            # a flaky Anthropic call never blocks the preflight critical
-            # path (WS-B). ``audit_findings_async`` retries with
+            # AI post-preflight passes — enqueued on separate Celery
+            # tasks so flaky Anthropic calls never block the preflight
+            # critical path (WS-B + WS-C). Each retries with
             # exponential back-off for up to 24h; after that the viewer
             # renders a retry chip from ``audit_status='pending_retry'``.
             try:
-                from lintpdf.queue.audit_tasks import audit_findings_async
+                from lintpdf.queue.audit_tasks import (
+                    audit_findings_async,
+                    ocr_job_async,
+                )
 
                 audit_findings_async.delay(job_id)
+                ocr_job_async.delay(job_id)
             except Exception:
                 logger.exception(
-                    "audit: failed to enqueue async audit for job %s", job_id
+                    "audit: failed to enqueue async AI tasks for job %s", job_id
                 )
 
             logger.info("Completed preflight job %s in %dms", job_id, duration_ms)
