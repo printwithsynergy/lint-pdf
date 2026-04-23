@@ -71,6 +71,15 @@ class HairlineAnalyzer(BaseAnalyzer):
 
         white_fill_pages: set[int] = set()
 
+        # WS-14 per-page aggregation buckets. On a 10-up repeat layout
+        # the same small-text defect fires ~228 times; on white text
+        # it fires ~290 times. Collapse to one aggregate per (page,
+        # rule) so the viewer's findings panel stays usable — the
+        # underlying defect still surfaces, just with count + sample
+        # bboxes inside ``details``.
+        text001_agg: dict[int, dict[str, object]] = {}
+        text004_agg: dict[int, dict[str, object]] = {}
+
         for event in events:
             if isinstance(event, PathPaintingEvent):
                 if event.stroke:
@@ -104,7 +113,12 @@ class HairlineAnalyzer(BaseAnalyzer):
                         )
                     )
             elif isinstance(event, TextRenderedEvent):
-                findings.extend(self._check_text_size(event))
+                findings.extend(
+                    self._check_text_size(event, text001_agg, text004_agg)
+                )
+
+        findings.extend(self._emit_text001_aggregates(text001_agg))
+        findings.extend(self._emit_text004_aggregates(text004_agg))
 
         return findings
 
@@ -334,7 +348,12 @@ class HairlineAnalyzer(BaseAnalyzer):
             return all(v < 0.01 for v in color_values)
         return False
 
-    def _check_text_size(self, event: TextRenderedEvent) -> list[Finding]:  # skipcq: PY-R1000
+    def _check_text_size(
+        self,
+        event: TextRenderedEvent,
+        text001_agg: dict[int, dict[str, object]],
+        text004_agg: dict[int, dict[str, object]],
+    ) -> list[Finding]:  # skipcq: PY-R1000
         """Check effective text size for small text issues."""
         findings: list[Finding] = []
 
@@ -358,23 +377,25 @@ class HairlineAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # LPDF_TEXT_004: White text
+        # LPDF_TEXT_004: White text — accumulate into per-page bucket;
+        # aggregate emitted once per page in _emit_text004_aggregates.
         if self._is_white_color(event.color_space, event.color_values):
-            findings.append(
-                Finding(
-                    inspection_id="LPDF_TEXT_004",
-                    severity=Severity.ADVISORY,
-                    message=f"White text detected on page {event.page_num}",
-                    page_num=event.page_num,
-                    details={
-                        "font_name": event.font_name,
-                        "color_space": event.color_space,
-                        "color_values": list(event.color_values),
-                    },
-                    object_type="text",
-                    bbox=event.bbox,
-                )
+            bucket = text004_agg.setdefault(
+                event.page_num,
+                {
+                    "count": 0,
+                    "bboxes": [],
+                    "font_names": set(),
+                    "color_space": event.color_space,
+                },
             )
+            bucket["count"] = int(bucket["count"]) + 1  # type: ignore[arg-type]
+            bboxes = bucket["bboxes"]
+            if isinstance(bboxes, list) and len(bboxes) < 5 and event.bbox:
+                bboxes.append(list(event.bbox))
+            fonts = bucket["font_names"]
+            if isinstance(fonts, set) and event.font_name:
+                fonts.add(event.font_name)
 
         # LPDF_TEXT_005: Text on registration color (all CMYK at 100%)
         if (
@@ -459,28 +480,97 @@ class HairlineAnalyzer(BaseAnalyzer):
                     bbox=event.bbox,
                 )
             )
-        # LPDF_TEXT_001: Small text
+        # LPDF_TEXT_001: Small text — accumulate per-page, emit one
+        # aggregate per page in _emit_text001_aggregates.
         elif effective_size < self.small_text_threshold:
-            findings.append(
+            bucket = text001_agg.setdefault(
+                event.page_num,
+                {
+                    "count": 0,
+                    "bboxes": [],
+                    "font_names": set(),
+                    "min_effective_size": effective_size,
+                    "threshold": self.small_text_threshold,
+                },
+            )
+            bucket["count"] = int(bucket["count"]) + 1  # type: ignore[arg-type]
+            bboxes = bucket["bboxes"]
+            if isinstance(bboxes, list) and len(bboxes) < 5 and event.bbox:
+                bboxes.append(list(event.bbox))
+            fonts = bucket["font_names"]
+            if isinstance(fonts, set) and event.font_name:
+                fonts.add(event.font_name)
+            if effective_size < float(bucket["min_effective_size"]):  # type: ignore[arg-type]
+                bucket["min_effective_size"] = effective_size
+
+        return findings
+
+    @staticmethod
+    def _emit_text001_aggregates(
+        agg: dict[int, dict[str, object]],
+    ) -> list[Finding]:
+        """Emit one LPDF_TEXT_001 finding per page with count + samples."""
+        out: list[Finding] = []
+        for page_num in sorted(agg):
+            bucket = agg[page_num]
+            count = int(bucket["count"])  # type: ignore[arg-type]
+            if count <= 0:
+                continue
+            min_size = float(bucket["min_effective_size"])  # type: ignore[arg-type]
+            threshold = float(bucket["threshold"])  # type: ignore[arg-type]
+            fonts = bucket["font_names"]
+            font_list = sorted(fonts) if isinstance(fonts, set) else []
+            out.append(
                 Finding(
                     inspection_id="LPDF_TEXT_001",
                     severity=Severity.ADVISORY,
                     message=(
-                        f"Small text ({effective_size:.1f}pt effective) "
-                        f"on page {event.page_num} "
-                        f"(below {self.small_text_threshold}pt)"
+                        f"{count} small text instance{'s' if count != 1 else ''} "
+                        f"(min {min_size:.1f}pt effective) on page {page_num} "
+                        f"(below {threshold}pt)"
                     ),
-                    page_num=event.page_num,
+                    page_num=page_num,
                     details={
-                        "font_name": event.font_name,
-                        "font_size": event.font_size,
-                        "effective_size": effective_size,
-                        "threshold": self.small_text_threshold,
+                        "object_count": count,
+                        "min_effective_size": min_size,
+                        "threshold": threshold,
+                        "font_names": font_list,
+                        "representative_bboxes": bucket["bboxes"],
                     },
-                    object_id=event.font_name,
                     object_type="text",
-                    bbox=event.bbox,
                 )
             )
+        return out
 
-        return findings
+    @staticmethod
+    def _emit_text004_aggregates(
+        agg: dict[int, dict[str, object]],
+    ) -> list[Finding]:
+        """Emit one LPDF_TEXT_004 finding per page with count + samples."""
+        out: list[Finding] = []
+        for page_num in sorted(agg):
+            bucket = agg[page_num]
+            count = int(bucket["count"])  # type: ignore[arg-type]
+            if count <= 0:
+                continue
+            fonts = bucket["font_names"]
+            font_list = sorted(fonts) if isinstance(fonts, set) else []
+            out.append(
+                Finding(
+                    inspection_id="LPDF_TEXT_004",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"{count} white text instance{'s' if count != 1 else ''} "
+                        f"on page {page_num}"
+                    ),
+                    page_num=page_num,
+                    details={
+                        "object_count": count,
+                        "color_space": bucket.get("color_space"),
+                        "font_names": font_list,
+                        "representative_bboxes": bucket["bboxes"],
+                    },
+                    object_type="text",
+                )
+            )
+        return out

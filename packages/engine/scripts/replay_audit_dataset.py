@@ -76,11 +76,36 @@ def _bbox_tuple(bbox: Any) -> tuple[float, float, float, float] | None:
 def _iou(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> float:
     """Axis-aligned-bbox IoU with an exact-match fast path so that
     degenerate (zero-area) bboxes still pair when they're identical
-    rather than silently missing each other via 0/0 → 0 IoU."""
+    rather than silently missing each other via 0/0 → 0 IoU.
+
+    Additionally, when one bbox is fully contained inside the other
+    we treat the pair as matched (returns 1.0). WS-9 refines box
+    violations from "whole parent object" bboxes down to the
+    "intersection with the violating region" — the new bbox is
+    strictly inside the old one, but their plain IoU is often below
+    0.5 because the new rectangle is 10–30 % of the original area.
+    Those findings are the same logical issue; without this fast
+    path they'd show up as "regressions" in the replay scoreboard
+    even though the verdict remains identical.
+    """
     if a == b:
         return 1.0
     ax0, ay0, ax1, ay1 = a
     bx0, by0, bx1, by1 = b
+    # Containment: one bbox sits fully within the other (allowing a
+    # 0.5pt fuzz for float jitter introduced by coordinate round-
+    # trips through different rendering paths).
+    fuzz = 0.5
+    a_in_b = (
+        bx0 - fuzz <= ax0 <= ax1 <= bx1 + fuzz
+        and by0 - fuzz <= ay0 <= ay1 <= by1 + fuzz
+    )
+    b_in_a = (
+        ax0 - fuzz <= bx0 <= bx1 <= ax1 + fuzz
+        and ay0 - fuzz <= by0 <= by1 <= ay1 + fuzz
+    )
+    if a_in_b or b_in_a:
+        return 1.0
     ix0, iy0 = max(ax0, bx0), max(ay0, by0)
     ix1, iy1 = min(ax1, bx1), min(ay1, by1)
     iw, ih = max(0.0, ix1 - ix0), max(0.0, iy1 - iy0)
