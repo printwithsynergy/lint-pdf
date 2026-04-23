@@ -102,16 +102,6 @@ import os as _os  # noqa: E402
 _broker = _os.environ.get("LINTPDF_REDIS_URL") or _os.environ.get("REDIS_URL") or "memory://"
 celery_app = create_celery_app(broker_url=_broker)
 
-# Eager-import every task module now that ``celery_app`` is assigned.
-# ``autodiscover_tasks`` only looks for ``tasks.py`` in each package —
-# sibling modules like ``audit_tasks.py`` must be imported explicitly
-# so their ``@celery_app.task`` decorators run at worker startup. Without
-# this, the first task that does ``from lintpdf.queue.audit_tasks
-# import audit_findings_async`` triggers mid-flight task registration
-# inside a forked child and the worker's receive loop deadlocks —
-# the "Task received, no further logs" pattern we hit on 2026-04-23.
-import lintpdf.queue.audit_tasks as _audit_tasks  # noqa: E402, F401
-
 
 # ---------------------------------------------------------------------------
 # Structured logging context for workers
@@ -227,3 +217,16 @@ def _unbind_task_context(**_: Any) -> None:
     from structlog.contextvars import unbind_contextvars
 
     unbind_contextvars("task_id", "task_name")
+
+
+# Eager-import the task modules that ``autodiscover_tasks`` misses
+# (it only looks for ``tasks.py``). Placed at the bottom of the module
+# so ``celery_app`` is fully assigned before audit_tasks does its
+# ``from lintpdf.queue.app import celery_app`` — avoids the circular
+# import that the first attempt triggered.
+#
+# Without these eager imports a forked child that does
+# ``from lintpdf.queue.audit_tasks import audit_findings_async`` would
+# register tasks mid-flight and the worker receive-loop deadlocks
+# ("Task received, no further logs" — the 2026-04-23 outage).
+from lintpdf.queue import audit_tasks as _eager_audit_tasks  # noqa: E402, F401
