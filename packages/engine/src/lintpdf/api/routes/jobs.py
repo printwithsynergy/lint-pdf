@@ -1261,10 +1261,10 @@ async def rerun_audit(
         their back-catalogue.
 
     Bypasses the entitlement gate (so pilots work), but still
-    requires ``LINTPDF_AUDIT_MODAL_URL`` to be set — otherwise
-    the helper logs + returns zero updates. Requires the caller
-    to own the job (the normal ``get_current_tenant`` dependency
-    scopes the lookup to the tenant).
+    requires ``ANTHROPIC_API_KEY`` to be set — otherwise the helper
+    logs + returns zero updates. Requires the caller to own the
+    job (the normal ``get_current_tenant`` dependency scopes the
+    lookup to the tenant).
     """
     try:
         uid = uuid_mod.UUID(job_id)

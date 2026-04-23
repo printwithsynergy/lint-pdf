@@ -5,10 +5,11 @@ page to PNG (via the already-GS-backed :func:`render_page_to_image`)
 and asks Claude Opus 4.7 to independently verify each finding
 against the actual rendered pixels.
 
-Not wired into the customer request path. Called from
+Not wired into the customer request path. Called from the
+admin health toolbox and from
 ``scripts/audit_preflight_accuracy.py`` for red-teaming the engine
-against a golden-PDF corpus. A customer-equivalent path lives in
-:mod:`lintpdf.audit.customer` and runs on Modal.
+against a golden-PDF corpus. The customer-visible audit path lives
+in :mod:`lintpdf.audit.claude` and runs on Haiku 4.5.
 
 Requires the ``anthropic`` Python SDK (``uv sync --extra ai``) and
 ``ANTHROPIC_API_KEY`` in the environment. Uses prompt caching on
@@ -39,11 +40,12 @@ logger = logging.getLogger(__name__)
 _MODEL_ID = "claude-opus-4-7"
 _MAX_FINDINGS_PER_CALL = 40
 _PAGE_DPI = 150
-# ~1h cache TTL on the shared system + page images so the harness
-# can rerun against the same PDF multiple times without re-billing
-# the vision ingest. Anthropic prompt-caching minimum input is
-# ~1024 tokens; the system prompt + one page image easily clears that.
-_CACHE_TTL_SECONDS = 3600
+# Anthropic prompt-caching TTL. Must be one of the API's supported
+# shorthand strings — today ``"5m"`` or ``"1h"``. Passing an integer
+# seconds value returns 400 ``Input should be '5m' or '1h'`` (same
+# bug ``claude.py`` had pre-`e0ced8f`). 1h matches the harness's
+# "rerun the same PDF a few times" usage.
+_CACHE_TTL = "1h"
 
 
 _SYSTEM_PROMPT = (
@@ -142,7 +144,7 @@ def _image_block(png_bytes: bytes, cache: bool) -> dict[str, Any]:
     if cache:
         block["cache_control"] = {
             "type": "ephemeral",
-            "ttl": _CACHE_TTL_SECONDS,
+            "ttl": _CACHE_TTL,
         }
     return block
 
@@ -304,7 +306,7 @@ class InternalAuditor:
                     "text": _SYSTEM_PROMPT,
                     "cache_control": {
                         "type": "ephemeral",
-                        "ttl": _CACHE_TTL_SECONDS,
+                        "ttl": _CACHE_TTL,
                     },
                 }
             ],

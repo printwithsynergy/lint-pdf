@@ -1,24 +1,21 @@
 """Customer-facing audit pass — Claude Haiku 4.5 via the Anthropic SDK.
 
-Primary auditor. Selected over Qwen2-VL on Modal because:
+The only customer auditor. After the wholesale Claude pivot the
+Modal Qwen2-VL fallback is gone — API failures trigger the Celery
+retry task :func:`lintpdf.queue.audit_tasks.audit_findings_async`
+instead (WS-B). Verdicts land in ``JobFinding.audit_*``.
 
-* Latency — Haiku responds in ~1-2 s per batch vs. Qwen2-VL's 4-7 s
-  per finding plus a 60-90 s cold start on the first request after
-  a quiet period. The audit no longer lands on the preflight
-  critical path.
-* Accuracy — Claude 4.5 scores better on structured-output +
-  reasoning-heavy vision tasks than a 7B OSS VLM. Disputed
-  verdicts come with actionable rationales.
+Why Haiku:
+
+* Latency — ~1-2 s per batch. Audit runs async off the preflight
+  critical path so this barely matters, but it's still the fastest
+  vision pass available.
+* Accuracy — Claude 4.5 scores well on structured-output +
+  reasoning-heavy vision tasks. Disputed verdicts carry
+  actionable rationales.
 * Cost — prompt caching on the page image + Haiku's $0.80/$4 per
-  million tokens puts per-job cost at ~$0.01 vs. Modal's
-  per-A10G-second billing that grows with cold-start churn.
+  million tokens puts per-job cost at ~$0.01.
 * Ops — one SDK, one API key, zero GPU image builds.
-
-``CustomerAuditor`` (the Modal-based original in :mod:`lintpdf.audit.customer`)
-stays deployed as an automatic fallback — if the Anthropic API is
-down or rate-limited, the caller transparently retries through
-Modal. Per-finding verdicts land in the same ``JobFinding.audit_*``
-columns either way.
 
 Env:
     ANTHROPIC_API_KEY      required
@@ -152,14 +149,13 @@ def _strip_ansi(text: str) -> str:
 class ClaudeAuditor:
     """Claude Haiku 4.5 vision auditor.
 
-    Matches ``CustomerAuditor``'s ``audit(pdf_bytes, findings) -> list[AuditResult | None]``
-    signature exactly, so ``run_customer_audit`` can swap the two
-    based on ``LINTPDF_AUDITOR`` without touching call-site code.
+    ``audit(pdf_bytes, findings) -> list[AuditResult | None]`` — one
+    entry per input finding, ``None`` where a batch failed.
 
     Failures degrade gracefully: an API 5xx / rate-limit error on a
-    batch yields ``None`` for every finding in that batch, and the
-    caller (see :mod:`lintpdf.queue.tasks`) falls through to Modal
-    via ``CustomerAuditor`` on the next preflight pass if configured.
+    batch yields ``None`` for every finding in that batch. The
+    caller (see :mod:`lintpdf.queue.audit_tasks`) schedules a
+    retry with exponential back-off.
     """
 
     def __init__(

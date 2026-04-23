@@ -13,56 +13,13 @@ from lintpdf.queue.app import celery_app
 logger = logging.getLogger(__name__)
 
 
-def _pick_primary_auditor() -> tuple[str, Any] | None:
-    """Return ``(name, auditor_instance)`` or ``None`` if no auditor is configured.
-
-    Claude (via Anthropic SDK) is the primary when ``ANTHROPIC_API_KEY``
-    is set; the Modal Qwen2-VL auditor is the fallback reached on
-    any Claude error or when only ``LINTPDF_AUDIT_MODAL_URL`` is
-    configured. When neither is set, auditing is a no-op.
-
-    Keeps the tuple returning the name so logs surface which
-    provider produced the verdicts — useful for ops debugging
-    accuracy or latency differences between the two paths.
-    """
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        try:
-            from lintpdf.audit.claude import ClaudeAuditor
-
-            return ("claude", ClaudeAuditor())
-        except Exception:
-            logger.exception("audit: ClaudeAuditor init failed; trying Modal fallback")
-    if os.environ.get("LINTPDF_AUDIT_MODAL_URL"):
-        try:
-            from lintpdf.audit.customer import CustomerAuditor
-
-            return ("modal", CustomerAuditor())
-        except Exception:
-            logger.exception("audit: CustomerAuditor init failed")
-    return None
-
-
-def _fallback_auditor(primary_name: str) -> tuple[str, Any] | None:
-    """Return the other auditor when the primary errored."""
-    if primary_name == "claude" and os.environ.get("LINTPDF_AUDIT_MODAL_URL"):
-        try:
-            from lintpdf.audit.customer import CustomerAuditor
-
-            return ("modal", CustomerAuditor())
-        except Exception:
-            logger.exception("audit: fallback CustomerAuditor init failed")
-    return None
-
-
 def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -> int:
     """Run the customer-facing AI audit against a job's findings.
 
-    Claude Haiku 4.5 is the default auditor (see
-    ``lintpdf.audit.claude.ClaudeAuditor``). When ``ANTHROPIC_API_KEY``
-    is unset we fall back to the Modal Qwen2-VL path. When the
-    primary fails on every batch we auto-retry the whole set
-    through the fallback. Per-verdict latency drops from 4-7 s on
-    Modal (A10G cold start + per-finding decode) to ~1-2 s on Claude.
+    Claude Haiku 4.5 is the only auditor (see
+    ``lintpdf.audit.claude.ClaudeAuditor``). On API failure the caller
+    schedules a Celery retry via ``audit_findings_async`` (WS-B);
+    no Modal fallback exists.
 
     When ``force=False`` (post-preflight hook), gated on
     ``entitlements.ai_audit_enabled``. When ``force=True`` (admin
@@ -85,12 +42,9 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
         if not getattr(entitlements, "ai_audit_enabled", False):
             return 0
 
-    picked = _pick_primary_auditor()
-    if picked is None:
+    if not os.environ.get("ANTHROPIC_API_KEY"):
         logger.info(
-            "audit: no auditor configured (ANTHROPIC_API_KEY + "
-            "LINTPDF_AUDIT_MODAL_URL both unset); skipping job %s",
-            job_id,
+            "audit: ANTHROPIC_API_KEY unset; skipping job %s", job_id
         )
         return 0
 
@@ -101,44 +55,10 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     storage = get_storage()
     pdf_bytes = storage.download_pdf(job.file_key)
 
-    primary_name, auditor = picked
-    try:
-        verdicts = auditor.audit(pdf_bytes, findings)
-    except Exception:
-        logger.exception(
-            "audit: primary (%s) raised; attempting fallback", primary_name
-        )
-        verdicts = [None] * len(findings)
+    from lintpdf.audit.claude import ClaudeAuditor
 
-    # Count verdicts the primary actually produced; if fewer than
-    # half landed, try the fallback on the rest so flaky primaries
-    # don't leave most findings unaudited.
-    primary_populated = sum(1 for v in verdicts if v is not None)
-    if primary_populated < len(findings) // 2:
-        fallback = _fallback_auditor(primary_name)
-        if fallback is not None:
-            fb_name, fb_auditor = fallback
-            missing = [
-                (i, f)
-                for i, (f, v) in enumerate(zip(findings, verdicts, strict=False))
-                if v is None
-            ]
-            try:
-                fb_findings = [f for _i, f in missing]
-                fb_verdicts = fb_auditor.audit(pdf_bytes, fb_findings)
-                for (abs_i, _f), fb_v in zip(missing, fb_verdicts, strict=False):
-                    if fb_v is not None:
-                        verdicts[abs_i] = fb_v
-                logger.info(
-                    "audit: fallback %s filled %d/%d gaps",
-                    fb_name,
-                    sum(1 for v in fb_verdicts if v is not None),
-                    len(missing),
-                )
-            except Exception:
-                logger.exception(
-                    "audit: fallback %s also failed", fb_name
-                )
+    auditor = ClaudeAuditor()
+    verdicts = auditor.audit(pdf_bytes, findings)
 
     changed = 0
     for finding, verdict in zip(findings, verdicts, strict=False):
@@ -152,11 +72,10 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     if changed:
         db.commit()
     logger.info(
-        "audit: wrote %d/%d verdicts for job %s via %s (force=%s)",
+        "audit: wrote %d/%d verdicts for job %s (force=%s)",
         changed,
         len(findings),
         job_id,
-        primary_name,
         force,
     )
     return changed

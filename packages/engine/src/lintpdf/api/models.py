@@ -325,10 +325,11 @@ class JobFinding(Base):
 
     # AI accuracy audit verdict (WS3 — Alembic 034).
     # Populated by ``lintpdf.audit.internal.InternalAuditor`` during
-    # dev/QA runs and by ``lintpdf.audit.customer.CustomerAuditor``
-    # during Scale/Enterprise production runs when the tenant has
-    # ``ai_audit_enabled``. Left NULL otherwise; the viewer's
-    # ``<AuditChip/>`` renders nothing when the whole block is NULL.
+    # dev/QA runs (via the admin health toolbox) and by
+    # ``lintpdf.audit.claude.ClaudeAuditor`` during production runs
+    # when the tenant has ``"audit"`` in ``ai_features``. Left NULL
+    # otherwise; the viewer's ``<AuditChip/>`` renders nothing when
+    # the whole block is NULL.
     audit_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     audit_rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
     audit_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
