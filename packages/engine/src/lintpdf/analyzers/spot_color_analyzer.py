@@ -54,6 +54,33 @@ _PROCESS_COLOR_NAMES = frozenset({"Cyan", "Magenta", "Yellow", "Black"})
 _PANTONE_PATTERN = re.compile(r"^PANTONE\s+.+$", re.IGNORECASE)
 
 
+def _canonical_colorant(raw: str | None) -> str:
+    """Normalise a raw colorant name for case-insensitive matching.
+
+    Colorant names come in with wildly inconsistent casing ("Pantone"
+    vs "PANTONE"), stray leading slashes from the PDF /Name syntax
+    ("/Pantone 485 C"), non-breaking spaces, registered-trademark
+    glyphs, and assorted leading/trailing whitespace. All of those
+    should be treated as the *same* spot colour for library-prefix
+    matching and dedup, while the original string stays intact for
+    display.
+
+    Returns an uppercase ASCII-normalised key; empty string when the
+    input is empty or whitespace-only.
+    """
+    if not raw:
+        return ""
+    s = str(raw).strip().lstrip("/").strip()
+    # Treat non-breaking space + registered-trademark glyph as plain
+    # variants so "PANTONE® 485 C" / "PANTONE 485 C" both
+    # canonicalise to "PANTONE 485 C".
+    s = s.replace(" ", " ").replace("®", "").replace("™", "")
+    # Collapse interior whitespace runs so "PANTONE  485  C" matches
+    # "PANTONE 485 C".
+    s = re.sub(r"\s+", " ", s).strip()
+    return s.upper()
+
+
 class SpotColorAnalyzer(BaseAnalyzer):
     """Analyzer for spot color and DeviceN color space validation.
 
@@ -112,7 +139,11 @@ class SpotColorAnalyzer(BaseAnalyzer):
         """
         findings: list[Finding] = []
 
-        # colorant_name -> {pages, alternate descriptions, cs_types}
+        # Canonical key -> bucket. Canonicalising ("PANTONE 485 C") means
+        # "Pantone 485 C" and "PANTONE 485 C" collapse into a single
+        # inventory row instead of reporting two separate spot colours
+        # that are really the same paint.
+        colorant_display: dict[str, str] = {}
         colorant_pages: dict[str, list[int]] = {}
         colorant_alternates: dict[str, set[str]] = {}
         colorant_cs_types: dict[str, set[str]] = {}
@@ -124,27 +155,34 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 if not cs.colorant_names:
                     continue
 
-                for colorant in cs.colorant_names:
-                    if colorant in ("All", "None"):
+                for raw_colorant in cs.colorant_names:
+                    if raw_colorant in ("All", "None"):
+                        continue
+                    key = _canonical_colorant(raw_colorant)
+                    if not key:
                         continue
 
-                    if colorant not in colorant_pages:
-                        colorant_pages[colorant] = []
-                        colorant_alternates[colorant] = set()
-                        colorant_cs_types[colorant] = set()
+                    if key not in colorant_pages:
+                        colorant_pages[key] = []
+                        colorant_alternates[key] = set()
+                        colorant_cs_types[key] = set()
+                        # First-seen casing wins for display — the rest
+                        # are variants of the same paint.
+                        colorant_display[key] = raw_colorant
 
-                    if page.page_num not in colorant_pages[colorant]:
-                        colorant_pages[colorant].append(page.page_num)
+                    if page.page_num not in colorant_pages[key]:
+                        colorant_pages[key].append(page.page_num)
 
-                    colorant_cs_types[colorant].add(cs.cs_type)
+                    colorant_cs_types[key].add(cs.cs_type)
 
                     alt_desc = _describe_alternate(cs.alternate)
-                    colorant_alternates[colorant].add(alt_desc)
+                    colorant_alternates[key].add(alt_desc)
 
         # Emit inventory advisory for each colorant
-        for colorant, pages in colorant_pages.items():
-            alt_descriptions = colorant_alternates[colorant]
-            cs_types = colorant_cs_types[colorant]
+        for key, pages in colorant_pages.items():
+            colorant = colorant_display[key]
+            alt_descriptions = colorant_alternates[key]
+            cs_types = colorant_cs_types[key]
 
             findings.append(
                 Finding(
@@ -167,20 +205,21 @@ class SpotColorAnalyzer(BaseAnalyzer):
             )
 
         # Flag inconsistencies: same name with different alternates
-        for colorant, alternates in colorant_alternates.items():
+        for key, alternates in colorant_alternates.items():
             if len(alternates) > 1:
+                colorant = colorant_display[key]
                 findings.append(
                     Finding(
                         inspection_id="LPDF_SPOT_001",
                         severity=Severity.WARNING,
                         message=(
                             f"Spot color '{colorant}' has inconsistent alternate "
-                            f"color spaces across pages {_format_page_list(colorant_pages[colorant])}: "
+                            f"color spaces across pages {_format_page_list(colorant_pages[key])}: "
                             f"{', '.join(sorted(alternates))}"
                         ),
                         details={
                             "colorant_name": colorant,
-                            "pages": colorant_pages[colorant],
+                            "pages": colorant_pages[key],
                             "alternates": sorted(alternates),
                         },
                         iso_clause="ISO 32000-2:2020 8.6.6.4",
@@ -215,11 +254,12 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     continue
 
                 colorant = cs.colorant_names[0] if cs.colorant_names else ""
-                if not _PANTONE_PATTERN.match(colorant):
+                key = _canonical_colorant(colorant)
+                if not key.startswith("PANTONE"):
                     continue
-                if colorant in seen_pantone:
+                if key in seen_pantone:
                     continue
-                seen_pantone.add(colorant)
+                seen_pantone.add(key)
 
                 alt_desc = _describe_alternate(cs.alternate)
                 alt_type = cs.alternate.cs_type if cs.alternate else None
@@ -365,9 +405,10 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 for colorant in cs.colorant_names:
                     if colorant in ("All", "None"):
                         continue
-                    if colorant in checked_names:
+                    key = _canonical_colorant(colorant)
+                    if key in checked_names:
                         continue
-                    checked_names.add(colorant)
+                    checked_names.add(key)
 
                     # Check for empty or whitespace-only names
                     if not colorant or not colorant.strip():
@@ -389,8 +430,11 @@ class SpotColorAnalyzer(BaseAnalyzer):
                         )
                         continue
 
-                    # Check Pantone-specific naming issues
-                    upper = colorant.upper()
+                    # Check Pantone-specific naming issues. ``upper`` is
+                    # the canonical form (strip + lstrip("/") + collapse
+                    # whitespace) so "Pantone 485 C", "PANTONE 485 C",
+                    # and "/Pantone  485  C" all match.
+                    upper = key
                     if upper.startswith("PANTONE"):
                         # Ambiguous: contains both C and U variant markers
                         has_c = upper.endswith(" C") or " C " in upper
@@ -688,11 +732,13 @@ class SpotColorAnalyzer(BaseAnalyzer):
                         continue
                     if colorant in _PROCESS_COLOR_NAMES:
                         continue
-                    if colorant in checked:
+                    upper = _canonical_colorant(colorant)
+                    if not upper:
                         continue
-                    checked.add(colorant)
+                    if upper in checked:
+                        continue
+                    checked.add(upper)
 
-                    upper = colorant.upper()
                     if not any(upper.startswith(prefix) for prefix in _ALL_KNOWN_LIBRARY_PREFIXES):
                         findings.append(
                             Finding(
@@ -741,11 +787,11 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 colorant = cs.colorant_names[0] if cs.colorant_names else ""
                 if not colorant or colorant in ("All", "None"):
                     continue
-                if colorant in checked:
+                upper = _canonical_colorant(colorant)
+                if not upper or upper in checked:
                     continue
-                checked.add(colorant)
+                checked.add(upper)
 
-                upper = colorant.upper()
                 matched_library: str | None = None
                 for prefix in _ALL_KNOWN_LIBRARY_PREFIXES:
                     if upper.startswith(prefix):
@@ -800,8 +846,8 @@ class SpotColorAnalyzer(BaseAnalyzer):
         findings: list[Finding] = []
 
         for page in document.pages:
-            # colorant -> list of (cs_name, alternate_desc)
-            colorant_defs: dict[str, list[tuple[str, str]]] = {}
+            # canonical key -> (display_name, list of (cs_name, alt_desc))
+            colorant_defs: dict[str, tuple[str, list[tuple[str, str]]]] = {}
 
             for cs_name, cs in page.color_spaces.items():
                 if cs.cs_type != "Separation":
@@ -812,13 +858,16 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 colorant = cs.colorant_names[0] if cs.colorant_names else ""
                 if not colorant or colorant in ("All", "None"):
                     continue
+                key = _canonical_colorant(colorant)
+                if not key:
+                    continue
 
                 alt_desc = _describe_alternate(cs.alternate)
-                if colorant not in colorant_defs:
-                    colorant_defs[colorant] = []
-                colorant_defs[colorant].append((cs_name, alt_desc))
+                if key not in colorant_defs:
+                    colorant_defs[key] = (colorant, [])
+                colorant_defs[key][1].append((cs_name, alt_desc))
 
-            for colorant, defs in colorant_defs.items():
+            for _key, (colorant, defs) in colorant_defs.items():
                 if len(defs) <= 1:
                     continue
 
@@ -861,7 +910,10 @@ class SpotColorAnalyzer(BaseAnalyzer):
         and All/None) across the entire document.
         """
         findings: list[Finding] = []
-        all_spots: set[str] = set()
+        # canonical key -> first-seen display name. Using a dict keyed
+        # on the canonical form means "Pantone 485 C" + "PANTONE 485 C"
+        # count as one spot colour, not two, for the cap check.
+        all_spots: dict[str, str] = {}
 
         for page in document.pages:
             for _cs_name, cs in page.color_spaces.items():
@@ -875,9 +927,13 @@ class SpotColorAnalyzer(BaseAnalyzer):
                         continue
                     if colorant in _PROCESS_COLOR_NAMES:
                         continue
-                    all_spots.add(colorant)
+                    key = _canonical_colorant(colorant)
+                    if not key:
+                        continue
+                    all_spots.setdefault(key, colorant)
 
         if len(all_spots) > self._max_spot_colors:
+            display_spots = sorted(all_spots.values())
             findings.append(
                 Finding(
                     inspection_id="LPDF_SPOT_010",
@@ -885,12 +941,12 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     message=(
                         f"Document uses {len(all_spots)} spot color(s), "
                         f"exceeding the maximum of {self._max_spot_colors}: "
-                        f"{', '.join(sorted(all_spots))}"
+                        f"{', '.join(display_spots)}"
                     ),
                     details={
                         "spot_color_count": len(all_spots),
                         "max_spot_colors": self._max_spot_colors,
-                        "spot_colors": sorted(all_spots),
+                        "spot_colors": display_spots,
                     },
                     iso_clause="ISO 32000-2:2020 8.6.6.4",
                 )

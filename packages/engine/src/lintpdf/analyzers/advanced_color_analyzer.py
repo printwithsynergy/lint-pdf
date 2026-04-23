@@ -919,7 +919,18 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
         known_prefixes = ("PANTONE", "HKS", "TOYO", "DIC", "RAL")
 
         for spot in cxf_data.spot_colors:
-            upper_name = spot.name.upper()
+            # Strip leading slash / whitespace / ® / ™ before matching —
+            # "/Pantone® 485 C" must still classify as PANTONE.
+            upper_name = (
+                str(spot.name or "")
+                .strip()
+                .lstrip("/")
+                .strip()
+                .replace(" ", " ")
+                .replace("®", "")
+                .replace("™", "")
+                .upper()
+            )
             for prefix in known_prefixes:
                 if upper_name.startswith(prefix):
                     findings.append(

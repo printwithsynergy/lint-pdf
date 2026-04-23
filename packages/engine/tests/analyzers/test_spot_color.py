@@ -89,3 +89,50 @@ class TestSpotColorAnalyzer:
         findings = SpotColorAnalyzer().analyze(doc, [])
         spot_004 = [f for f in findings if f.inspection_id == "LPDF_SPOT_004"]
         assert len(spot_004) >= 1
+
+    def test_pantone_case_insensitive_dedup(self):
+        # "Pantone 485 C" and "PANTONE 485 C" are the same paint. The
+        # inventory must collapse them into one row and the unknown-
+        # library check must match PANTONE for both, not flag either.
+        cs_lower = PdfColorSpace(
+            name="CS1",
+            cs_type="Separation",
+            components=1,
+            colorant_names=("Pantone 485 C",),
+            alternate=PdfColorSpace(name=None, cs_type="DeviceCMYK", components=4),
+        )
+        cs_upper = PdfColorSpace(
+            name="CS2",
+            cs_type="Separation",
+            components=1,
+            colorant_names=("PANTONE 485 C",),
+            alternate=PdfColorSpace(name=None, cs_type="DeviceCMYK", components=4),
+        )
+        doc = _make_doc(color_spaces_by_page=[{"CS1": cs_lower, "CS2": cs_upper}])
+        findings = SpotColorAnalyzer().analyze(doc, [])
+
+        spot_001 = [f for f in findings if f.inspection_id == "LPDF_SPOT_001"]
+        assert len(spot_001) == 1, f"expected one inventory row, got {len(spot_001)}"
+
+        spot_007 = [f for f in findings if f.inspection_id == "LPDF_SPOT_007"]
+        assert spot_007 == [], (
+            f"Pantone 485 C / PANTONE 485 C must match PANTONE library; got {spot_007}"
+        )
+
+    def test_pantone_with_trademark_glyph_and_leading_slash(self):
+        # Colourant names that come through with a stray leading
+        # slash, non-breaking space, or (R) glyph still have to
+        # classify as PANTONE.
+        cs = PdfColorSpace(
+            name="CS1",
+            cs_type="Separation",
+            components=1,
+            colorant_names=("/Pantone 485 C",),
+            alternate=PdfColorSpace(name=None, cs_type="DeviceCMYK", components=4),
+        )
+        doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])
+        findings = SpotColorAnalyzer().analyze(doc, [])
+        spot_007 = [f for f in findings if f.inspection_id == "LPDF_SPOT_007"]
+        assert spot_007 == [], (
+            "leading-slash + non-breaking-space Pantone names must still match the library"
+        )

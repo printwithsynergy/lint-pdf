@@ -862,6 +862,15 @@ class ViewerConfigResponse(BaseModel):
     # the UI must disable PDF/JSON/XML download buttons.
     allowed_report_formats: list[str] = []
     tile_cdn_base: str | None = None
+    # WS-D / WS-E packaging data — populated at ingest time on the job
+    # record, mirrored here so the viewer's Art Info panel can render
+    # trim size, dieline overlay, swatch legend, and OCR text layer
+    # without a second round-trip. ``None`` means "no packaging data
+    # for this job" — the panel renders a muted empty state.
+    dieline: dict[str, Any] | None = None
+    art_size_mm: dict[str, float] | None = None
+    legend_swatches: list[dict[str, Any]] | None = None
+    ocr_text_layer: list[dict[str, Any]] | None = None
 
 
 def _apply_branding_to_config(config: ViewerConfigResponse, branding: Any, tenant: Tenant) -> None:
@@ -936,6 +945,12 @@ def _build_viewer_config(
         capability_fillin_enabled=entitlements.capability_fillin_enabled,
         annotations_enabled=entitlements.annotations_enabled,
         allowed_report_formats=list(entitlements.allowed_report_formats),
+        # WS-E — surface the packaging data the viewer's Art Info
+        # panel needs, reading straight off the ingest-time columns.
+        dieline=job.dieline,
+        art_size_mm=job.art_size_mm,
+        legend_swatches=job.legend_swatches,
+        ocr_text_layer=job.ocr_text_layer,
     )
     # When the plan forbids annotations, force the annotations toggle
     # off regardless of what the profile / brand / override layer says.
