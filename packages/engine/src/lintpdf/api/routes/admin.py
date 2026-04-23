@@ -2511,6 +2511,13 @@ async def get_all_ai_usage(
                 "feature": log.feature,
                 "credits_consumed": log.credits_consumed,
                 "cost": float(log.cost),
+                # WS-G per-call metering — nullable on pre-037 rows.
+                "model": log.model,
+                "input_tokens": log.input_tokens,
+                "output_tokens": log.output_tokens,
+                "cache_read_tokens": log.cache_read_tokens,
+                "cache_write_tokens": log.cache_write_tokens,
+                "cost_cents": log.cost_cents,
                 "created_at": log.created_at.isoformat(),
             }
             for log in logs
@@ -2520,6 +2527,77 @@ async def get_all_ai_usage(
         "total": total,
         "page": page,
         "page_size": page_size,
+    }
+
+
+@router.get("/ai/usage/summary")
+async def get_ai_usage_summary(
+    tenant_id: str | None = None,
+    feature: str | None = None,
+    month: str | None = None,  # "YYYY-MM" — defaults to current
+    db: Session = Depends(get_db),
+    _admin: str = Depends(_verify_admin_key),
+) -> dict[str, Any]:
+    """WS-G aggregation endpoint for the admin spend dashboard.
+
+    Returns one row per (tenant, feature) with ``cost_cents`` summed
+    across the selected month. ``month`` accepts ``YYYY-MM``;
+    unset means "current calendar month in UTC".
+    """
+    from datetime import UTC, datetime
+
+    from sqlalchemy import func
+
+    from lintpdf.api.models import AIUsageLog
+
+    if month:
+        try:
+            y, m = month.split("-", 1)
+            month_start = datetime(int(y), int(m), 1, tzinfo=UTC)
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=422, detail="month must be YYYY-MM") from None
+    else:
+        now = datetime.now(UTC)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    if month_start.month == 12:
+        month_end = month_start.replace(year=month_start.year + 1, month=1)
+    else:
+        month_end = month_start.replace(month=month_start.month + 1)
+
+    q = (
+        db.query(
+            AIUsageLog.tenant_id,
+            AIUsageLog.feature,
+            func.coalesce(func.sum(AIUsageLog.cost_cents), 0).label("cost_cents"),
+            func.count(AIUsageLog.id).label("call_count"),
+        )
+        .filter(
+            AIUsageLog.created_at >= month_start,
+            AIUsageLog.created_at < month_end,
+        )
+        .group_by(AIUsageLog.tenant_id, AIUsageLog.feature)
+    )
+    if tenant_id:
+        try:
+            q = q.filter(AIUsageLog.tenant_id == uuid_mod.UUID(tenant_id))
+        except ValueError:
+            raise HTTPException(status_code=422, detail="tenant_id must be UUID") from None
+    if feature:
+        q = q.filter(AIUsageLog.feature == feature)
+
+    rows = q.all()
+    return {
+        "month": month_start.strftime("%Y-%m"),
+        "rows": [
+            {
+                "tenant_id": str(r.tenant_id),
+                "feature": r.feature,
+                "cost_cents": int(r.cost_cents or 0),
+                "call_count": int(r.call_count or 0),
+            }
+            for r in rows
+        ],
     }
 
 

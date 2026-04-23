@@ -38,19 +38,29 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
     if tenant is None:
         return 0
-    if not force:
-        entitlements = resolve_entitlements(tenant)
-        if not entitlements.can_use("audit"):
-            # Emit one LPDF_FEATURE_LOCKED finding so the viewer can
-            # render an upsell chip on the job. Skipping silently
-            # would leave customers guessing why no verdicts showed up.
-            _emit_feature_locked(db, job, "audit")
-            return 0
+    entitlements = resolve_entitlements(tenant)
+    if not force and not entitlements.can_use("audit"):
+        # Emit one LPDF_FEATURE_LOCKED finding so the viewer can
+        # render an upsell chip on the job. Skipping silently
+        # would leave customers guessing why no verdicts showed up.
+        _emit_feature_locked(db, job, "audit")
+        return 0
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
         logger.info(
             "audit: ANTHROPIC_API_KEY unset; skipping job %s", job_id
         )
+        return 0
+
+    # Quota gate. Skip silently (no 402) — the preflight itself
+    # already finished; we just won't spend on AI for this job.
+    # The LPDF_AI_QUOTA_EXCEEDED finding surfaces the cap hit.
+    from lintpdf.audit.quota import current_month_usage_cents, is_over_quota
+
+    if not force and is_over_quota(
+        entitlements, current_month_usage_cents(db, job.tenant_id)
+    ):
+        _emit_quota_exceeded(db, job)
         return 0
 
     findings = db.query(JobFinding).filter(JobFinding.job_id == job.id).all()
@@ -63,7 +73,9 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     from lintpdf.audit.claude import ClaudeAuditor
 
     auditor = ClaudeAuditor()
-    verdicts = auditor.audit(pdf_bytes, findings)
+    verdicts = auditor.audit(
+        pdf_bytes, findings, tenant_id=job.tenant_id, job_id=job.id
+    )
 
     changed = 0
     for finding, verdict in zip(findings, verdicts, strict=False):
@@ -117,6 +129,46 @@ _FEATURE_LOCKED_COPY: dict[str, str] = {
         "Opus-backed internal auditing is operator-only."
     ),
 }
+
+
+def _emit_quota_exceeded(db: Any, job: Any) -> None:
+    """Write one ``LPDF_AI_QUOTA_EXCEEDED`` finding on the job.
+
+    Idempotent — re-runs won't stack duplicates. Non-AI preflight
+    still completes; this finding is the visible breadcrumb.
+    """
+    try:
+        from lintpdf.api.models import JobFinding
+
+        existing = (
+            db.query(JobFinding)
+            .filter(
+                JobFinding.job_id == job.id,
+                JobFinding.inspection_id == "LPDF_AI_QUOTA_EXCEEDED",
+            )
+            .first()
+        )
+        if existing is not None:
+            return
+        db.add(
+            JobFinding(
+                job_id=job.id,
+                inspection_id="LPDF_AI_QUOTA_EXCEEDED",
+                severity="warning",
+                category="ai.quota",
+                source="engine",
+                message=(
+                    "This tenant's monthly AI budget is exhausted. "
+                    "Non-AI checks still ran; AI features are paused "
+                    "until the first of the next month or an admin "
+                    "raises the cap."
+                ),
+                details={},
+            )
+        )
+        db.commit()
+    except Exception:
+        logger.exception("audit: failed to emit LPDF_AI_QUOTA_EXCEEDED")
 
 
 def _emit_feature_locked(db: Any, job: Any, feature: str) -> None:

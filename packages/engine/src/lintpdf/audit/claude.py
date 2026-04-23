@@ -185,6 +185,9 @@ class ClaudeAuditor:
         self,
         pdf_bytes: bytes,
         findings: Sequence[JobFinding],
+        *,
+        tenant_id: Any | None = None,
+        job_id: Any | None = None,
     ) -> list[AuditResult | None]:
         if not findings:
             return []
@@ -196,7 +199,9 @@ class ClaudeAuditor:
         for batch_start in range(0, len(findings), _MAX_FINDINGS_PER_CALL):
             batch = list(findings[batch_start : batch_start + _MAX_FINDINGS_PER_CALL])
             try:
-                verdicts = self._audit_batch(batch, pages)
+                verdicts = self._audit_batch(
+                    batch, pages, tenant_id=tenant_id, job_id=job_id
+                )
             except Exception:
                 logger.exception(
                     "claude-audit: batch %d..%d failed; leaving verdicts NULL",
@@ -214,6 +219,9 @@ class ClaudeAuditor:
         self,
         batch: list[JobFinding],
         pages: dict[int, bytes],
+        *,
+        tenant_id: Any | None = None,
+        job_id: Any | None = None,
     ) -> dict[int, AuditResult | None]:
         """One Claude call per batch; returns index→AuditResult dict."""
         needed_pages = sorted({f.page_num for f in batch if f.page_num})
@@ -270,6 +278,33 @@ class ClaudeAuditor:
             record_outcome(False)
             raise
         record_outcome(True)
+
+        # WS-G metering — best-effort, never raises.
+        if tenant_id is not None:
+            try:
+                from lintpdf.audit.metering import record_usage
+
+                usage = getattr(response, "usage", None)
+                record_usage(
+                    tenant_id=tenant_id,
+                    job_id=job_id,
+                    feature="audit",
+                    model=self._model,
+                    input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
+                    output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
+                    cache_read_tokens=int(
+                        getattr(usage, "cache_read_input_tokens", 0) or 0
+                    ),
+                    cache_write_tokens=int(
+                        getattr(usage, "cache_creation_input_tokens", 0) or 0
+                    ),
+                )
+            except Exception:
+                logger.warning(
+                    "claude-audit: metering write failed; audit verdicts "
+                    "still land (fail-open)",
+                    exc_info=True,
+                )
 
         out: dict[int, AuditResult | None] = {}
         for block in response.content:
