@@ -17,6 +17,10 @@ from typing import TYPE_CHECKING, Any
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.analyzers.text_metrics import (
+    effective_font_size_pt,
+    effective_x_height_mm,
+)
 
 if TYPE_CHECKING:
     from lintpdf.api.models import TenantAIConfig
@@ -96,27 +100,6 @@ _EU_NUTRITION_ORDER: list[str] = [
 ]
 
 
-def _compute_x_height_mm(
-    font_size_pt: float,
-    sx_height: float | None = None,
-    units_per_em: float | None = None,
-) -> float:
-    """Compute x-height in millimetres.
-
-    Formula: (sxHeight / unitsPerEm) * fontSize_pt * 0.3528 mm/pt
-
-    If sxHeight/unitsPerEm are not available, use the typographic
-    convention that x-height ≈ 0.48 of font size.
-    """
-    if sx_height is not None and units_per_em is not None and units_per_em > 0:
-        x_height_ratio = sx_height / units_per_em
-    else:
-        # Typical Latin x-height ratio
-        x_height_ratio = 0.48
-
-    return x_height_ratio * font_size_pt * 0.3528
-
-
 def _is_bold_font(font_name: str) -> bool:
     """Check if a font name indicates bold weight."""
     lower = font_name.lower()
@@ -167,30 +150,18 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
                 text_events_by_page[page_num] = []
             text_events_by_page[page_num].append(event)
 
-            font_size_pt = abs(event.font_size)
+            page = next((p for p in document.pages if p.page_num == page_num), None)
+            font = page.fonts.get(event.font_name) if page else None
+            x_height_mm = effective_x_height_mm(event, font=font)
+            if x_height_mm is None:
+                # Invisible text (rendering_mode == 3) -- skip; no
+                # ink is drawn, so legibility rules don't apply.
+                continue
+            # Composed on-page font size, used for the dedup key +
+            # user-facing message so "1pt logo" findings go away.
+            font_size_pt = effective_font_size_pt(event)
             if font_size_pt <= 0:
                 continue
-
-            # Try to get sxHeight and unitsPerEm from font descriptor
-            sx_height: float | None = None
-            units_per_em: float | None = None
-
-            page = next((p for p in document.pages if p.page_num == page_num), None)
-            if page and event.font_name in page.fonts:
-                font = page.fonts[event.font_name]
-                fd = font.font_descriptor
-                if fd:
-                    sx_height_raw = fd.get("StemH") or fd.get("XHeight") or fd.get("sxHeight")
-                    if sx_height_raw is not None:
-                        with contextlib.suppress(TypeError, ValueError):
-                            sx_height = float(sx_height_raw)
-                    # unitsPerEm is typically in the font descriptor or defaults to 1000
-                    units_raw = fd.get("UnitsPerEm")
-                    if units_raw is not None:
-                        with contextlib.suppress(TypeError, ValueError):
-                            units_per_em = float(units_raw)
-
-            x_height_mm = _compute_x_height_mm(font_size_pt, sx_height, units_per_em)
 
             if x_height_mm < min_x_height_mm:
                 x_height_violations.append(
