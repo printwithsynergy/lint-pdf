@@ -243,6 +243,19 @@ class Job(Base):
     ocr_force: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=sa_text("false")
     )
+    # WS-D packaging inspectors. ``dieline`` carries the name-match
+    # or Sonnet-fallback verdict; ``art_size_mm`` is NULL when the
+    # dieline is missing (strict — see LPDF_DIE_MISSING);
+    # ``legend_swatches`` carries the position/vision verdicts.
+    dieline: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    art_size_mm: Mapped[dict[str, float] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    legend_swatches: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSON, nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
