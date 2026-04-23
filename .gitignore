@@ -98,3 +98,8 @@ preflight-stress-tier*-*.csv
 # untracked files after every QA.
 preflight-stress-*-metrics.csv
 preflight-stress-*-results.md
+
+# Raw per-job JSON payloads produced by the Opus audit harness
+# (packages/engine/scripts/audit_test_corpus.py). Large, reproducible —
+# only the human-readable markdown report gets committed.
+/docs/audits/raw/
