@@ -26,6 +26,10 @@ from lintpdf.api.routes.branding import EDGE_HOSTNAME
 from lintpdf.api.schemas import (
     AdminCustomDomainListResponse,
     AdminUpdateCustomDomainRequest,
+    WebhookCreateRequest,
+    WebhookListResponse,
+    WebhookResponse,
+    WebhookUpdateRequest,
 )
 from lintpdf.api.storage import get_storage
 
@@ -3663,3 +3667,150 @@ async def list_admin_report_tokens(
     return AdminReportTokenListResponse(
         groups=groups, total=total, page=page, page_size=page_size, group_by=group_by
     )
+
+
+
+
+# ── Cross-tenant webhook endpoint CRUD ────────────────────────
+
+
+class AdminWebhookCreateResponse(BaseModel):
+    """Admin-only create response that includes the freshly generated
+    signing secret. Admin is expected to hand this off to the tenant
+    through a secure channel — the engine never re-projects it."""
+
+    id: str
+    url: str
+    events: list[str]
+    is_active: bool
+    created_at: str
+    secret: str
+    max_retries: int | None = None
+    retry_base_delay_seconds: int | None = None
+    retry_max_delay_seconds: int | None = None
+    delivery_retention_days: int | None = None
+    retention_overrides: dict | None = None
+
+
+def _get_tenant_or_404(db: Session, tenant_id: str) -> Tenant:
+    """Mirror of :func:`_get_tenant` — exposed under a more explicit
+    name to make the webhook admin routes read cleanly."""
+    return _get_tenant(db, tenant_id)
+
+
+@router.get(
+    "/tenants/{tenant_id}/webhook-endpoints",
+    response_model=WebhookListResponse,
+)
+async def admin_list_webhooks_for_tenant(
+    tenant_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> WebhookListResponse:
+    from lintpdf.api.routes.webhooks import (
+        _webhook_to_response,
+        list_webhooks_for_tenant,
+    )
+
+    tenant = _get_tenant_or_404(db, tenant_id)
+    endpoints = list_webhooks_for_tenant(db, tenant)
+    return WebhookListResponse(
+        webhooks=[_webhook_to_response(e) for e in endpoints]
+    )
+
+
+@router.post(
+    "/tenants/{tenant_id}/webhook-endpoints",
+    response_model=AdminWebhookCreateResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def admin_create_webhook_for_tenant(
+    tenant_id: str,
+    request: WebhookCreateRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> AdminWebhookCreateResponse:
+    from lintpdf.api.routes.webhooks import create_webhook_for_tenant
+
+    tenant = _get_tenant_or_404(db, tenant_id)
+    webhook, secret = create_webhook_for_tenant(db, tenant, request)
+    return AdminWebhookCreateResponse(
+        id=str(webhook.id),
+        url=webhook.url,
+        events=list(webhook.events or []),
+        is_active=webhook.is_active,
+        created_at=webhook.created_at.isoformat(),
+        secret=secret,
+        max_retries=webhook.max_retries,
+        retry_base_delay_seconds=webhook.retry_base_delay_seconds,
+        retry_max_delay_seconds=webhook.retry_max_delay_seconds,
+        delivery_retention_days=webhook.delivery_retention_days,
+        retention_overrides=webhook.retention_overrides,
+    )
+
+
+@router.patch(
+    "/tenants/{tenant_id}/webhook-endpoints/{webhook_id}",
+    response_model=WebhookResponse,
+)
+async def admin_update_webhook_for_tenant(
+    tenant_id: str,
+    webhook_id: str,
+    request: WebhookUpdateRequest,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> WebhookResponse:
+    from lintpdf.api.routes.webhooks import (
+        _webhook_to_response,
+        update_webhook_for_tenant,
+    )
+
+    tenant = _get_tenant_or_404(db, tenant_id)
+    endpoint = update_webhook_for_tenant(db, tenant, webhook_id, request)
+    return _webhook_to_response(endpoint)
+
+
+@router.delete(
+    "/tenants/{tenant_id}/webhook-endpoints/{webhook_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def admin_delete_webhook_for_tenant(
+    tenant_id: str,
+    webhook_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+) -> None:
+    from lintpdf.api.routes.webhooks import delete_webhook_for_tenant
+
+    tenant = _get_tenant_or_404(db, tenant_id)
+    delete_webhook_for_tenant(db, tenant, webhook_id)
+
+
+@router.post("/tenants/{tenant_id}/webhook-endpoints/{webhook_id}/rotate-secret")
+async def admin_rotate_webhook_secret_for_tenant(
+    tenant_id: str,
+    webhook_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+):
+    from lintpdf.api.routes.webhooks import (
+        WebhookSecretResponse,
+        rotate_webhook_secret_for_tenant,
+    )
+
+    tenant = _get_tenant_or_404(db, tenant_id)
+    endpoint, new_secret = rotate_webhook_secret_for_tenant(db, tenant, webhook_id)
+    return WebhookSecretResponse(id=str(endpoint.id), secret=new_secret)
+
+
+@router.post("/tenants/{tenant_id}/webhook-endpoints/{webhook_id}/test")
+async def admin_test_webhook_for_tenant(
+    tenant_id: str,
+    webhook_id: str,
+    db: Session = Depends(get_db),
+    _key: str = Depends(_verify_admin_key),
+):
+    from lintpdf.api.routes.webhooks import test_webhook_for_tenant
+
+    tenant = _get_tenant_or_404(db, tenant_id)
+    return test_webhook_for_tenant(db, tenant, webhook_id)

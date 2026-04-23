@@ -917,6 +917,116 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
           return { status: 204, body: null };
         }) as RouteHandler,
       },
+      // ── Webhook endpoint admin CRUD ──────────────────────────
+      {
+        method: "GET" as HttpMethod,
+        path: "/tenants/:tenantId/webhook-endpoints",
+        auth: true,
+        permission: "site-admin:access",
+        description: "List a tenant's webhook endpoints (admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/webhook-endpoints`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "POST" as HttpMethod,
+        path: "/tenants/:tenantId/webhook-endpoints",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "Create a webhook endpoint on behalf of a tenant. Response carries the freshly generated secret once — admin must capture it now.",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/webhook-endpoints`,
+            { method: "POST", body: JSON.stringify(req.body) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 201, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "PATCH" as HttpMethod,
+        path: "/tenants/:tenantId/webhook-endpoints/:webhookId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Edit a tenant's webhook endpoint (admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/webhook-endpoints/${req.params.webhookId}`,
+            { method: "PATCH", body: JSON.stringify(req.body) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "DELETE" as HttpMethod,
+        path: "/tenants/:tenantId/webhook-endpoints/:webhookId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Delete a tenant's webhook endpoint (admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/webhook-endpoints/${req.params.webhookId}`,
+            { method: "DELETE" },
+          );
+          if (!resp.ok && resp.status !== 204) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 204, body: null };
+        }) as RouteHandler,
+      },
+      {
+        method: "POST" as HttpMethod,
+        path: "/tenants/:tenantId/webhook-endpoints/:webhookId/rotate-secret",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "Rotate a webhook endpoint's HMAC secret. Response carries the fresh secret once.",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/webhook-endpoints/${req.params.webhookId}/rotate-secret`,
+            { method: "POST" },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "POST" as HttpMethod,
+        path: "/tenants/:tenantId/webhook-endpoints/:webhookId/test",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Fire a test delivery to a tenant's webhook endpoint (admin)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/webhook-endpoints/${req.params.webhookId}/test`,
+            { method: "POST" },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
     ];
 
     ctx.addRoutes("/api/lintpdf/admin", routes);
