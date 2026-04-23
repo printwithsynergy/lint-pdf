@@ -54,8 +54,8 @@ importers:
         specifier: ^1.2.11
         version: 1.2.11(typescript@5.9.3)
       '@thinkneverland/pixie-dust-dashboard':
-        specifier: ^1.21.1
-        version: 1.21.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^1.22.0
+        version: 1.22.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@thinkneverland/pixie-dust-database':
         specifier: ^2.4.0
         version: 2.4.0(prisma@7.6.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3))(typescript@5.9.3)
@@ -215,8 +215,8 @@ importers:
   packages/plugin:
     dependencies:
       '@thinkneverland/pixie-dust-dashboard':
-        specifier: ^1.18.4
-        version: 1.21.1(lucide-react@0.577.0(react@19.2.4))(next@15.5.14(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
+        specifier: ^1.22.0
+        version: 1.22.0(lucide-react@0.577.0(react@19.2.4))(next@15.5.14(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)
       '@thinkneverland/pixie-dust-email':
         specifier: ^1.6.0
         version: 1.6.0(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -2545,8 +2545,8 @@ packages:
   '@thinkneverland/pixie-dust-core@1.2.11':
     resolution: {integrity: sha512-Y7A9tV4FrPTTzrvL+sntCguMea6Ac9H+NYGWZomYwdycwx7Xe+ndGA7DwBj4Qc3rlvlSho31ZXtLauRJIIS5Zg==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-core/1.2.11/9f196e173072185530e12505b8dc87e23884f8cd}
 
-  '@thinkneverland/pixie-dust-dashboard@1.21.1':
-    resolution: {integrity: sha512-EogGgZF9gpyE8jZ3pxwxqrgBeX8OfQq0Wj66cqrSrghGt9gI0qm8eYMRA1hQ1GaWcVtdop1zpWsTBNeHPZIurw==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-dashboard/1.21.1/a51e141a6928b639991e3d899039d8bcdcf8e26f}
+  '@thinkneverland/pixie-dust-dashboard@1.22.0':
+    resolution: {integrity: sha512-CbabBEZViqeC+I4C4L0bdEMn7iqXd6Mrd9JWvlJIQ76tNjVwxZ3eZLW/DmFYw4167k6xJ+CvcxTRsboVezNe3A==, tarball: https://npm.pkg.github.com/download/@thinkneverland/pixie-dust-dashboard/1.22.0/982e4fc51d1dff7826b9ce0666245784d0d0f65a}
     peerDependencies:
       lucide-react: '>=0.300.0'
       next: '>=14.0.0'
@@ -8480,7 +8480,7 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@thinkneverland/pixie-dust-dashboard@1.21.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
+  '@thinkneverland/pixie-dust-dashboard@1.22.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(lucide-react@0.469.0(react@19.2.4))(next@15.5.14(@babel/core@7.29.0)(@opentelemetry/api@1.9.1)(@playwright/test@1.56.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
     dependencies:
       '@thinkneverland/pixie-dust-auth': 1.12.0(typescript@5.9.3)
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.2
@@ -8495,7 +8495,7 @@ snapshots:
       - react-dom
       - typescript
 
-  '@thinkneverland/pixie-dust-dashboard@1.21.1(lucide-react@0.577.0(react@19.2.4))(next@15.5.14(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
+  '@thinkneverland/pixie-dust-dashboard@1.22.0(lucide-react@0.577.0(react@19.2.4))(next@15.5.14(@opentelemetry/api@1.9.1)(@playwright/test@1.58.2)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(typescript@5.9.3)':
     dependencies:
       '@thinkneverland/pixie-dust-auth': 1.12.0(typescript@5.9.3)
       '@thinkneverland/pixie-dust-fairy-ring': 1.7.2
