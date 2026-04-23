@@ -1,6 +1,12 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "packages/engine/Dockerfile"
+# Only rebuild on engine changes. See railway.worker.toml.
+watchPatterns = [
+    "packages/engine/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
 
 [deploy]
 numReplicas = 1

@@ -1,6 +1,17 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "packages/engine/Dockerfile"
+# Only rebuild when engine code, build inputs, or deploy config
+# actually change. Without this filter, every commit to main
+# (including pure-frontend ones to packages/app or packages/web)
+# triggers a ~28 min Python build on this service — observed on
+# 2026-04-23 when PR #178 (app/web TypeScript fixes) took down
+# every engine-family Railway service that lacked watchPatterns.
+watchPatterns = [
+    "packages/engine/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
 
 [deploy]
 numReplicas = 1
