@@ -93,26 +93,30 @@ def upgrade() -> None:
     )
 
     # Copy the dead ai_audit_enabled bool → ai_features=["audit"].
-    # entitlement_overrides is JSON; read via ->> cast.
+    # tenants.entitlement_overrides + plan_limit_overrides.overrides
+    # are SQLAlchemy ``JSON`` (plain json, not jsonb), so the ``?``,
+    # ``-``, and ``@>`` operators need an explicit ``::jsonb`` cast.
+    # We read via ``->>`` (works on both) and write back via a cast
+    # expression so the column's declared json type is preserved.
     op.execute(
         """
         UPDATE tenants
            SET ai_features = '["audit"]'::jsonb
-         WHERE (entitlement_overrides->>'ai_audit_enabled')::bool = true
+         WHERE (entitlement_overrides::jsonb ->> 'ai_audit_enabled')::bool = true
         """
     )
     # Drop the dead key from the JSON blob so the resolver never
-    # sees it again.
+    # sees it again. Cast to jsonb for the ``-`` operator, then
+    # cast back to json to keep the column's declared type.
     op.execute(
         """
         UPDATE tenants
-           SET entitlement_overrides = entitlement_overrides - 'ai_audit_enabled'
-         WHERE entitlement_overrides ? 'ai_audit_enabled'
+           SET entitlement_overrides = (entitlement_overrides::jsonb - 'ai_audit_enabled')::json
+         WHERE entitlement_overrides IS NOT NULL
+           AND (entitlement_overrides::jsonb ? 'ai_audit_enabled')
         """
     )
-    # Mirror the clean-up on plan-tier overrides — any row that
-    # carried ``ai_audit_enabled`` gets ``ai_features=["audit"]``
-    # folded into its ``overrides`` JSON and the dead key stripped.
+    # Mirror the clean-up on plan-tier overrides.
     op.execute(
         """
         UPDATE plan_limit_overrides
@@ -121,8 +125,9 @@ def upgrade() -> None:
                    '{ai_features}',
                    '["audit"]'::jsonb,
                    true
-               )
-         WHERE (overrides::jsonb->>'ai_audit_enabled')::bool = true
+               )::json
+         WHERE overrides IS NOT NULL
+           AND (overrides::jsonb ->> 'ai_audit_enabled')::bool = true
         """
     )
 
