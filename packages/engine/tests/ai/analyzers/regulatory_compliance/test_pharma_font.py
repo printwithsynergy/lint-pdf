@@ -78,3 +78,39 @@ def test_tiny_text_still_flags_pharma_min() -> None:
     findings = PharmaFontAnalyzer().analyze(doc, [event], pdf_bytes=b"")
     pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
     assert len(pharma) == 1
+
+
+class _Cfg:
+    """Stand-in for TenantAIConfig — analyzer only reads the
+    category / market attributes via ``getattr``."""
+
+    def __init__(self, industry_type: str | None = None) -> None:
+        self.industry_type = industry_type
+        self.regulatory_market = None
+        self.default_package_surface_area_cm2 = None
+
+
+def test_dietary_supplement_industry_skips_analyzer() -> None:
+    """WS-3 category gate: a dietary supplement product should
+    produce zero pharma findings even when the same 6 pt text
+    would otherwise flag as below the pharma minimum."""
+    doc = _doc_eu()
+    event = _text_event(font_size=6.0)
+    cfg = _Cfg(industry_type="dietary_supplement")
+    findings = PharmaFontAnalyzer().analyze(
+        doc, [event], pdf_bytes=b"", ai_config=cfg
+    )
+    pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
+    assert pharma == []
+
+
+def test_unknown_industry_runs_analyzer() -> None:
+    """Conservative default: unset industry_type still fires."""
+    doc = _doc_eu()
+    event = _text_event(font_size=6.0)
+    cfg = _Cfg(industry_type=None)
+    findings = PharmaFontAnalyzer().analyze(
+        doc, [event], pdf_bytes=b"", ai_config=cfg
+    )
+    pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
+    assert len(pharma) == 1

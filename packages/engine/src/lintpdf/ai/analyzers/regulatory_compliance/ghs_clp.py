@@ -15,6 +15,7 @@ import math
 import re
 from typing import TYPE_CHECKING, Any
 
+from lintpdf.ai.analyzers.regulatory_compliance._gates import is_ghs_applicable
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
@@ -173,8 +174,11 @@ class GhsClpAnalyzer(BaseAIAnalyzer):
             self._check_pictogram_sizes(
                 document, events, detected_pictograms, min_pictogram_mm, findings
             )
-        elif h_statements or signal_words:
-            # H-statements or signal words present but no pictograms
+        elif (h_statements or signal_words) and is_ghs_applicable(ai_config):
+            # H-statements or signal words present but no pictograms.
+            # Gated on industry_type: food / supplement / cosmetic
+            # products are not CLP-regulated, so cautionary text
+            # like Prop 65 "WARNING" shouldn't trip this rule.
             findings.append(
                 self._make_finding(
                     inspection_id="AI_GHS_003",

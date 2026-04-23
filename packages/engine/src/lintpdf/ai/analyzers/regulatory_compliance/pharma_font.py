@@ -12,6 +12,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from lintpdf.ai.analyzers.regulatory_compliance._gates import is_pharma_applicable
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
@@ -95,6 +96,14 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
         pdf_bytes: bytes,
         ai_config: TenantAIConfig | None = None,
     ) -> list[Finding]:
+        # Category gate: pharma rules do not apply to food /
+        # supplement / cosmetic / pet-food products regulated under
+        # FIR 1169/2011 or equivalent. Skip the rule outright on
+        # those tenants. Unknown industry_type defaults to "run"
+        # so uncategorised tenants still see conservative findings.
+        if not is_pharma_applicable(ai_config):
+            return []
+
         # Determine regulatory market
         market = "auto"  # Will try to auto-detect
         if ai_config is not None:
