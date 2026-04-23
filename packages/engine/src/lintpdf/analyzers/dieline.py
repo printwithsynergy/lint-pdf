@@ -258,6 +258,186 @@ def _collect_layer_names(pdf: Any) -> list[str]:
     return out
 
 
+# WS-19 geometry fallback — tuning constants.
+#
+# Corner-mark tolerance: distance in PDF points from each MediaBox
+# corner within which a stroked path's bbox counts as a "corner
+# mark". Real cut-mark sets usually sit 6–18 pt inside the media
+# edge; 30 pt catches slightly offset marks without picking up
+# decorative corner glyphs.
+_CORNER_TOLERANCE_PT = 30.0
+
+# Rectangle-candidate threshold: how large a stroke-only rectangular
+# path must be (as a fraction of MediaBox area) to count as the
+# dieline's bounding rectangle. Textbook trim boxes span 60–95 % of
+# the MediaBox (the remainder being bleed + marks).
+_RECT_AREA_RATIO_MIN = 0.60
+
+# How many of the 4 corners must show a clustered stroke before we
+# accept a geometry match. 4 is strict; 3 keeps us honest on files
+# where one corner's mark sits just outside the tolerance.
+_MIN_CORNERS_FOR_MATCH = 3
+
+
+def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
+    """Return ``(corners_hit, rect_area_ratio)`` when page 1 shows
+    the textbook "4 corner trim marks + bounding rectangle" pattern,
+    or ``None`` when the heuristic doesn't fire.
+
+    Parses the page-1 content stream, tracks stroke-only path
+    bounding boxes, and tests two conditions simultaneously:
+
+    1. At least ``_MIN_CORNERS_FOR_MATCH`` of the 4 MediaBox corners
+       have a small stroked path within ``_CORNER_TOLERANCE_PT`` of
+       the corner.
+    2. At least one stroked rectangle covers ≥ ``_RECT_AREA_RATIO_MIN``
+       of the MediaBox area.
+
+    Both must hold for a match. Returns early on the first page —
+    dieline geometry lives on page 1 by convention in the corpora
+    this heuristic targets.
+
+    CTM transformations are NOT composed (the walker reads raw
+    coordinates from ``m / l / re`` operands); axis-aligned page-1
+    artwork is handled correctly, rotated or heavily transformed
+    dielines will miss and fall through to Sonnet.
+    """
+    try:
+        import pikepdf
+    except ImportError:
+        return None
+
+    try:
+        page = pdf.pages[0]
+    except (IndexError, Exception):
+        return None
+
+    try:
+        mb = page.mediabox
+        mb_x0, mb_y0, mb_x1, mb_y1 = (
+            float(mb[0]), float(mb[1]), float(mb[2]), float(mb[3])
+        )
+    except Exception:
+        return None
+    mb_w = mb_x1 - mb_x0
+    mb_h = mb_y1 - mb_y0
+    if mb_w <= 0 or mb_h <= 0:
+        return None
+    mb_area = mb_w * mb_h
+
+    try:
+        instructions = pikepdf.parse_content_stream(page)
+    except Exception:
+        return None
+
+    # Per-path point accumulator — reset on m/re operators that
+    # start a new subpath. We don't need perfect path granularity,
+    # just a bbox around the current subpath.
+    path_points: list[tuple[float, float]] = []
+    stroked_bboxes: list[tuple[float, float, float, float]] = []
+
+    def _flush_stroked() -> None:
+        if not path_points:
+            return
+        xs = [p[0] for p in path_points]
+        ys = [p[1] for p in path_points]
+        stroked_bboxes.append((min(xs), min(ys), max(xs), max(ys)))
+
+    for inst in instructions:
+        op = str(getattr(inst, "operator", inst[1] if isinstance(inst, tuple) else ""))
+        operands = getattr(inst, "operands", inst[0] if isinstance(inst, tuple) else [])
+
+        # New subpath — m x y
+        if op == "m":
+            if len(operands) >= 2:
+                try:
+                    path_points = [(float(operands[0]), float(operands[1]))]
+                except Exception:
+                    path_points = []
+            continue
+        # Line to — l x y
+        if op == "l":
+            if len(operands) >= 2:
+                try:
+                    path_points.append((float(operands[0]), float(operands[1])))
+                except Exception:
+                    pass
+            continue
+        # Curve to (approximated by endpoints for bbox purposes)
+        if op in ("c", "v", "y"):
+            try:
+                x = float(operands[-2])
+                y = float(operands[-1])
+                path_points.append((x, y))
+            except Exception:
+                pass
+            continue
+        # Rectangle — re x y w h (single-shot rectangle path)
+        if op == "re":
+            if len(operands) >= 4:
+                try:
+                    x, y, w, h = (float(v) for v in operands[:4])
+                    path_points = [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+                except Exception:
+                    path_points = []
+            continue
+        # Close subpath
+        if op == "h":
+            continue
+        # Stroke-only finishers
+        if op in ("S", "s"):
+            _flush_stroked()
+            path_points = []
+            continue
+        # Anything with a fill (f, F, f*, B, B*, b, b*) — flush without
+        # recording as stroked; filled shapes aren't what we want for
+        # corner marks / trim rectangles.
+        if op in ("f", "F", "f*", "B", "B*", "b", "b*", "n"):
+            path_points = []
+            continue
+
+    # Evaluate corner coverage.
+    corners = [
+        (mb_x0, mb_y0),
+        (mb_x1, mb_y0),
+        (mb_x0, mb_y1),
+        (mb_x1, mb_y1),
+    ]
+    hits = 0
+    for cx, cy in corners:
+        for bx0, by0, bx1, by1 in stroked_bboxes:
+            # Small stroked bbox sitting near the corner (any edge
+            # within tolerance). Reject shapes that also span more
+            # than ~10 % of the MediaBox dimension — those are rect
+            # candidates, not corner marks.
+            bw = bx1 - bx0
+            bh = by1 - by0
+            if bw > mb_w * 0.1 or bh > mb_h * 0.1:
+                continue
+            close = (
+                abs(bx0 - cx) <= _CORNER_TOLERANCE_PT
+                or abs(bx1 - cx) <= _CORNER_TOLERANCE_PT
+            ) and (
+                abs(by0 - cy) <= _CORNER_TOLERANCE_PT
+                or abs(by1 - cy) <= _CORNER_TOLERANCE_PT
+            )
+            if close:
+                hits += 1
+                break  # don't double-count a corner
+
+    # Evaluate rectangle coverage.
+    best_ratio = 0.0
+    for bx0, by0, bx1, by1 in stroked_bboxes:
+        area = max(0.0, bx1 - bx0) * max(0.0, by1 - by0)
+        ratio = area / mb_area if mb_area > 0 else 0.0
+        if ratio > best_ratio:
+            best_ratio = ratio
+
+    if hits >= _MIN_CORNERS_FOR_MATCH and best_ratio >= _RECT_AREA_RATIO_MIN:
+        return hits, best_ratio
+    return None
+
+
 def detect_dieline(pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] | None = None) -> DielineResult:
     """Run the dieline detection pipeline.
 
@@ -294,17 +474,55 @@ def detect_dieline(pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] |
                 confidence=1.0,
             )
 
+    # WS-19 geometry fallback — detect the textbook
+    # "4 corner trim marks + bounding rectangle" pattern without
+    # relying on spot / layer naming conventions. Runs before
+    # Sonnet so we avoid the API round-trip when the shape
+    # heuristic is confident. Confidence 0.9 beats typical Sonnet
+    # output (0.8–0.85) so this path wins on canonical dielines;
+    # Sonnet still takes over on stylised / broken-frame layouts
+    # because geometry returns None there.
+    try:
+        geometry = _detect_by_geometry(pdf)
+    except Exception:
+        logger.exception("dieline: geometry fallback crashed")
+        geometry = None
+    if geometry is not None:
+        logger.info(
+            "dieline: geometry-match hit (corners=%d rect_area_ratio=%.2f)",
+            geometry[0],
+            geometry[1],
+        )
+        return DielineResult(
+            source="geometry",
+            spot_name=None,
+            polylines=[],
+            confidence=0.9,
+        )
+
     # Sonnet fallback — only when the operator has granted it.
     ai_features = frozenset(ai_features or frozenset())
     if "sonnet_fallback" in ai_features:
         try:
             from lintpdf.ai.dieline_claude import detect_dieline_via_claude
 
+            logger.info("dieline: name + geometry missed, calling Sonnet fallback")
             vision = detect_dieline_via_claude(pdf_bytes)
             if vision is not None:
+                logger.info(
+                    "dieline: Sonnet verdict source=%s confidence=%.2f polylines=%d",
+                    vision.source,
+                    vision.confidence,
+                    len(vision.polylines),
+                )
                 return vision
+            logger.info("dieline: Sonnet returned no dieline (empty polylines / parse miss)")
         except Exception:
             logger.exception("dieline: vision fallback failed")
+    else:
+        logger.info(
+            "dieline: name + geometry missed and sonnet_fallback not granted"
+        )
 
     return DielineResult(source="missing")
 
