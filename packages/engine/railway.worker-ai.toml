@@ -1,6 +1,14 @@
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "packages/engine/Dockerfile"
+# Only rebuild when engine code, build inputs, or deploy config
+# actually change. See railway.worker.toml for the 2026-04-23
+# incident context.
+watchPatterns = [
+    "packages/engine/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
 
 [deploy]
 # Dedicated Celery worker for AI-enabled jobs. Isolated from the main
