@@ -53,35 +53,25 @@ def init_db(database_url: str) -> None:
 
 
 def reset_db_state() -> None:
-    """Drop the cached engine AND the fork-inherited mutex.
+    """Drop the cached engine so the next call to ``init_db`` rebuilds it.
 
-    Called from the Celery ``worker_process_init`` fork hook. Three jobs:
+    Celery ``prefork`` workers inherit the parent process's engine across
+    ``fork()``. The child then holds references to TCP sockets that the
+    parent is also using, which psycopg2 detects as corrupted connections
+    the moment the child tries to execute a query — manifesting as silent
+    worker deaths (``missed heartbeat from celery@...``) with no
+    Soft/Hard TimeLimit warnings because the task never gets far enough
+    to progress. Disposing + resetting in the child's
+    ``worker_process_init`` signal handler forces each prefork slot to
+    build its own engine with its own socket pool.
 
-    1. **Replace ``_db_lock``** with a fresh ``threading.Lock()``. The
-       lock is module-level: if the parent happened to be holding it at
-       ``fork()`` time (even for a microsecond — e.g. first query during
-       concurrent boot), the child inherits the lock ALREADY LOCKED
-       with no thread owning it. Every ``with _db_lock:`` in the child
-       then blocks forever. Since ``get_db_session`` opens with
-       ``with _db_lock:``, the FIRST query in the child deadlocks
-       silently and the task execution stalls with no logs — exactly
-       the "Task received, no further output, missed heartbeat" pattern
-       that plagued prod on 2026-04-23.
-    2. **Dispose the inherited engine** so each prefork slot builds its
-       own TCP sockets rather than corrupting the parent's. ``close=False``
-       keeps the parent's sockets intact.
-    3. **Clear the session factory** so the next ``get_db_session`` call
-       re-inits against the same DATABASE_URL but with a fresh engine
-       owned entirely by the child.
+    ``dispose(close=False)`` releases the engine's pool WITHOUT calling
+    ``close()`` on the inherited sockets — closing them in the child
+    would also shut them down for the parent, breaking the parent's
+    beat/scheduler pool. ``close=False`` lets each process manage only
+    its own copy.
     """
     import contextlib
-    import threading
-
-    global _db_lock
-    # Reset the lock FIRST — it's what makes the rest of this function
-    # safe to run in a child process. Before this line, ``with _db_lock:``
-    # would deadlock if the parent was holding the lock at fork time.
-    _db_lock = threading.Lock()
 
     with _db_lock:
         engine = _db_state["engine"]
