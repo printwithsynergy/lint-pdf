@@ -22,8 +22,9 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     no Modal fallback exists.
 
     When ``force=False`` (post-preflight hook), gated on
-    ``entitlements.ai_audit_enabled``. When ``force=True`` (admin
-    rerun + the customer rerun endpoint), the gate is bypassed.
+    ``entitlements.can_use("audit")`` (= ``ai_enabled AND "audit" in
+    ai_features``). When ``force=True`` (admin rerun + the customer
+    rerun endpoint), the gate is bypassed.
 
     Returns the count of findings whose ``audit_*`` columns were
     written. Exceptions here are re-raised to the caller; the
@@ -39,7 +40,11 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
         return 0
     if not force:
         entitlements = resolve_entitlements(tenant)
-        if not getattr(entitlements, "ai_audit_enabled", False):
+        if not entitlements.can_use("audit"):
+            # Emit one LPDF_FEATURE_LOCKED finding so the viewer can
+            # render an upsell chip on the job. Skipping silently
+            # would leave customers guessing why no verdicts showed up.
+            _emit_feature_locked(db, job, "audit")
             return 0
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
@@ -81,6 +86,76 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     return changed
 
 
+_FEATURE_LOCKED_COPY: dict[str, str] = {
+    "audit": (
+        "AI accuracy audit is not enabled for this tenant. Upgrade to "
+        "Growth or higher, or ask an admin to grant the 'audit' AI feature."
+    ),
+    "ocr": (
+        "OCR for outlined artwork is a Scale-tier AI feature. This PDF "
+        "appears to have outlined text — enable 'ocr' to recover it."
+    ),
+    "dieline": (
+        "Dieline detection is a Scale-tier AI feature. Upgrade to see "
+        "cut / crease / perf contours on rendered pages."
+    ),
+    "art_size": (
+        "Trim-size detection (from dieline) is a Scale-tier AI feature. "
+        "Upgrade to see dimensions derived from the dieline stroke."
+    ),
+    "legend": (
+        "Legend-vs-art swatch classification is a Scale-tier AI feature. "
+        "Upgrade to distinguish colour legend blocks from real artwork."
+    ),
+    "similarity": (
+        "Asset similarity (CLIP embedding) is an Enterprise AI feature."
+    ),
+    "sonnet_fallback": (
+        "Sonnet-tier vision reasoning is an Enterprise AI feature."
+    ),
+    "internal_opus": (
+        "Opus-backed internal auditing is operator-only."
+    ),
+}
+
+
+def _emit_feature_locked(db: Any, job: Any, feature: str) -> None:
+    """Write a single ``LPDF_FEATURE_LOCKED`` finding for one locked feature.
+
+    Idempotent per (job, feature) — re-runs (e.g. the rerun endpoint)
+    won't duplicate the upsell chip. Best-effort: any exception here
+    is swallowed so the entitlement-gate path never fails preflight.
+    """
+    try:
+        from lintpdf.api.models import JobFinding
+
+        existing = (
+            db.query(JobFinding)
+            .filter(
+                JobFinding.job_id == job.id,
+                JobFinding.inspection_id == "LPDF_FEATURE_LOCKED",
+                JobFinding.details.op("->>")("feature") == feature,
+            )
+            .first()
+        )
+        if existing is not None:
+            return
+        db.add(
+            JobFinding(
+                job_id=job.id,
+                inspection_id="LPDF_FEATURE_LOCKED",
+                severity="info",
+                category="ai.entitlement",
+                source="engine",
+                message=_FEATURE_LOCKED_COPY.get(feature, "This AI feature is not enabled."),
+                details={"feature": feature},
+            )
+        )
+        db.commit()
+    except Exception:
+        logger.exception(
+            "audit: failed to emit LPDF_FEATURE_LOCKED finding for %s", feature
+        )
 
 
 def _auto_generate_reports(

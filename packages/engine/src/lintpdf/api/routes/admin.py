@@ -6,7 +6,7 @@ import uuid as uuid_mod
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session  # noqa: TC002
 
@@ -138,8 +138,11 @@ class UpdateEntitlementsRequest(BaseModel):
     # Setting True forces-on regardless of plan; setting False
     # forces-off even on Enterprise. Deleting the key (via the
     # clear-overrides endpoint) reverts to the plan default.
+    #
+    # NB: ``ai_audit_enabled`` dropped in WS-F — migrated into
+    # ``ai_features`` below. ``ai_enabled`` stays as the hard
+    # master kill-switch; AND-gated with the per-feature grant.
     desktop_app_enabled: bool | None = None
-    ai_audit_enabled: bool | None = None
     ai_enabled: bool | None = None
     webhooks_enabled: bool | None = None
     whitelabel_enabled: bool | None = None
@@ -163,6 +166,28 @@ class UpdateEntitlementsRequest(BaseModel):
     # match any feature check.
     allowed_report_formats: list[str] | None = None
     allowed_preflight_sources: list[str] | None = None
+    # Per-feature AI grant list. Union-merged with plan-tier baseline
+    # + plan_limit_overrides by the resolver. Unknown flag names are
+    # rejected by the field validator below. Setting ``[]`` forces
+    # "no AI features" even on Enterprise; leaving this key absent
+    # (via the clear-overrides endpoint) reverts to the plan default.
+    ai_features: list[str] | None = None
+
+    @field_validator("ai_features")
+    @classmethod
+    def _ai_features_are_known(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return None
+        from lintpdf.tenants.entitlements import AI_FEATURE_FLAGS
+
+        bad = [f for f in v if f not in AI_FEATURE_FLAGS]
+        if bad:
+            raise ValueError(
+                f"Unknown ai_features flag(s): {sorted(set(bad))}. "
+                f"Allowed: {sorted(AI_FEATURE_FLAGS)}"
+            )
+        # Dedupe + sort for deterministic DB rows.
+        return sorted(set(v))
 
 
 class EntitlementOverridesResponse(BaseModel):
@@ -3875,7 +3900,7 @@ class AdminTenantDefaultProfileResponse(BaseModel):
 _VALID_VISIBILITY_MODES = {"all", "plan", "tenants", "plan_and_tenants"}
 
 
-def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:  # noqa: ANN001
+def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:
     from lintpdf.profiles.schema import PreflightProfile
 
     try:
@@ -3884,7 +3909,7 @@ def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:  # noqa: AN
         description = fp.description
         conformance = fp.conformance
         workflow = fp.workflow
-    except Exception:  # noqa: BLE001
+    except Exception:
         name = sp.profile_id
         description = None
         conformance = None

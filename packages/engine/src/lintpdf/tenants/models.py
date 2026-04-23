@@ -21,6 +21,30 @@ class TenantPlan(enum.StrEnum):
 ALL_PREFLIGHT_SOURCES: list[str] = ["engine", "external", "minimal"]
 
 
+# AI-feature baselines per plan. Resolver union-merges with
+# ``plan_limit_overrides.ai_features`` + per-tenant grants, so
+# these are the floor. ``monthly_ai_credits`` is in **integer
+# cents** post-migration 037.
+#
+# STARTER: no AI — trial / low-ceiling plan.
+# GROWTH:  audit only (the main cross-sell feature).
+# SCALE:   full packaging stack.
+# ENTERPRISE: SCALE + similarity + Sonnet fallback routing.
+_AI_FEATURES_GROWTH: list[str] = ["audit"]
+_AI_FEATURES_SCALE: list[str] = [
+    "audit",
+    "ocr",
+    "dieline",
+    "art_size",
+    "legend",
+]
+_AI_FEATURES_ENTERPRISE: list[str] = [
+    *_AI_FEATURES_SCALE,
+    "similarity",
+    "sonnet_fallback",
+]
+
+
 # Plan limits configuration
 PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
     TenantPlan.FREE: {
@@ -45,6 +69,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "desktop_app_enabled": False,
         "monthly_ai_credits": 0,
         "monthly_files_included": 50,
+        "ai_features": [],
     },
     TenantPlan.VIEWER: {
         "rate_limit_daily": 150,
@@ -68,6 +93,7 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "desktop_app_enabled": False,
         "monthly_ai_credits": 0,
         "monthly_files_included": 50,
+        "ai_features": [],
     },
     TenantPlan.STARTER: {
         "rate_limit_daily": 500,
@@ -89,8 +115,12 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": False,
         "max_approval_templates": 0,
         "desktop_app_enabled": False,
-        "monthly_ai_credits": 100,
+        # Value was 100 whole dollars pre-037 — migration multiplies
+        # every existing row by 100. Hardcoded defaults are authored
+        # directly in cents; no retroactive math needed.
+        "monthly_ai_credits": 0,
         "monthly_files_included": 500,
+        "ai_features": [],
     },
     TenantPlan.GROWTH: {
         "rate_limit_daily": 5000,
@@ -112,8 +142,11 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": True,
         "max_approval_templates": 3,
         "desktop_app_enabled": False,
+        # $5.00 cap — enough for audit on ~500 typical jobs/mo at
+        # Haiku's $0.01/job amortized cost.
         "monthly_ai_credits": 500,
         "monthly_files_included": 2500,
+        "ai_features": _AI_FEATURES_GROWTH,
     },
     TenantPlan.SCALE: {
         "rate_limit_daily": 25000,
@@ -142,9 +175,10 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": True,
         "max_approval_templates": None,
         "desktop_app_enabled": False,
-        "monthly_ai_credits": 2000,
+        # $25.00 cap.
+        "monthly_ai_credits": 2500,
         "monthly_files_included": 10000,
-        "ai_audit_enabled": True,
+        "ai_features": _AI_FEATURES_SCALE,
     },
     TenantPlan.ENTERPRISE: {
         "rate_limit_daily": 100000,
@@ -173,9 +207,10 @@ PLAN_LIMITS: dict[TenantPlan, dict[str, Any]] = {
         "approval_chains_enabled": True,
         "max_approval_templates": None,
         "desktop_app_enabled": False,
-        "monthly_ai_credits": 10000,
+        # $250.00 cap.
+        "monthly_ai_credits": 25000,
         "monthly_files_included": 100000,
-        "ai_audit_enabled": True,
+        "ai_features": _AI_FEATURES_ENTERPRISE,
     },
 }
 

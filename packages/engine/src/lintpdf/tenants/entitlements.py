@@ -2,10 +2,26 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from lintpdf.tenants.models import ALL_PREFLIGHT_SOURCES, PLAN_LIMITS, TenantPlan
+
+# Canonical set of AI feature flag names. Unknown flags are rejected
+# by the admin PATCH schema so typos never land silently in the DB.
+# Keep this in lock-step with the PLAN_LIMITS baselines below.
+AI_FEATURE_FLAGS: frozenset[str] = frozenset(
+    {
+        "audit",
+        "ocr",
+        "dieline",
+        "art_size",
+        "legend",
+        "similarity",
+        "internal_opus",
+        "sonnet_fallback",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -33,20 +49,50 @@ class TenantEntitlements:
     max_approval_templates: int | None = None
     desktop_app_enabled: bool = False
     # Metered-resource monthly allotments (see billing/metered_packs.py).
-    # ``monthly_ai_credits`` is the monthly AI-credit grant; tenants can
-    # also buy top-up packs via Stripe Checkout that roll over.
+    # ``monthly_ai_credits`` is the monthly AI-credit grant in INTEGER
+    # CENTS (500 = $5.00) — rescaled from whole dollars by Alembic
+    # migration 037. Tenants can also buy top-up packs via Stripe
+    # Checkout that roll over.
     # ``monthly_files_included`` is the monthly file/job allotment; the
     # daily ``rate_limit_daily`` still serves as an abuse shield on top
     # of this monthly cap.
     monthly_ai_credits: int = 0
     monthly_files_included: int = 0
-    # AI accuracy audit — when True the customer-facing Modal auditor
-    # runs after every preflight and writes per-finding verdicts to
-    # JobFinding.audit_*. Gated to Scale + Enterprise by default; ops
-    # can flip it on any tenant via ``entitlement_overrides`` for
-    # pilots. Internal Opus harness runs regardless of this flag —
-    # it's operator-side, not customer-visible.
-    ai_audit_enabled: bool = False
+    # Per-feature AI grant list. Drives every AI call site via the
+    # AND-gate ``ai_enabled AND feature in ai_features``. Replaces
+    # the old ``ai_audit_enabled`` bool (migration 037). Flags:
+    # see :data:`AI_FEATURE_FLAGS`.
+    ai_features: frozenset[str] = field(default_factory=frozenset)
+
+    def can_use(self, feature: str) -> bool:
+        """Return True when the tenant may use this AI feature.
+
+        AND-gate: both the master ``ai_enabled`` switch and an
+        explicit ``feature in ai_features`` grant must be present.
+        Unknown feature names always return False so a typo at a
+        call site never silently allows an AI call.
+        """
+        if feature not in AI_FEATURE_FLAGS:
+            return False
+        return bool(self.ai_enabled) and feature in self.ai_features
+
+
+def _coerce_feature_list(raw: Any) -> frozenset[str]:
+    """Normalize whatever shape ``ai_features`` arrives as into a frozenset.
+
+    Accepts list/tuple/set/frozenset of strings; drops unknown flag
+    names silently (the admin PATCH schema is the validation surface).
+    """
+    if raw is None:
+        return frozenset()
+    if isinstance(raw, str):
+        # Defensive: a JSON string that wasn't decoded.
+        raw = [raw]
+    try:
+        items = {str(x) for x in raw}
+    except TypeError:
+        return frozenset()
+    return frozenset(i for i in items if i in AI_FEATURE_FLAGS)
 
 
 def _plan_tier_overrides(plan: TenantPlan) -> dict[str, Any]:
@@ -92,30 +138,25 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
 
     Priority (highest to lowest):
     1. ``entitlement_overrides`` JSON column (admin per-tenant overrides)
-    2. Dedicated per-tenant columns (``rate_limit_daily``, etc.) when
+    2. ``tenant.ai_features`` column (WS-F — dedicated JSONB)
+    3. Dedicated per-tenant columns (``rate_limit_daily``, etc.) when
        they differ from plan defaults (backward-compat)
-    3. ``plan_limit_overrides`` row for this plan (operator-editable,
+    4. ``plan_limit_overrides`` row for this plan (operator-editable,
        effective for every tenant on the plan)
-    4. ``PLAN_LIMITS`` hardcoded defaults for the tenant's plan
+    5. ``PLAN_LIMITS`` hardcoded defaults for the tenant's plan
 
-    Args:
-        tenant: SQLAlchemy Tenant model instance (or any object with
-                ``plan``, ``entitlement_overrides``, ``rate_limit_daily``,
-                ``max_file_size_mb`` attributes).
-
-    Returns:
-        Frozen ``TenantEntitlements`` dataclass.
+    ``ai_features`` merges by set-union across layers, not overwrite,
+    so a plan-tier grant is never silently stripped by an
+    unrelated per-tenant override.
     """
     plan = TenantPlan(tenant.plan)
     plan_defaults = dict(PLAN_LIMITS[plan])
     overrides = getattr(tenant, "entitlement_overrides", None) or {}
 
-    # Start with hardcoded plan defaults, then layer ops-edited
-    # plan-tier overrides before the per-tenant merge.
     merged: dict[str, Any] = {**plan_defaults}
-    merged.update(_plan_tier_overrides(plan))
+    plan_tier = _plan_tier_overrides(plan)
+    merged.update(plan_tier)
 
-    # Layer in legacy column overrides (only if they differ from plan default)
     tenant_rate = getattr(tenant, "rate_limit_daily", None)
     if tenant_rate is not None and tenant_rate != plan_defaults["rate_limit_daily"]:
         merged["rate_limit_daily"] = tenant_rate
@@ -124,19 +165,24 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
     if tenant_max_mb is not None and tenant_max_mb != plan_defaults["max_file_size_mb"]:
         merged["max_file_size_mb"] = tenant_max_mb
 
-    # Layer in JSON overrides (highest priority for generic entitlements)
     merged.update(overrides)
 
-    # Dedicated per-tenant columns for metered-resource monthly caps
-    # beat both the plan defaults and the generic JSON overrides, so
-    # ops can set ``monthly_ai_credits_override=2000`` on a Growth
-    # tenant without reshaping their entitlement_overrides blob.
     credits_override = getattr(tenant, "monthly_ai_credits_override", None)
     if credits_override is not None:
         merged["monthly_ai_credits"] = credits_override
     files_override = getattr(tenant, "monthly_files_override", None)
     if files_override is not None:
         merged["monthly_files_included"] = files_override
+
+    # Union-merge ai_features across every layer. Order-insensitive
+    # because it's a set — but we *do* want PLAN + plan-tier +
+    # per-tenant grants to all accumulate.
+    ai_features = frozenset().union(
+        _coerce_feature_list(plan_defaults.get("ai_features")),
+        _coerce_feature_list(plan_tier.get("ai_features")),
+        _coerce_feature_list(overrides.get("ai_features")),
+        _coerce_feature_list(getattr(tenant, "ai_features", None)),
+    )
 
     return TenantEntitlements(
         rate_limit_daily=merged["rate_limit_daily"],
@@ -163,5 +209,5 @@ def resolve_entitlements(tenant: Any) -> TenantEntitlements:
         desktop_app_enabled=merged.get("desktop_app_enabled", False),
         monthly_ai_credits=int(merged.get("monthly_ai_credits", 0) or 0),
         monthly_files_included=int(merged.get("monthly_files_included", 0) or 0),
-        ai_audit_enabled=bool(merged.get("ai_audit_enabled", False)),
+        ai_features=ai_features,
     )

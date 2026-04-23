@@ -171,6 +171,14 @@ class Tenant(Base):
     entitlement_overrides: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, default=None
     )
+    # Per-feature AI grant list (WS-F — Alembic 037). JSONB list of
+    # flag names; the resolver union-merges with PLAN_LIMITS[plan]
+    # and ``plan_limit_overrides.ai_features``. Empty list is the
+    # floor; ``[]``/NULL + ``ai_enabled=True`` + plan=STARTER means
+    # no AI at all (the ``can_use`` AND-gate short-circuits).
+    ai_features: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=list, server_default="[]"
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -566,7 +574,7 @@ class PlanLimitOverride(Base):
     Sits between hardcoded ``PLAN_LIMITS`` (the baseline) and
     ``Tenant.entitlement_overrides`` (the per-tenant delta). Ops flip
     an entry here to shift ceilings globally — e.g. "every Scale
-    tenant now gets ``ai_audit_enabled=True``" — without a code-ship
+    tenant now gets ``ai_features=['audit']``" — without a code-ship
     cycle. Per-tenant overrides still win; see
     :func:`lintpdf.tenants.entitlements.resolve_entitlements` for the
     three-layer merge order.
@@ -784,12 +792,23 @@ class TenantAICreditPackage(Base):
 
 
 class AIUsageLog(Base):
-    """Log entry for AI feature usage and credit consumption."""
+    """Log entry for AI feature usage and credit consumption.
+
+    Shared between the pre-existing credit-consumption accounting
+    (``credits_consumed``, ``cost`` in USD Numeric, ``processing_time_ms``,
+    ``result_summary``) and the WS-G per-Claude-call metering
+    columns added in Alembic 037 (``model``, ``input_tokens``,
+    ``output_tokens``, ``cache_read_tokens``, ``cache_write_tokens``,
+    ``cost_cents``). Quota + admin dashboard reads use the
+    ``cost_cents`` column; the old Numeric ``cost`` stays populated
+    for the credit-packages UI.
+    """
 
     __tablename__ = "ai_usage_logs"
     __table_args__ = (
         Index("ix_ai_usage_logs_tenant_created", "tenant_id", "created_at"),
         Index("ix_ai_usage_logs_job", "job_id"),
+        Index("ix_ai_usage_logs_tenant_month", "tenant_id", "created_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -808,6 +827,17 @@ class AIUsageLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # WS-G per-call metering columns (Alembic 037). ``cost_cents``
+    # is the integer-cent cost computed by
+    # :func:`lintpdf.audit.metering.record_usage`. Sub-cent calls
+    # round UP to 1 so quota maths stay truthful. Nullable because
+    # older rows (pre-037) don't have a model/token breakdown.
+    model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cache_read_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cache_write_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cost_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Relationships
     tenant: Mapped[Tenant] = relationship(back_populates="ai_usage_logs")
