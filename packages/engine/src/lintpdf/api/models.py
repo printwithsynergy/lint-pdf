@@ -294,6 +294,18 @@ class Job(Base):
     data_capabilities: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     # Per-job brand override — if set, wins over tenant default.
     brand_profile_id_override: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+    # Per-job brand specification — captured at submit time, wins
+    # over the endpoint's ``default_brand_spec_id`` and the
+    # tenant-default BrandSpec row. The orchestrator resolves this
+    # via :func:`lintpdf.brand_specs.resolver.resolve_brand_spec_for_job`
+    # and the analyzers gate the strict colour advisories on
+    # whether a spec was actually resolved. FK set to NULL on
+    # delete so archived specs can't dangle.
+    brand_spec_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("brand_specs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     # Per-job unbranded override (request-level flag, orthogonal to
     # ``brand_profile_id_override``). ``True`` forces rendering with the
     # ``none`` brand profile type even if a branded profile is otherwise
@@ -590,6 +602,111 @@ class CustomEndpoint(Base):
     __table_args__ = (Index("ix_custom_endpoints_tenant_slug", "tenant_id", "slug", unique=True),)
 
     # Relationships
+    tenant: Mapped[Tenant] = relationship()
+
+    # Per-endpoint default brand specification — applies to every job
+    # submitted through this endpoint unless the submit call overrides
+    # it with an explicit ``brand_spec_id``. FK set to NULL on delete
+    # so deleting a BrandSpec doesn't cascade-remove endpoints.
+    default_brand_spec_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey("brand_specs.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+
+class BrandSpec(Base):
+    """A named colour specification a tenant maintains per end-customer.
+
+    Tenants (LintPDF's customers) typically serve multiple brand
+    owners — think an agency that preflights packaging for both
+    Coca-Cola and Pepsi. Each end-customer gets its own BrandSpec
+    row with the palette, optional rich-black composition, and
+    optional description. BrandSpecs plug into preflight at two
+    levels:
+
+    * Per-endpoint default — a custom API endpoint can pin a
+      default BrandSpec so every submission inherits it without
+      the caller having to specify it each time.
+    * Per-submission override — any POST /jobs call may supply
+      ``brand_spec_id`` to pick one explicitly. The per-job
+      choice wins over the endpoint default.
+
+    Exactly one BrandSpec per tenant may carry ``is_default=True``
+    as the catch-all fallback when no endpoint or submit override
+    applies. The resolver enforces the "last one wins" semantics
+    (see :mod:`lintpdf.brand_specs.resolver`).
+    """
+
+    __tablename__ = "brand_specs"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Free-form label for the end-customer the spec serves. Optional
+    # so a tenant can keep internal / shared specs that don't belong
+    # to a single customer.
+    customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # List of ``{"name": str, "value": str, "pantone": str | None,
+    # "notes": str | None}`` rows. Kept as JSONB so the shape can
+    # evolve (e.g. Lab coordinates, ΔE tolerances) without schema
+    # churn, while still being queryable.
+    colors: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    # Optional target rich-black composition — ``{"c": 60, "m": 50,
+    # "y": 50, "k": 100}`` style. When set, print-production
+    # advisories can measure the document's rich black against this
+    # reference instead of the profile's defaults.
+    rich_black_spec: Mapped[dict[str, float] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    # Tenant-level default. At most one row per tenant with
+    # ``is_default=True``; a Postgres partial-unique index enforces
+    # this. When no endpoint or submit override applies, the
+    # resolver falls back to this row.
+    is_default: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    # Soft-delete flag. Archived specs stop appearing in pickers
+    # but existing jobs / endpoints that reference them keep
+    # resolving against them so historical data stays intact.
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default="false"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (
+        Index(
+            "ix_brand_specs_tenant_default",
+            "tenant_id",
+            unique=True,
+            postgresql_where=sa_text("is_default AND NOT is_archived"),
+            # SQLite (used by the unit-test harness) ignores
+            # ``postgresql_where`` and would otherwise interpret the
+            # index as a tenant-unique-regardless-of-is_default
+            # constraint, which collides the moment a tenant has two
+            # non-default specs. Mirror the predicate via the
+            # SQLite-specific kwarg so both dialects enforce the
+            # same "at most one default per tenant" rule.
+            sqlite_where=sa_text("is_default AND NOT is_archived"),
+        ),
+    )
+
     tenant: Mapped[Tenant] = relationship()
 
 

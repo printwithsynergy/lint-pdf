@@ -632,6 +632,16 @@ class EndpointCreateRequest(BaseModel):
             "full JobResponse inline."
         ),
     )
+    default_brand_spec_id: uuid.UUID | None = Field(
+        default=None,
+        description=(
+            "Optional BrandSpec to apply to every submission through this "
+            "endpoint. Per-submit ``brand_spec_id`` (if provided) wins over "
+            "this default. Set to ``null`` to disable the default — each "
+            "submission then either supplies an explicit spec or falls back "
+            "to the tenant-level default spec."
+        ),
+    )
 
     @field_validator("response_mode")
     @classmethod
@@ -653,6 +663,10 @@ class EndpointResponse(BaseModel):
     is_active: bool
     response_mode: str
     created_at: datetime
+    default_brand_spec_id: uuid.UUID | None = Field(
+        default=None,
+        description="BrandSpec applied to every submission through this endpoint when set.",
+    )
 
 
 class EndpointUpdateRequest(BaseModel):
@@ -663,6 +677,19 @@ class EndpointUpdateRequest(BaseModel):
     description: str | None = None
     is_active: bool | None = None
     response_mode: str | None = None
+    # ``None`` means "leave unchanged"; to unset the default, pass a
+    # sentinel string that validators convert to ``null``. The
+    # endpoint PATCH route treats a literal string ``"null"`` as
+    # "clear the FK." This avoids Pydantic's default merge confusing
+    # "no-op" with "clear."
+    default_brand_spec_id: uuid.UUID | str | None = Field(
+        default=None,
+        description=(
+            "Pass a BrandSpec UUID to pin it as this endpoint's default, "
+            "the string ``'null'`` (or JSON null when used via PATCH) to "
+            "clear the default, or omit the field to leave it unchanged."
+        ),
+    )
 
     @field_validator("response_mode")
     @classmethod
@@ -678,6 +705,91 @@ class EndpointListResponse(BaseModel):
     """List of custom endpoints."""
 
     endpoints: list[EndpointResponse]
+
+
+# --- BrandSpec schemas ---
+
+
+class BrandSpecColorEntry(BaseModel):
+    """One swatch row on a BrandSpec."""
+
+    name: str = Field(description="Display label for the swatch, e.g. 'Primary Navy'.")
+    value: str = Field(
+        description=(
+            "Canonical colour value. Hex (``#1a365d``), named CSS colour, "
+            "or explicit ``rgb()`` / ``cmyk()`` string — the engine parses "
+            "the first form it recognises."
+        ),
+    )
+    pantone: str | None = Field(
+        default=None,
+        description="Optional Pantone reference (e.g. ``PMS 2727 C``).",
+    )
+    notes: str | None = Field(
+        default=None,
+        description="Optional free-form usage notes.",
+    )
+
+
+class BrandSpecRichBlackSpec(BaseModel):
+    """Optional target rich-black composition."""
+
+    c: float = Field(ge=0.0, le=100.0, description="Cyan percentage 0-100.")
+    m: float = Field(ge=0.0, le=100.0, description="Magenta percentage 0-100.")
+    y: float = Field(ge=0.0, le=100.0, description="Yellow percentage 0-100.")
+    k: float = Field(ge=0.0, le=100.0, description="Key (black) percentage 0-100.")
+
+
+class BrandSpecCreateRequest(BaseModel):
+    """Create a new BrandSpec for the authenticated tenant."""
+
+    name: str = Field(min_length=1, max_length=255)
+    customer_name: str | None = Field(default=None, max_length=255)
+    description: str | None = None
+    colors: list[BrandSpecColorEntry] = Field(default_factory=list)
+    rich_black_spec: BrandSpecRichBlackSpec | None = None
+    is_default: bool = Field(
+        default=False,
+        description=(
+            "Mark this spec as the tenant-level default. If another "
+            "non-archived spec already carries ``is_default=True`` for "
+            "this tenant, that row is demoted to ``false`` atomically "
+            "so the 'at most one default' invariant holds."
+        ),
+    )
+
+
+class BrandSpecUpdateRequest(BaseModel):
+    """Patch a BrandSpec. All fields optional."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    customer_name: str | None = None
+    description: str | None = None
+    colors: list[BrandSpecColorEntry] | None = None
+    rich_black_spec: BrandSpecRichBlackSpec | None = None
+    is_default: bool | None = None
+
+
+class BrandSpecResponse(BaseModel):
+    """Full BrandSpec detail."""
+
+    id: uuid.UUID
+    tenant_id: uuid.UUID
+    name: str
+    customer_name: str | None
+    description: str | None
+    colors: list[BrandSpecColorEntry]
+    rich_black_spec: BrandSpecRichBlackSpec | None
+    is_default: bool
+    is_archived: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class BrandSpecListResponse(BaseModel):
+    """List of BrandSpecs visible to the tenant."""
+
+    brand_specs: list[BrandSpecResponse]
 
 
 # --- Health schemas ---

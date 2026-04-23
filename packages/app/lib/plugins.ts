@@ -32,6 +32,7 @@ import {
   lintpdfSiteAdminPlugin,
   lintpdfWebhooksPlugin,
   lintpdfEndpointsPlugin,
+  lintpdfBrandSpecsPlugin,
   lintpdfSuperAdminPlugin,
 } from "@thinkneverland/grounded-plugin";
 import { lintpdfBillingPlugin } from "@lintpdf/stripe";
@@ -108,6 +109,7 @@ const plugins: PixieDustPlugin[] = [
   lintpdfDownloadsPlugin,
   lintpdfWebhooksPlugin,
   lintpdfEndpointsPlugin,
+  lintpdfBrandSpecsPlugin,
   lintpdfSuperAdminPlugin,
   lintpdfSiteAdminPlugin,
   lintpdfBillingPlugin,

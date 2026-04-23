@@ -109,6 +109,12 @@ export default function ApiJobsSection() {
             description: "Convenience alias: when true, equivalent to brand=anonymous.",
           },
           {
+            name: "brand_spec_id",
+            type: "uuid",
+            description:
+              "Per-submission BrandSpec override. Wins over the endpoint default and the tenant-default BrandSpec. Must be a non-archived spec owned by the current tenant; a foreign or archived ID fails fast with 404 before upload is committed.",
+          },
+          {
             name: "wait",
             type: "float (query param)",
             description:
@@ -323,6 +329,12 @@ curl -X POST "https://api.lintpdf.com/api/v1/endpoints/acme-proofs/submit?wait=6
             default: "async",
             description:
               "Default response behavior for this endpoint. async = 202 + job_id (caller polls). sync = block for terminal state and return full JobResponse. Server-side ceiling is LINTPDF_SYNC_MAX_WAIT_S (default 120s). Callers can override per-request via ?wait= on the submit route.",
+          },
+          {
+            name: "default_brand_spec_id",
+            type: "uuid | null",
+            description:
+              "Optional BrandSpec to apply to every submission through this endpoint. Wins over the tenant-default BrandSpec but not over a submit-time brand_spec_id. Pass the literal string \"null\" in a PATCH to clear the binding without unsetting the field — omitting the field leaves it unchanged.",
           },
         ]}
       />

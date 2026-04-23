@@ -24,6 +24,7 @@ from lintpdf.api.routes import (
     annotations,
     approvals,
     batch,
+    brand_specs,
     branding,
     color_config,
     downloads,
@@ -267,6 +268,7 @@ def create_app() -> FastAPI:
     if not control_plane_only:
         app.include_router(viewer.router)
     app.include_router(branding.router)
+    app.include_router(brand_specs.router)
     if not control_plane_only:
         app.include_router(approvals.router)
         app.include_router(annotations.router, prefix="/api/v1/viewer")
