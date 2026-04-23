@@ -954,11 +954,24 @@ def sample_densitometer(
     """
     # Try the cache-only path first: if all four CMYK channels are
     # already in S3 we can avoid shelling out to Ghostscript entirely.
-    # Spot channels are a nice-to-have — when the cache hits we accept
-    # losing them in exchange for the ~2s latency cut.
+    # When the PDF has spot inks we also try to pull each spot from
+    # the cache so the response stays complete; if any spot misses
+    # we fall back to tiffsep so the densitometer never hides inks
+    # the page actually uses.
     cache_ok = bool(tenant_id and job_id and storage)
     cmyk_from_cache: list[np.ndarray] | None = None
+    spots_from_cache: list[tuple[str, np.ndarray]] = []
+    spot_names: list[str] = []
     if cache_ok and tenant_id and job_id and storage:
+        try:
+            spot_names = [
+                s["name"]
+                for s in list_separations(pdf_bytes)
+                if s.get("type") == "spot"
+            ]
+        except Exception:
+            spot_names = []
+
         candidate: list[np.ndarray] = []
         for ch in PROCESS_CHANNEL_ORDER:
             key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch)
@@ -972,6 +985,21 @@ def sample_densitometer(
             candidate.append(_pct_array_from_png_bytes(raw))
         if len(candidate) == 4:
             cmyk_from_cache = candidate
+            # Also try the spot cache. Any miss → fall back to tiffsep
+            # below so no ink is silently dropped.
+            spot_pulls: list[tuple[str, np.ndarray]] = []
+            for spot in spot_names:
+                key = channel_cache_key(tenant_id, job_id, page_num, dpi, spot)
+                try:
+                    raw = storage.download_raw(key)
+                except Exception:
+                    raw = None
+                if raw is None:
+                    spot_pulls = []
+                    cmyk_from_cache = None
+                    break
+                spot_pulls.append((spot, _pct_array_from_png_bytes(raw)))
+            spots_from_cache = spot_pulls
 
     def _sample_patch(arr: np.ndarray, px_x: int, px_y: int) -> float:
         img_h, img_w = arr.shape
@@ -1003,7 +1031,14 @@ def sample_densitometer(
             channel_entries.append(
                 {"name": ch_name, "percent": round(_sample_patch(arr, px_x, px_y), 2)}
             )
-        logger.debug("sample_densitometer: CMYK cache hit (no tiffsep)")
+        for spot_name, spot_arr in spots_from_cache:
+            channel_entries.append(
+                {"name": spot_name, "percent": round(_sample_patch(spot_arr, px_x, px_y), 2)}
+            )
+        logger.debug(
+            "sample_densitometer: cache hit (no tiffsep) — cmyk=4 spots=%d",
+            len(spots_from_cache),
+        )
     else:
         # Cache miss or no scope — run tiffsep, capture CMYK + any spots,
         # write CMYK back to the cache for next time.
@@ -1044,13 +1079,10 @@ def sample_densitometer(
                 channel_entries.append(
                     {"name": ch_name, "percent": round(_sample_patch(arr, px_x, px_y), 2)}
                 )
-                if (
-                    cache_ok
-                    and ch_name in PROCESS_CHANNEL_ORDER
-                    and tenant_id
-                    and job_id
-                    and storage
-                ):
+                # Cache CMYK + spots alike. The cache-hit path above
+                # pulls both so caching every channel keeps the fast
+                # path complete for spot-heavy files.
+                if cache_ok and tenant_id and job_id and storage:
                     key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch_name)
                     try:
                         storage.upload_raw(

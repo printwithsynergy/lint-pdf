@@ -15,6 +15,14 @@ interface PageCanvasProps {
   onPageChange?: (delta: number) => void;
   tileDpi?: number;
   tileCdnBase?: string | null;
+  /**
+   * WS-17B — when true, the canvas is clipped to the page's
+   * TrimBox (falls back to BleedBox, then CropBox). Hides the
+   * white bleed strip that sits outside the trim line on finished-
+   * goods review. Default false so pre-WS-17 viewers still see
+   * the full MediaBox unchanged.
+   */
+  cropToTrim?: boolean;
 }
 
 const SEVERITY_HEX: Record<string, string> = {
@@ -34,6 +42,7 @@ export function PageCanvas({
   onPageChange,
   tileDpi,
   tileCdnBase,
+  cropToTrim = false,
 }: PageCanvasProps) {
   const { apiBase } = useViewerApi();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -108,6 +117,38 @@ export function PageCanvas({
   const ptsToPixels = dpi / 72;
   const canvasWidth = Math.round(page.width_pts * ptsToPixels * scale);
   const canvasHeight = Math.round(page.height_pts * ptsToPixels * scale);
+
+  // WS-17B clip-path inset. When ``cropToTrim`` is on we hide the
+  // portion of the rendered tile that falls outside the TrimBox
+  // (bleed + printer marks). Falls back to BleedBox, then CropBox,
+  // then disables itself when none of those are present so a
+  // MediaBox-only PDF renders unchanged. inset() values are in
+  // px relative to the canvas size (top right bottom left).
+  const trimClipPath = (() => {
+    if (!cropToTrim) return undefined;
+    const box = page.trim_box ?? page.bleed_box ?? page.crop_box;
+    if (!box) return undefined;
+    const mb = page.media_box;
+    const mbW = mb.x1 - mb.x0;
+    const mbH = mb.y1 - mb.y0;
+    if (mbW <= 0 || mbH <= 0) return undefined;
+    const top = ((mb.y1 - box.y1) / mbH) * canvasHeight;
+    const bottom = ((box.y0 - mb.y0) / mbH) * canvasHeight;
+    const left = ((box.x0 - mb.x0) / mbW) * canvasWidth;
+    const right = ((mb.x1 - box.x1) / mbW) * canvasWidth;
+    // Ignore when the computed inset is sub-pixel — no visible
+    // difference and cheaper to skip the clip-path repaint entirely.
+    if (
+      Math.max(Math.abs(top), Math.abs(bottom), Math.abs(left), Math.abs(right)) <
+      0.5
+    ) {
+      return undefined;
+    }
+    return `inset(${Math.max(0, top)}px ${Math.max(0, right)}px ${Math.max(
+      0,
+      bottom,
+    )}px ${Math.max(0, left)}px)`;
+  })();
 
   // Load tile image — prefer CDN when available, fall back to engine proxy
   useEffect(() => {
@@ -337,7 +378,11 @@ export function PageCanvas({
         ref={canvasRef}
         onClick={handleClick}
         className={`cursor-crosshair ${loading ? "hidden" : ""}`}
-        style={{ width: canvasWidth, height: canvasHeight }}
+        style={{
+          width: canvasWidth,
+          height: canvasHeight,
+          clipPath: trimClipPath,
+        }}
       />
       {/* Page-level indicator for findings without bbox */}
       {selectedFinding && !selectedFinding.bbox && selectedFinding.page_num === page.page_num && (
