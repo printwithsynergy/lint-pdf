@@ -268,6 +268,93 @@ export default function ApiBrandingSection() {
   "plan_allows_whitelabel": true
 }`}
       />
+
+      <h4 id="brand-specs" className="font-semibold text-slate-900 mt-6 mb-2">
+        BrandSpecs — per-customer colour specifications
+      </h4>
+      <p className="text-slate-600 mb-4">
+        A BrandSpec is a named colour specification a tenant maintains per end-customer — swatches, optional rich-black, and flags. The resolver walks
+        <code className="bg-slate-100 px-1 rounded"> job.brand_spec_id → endpoint.default_brand_spec_id → tenant-default spec</code> and applies the first hit.
+        When nothing resolves, strict colour advisories stay suppressed.
+      </p>
+
+      <Endpoint
+        method="GET"
+        path="/api/v1/brand-specs"
+        description="List BrandSpecs for the current tenant. Pass ?include_archived=true to include soft-deleted rows."
+        auth
+        request={`curl https://api.lintpdf.com/api/v1/brand-specs \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "brand_specs": [
+    {
+      "id": "...",
+      "name": "Coca-Cola",
+      "customer_name": "Coca-Cola Co.",
+      "colors": [{"name": "Coke Red", "value": "#F40009", "pantone": "PMS 185 C"}],
+      "rich_black_spec": {"c": 60, "m": 50, "y": 50, "k": 100},
+      "is_default": true,
+      "is_archived": false
+    }
+  ]
+}`}
+      />
+
+      <Endpoint
+        method="POST"
+        path="/api/v1/brand-specs"
+        description="Create a new BrandSpec. Setting is_default=true atomically demotes any existing default spec for this tenant."
+        auth
+        request={`curl -X POST https://api.lintpdf.com/api/v1/brand-specs \\
+  -H "Authorization: Bearer lpdf_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "name": "Coca-Cola",
+    "customer_name": "Coca-Cola Co.",
+    "colors": [{"name": "Coke Red", "value": "#F40009"}],
+    "is_default": true
+  }'`}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-2 mb-2">BrandSpec fields</h4>
+      <FieldTable rows={[
+        { name: "name", type: "string", description: "Display label for the spec, e.g. the end-customer's brand." },
+        { name: "customer_name", type: "string | null", description: "Free-form customer label; use for reporting / filtering." },
+        { name: "description", type: "string | null", description: "Internal notes about the spec." },
+        { name: "colors[]", type: "array", description: "One object per swatch. Required shape: {name, value}. Optional: pantone, notes. value is hex, named CSS colour, or explicit rgb()/cmyk()." },
+        { name: "rich_black_spec", type: "object | null", description: "Optional {c, m, y, k} target rich-black composition. When set, print advisories measure against this instead of the profile default." },
+        { name: "is_default", type: "boolean", description: "At most one non-archived spec per tenant may carry is_default=true. Setting it on a new spec demotes the previous default atomically." },
+        { name: "is_archived", type: "boolean", description: "Soft-delete flag. Archived specs don't resolve as tenant-default but still resolve for historical jobs that captured them." },
+      ]} />
+
+      <Endpoint
+        method="PATCH"
+        path="/api/v1/brand-specs/{id}"
+        description="Patch any subset of fields. Setting is_default=true demotes the previous default."
+        auth
+        request={`curl -X PATCH https://api.lintpdf.com/api/v1/brand-specs/SPEC_ID \\
+  -H "Authorization: Bearer lpdf_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{ "colors": [{"name": "New", "value": "#123456"}] }'`}
+      />
+
+      <Endpoint
+        method="DELETE"
+        path="/api/v1/brand-specs/{id}"
+        description="Archive (soft-delete) a BrandSpec. Clears is_default. Historical jobs still resolve to the archived spec."
+        auth
+        request={`curl -X DELETE https://api.lintpdf.com/api/v1/brand-specs/SPEC_ID \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+      />
+
+      <Endpoint
+        method="POST"
+        path="/api/v1/brand-specs/{id}/restore"
+        description="Un-archive a BrandSpec. is_default stays false — mark it default again explicitly if needed."
+        auth
+        request={`curl -X POST https://api.lintpdf.com/api/v1/brand-specs/SPEC_ID/restore \\
+  -H "Authorization: Bearer lpdf_live_..."`}
+      />
     </section>
   );
 }

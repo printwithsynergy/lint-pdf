@@ -20,6 +20,7 @@ from lintpdf.api.database import get_db
 from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit
 from lintpdf.api.models import (
     BrandProfile,
+    BrandSpec,
     Job,
     JobFinding,
     JobImportedReport,
@@ -138,6 +139,17 @@ _unbranded_param = Form(
         "branding (equivalent to ``brand=anonymous``)."
     ),
 )
+_brand_spec_param = Form(
+    default=None,
+    description=(
+        "Per-submission BrandSpec override. Accepts a UUID owned by the "
+        "authenticated tenant; the resolver uses it in preference to any "
+        "custom endpoint's default BrandSpec and the tenant-default "
+        "BrandSpec. Absent → fall back to the endpoint / tenant default. "
+        "Strict colour advisories stay suppressed when no spec resolves "
+        "anywhere in the chain."
+    ),
+)
 _overrides_param = Form(
     default=None,
     description=(
@@ -229,6 +241,7 @@ async def submit_job(  # skipcq: PY-R1000
     mapping_id: str | None = _mapping_id_param,
     brand: str | None = _brand_param,
     unbranded: bool | None = _unbranded_param,
+    brand_spec_id: str | None = _brand_spec_param,
     overrides: str | None = _overrides_param,
     wait: float | None = Query(
         default=None,
@@ -545,6 +558,36 @@ async def submit_job(  # skipcq: PY-R1000
         # LintPDF" edge case we surface the explicit param as a query
         # string on the report URL, so persisting it is unnecessary.
 
+    # Resolve the per-submission BrandSpec override. We validate
+    # ownership here (before the upload has started) so a malformed
+    # or foreign ID fails fast with a 422/404 rather than after the
+    # caller has paid the PDF upload cost. A missing BrandSpec is a
+    # 404 rather than a silent fallback — the caller explicitly
+    # asked for a spec and we shouldn't pretend we found one.
+    brand_spec_id_resolved: uuid_mod.UUID | None = None
+    if brand_spec_id is not None:
+        try:
+            brand_spec_id_resolved = uuid_mod.UUID(brand_spec_id)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="brand_spec_id must be a UUID.",
+            ) from exc
+        spec_row = (
+            db.query(BrandSpec)
+            .filter(
+                BrandSpec.id == brand_spec_id_resolved,
+                BrandSpec.tenant_id == tenant.id,
+                BrandSpec.is_archived.is_(False),
+            )
+            .first()
+        )
+        if spec_row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Brand spec '{brand_spec_id}' not found or archived.",
+            )
+
     # Stream upload body into a spooled temp file so worker RSS stays
     # bounded regardless of PDF size — the first stress test (2026-04-21)
     # wedged the engine when 15 concurrent 30-47 MB uploads materialized
@@ -598,6 +641,7 @@ async def submit_job(  # skipcq: PY-R1000
         external_format=resolved_external_format,
         brand_profile_id_override=brand_profile_override_id,
         unbranded_override=unbranded_override_flag,
+        brand_spec_id=brand_spec_id_resolved,
         # Persisted so the worker (via ``run_preflight``), the viewer
         # config endpoint, and any subsequent mint call all see the
         # exact envelope the caller sent — no re-parsing, no drift.

@@ -16,6 +16,7 @@ from lintpdf.api.config import get_settings
 from lintpdf.api.database import get_db
 from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit
 from lintpdf.api.models import (
+    BrandSpec,
     CustomEndpoint,
     CustomProfile,
     Job,
@@ -49,6 +50,33 @@ def _profile_exists(profile_id: str, db: Session, tenant: Tenant) -> bool:
     tenant's ``/api/v1/profiles`` list.
     """
     return profile_exists_for_tenant(db, tenant, profile_id)
+
+
+def _resolve_brand_spec_id(
+    db: Session, tenant_id: uuid_mod.UUID, spec_id: uuid_mod.UUID | None
+) -> uuid_mod.UUID | None:
+    """Validate that ``spec_id`` (if non-None) points at a
+    non-archived BrandSpec owned by this tenant. Raises 404
+    otherwise. Returns the validated UUID unchanged so callers
+    can store it on the endpoint row without re-querying.
+    """
+    if spec_id is None:
+        return None
+    spec = (
+        db.query(BrandSpec)
+        .filter(
+            BrandSpec.id == spec_id,
+            BrandSpec.tenant_id == tenant_id,
+            BrandSpec.is_archived.is_(False),
+        )
+        .first()
+    )
+    if spec is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Brand spec '{spec_id}' not found or archived.",
+        )
+    return spec.id
 
 
 @router.post("", response_model=EndpointResponse, status_code=status.HTTP_201_CREATED)
@@ -86,6 +114,10 @@ async def create_endpoint(
             detail=f"Endpoint slug '{request.slug}' already exists.",
         )
 
+    default_brand_spec_id = _resolve_brand_spec_id(
+        db, tenant.id, request.default_brand_spec_id
+    )
+
     endpoint = CustomEndpoint(
         id=uuid_mod.uuid4(),
         tenant_id=tenant.id,
@@ -94,6 +126,7 @@ async def create_endpoint(
         description=request.description,
         is_active=True,
         response_mode=request.response_mode,
+        default_brand_spec_id=default_brand_spec_id,
     )
     db.add(endpoint)
     db.commit()
@@ -107,6 +140,7 @@ async def create_endpoint(
         is_active=endpoint.is_active,
         response_mode=endpoint.response_mode,
         created_at=endpoint.created_at,
+        default_brand_spec_id=endpoint.default_brand_spec_id,
     )
 
 
@@ -127,6 +161,7 @@ async def list_endpoints(
                 is_active=e.is_active,
                 response_mode=e.response_mode,
                 created_at=e.created_at,
+                default_brand_spec_id=e.default_brand_spec_id,
             )
             for e in endpoints
         ]
@@ -195,6 +230,24 @@ async def update_endpoint(
     if request.response_mode is not None:
         ep.response_mode = request.response_mode
 
+    # ``default_brand_spec_id`` uses a three-state convention:
+    #   * omitted / None          → leave the FK unchanged
+    #   * "null" (case-insensitive) → clear the FK
+    #   * UUID                    → validate ownership, then set
+    if request.default_brand_spec_id is not None:
+        raw = request.default_brand_spec_id
+        if isinstance(raw, str) and raw.strip().lower() == "null":
+            ep.default_brand_spec_id = None
+        else:
+            try:
+                spec_uuid = raw if isinstance(raw, uuid_mod.UUID) else uuid_mod.UUID(str(raw))
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="default_brand_spec_id must be a UUID or the string 'null'.",
+                ) from exc
+            ep.default_brand_spec_id = _resolve_brand_spec_id(db, tenant.id, spec_uuid)
+
     db.commit()
     db.refresh(ep)
 
@@ -206,6 +259,7 @@ async def update_endpoint(
         is_active=ep.is_active,
         response_mode=ep.response_mode,
         created_at=ep.created_at,
+        default_brand_spec_id=ep.default_brand_spec_id,
     )
 
 
@@ -330,6 +384,13 @@ async def submit_to_endpoint(
         file_key=file_key,
         file_name=file.filename,
         file_size=file_size,
+        # Inherit the endpoint's default BrandSpec at submit time
+        # so the worker has a stable pointer even if the endpoint's
+        # default is re-bound later. Submit-time explicit overrides
+        # aren't exposed here — the endpoint-submit route is for
+        # vanity URLs where the caller pre-committed to the
+        # endpoint's configuration.
+        brand_spec_id=ep.default_brand_spec_id,
     )
     db.add(job)
     db.commit()

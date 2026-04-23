@@ -56,6 +56,7 @@ export { lintpdfDownloadsPlugin } from "./plugins/downloads/index";
 export { lintpdfSiteAdminPlugin } from "./plugins/site-admin/index";
 export { lintpdfWebhooksPlugin } from "./plugins/webhooks/index";
 export { lintpdfEndpointsPlugin } from "./plugins/endpoints/index";
+export { lintpdfBrandSpecsPlugin } from "./plugins/brand-specs/index";
 export { lintpdfSuperAdminPlugin } from "./plugins/super-admin/index";
 
 // ── Client singleton ────────────────────────────────────────

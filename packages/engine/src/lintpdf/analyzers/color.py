@@ -27,6 +27,7 @@ Check IDs:
     LPDF_COLOR_018 — Lab color space detected
     LPDF_COLOR_019 — Indexed color space detected
     LPDF_COLOR_020 — Default color space used
+    LPDF_COLOR_021 — Rich black text (any size, >1 CMYK ink) — advisory
 """
 
 from __future__ import annotations
@@ -473,9 +474,22 @@ class ColorAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_rich_black_text(event: TextRenderedEvent) -> list[Finding]:
-        """Check for rich black on small text (LPDF_COLOR_008).
+        """Check for rich black on text.
 
-        Rich black = CMYK fill with >1 non-zero ink on text <12pt.
+        Two findings emit from one condition: a CMYK fill with
+        more than one non-zero ink channel on a text event.
+
+        * ``LPDF_COLOR_008`` — warning for text < 12pt, same
+          historical behaviour.
+        * ``LPDF_COLOR_021`` — advisory for any text size, fires
+          alongside LPDF_COLOR_008 on small text and on its own
+          for display type. Captures the "Text should NEVER be
+          rich black" print-production principle regardless of
+          the point size.
+
+        Neither is gated on the brand-palette flag — rich-black
+        text is a universal misregistration risk and should show
+        up in the findings panel on every preflight.
         """
         import math
 
@@ -483,17 +497,24 @@ class ColorAnalyzer(BaseAnalyzer):
         if event.color_space != "DeviceCMYK" or len(event.color_values) != 4:
             return findings
 
-        # Calculate effective size
         tm_scale_y = math.sqrt(event.text_matrix.b**2 + event.text_matrix.d**2)
         ctm_scale_y = math.sqrt(event.ctm.b**2 + event.ctm.d**2)
         effective_size = event.font_size * tm_scale_y * ctm_scale_y
-
-        if effective_size >= 12.0 or effective_size <= 0:
+        if effective_size <= 0:
             return findings
 
-        # Count non-zero ink channels
         non_zero = sum(1 for v in event.color_values if v > 0.01)
-        if non_zero > 1:
+        if non_zero <= 1:
+            return findings
+
+        details = {
+            "font_name": event.font_name,
+            "effective_size": effective_size,
+            "color_values": list(event.color_values),
+            "non_zero_inks": non_zero,
+        }
+
+        if effective_size < 12.0:
             findings.append(
                 Finding(
                     inspection_id="LPDF_COLOR_008",
@@ -504,15 +525,26 @@ class ColorAnalyzer(BaseAnalyzer):
                         f"({non_zero} ink channels — risk of misregistration)"
                     ),
                     page_num=event.page_num,
-                    details={
-                        "font_name": event.font_name,
-                        "effective_size": effective_size,
-                        "color_values": list(event.color_values),
-                        "non_zero_inks": non_zero,
-                    },
+                    details=details,
                     object_type="text",
                 )
             )
+
+        findings.append(
+            Finding(
+                inspection_id="LPDF_COLOR_021",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"Rich black text ({effective_size:.1f}pt, "
+                    f"{non_zero} ink channels) on page {event.page_num} "
+                    f"— pure K (100/0/0/0) is recommended to avoid "
+                    f"misregistration."
+                ),
+                page_num=event.page_num,
+                details=details,
+                object_type="text",
+            )
+        )
         return findings
 
     @staticmethod

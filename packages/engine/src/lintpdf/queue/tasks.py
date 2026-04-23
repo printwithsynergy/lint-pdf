@@ -655,12 +655,32 @@ def run_preflight(
 
             from lintpdf.profiles.orchestrator import PreflightOrchestrator
 
+            # Resolve the BrandSpec for this job. The resolver walks
+            # ``job.brand_spec_id`` → endpoint default → tenant default
+            # and returns a detached :class:`ResolvedBrandSpec` (or
+            # ``None`` when the chain dead-ends). The orchestrator
+            # gates the strict colour advisories on whether this is
+            # non-``None``.
+            resolved_brand_spec = None
+            try:
+                from lintpdf.brand_specs.resolver import resolve_brand_spec_for_job
+
+                resolved_brand_spec = resolve_brand_spec_for_job(db, job=job)
+            except Exception:
+                logger.debug(
+                    "BrandSpec resolver failed for job %s — falling back "
+                    "to no-spec behaviour",
+                    job_id,
+                    exc_info=True,
+                )
+
             orchestrator = PreflightOrchestrator(
                 profile,
                 profile_id=profile_id,
                 ai_config=ai_config,
                 pdf_bytes=pdf_bytes,
                 custom_pantone_overrides=custom_pantone,
+                brand_spec=resolved_brand_spec,
             )
             try:
                 result = orchestrator.run(pdf_bytes)

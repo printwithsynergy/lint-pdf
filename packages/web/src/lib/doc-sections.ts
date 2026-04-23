@@ -195,6 +195,12 @@ export const docSections: DocSection[] = [
         description: "Three report-branding modes and when to use each.",
       },
       {
+        slug: "brand-specs",
+        label: "Brand Specs",
+        description:
+          "Per-customer colour specifications with three-level resolution (tenant default, endpoint default, per-job override).",
+      },
+      {
         slug: "share-links",
         label: "Share links",
         description: "Expiring tokens, viewer-only vs. download, access logs.",

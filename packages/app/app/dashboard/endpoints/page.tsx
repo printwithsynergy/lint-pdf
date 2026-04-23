@@ -11,6 +11,7 @@ interface CustomEndpoint {
   description: string;
   is_active: boolean;
   created_at: string;
+  default_brand_spec_id: string | null;
 }
 
 interface ProfileSummary {
@@ -19,9 +20,17 @@ interface ProfileSummary {
   is_builtin: boolean;
 }
 
+interface BrandSpecSummary {
+  id: string;
+  name: string;
+  customer_name: string | null;
+  is_default: boolean;
+}
+
 export default function EndpointsPage() {
   const [endpoints, setEndpoints] = useState<CustomEndpoint[]>([]);
   const [profiles, setProfiles] = useState<ProfileSummary[]>([]);
+  const [brandSpecs, setBrandSpecs] = useState<BrandSpecSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -30,6 +39,7 @@ export default function EndpointsPage() {
   const [newSlug, setNewSlug] = useState("");
   const [newProfileId, setNewProfileId] = useState("");
   const [newDescription, setNewDescription] = useState("");
+  const [newBrandSpecId, setNewBrandSpecId] = useState("");
   const [creating, setCreating] = useState(false);
 
   // Edit state
@@ -37,14 +47,16 @@ export default function EndpointsPage() {
   const [editSlug, setEditSlug] = useState("");
   const [editProfileId, setEditProfileId] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editBrandSpecId, setEditBrandSpecId] = useState("");
 
   const apiBaseUrl = process.env.NEXT_PUBLIC_LINTPDF_API_URL ?? "";
 
   const fetchData = useCallback(async () => {
     try {
-      const [epResp, profResp] = await Promise.all([
+      const [epResp, profResp, specResp] = await Promise.all([
         fetch("/api/lintpdf/endpoints"),
         fetch("/api/lintpdf/profiles"),
+        fetch("/api/lintpdf/brand-specs"),
       ]);
       if (epResp.ok) {
         const data = await epResp.json();
@@ -53,6 +65,13 @@ export default function EndpointsPage() {
       if (profResp.ok) {
         const data = await profResp.json();
         setProfiles(data.profiles ?? []);
+      }
+      if (specResp.ok) {
+        const data = await specResp.json();
+        // The list route returns ``brand_specs``; tolerate an
+        // outage by leaving the dropdown empty so the endpoint
+        // picker still works without brand specs.
+        setBrandSpecs(data.brand_specs ?? []);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load data");
@@ -76,6 +95,7 @@ export default function EndpointsPage() {
           slug: newSlug,
           profile_id: newProfileId,
           description: newDescription,
+          default_brand_spec_id: newBrandSpecId || null,
         }),
       });
       if (!resp.ok) {
@@ -85,6 +105,7 @@ export default function EndpointsPage() {
       setNewSlug("");
       setNewProfileId("");
       setNewDescription("");
+      setNewBrandSpecId("");
       setShowCreate(false);
       await fetchData();
     } catch (e) {
@@ -104,6 +125,10 @@ export default function EndpointsPage() {
           slug: editSlug,
           profile_id: editProfileId,
           description: editDescription,
+          // Empty string → "null" sentinel so the server
+          // clears the FK (Pydantic validator on the route
+          // accepts that string as "unset this").
+          default_brand_spec_id: editBrandSpecId || "null",
         }),
       });
       if (!resp.ok) {
@@ -217,6 +242,31 @@ export default function EndpointsPage() {
                 className="mt-1 w-full rounded-md border px-3 py-2 text-sm"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium">
+                Default brand spec
+              </label>
+              <select
+                value={newBrandSpecId}
+                onChange={(e) => setNewBrandSpecId(e.target.value)}
+                className="mt-1 h-10 w-full rounded-md border px-3 py-2 text-sm"
+              >
+                <option value="">
+                  None (fall back to tenant default)
+                </option>
+                {brandSpecs.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                    {s.customer_name ? ` — ${s.customer_name}` : ""}
+                    {s.is_default ? " (tenant default)" : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Applied to every submission through this endpoint unless the
+                caller supplies <code>brand_spec_id</code>.
+              </p>
+            </div>
             <Button
               onClick={handleCreate}
               disabled={creating || !newSlug || !newProfileId}
@@ -263,6 +313,22 @@ export default function EndpointsPage() {
                     onChange={(e) => setEditDescription(e.target.value)}
                     className="w-full rounded-md border px-3 py-2 text-sm"
                   />
+                  <select
+                    value={editBrandSpecId}
+                    onChange={(e) => setEditBrandSpecId(e.target.value)}
+                    className="h-10 w-full rounded-md border px-3 py-2 text-sm"
+                  >
+                    <option value="">
+                      No default brand spec (fall back to tenant default)
+                    </option>
+                    {brandSpecs.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                        {s.customer_name ? ` — ${s.customer_name}` : ""}
+                        {s.is_default ? " (tenant default)" : ""}
+                      </option>
+                    ))}
+                  </select>
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleUpdate(ep.id)}
@@ -289,6 +355,18 @@ export default function EndpointsPage() {
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">
                       Profile: <code>{ep.profile_id}</code>
+                      {ep.default_brand_spec_id ? (
+                        <>
+                          {" · "}
+                          Brand spec:{" "}
+                          <code>
+                            {brandSpecs.find((s) => s.id === ep.default_brand_spec_id)
+                              ?.name ?? ep.default_brand_spec_id}
+                          </code>
+                        </>
+                      ) : (
+                        <>{" · "}No brand spec override</>
+                      )}
                     </div>
                     {ep.description && (
                       <p className="mt-0.5 text-sm text-muted-foreground">
@@ -306,6 +384,7 @@ export default function EndpointsPage() {
                         setEditSlug(ep.slug);
                         setEditProfileId(ep.profile_id);
                         setEditDescription(ep.description);
+                        setEditBrandSpecId(ep.default_brand_spec_id ?? "");
                       }}
                       className="rounded border px-2 py-1 text-xs hover:bg-muted"
                     >

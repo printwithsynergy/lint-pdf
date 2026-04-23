@@ -10,6 +10,7 @@ Check IDs:
     LPDF_STROKE_004 — Multi-ink thin stroke (<0.5pt, >1 CMYK separation)
     LPDF_STROKE_005 — Invisible line art (zero opacity stroke)
     LPDF_STROKE_006 — Flatness tolerance override
+    LPDF_STROKE_007 — Multi-ink stroke (0.5-1.0pt, >1 CMYK separation) — advisory
     LPDF_PATH_001 — Excessive path points (>10,000)
     LPDF_PATH_002 — White fill detected on paths
     LPDF_TEXT_001 — Small text (<6pt effective)
@@ -175,33 +176,56 @@ class HairlineAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # LPDF_STROKE_004: Multi-ink thin stroke (<0.5pt, >1 CMYK separation)
+        # LPDF_STROKE_004 / LPDF_STROKE_007 — multi-ink stroke checks
+        # on CMYK paths. _004 is the warning at < 0.5pt (existing).
+        # _007 is the advisory for 0.5pt–1.0pt strokes, capturing
+        # the broader "thin elements shouldn't be rich black"
+        # principle without drowning the findings panel on thicker
+        # artwork.
         if (
-            line_width < THIN_STROKE_THRESHOLD
-            and event.stroke_color_space == "DeviceCMYK"
+            event.stroke_color_space == "DeviceCMYK"
             and len(event.stroke_color_values) == 4
         ):
             non_zero = sum(1 for v in event.stroke_color_values if v > 0.01)
             if non_zero > 1:
-                findings.append(
-                    Finding(
-                        inspection_id="LPDF_STROKE_004",
-                        severity=Severity.WARNING,
-                        message=(
-                            f"Multi-ink thin stroke ({line_width:.3f}pt, "
-                            f"{non_zero} inks) on page {event.page_num} "
-                            f"(risk of misregistration on thin lines)"
-                        ),
-                        page_num=event.page_num,
-                        details={
-                            "line_width": line_width,
-                            "stroke_color_values": list(event.stroke_color_values),
-                            "non_zero_inks": non_zero,
-                        },
-                        object_type="path",
-                        bbox=event.bbox,
+                multi_ink_details = {
+                    "line_width": line_width,
+                    "stroke_color_values": list(event.stroke_color_values),
+                    "non_zero_inks": non_zero,
+                }
+                if line_width < THIN_STROKE_THRESHOLD:
+                    findings.append(
+                        Finding(
+                            inspection_id="LPDF_STROKE_004",
+                            severity=Severity.WARNING,
+                            message=(
+                                f"Multi-ink thin stroke ({line_width:.3f}pt, "
+                                f"{non_zero} inks) on page {event.page_num} "
+                                f"(risk of misregistration on thin lines)"
+                            ),
+                            page_num=event.page_num,
+                            details=multi_ink_details,
+                            object_type="path",
+                            bbox=event.bbox,
+                        )
                     )
-                )
+                elif line_width <= 1.0:
+                    findings.append(
+                        Finding(
+                            inspection_id="LPDF_STROKE_007",
+                            severity=Severity.ADVISORY,
+                            message=(
+                                f"Multi-ink stroke ({line_width:.3f}pt, "
+                                f"{non_zero} inks) on page {event.page_num} "
+                                f"— pure K (or a single spot) prints cleaner "
+                                f"on thin lines."
+                            ),
+                            page_num=event.page_num,
+                            details=multi_ink_details,
+                            object_type="path",
+                            bbox=event.bbox,
+                        )
+                    )
 
         # LPDF_STROKE_005: Invisible line art (zero opacity stroke)
         stroke_alpha = getattr(event, "stroke_alpha", None)

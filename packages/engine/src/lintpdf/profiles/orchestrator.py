@@ -160,12 +160,67 @@ class PreflightOrchestrator:
         ai_config: Any | None = None,
         pdf_bytes: bytes | None = None,
         custom_pantone_overrides: dict[str, Any] | None = None,
+        brand_spec: Any | None = None,
     ) -> None:
         self._plan = profile
         self._profile_id = profile_id
         self._ai_config = ai_config
         self._pdf_bytes = pdf_bytes
         self._custom_pantone_overrides = custom_pantone_overrides
+        # ``brand_spec`` is a :class:`ResolvedBrandSpec` produced by the
+        # resolver (or ``None`` when nothing in the chain matches). It's
+        # a frozen dataclass, not the SQLAlchemy row, so analyzers can
+        # hold onto it past session teardown without risking
+        # autoflush-on-mutate surprises.
+        self._brand_spec = brand_spec
+
+    def _ai_config_with_brand_spec(self) -> Any | None:
+        """Return an AI config shim carrying the resolved BrandSpec's
+        palette.
+
+        AI analyzers read ``ai_config.brand_palette`` directly. When a
+        BrandSpec has been resolved for this job we need that attribute
+        to reflect the spec's colours rather than the legacy
+        ``TenantAIConfig.brand_palette`` column. Rather than mutate the
+        live ORM object (which would flush on the next commit), we
+        build a lightweight ``SimpleNamespace`` that proxies the
+        attributes the analyzers read. When no spec is resolved we
+        return the original ``ai_config`` unchanged so nothing changes
+        for tenants still on the legacy column.
+        """
+        if self._brand_spec is None:
+            return self._ai_config
+        if self._ai_config is None:
+            from types import SimpleNamespace
+
+            return SimpleNamespace(
+                brand_palette=list(self._brand_spec.colors),
+                # ΔE thresholds come from the tenant's default when the
+                # caller hasn't supplied an AI config; the analyzer's
+                # ``getattr(..., default)`` pattern handles the absence.
+            )
+        from types import SimpleNamespace
+
+        keep = {
+            "brand_palette": list(self._brand_spec.colors),
+        }
+        # Shallow-copy every attribute the analyzer may read so the
+        # shim behaves like ``self._ai_config`` apart from the
+        # overridden palette. ``vars()`` on a SQLAlchemy object is
+        # noisy; we copy explicit attributes instead.
+        for attr in (
+            "delta_e_warning_threshold",
+            "delta_e_error_threshold",
+            "reference_logos",
+            "custom_dictionary",
+            "severity_labels",
+            "industry_type",
+            "regulatory_market",
+            "tenant_id",
+        ):
+            if hasattr(self._ai_config, attr):
+                keep[attr] = getattr(self._ai_config, attr)
+        return SimpleNamespace(**keep)
 
     def run(self, pdf_bytes: bytes) -> PreflightResult:
         """Execute full preflight pipeline on raw PDF bytes."""
@@ -345,12 +400,23 @@ class PreflightOrchestrator:
             if not analyzers:
                 return []
 
+            # Overlay the resolved BrandSpec's palette onto a
+            # detached shim so the AI analyzers (which read
+            # ``ai_config.brand_palette``) see the same colours the
+            # standard analyzers gate on. We deliberately avoid
+            # mutating ``self._ai_config`` — it's still attached to
+            # the DB session at the caller and a flush would
+            # accidentally persist the overlay.
+            ai_config_for_analyzers = self._ai_config_with_brand_spec()
+
             ai_findings: list[Finding] = []
             ran_categories: set[str] = set()
             ran_features: list[str] = []
             for analyzer in analyzers:
                 try:
-                    findings = analyzer.analyze(document, events, pdf_bytes, self._ai_config)
+                    findings = analyzer.analyze(
+                        document, events, pdf_bytes, ai_config_for_analyzers
+                    )
                     ai_findings.extend(findings)
                     ran_categories.add(analyzer.category)
                     ran_features.append(analyzer.feature_slug)
@@ -455,9 +521,19 @@ class PreflightOrchestrator:
         # can't tell whether a large pure-K fill was intentional,
         # and the rules generate thousands of "might be wrong, can't
         # tell" findings per page on vector-dense artwork.
-        brand_palette_present = bool(
-            getattr(self._ai_config, "brand_palette", None)
-        )
+        #
+        # WS-11: the resolved :class:`ResolvedBrandSpec` (from
+        # ``lintpdf.brand_specs.resolver``) is the authoritative
+        # source of "is there a brand palette?" — the legacy
+        # ``ai_config.brand_palette`` column is a fallback for
+        # tenants whose migration hasn't touched their row yet.
+        brand_palette_present = False
+        if self._brand_spec is not None and getattr(
+            self._brand_spec, "has_colors", False
+        ):
+            brand_palette_present = True
+        elif getattr(self._ai_config, "brand_palette", None):
+            brand_palette_present = True
 
         analyzers: list[Any] = [
             ImageAnalyzer(min_dpi=t.min_dpi, max_dpi=t.max_dpi),
@@ -495,6 +571,11 @@ class PreflightOrchestrator:
                 rich_black_y=t.rich_black_y,
                 rich_black_k=t.rich_black_k,
                 brand_palette_present=brand_palette_present,
+                # WS-8: hand the raw PDF bytes to the analyzer so
+                # the pixel gate on LPDF_ADV_005 can re-check the
+                # composited render. ``self._pdf_bytes`` was
+                # stashed in ``run()`` on first entry.
+                pdf_bytes=self._pdf_bytes,
             ),
         ]
 
