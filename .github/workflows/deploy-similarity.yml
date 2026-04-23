@@ -1,0 +1,46 @@
+name: Deploy lintpdf-similarity (Modal)
+
+# Deploys the slim OpenCLIP similarity app to Modal whenever
+# ``packages/inference/similarity_app.py`` changes on main.
+# This is the only Modal-hosted service after the WS-A wholesale
+# Claude pivot — everything else moved to Anthropic.
+#
+# Required repo secrets:
+#   MODAL_TOKEN_ID       Modal account token ID
+#   MODAL_TOKEN_SECRET   Modal account token secret
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/inference/similarity_app.py"
+      - ".github/workflows/deploy-similarity.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: modal-similarity-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Modal CLI
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install modal
+
+      - name: Deploy to Modal
+        env:
+          MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+          MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+        run: |
+          cd packages/inference
+          modal deploy similarity_app.py

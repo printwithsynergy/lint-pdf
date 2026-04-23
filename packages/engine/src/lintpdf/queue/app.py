@@ -127,6 +127,71 @@ def _configure_worker_process(**_: Any) -> None:
 
     configure_logging()
     reset_db_state()
+    # WS-H — drain any rows seeded into ai_audit_rerun_queue by
+    # Alembic 038. Best-effort: a DB flap here just means the
+    # queue drains on the next worker boot instead.
+    try:
+        _drain_rerun_queue()
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception(
+            "worker-boot: ai_audit_rerun_queue drain failed — will retry next boot"
+        )
+
+
+def _drain_rerun_queue() -> None:
+    """Enqueue ``audit_findings_async`` for every row in the queue table.
+
+    Runs once per worker process start. Deletes rows as it enqueues
+    so a crash mid-drain resumes cleanly on the next boot.
+    """
+    from sqlalchemy import text
+
+    from lintpdf.api.database import get_db_session
+
+    try:
+        from lintpdf.queue.audit_tasks import audit_findings_async
+    except Exception:
+        # audit_tasks pulls in Celery; during boot this should already
+        # be wired — if it isn't, skip silently.
+        return
+
+    session = get_db_session()
+    try:
+        # Check if the table exists (pre-038 environments won't have
+        # it yet — skip silently).
+        exists = session.execute(
+            text(
+                "SELECT 1 FROM information_schema.tables "
+                "WHERE table_name = 'ai_audit_rerun_queue'"
+            )
+        ).first()
+        if not exists:
+            return
+
+        rows = session.execute(
+            text("SELECT job_id::text FROM ai_audit_rerun_queue")
+        ).fetchall()
+        for (jid,) in rows:
+            try:
+                audit_findings_async.delay(jid)
+                session.execute(
+                    text(
+                        "DELETE FROM ai_audit_rerun_queue "
+                        "WHERE job_id = :jid"
+                    ),
+                    {"jid": jid},
+                )
+                session.commit()
+            except Exception:
+                session.rollback()
+                # Leave the row so a later boot retries.
+    finally:
+        import contextlib
+
+        with contextlib.suppress(Exception):
+            session.close()
 
 
 @task_prerun.connect  # type: ignore[misc]

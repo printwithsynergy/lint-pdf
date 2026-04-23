@@ -13,60 +13,18 @@ from lintpdf.queue.app import celery_app
 logger = logging.getLogger(__name__)
 
 
-def _pick_primary_auditor() -> tuple[str, Any] | None:
-    """Return ``(name, auditor_instance)`` or ``None`` if no auditor is configured.
-
-    Claude (via Anthropic SDK) is the primary when ``ANTHROPIC_API_KEY``
-    is set; the Modal Qwen2-VL auditor is the fallback reached on
-    any Claude error or when only ``LINTPDF_AUDIT_MODAL_URL`` is
-    configured. When neither is set, auditing is a no-op.
-
-    Keeps the tuple returning the name so logs surface which
-    provider produced the verdicts — useful for ops debugging
-    accuracy or latency differences between the two paths.
-    """
-    if os.environ.get("ANTHROPIC_API_KEY"):
-        try:
-            from lintpdf.audit.claude import ClaudeAuditor
-
-            return ("claude", ClaudeAuditor())
-        except Exception:
-            logger.exception("audit: ClaudeAuditor init failed; trying Modal fallback")
-    if os.environ.get("LINTPDF_AUDIT_MODAL_URL"):
-        try:
-            from lintpdf.audit.customer import CustomerAuditor
-
-            return ("modal", CustomerAuditor())
-        except Exception:
-            logger.exception("audit: CustomerAuditor init failed")
-    return None
-
-
-def _fallback_auditor(primary_name: str) -> tuple[str, Any] | None:
-    """Return the other auditor when the primary errored."""
-    if primary_name == "claude" and os.environ.get("LINTPDF_AUDIT_MODAL_URL"):
-        try:
-            from lintpdf.audit.customer import CustomerAuditor
-
-            return ("modal", CustomerAuditor())
-        except Exception:
-            logger.exception("audit: fallback CustomerAuditor init failed")
-    return None
-
-
 def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -> int:
     """Run the customer-facing AI audit against a job's findings.
 
-    Claude Haiku 4.5 is the default auditor (see
-    ``lintpdf.audit.claude.ClaudeAuditor``). When ``ANTHROPIC_API_KEY``
-    is unset we fall back to the Modal Qwen2-VL path. When the
-    primary fails on every batch we auto-retry the whole set
-    through the fallback. Per-verdict latency drops from 4-7 s on
-    Modal (A10G cold start + per-finding decode) to ~1-2 s on Claude.
+    Claude Haiku 4.5 is the only auditor (see
+    ``lintpdf.audit.claude.ClaudeAuditor``). On API failure the caller
+    schedules a Celery retry via ``audit_findings_async`` (WS-B);
+    no Modal fallback exists.
 
     When ``force=False`` (post-preflight hook), gated on
-    ``entitlements.ai_audit_enabled``. When ``force=True`` (admin
-    rerun + the customer rerun endpoint), the gate is bypassed.
+    ``entitlements.can_use("audit")`` (= ``ai_enabled AND "audit" in
+    ai_features``). When ``force=True`` (admin rerun + the customer
+    rerun endpoint), the gate is bypassed.
 
     Returns the count of findings whose ``audit_*`` columns were
     written. Exceptions here are re-raised to the caller; the
@@ -80,18 +38,29 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
     if tenant is None:
         return 0
-    if not force:
-        entitlements = resolve_entitlements(tenant)
-        if not getattr(entitlements, "ai_audit_enabled", False):
-            return 0
+    entitlements = resolve_entitlements(tenant)
+    if not force and not entitlements.can_use("audit"):
+        # Emit one LPDF_FEATURE_LOCKED finding so the viewer can
+        # render an upsell chip on the job. Skipping silently
+        # would leave customers guessing why no verdicts showed up.
+        _emit_feature_locked(db, job, "audit")
+        return 0
 
-    picked = _pick_primary_auditor()
-    if picked is None:
+    if not os.environ.get("ANTHROPIC_API_KEY"):
         logger.info(
-            "audit: no auditor configured (ANTHROPIC_API_KEY + "
-            "LINTPDF_AUDIT_MODAL_URL both unset); skipping job %s",
-            job_id,
+            "audit: ANTHROPIC_API_KEY unset; skipping job %s", job_id
         )
+        return 0
+
+    # Quota gate. Skip silently (no 402) — the preflight itself
+    # already finished; we just won't spend on AI for this job.
+    # The LPDF_AI_QUOTA_EXCEEDED finding surfaces the cap hit.
+    from lintpdf.audit.quota import current_month_usage_cents, is_over_quota
+
+    if not force and is_over_quota(
+        entitlements, current_month_usage_cents(db, job.tenant_id)
+    ):
+        _emit_quota_exceeded(db, job)
         return 0
 
     findings = db.query(JobFinding).filter(JobFinding.job_id == job.id).all()
@@ -101,44 +70,12 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     storage = get_storage()
     pdf_bytes = storage.download_pdf(job.file_key)
 
-    primary_name, auditor = picked
-    try:
-        verdicts = auditor.audit(pdf_bytes, findings)
-    except Exception:
-        logger.exception(
-            "audit: primary (%s) raised; attempting fallback", primary_name
-        )
-        verdicts = [None] * len(findings)
+    from lintpdf.audit.claude import ClaudeAuditor
 
-    # Count verdicts the primary actually produced; if fewer than
-    # half landed, try the fallback on the rest so flaky primaries
-    # don't leave most findings unaudited.
-    primary_populated = sum(1 for v in verdicts if v is not None)
-    if primary_populated < len(findings) // 2:
-        fallback = _fallback_auditor(primary_name)
-        if fallback is not None:
-            fb_name, fb_auditor = fallback
-            missing = [
-                (i, f)
-                for i, (f, v) in enumerate(zip(findings, verdicts, strict=False))
-                if v is None
-            ]
-            try:
-                fb_findings = [f for _i, f in missing]
-                fb_verdicts = fb_auditor.audit(pdf_bytes, fb_findings)
-                for (abs_i, _f), fb_v in zip(missing, fb_verdicts, strict=False):
-                    if fb_v is not None:
-                        verdicts[abs_i] = fb_v
-                logger.info(
-                    "audit: fallback %s filled %d/%d gaps",
-                    fb_name,
-                    sum(1 for v in fb_verdicts if v is not None),
-                    len(missing),
-                )
-            except Exception:
-                logger.exception(
-                    "audit: fallback %s also failed", fb_name
-                )
+    auditor = ClaudeAuditor()
+    verdicts = auditor.audit(
+        pdf_bytes, findings, tenant_id=job.tenant_id, job_id=job.id
+    )
 
     changed = 0
     for finding, verdict in zip(findings, verdicts, strict=False):
@@ -152,27 +89,125 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     if changed:
         db.commit()
     logger.info(
-        "audit: wrote %d/%d verdicts for job %s via %s (force=%s)",
+        "audit: wrote %d/%d verdicts for job %s (force=%s)",
         changed,
         len(findings),
         job_id,
-        primary_name,
         force,
     )
     return changed
 
 
-def _maybe_run_customer_audit(db: Any, job: Any, job_id: str) -> None:
-    """Gated, best-effort wrapper used by the post-preflight hook.
+_FEATURE_LOCKED_COPY: dict[str, str] = {
+    "audit": (
+        "AI accuracy audit is not enabled for this tenant. Upgrade to "
+        "Growth or higher, or ask an admin to grant the 'audit' AI feature."
+    ),
+    "ocr": (
+        "OCR for outlined artwork is a Scale-tier AI feature. This PDF "
+        "appears to have outlined text — enable 'ocr' to recover it."
+    ),
+    "dieline": (
+        "Dieline detection is a Scale-tier AI feature. Upgrade to see "
+        "cut / crease / perf contours on rendered pages."
+    ),
+    "art_size": (
+        "Trim-size detection (from dieline) is a Scale-tier AI feature. "
+        "Upgrade to see dimensions derived from the dieline stroke."
+    ),
+    "legend": (
+        "Legend-vs-art swatch classification is a Scale-tier AI feature. "
+        "Upgrade to distinguish colour legend blocks from real artwork."
+    ),
+    "similarity": (
+        "Asset similarity (CLIP embedding) is an Enterprise AI feature."
+    ),
+    "sonnet_fallback": (
+        "Sonnet-tier vision reasoning is an Enterprise AI feature."
+    ),
+    "internal_opus": (
+        "Opus-backed internal auditing is operator-only."
+    ),
+}
 
-    Wraps :func:`run_customer_audit` so exceptions don't fail the
-    job. The rerun endpoint calls the unwrapped function directly
-    so 5xx / auditor errors are visible to the caller.
+
+def _emit_quota_exceeded(db: Any, job: Any) -> None:
+    """Write one ``LPDF_AI_QUOTA_EXCEEDED`` finding on the job.
+
+    Idempotent — re-runs won't stack duplicates. Non-AI preflight
+    still completes; this finding is the visible breadcrumb.
     """
     try:
-        run_customer_audit(db, job, job_id, force=False)
+        from lintpdf.api.models import JobFinding
+
+        existing = (
+            db.query(JobFinding)
+            .filter(
+                JobFinding.job_id == job.id,
+                JobFinding.inspection_id == "LPDF_AI_QUOTA_EXCEEDED",
+            )
+            .first()
+        )
+        if existing is not None:
+            return
+        db.add(
+            JobFinding(
+                job_id=job.id,
+                inspection_id="LPDF_AI_QUOTA_EXCEEDED",
+                severity="warning",
+                category="ai.quota",
+                source="engine",
+                message=(
+                    "This tenant's monthly AI budget is exhausted. "
+                    "Non-AI checks still ran; AI features are paused "
+                    "until the first of the next month or an admin "
+                    "raises the cap."
+                ),
+                details={},
+            )
+        )
+        db.commit()
     except Exception:
-        logger.exception("audit: customer audit failed for job %s", job_id)
+        logger.exception("audit: failed to emit LPDF_AI_QUOTA_EXCEEDED")
+
+
+def _emit_feature_locked(db: Any, job: Any, feature: str) -> None:
+    """Write a single ``LPDF_FEATURE_LOCKED`` finding for one locked feature.
+
+    Idempotent per (job, feature) — re-runs (e.g. the rerun endpoint)
+    won't duplicate the upsell chip. Best-effort: any exception here
+    is swallowed so the entitlement-gate path never fails preflight.
+    """
+    try:
+        from lintpdf.api.models import JobFinding
+
+        existing = (
+            db.query(JobFinding)
+            .filter(
+                JobFinding.job_id == job.id,
+                JobFinding.inspection_id == "LPDF_FEATURE_LOCKED",
+                JobFinding.details.op("->>")("feature") == feature,
+            )
+            .first()
+        )
+        if existing is not None:
+            return
+        db.add(
+            JobFinding(
+                job_id=job.id,
+                inspection_id="LPDF_FEATURE_LOCKED",
+                severity="info",
+                category="ai.entitlement",
+                source="engine",
+                message=_FEATURE_LOCKED_COPY.get(feature, "This AI feature is not enabled."),
+                details={"feature": feature},
+            )
+        )
+        db.commit()
+    except Exception:
+        logger.exception(
+            "audit: failed to emit LPDF_FEATURE_LOCKED finding for %s", feature
+        )
 
 
 def _auto_generate_reports(
@@ -762,14 +797,23 @@ def run_preflight(
 
             db.commit()
 
-            # AI accuracy audit — runs after the initial findings commit
-            # when the tenant opted into ``ai_audit_enabled`` (Scale +
-            # Enterprise). Writes verdicts back to each JobFinding row's
-            # ``audit_*`` columns via a second commit. Best-effort: any
-            # exception here is logged and swallowed so an auditor hiccup
-            # never fails the preflight job itself — the viewer just
-            # renders no chip on that finding.
-            _maybe_run_customer_audit(db, job, job_id)
+            # AI post-preflight passes — enqueued on separate Celery
+            # tasks so flaky Anthropic calls never block the preflight
+            # critical path (WS-B + WS-C). Each retries with
+            # exponential back-off for up to 24h; after that the viewer
+            # renders a retry chip from ``audit_status='pending_retry'``.
+            try:
+                from lintpdf.queue.audit_tasks import (
+                    audit_findings_async,
+                    ocr_job_async,
+                )
+
+                audit_findings_async.delay(job_id)
+                ocr_job_async.delay(job_id)
+            except Exception:
+                logger.exception(
+                    "audit: failed to enqueue async AI tasks for job %s", job_id
+                )
 
             logger.info("Completed preflight job %s in %dms", job_id, duration_ms)
 

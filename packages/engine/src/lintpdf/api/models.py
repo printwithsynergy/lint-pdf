@@ -22,11 +22,18 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy import JSON as SA_JSON
 from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from lintpdf.tenants.models import TenantPlan
+
+# PG_ARRAY only compiles under the Postgres dialect — SQLite (used by
+# the unit-test fixtures) raises CompileError. Fall back to JSON there.
+# ``with_variant`` keeps the Postgres-side behaviour identical while
+# giving the SQLite test harness a column shape it can render.
+_PG_UUID_ARRAY = PG_ARRAY(Uuid).with_variant(SA_JSON(), "sqlite")
 
 
 class Base(DeclarativeBase):
@@ -164,6 +171,14 @@ class Tenant(Base):
     entitlement_overrides: Mapped[dict[str, Any] | None] = mapped_column(
         JSON, nullable=True, default=None
     )
+    # Per-feature AI grant list (WS-F — Alembic 037). JSONB list of
+    # flag names; the resolver union-merges with PLAN_LIMITS[plan]
+    # and ``plan_limit_overrides.ai_features``. Empty list is the
+    # floor; ``[]``/NULL + ``ai_enabled=True`` + plan=STARTER means
+    # no AI at all (the ``can_use`` AND-gate short-circuits).
+    ai_features: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=list, server_default="[]"
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
@@ -216,6 +231,31 @@ class Job(Base):
     page_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     result_json: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    # WS-C — Claude OCR recovered text layer. List[OCRPage]-shaped
+    # JSONB: [{page_num, blocks: [{text, bbox, confidence}, ...]}, ...].
+    # NULL when OCR didn't run (text-extraction succeeded, or the
+    # tenant doesn't have the ``ocr`` AI feature).
+    ocr_text_layer: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    # Opt-in override from ``POST /jobs?ocr=force``. When True the
+    # OCR async task runs regardless of the extractable-char check.
+    ocr_force: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=sa_text("false")
+    )
+    # WS-D packaging inspectors. ``dieline`` carries the name-match
+    # or Sonnet-fallback verdict; ``art_size_mm`` is NULL when the
+    # dieline is missing (strict — see LPDF_DIE_MISSING);
+    # ``legend_swatches`` carries the position/vision verdicts.
+    dieline: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    art_size_mm: Mapped[dict[str, float] | None] = mapped_column(
+        JSON, nullable=True
+    )
+    legend_swatches: Mapped[list[dict[str, Any]] | None] = mapped_column(
+        JSON, nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -325,10 +365,11 @@ class JobFinding(Base):
 
     # AI accuracy audit verdict (WS3 — Alembic 034).
     # Populated by ``lintpdf.audit.internal.InternalAuditor`` during
-    # dev/QA runs and by ``lintpdf.audit.customer.CustomerAuditor``
-    # during Scale/Enterprise production runs when the tenant has
-    # ``ai_audit_enabled``. Left NULL otherwise; the viewer's
-    # ``<AuditChip/>`` renders nothing when the whole block is NULL.
+    # dev/QA runs (via the admin health toolbox) and by
+    # ``lintpdf.audit.claude.ClaudeAuditor`` during production runs
+    # when the tenant has ``"audit"`` in ``ai_features``. Left NULL
+    # otherwise; the viewer's ``<AuditChip/>`` renders nothing when
+    # the whole block is NULL.
     audit_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     audit_rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
     audit_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -510,7 +551,7 @@ class SystemProfile(Base):
     )
     min_plan: Mapped[str | None] = mapped_column(String(32), nullable=True)
     visible_tenant_ids: Mapped[list[uuid.UUID] | None] = mapped_column(
-        PG_ARRAY(Uuid), nullable=True
+        _PG_UUID_ARRAY, nullable=True
     )
     created_by_admin_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -558,7 +599,7 @@ class PlanLimitOverride(Base):
     Sits between hardcoded ``PLAN_LIMITS`` (the baseline) and
     ``Tenant.entitlement_overrides`` (the per-tenant delta). Ops flip
     an entry here to shift ceilings globally — e.g. "every Scale
-    tenant now gets ``ai_audit_enabled=True``" — without a code-ship
+    tenant now gets ``ai_features=['audit']``" — without a code-ship
     cycle. Per-tenant overrides still win; see
     :func:`lintpdf.tenants.entitlements.resolve_entitlements` for the
     three-layer merge order.
@@ -776,12 +817,23 @@ class TenantAICreditPackage(Base):
 
 
 class AIUsageLog(Base):
-    """Log entry for AI feature usage and credit consumption."""
+    """Log entry for AI feature usage and credit consumption.
+
+    Shared between the pre-existing credit-consumption accounting
+    (``credits_consumed``, ``cost`` in USD Numeric, ``processing_time_ms``,
+    ``result_summary``) and the WS-G per-Claude-call metering
+    columns added in Alembic 037 (``model``, ``input_tokens``,
+    ``output_tokens``, ``cache_read_tokens``, ``cache_write_tokens``,
+    ``cost_cents``). Quota + admin dashboard reads use the
+    ``cost_cents`` column; the old Numeric ``cost`` stays populated
+    for the credit-packages UI.
+    """
 
     __tablename__ = "ai_usage_logs"
     __table_args__ = (
         Index("ix_ai_usage_logs_tenant_created", "tenant_id", "created_at"),
         Index("ix_ai_usage_logs_job", "job_id"),
+        Index("ix_ai_usage_logs_tenant_month", "tenant_id", "created_at"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -800,6 +852,17 @@ class AIUsageLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # WS-G per-call metering columns (Alembic 037). ``cost_cents``
+    # is the integer-cent cost computed by
+    # :func:`lintpdf.audit.metering.record_usage`. Sub-cent calls
+    # round UP to 1 so quota maths stay truthful. Nullable because
+    # older rows (pre-037) don't have a model/token breakdown.
+    model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cache_read_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cache_write_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    cost_cents: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # Relationships
     tenant: Mapped[Tenant] = relationship(back_populates="ai_usage_logs")
