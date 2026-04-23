@@ -34,6 +34,102 @@ if TYPE_CHECKING:
 DEFAULT_MIN_BLEED_PTS = 8.5
 
 
+def _aabb_union(
+    rects: list[tuple[float, float, float, float]],
+) -> tuple[float, float, float, float] | None:
+    """Axis-aligned-bbox union over a list of non-empty rects.
+
+    Empty input -> ``None``. Used by the violation-region helpers
+    so a content object that crosses multiple margin strips emits
+    a single tightest-enclosing AABB rather than one finding per
+    strip (the viewer draws one highlight, not four).
+    """
+    if not rects:
+        return None
+    x0 = min(r[0] for r in rects)
+    y0 = min(r[1] for r in rects)
+    x1 = max(r[2] for r in rects)
+    y1 = max(r[3] for r in rects)
+    return (x0, y0, x1, y1)
+
+
+def _intersect(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> tuple[float, float, float, float] | None:
+    ix0, iy0 = max(a[0], b[0]), max(a[1], b[1])
+    ix1, iy1 = min(a[2], b[2]), min(a[3], b[3])
+    if ix0 >= ix1 or iy0 >= iy1:
+        return None
+    return (ix0, iy0, ix1, iy1)
+
+
+def _safety_margin_violation(
+    content_bbox: tuple[float, float, float, float],
+    trim: PdfBox,
+    margin: float,
+) -> tuple[float, float, float, float] | None:
+    """Return the portion of ``content_bbox`` that sits inside the
+    safety-margin ring (the N-pt strip around the inside of the
+    trim box). ``None`` when content is entirely inside the inner
+    safe zone or entirely outside the trim box (those aren't
+    safety-margin violations)."""
+    trim_rect = (trim.x0, trim.y0, trim.x1, trim.y1)
+    # Content must be at least partially inside the trim to count.
+    in_trim = _intersect(content_bbox, trim_rect)
+    if in_trim is None:
+        return None
+    # The inner "safe" zone: trim minus margin on every side.
+    if margin <= 0 or (trim.x1 - trim.x0) <= 2 * margin or (trim.y1 - trim.y0) <= 2 * margin:
+        # Degenerate: the whole trim is a margin. Report the
+        # trim intersection verbatim.
+        return in_trim
+    inner_rect = (
+        trim.x0 + margin,
+        trim.y0 + margin,
+        trim.x1 - margin,
+        trim.y1 - margin,
+    )
+    # Four margin strips (left, right, bottom, top) that make up
+    # the ring between trim and inner_rect.
+    strips = [
+        (trim.x0, trim.y0, inner_rect[0], trim.y1),  # left
+        (inner_rect[2], trim.y0, trim.x1, trim.y1),  # right
+        (inner_rect[0], trim.y0, inner_rect[2], inner_rect[1]),  # bottom
+        (inner_rect[0], inner_rect[3], inner_rect[2], trim.y1),  # top
+    ]
+    parts = [p for p in (_intersect(in_trim, s) for s in strips) if p is not None]
+    return _aabb_union(parts)
+
+
+def _beyond_bleed_violation(
+    content_bbox: tuple[float, float, float, float],
+    bleed: PdfBox,
+) -> tuple[float, float, float, float] | None:
+    """Return the portion of ``content_bbox`` that sits outside the
+    bleed box. ``None`` when all of the content fits inside bleed."""
+    bleed_rect = (bleed.x0, bleed.y0, bleed.x1, bleed.y1)
+    inside = _intersect(content_bbox, bleed_rect)
+    if inside == content_bbox:
+        # Fully inside the bleed.
+        return None
+    # Four external strips (the whole PDF page plane beyond bleed).
+    # Clip content against each side individually and take the
+    # AABB of non-empty pieces.
+    cx0, cy0, cx1, cy1 = content_bbox
+    strips = [
+        (cx0, cy0, min(cx1, bleed.x0), cy1),  # left of bleed
+        (max(cx0, bleed.x1), cy0, cx1, cy1),  # right of bleed
+        (cx0, cy0, cx1, min(cy1, bleed.y0)),  # below bleed
+        (cx0, max(cy0, bleed.y1), cx1, cy1),  # above bleed
+    ]
+    valid: list[tuple[float, float, float, float]] = []
+    for s in strips:
+        if s[0] < s[2] and s[1] < s[3]:
+            valid.append(s)
+    return _aabb_union(valid)
+
+
 class PageGeometryAnalyzer(BaseAnalyzer):
     """Analyzer for page box hierarchy and bleed requirements.
 
@@ -138,24 +234,23 @@ class PageGeometryAnalyzer(BaseAnalyzer):
         trim_box: PdfBox | None,
         bleed_box: PdfBox | None,
     ) -> list[Finding]:
-        """Check if content bbox is too close to trim edge or beyond bleed."""
-        findings: list[Finding] = []
-        bx0, by0, bx1, by1 = bbox
+        """Check if content bbox is too close to trim edge or beyond bleed.
 
-        # LPDF_BOX_005: Content within safety margin of trim edge
+        WS-9: the emitted ``bbox`` / ``details`` report the
+        *violation region* (the sliver of content that actually
+        sits inside the safety margin or outside the bleed), not
+        the whole content bbox. Content that only touches the
+        offending zone on one edge now shows a narrow strip in
+        the viewer instead of the entire object.
+        """
+        findings: list[Finding] = []
+
+        # LPDF_BOX_005: Content within safety margin of trim edge.
         if trim_box is not None:
-            margin = self.safety_margin_pts
-            in_safety = (
-                bx0 < trim_box.x0 + margin
-                or by0 < trim_box.y0 + margin
-                or bx1 > trim_box.x1 - margin
-                or by1 > trim_box.y1 - margin
+            violation = _safety_margin_violation(
+                bbox, trim_box, self.safety_margin_pts
             )
-            # Only flag if content is inside (or overlapping) the trim box
-            in_trim = (
-                bx1 > trim_box.x0 and bx0 < trim_box.x1 and by1 > trim_box.y0 and by0 < trim_box.y1
-            )
-            if in_safety and in_trim:
+            if violation is not None:
                 findings.append(
                     Finding(
                         inspection_id="LPDF_BOX_005",
@@ -166,21 +261,20 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                         ),
                         page_num=page_num,
                         details={
+                            "violation_bbox": list(violation),
                             "content_bbox": list(bbox),
                             "trim_box": trim_box.as_tuple(),
                             "safety_margin_pts": self.safety_margin_pts,
                         },
                         object_type="path",
-                        bbox=bbox,
+                        bbox=violation,
                     )
                 )
 
-        # LPDF_BOX_006: Content extends beyond bleed box
+        # LPDF_BOX_006: Content extends beyond bleed box.
         if bleed_box is not None:
-            beyond_bleed = (
-                bx0 < bleed_box.x0 or by0 < bleed_box.y0 or bx1 > bleed_box.x1 or by1 > bleed_box.y1
-            )
-            if beyond_bleed:
+            violation = _beyond_bleed_violation(bbox, bleed_box)
+            if violation is not None:
                 findings.append(
                     Finding(
                         inspection_id="LPDF_BOX_006",
@@ -188,11 +282,12 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                         message=(f"Content extends beyond bleed box on page {page_num}"),
                         page_num=page_num,
                         details={
+                            "violation_bbox": list(violation),
                             "content_bbox": list(bbox),
                             "bleed_box": bleed_box.as_tuple(),
                         },
                         object_type="path",
-                        bbox=bbox,
+                        bbox=violation,
                     )
                 )
 

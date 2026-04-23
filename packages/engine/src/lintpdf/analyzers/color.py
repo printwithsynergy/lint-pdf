@@ -61,8 +61,21 @@ class ColorAnalyzer(BaseAnalyzer):
         tac_limit: Maximum allowed TAC percentage (default 300).
     """
 
-    def __init__(self, tac_limit: float = DEFAULT_TAC_LIMIT) -> None:
+    def __init__(
+        self,
+        tac_limit: float = DEFAULT_TAC_LIMIT,
+        *,
+        brand_palette_present: bool = False,
+    ) -> None:
         self.tac_limit = tac_limit
+        # When the tenant hasn't declared a brand colour palette we
+        # have no ground truth for whether a pure-K fill or knockout
+        # black was intentional. The rules still have noise value on
+        # brand-configured tenants, but on an uncategorised tenant
+        # they generate only "might be wrong, can't tell" findings
+        # -- Opus rated 3,054 such findings as needs_context on one
+        # Pink-Slush page. Suppress both outright in that case.
+        self.brand_palette_present = brand_palette_present
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -80,6 +93,15 @@ class ColorAnalyzer(BaseAnalyzer):
         findings: list[Finding] = []
         seen_spaces: set[tuple[int, str]] = set()
         overprint_non_stroking = False
+
+        # WS-7 per-page aggregation: LPDF_COLOR_009 (knockout black)
+        # and LPDF_COLOR_010 (pure K-only) fire once per matching
+        # path event in the old implementation, producing ~1,000
+        # findings per page on vector-dense artwork. Collect hits
+        # into these dicts and emit one aggregate per (rule, page)
+        # at the end of the analyze() pass.
+        knockout_agg: dict[int, dict[str, object]] = {}
+        pure_k_agg: dict[int, dict[str, object]] = {}
 
         # LPDF_COLOR_014: Color space inventory tracking
         cs_inventory: dict[str, dict[str, int | list[int]]] = {}
@@ -101,8 +123,11 @@ class ColorAnalyzer(BaseAnalyzer):
             elif isinstance(event, PathPaintingEvent):
                 findings.extend(self._check_path_tac(event))
                 findings.extend(self._check_registration_color(event))
-                findings.extend(self._check_knockout_black(event, overprint_non_stroking))
-                findings.extend(self._check_pure_k_fill(event))
+                if self.brand_palette_present:
+                    self._accumulate_knockout_black(
+                        event, overprint_non_stroking, knockout_agg
+                    )
+                    self._accumulate_pure_k_fill(event, pure_k_agg)
                 findings.extend(self._check_impure_gray(event))
                 findings.extend(self._check_impure_black(event))
             elif isinstance(event, TextRenderedEvent):
@@ -313,6 +338,11 @@ class ColorAnalyzer(BaseAnalyzer):
         # LPDF_COLOR_020: Default color space overrides
         findings.extend(self._check_default_color_spaces(document))
 
+        # WS-7: emit one aggregate finding per (rule, page) for the
+        # per-object rules that previously exploded on dense artwork.
+        findings.extend(self._emit_knockout_aggregates(knockout_agg))
+        findings.extend(self._emit_pure_k_aggregates(pure_k_agg))
+
         return findings
 
     @staticmethod
@@ -486,72 +516,129 @@ class ColorAnalyzer(BaseAnalyzer):
         return findings
 
     @staticmethod
-    def _check_knockout_black(
-        event: PathPaintingEvent, overprint_non_stroking: bool
-    ) -> list[Finding]:
-        """Check for 100% K fill without overprint (LPDF_COLOR_009).
+    def _bucket_for_page(
+        agg: dict[int, dict[str, object]], page_num: int
+    ) -> dict[str, object]:
+        """Return the per-page accumulator slot, creating a fresh
+        {count, max_k_percent, bboxes} dict if needed."""
+        bucket = agg.get(page_num)
+        if bucket is None:
+            bucket = {"count": 0, "max_k_percent": 0.0, "bboxes": []}
+            agg[page_num] = bucket
+        return bucket
+
+    @classmethod
+    def _accumulate_knockout_black(
+        cls,
+        event: PathPaintingEvent,
+        overprint_non_stroking: bool,
+        agg: dict[int, dict[str, object]],
+    ) -> None:
+        """Update the LPDF_COLOR_009 accumulator for this event.
 
         Knockout black = 0/0/0/100% CMYK fill with overprint OFF.
+        Replaces the old per-event emit -- see _emit_knockout_aggregates
+        for the one-per-page flush.
         """
-        findings: list[Finding] = []
         if not event.fill or event.fill_color_space != "DeviceCMYK":
-            return findings
+            return
         vals = event.fill_color_values
         if len(vals) != 4:
-            return findings
-        # Check if pure 100% K without overprint
+            return
         is_pure_k = abs(vals[3] - 1.0) < 0.01 and all(abs(v) < 0.01 for v in vals[:3])
-        if is_pure_k and not overprint_non_stroking:
-            findings.append(
+        if not (is_pure_k and not overprint_non_stroking):
+            return
+        bucket = cls._bucket_for_page(agg, event.page_num)
+        bucket["count"] = int(bucket["count"]) + 1  # type: ignore[arg-type]
+        bboxes = bucket["bboxes"]
+        if isinstance(bboxes, list) and len(bboxes) < 5 and getattr(event, "bbox", None):
+            bboxes.append(list(event.bbox))
+
+    @classmethod
+    def _accumulate_pure_k_fill(
+        cls,
+        event: PathPaintingEvent,
+        agg: dict[int, dict[str, object]],
+    ) -> None:
+        """Update the LPDF_COLOR_010 accumulator. Pure K-only on
+        fill (K > 50%, CMY ~= 0); large areas appear washed out
+        without rich-black support. Emits once per page at the end."""
+        if not event.fill or event.fill_color_space != "DeviceCMYK":
+            return
+        vals = event.fill_color_values
+        if len(vals) != 4:
+            return
+        if not (vals[3] > 0.50 and all(abs(v) < 0.01 for v in vals[:3])):
+            return
+        bucket = cls._bucket_for_page(agg, event.page_num)
+        bucket["count"] = int(bucket["count"]) + 1  # type: ignore[arg-type]
+        k_pct = vals[3] * 100.0
+        if k_pct > float(bucket["max_k_percent"]):  # type: ignore[arg-type]
+            bucket["max_k_percent"] = k_pct
+        bboxes = bucket["bboxes"]
+        if isinstance(bboxes, list) and len(bboxes) < 5 and getattr(event, "bbox", None):
+            bboxes.append(list(event.bbox))
+
+    @staticmethod
+    def _emit_knockout_aggregates(
+        agg: dict[int, dict[str, object]],
+    ) -> list[Finding]:
+        out: list[Finding] = []
+        for page_num in sorted(agg):
+            bucket = agg[page_num]
+            count = int(bucket["count"])  # type: ignore[arg-type]
+            if count <= 0:
+                continue
+            out.append(
                 Finding(
                     inspection_id="LPDF_COLOR_009",
                     severity=Severity.ADVISORY,
                     message=(
-                        f"100% K fill without overprint on page {event.page_num} "
+                        f"{count} object{'s' if count != 1 else ''} with "
+                        f"100% K fill and no overprint on page {page_num} "
                         f"(knockout black may cause white gaps)"
                     ),
-                    page_num=event.page_num,
+                    page_num=page_num,
                     details={
-                        "color_values": list(vals),
+                        "object_count": count,
                         "overprint": False,
+                        "representative_bboxes": bucket["bboxes"],
                     },
                     object_type="path",
                 )
             )
-        return findings
+        return out
 
     @staticmethod
-    def _check_pure_k_fill(event: PathPaintingEvent) -> list[Finding]:
-        """Check for pure K-only on fill (LPDF_COLOR_010).
-
-        Advisory: large fills in K-only may appear washed out compared to rich black.
-        Only flags fills (not strokes) as these are the visible ones.
-        """
-        findings: list[Finding] = []
-        if not event.fill or event.fill_color_space != "DeviceCMYK":
-            return findings
-        vals = event.fill_color_values
-        if len(vals) != 4:
-            return findings
-        # Pure K-only: K > 50% and C/M/Y all near 0
-        if vals[3] > 0.50 and all(abs(v) < 0.01 for v in vals[:3]):
-            findings.append(
+    def _emit_pure_k_aggregates(
+        agg: dict[int, dict[str, object]],
+    ) -> list[Finding]:
+        out: list[Finding] = []
+        for page_num in sorted(agg):
+            bucket = agg[page_num]
+            count = int(bucket["count"])  # type: ignore[arg-type]
+            if count <= 0:
+                continue
+            max_k = float(bucket["max_k_percent"])  # type: ignore[arg-type]
+            out.append(
                 Finding(
                     inspection_id="LPDF_COLOR_010",
                     severity=Severity.ADVISORY,
                     message=(
-                        f"Pure K-only fill ({vals[3] * 100:.0f}% K) on page {event.page_num} "
+                        f"{count} pure K-only fill{'s' if count != 1 else ''} "
+                        f"(max {max_k:.0f}% K) on page {page_num} "
                         f"(may appear washed out on large areas)"
                     ),
-                    page_num=event.page_num,
+                    page_num=page_num,
                     details={
-                        "color_values": list(vals),
-                        "k_percent": vals[3] * 100.0,
+                        "object_count": count,
+                        "max_k_percent": max_k,
+                        "representative_bboxes": bucket["bboxes"],
                     },
                     object_type="path",
                 )
             )
-        return findings
+        return out
 
     @staticmethod
     def _check_impure_gray(event: PathPaintingEvent) -> list[Finding]:

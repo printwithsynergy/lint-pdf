@@ -72,6 +72,65 @@ _GRADE_ORDER = {"A": 4, "B": 3, "C": 2, "D": 1, "F": 0}
 _PTS_PER_MM = 2.834645669
 
 
+# WS-10 structural thresholds. Calibrated against the
+# 2026-04-23 Opus audit disputes: every one of those five
+# false positives fails at least one of these checks, and the
+# synthetic Data Matrix / QR fixtures in the tests pass all of
+# them.
+_BARCODE_ASPECT_MIN = 0.4
+_BARCODE_ASPECT_MAX = 2.5
+# Reject regions whose diagonal exceeds this many points. A real
+# 2D symbol is typically <= 50 mm on a side; a 200 mm region is
+# obviously something else (page panel, artwork block).
+_BARCODE_MAX_SIDE_PTS = 200.0  # ~70 mm
+# Module-size coefficient of variation must stay below this on
+# both axes.
+_BARCODE_MAX_CV = 0.5
+# Fill-density floor: (sum of module areas) / region area.
+# Real 2D symbols run 40-60% dark; decorative fill scatter is
+# usually <5%.
+_BARCODE_MIN_FILL_DENSITY = 0.2
+
+
+def _looks_like_2d_barcode(
+    fills: list[tuple[float, float, float, float]],
+    region_w: float,
+    region_h: float,
+) -> bool:
+    """Structural gate before emitting LPDF_BARCODE_014..018.
+
+    All checks are vector-only -- no pixel rendering required --
+    so the gate adds essentially zero cost to the preflight run.
+    Returns True only when every structural signal points at a
+    plausible 2D barcode symbol.
+    """
+    # 1. Aspect ratio sanity.
+    aspect = region_w / region_h if region_h > 0 else 0.0
+    if aspect < _BARCODE_ASPECT_MIN or aspect > _BARCODE_ASPECT_MAX:
+        return False
+    # 2. Region size sanity.
+    if region_w > _BARCODE_MAX_SIDE_PTS or region_h > _BARCODE_MAX_SIDE_PTS:
+        return False
+    # 3. Module-size regularity (low CV).
+    widths = [f[2] - f[0] for f in fills]
+    heights = [f[3] - f[1] for f in fills]
+    mean_w = sum(widths) / len(widths)
+    mean_h = sum(heights) / len(heights)
+    if mean_w <= 0 or mean_h <= 0:
+        return False
+    cv_w = (sum((w - mean_w) ** 2 for w in widths) / len(widths)) ** 0.5 / mean_w
+    cv_h = (sum((h - mean_h) ** 2 for h in heights) / len(heights)) ** 0.5 / mean_h
+    if cv_w > _BARCODE_MAX_CV or cv_h > _BARCODE_MAX_CV:
+        return False
+    # 4. Fill-density floor.
+    module_area = sum((f[2] - f[0]) * (f[3] - f[1]) for f in fills)
+    region_area = region_w * region_h
+    if region_area <= 0:
+        return False
+    density = module_area / region_area
+    return density >= _BARCODE_MIN_FILL_DENSITY
+
+
 def _grade_value(grade: str) -> int:
     """Return numeric value for a grade letter (A=4, F=0)."""
     return _GRADE_ORDER.get(grade.upper(), -1)
@@ -984,6 +1043,29 @@ class BarcodeAnalyzer(BaseAnalyzer):
                 continue
 
             region_bbox = (all_x0, all_y0, all_x1, all_y1)
+
+            # WS-10 structural gate. Before emitting any of the
+            # LPDF_BARCODE_014..018 advisories, verify the candidate
+            # region actually looks like a 2D barcode. The audit
+            # disputed 100% of these on splatter artwork / blocky
+            # decorative text because the old heuristic just counted
+            # "small square-ish fills." Real Data Matrix / QR
+            # symbols satisfy ALL of:
+            #
+            # 1. Aspect ratio is near-square (0.4 .. 2.5). Full-panel
+            #    regions (0.34, 2.63) get caught here.
+            # 2. Region is smaller than 50% of the likely page area.
+            #    The Nutrops 143x427mm "barcode" and the Pavette
+            #    both-labels span get caught here.
+            # 3. Module-size coefficient of variation is < 0.5 on
+            #    both axes. Splatter artwork varies wildly.
+            # 4. Fill density >= 20% of the region area. A scatter
+            #    of 30 tiny marks in a huge area is not a barcode.
+            #
+            # If any check fails, skip the entire 014..018 cascade
+            # for this candidate region.
+            if not _looks_like_2d_barcode(fills, region_w, region_h):
+                continue
 
             # LPDF_BARCODE_014: 2D barcode detected
             findings.append(

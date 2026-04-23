@@ -11,6 +11,7 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any
 
+from lintpdf.ai.analyzers.regulatory_compliance.nfp_detector import pages_with_nfp
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
@@ -90,23 +91,13 @@ def _is_bold_font(font_name: str) -> bool:
 def _find_nutrition_panel_pages(
     document: SemanticDocument,
 ) -> list[int]:
-    """Identify pages that likely contain a Nutrition Facts panel."""
-    panel_pages: list[int] = []
-    for page in document.pages:
-        if page.content_stream:
-            raw = page.content_stream
-            if isinstance(raw, bytes):
-                try:
-                    decoded = raw.decode("latin-1")
-                except Exception:
-                    decoded = ""
-            else:
-                decoded = str(raw)
-
-            if _NUTRITION_FACTS_PATTERN.search(decoded):
-                panel_pages.append(page.page_num)
-
-    return panel_pages
+    """Identify pages that structurally contain a Nutrition Facts
+    panel -- delegates to ``nfp_detector.pages_with_nfp`` so the
+    three-signal check (header + nutrient vocab + numeric values)
+    lives in one place and the FDA rules short-circuit cleanly on
+    pages that only mention "Nutrition Facts" in marketing copy.
+    """
+    return pages_with_nfp(document)
 
 
 @register_ai_analyzer

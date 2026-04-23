@@ -17,6 +17,10 @@ from typing import TYPE_CHECKING, Any
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.analyzers.text_metrics import (
+    effective_font_size_pt,
+    effective_x_height_mm,
+)
 
 if TYPE_CHECKING:
     from lintpdf.api.models import TenantAIConfig
@@ -96,25 +100,53 @@ _EU_NUTRITION_ORDER: list[str] = [
 ]
 
 
-def _compute_x_height_mm(
-    font_size_pt: float,
-    sx_height: float | None = None,
-    units_per_em: float | None = None,
-) -> float:
-    """Compute x-height in millimetres.
+# WS-5 declaration-context anchors. An allergen-name match only
+# counts toward the emphasis check (AI_EU1169_002) when one of
+# these phrases appears within ``_DECL_WINDOW_CHARS`` of the match.
+# "Gluten Free" is excluded via the claim patterns below.
+_DECL_WINDOW_CHARS = 120
+_CLAIM_WINDOW_CHARS = 40
+_DECLARATION_ANCHORS = (
+    re.compile(r"\bingredients?\s*:", re.IGNORECASE),
+    re.compile(r"\bcontains\s*:", re.IGNORECASE),
+    re.compile(r"\ballergens?\s*:", re.IGNORECASE),
+    re.compile(r"\bmay\s+contain\b", re.IGNORECASE),
+    re.compile(r"\bwarning\s*:\s*contains\b", re.IGNORECASE),
+    re.compile(r"\ballergen\s+warning\b", re.IGNORECASE),
+    re.compile(r"\btraces\s+of\b", re.IGNORECASE),
+)
+# Claim patterns rejected as declaration context. "Gluten Free",
+# "Dairy-Free", "Nut Free" etc. on the front panel are marketing
+# claims, not allergen declarations.
+_CLAIM_PATTERNS = (
+    re.compile(r"\b(?:gluten|dairy|nut|lactose|soy|egg|wheat|peanut)[-\s]*free\b", re.IGNORECASE),
+    re.compile(r"\bfree\s+from\s+(?:gluten|dairy|nuts?|lactose|soy|eggs?|wheat|peanuts?)\b", re.IGNORECASE),
+    re.compile(r"\bno\s+(?:added\s+)?(?:gluten|dairy|nuts?|lactose|soy|eggs?|wheat|peanuts?)\b", re.IGNORECASE),
+)
 
-    Formula: (sxHeight / unitsPerEm) * fontSize_pt * 0.3528 mm/pt
 
-    If sxHeight/unitsPerEm are not available, use the typographic
-    convention that x-height ≈ 0.48 of font size.
+def _in_declaration_context(text: str, start: int, end: int) -> bool:
+    """True when a regex match at [start, end) in ``text`` sits
+    inside an allergen-declaration context.
+
+    Semantics:
+    * At least one declaration anchor must appear within
+      ``_DECL_WINDOW_CHARS`` before or after the match.
+    * No claim pattern may appear within ``_CLAIM_WINDOW_CHARS``
+      of the match (claim wins over declaration — "Gluten Free
+      ingredients: ..." on a front panel is still a claim).
     """
-    if sx_height is not None and units_per_em is not None and units_per_em > 0:
-        x_height_ratio = sx_height / units_per_em
-    else:
-        # Typical Latin x-height ratio
-        x_height_ratio = 0.48
+    claim_left = max(0, start - _CLAIM_WINDOW_CHARS)
+    claim_right = min(len(text), end + _CLAIM_WINDOW_CHARS)
+    claim_window = text[claim_left:claim_right]
+    for claim in _CLAIM_PATTERNS:
+        if claim.search(claim_window):
+            return False
 
-    return x_height_ratio * font_size_pt * 0.3528
+    decl_left = max(0, start - _DECL_WINDOW_CHARS)
+    decl_right = min(len(text), end + _DECL_WINDOW_CHARS)
+    decl_window = text[decl_left:decl_right]
+    return any(anchor.search(decl_window) for anchor in _DECLARATION_ANCHORS)
 
 
 def _is_bold_font(font_name: str) -> bool:
@@ -167,30 +199,18 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
                 text_events_by_page[page_num] = []
             text_events_by_page[page_num].append(event)
 
-            font_size_pt = abs(event.font_size)
+            page = next((p for p in document.pages if p.page_num == page_num), None)
+            font = page.fonts.get(event.font_name) if page else None
+            x_height_mm = effective_x_height_mm(event, font=font)
+            if x_height_mm is None:
+                # Invisible text (rendering_mode == 3) -- skip; no
+                # ink is drawn, so legibility rules don't apply.
+                continue
+            # Composed on-page font size, used for the dedup key +
+            # user-facing message so "1pt logo" findings go away.
+            font_size_pt = effective_font_size_pt(event)
             if font_size_pt <= 0:
                 continue
-
-            # Try to get sxHeight and unitsPerEm from font descriptor
-            sx_height: float | None = None
-            units_per_em: float | None = None
-
-            page = next((p for p in document.pages if p.page_num == page_num), None)
-            if page and event.font_name in page.fonts:
-                font = page.fonts[event.font_name]
-                fd = font.font_descriptor
-                if fd:
-                    sx_height_raw = fd.get("StemH") or fd.get("XHeight") or fd.get("sxHeight")
-                    if sx_height_raw is not None:
-                        with contextlib.suppress(TypeError, ValueError):
-                            sx_height = float(sx_height_raw)
-                    # unitsPerEm is typically in the font descriptor or defaults to 1000
-                    units_raw = fd.get("UnitsPerEm")
-                    if units_raw is not None:
-                        with contextlib.suppress(TypeError, ValueError):
-                            units_per_em = float(units_raw)
-
-            x_height_mm = _compute_x_height_mm(font_size_pt, sx_height, units_per_em)
 
             if x_height_mm < min_x_height_mm:
                 x_height_violations.append(
@@ -289,6 +309,15 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
 
                 for match in matches:
                     matched_text = match.group(0)
+
+                    # WS-5: only allergen matches inside a real
+                    # declaration-context window count. Claim
+                    # phrases ("Gluten Free") on the front panel
+                    # must not trip the emphasis rule, and stray
+                    # marketing copy with an allergen name in it
+                    # shouldn't either.
+                    if not _in_declaration_context(page_text, match.start(), match.end()):
+                        continue
 
                     # Check if the allergen text is emphasised
                     # Emphasis indicators: all caps, bold font

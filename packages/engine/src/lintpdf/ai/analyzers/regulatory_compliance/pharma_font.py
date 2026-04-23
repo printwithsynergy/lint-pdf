@@ -8,14 +8,18 @@ Validates font sizes for pharmaceutical labelling against:
 
 from __future__ import annotations
 
-import contextlib
 import logging
 import re
 from typing import TYPE_CHECKING
 
+from lintpdf.ai.analyzers.regulatory_compliance._gates import is_pharma_applicable
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.analyzers.text_metrics import (
+    effective_font_size_pt,
+    effective_x_height_mm,
+)
 
 if TYPE_CHECKING:
     from lintpdf.api.models import TenantAIConfig
@@ -46,19 +50,6 @@ _DRUG_FACTS_HEADINGS = [
     "Inactive ingredients",
     "Questions?",
 ]
-
-
-def _compute_x_height_mm(
-    font_size_pt: float,
-    sx_height: float | None = None,
-    units_per_em: float | None = None,
-) -> float:
-    """Compute x-height in millimetres."""
-    if sx_height is not None and units_per_em is not None and units_per_em > 0:
-        x_height_ratio = sx_height / units_per_em
-    else:
-        x_height_ratio = 0.48
-    return x_height_ratio * font_size_pt * 0.3528
 
 
 def _is_bold_font(font_name: str) -> bool:
@@ -105,6 +96,14 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
         pdf_bytes: bytes,
         ai_config: TenantAIConfig | None = None,
     ) -> list[Finding]:
+        # Category gate: pharma rules do not apply to food /
+        # supplement / cosmetic / pet-food products regulated under
+        # FIR 1169/2011 or equivalent. Skip the rule outright on
+        # those tenants. Unknown industry_type defaults to "run"
+        # so uncategorised tenants still see conservative findings.
+        if not is_pharma_applicable(ai_config):
+            return []
+
         # Determine regulatory market
         market = "auto"  # Will try to auto-detect
         if ai_config is not None:
@@ -165,28 +164,15 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
             if not isinstance(event, TextRenderedEvent):
                 continue
 
-            font_size_pt = abs(event.font_size)
+            page = next((p for p in document.pages if p.page_num == event.page_num), None)
+            font = page.fonts.get(event.font_name) if page else None
+            x_height_mm = effective_x_height_mm(event, font=font)
+            if x_height_mm is None:
+                # Invisible text -- skip.
+                continue
+            font_size_pt = effective_font_size_pt(event)
             if font_size_pt <= 0:
                 continue
-
-            # Get font descriptor data for x-height calculation
-            sx_height: float | None = None
-            units_per_em: float | None = None
-
-            page = next((p for p in document.pages if p.page_num == event.page_num), None)
-            if page and event.font_name in page.fonts:
-                fd = page.fonts[event.font_name].font_descriptor
-                if fd:
-                    xh = fd.get("XHeight") or fd.get("sxHeight")
-                    if xh is not None:
-                        with contextlib.suppress(TypeError, ValueError):
-                            sx_height = float(xh)
-                    upe = fd.get("UnitsPerEm")
-                    if upe is not None:
-                        with contextlib.suppress(TypeError, ValueError):
-                            units_per_em = float(upe)
-
-            x_height_mm = _compute_x_height_mm(font_size_pt, sx_height, units_per_em)
 
             if x_height_mm < _EU_PHARMA_MIN_X_HEIGHT_MM:
                 key = f"eu:{event.page_num}:{event.font_name}:{font_size_pt:.1f}"
@@ -258,7 +244,7 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
             if event.page_num not in drug_facts_pages:
                 continue
 
-            font_size_pt = abs(event.font_size)
+            font_size_pt = effective_font_size_pt(event)
             if font_size_pt <= 0:
                 continue
 

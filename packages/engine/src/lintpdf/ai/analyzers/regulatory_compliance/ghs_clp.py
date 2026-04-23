@@ -15,6 +15,7 @@ import math
 import re
 from typing import TYPE_CHECKING, Any
 
+from lintpdf.ai.analyzers.regulatory_compliance._gates import is_ghs_applicable
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
@@ -63,6 +64,26 @@ _P_STATEMENT_PATTERN = re.compile(r"\b(P[1-5]\d{2}(?:\s*\+\s*P[1-5]\d{2})*)\b")
 
 # Signal words
 _SIGNAL_WORDS = {"Danger", "Warning"}
+
+# Prop 65 cautionary text uses "WARNING" exactly the way CLP does,
+# but it's regulated under California Health & Safety Code 25249.5
+# -- not CLP Regulation 1272/2008. Signal-word hits that land
+# inside a proximity window around any of these anchor phrases
+# are treated as Prop 65, not GHS, and do NOT trigger AI_GHS_003.
+_PROP65_ANCHORS = (
+    "proposition 65",
+    "prop 65",
+    "prop. 65",
+    "p65",
+    "p65warnings.ca.gov",
+    "cancer and/or reproductive harm",
+    "cancer or reproductive harm",
+    "known to the state of california",
+)
+# Chars of context either side of a signal-word match that we'll
+# scan for a Prop 65 anchor. 500 matches the window the plan
+# called out (wide enough to catch multi-line disclaimer blocks).
+_PROP65_WINDOW_CHARS = 500
 
 
 def _get_min_pictogram_size_mm(capacity_ml: float | None) -> float:
@@ -173,24 +194,31 @@ class GhsClpAnalyzer(BaseAIAnalyzer):
             self._check_pictogram_sizes(
                 document, events, detected_pictograms, min_pictogram_mm, findings
             )
-        elif h_statements or signal_words:
-            # H-statements or signal words present but no pictograms
-            findings.append(
-                self._make_finding(
-                    inspection_id="AI_GHS_003",
-                    severity=Severity.ERROR,
-                    message=(
-                        "H-statements or signal words detected but no GHS "
-                        "pictograms found. CLP requires pictograms when "
-                        "hazard statements are present."
-                    ),
-                    details={
-                        "h_statements": h_statements,
-                        "signal_words": signal_words,
-                        "regulation": "EU Regulation 1272/2008 Article 19",
-                    },
-                )
-            )
+        else:
+            # Gate 1 (WS-3): skip the whole rule on food / supplement /
+            # cosmetic products -- they're not CLP-regulated.
+            # Gate 2 (WS-4): signal words landing inside a Prop 65
+            # proximity window are cautionary, not CLP hazard labels,
+            # so filter them out before deciding if anything remains.
+            if is_ghs_applicable(ai_config):
+                non_prop65 = self._non_prop65_signal_words(all_text)
+                if h_statements or non_prop65:
+                    findings.append(
+                        self._make_finding(
+                            inspection_id="AI_GHS_003",
+                            severity=Severity.ERROR,
+                            message=(
+                                "H-statements or signal words detected but no GHS "
+                                "pictograms found. CLP requires pictograms when "
+                                "hazard statements are present."
+                            ),
+                            details={
+                                "h_statements": h_statements,
+                                "signal_words": non_prop65,
+                                "regulation": "EU Regulation 1272/2008 Article 19",
+                            },
+                        )
+                    )
 
         # Report H-statements
         if h_statements:
@@ -335,6 +363,50 @@ class GhsClpAnalyzer(BaseAIAnalyzer):
             if re.search(r"\b" + re.escape(word) + r"\b", text, re.IGNORECASE):
                 found.append(word)
         return found
+
+    @staticmethod
+    def _non_prop65_signal_words(text: str) -> list[str]:
+        """Return signal words whose match is NOT inside a Prop 65
+        proximity window.
+
+        The 2026-04-23 Opus audit flagged one false-positive
+        ``AI_GHS_003`` where "WARNING: This product can expose you
+        to ... known to the State of California to cause cancer"
+        on a dietary supplement was treated as a CLP hazard
+        statement. Rather than suppress the whole match, we check
+        each occurrence individually -- a product page carrying
+        both a real H-statement block AND a Prop 65 disclaimer
+        should still flag the CLP portion.
+        """
+        lowered = text.lower()
+        # Map anchor->list of (start, end) spans.
+        anchor_spans: list[tuple[int, int]] = []
+        for anchor in _PROP65_ANCHORS:
+            start = 0
+            while True:
+                idx = lowered.find(anchor, start)
+                if idx < 0:
+                    break
+                anchor_spans.append((idx, idx + len(anchor)))
+                start = idx + len(anchor)
+
+        def _near_anchor(pos: int) -> bool:
+            for a_start, a_end in anchor_spans:
+                if abs(pos - a_start) <= _PROP65_WINDOW_CHARS or abs(pos - a_end) <= _PROP65_WINDOW_CHARS:
+                    return True
+            return False
+
+        out: list[str] = []
+        for word in _SIGNAL_WORDS:
+            pattern = re.compile(r"\b" + re.escape(word) + r"\b", re.IGNORECASE)
+            any_non_prop65 = False
+            for m in pattern.finditer(text):
+                if not _near_anchor(m.start()):
+                    any_non_prop65 = True
+                    break
+            if any_non_prop65:
+                out.append(word)
+        return out
 
     def _check_pictogram_sizes(  # skipcq: PY-R1000
         self,

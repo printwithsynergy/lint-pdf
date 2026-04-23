@@ -450,9 +450,21 @@ class PreflightOrchestrator:
         bleed_pts = _mm_to_pts(t.min_bleed_mm)
         safety_pts = _mm_to_pts(t.safety_margin_mm)
 
+        # WS-7: gate the ambiguous pure-K / knockout advisories on
+        # the presence of a brand colour palette. Without it we
+        # can't tell whether a large pure-K fill was intentional,
+        # and the rules generate thousands of "might be wrong, can't
+        # tell" findings per page on vector-dense artwork.
+        brand_palette_present = bool(
+            getattr(self._ai_config, "brand_palette", None)
+        )
+
         analyzers: list[Any] = [
             ImageAnalyzer(min_dpi=t.min_dpi, max_dpi=t.max_dpi),
-            ColorAnalyzer(tac_limit=t.tac_limit),
+            ColorAnalyzer(
+                tac_limit=t.tac_limit,
+                brand_palette_present=brand_palette_present,
+            ),
             FontAnalyzer(),
             PageGeometryAnalyzer(min_bleed_pts=bleed_pts, safety_margin_pts=safety_pts),
             HairlineAnalyzer(
@@ -482,6 +494,7 @@ class PreflightOrchestrator:
                 rich_black_m=t.rich_black_m,
                 rich_black_y=t.rich_black_y,
                 rich_black_k=t.rich_black_k,
+                brand_palette_present=brand_palette_present,
             ),
         ]
 

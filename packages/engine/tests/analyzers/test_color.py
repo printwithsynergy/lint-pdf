@@ -358,9 +358,14 @@ class TestKnockoutBlack:
         )
 
     def test_knockout_black_advisory(self) -> None:
-        """Pure 100% K fill without overprint triggers LPDF_COLOR_009."""
+        """Pure 100% K fill without overprint triggers LPDF_COLOR_009.
+
+        WS-7 gates this rule on ``brand_palette_present`` since the
+        "was the pure-K intentional?" question is only answerable
+        against a brand rich-black spec; the test opts in.
+        """
         event = self._fill_event()
-        analyzer = ColorAnalyzer()
+        analyzer = ColorAnalyzer(brand_palette_present=True)
         findings = analyzer.analyze(_make_document(), [event])
         ko = [f for f in findings if f.inspection_id == "LPDF_COLOR_009"]
         assert len(ko) == 1
@@ -404,7 +409,12 @@ class TestPureKFill:
 
     @staticmethod
     def test_pure_k_fill_advisory() -> None:
-        """80% K-only fill triggers LPDF_COLOR_010."""
+        """80% K-only fill triggers LPDF_COLOR_010.
+
+        WS-7 gates on ``brand_palette_present`` (ambiguous without
+        a brand rich-black spec) and aggregates per page; the
+        payload now carries ``max_k_percent`` + ``object_count``.
+        """
         event = PathPaintingEvent(
             operator="f",
             page_num=1,
@@ -414,12 +424,13 @@ class TestPureKFill:
             fill_color_space="DeviceCMYK",
             fill_color_values=(0.0, 0.0, 0.0, 0.8),
         )
-        analyzer = ColorAnalyzer()
+        analyzer = ColorAnalyzer(brand_palette_present=True)
         findings = analyzer.analyze(_make_document(), [event])
         pk = [f for f in findings if f.inspection_id == "LPDF_COLOR_010"]
         assert len(pk) == 1
         assert pk[0].severity == Severity.ADVISORY
-        assert pk[0].details["k_percent"] == 80.0
+        assert pk[0].details["max_k_percent"] == 80.0
+        assert pk[0].details["object_count"] == 1
 
     @staticmethod
     def test_low_k_no_finding() -> None:
