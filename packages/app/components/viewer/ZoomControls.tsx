@@ -27,7 +27,7 @@ export function ZoomControls({ zoom, onZoomChange, compact, dark }: ZoomControls
       ? "rounded p-1 text-xs text-slate-300 hover:bg-white/10 hover:text-white disabled:opacity-40"
       : "rounded p-1 text-xs hover:bg-muted disabled:opacity-40";
     const selectClass = dark
-      ? "rounded border border-white/20 bg-white/10 px-1 py-0.5 text-xs text-white outline-none"
+      ? "rounded border border-white/10 bg-white/[0.04] px-1 py-0.5 text-xs text-white outline-none"
       : "rounded border px-1 py-0.5 text-xs";
 
     return (

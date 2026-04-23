@@ -600,13 +600,13 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
           </div>
 
           {/* File info */}
-          <div className="space-y-1 border-t border-slate-700 pt-3 text-xs text-slate-400">
+          <div className="space-y-1 border-t border-white/[0.06] pt-3 text-xs text-slate-400">
             <div><span className="text-slate-500">Pages:</span> {pages.length}</div>
             <div><span className="text-slate-500">Profile:</span> {config.brand_name}</div>
           </div>
 
           {/* Verdict */}
-          <div className="rounded-lg border border-slate-700 p-3 text-center">
+          <div className="rounded-lg border border-white/[0.06] p-3 text-center">
             <div className={`text-lg font-extrabold ${findingsSummary.error > 0 ? "text-red-400" : "text-green-400"}`}>
               {findingsSummary.error > 0 ? "FAIL" : "PASS"}
             </div>
@@ -656,7 +656,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         <>
           {/* Collapsible horizontal page thumbnails strip */}
           {config.enable_page_thumbnails && (
-            <div className="shrink-0 border-b border-slate-700">
+            <div className="shrink-0 border-b border-white/[0.06]">
               <button
                 onClick={() => setThumbnailsExpanded((v) => !v)}
                 className="flex w-full items-center justify-between px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200"
@@ -876,7 +876,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
 
           {/* Mobile annotation toolbar */}
           {viewerMode === "annotation" && !readOnly && (
-            <div className="shrink-0 overflow-x-auto border-t border-slate-700 bg-slate-900 px-2 py-1.5">
+            <div className="shrink-0 overflow-x-auto border-t border-white/[0.06] bg-slate-900 px-2 py-1.5">
               <div className="flex items-center gap-1 min-w-max">
                 {/* Tool buttons */}
                 {([
@@ -1024,7 +1024,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
               aria-hidden="true"
             />
             <aside
-              className={`absolute inset-y-0 left-0 z-[60] flex w-[320px] flex-col border-r border-slate-700 bg-slate-900 shadow-2xl transition-transform duration-200 ease-out ${
+              className={`absolute inset-y-0 left-0 z-[60] flex w-[320px] flex-col border-r border-white/[0.06] bg-slate-900 shadow-2xl transition-transform duration-200 ease-out ${
                 desktopSidebarOpen ? "translate-x-0" : "-translate-x-full"
               }`}
               aria-label="Findings panel"
@@ -1152,7 +1152,7 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     {emailPromptOpen && publicToken && (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
         <form
-          className="w-full max-w-sm rounded-lg border border-slate-700 bg-slate-900 p-5 text-white shadow-2xl"
+          className="w-full max-w-sm rounded-lg border border-white/[0.06] bg-slate-900 p-5 text-white shadow-2xl"
           onSubmit={(e) => {
             e.preventDefault();
             const form = e.currentTarget as HTMLFormElement;
@@ -1179,13 +1179,13 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             required
             autoFocus
             placeholder="you@example.com"
-            className="mt-3 w-full rounded border border-slate-700 bg-slate-800 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+            className="mt-3 w-full rounded border border-white/10 bg-slate-800 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
           />
           <div className="mt-3 flex justify-end gap-2">
             <button
               type="button"
               onClick={() => setEmailPromptOpen(false)}
-              className="rounded border border-slate-600 px-3 py-1.5 text-xs hover:bg-slate-800"
+              className="rounded border border-white/10 px-3 py-1.5 text-xs hover:bg-slate-800"
             >
               Cancel
             </button>

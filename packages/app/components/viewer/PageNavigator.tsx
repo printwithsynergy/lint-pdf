@@ -57,7 +57,7 @@ export function PageNavigator({
               className={`relative shrink-0 rounded border p-0.5 transition-colors ${
                 isActive
                   ? "border-blue-500 ring-2 ring-blue-500/30"
-                  : "border-slate-700 hover:border-slate-500"
+                  : "border-white/[0.06] hover:border-slate-500"
               }`}
               style={{ width: 56 }}
             >

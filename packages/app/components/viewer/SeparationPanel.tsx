@@ -86,13 +86,13 @@ export function SeparationPanel({
         <div className="flex gap-1">
           <button
             onClick={() => onSetAllChannels(true)}
-            className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
+            className="rounded border border-white/10 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
           >
             All On
           </button>
           <button
             onClick={() => onSetAllChannels(false)}
-            className="rounded border border-slate-600 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
+            className="rounded border border-white/10 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
           >
             All Off
           </button>
@@ -155,10 +155,10 @@ function ChannelToggle({
         type="checkbox"
         checked={enabled}
         onChange={onToggle}
-        className="rounded border-slate-600"
+        className="rounded border-white/10"
       />
       <span
-        className="inline-block h-3 w-3 shrink-0 rounded-full border border-slate-600"
+        className="inline-block h-3 w-3 shrink-0 rounded-full border border-white/10"
         style={{ backgroundColor: color }}
       />
       <span className="truncate text-xs">{name}</span>

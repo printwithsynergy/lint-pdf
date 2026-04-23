@@ -61,12 +61,12 @@ export function ComparisonPanel({
 
   return (
     <div className="flex h-full flex-col text-slate-200">
-      <div className="border-b border-slate-700 px-3 py-2">
+      <div className="border-b border-white/[0.06] px-3 py-2">
         <h3 className="text-sm font-semibold text-white">File Comparison</h3>
       </div>
 
       {/* Job selector */}
-      <div className="space-y-2 border-b border-slate-700 p-3">
+      <div className="space-y-2 border-b border-white/[0.06] p-3">
         <div className="text-xs text-slate-400">
           Current: <code className="text-[10px] text-slate-300">{jobId.slice(0, 8)}...</code>
         </div>
@@ -76,7 +76,7 @@ export function ComparisonPanel({
             value={compareJobId}
             onChange={(e) => setCompareJobId(e.target.value)}
             placeholder="Compare with Job ID..."
-            className="flex-1 rounded border border-slate-600 bg-slate-800 px-2 py-1 text-xs text-slate-200 placeholder-slate-500"
+            className="flex-1 rounded border border-white/10 bg-slate-800 px-2 py-1 text-xs text-slate-200 placeholder-slate-500"
           />
           <button
             onClick={handleCompare}
@@ -93,7 +93,7 @@ export function ComparisonPanel({
       {comparison && (
         <>
           {/* Mode selector */}
-          <div className="flex gap-1 border-b border-slate-700 p-2">
+          <div className="flex gap-1 border-b border-white/[0.06] p-2">
             {(["ab", "side-by-side", "overlay"] as const).map((mode) => (
               <button
                 key={mode}
@@ -126,7 +126,7 @@ export function ComparisonPanel({
                 <button
                   key={p.page_num}
                   onClick={() => onPageChange(p.page_num)}
-                  className={`flex w-full items-center justify-between border-b border-slate-800 px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 ${
+                  className={`flex w-full items-center justify-between border-b border-white/[0.06] px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800 ${
                     isActive ? "bg-slate-800 ring-1 ring-inset ring-blue-500/30" : ""
                   }`}
                 >
