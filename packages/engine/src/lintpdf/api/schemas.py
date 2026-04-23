@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid  # noqa: TC003
 from datetime import datetime  # noqa: TC003
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -186,6 +187,44 @@ class JobResponse(BaseModel):
     color_quality_grade: str | None = None
     color_score_breakdown: dict[str, float] | None = None
     reports: dict[str, str] | None = None
+
+    # WS-D packaging inspectors + WS-C OCR. The DB model has carried
+    # these columns since migration 037 but they were never declared
+    # on JobResponse, so the public API silently dropped them and
+    # `GET /api/v1/jobs/{id}` returned no dieline / art-size / legend /
+    # OCR data even when the analyzers populated them.
+    dieline: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Dieline detection outcome. ``source`` is `name` (spot/OCG heuristic "
+            "hit), `vision` (Sonnet fallback confirmed), or `missing`. "
+            "Includes ``polylines``, ``spot_name`` and ``confidence``."
+        ),
+    )
+    art_size_mm: dict[str, float] | None = Field(
+        default=None,
+        description=(
+            "Art size in millimetres, computed from the dieline stroke centre-line. "
+            "``null`` when the dieline is `missing` (strict, no guessing; see "
+            "LPDF_DIE_MISSING)."
+        ),
+    )
+    legend_swatches: list[dict[str, Any]] | None = Field(
+        default=None,
+        description=(
+            "Per-swatch legend/art classification. Each entry carries "
+            "``spot_name``, ``bbox``, ``kind`` (`art` | `legend` | `unknown`), "
+            "and ``source`` (`position` | `position_only` | `vision`)."
+        ),
+    )
+    ocr_text_layer: list[dict[str, Any]] | None = Field(
+        default=None,
+        description=(
+            "Recovered text layer for outlined PDFs. One entry per page with "
+            "``page_num`` and ``blocks`` (text + bbox + confidence). Present "
+            "only when the engine ran Claude OCR on this job."
+        ),
+    )
 
 
 class JobListResponse(BaseModel):
