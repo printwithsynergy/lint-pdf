@@ -50,7 +50,13 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/jobs", tags=["jobs"])
 
 _file_param = File(..., description="PDF file to preflight")
-_profile_param = Form(default="lintpdf-default", description="Profile to use")
+_profile_param = Form(
+    default=None,
+    description=(
+        "Profile to use. When omitted, falls back to the tenant's "
+        "default_profile_id (set by site-admins) or `lintpdf-default`."
+    ),
+)
 _ai_enabled_param = Form(
     default=None,
     description=(
@@ -210,7 +216,7 @@ def _send_rate_warning_if_needed(tenant: Tenant, usage: object) -> None:  # skip
 @router.post("", response_model=JobCreateResponse, status_code=status.HTTP_202_ACCEPTED)
 async def submit_job(  # skipcq: PY-R1000
     file: UploadFile = _file_param,
-    profile_id: str = _profile_param,
+    profile_id: str | None = _profile_param,
     jdf_file: UploadFile | None = File(default=None, description="Optional JDF/XJDF sidecar"),
     ai_enabled: bool | None = _ai_enabled_param,
     ai_categories: str | None = _ai_categories_param,
@@ -310,9 +316,19 @@ async def submit_job(  # skipcq: PY-R1000
     # Validate ``profile_id`` exists at submit time so clients get a clean
     # 404 instead of a queued job that silently fails in the worker. This
     # also matches the test contract: nonexistent profile → 404.
-    from lintpdf.profiles.registry import ProfileRegistry
+    #
+    # Resolver checks: tenant's custom_profiles (wins on collision) →
+    # visible system_profiles → tenant default → `lintpdf-default`.
+    # Also side-fixes the pre-existing bug where a tenant with a valid
+    # custom_profiles row 404'd because the old check only hit the
+    # bundled registry.
+    from lintpdf.profiles.resolver import (
+        profile_exists_for_tenant,
+        resolve_effective_profile_id,
+    )
 
-    if not ProfileRegistry().has(profile_id):
+    profile_id = resolve_effective_profile_id(db, tenant, profile_id)
+    if not profile_exists_for_tenant(db, tenant, profile_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Profile '{profile_id}' not found",

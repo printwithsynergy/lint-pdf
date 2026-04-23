@@ -32,6 +32,7 @@ from lintpdf.api.schemas import (
 from lintpdf.api.storage import get_storage
 from lintpdf.api.upload_security import PDF_TYPES, validate_upload_streaming
 from lintpdf.profiles.registry import ProfileRegistry
+from lintpdf.profiles.resolver import profile_exists_for_tenant
 
 logger = logging.getLogger(__name__)
 
@@ -40,16 +41,14 @@ router = APIRouter(prefix="/api/v1/endpoints", tags=["endpoints"])
 _registry = ProfileRegistry()
 
 
-def _profile_exists(profile_id: str, db: Session, tenant_id: uuid_mod.UUID) -> bool:
-    """Check if a profile exists (built-in or custom for this tenant)."""
-    if _registry.has(profile_id):
-        return True
-    row = (
-        db.query(CustomProfile)
-        .filter(CustomProfile.tenant_id == tenant_id, CustomProfile.profile_id == profile_id)
-        .first()
-    )
-    return row is not None
+def _profile_exists(profile_id: str, db: Session, tenant: Tenant) -> bool:
+    """Check if a profile exists (system-visible-to-tenant or custom).
+
+    Delegates to :func:`lintpdf.profiles.resolver.profile_exists_for_tenant`
+    so submission guards share the same visibility semantics as the
+    tenant's ``/api/v1/profiles`` list.
+    """
+    return profile_exists_for_tenant(db, tenant, profile_id)
 
 
 @router.post("", response_model=EndpointResponse, status_code=status.HTTP_201_CREATED)
@@ -69,7 +68,7 @@ async def create_endpoint(
         )
 
     # Validate that the target profile exists
-    if not _profile_exists(request.profile_id, db, tenant.id):
+    if not _profile_exists(request.profile_id, db, tenant):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Profile '{request.profile_id}' not found.",
@@ -180,7 +179,7 @@ async def update_endpoint(
         ep.slug = request.slug
 
     if request.profile_id is not None:
-        if not _profile_exists(request.profile_id, db, tenant.id):
+        if not _profile_exists(request.profile_id, db, tenant):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Profile '{request.profile_id}' not found.",

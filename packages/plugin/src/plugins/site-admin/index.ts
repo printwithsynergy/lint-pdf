@@ -1027,6 +1027,154 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
           return { status: 200, body: await resp.json() };
         }) as RouteHandler,
       },
+      // ── System preset CRUD + visibility + clone + tenant default ─
+      {
+        method: "GET" as HttpMethod,
+        path: "/system-profiles",
+        auth: true,
+        permission: "site-admin:access",
+        description: "List every system preset (admin view, visibility unfiltered)",
+        handler: (async (_req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(`/api/v1/admin/system-profiles`);
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/system-profiles/:profileId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Fetch one system preset (incl. full PreflightProfile JSON)",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/system-profiles/${req.params.profileId}`,
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "POST" as HttpMethod,
+        path: "/system-profiles",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "Create a new admin-authored system preset. profile_id passed as ?profile_id=…",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const qs = new URLSearchParams();
+          if (req.query.profile_id)
+            qs.set("profile_id", String(req.query.profile_id));
+          const resp = await adminFetch(
+            `/api/v1/admin/system-profiles?${qs}`,
+            { method: "POST", body: JSON.stringify(req.body) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 201, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "PATCH" as HttpMethod,
+        path: "/system-profiles/:profileId",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "Replace a system preset's PreflightProfile JSON. Flips source to 'admin' on first edit of a bundled row.",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/system-profiles/${req.params.profileId}`,
+            { method: "PATCH", body: JSON.stringify(req.body) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "DELETE" as HttpMethod,
+        path: "/system-profiles/:profileId",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Delete a system preset from this deployment",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/system-profiles/${req.params.profileId}`,
+            { method: "DELETE" },
+          );
+          if (!resp.ok && resp.status !== 204) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 204, body: null };
+        }) as RouteHandler,
+      },
+      {
+        method: "PATCH" as HttpMethod,
+        path: "/system-profiles/:profileId/visibility",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "Set visibility_mode + min_plan + visible_tenant_ids on a system preset",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/system-profiles/${req.params.profileId}/visibility`,
+            { method: "PATCH", body: JSON.stringify(req.body) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "POST" as HttpMethod,
+        path: "/system-profiles/:profileId/clone-to/:tenantId",
+        auth: true,
+        permission: "site-admin:access",
+        description:
+          "One-shot copy of a system preset into a tenant's custom_profiles table",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/system-profiles/${req.params.profileId}/clone-to/${req.params.tenantId}`,
+            { method: "POST", body: JSON.stringify(req.body ?? {}) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 201, body: await resp.json() };
+        }) as RouteHandler,
+      },
+      {
+        method: "PATCH" as HttpMethod,
+        path: "/tenants/:tenantId/default-profile",
+        auth: true,
+        permission: "site-admin:access",
+        description: "Set the tenant's soft-default preset",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${req.params.tenantId}/default-profile`,
+            { method: "PATCH", body: JSON.stringify(req.body) },
+          );
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          return { status: 200, body: await resp.json() };
+        }) as RouteHandler,
+      },
     ];
 
     ctx.addRoutes("/api/lintpdf/admin", routes);
