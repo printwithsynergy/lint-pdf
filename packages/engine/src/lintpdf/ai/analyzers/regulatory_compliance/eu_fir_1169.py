@@ -100,6 +100,55 @@ _EU_NUTRITION_ORDER: list[str] = [
 ]
 
 
+# WS-5 declaration-context anchors. An allergen-name match only
+# counts toward the emphasis check (AI_EU1169_002) when one of
+# these phrases appears within ``_DECL_WINDOW_CHARS`` of the match.
+# "Gluten Free" is excluded via the claim patterns below.
+_DECL_WINDOW_CHARS = 120
+_CLAIM_WINDOW_CHARS = 40
+_DECLARATION_ANCHORS = (
+    re.compile(r"\bingredients?\s*:", re.IGNORECASE),
+    re.compile(r"\bcontains\s*:", re.IGNORECASE),
+    re.compile(r"\ballergens?\s*:", re.IGNORECASE),
+    re.compile(r"\bmay\s+contain\b", re.IGNORECASE),
+    re.compile(r"\bwarning\s*:\s*contains\b", re.IGNORECASE),
+    re.compile(r"\ballergen\s+warning\b", re.IGNORECASE),
+    re.compile(r"\btraces\s+of\b", re.IGNORECASE),
+)
+# Claim patterns rejected as declaration context. "Gluten Free",
+# "Dairy-Free", "Nut Free" etc. on the front panel are marketing
+# claims, not allergen declarations.
+_CLAIM_PATTERNS = (
+    re.compile(r"\b(?:gluten|dairy|nut|lactose|soy|egg|wheat|peanut)[-\s]*free\b", re.IGNORECASE),
+    re.compile(r"\bfree\s+from\s+(?:gluten|dairy|nuts?|lactose|soy|eggs?|wheat|peanuts?)\b", re.IGNORECASE),
+    re.compile(r"\bno\s+(?:added\s+)?(?:gluten|dairy|nuts?|lactose|soy|eggs?|wheat|peanuts?)\b", re.IGNORECASE),
+)
+
+
+def _in_declaration_context(text: str, start: int, end: int) -> bool:
+    """True when a regex match at [start, end) in ``text`` sits
+    inside an allergen-declaration context.
+
+    Semantics:
+    * At least one declaration anchor must appear within
+      ``_DECL_WINDOW_CHARS`` before or after the match.
+    * No claim pattern may appear within ``_CLAIM_WINDOW_CHARS``
+      of the match (claim wins over declaration — "Gluten Free
+      ingredients: ..." on a front panel is still a claim).
+    """
+    claim_left = max(0, start - _CLAIM_WINDOW_CHARS)
+    claim_right = min(len(text), end + _CLAIM_WINDOW_CHARS)
+    claim_window = text[claim_left:claim_right]
+    for claim in _CLAIM_PATTERNS:
+        if claim.search(claim_window):
+            return False
+
+    decl_left = max(0, start - _DECL_WINDOW_CHARS)
+    decl_right = min(len(text), end + _DECL_WINDOW_CHARS)
+    decl_window = text[decl_left:decl_right]
+    return any(anchor.search(decl_window) for anchor in _DECLARATION_ANCHORS)
+
+
 def _is_bold_font(font_name: str) -> bool:
     """Check if a font name indicates bold weight."""
     lower = font_name.lower()
@@ -260,6 +309,15 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
 
                 for match in matches:
                     matched_text = match.group(0)
+
+                    # WS-5: only allergen matches inside a real
+                    # declaration-context window count. Claim
+                    # phrases ("Gluten Free") on the front panel
+                    # must not trip the emphasis rule, and stray
+                    # marketing copy with an allergen name in it
+                    # shouldn't either.
+                    if not _in_declaration_context(page_text, match.start(), match.end()):
+                        continue
 
                     # Check if the allergen text is emphasised
                     # Emphasis indicators: all caps, bold font
