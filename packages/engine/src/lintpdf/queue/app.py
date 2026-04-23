@@ -140,7 +140,14 @@ def _configure_worker_process(**_: Any) -> None:
     from lintpdf.api.database import reset_db_state
     from lintpdf.api.logging_config import configure_logging
 
-    configure_logging()
+    # ``force=True`` is mandatory in a forked child — the module-level
+    # ``_configured`` flag is inherited True from the parent, which
+    # would skip handler re-installation. The child would then log
+    # through the parent's StreamHandler, whose internal RLock may
+    # have been inherited held-without-owner if the parent was mid-log
+    # at fork, deadlocking every child-side log call silently.
+    # No log output → silent task hang (the 2026-04-23 outage).
+    configure_logging(force=True)
     reset_db_state()
 
 
