@@ -131,7 +131,7 @@ export default function WebhookDeliveriesPage({
 
       <div className="mt-4 flex gap-2">
         <Button
-          variant={successFilter === "all" ? "default" : "secondary"}
+          variant={successFilter === "all" ? "primary" : "secondary"}
           size="sm"
           onClick={() => {
             setSuccessFilter("all");
@@ -141,7 +141,7 @@ export default function WebhookDeliveriesPage({
           All
         </Button>
         <Button
-          variant={successFilter === "failed" ? "default" : "secondary"}
+          variant={successFilter === "failed" ? "primary" : "secondary"}
           size="sm"
           onClick={() => {
             setSuccessFilter("failed");

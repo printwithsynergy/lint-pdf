@@ -369,7 +369,9 @@ function SwatchEditor({
 }) {
   function update(i: number, patch: Partial<BrandSpecColor>) {
     const next = colors.slice();
-    next[i] = { ...next[i], ...patch };
+    const current = next[i];
+    if (!current) return;
+    next[i] = { ...current, ...patch };
     onChange(next);
   }
   return (

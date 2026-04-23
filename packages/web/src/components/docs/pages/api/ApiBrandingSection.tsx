@@ -314,6 +314,15 @@ export default function ApiBrandingSection() {
     "colors": [{"name": "Coke Red", "value": "#F40009"}],
     "is_default": true
   }'`}
+        response={`{
+  "id": "brand-spec-uuid",
+  "name": "Coca-Cola",
+  "customer_name": "Coca-Cola Co.",
+  "colors": [{"name": "Coke Red", "value": "#F40009"}],
+  "rich_black_spec": null,
+  "is_default": true,
+  "is_archived": false
+}`}
       />
 
       <h4 className="font-semibold text-slate-900 mt-2 mb-2">BrandSpec fields</h4>
@@ -336,6 +345,15 @@ export default function ApiBrandingSection() {
   -H "Authorization: Bearer lpdf_live_..." \\
   -H "Content-Type: application/json" \\
   -d '{ "colors": [{"name": "New", "value": "#123456"}] }'`}
+        response={`{
+  "id": "brand-spec-uuid",
+  "name": "Coca-Cola",
+  "customer_name": "Coca-Cola Co.",
+  "colors": [{"name": "New", "value": "#123456"}],
+  "rich_black_spec": null,
+  "is_default": true,
+  "is_archived": false
+}`}
       />
 
       <Endpoint
@@ -345,6 +363,11 @@ export default function ApiBrandingSection() {
         auth
         request={`curl -X DELETE https://api.lintpdf.com/api/v1/brand-specs/SPEC_ID \\
   -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "id": "brand-spec-uuid",
+  "is_archived": true,
+  "is_default": false
+}`}
       />
 
       <Endpoint
@@ -354,6 +377,11 @@ export default function ApiBrandingSection() {
         auth
         request={`curl -X POST https://api.lintpdf.com/api/v1/brand-specs/SPEC_ID/restore \\
   -H "Authorization: Bearer lpdf_live_..."`}
+        response={`{
+  "id": "brand-spec-uuid",
+  "is_archived": false,
+  "is_default": false
+}`}
       />
     </section>
   );
