@@ -42,7 +42,16 @@ def create_celery_app(broker_url: str) -> Celery:
         # it. Without this, a redeploy abandons in-flight jobs and their
         # ``Job`` rows stay in ``processing`` forever.
         task_reject_on_worker_lost=True,
-        worker_max_tasks_per_child=25,  # Restart worker after 25 tasks (lower for larger files)
+        # Restart every prefork child after exactly ONE task. Diagnostic
+        # workaround for the 2026-04-23 silent preflight hang — the
+        # hypothesis is that the prefork child inherits some corrupt
+        # post-fork state (a locked mutex somewhere in SQLAlchemy,
+        # logging, or Celery's own state) that makes task execution
+        # deadlock before any user code runs. Forcing a fresh child
+        # per task means each preflight runs in a process whose only
+        # fork happened seconds before and whose parent was idle.
+        # Slower than a long-lived pool but unblocks preflight.
+        worker_max_tasks_per_child=1,
         # All beat-scheduled tasks must route to a queue the worker actually
         # listens on (``default`` / ``priority``) — Celery's default queue is
         # ``celery``, which no service consumes, so an unrouted scheduled task
