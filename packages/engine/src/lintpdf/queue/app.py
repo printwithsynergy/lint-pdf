@@ -54,6 +54,7 @@ def create_celery_app(broker_url: str) -> Celery:
             "lintpdf.queue.tasks.process_approval_timeouts": {"queue": "default"},
             "lintpdf.queue.tasks.reap_stale_jobs": {"queue": "default"},
             "lintpdf.queue.tasks.sweep_webhook_deliveries": {"queue": "default"},
+            "lintpdf.queue.audit_tasks.drain_ai_audit_rerun_queue": {"queue": "default"},
         },
         beat_schedule={
             "cleanup-expired-reports": {
@@ -75,6 +76,10 @@ def create_celery_app(broker_url: str) -> Celery:
             "sweep-webhook-deliveries": {
                 "task": "lintpdf.queue.tasks.sweep_webhook_deliveries",
                 "schedule": 86400.0,  # Daily
+            },
+            "drain-ai-audit-rerun-queue": {
+                "task": "lintpdf.queue.audit_tasks.drain_ai_audit_rerun_queue",
+                "schedule": 600.0,  # Every 10 minutes
             },
         },
     )
@@ -121,30 +126,29 @@ def _configure_worker_process(**_: Any) -> None:
     The API process calls ``init_db()`` on startup; the first task to
     land on this worker will re-init against the same DATABASE_URL but
     with a fresh engine owned entirely by the child.
+
+    NB: ``_drain_rerun_queue`` was previously called from here (WS-H).
+    It was moved to a Celery beat-scheduled task
+    (:func:`drain_ai_audit_rerun_queue`) to avoid blocking prefork
+    child boot on a DB query — the silent-death symptom we hit
+    on 2026-04-23 after #156 + #158 + #159.
     """
     from lintpdf.api.database import reset_db_state
     from lintpdf.api.logging_config import configure_logging
 
     configure_logging()
     reset_db_state()
-    # WS-H — drain any rows seeded into ai_audit_rerun_queue by
-    # Alembic 038. Best-effort: a DB flap here just means the
-    # queue drains on the next worker boot instead.
-    try:
-        _drain_rerun_queue()
-    except Exception:
-        import logging
-
-        logging.getLogger(__name__).exception(
-            "worker-boot: ai_audit_rerun_queue drain failed — will retry next boot"
-        )
 
 
 def _drain_rerun_queue() -> None:
     """Enqueue ``audit_findings_async`` for every row in the queue table.
 
-    Runs once per worker process start. Deletes rows as it enqueues
-    so a crash mid-drain resumes cleanly on the next boot.
+    Called by the beat-scheduled ``drain_ai_audit_rerun_queue`` task
+    (every 10 minutes), NOT from ``worker_process_init``. Blocking
+    the fork hook on a DB query turned out to be fatal — when PgBouncer
+    is busy or the query stalls, the child never reaches Celery's
+    task-pickup loop and every subsequent preflight sits in
+    ``received`` forever with no traceback.
     """
     from sqlalchemy import text
 
@@ -153,14 +157,12 @@ def _drain_rerun_queue() -> None:
     try:
         from lintpdf.queue.audit_tasks import audit_findings_async
     except Exception:
-        # audit_tasks pulls in Celery; during boot this should already
-        # be wired — if it isn't, skip silently.
+        # audit_tasks pulls in Celery; if for some reason it's not
+        # wired, skip silently — the task is harmless to skip.
         return
 
     session = get_db_session()
     try:
-        # Check if the table exists (pre-038 environments won't have
-        # it yet — skip silently).
         exists = session.execute(
             text(
                 "SELECT 1 FROM information_schema.tables "
@@ -186,7 +188,7 @@ def _drain_rerun_queue() -> None:
                 session.commit()
             except Exception:
                 session.rollback()
-                # Leave the row so a later boot retries.
+                # Leave the row so a later drain attempt retries.
     finally:
         import contextlib
 
