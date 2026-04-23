@@ -23,6 +23,16 @@ interface FindingsPanelProps {
   capabilityFillinEnabled?: boolean;
   /** Plan name, surfaced in the UpgradePrompt when present. */
   currentPlan?: string;
+  /**
+   * Optional controlled state for the severity filter. When both
+   * ``activeTab`` and ``onActiveTabChange`` are provided the component
+   * drives its filter from props so the parent (e.g. the share-viewer
+   * header chip row in WS-18) can set the tab externally. Omitting
+   * either falls back to the internal ``useState`` path so
+   * pre-existing callers keep working unchanged.
+   */
+  activeTab?: SeverityTab;
+  onActiveTabChange?: (tab: SeverityTab) => void;
 }
 
 type SeverityTab = "all" | "error" | "warning" | "advisory";
@@ -54,8 +64,20 @@ export function FindingsPanel({
   externalSourceLabel,
   capabilityFillinEnabled = true,
   currentPlan,
+  activeTab: controlledActiveTab,
+  onActiveTabChange,
 }: FindingsPanelProps) {
-  const [activeTab, setActiveTab] = useState<SeverityTab>("all");
+  const [internalActiveTab, setInternalActiveTab] = useState<SeverityTab>("all");
+  const isControlled =
+    controlledActiveTab !== undefined && onActiveTabChange !== undefined;
+  const activeTab = isControlled ? controlledActiveTab : internalActiveTab;
+  const setActiveTab = (tab: SeverityTab) => {
+    if (isControlled) {
+      onActiveTabChange(tab);
+    } else {
+      setInternalActiveTab(tab);
+    }
+  };
   const [filterScope, setFilterScope] = useState<"all" | "page">("all");
   const [searchQuery, setSearchQuery] = useState("");
 

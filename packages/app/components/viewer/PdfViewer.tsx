@@ -230,12 +230,29 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Findings summary for mobile bottom sheet
+  // Severity filter lifted from FindingsPanel so the mobile summary
+  // header (WS-18) can double as a filter trigger — tapping
+  // "2 errors" sets the panel to the errors tab. `"all"` means no
+  // severity filter applied.
+  const [findingsSeverity, setFindingsSeverity] = useState<
+    "all" | "error" | "warning" | "advisory"
+  >("all");
+
+  // Findings summary for mobile bottom sheet — both all-pages totals
+  // and a parallel current-page breakdown so the header can show
+  // "2 errors (1 this page)" without double-counting.
   const findingsSummary = useMemo(() => {
     const counts = { error: 0, warning: 0, advisory: 0 };
     for (const f of findings) counts[f.severity]++;
     return counts;
   }, [findings]);
+  const findingsSummaryThisPage = useMemo(() => {
+    const counts = { error: 0, warning: 0, advisory: 0 };
+    for (const f of findings) {
+      if (f.page_num === currentPage) counts[f.severity]++;
+    }
+    return counts;
+  }, [findings, currentPage]);
 
   // Health score
   const health = useMemo(() => {
@@ -693,6 +710,8 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             currentPage={currentPage}
             preflightSource={config.preflight_source}
             capabilityFillinEnabled={config.capability_fillin_enabled !== false}
+            activeTab={findingsSeverity}
+            onActiveTabChange={setFindingsSeverity}
           />
           {/* WS-E Art Info — trim size + dieline toggle + OCR text toggle +
               legend/art badged swatches. Data flows from the WS-D JobResponse
@@ -720,11 +739,41 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     return null;
   };
 
+  // WS-18: the header is now an interactive filter, not a display
+  // strip. Each chip shows the all-pages total alongside the
+  // current-page count in parentheses so users can see at a glance
+  // when a severity is concentrated elsewhere in the document.
   const summaryNode = (
-    <div className="flex items-center gap-3 text-xs font-medium">
-      <span className="text-red-400">{findingsSummary.error} errors</span>
-      <span className="text-amber-400">{findingsSummary.warning} warnings</span>
-      <span className="text-blue-400">{findingsSummary.advisory} advisory</span>
+    <div className="flex items-center gap-2 text-xs font-medium">
+      {(
+        [
+          { key: "error", label: "errors", color: "text-red-400", ring: "ring-red-400" },
+          { key: "warning", label: "warnings", color: "text-amber-400", ring: "ring-amber-400" },
+          { key: "advisory", label: "advisory", color: "text-blue-400", ring: "ring-blue-400" },
+        ] as const
+      ).map((chip) => {
+        const total = findingsSummary[chip.key];
+        const thisPage = findingsSummaryThisPage[chip.key];
+        const active = findingsSeverity === chip.key;
+        return (
+          <button
+            key={chip.key}
+            type="button"
+            onClick={() =>
+              setFindingsSeverity(active ? "all" : chip.key)
+            }
+            aria-pressed={active}
+            className={`rounded-full px-2 py-0.5 transition-colors ${chip.color} hover:bg-white/5 ${
+              active ? `bg-white/10 ring-1 ${chip.ring}` : ""
+            }`}
+          >
+            {total} {chip.label}
+            <span className="ml-1 text-[10px] text-slate-400">
+              ({thisPage} this page)
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 
