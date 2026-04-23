@@ -180,7 +180,6 @@ export function setCheckEnabled(
   checkId: string,
   enabled: boolean,
 ): Profile {
-  const { severity } = resolveCheckState(profile, checkId);
   if (enabled) {
     // Re-enabling: drop any "off" override / disabled entry and
     // restore the prior severity (or the default if none).

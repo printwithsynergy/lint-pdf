@@ -172,7 +172,7 @@ export default function TenantEntitlementsPage(): React.ReactNode {
     }
   }
 
-  if (loading || !data) return <SkeletonDashboard />;
+  if (loading || !data) return <SkeletonDashboard type="form" />;
 
   const overrides = data.overrides ?? {};
   const effective = data.effective ?? {};

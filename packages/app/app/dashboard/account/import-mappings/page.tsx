@@ -523,7 +523,7 @@ export default function ImportMappingsPage() {
                 </td>
                 <td className="py-3 text-right">
                   <Button
-                    variant="outline"
+                    variant="secondary"
                     size="sm"
                     onClick={() => beginEdit(m)}
                   >
@@ -612,7 +612,7 @@ export default function ImportMappingsPage() {
             <header className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Fields</h3>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() =>
                   setFieldRows((rows) => [
@@ -736,7 +736,7 @@ export default function ImportMappingsPage() {
             <header className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Severity map</h3>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={() =>
                   setSeverityRows((rows) => [...rows, { raw: "", mapped: "" }])
@@ -937,7 +937,7 @@ export default function ImportMappingsPage() {
               Cancel
             </Button>
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={runPreview}
               disabled={previewing || !editingId}
               title={

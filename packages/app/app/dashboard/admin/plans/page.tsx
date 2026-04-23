@@ -77,7 +77,7 @@ export default function AdminPlansPage(): React.ReactNode {
       }
       const doc = (await resp.json()) as PlanLimitList;
       setData(doc.plans);
-      if (!activePlan && doc.plans.length > 0) {
+      if (!activePlan && doc.plans.length > 0 && doc.plans[0]) {
         setActivePlan(doc.plans[0].plan);
       }
       setDraft({});
@@ -162,7 +162,7 @@ export default function AdminPlansPage(): React.ReactNode {
     }
   }
 
-  if (loading || !data) return <SkeletonDashboard />;
+  if (loading || !data) return <SkeletonDashboard type="form" />;
 
   // Union of all keys across baseline + overrides so a key added to
   // overrides (but not baseline) still gets a row to edit / clear.
