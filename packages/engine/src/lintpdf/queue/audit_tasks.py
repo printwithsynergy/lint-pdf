@@ -236,3 +236,26 @@ def _mark_pending_retry(db: Any, job_id: str) -> None:
         f.audit_at = datetime.now(UTC)
     if stale:
         db.commit()
+
+
+@celery_app.task(
+    name="lintpdf.queue.audit_tasks.drain_ai_audit_rerun_queue",
+)
+def drain_ai_audit_rerun_queue() -> int:
+    """Beat-scheduled drain of the ``ai_audit_rerun_queue`` seed table.
+
+    Runs every 10 min. Reads every row, ``.delay()``s
+    :func:`audit_findings_async` for each, and deletes the row on
+    successful enqueue. Idempotent + crash-safe: if a ``.delay``
+    succeeds but the DELETE fails, the next run just re-enqueues
+    that job (:func:`audit_findings_async` itself is a no-op when
+    findings are already audited).
+
+    Moved here from ``worker_process_init`` in WS-H's follow-up
+    hotfix — running DB I/O inside a fork hook hung the child
+    silently on PgBouncer pressure.
+    """
+    from lintpdf.queue.app import _drain_rerun_queue
+
+    _drain_rerun_queue()
+    return 0
