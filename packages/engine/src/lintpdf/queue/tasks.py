@@ -410,6 +410,11 @@ def run_preflight(
         Dict with job results including findings and summary.
     """
     start = time.monotonic()
+    # Diagnostic trace — the post-pivot prod deploy had preflight tasks
+    # hang silently between "Task received" and the first real log.
+    # Each line is a stage marker; if the logs show [STAGE 3] but not
+    # [STAGE 4], the culprit sits between them.
+    logger.warning("[PFDIAG 0] task entered job_id=%s", job_id)
     logger.info("Starting preflight job %s with profile %s", job_id, profile_id)
 
     # Wake-on-need: kick cold-start warmers for every downstream
@@ -418,11 +423,14 @@ def run_preflight(
     # engine containers boot in parallel with work we'd do anyway.
     # If a dep isn't configured on this deployment (URL env var
     # unset) the warmer silently skips — no noise in the logs.
+    logger.warning("[PFDIAG 1] before ensure_warm import")
     try:
         from lintpdf.warming import ensure_warm
 
-        _warm_targets: list[str] = ["inference", "audit"]
+        logger.warning("[PFDIAG 2] ensure_warm imported")
+        _warm_targets: list[str] = ["similarity"]
         ensure_warm(_warm_targets)
+        logger.warning("[PFDIAG 3] ensure_warm returned")
     except Exception:  # pragma: no cover — warmers never fail the task
         logger.exception("warm: ensure_warm threw; continuing")
 
@@ -430,15 +438,21 @@ def run_preflight(
         # Get DB session
         import uuid as uuid_mod
 
+        logger.warning("[PFDIAG 4] pre get_db_session import")
         from lintpdf.api.database import get_db_session
         from lintpdf.api.models import Job, JobFinding, JobStatus
 
+        logger.warning("[PFDIAG 5] models imported; parsing job_uuid")
         job_uuid = uuid_mod.UUID(job_id)
+        logger.warning("[PFDIAG 6] acquiring DB session")
         db = get_db_session()
+        logger.warning("[PFDIAG 7] DB session acquired")
         job: Job | None = None
 
         try:
+            logger.warning("[PFDIAG 8] querying Job row")
             job = db.query(Job).filter(Job.id == job_uuid).first()
+            logger.warning("[PFDIAG 9] Job row fetched: %s", "found" if job else "None")
             if job is None:
                 logger.error("Job %s not found in database", job_id)
                 return {"job_id": job_id, "status": "failed", "error": "Job not found"}
@@ -464,8 +478,10 @@ def run_preflight(
                 }
 
             # Mark as processing
+            logger.warning("[PFDIAG 10] marking PROCESSING + commit")
             job.status = JobStatus.PROCESSING
             db.commit()
+            logger.warning("[PFDIAG 11] PROCESSING commit done")
 
             # ------------------------------------------------------------------
             # Branch on preflight_source: external imports and minimal (viewer
@@ -482,11 +498,13 @@ def run_preflight(
                 return _run_minimal_preflight(self=self, db=db, job=job, job_id=job_id, start=start)
 
             # Download PDF from storage (try R2, fall back to Redis cache)
+            logger.warning("[PFDIAG 12] pre storage import + download")
             from lintpdf.api.storage import get_storage
 
             storage = get_storage()
             try:
                 pdf_bytes = storage.download_pdf(file_key)
+                logger.warning("[PFDIAG 13] PDF downloaded (%d bytes)", len(pdf_bytes))
             except Exception as r2_err:
                 logger.warning(
                     "R2 download failed for %s: %s (type=%s) — trying Redis cache",
