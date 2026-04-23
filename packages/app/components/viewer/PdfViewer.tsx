@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import type { ComparisonState, PageInfo, ViewerConfig, ViewerFinding } from "./types";
 import { DEFAULT_VIEWER_CONFIG, DEFAULT_DPI, ViewerApiContext } from "./types";
 import { PageCanvas } from "./PageCanvas";
-import { ArtInfoPanel } from "./ArtInfoPanel";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./PageNavigator";
 import { ViewerToolbar } from "./ViewerToolbar";
@@ -693,26 +692,6 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             currentPage={currentPage}
             preflightSource={config.preflight_source}
             capabilityFillinEnabled={config.capability_fillin_enabled !== false}
-          />
-          {/* WS-E Art Info — trim size + dieline toggle + OCR text toggle +
-              legend/art badged swatches. Data flows from the WS-D JobResponse
-              fields (dieline, art_size_mm, legend_swatches) and WS-C
-              (ocr_text_layer). Props default to safe empty values so the
-              panel is a no-op when the job doesn't carry packaging data. */}
-          <ArtInfoPanel
-            jobId={jobId}
-            dieline={
-              (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
-            }
-            artSize={
-              (config as { art_size_mm?: import("./types").ArtSizeMM | null }).art_size_mm ?? null
-            }
-            swatches={
-              (config as { legend_swatches?: import("./types").SwatchClassification[] }).legend_swatches ?? []
-            }
-            ocrLayer={
-              (config as { ocr_text_layer?: import("./types").OCRPage[] | null }).ocr_text_layer ?? null
-            }
           />
         </>
       );

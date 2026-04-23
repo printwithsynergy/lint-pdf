@@ -126,12 +126,6 @@ export const docSections: DocSection[] = [
           "Opt-in AI verification of engine findings — confirmed / disputed / needs_context verdicts on every row.",
       },
       {
-        slug: "entitlements",
-        label: "Entitlements & AI grants",
-        description:
-          "Per-feature AI grants, master kill-switch, monthly spend cap, and the resolver merge order.",
-      },
-      {
         slug: "ai/troubleshooting",
         label: "Troubleshooting",
         description: "FAQ + full error-code reference.",

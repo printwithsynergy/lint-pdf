@@ -6,7 +6,7 @@ import uuid as uuid_mod
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session  # noqa: TC002
 
@@ -138,11 +138,8 @@ class UpdateEntitlementsRequest(BaseModel):
     # Setting True forces-on regardless of plan; setting False
     # forces-off even on Enterprise. Deleting the key (via the
     # clear-overrides endpoint) reverts to the plan default.
-    #
-    # NB: ``ai_audit_enabled`` dropped in WS-F — migrated into
-    # ``ai_features`` below. ``ai_enabled`` stays as the hard
-    # master kill-switch; AND-gated with the per-feature grant.
     desktop_app_enabled: bool | None = None
+    ai_audit_enabled: bool | None = None
     ai_enabled: bool | None = None
     webhooks_enabled: bool | None = None
     whitelabel_enabled: bool | None = None
@@ -166,28 +163,6 @@ class UpdateEntitlementsRequest(BaseModel):
     # match any feature check.
     allowed_report_formats: list[str] | None = None
     allowed_preflight_sources: list[str] | None = None
-    # Per-feature AI grant list. Union-merged with plan-tier baseline
-    # + plan_limit_overrides by the resolver. Unknown flag names are
-    # rejected by the field validator below. Setting ``[]`` forces
-    # "no AI features" even on Enterprise; leaving this key absent
-    # (via the clear-overrides endpoint) reverts to the plan default.
-    ai_features: list[str] | None = None
-
-    @field_validator("ai_features")
-    @classmethod
-    def _ai_features_are_known(cls, v: list[str] | None) -> list[str] | None:
-        if v is None:
-            return None
-        from lintpdf.tenants.entitlements import AI_FEATURE_FLAGS
-
-        bad = [f for f in v if f not in AI_FEATURE_FLAGS]
-        if bad:
-            raise ValueError(
-                f"Unknown ai_features flag(s): {sorted(set(bad))}. "
-                f"Allowed: {sorted(AI_FEATURE_FLAGS)}"
-            )
-        # Dedupe + sort for deterministic DB rows.
-        return sorted(set(v))
 
 
 class EntitlementOverridesResponse(BaseModel):
@@ -2511,13 +2486,6 @@ async def get_all_ai_usage(
                 "feature": log.feature,
                 "credits_consumed": log.credits_consumed,
                 "cost": float(log.cost),
-                # WS-G per-call metering — nullable on pre-037 rows.
-                "model": log.model,
-                "input_tokens": log.input_tokens,
-                "output_tokens": log.output_tokens,
-                "cache_read_tokens": log.cache_read_tokens,
-                "cache_write_tokens": log.cache_write_tokens,
-                "cost_cents": log.cost_cents,
                 "created_at": log.created_at.isoformat(),
             }
             for log in logs
@@ -2527,77 +2495,6 @@ async def get_all_ai_usage(
         "total": total,
         "page": page,
         "page_size": page_size,
-    }
-
-
-@router.get("/ai/usage/summary")
-async def get_ai_usage_summary(
-    tenant_id: str | None = None,
-    feature: str | None = None,
-    month: str | None = None,  # "YYYY-MM" — defaults to current
-    db: Session = Depends(get_db),
-    _admin: str = Depends(_verify_admin_key),
-) -> dict[str, Any]:
-    """WS-G aggregation endpoint for the admin spend dashboard.
-
-    Returns one row per (tenant, feature) with ``cost_cents`` summed
-    across the selected month. ``month`` accepts ``YYYY-MM``;
-    unset means "current calendar month in UTC".
-    """
-    from datetime import UTC, datetime
-
-    from sqlalchemy import func
-
-    from lintpdf.api.models import AIUsageLog
-
-    if month:
-        try:
-            y, m = month.split("-", 1)
-            month_start = datetime(int(y), int(m), 1, tzinfo=UTC)
-        except (ValueError, TypeError):
-            raise HTTPException(status_code=422, detail="month must be YYYY-MM") from None
-    else:
-        now = datetime.now(UTC)
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-
-    if month_start.month == 12:
-        month_end = month_start.replace(year=month_start.year + 1, month=1)
-    else:
-        month_end = month_start.replace(month=month_start.month + 1)
-
-    q = (
-        db.query(
-            AIUsageLog.tenant_id,
-            AIUsageLog.feature,
-            func.coalesce(func.sum(AIUsageLog.cost_cents), 0).label("cost_cents"),
-            func.count(AIUsageLog.id).label("call_count"),
-        )
-        .filter(
-            AIUsageLog.created_at >= month_start,
-            AIUsageLog.created_at < month_end,
-        )
-        .group_by(AIUsageLog.tenant_id, AIUsageLog.feature)
-    )
-    if tenant_id:
-        try:
-            q = q.filter(AIUsageLog.tenant_id == uuid_mod.UUID(tenant_id))
-        except ValueError:
-            raise HTTPException(status_code=422, detail="tenant_id must be UUID") from None
-    if feature:
-        q = q.filter(AIUsageLog.feature == feature)
-
-    rows = q.all()
-    return {
-        "month": month_start.strftime("%Y-%m"),
-        "rows": [
-            {
-                "tenant_id": str(r.tenant_id),
-                "feature": r.feature,
-                "cost_cents": int(r.cost_cents or 0),
-                "call_count": int(r.call_count or 0),
-            }
-            for r in rows
-        ],
     }
 
 
@@ -3978,7 +3875,7 @@ class AdminTenantDefaultProfileResponse(BaseModel):
 _VALID_VISIBILITY_MODES = {"all", "plan", "tenants", "plan_and_tenants"}
 
 
-def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:
+def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:  # noqa: ANN001
     from lintpdf.profiles.schema import PreflightProfile
 
     try:
@@ -3987,7 +3884,7 @@ def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:
         description = fp.description
         conformance = fp.conformance
         workflow = fp.workflow
-    except Exception:
+    except Exception:  # noqa: BLE001
         name = sp.profile_id
         description = None
         conformance = None

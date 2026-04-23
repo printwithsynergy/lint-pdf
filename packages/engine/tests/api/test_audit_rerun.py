@@ -1,10 +1,10 @@
 """Tests for ``POST /api/v1/jobs/{job_id}/audit:rerun``.
 
-Fakes the Claude auditor so the endpoint is exercised end-to-end
-without a live Anthropic call. The rerun endpoint bypasses the
+Fakes the Modal auditor so the endpoint is exercised end-to-end
+without a live deploy. The rerun endpoint bypasses the
 ``ai_audit_enabled`` entitlement gate (so pilots + back-catalogue
-refreshes work) but still requires ``ANTHROPIC_API_KEY`` in the
-env — both paths covered below.
+refreshes work) but still requires ``LINTPDF_AUDIT_MODAL_URL`` in
+the env — both paths covered below.
 """
 
 from __future__ import annotations
@@ -107,7 +107,7 @@ class TestAuditRerun:
 
         job_id = _seed_complete_job(db_session, tenant.id, finding_count=2)
 
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-stub")
+        monkeypatch.setenv("LINTPDF_AUDIT_MODAL_URL", "https://stub.modal.run")
         from lintpdf.queue import tasks as tasks_mod
 
         def fake_run_customer_audit(
@@ -125,7 +125,7 @@ class TestAuditRerun:
             for f in findings:
                 f.audit_status = "confirmed"
                 f.audit_rationale = "Forced rerun smoke."
-                f.audit_model = "claude-haiku-4-5"
+                f.audit_model = "modal:qwen2-vl-7b"
                 f.audit_at = datetime.now(UTC)
             db.commit()
             return len(findings)
@@ -140,7 +140,7 @@ class TestAuditRerun:
         assert resp.status_code == 200, resp.text
         body = resp.json()
         assert body["findings_updated"] == 2
-        assert body["model"] == "claude-haiku-4-5"
+        assert body["model"] == "modal:qwen2-vl-7b"
         assert body["job_id"] == str(job_id)
 
         # Verdicts actually landed in the DB.
@@ -162,15 +162,15 @@ class TestAuditRerun:
         assert tenant is not None
         job_id = _seed_complete_job(db_session, tenant.id, finding_count=1)
 
-        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-stub")
+        monkeypatch.setenv("LINTPDF_AUDIT_MODAL_URL", "https://stub.modal.run")
         from lintpdf.queue import tasks as tasks_mod
 
         monkeypatch.setattr(
             tasks_mod,
             "run_customer_audit",
-            MagicMock(side_effect=RuntimeError("claude is napping")),
+            MagicMock(side_effect=RuntimeError("modal is napping")),
         )
 
         resp = client.post(f"/api/v1/jobs/{job_id}/audit:rerun")
         assert resp.status_code == 502
-        assert "claude is napping" in resp.json().get("detail", "")
+        assert "modal is napping" in resp.json().get("detail", "")
