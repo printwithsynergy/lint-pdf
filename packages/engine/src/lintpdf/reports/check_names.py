@@ -189,6 +189,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_COLOR_020": CheckInfo(
         "Overink Warning", "Multiple color operations accumulate high ink levels."
     ),
+    "LPDF_COLOR_021": CheckInfo(
+        "Rich Black Text",
+        "Text uses more than one CMYK ink — pure K (100/0/0/0) is recommended "
+        "at every size to avoid misregistration.",
+    ),
     # ── Page Geometry ─────────────────────────────────────────────────────
     "LPDF_BOX_001": CheckInfo(
         "Missing Trim/Bleed Box", "Page boundaries needed for cutting and bleed are not defined."
@@ -306,6 +311,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_STROKE_003": CheckInfo(
         "Butt Cap on Thin Line",
         "A butt line cap on a thin stroke may cause visible gaps — round cap recommended.",
+    ),
+    "LPDF_STROKE_007": CheckInfo(
+        "Rich Black Stroke",
+        "A thin stroke (0.5-1.0pt) uses more than one CMYK ink - pure K or a "
+        "single spot is recommended on fine line work.",
     ),
     # ── Ink & Advanced Color ──────────────────────────────────────────────
     "LPDF_INK_001": CheckInfo("TAC Heatmap", "Total Area Coverage data for this page."),
