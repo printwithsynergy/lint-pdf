@@ -47,6 +47,7 @@ Viewer-tier tenants see all three as `false` / `[]`. Starter and above see them 
 | `layers` | ✗ | Extracted from PDF at job creation; not re-derivable | Layers panel (interactive via `ocg_on` / `ocg_off` query params on the tile endpoint — see below) |
 | `thumbnails` | ✓ (always populated on `complete`) | Page rasterizer | Page thumbnails strip |
 | `metadata` | ✓ (always populated on `complete`) | PDF metadata extractor | Document info panel |
+| `art_info` | ✗ (filled at ingest, not re-derivable) | Dieline detector (name-match + Sonnet fallback) + art-size inspector (dieline centerline) + legend-vs-art classifier + Claude OCR for outlined text | Art Info panel — trim size, dieline overlay toggle, OCR text-layer toggle, swatch list with legend/art badges. Gated on the tenant's `ai_features` grants (`dieline`, `art_size`, `legend`, `ocr`); locked features surface as `LPDF_FEATURE_LOCKED` findings instead of fields. |
 
 Unknown capability names are ignored; the map is forward-compatible.
 
