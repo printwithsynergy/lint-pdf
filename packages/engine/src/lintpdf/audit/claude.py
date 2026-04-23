@@ -246,23 +246,30 @@ class ClaudeAuditor:
             }
         )
 
-        response = self._client.messages.create(
-            model=self._model,
-            max_tokens=1536,
-            system=[
-                {
-                    "type": "text",
-                    "text": _SYSTEM_PROMPT,
-                    "cache_control": {
-                        "type": "ephemeral",
-                        "ttl": _CACHE_TTL,
-                    },
-                }
-            ],
-            tools=[_TOOL_DEFINITION],
-            tool_choice={"type": "tool", "name": "record_verdict"},
-            messages=[{"role": "user", "content": content}],
-        )
+        from lintpdf.audit.outage import record_outcome
+
+        try:
+            response = self._client.messages.create(
+                model=self._model,
+                max_tokens=1536,
+                system=[
+                    {
+                        "type": "text",
+                        "text": _SYSTEM_PROMPT,
+                        "cache_control": {
+                            "type": "ephemeral",
+                            "ttl": _CACHE_TTL,
+                        },
+                    }
+                ],
+                tools=[_TOOL_DEFINITION],
+                tool_choice={"type": "tool", "name": "record_verdict"},
+                messages=[{"role": "user", "content": content}],
+            )
+        except Exception:
+            record_outcome(False)
+            raise
+        record_outcome(True)
 
         out: dict[int, AuditResult | None] = {}
         for block in response.content:

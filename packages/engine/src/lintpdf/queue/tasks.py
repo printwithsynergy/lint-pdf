@@ -81,17 +81,6 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     return changed
 
 
-def _maybe_run_customer_audit(db: Any, job: Any, job_id: str) -> None:
-    """Gated, best-effort wrapper used by the post-preflight hook.
-
-    Wraps :func:`run_customer_audit` so exceptions don't fail the
-    job. The rerun endpoint calls the unwrapped function directly
-    so 5xx / auditor errors are visible to the caller.
-    """
-    try:
-        run_customer_audit(db, job, job_id, force=False)
-    except Exception:
-        logger.exception("audit: customer audit failed for job %s", job_id)
 
 
 def _auto_generate_reports(
@@ -681,14 +670,19 @@ def run_preflight(
 
             db.commit()
 
-            # AI accuracy audit — runs after the initial findings commit
-            # when the tenant opted into ``ai_audit_enabled`` (Scale +
-            # Enterprise). Writes verdicts back to each JobFinding row's
-            # ``audit_*`` columns via a second commit. Best-effort: any
-            # exception here is logged and swallowed so an auditor hiccup
-            # never fails the preflight job itself — the viewer just
-            # renders no chip on that finding.
-            _maybe_run_customer_audit(db, job, job_id)
+            # AI accuracy audit — enqueued on a separate Celery task so
+            # a flaky Anthropic call never blocks the preflight critical
+            # path (WS-B). ``audit_findings_async`` retries with
+            # exponential back-off for up to 24h; after that the viewer
+            # renders a retry chip from ``audit_status='pending_retry'``.
+            try:
+                from lintpdf.queue.audit_tasks import audit_findings_async
+
+                audit_findings_async.delay(job_id)
+            except Exception:
+                logger.exception(
+                    "audit: failed to enqueue async audit for job %s", job_id
+                )
 
             logger.info("Completed preflight job %s in %dms", job_id, duration_ms)
 

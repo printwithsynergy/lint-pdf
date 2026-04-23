@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import os
 import uuid as uuid_mod
 from typing import Any
 
@@ -1224,14 +1225,14 @@ class RerunAuditResponse(BaseModel):
         description=(
             "How many ``JobFinding`` rows received a fresh "
             "verdict. Zero is a valid outcome — it means the "
-            "Modal auditor returned all-null verdicts (transport "
+            "Claude auditor returned all-null verdicts (transport "
             "error on every batch) or the job has no findings. "
             "Not an error."
         ),
     )
     model: str = Field(
         ...,
-        description="Auditor model used (e.g. ``modal:qwen2-vl-7b``).",
+        description="Auditor model used (e.g. ``claude-haiku-4-5``).",
     )
 
 
@@ -1247,18 +1248,18 @@ async def rerun_audit(
 ) -> RerunAuditResponse:
     """Re-run the customer AI audit against an already-complete job.
 
-    The normal audit runs inline at ``run_preflight`` completion;
-    this endpoint is for the cases it isn't useful to resubmit the
-    whole PDF:
+    The normal audit runs async at ``run_preflight`` completion
+    via ``audit_findings_async``; this endpoint is for the cases
+    it isn't useful to resubmit the whole PDF:
 
-      * A Modal prompt tune dropped; ops wants to refresh verdicts
+      * A Claude prompt tune dropped; ops wants to refresh verdicts
         on historical jobs.
-      * The Modal endpoint was down when the job originally ran;
-        the verdicts are all NULL and the customer wants them
-        refreshed once service recovers.
-      * An admin toggled ``ai_audit_enabled`` on mid-flight for
-        a pilot tenant and wants to populate the audit field on
-        their back-catalogue.
+      * Anthropic was down when the async audit first ran and the
+        24h retry ceiling expired; the verdicts are all NULL and
+        the customer wants them refreshed once service recovers.
+      * An admin toggled ``"audit"`` into a tenant's ``ai_features``
+        mid-flight for a pilot and wants to populate the audit
+        columns on their back-catalogue.
 
     Bypasses the entitlement gate (so pilots work), but still
     requires ``ANTHROPIC_API_KEY`` to be set — otherwise the helper
@@ -1302,5 +1303,5 @@ async def rerun_audit(
     return RerunAuditResponse(
         job_id=job.id,
         findings_updated=changed,
-        model="modal:qwen2-vl-7b",
+        model=os.environ.get("LINTPDF_AUDIT_MODEL", "claude-haiku-4-5"),
     )

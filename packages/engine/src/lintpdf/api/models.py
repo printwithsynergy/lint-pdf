@@ -22,11 +22,18 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy import JSON as SA_JSON
 from sqlalchemy import text as sa_text
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from lintpdf.tenants.models import TenantPlan
+
+# PG_ARRAY only compiles under the Postgres dialect — SQLite (used by
+# the unit-test fixtures) raises CompileError. Fall back to JSON there.
+# ``with_variant`` keeps the Postgres-side behaviour identical while
+# giving the SQLite test harness a column shape it can render.
+_PG_UUID_ARRAY = PG_ARRAY(Uuid).with_variant(SA_JSON(), "sqlite")
 
 
 class Base(DeclarativeBase):
@@ -511,7 +518,7 @@ class SystemProfile(Base):
     )
     min_plan: Mapped[str | None] = mapped_column(String(32), nullable=True)
     visible_tenant_ids: Mapped[list[uuid.UUID] | None] = mapped_column(
-        PG_ARRAY(Uuid), nullable=True
+        _PG_UUID_ARRAY, nullable=True
     )
     created_by_admin_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(

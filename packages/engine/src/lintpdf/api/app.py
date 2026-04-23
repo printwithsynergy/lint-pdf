@@ -16,6 +16,7 @@ from lintpdf.api.routes import (
     ai_config,
     ai_credits,
     ai_generate,
+    ai_health,
     ai_interpret,
     ai_presets,
     ai_usage,
@@ -139,7 +140,7 @@ async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
                 seed_system_profiles_from_bundled(_seed_db)
             finally:
                 _seed_db.close()
-        except Exception:  # noqa: BLE001
+        except Exception:
             import logging
 
             logging.getLogger(__name__).exception(
@@ -248,6 +249,7 @@ def create_app() -> FastAPI:
 
     # Mount routers
     app.include_router(health.router)  # /ready, /health — always mounted
+    app.include_router(ai_health.router)  # /api/v1/ai/health — unauthenticated outage probe
     if not control_plane_only:
         app.include_router(jobs.router)
     app.include_router(profiles.router)
