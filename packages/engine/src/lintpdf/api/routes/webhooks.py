@@ -33,6 +33,18 @@ class WebhookTestResponse(BaseModel):
     event: str = "test.ping"
 
 
+class WebhookSecretResponse(BaseModel):
+    """One-shot response carrying a freshly generated HMAC secret.
+
+    Returned by secret-rotation endpoints. The server does not persist a
+    cleartext copy of the secret after this response is built — callers
+    must capture it now.
+    """
+
+    id: str
+    secret: str
+
+
 router = APIRouter(prefix="/api/v1/webhooks", tags=["webhooks"])
 
 # Private/reserved IP ranges that webhook URLs must not resolve to
@@ -71,13 +83,20 @@ def _validate_webhook_url(url: str) -> None:
         pass  # Not an IP literal — hostname is fine
 
 
-@router.post("", response_model=WebhookResponse, status_code=status.HTTP_201_CREATED)
-async def create_webhook(
+def create_webhook_for_tenant(
+    db: Session,
+    tenant: Tenant,
     request: WebhookCreateRequest,
-    db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
-) -> WebhookResponse:
-    """Register a new webhook endpoint."""
+) -> tuple[WebhookEndpoint, str]:
+    """Register a new webhook endpoint for ``tenant``.
+
+    Returns the persisted row and the freshly generated signing secret
+    (the secret is never re-projected anywhere else, so callers must
+    capture it on this return). Entitlement gates are enforced here so
+    tenant-scoped and admin-scoped callers see identical behavior;
+    site-admins should upgrade a tenant's plan before provisioning
+    extra endpoints rather than bypassing the gate.
+    """
     from lintpdf.tenants.entitlements import resolve_entitlements
 
     entitlements = resolve_entitlements(tenant)
@@ -88,7 +107,6 @@ async def create_webhook(
             detail="Webhooks (Tower Alerts) require Growth plan or above.",
         )
 
-    # Enforce max webhook count
     existing_count = (
         db.query(WebhookEndpoint).filter(WebhookEndpoint.tenant_id == tenant.id).count()
     )
@@ -100,12 +118,13 @@ async def create_webhook(
 
     _validate_webhook_url(request.url)
 
+    secret = secrets.token_urlsafe(32)
     webhook = WebhookEndpoint(
         id=uuid_mod.uuid4(),
         tenant_id=tenant.id,
         url=request.url,
         events=request.events,
-        secret=secrets.token_urlsafe(32),
+        secret=secret,
         is_active=True,
         max_retries=request.max_retries,
         retry_base_delay_seconds=request.retry_base_delay_seconds,
@@ -116,30 +135,18 @@ async def create_webhook(
     db.add(webhook)
     db.commit()
     db.refresh(webhook)
+    return webhook, secret
 
-    return _webhook_to_response(webhook)
 
-
-@router.get("", response_model=WebhookListResponse)
-async def list_webhooks(
-    db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
-) -> WebhookListResponse:
-    """List all registered webhook endpoints for the current tenant."""
-    endpoints: list[WebhookEndpoint] = (
+def list_webhooks_for_tenant(db: Session, tenant: Tenant) -> list[WebhookEndpoint]:
+    return (
         db.query(WebhookEndpoint).filter(WebhookEndpoint.tenant_id == tenant.id).all()
     )
-    return WebhookListResponse(webhooks=[_webhook_to_response(e) for e in endpoints])
 
 
-@router.patch("/{webhook_id}", response_model=WebhookResponse)
-async def update_webhook(
-    webhook_id: str,
-    request: WebhookUpdateRequest,
-    db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
-) -> WebhookResponse:
-    """Update a webhook endpoint (URL, events, or active status)."""
+def _resolve_webhook(
+    db: Session, tenant: Tenant, webhook_id: str
+) -> WebhookEndpoint:
     try:
         uid = uuid_mod.UUID(webhook_id)
     except ValueError as exc:
@@ -158,6 +165,16 @@ async def update_webhook(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Webhook '{webhook_id}' not found.",
         )
+    return endpoint
+
+
+def update_webhook_for_tenant(
+    db: Session,
+    tenant: Tenant,
+    webhook_id: str,
+    request: WebhookUpdateRequest,
+) -> WebhookEndpoint:
+    endpoint = _resolve_webhook(db, tenant, webhook_id)
 
     if request.url is not None:
         _validate_webhook_url(request.url)
@@ -186,88 +203,32 @@ async def update_webhook(
 
     db.commit()
     db.refresh(endpoint)
-
-    return _webhook_to_response(endpoint)
-
-
-def _webhook_to_response(e: WebhookEndpoint) -> WebhookResponse:
-    """One place to project WebhookEndpoint → WebhookResponse.
-
-    Keeps the three routes (create / list / update) from drifting when a
-    new column is added. ``max_retries``, ``retry_base_delay_seconds``,
-    ``retry_max_delay_seconds``, ``delivery_retention_days``, and
-    ``retention_overrides`` return ``None`` when the row inherits the
-    platform default.
-    """
-    return WebhookResponse(
-        id=e.id,
-        url=e.url,
-        events=e.events,
-        is_active=e.is_active,
-        created_at=e.created_at,
-        max_retries=e.max_retries,
-        retry_base_delay_seconds=e.retry_base_delay_seconds,
-        retry_max_delay_seconds=e.retry_max_delay_seconds,
-        delivery_retention_days=e.delivery_retention_days,
-        retention_overrides=e.retention_overrides,
-    )
+    return endpoint
 
 
-@router.delete("/{webhook_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_webhook(
-    webhook_id: str,
-    db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
+def delete_webhook_for_tenant(
+    db: Session, tenant: Tenant, webhook_id: str
 ) -> None:
-    """Remove a webhook endpoint."""
-    try:
-        uid = uuid_mod.UUID(webhook_id)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid webhook ID format.",
-        ) from exc
-
-    endpoint: WebhookEndpoint | None = (
-        db.query(WebhookEndpoint)
-        .filter(WebhookEndpoint.id == uid, WebhookEndpoint.tenant_id == tenant.id)
-        .first()
-    )
-    if endpoint is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found.",
-        )
-
+    endpoint = _resolve_webhook(db, tenant, webhook_id)
     db.delete(endpoint)
     db.commit()
 
 
-@router.post("/{webhook_id}/test", response_model=WebhookTestResponse)
-async def test_webhook(
-    webhook_id: str,
-    db: Session = Depends(get_db),
-    tenant: Tenant = Depends(get_current_tenant),
-) -> WebhookTestResponse:
-    """Send a test payload to a webhook endpoint to verify connectivity."""
-    try:
-        uid = uuid_mod.UUID(webhook_id)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Invalid webhook ID format.",
-        ) from exc
+def rotate_webhook_secret_for_tenant(
+    db: Session, tenant: Tenant, webhook_id: str
+) -> tuple[WebhookEndpoint, str]:
+    endpoint = _resolve_webhook(db, tenant, webhook_id)
+    new_secret = secrets.token_urlsafe(32)
+    endpoint.secret = new_secret
+    db.commit()
+    db.refresh(endpoint)
+    return endpoint, new_secret
 
-    endpoint: WebhookEndpoint | None = (
-        db.query(WebhookEndpoint)
-        .filter(WebhookEndpoint.id == uid, WebhookEndpoint.tenant_id == tenant.id)
-        .first()
-    )
-    if endpoint is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Webhook '{webhook_id}' not found.",
-        )
+
+def test_webhook_for_tenant(
+    db: Session, tenant: Tenant, webhook_id: str
+) -> WebhookTestResponse:
+    endpoint = _resolve_webhook(db, tenant, webhook_id)
 
     test_payload = {
         "event": "test.ping",
@@ -278,10 +239,6 @@ async def test_webhook(
         "message": "This is a test webhook delivery from LintPDF.",
     }
 
-    # Persist an audit row BEFORE dispatch so a timeout / crash still
-    # leaves a trail. The dispatcher returns synchronously here (no
-    # Celery), so we update the row inline with whatever the caller's
-    # endpoint returned.
     delivery = WebhookDelivery(
         id=uuid_mod.uuid4(),
         webhook_id=endpoint.id,
@@ -318,6 +275,94 @@ async def test_webhook(
         error=result.error,
         event="test.ping",
     )
+
+
+@router.post("", response_model=WebhookResponse, status_code=status.HTTP_201_CREATED)
+async def create_webhook(
+    request: WebhookCreateRequest,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> WebhookResponse:
+    """Register a new webhook endpoint."""
+    webhook, _secret = create_webhook_for_tenant(db, tenant, request)
+    return _webhook_to_response(webhook)
+
+
+@router.get("", response_model=WebhookListResponse)
+async def list_webhooks(
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> WebhookListResponse:
+    """List all registered webhook endpoints for the current tenant."""
+    endpoints = list_webhooks_for_tenant(db, tenant)
+    return WebhookListResponse(webhooks=[_webhook_to_response(e) for e in endpoints])
+
+
+@router.patch("/{webhook_id}", response_model=WebhookResponse)
+async def update_webhook(
+    webhook_id: str,
+    request: WebhookUpdateRequest,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> WebhookResponse:
+    """Update a webhook endpoint (URL, events, or active status)."""
+    endpoint = update_webhook_for_tenant(db, tenant, webhook_id, request)
+    return _webhook_to_response(endpoint)
+
+
+def _webhook_to_response(e: WebhookEndpoint) -> WebhookResponse:
+    """One place to project WebhookEndpoint → WebhookResponse.
+
+    Keeps the three routes (create / list / update) from drifting when a
+    new column is added. ``max_retries``, ``retry_base_delay_seconds``,
+    ``retry_max_delay_seconds``, ``delivery_retention_days``, and
+    ``retention_overrides`` return ``None`` when the row inherits the
+    platform default.
+    """
+    return WebhookResponse(
+        id=e.id,
+        url=e.url,
+        events=e.events,
+        is_active=e.is_active,
+        created_at=e.created_at,
+        max_retries=e.max_retries,
+        retry_base_delay_seconds=e.retry_base_delay_seconds,
+        retry_max_delay_seconds=e.retry_max_delay_seconds,
+        delivery_retention_days=e.delivery_retention_days,
+        retention_overrides=e.retention_overrides,
+    )
+
+
+@router.delete("/{webhook_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_webhook(
+    webhook_id: str,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> None:
+    """Remove a webhook endpoint."""
+    delete_webhook_for_tenant(db, tenant, webhook_id)
+
+
+@router.post("/{webhook_id}/rotate-secret", response_model=WebhookSecretResponse)
+async def rotate_webhook_secret(
+    webhook_id: str,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> WebhookSecretResponse:
+    """Rotate the HMAC signing secret. Response carries the new secret
+    once — it is never surfaced again."""
+    endpoint, new_secret = rotate_webhook_secret_for_tenant(db, tenant, webhook_id)
+    return WebhookSecretResponse(id=str(endpoint.id), secret=new_secret)
+
+
+@router.post("/{webhook_id}/test", response_model=WebhookTestResponse)
+async def test_webhook(
+    webhook_id: str,
+    db: Session = Depends(get_db),
+    tenant: Tenant = Depends(get_current_tenant),
+) -> WebhookTestResponse:
+    """Send a test payload to a webhook endpoint to verify connectivity."""
+    return test_webhook_for_tenant(db, tenant, webhook_id)
 
 
 # ---------------------------------------------------------------------------
