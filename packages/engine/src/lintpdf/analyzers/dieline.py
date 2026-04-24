@@ -455,7 +455,7 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
 def _merge_overlapping(
     bboxes: list[tuple[float, float, float, float]],
     *,
-    fuzz: float = 5.0,
+    fuzz: float = 0.0,
     min_area: float = 100.0,
 ) -> list[tuple[float, float, float, float]]:
     """Cluster axis-aligned bboxes that overlap (with a ``fuzz`` pt
@@ -714,41 +714,53 @@ def detect_dieline(pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] |
             # Walk the page-1 content stream to pick up the actual
             # stroked subpaths painted with this spot / on this OCG,
             # cluster them into region bboxes, and flag multi-colour
-            # dielines. The polylines feed the art-size inspector
-            # and the viewer's per-region info icons; the
-            # colour-count feeds LPDF_DIE_MULTI_COLOR downstream.
-            bboxes, distinct_color_count = _extract_dieline_paths(
-                pdf, spot_name=name
-            )
-            region_bboxes = _merge_overlapping(bboxes)
-            polylines: list[list[list[float]]] = [
-                [
-                    [float(b[0]), float(b[1])],
-                    [float(b[2]), float(b[1])],
-                    [float(b[2]), float(b[3])],
-                    [float(b[0]), float(b[3])],
-                    [float(b[0]), float(b[1])],
+            # dielines. Anything the walker / clusterer raises falls
+            # back to the old "name-match only, empty polylines"
+            # behaviour so a single corrupt content stream can't
+            # wipe a valid name-match detection.
+            try:
+                bboxes, distinct_color_count = _extract_dieline_paths(
+                    pdf, spot_name=name
+                )
+                region_bboxes = _merge_overlapping(bboxes)
+                polylines: list[list[list[float]]] = [
+                    [
+                        [float(b[0]), float(b[1])],
+                        [float(b[2]), float(b[1])],
+                        [float(b[2]), float(b[3])],
+                        [float(b[0]), float(b[3])],
+                        [float(b[0]), float(b[1])],
+                    ]
+                    for b in region_bboxes
                 ]
-                for b in region_bboxes
-            ]
-            regions = [
-                {
-                    "x0": float(b[0]),
-                    "y0": float(b[1]),
-                    "x1": float(b[2]),
-                    "y1": float(b[3]),
-                    "width_mm": round((b[2] - b[0]) * 25.4 / 72, 3),
-                    "height_mm": round((b[3] - b[1]) * 25.4 / 72, 3),
-                }
-                for b in region_bboxes
-            ]
+                regions = [
+                    {
+                        "x0": float(b[0]),
+                        "y0": float(b[1]),
+                        "x1": float(b[2]),
+                        "y1": float(b[3]),
+                        "width_mm": round((b[2] - b[0]) * 25.4 / 72, 3),
+                        "height_mm": round((b[3] - b[1]) * 25.4 / 72, 3),
+                    }
+                    for b in region_bboxes
+                ]
+                multi = distinct_color_count > 1
+            except Exception:
+                logger.exception(
+                    "dieline: content-stream walker raised on '%s' — "
+                    "falling back to name-match only",
+                    name,
+                )
+                polylines = []
+                regions = []
+                multi = False
             return DielineResult(
                 source="name",
                 spot_name=name,
                 polylines=polylines,
                 confidence=1.0,
                 regions=regions,
-                multi_color=distinct_color_count > 1,
+                multi_color=multi,
             )
 
     # WS-19 geometry fallback — detect the textbook
