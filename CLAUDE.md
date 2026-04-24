@@ -297,9 +297,17 @@ connections than expected and blow the budget.
   scripts, and any generated documentation. If a file must exceed
   that, split it into multiple `Edit` passes.
 - **Never bypass the sandbox with `--no-verify`, `--no-gpg-sign`, or
-  `--accept-data-loss`.** The shared Prisma/engine schema in
-  particular will silently drop engine tables if `--accept-data-loss`
-  is used.
+  `--accept-data-loss`. No exceptions, no "just this once."** If the
+  pre-commit or pre-push hook fails on a file you didn't stage, that's
+  a signal to fix the underlying error in the staged file(s), unstage
+  the problematic hunk, or — if the hook's global scope is catching
+  pre-existing debt in an unrelated file — fix the hook itself first
+  and make it scoped (see `.githooks/pre-commit`, which now scopes
+  ruff + format to staged files). Do **not** shortcut around the
+  hook. If a commit genuinely cannot pass the hook for a legitimate
+  reason, stop and ask the user; do not proceed. `--accept-data-loss`
+  in particular will silently drop engine tables from the shared
+  Prisma/engine schema.
 - **Plan mode vs. execute mode.** In plan mode only the named plan
   file is writable; do not edit CLAUDE.md or source in plan mode even
   if asked — call it out and defer to execute mode.
