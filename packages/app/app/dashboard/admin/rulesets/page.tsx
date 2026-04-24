@@ -108,6 +108,33 @@ export default function AdminRulesetsPage() {
     ),
   );
 
+  // Tenant-scoped custom-profile create (admin authoring a profile for
+  // a specific tenant — used for building demos / onboarding).
+  const [creatingForTenant, setCreatingForTenant] = useState<string | null>(
+    null,
+  );
+  const [tenantCreateId, setTenantCreateId] = useState("");
+  const [tenantCreateJson, setTenantCreateJson] = useState(
+    JSON.stringify(
+      {
+        name: "New tenant preset",
+        description: "",
+        version: "1.0",
+        workflow: "auto",
+        checks: {},
+        thresholds: {},
+      },
+      null,
+      2,
+    ),
+  );
+  const [tenantCreateBusy, setTenantCreateBusy] = useState(false);
+  const [deletingTenantProfile, setDeletingTenantProfile] = useState<{
+    tenantId: string;
+    profileId: string;
+  } | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -307,6 +334,68 @@ export default function AdminRulesetsPage() {
     }
   }
 
+  async function createTenantProfile(tenantId: string) {
+    if (!tenantCreateId) {
+      setError("profile_id required.");
+      return;
+    }
+    setError("");
+    setTenantCreateBusy(true);
+    try {
+      const parsed = JSON.parse(tenantCreateJson);
+      const resp = await fetch(
+        `/api/lintpdf/admin/tenants/${tenantId}/profiles/${encodeURIComponent(
+          tenantCreateId,
+        )}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ preflight_profile: parsed }),
+        },
+      );
+      if (!resp.ok) {
+        const b = (await resp.json().catch(() => ({}))) as { error?: string };
+        throw new Error(b.error ?? `Failed (${resp.status})`);
+      }
+      setCreatingForTenant(null);
+      setTenantCreateId("");
+      await load();
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Failed to create tenant profile",
+      );
+    } finally {
+      setTenantCreateBusy(false);
+    }
+  }
+
+  async function confirmDeleteTenantProfile() {
+    if (!deletingTenantProfile) return;
+    setError("");
+    setDeleteBusy(true);
+    try {
+      const { tenantId, profileId } = deletingTenantProfile;
+      const resp = await fetch(
+        `/api/lintpdf/admin/tenants/${tenantId}/profiles/${encodeURIComponent(
+          profileId,
+        )}`,
+        { method: "DELETE" },
+      );
+      if (!resp.ok && resp.status !== 204) {
+        const b = (await resp.json().catch(() => ({}))) as { error?: string };
+        throw new Error(b.error ?? `Failed (${resp.status})`);
+      }
+      setDeletingTenantProfile(null);
+      await load();
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Failed to delete tenant profile",
+      );
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
+
   async function setTenantDefault(
     tenantId: string,
     profileId: string | null,
@@ -454,6 +543,16 @@ export default function AdminRulesetsPage() {
                       key={t.tenant_id}
                       block={t}
                       onSetDefault={(pid) => setTenantDefault(t.tenant_id, pid)}
+                      onCreate={() => {
+                        setTenantCreateId("");
+                        setCreatingForTenant(t.tenant_id);
+                      }}
+                      onDelete={(pid) =>
+                        setDeletingTenantProfile({
+                          tenantId: t.tenant_id,
+                          profileId: pid,
+                        })
+                      }
                     />
                   ))}
                 </div>
@@ -682,6 +781,98 @@ export default function AdminRulesetsPage() {
           </div>
         </Modal>
       )}
+
+      {creatingForTenant && (
+        <Modal
+          title={`New ruleset for ${
+            tenants.find((t) => t.tenant_id === creatingForTenant)
+              ?.tenant_name ?? creatingForTenant
+          }`}
+          onClose={() => setCreatingForTenant(null)}
+        >
+          <p className="text-xs text-muted-foreground">
+            Authors a custom profile scoped to this tenant. The tenant&rsquo;s
+            users will see it alongside their own customs.
+          </p>
+          <label className="mt-3 block text-xs font-semibold uppercase text-muted-foreground">
+            profile_id (unique within this tenant)
+          </label>
+          <input
+            type="text"
+            value={tenantCreateId}
+            onChange={(e) => setTenantCreateId(e.target.value)}
+            placeholder="e.g. demo-spot-colors"
+            className="mt-1 h-9 w-full rounded-md border px-2 text-sm"
+            disabled={tenantCreateBusy}
+          />
+          <label className="mt-3 block text-xs font-semibold uppercase text-muted-foreground">
+            PreflightProfile JSON
+          </label>
+          <textarea
+            value={tenantCreateJson}
+            onChange={(e) => setTenantCreateJson(e.target.value)}
+            className="mt-1 h-60 w-full rounded-md border p-2 font-mono text-xs"
+            disabled={tenantCreateBusy}
+          />
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setCreatingForTenant(null)}
+              disabled={tenantCreateBusy}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => createTenantProfile(creatingForTenant)}
+              loading={tenantCreateBusy}
+              disabled={tenantCreateBusy}
+            >
+              Create
+            </Button>
+          </div>
+        </Modal>
+      )}
+
+      {deletingTenantProfile && (
+        <Modal
+          title="Delete tenant profile?"
+          onClose={() => setDeletingTenantProfile(null)}
+        >
+          <p className="text-sm">
+            Permanently delete{" "}
+            <code className="text-xs">
+              {deletingTenantProfile.profileId}
+            </code>{" "}
+            from tenant{" "}
+            <code className="text-xs">
+              {deletingTenantProfile.tenantId}
+            </code>
+            ? Endpoints and jobs referencing this profile will start failing
+            until they&rsquo;re re-pointed.
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => setDeletingTenantProfile(null)}
+              disabled={deleteBusy}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={confirmDeleteTenantProfile}
+              loading={deleteBusy}
+              disabled={deleteBusy}
+            >
+              Delete
+            </Button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
@@ -733,9 +924,13 @@ function VisibilityBadge({ p }: { p: SystemProfileSummary }) {
 function TenantBlockRow({
   block,
   onSetDefault,
+  onCreate,
+  onDelete,
 }: {
   block: TenantBlock;
   onSetDefault: (profileId: string | null) => void;
+  onCreate: () => void;
+  onDelete: (profileId: string) => void;
 }) {
   return (
     <div className="rounded-lg border">
@@ -746,48 +941,65 @@ function TenantBlockRow({
           {block.profiles.length} profile
           {block.profiles.length === 1 ? "" : "s"}
         </span>
+        <Button size="sm" variant="secondary" onClick={onCreate}>
+          New ruleset
+        </Button>
       </header>
-      <ul className="divide-y">
-        {block.profiles.map((p) => (
-          <li
-            key={p.profile_id}
-            className="flex items-center justify-between p-3"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{p.name}</span>
-                <code className="text-xs text-muted-foreground">
-                  {p.profile_id}
-                </code>
-                <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
-                  custom
-                </span>
+      {block.profiles.length === 0 ? (
+        <p className="p-3 text-sm text-muted-foreground">
+          No custom profiles yet. Click <strong>New ruleset</strong> to author
+          one for this tenant.
+        </p>
+      ) : (
+        <ul className="divide-y">
+          {block.profiles.map((p) => (
+            <li
+              key={p.profile_id}
+              className="flex items-center justify-between p-3"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{p.name}</span>
+                  <code className="text-xs text-muted-foreground">
+                    {p.profile_id}
+                  </code>
+                  <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700">
+                    custom
+                  </span>
+                </div>
+                {p.description && (
+                  <p className="truncate text-sm text-muted-foreground">
+                    {p.description}
+                  </p>
+                )}
               </div>
-              {p.description && (
-                <p className="truncate text-sm text-muted-foreground">
-                  {p.description}
-                </p>
-              )}
-            </div>
-            <div className="ml-4 flex shrink-0 gap-2">
-              <Link
-                href={`/dashboard/rulesets?tenant=${block.tenant_id}&profile=${p.profile_id}`}
-              >
-                <Button variant="secondary" size="sm">
-                  Edit
+              <div className="ml-4 flex shrink-0 gap-2">
+                <Link
+                  href={`/dashboard/rulesets?tenant=${block.tenant_id}&profile=${p.profile_id}`}
+                >
+                  <Button variant="secondary" size="sm">
+                    Edit
+                  </Button>
+                </Link>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => onSetDefault(p.profile_id)}
+                >
+                  Set as default
                 </Button>
-              </Link>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => onSetDefault(p.profile_id)}
-              >
-                Set as default
-              </Button>
-            </div>
-          </li>
-        ))}
-      </ul>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => onDelete(p.profile_id)}
+                >
+                  Delete
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
