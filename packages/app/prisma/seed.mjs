@@ -159,6 +159,54 @@ async function main() {
     );
   }
 
+  // ── Print With Synergy (PWS) demo tenant ───────────────────
+  // Quincy needs a non-super-admin account so he can exercise the
+  // tenant-facing UI without seeing the Admin section. PWS is the
+  // reference "demo tenant" for LintPDF sales walkthroughs. Kept in
+  // sync with seed.ts — if you update one, update both (startup.sh
+  // runs seed.mjs on every deploy; prisma db seed runs seed.ts).
+  const pwsAdmin = await prisma.user.upsert({
+    where: { email: "quincy@printwithsynergy.com" },
+    update: {},
+    create: {
+      email: "quincy@printwithsynergy.com",
+      name: "Quincy (PWS)",
+      isSuperAdmin: false,
+    },
+  });
+  console.log(`PWS admin: ${pwsAdmin.email} (id: ${pwsAdmin.id})`);
+
+  const pwsTenant = await prisma.tenant.upsert({
+    where: { slug: "print-with-synergy" },
+    update: {},
+    create: {
+      name: "Print With Synergy",
+      slug: "print-with-synergy",
+      engineTenantId: "df520bc7-fc77-44cf-a275-c756fbbfb618",
+    },
+  });
+  console.log(`PWS tenant: ${pwsTenant.name} (${pwsTenant.id})`);
+
+  const pwsMembership = await prisma.tenantUser.findUnique({
+    where: {
+      userId_tenantId: { userId: pwsAdmin.id, tenantId: pwsTenant.id },
+    },
+  });
+  if (!pwsMembership) {
+    await prisma.tenantUser.create({
+      data: {
+        userId: pwsAdmin.id,
+        tenantId: pwsTenant.id,
+        role: "ADMIN",
+      },
+    });
+    console.log(`Linked ${pwsAdmin.email} as ADMIN of ${pwsTenant.name}`);
+  } else {
+    console.log(
+      `${pwsAdmin.email} already a member of ${pwsTenant.name} (${pwsMembership.role})`,
+    );
+  }
+
   // ── App Settings (branding) ─────────────────────────────────
   // Full branding matching the marketing site and Pixie Dust theme
   const brandingData = {

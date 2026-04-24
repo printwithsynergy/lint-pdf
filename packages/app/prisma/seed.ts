@@ -121,6 +121,7 @@ async function main() {
     create: {
       name: "Print With Synergy",
       slug: "print-with-synergy",
+      engineTenantId: "df520bc7-fc77-44cf-a275-c756fbbfb618",
     },
   });
   console.log(`PWS tenant: ${pwsTenant.name} (${pwsTenant.id})`);
