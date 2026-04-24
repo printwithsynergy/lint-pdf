@@ -1,0 +1,825 @@
+{
+  "modules": [
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/accessibility.py",
+      "loc": 231,
+      "check_count": 13,
+      "check_ids": [
+        "LPDF_ACCESS_001",
+        "LPDF_ACCESS_002",
+        "LPDF_ACCESS_003",
+        "LPDF_ACCESS_004",
+        "LPDF_ACCESS_005",
+        "LPDF_ACCESS_006",
+        "LPDF_ACCESS_007",
+        "LPDF_ACCESS_008",
+        "LPDF_ACCESS_009",
+        "LPDF_ACCESS_010",
+        "LPDF_ACCESS_011",
+        "LPDF_ACCESS_012",
+        "LPDF_ACCESS_013"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_accessibility.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py",
+      "loc": 942,
+      "check_count": 15,
+      "check_ids": [
+        "LPDF_ADV_001",
+        "LPDF_ADV_002",
+        "LPDF_ADV_003",
+        "LPDF_ADV_004",
+        "LPDF_ADV_005",
+        "LPDF_ADV_006",
+        "LPDF_ADV_007",
+        "LPDF_ADV_008",
+        "LPDF_ADV_009",
+        "LPDF_ADV_010",
+        "LPDF_ADV_011",
+        "LPDF_ADV_012",
+        "LPDF_ADV_013",
+        "LPDF_ADV_014",
+        "LPDF_ADV_015"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/annotation.py",
+      "loc": 130,
+      "check_count": 6,
+      "check_ids": [
+        "LPDF_ANNOT_001",
+        "LPDF_ANNOT_002",
+        "LPDF_ANNOT_003",
+        "LPDF_ANNOT_004",
+        "LPDF_ANNOT_005",
+        "LPDF_ANNOT_006"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_annotation.py",
+      "has_test": true,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/art_size.py",
+      "loc": 58,
+      "check_count": 0,
+      "check_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/queue/tasks.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/barcode.py",
+      "loc": 920,
+      "check_count": 28,
+      "check_ids": [
+        "LPDF_BARCODE_001",
+        "LPDF_BARCODE_004",
+        "LPDF_BARCODE_005",
+        "LPDF_BARCODE_006",
+        "LPDF_BARCODE_007",
+        "LPDF_BARCODE_008",
+        "LPDF_BARCODE_009",
+        "LPDF_BARCODE_010",
+        "LPDF_BARCODE_011",
+        "LPDF_BARCODE_012",
+        "LPDF_BARCODE_013",
+        "LPDF_BARCODE_014",
+        "LPDF_BARCODE_015",
+        "LPDF_BARCODE_016",
+        "LPDF_BARCODE_017",
+        "LPDF_BARCODE_018",
+        "LPDF_BARCODE_019",
+        "LPDF_BARCODE_020",
+        "LPDF_BARCODE_021",
+        "LPDF_BARCODE_022",
+        "LPDF_BARCODE_023",
+        "LPDF_BARCODE_024",
+        "LPDF_BARCODE_025",
+        "LPDF_BARCODE_026",
+        "LPDF_BARCODE_027",
+        "LPDF_BARCODE_028",
+        "LPDF_BARCODE_029",
+        "LPDF_BARCODE_030"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_barcode.py",
+      "has_test": true,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/base.py",
+      "loc": 30,
+      "check_count": 0,
+      "check_ids": [],
+      "importer_count": 25,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py",
+        "packages/engine/src/lintpdf/analyzers/accessibility.py",
+        "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/annotation.py",
+        "packages/engine/src/lintpdf/analyzers/barcode.py",
+        "packages/engine/src/lintpdf/analyzers/color.py",
+        "packages/engine/src/lintpdf/analyzers/document.py",
+        "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/epm_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/font.py",
+        "packages/engine/src/lintpdf/analyzers/gamut_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/hairline.py",
+        "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/image.py",
+        "packages/engine/src/lintpdf/analyzers/ink_coverage_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/metadata.py",
+        "packages/engine/src/lintpdf/analyzers/overprint.py",
+        "packages/engine/src/lintpdf/analyzers/packaging.py",
+        "packages/engine/src/lintpdf/analyzers/page_geometry.py",
+        "packages/engine/src/lintpdf/analyzers/prepress.py",
+        "packages/engine/src/lintpdf/analyzers/processing.py",
+        "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/standards_compliance.py",
+        "packages/engine/src/lintpdf/analyzers/structure.py",
+        "packages/engine/src/lintpdf/analyzers/transparency.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/color.py",
+      "loc": 827,
+      "check_count": 21,
+      "check_ids": [
+        "LPDF_COLOR_001",
+        "LPDF_COLOR_002",
+        "LPDF_COLOR_003",
+        "LPDF_COLOR_004",
+        "LPDF_COLOR_005",
+        "LPDF_COLOR_006",
+        "LPDF_COLOR_007",
+        "LPDF_COLOR_008",
+        "LPDF_COLOR_009",
+        "LPDF_COLOR_010",
+        "LPDF_COLOR_011",
+        "LPDF_COLOR_012",
+        "LPDF_COLOR_013",
+        "LPDF_COLOR_014",
+        "LPDF_COLOR_015",
+        "LPDF_COLOR_016",
+        "LPDF_COLOR_017",
+        "LPDF_COLOR_018",
+        "LPDF_COLOR_019",
+        "LPDF_COLOR_020",
+        "LPDF_COLOR_021"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_color.py",
+      "has_test": true,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/cxf_parser.py",
+      "loc": 205,
+      "check_count": 0,
+      "check_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_cxf_parser.py",
+      "has_test": true,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/dieline.py",
+      "loc": 734,
+      "check_count": 0,
+      "check_ids": [],
+      "importer_count": 2,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/dieline_claude.py",
+        "packages/engine/src/lintpdf/queue/tasks.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/document.py",
+      "loc": 193,
+      "check_count": 8,
+      "check_ids": [
+        "LPDF_DOC_001",
+        "LPDF_DOC_002",
+        "LPDF_DOC_003",
+        "LPDF_DOC_004",
+        "LPDF_DOC_005",
+        "LPDF_DOC_006",
+        "LPDF_DOC_007",
+        "LPDF_DOC_008"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_document.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py",
+      "loc": 1047,
+      "check_count": 18,
+      "check_ids": [
+        "LPDF_ECG_001",
+        "LPDF_ECG_002",
+        "LPDF_ECG_003",
+        "LPDF_ECG_004",
+        "LPDF_ECG_005",
+        "LPDF_ECG_006",
+        "LPDF_ECG_007",
+        "LPDF_ECG_008",
+        "LPDF_ECG_009",
+        "LPDF_ECG_010",
+        "LPDF_ECG_011",
+        "LPDF_ECG_012",
+        "LPDF_ECG_013",
+        "LPDF_ECG_014",
+        "LPDF_ECG_015",
+        "LPDF_ECG_016",
+        "LPDF_ECG_017",
+        "LPDF_ECG_018"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/profiles/orchestrator.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/epm_analyzer.py",
+      "loc": 669,
+      "check_count": 18,
+      "check_ids": [
+        "LPDF_EPM_001",
+        "LPDF_EPM_002",
+        "LPDF_EPM_003",
+        "LPDF_EPM_004",
+        "LPDF_EPM_005",
+        "LPDF_EPM_006",
+        "LPDF_EPM_007",
+        "LPDF_EPM_008",
+        "LPDF_EPM_009",
+        "LPDF_EPM_010",
+        "LPDF_EPM_011",
+        "LPDF_EPM_012",
+        "LPDF_EPM_013",
+        "LPDF_EPM_014",
+        "LPDF_EPM_015",
+        "LPDF_EPM_016",
+        "LPDF_EPM_017",
+        "LPDF_EPM_018"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/profiles/orchestrator.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/finding.py",
+      "loc": 42,
+      "check_count": 0,
+      "check_ids": [],
+      "importer_count": 105,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content.py",
+        "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py",
+        "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_decode.py",
+        "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py",
+        "packages/engine/src/lintpdf/ai/analyzers/barcode/pharma_serialization.py",
+        "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_human_readable.py",
+        "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_validation.py",
+        "packages/engine/src/lintpdf/ai/analyzers/color_analysis/banding_detection.py",
+        "packages/engine/src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py",
+        "packages/engine/src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py",
+        "packages/engine/src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py",
+        "packages/engine/src/lintpdf/ai/analyzers/color_compliance/brand_palette.py",
+        "packages/engine/src/lintpdf/ai/analyzers/color_compliance/dieline_by_color_name.py",
+        "packages/engine/src/lintpdf/ai/analyzers/color_compliance/wcag_contrast.py",
+        "packages/engine/src/lintpdf/ai/analyzers/content_quality/duplicate_detection.py",
+        "packages/engine/src/lintpdf/ai/analyzers/content_quality/language_detection.py",
+        "packages/engine/src/lintpdf/ai/analyzers/content_quality/spell_check.py",
+        "packages/engine/src/lintpdf/ai/analyzers/dieline_detection/dieline_by_name.py",
+        "packages/engine/src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py",
+        "packages/engine/src/lintpdf/ai/analyzers/document_classification/file_classification.py",
+        "packages/engine/src/lintpdf/ai/analyzers/file_comparison/version_diff.py",
+        "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_quality.py",
+        "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_similarity.py",
+        "packages/engine/src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py",
+        "packages/engine/src/lintpdf/ai/analyzers/logo_verification/logo_detection.py",
+        "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py",
+        "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/nl_preflight_profile.py",
+        "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/nl_report_interpret.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/alcohol.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/cannabis.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/cosmetics.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/eu_fir_1169.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_otc.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/organic.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py",
+        "packages/engine/src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py",
+        "packages/engine/src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py",
+        "packages/engine/src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py",
+        "packages/engine/src/lintpdf/ai/analyzers/text_analysis/text_as_outlines.py",
+        "packages/engine/src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py",
+        "packages/engine/src/lintpdf/ai/base.py",
+        "packages/engine/src/lintpdf/analyzers/__init__.py",
+        "packages/engine/src/lintpdf/analyzers/accessibility.py",
+        "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/annotation.py",
+        "packages/engine/src/lintpdf/analyzers/barcode.py",
+        "packages/engine/src/lintpdf/analyzers/base.py",
+        "packages/engine/src/lintpdf/analyzers/color.py",
+        "packages/engine/src/lintpdf/analyzers/document.py",
+        "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/epm_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/font.py",
+        "packages/engine/src/lintpdf/analyzers/gamut_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/hairline.py",
+        "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/image.py",
+        "packages/engine/src/lintpdf/analyzers/ink_coverage_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/metadata.py",
+        "packages/engine/src/lintpdf/analyzers/overprint.py",
+        "packages/engine/src/lintpdf/analyzers/packaging.py",
+        "packages/engine/src/lintpdf/analyzers/page_geometry.py",
+        "packages/engine/src/lintpdf/analyzers/prepress.py",
+        "packages/engine/src/lintpdf/analyzers/processing.py",
+        "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py",
+        "packages/engine/src/lintpdf/analyzers/standards_compliance.py",
+        "packages/engine/src/lintpdf/analyzers/structure.py",
+        "packages/engine/src/lintpdf/analyzers/transparency.py",
+        "packages/engine/src/lintpdf/color_score.py",
+        "packages/engine/src/lintpdf/conformance/base.py",
+        "packages/engine/src/lintpdf/conformance/pdfa/__init__.py",
+        "packages/engine/src/lintpdf/conformance/pdfa/_color.py",
+        "packages/engine/src/lintpdf/conformance/pdfa/_font.py",
+        "packages/engine/src/lintpdf/conformance/pdfa/_metadata.py",
+        "packages/engine/src/lintpdf/conformance/pdfa/_restrictions.py",
+        "packages/engine/src/lintpdf/conformance/pdfx1a/__init__.py",
+        "packages/engine/src/lintpdf/conformance/pdfx1a/_color.py",
+        "packages/engine/src/lintpdf/conformance/pdfx1a/_font.py",
+        "packages/engine/src/lintpdf/conformance/pdfx1a/_metadata.py",
+        "packages/engine/src/lintpdf/conformance/pdfx1a/_output_intent.py",
+        "packages/engine/src/lintpdf/conformance/pdfx1a/_restrictions.py",
+        "packages/engine/src/lintpdf/conformance/pdfx1a/_transparency.py",
+        "packages/engine/src/lintpdf/conformance/pdfx3/__init__.py",
+        "packages/engine/src/lintpdf/conformance/pdfx3/_color.py",
+        "packages/engine/src/lintpdf/conformance/pdfx3/_font.py",
+        "packages/engine/src/lintpdf/conformance/pdfx3/_metadata.py",
+        "packages/engine/src/lintpdf/conformance/pdfx3/_output_intent.py",
+        "packages/engine/src/lintpdf/conformance/pdfx3/_restrictions.py",
+        "packages/engine/src/lintpdf/conformance/pdfx3/_transparency.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/__init__.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_annotations.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_boxes.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_color.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_file_structure.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_font.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_images.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_metadata.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_optional_content.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_output_intent.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_resources.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_restricted_features.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_security.py",
+        "packages/engine/src/lintpdf/conformance/pdfx4/_transparency.py",
+        "packages/engine/src/lintpdf/profiles/orchestrator.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_finding.py",
+      "has_test": true,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/font.py",
+      "loc": 342,
+      "check_count": 14,
+      "check_ids": [
+        "LPDF_FONT_001",
+        "LPDF_FONT_002",
+        "LPDF_FONT_003",
+        "LPDF_FONT_004",
+        "LPDF_FONT_005",
+        "LPDF_FONT_006",
+        "LPDF_FONT_007",
+        "LPDF_FONT_008",
+        "LPDF_FONT_009",
+        "LPDF_FONT_010",
+        "LPDF_FONT_011",
+        "LPDF_FONT_012",
+        "LPDF_FONT_013",
+        "LPDF_FONT_014"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_font.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/gamut_analyzer.py",
+      "loc": 386,
+      "check_count": 3,
+      "check_ids": [
+        "LPDF_GAMUT_001",
+        "LPDF_GAMUT_002",
+        "LPDF_GAMUT_003"
+      ],
+      "importer_count": 3,
+      "importers": [
+        "packages/engine/src/lintpdf/profiles/icc/build_gamut_meshes.py",
+        "packages/engine/src/lintpdf/profiles/icc/pantone_manager.py",
+        "packages/engine/src/lintpdf/profiles/orchestrator.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/hairline.py",
+      "loc": 505,
+      "check_count": 15,
+      "check_ids": [
+        "LPDF_PATH_001",
+        "LPDF_PATH_002",
+        "LPDF_STROKE_001",
+        "LPDF_STROKE_002",
+        "LPDF_STROKE_003",
+        "LPDF_STROKE_004",
+        "LPDF_STROKE_005",
+        "LPDF_STROKE_006",
+        "LPDF_STROKE_007",
+        "LPDF_TEXT_001",
+        "LPDF_TEXT_002",
+        "LPDF_TEXT_003",
+        "LPDF_TEXT_004",
+        "LPDF_TEXT_005",
+        "LPDF_TEXT_006"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_hairline.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py",
+      "loc": 514,
+      "check_count": 9,
+      "check_ids": [
+        "LPDF_ICC_001",
+        "LPDF_ICC_002",
+        "LPDF_ICC_003",
+        "LPDF_ICC_004",
+        "LPDF_ICC_005",
+        "LPDF_ICC_006",
+        "LPDF_ICC_007",
+        "LPDF_ICC_008",
+        "LPDF_ICC_009"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/image.py",
+      "loc": 593,
+      "check_count": 17,
+      "check_ids": [
+        "LPDF_IMG_001",
+        "LPDF_IMG_002",
+        "LPDF_IMG_003",
+        "LPDF_IMG_004",
+        "LPDF_IMG_005",
+        "LPDF_IMG_006",
+        "LPDF_IMG_007",
+        "LPDF_IMG_008",
+        "LPDF_IMG_009",
+        "LPDF_IMG_010",
+        "LPDF_IMG_011",
+        "LPDF_IMG_012",
+        "LPDF_IMG_013",
+        "LPDF_IMG_014",
+        "LPDF_IMG_015",
+        "LPDF_IMG_016",
+        "LPDF_IMG_017"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_image.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/ink_coverage_analyzer.py",
+      "loc": 297,
+      "check_count": 3,
+      "check_ids": [
+        "LPDF_INK_001",
+        "LPDF_INK_002",
+        "LPDF_INK_003"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/legend.py",
+      "loc": 138,
+      "check_count": 0,
+      "check_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/legend_claude.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/metadata.py",
+      "loc": 83,
+      "check_count": 4,
+      "check_ids": [
+        "LPDF_META_001",
+        "LPDF_META_002",
+        "LPDF_META_003",
+        "LPDF_META_004"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_metadata.py",
+      "has_test": true,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/overprint.py",
+      "loc": 294,
+      "check_count": 8,
+      "check_ids": [
+        "LPDF_OVER_001",
+        "LPDF_OVER_002",
+        "LPDF_OVER_003",
+        "LPDF_OVER_004",
+        "LPDF_OVER_005",
+        "LPDF_OVER_006",
+        "LPDF_OVER_007",
+        "LPDF_OVER_008"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_overprint.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/packaging.py",
+      "loc": 345,
+      "check_count": 10,
+      "check_ids": [
+        "LPDF_PKG_001",
+        "LPDF_PKG_002",
+        "LPDF_PKG_003",
+        "LPDF_PKG_004",
+        "LPDF_PKG_005",
+        "LPDF_PKG_006",
+        "LPDF_PKG_007",
+        "LPDF_PKG_008",
+        "LPDF_PKG_009",
+        "LPDF_PKG_010"
+      ],
+      "importer_count": 2,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py",
+        "packages/engine/src/lintpdf/profiles/orchestrator.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/page_geometry.py",
+      "loc": 400,
+      "check_count": 9,
+      "check_ids": [
+        "LPDF_BOX_001",
+        "LPDF_BOX_002",
+        "LPDF_BOX_003",
+        "LPDF_BOX_004",
+        "LPDF_BOX_005",
+        "LPDF_BOX_006",
+        "LPDF_BOX_007",
+        "LPDF_BOX_008",
+        "LPDF_BOX_009"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_page_geometry.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/prepress.py",
+      "loc": 143,
+      "check_count": 5,
+      "check_ids": [
+        "LPDF_PRESS_001",
+        "LPDF_PRESS_002",
+        "LPDF_PRESS_003",
+        "LPDF_PRESS_004",
+        "LPDF_PRESS_005"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_prepress.py",
+      "has_test": true,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/processing.py",
+      "loc": 88,
+      "check_count": 2,
+      "check_ids": [
+        "LPDF_PROC_001",
+        "LPDF_PROC_002"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_processing.py",
+      "has_test": true,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py",
+      "loc": 858,
+      "check_count": 11,
+      "check_ids": [
+        "LPDF_SPOT_001",
+        "LPDF_SPOT_002",
+        "LPDF_SPOT_003",
+        "LPDF_SPOT_004",
+        "LPDF_SPOT_005",
+        "LPDF_SPOT_006",
+        "LPDF_SPOT_007",
+        "LPDF_SPOT_008",
+        "LPDF_SPOT_009",
+        "LPDF_SPOT_010",
+        "LPDF_SPOT_011"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/standards_compliance.py",
+      "loc": 352,
+      "check_count": 3,
+      "check_ids": [
+        "LPDF_STD_001",
+        "LPDF_STD_002",
+        "LPDF_STD_003"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/profiles/orchestrator.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/structure.py",
+      "loc": 461,
+      "check_count": 14,
+      "check_ids": [
+        "LPDF_STRUCT_001",
+        "LPDF_STRUCT_002",
+        "LPDF_STRUCT_003",
+        "LPDF_STRUCT_004",
+        "LPDF_STRUCT_005",
+        "LPDF_STRUCT_006",
+        "LPDF_STRUCT_007",
+        "LPDF_STRUCT_008",
+        "LPDF_STRUCT_009",
+        "LPDF_STRUCT_010",
+        "LPDF_STRUCT_011",
+        "LPDF_STRUCT_012",
+        "LPDF_STRUCT_013",
+        "LPDF_STRUCT_014"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_structure.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/text_metrics.py",
+      "loc": 97,
+      "check_count": 0,
+      "check_ids": [],
+      "importer_count": 2,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/eu_fir_1169.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_text_metrics.py",
+      "has_test": true,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/analyzers/transparency.py",
+      "loc": 215,
+      "check_count": 7,
+      "check_ids": [
+        "LPDF_TRANS_001",
+        "LPDF_TRANS_002",
+        "LPDF_TRANS_003",
+        "LPDF_TRANS_004",
+        "LPDF_TRANS_005",
+        "LPDF_TRANS_006",
+        "LPDF_TRANS_007"
+      ],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/analyzers/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/analyzers/test_transparency.py",
+      "has_test": true,
+      "risk": "low"
+    }
+  ]
+}
