@@ -27,7 +27,9 @@ Check IDs:
     LPDF_IMG_015 — Image is significantly rotated (non-90-degree rotation)
     LPDF_IMG_016 — Image is flipped (mirrored)
     LPDF_IMG_017 — Image precise scaling percentage (extreme scaling detected)
-    LPDF_IMG_018 — Missing image / broken XObject reference
+    LPDF_IMG_018 — Dangling image XObject reference (broken)
+    LPDF_IMG_019 — Image XObject missing /Subtype
+    LPDF_IMG_020 — Image XObject has wrong /Subtype
 """
 
 from __future__ import annotations
@@ -622,20 +624,19 @@ class ImageAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_broken_image_refs(document: SemanticDocument) -> list[Finding]:
-        """Check for dangling / wrong-type XObject references (LPDF_IMG_018).
+        """Check for broken XObject references.
 
         Walks every page's /Resources /XObject dictionary and flags entries
-        whose indirect reference didn't resolve to an Image XObject.
+        whose indirect reference didn't resolve to a legitimate Image or
+        Form XObject. Emits one of three distinct check IDs so tenants can
+        tune severity per failure class:
 
-        Three failure modes collapse into one finding:
-          - ``dangling_indirect_ref`` — entry resolved to null (pikepdf
-            returns ``None`` when the xref slot is absent or marked free).
-          - ``missing_subtype`` — entry is a dict with no /Subtype key, so
-            the RIP can't know how to render it.
-          - ``wrong_subtype`` — entry is a dict with /Subtype that's
-            neither /Image (legitimate image) nor /Form (legitimate reusable
-            graphic). Includes deprecated /PS (PostScript XObject) and any
-            vendor-invented subtype the RIP won't recognise.
+          - LPDF_IMG_018 — dangling indirect ref (xref slot absent, null
+            object, or pikepdf cycle-detection sentinel).
+          - LPDF_IMG_019 — entry is a dict with no /Subtype key.
+          - LPDF_IMG_020 — entry is a dict with /Subtype that's neither
+            /Image nor /Form (e.g., deprecated /PS, vendor-invented
+            subtype), or an entry that isn't a dict at all.
         """
         findings: list[Finding] = []
         for page in document.pages:
@@ -643,40 +644,47 @@ class ImageAnalyzer(BaseAnalyzer):
             if not isinstance(xobjects, dict):
                 continue
             for xobj_name, xobj_entry in xobjects.items():
+                inspection_id: str | None = None
                 failure_mode: str | None = None
                 resolved_subtype: str | None = None
 
                 if xobj_entry is None:
+                    inspection_id = "LPDF_IMG_018"
                     failure_mode = "dangling_indirect_ref"
                 elif isinstance(xobj_entry, str):
                     # _pikepdf_to_python returns "<shared ref: N N R>" on
                     # cycle detection or str(obj) at depth-cap — neither
                     # is a usable XObject for the RIP.
+                    inspection_id = "LPDF_IMG_018"
                     failure_mode = "dangling_indirect_ref"
                 elif isinstance(xobj_entry, dict):
                     subtype = xobj_entry.get("/Subtype")
                     if subtype is None:
+                        inspection_id = "LPDF_IMG_019"
                         failure_mode = "missing_subtype"
                     elif subtype not in ("/Image", "/Form"):
+                        inspection_id = "LPDF_IMG_020"
                         failure_mode = "wrong_subtype"
                         resolved_subtype = str(subtype)
                 else:
+                    inspection_id = "LPDF_IMG_020"
                     failure_mode = "wrong_subtype"
                     resolved_subtype = type(xobj_entry).__name__
 
-                if failure_mode is None:
+                if inspection_id is None:
                     continue
 
+                message = (
+                    f"Image XObject '{xobj_name}' on page {page.page_num} "
+                    f"has a broken reference ({failure_mode}"
+                    + (f": {resolved_subtype}" if resolved_subtype else "")
+                    + ")"
+                )
                 findings.append(
                     Finding(
-                        inspection_id="LPDF_IMG_018",
+                        inspection_id=inspection_id,
                         severity=Severity.ERROR,
-                        message=(
-                            f"Image XObject '{xobj_name}' on page {page.page_num} "
-                            f"has a broken reference ({failure_mode}"
-                            + (f": {resolved_subtype}" if resolved_subtype else "")
-                            + ")"
-                        ),
+                        message=message,
                         page_num=page.page_num,
                         details={
                             "resource_name": xobj_name,

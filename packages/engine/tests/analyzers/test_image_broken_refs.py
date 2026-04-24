@@ -1,9 +1,13 @@
-"""Tests for LPDF_IMG_018 — broken image XObject references.
+"""Tests for LPDF_IMG_018 / 019 / 020 — broken image XObject references.
 
-The check scans each page's /Resources /XObject dictionary and flags
-entries that don't resolve to a legitimate Image or Form XObject. Three
-failure modes are reported: dangling_indirect_ref, missing_subtype,
-wrong_subtype.
+Three distinct inspection_ids, split by failure class so tenants can tune
+severity per class in the rules editor:
+
+  - LPDF_IMG_018: dangling indirect ref (xref slot absent, null object,
+    or pikepdf cycle sentinel)
+  - LPDF_IMG_019: entry is a dict with no /Subtype key
+  - LPDF_IMG_020: entry is a dict with /Subtype that's neither /Image
+    nor /Form (e.g., deprecated /PS), or a non-dict entry
 """
 
 from __future__ import annotations
@@ -29,12 +33,11 @@ def _make_document_with_xobjects(xobjects: dict) -> SemanticDocument:
     )
 
 
-class TestBrokenImageRefs:
-    """LPDF_IMG_018 — dangling / wrong-type XObject references."""
+class TestDanglingRef018:
+    """LPDF_IMG_018 — dangling indirect reference."""
 
     @staticmethod
-    def test_dangling_indirect_ref_fires() -> None:
-        """An XObject entry resolved to None → dangling_indirect_ref finding."""
+    def test_none_entry_fires() -> None:
         doc = _make_document_with_xobjects({"/Im1": None})
         findings = ImageAnalyzer()._check_broken_image_refs(doc)
         assert len(findings) == 1
@@ -46,93 +49,133 @@ class TestBrokenImageRefs:
         assert f.details["resolved_subtype"] is None
 
     @staticmethod
-    def test_shared_ref_string_is_dangling() -> None:
-        """pikepdf cycle-detection sentinel string → dangling_indirect_ref."""
+    def test_shared_ref_sentinel_fires() -> None:
+        """pikepdf cycle-detection sentinel string → dangling."""
         doc = _make_document_with_xobjects({"/ImCycle": "<shared ref: 5 0 R>"})
         findings = ImageAnalyzer()._check_broken_image_refs(doc)
         assert len(findings) == 1
+        assert findings[0].inspection_id == "LPDF_IMG_018"
         assert findings[0].details["failure_mode"] == "dangling_indirect_ref"
+
+
+class TestMissingSubtype019:
+    """LPDF_IMG_019 — /Subtype key missing."""
 
     @staticmethod
     def test_missing_subtype_fires() -> None:
-        """An XObject dict with no /Subtype key is unrenderable."""
         doc = _make_document_with_xobjects(
             {"/Im2": {"/Width": 100, "/Height": 100}}  # no /Subtype
         )
         findings = ImageAnalyzer()._check_broken_image_refs(doc)
         assert len(findings) == 1
-        assert findings[0].details["failure_mode"] == "missing_subtype"
-        assert findings[0].details["resolved_subtype"] is None
+        f = findings[0]
+        assert f.inspection_id == "LPDF_IMG_019"
+        assert f.severity == Severity.ERROR
+        assert f.details["failure_mode"] == "missing_subtype"
+        assert f.details["resolved_subtype"] is None
+
+
+class TestWrongSubtype020:
+    """LPDF_IMG_020 — /Subtype present but unrecognised."""
 
     @staticmethod
-    def test_wrong_subtype_fires() -> None:
-        """A /Subtype other than /Image or /Form → wrong_subtype."""
-        doc = _make_document_with_xobjects(
-            {"/Im3": {"/Subtype": "/PS", "/Length": 10}}  # deprecated PostScript XObject
-        )
+    def test_ps_subtype_fires() -> None:
+        """Deprecated PostScript XObject → wrong_subtype."""
+        doc = _make_document_with_xobjects({"/Im3": {"/Subtype": "/PS", "/Length": 10}})
         findings = ImageAnalyzer()._check_broken_image_refs(doc)
         assert len(findings) == 1
-        assert findings[0].details["failure_mode"] == "wrong_subtype"
-        assert findings[0].details["resolved_subtype"] == "/PS"
+        f = findings[0]
+        assert f.inspection_id == "LPDF_IMG_020"
+        assert f.severity == Severity.ERROR
+        assert f.details["failure_mode"] == "wrong_subtype"
+        assert f.details["resolved_subtype"] == "/PS"
 
     @staticmethod
-    def test_valid_image_xobject_silent() -> None:
-        """A legit /Subtype=/Image XObject → no finding."""
-        doc = _make_document_with_xobjects(
-            {"/Im4": {"/Subtype": "/Image", "/Width": 100, "/Height": 100}}
-        )
-        findings = ImageAnalyzer()._check_broken_image_refs(doc)
-        assert findings == []
-
-    @staticmethod
-    def test_form_xobject_silent() -> None:
-        """A legit /Subtype=/Form XObject → no finding (reusable graphics)."""
-        doc = _make_document_with_xobjects(
-            {"/Fm1": {"/Subtype": "/Form", "/BBox": [0, 0, 100, 100]}}
-        )
-        findings = ImageAnalyzer()._check_broken_image_refs(doc)
-        assert findings == []
-
-    @staticmethod
-    def test_mixed_dict_reports_only_broken() -> None:
-        """A resource dict with both valid and broken entries → only broken flagged."""
-        doc = _make_document_with_xobjects(
-            {
-                "/ImGood": {"/Subtype": "/Image", "/Width": 100, "/Height": 100},
-                "/ImBroken": None,
-                "/FmGood": {"/Subtype": "/Form", "/BBox": [0, 0, 100, 100]},
-            }
-        )
-        findings = ImageAnalyzer()._check_broken_image_refs(doc)
-        assert len(findings) == 1
-        assert findings[0].details["resource_name"] == "/ImBroken"
-        assert findings[0].details["failure_mode"] == "dangling_indirect_ref"
-
-    @staticmethod
-    def test_non_dict_xobject_entry_is_wrong_type() -> None:
-        """An XObject entry that's an integer / list → wrong_subtype."""
+    def test_non_dict_entry_fires() -> None:
+        """An XObject entry that's an int / list → wrong_subtype."""
         doc = _make_document_with_xobjects({"/Im5": 42})
         findings = ImageAnalyzer()._check_broken_image_refs(doc)
         assert len(findings) == 1
-        assert findings[0].details["failure_mode"] == "wrong_subtype"
+        assert findings[0].inspection_id == "LPDF_IMG_020"
         assert findings[0].details["resolved_subtype"] == "int"
 
     @staticmethod
+    def test_vendor_subtype_fires() -> None:
+        """Any /Subtype that isn't /Image or /Form is flagged."""
+        doc = _make_document_with_xobjects({"/Im6": {"/Subtype": "/SomeVendorThing"}})
+        findings = ImageAnalyzer()._check_broken_image_refs(doc)
+        assert len(findings) == 1
+        assert findings[0].inspection_id == "LPDF_IMG_020"
+
+
+class TestValidRefsSilent:
+    """Legitimate XObjects emit no finding regardless of inspection_id."""
+
+    @staticmethod
+    def test_image_xobject_silent() -> None:
+        doc = _make_document_with_xobjects(
+            {"/Im4": {"/Subtype": "/Image", "/Width": 100, "/Height": 100}}
+        )
+        assert ImageAnalyzer()._check_broken_image_refs(doc) == []
+
+    @staticmethod
+    def test_form_xobject_silent() -> None:
+        doc = _make_document_with_xobjects(
+            {"/Fm1": {"/Subtype": "/Form", "/BBox": [0, 0, 100, 100]}}
+        )
+        assert ImageAnalyzer()._check_broken_image_refs(doc) == []
+
+    @staticmethod
     def test_no_xobject_dict_silent() -> None:
-        """A page with no /XObject in resources → no finding."""
         doc = SemanticDocument(
             version="2.0",
             page_count=1,
             is_encrypted=False,
             pages=[SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792), resources={})],
         )
-        findings = ImageAnalyzer()._check_broken_image_refs(doc)
-        assert findings == []
+        assert ImageAnalyzer()._check_broken_image_refs(doc) == []
+
+
+class TestMixedDict:
+    """A dict with mixed entries routes each to the correct ID."""
 
     @staticmethod
-    def test_integration_via_analyze() -> None:
-        """Full analyze() call routes through _check_broken_image_refs."""
+    def test_all_three_failure_modes_at_once() -> None:
+        doc = _make_document_with_xobjects(
+            {
+                "/ImGood": {"/Subtype": "/Image", "/Width": 100, "/Height": 100},
+                "/ImDangling": None,
+                "/ImMissingSubtype": {"/Width": 50},
+                "/ImWrongSubtype": {"/Subtype": "/PS"},
+                "/FmGood": {"/Subtype": "/Form", "/BBox": [0, 0, 100, 100]},
+            }
+        )
+        findings = ImageAnalyzer()._check_broken_image_refs(doc)
+        assert len(findings) == 3
+        by_name = {f.details["resource_name"]: f for f in findings}
+        assert by_name["/ImDangling"].inspection_id == "LPDF_IMG_018"
+        assert by_name["/ImMissingSubtype"].inspection_id == "LPDF_IMG_019"
+        assert by_name["/ImWrongSubtype"].inspection_id == "LPDF_IMG_020"
+
+
+class TestAnalyzeIntegration:
+    @staticmethod
+    def test_analyze_emits_dangling() -> None:
         doc = _make_document_with_xobjects({"/Im1": None})
         findings = ImageAnalyzer().analyze(doc, events=[])
-        broken = [f for f in findings if f.inspection_id == "LPDF_IMG_018"]
-        assert len(broken) == 1
+        ids = {f.inspection_id for f in findings}
+        assert "LPDF_IMG_018" in ids
+
+    @staticmethod
+    def test_analyze_emits_missing_subtype() -> None:
+        doc = _make_document_with_xobjects({"/Im2": {"/Width": 100}})
+        findings = ImageAnalyzer().analyze(doc, events=[])
+        ids = {f.inspection_id for f in findings}
+        assert "LPDF_IMG_019" in ids
+
+    @staticmethod
+    def test_analyze_emits_wrong_subtype() -> None:
+        doc = _make_document_with_xobjects({"/Im3": {"/Subtype": "/PS"}})
+        findings = ImageAnalyzer().analyze(doc, events=[])
+        ids = {f.inspection_id for f in findings}
+        assert "LPDF_IMG_020" in ids

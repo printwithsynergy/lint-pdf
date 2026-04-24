@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 376,
+  "total_checks": 378,
   "categories": [
     {
       "id": "image",
@@ -111,8 +111,20 @@
         },
         {
           "id": "LPDF_IMG_018",
-          "name": "Broken Image Reference",
-          "description": "An image XObject in page resources resolves to a missing object or a non-image type \u2014 the RIP will render a blank region where this image was placed.",
+          "name": "Dangling Image XObject Reference",
+          "description": "An image XObject in page resources resolves to a missing object (xref slot absent, null object, or cycle-detection sentinel) \u2014 the RIP will render a blank region.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_019",
+          "name": "Image XObject Missing /Subtype",
+          "description": "An image XObject dictionary has no /Subtype key, so the RIP can't know how to render it. The PDF is structurally malformed.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_020",
+          "name": "Image XObject Has Wrong /Subtype",
+          "description": "An image XObject's /Subtype is neither /Image nor /Form (e.g., deprecated /PS, or a vendor-invented subtype the RIP won't recognise).",
           "default_severity": "warning"
         }
       ]

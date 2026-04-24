@@ -84,8 +84,16 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Extreme Scaling", "Image is scaled to an extreme percentage of its original size."
     ),
     "LPDF_IMG_018": CheckInfo(
-        "Broken Image Reference",
-        "An image XObject in page resources resolves to a missing object or a non-image type — the RIP will render a blank region where this image was placed.",
+        "Dangling Image XObject Reference",
+        "An image XObject in page resources resolves to a missing object (xref slot absent, null object, or cycle-detection sentinel) — the RIP will render a blank region.",
+    ),
+    "LPDF_IMG_019": CheckInfo(
+        "Image XObject Missing /Subtype",
+        "An image XObject dictionary has no /Subtype key, so the RIP can't know how to render it. The PDF is structurally malformed.",
+    ),
+    "LPDF_IMG_020": CheckInfo(
+        "Image XObject Has Wrong /Subtype",
+        "An image XObject's /Subtype is neither /Image nor /Form (e.g., deprecated /PS, or a vendor-invented subtype the RIP won't recognise).",
     ),
     # ── Fonts ─────────────────────────────────────────────────────────────
     "LPDF_FONT_001": CheckInfo(
