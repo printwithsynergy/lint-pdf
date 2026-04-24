@@ -595,6 +595,12 @@ def _extract_dieline_paths(
     current_stroke_color: tuple[float, ...] = ()
     ocg_stack: list[str] = []
     path_points: list[tuple[float, float]] = []
+    # ``subpath_bboxes`` holds one bbox per completed subpath within
+    # the current compound path. A new ``m`` flushes the in-progress
+    # subpath into this list; the stroke finisher consumes every
+    # entry so compound paths (``m ... m ... S``) register each
+    # artwork separately instead of collapsing onto the last subpath.
+    subpath_bboxes: list[tuple[float, float, float, float]] = []
 
     dieline_bboxes: list[tuple[float, float, float, float]] = []
     dieline_colors: set[tuple[str | None, tuple[float, ...]]] = set()
@@ -610,19 +616,33 @@ def _extract_dieline_paths(
         cs_spot = cs_to_spot.get(current_stroke_cs)
         return cs_spot == spot_name
 
-    def flush_stroked() -> None:
+    def seal_subpath() -> None:
+        """Freeze the current subpath's bbox into ``subpath_bboxes``.
+        Called when the compound path continues with a new ``m`` /
+        ``re`` or when a paint operator finishes the whole path."""
         nonlocal path_points
         if not path_points:
+            return
+        xs = [p[0] for p in path_points]
+        ys = [p[1] for p in path_points]
+        subpath_bboxes.append((min(xs), min(ys), max(xs), max(ys)))
+        path_points = []
+
+    def flush_stroked() -> None:
+        """Paint operator hit — seal the current subpath and commit
+        every subpath of this compound path as dieline if the stroke
+        conditions apply."""
+        nonlocal subpath_bboxes
+        seal_subpath()
+        if not subpath_bboxes:
             return
         hit_layer = in_dieline_layer()
         hit_spot = cur_is_dieline_spot()
         if hit_layer or hit_spot:
-            xs = [p[0] for p in path_points]
-            ys = [p[1] for p in path_points]
-            dieline_bboxes.append((min(xs), min(ys), max(xs), max(ys)))
+            dieline_bboxes.extend(subpath_bboxes)
             if hit_layer:
                 dieline_colors.add((current_stroke_cs, current_stroke_color))
-        path_points = []
+        subpath_bboxes = []
 
     for inst in instrs:
         try:
@@ -654,6 +674,8 @@ def _extract_dieline_paths(
                     pass
             current_stroke_color = tuple(floats)
         elif op == "m":
+            # New subpath — freeze the previous one if any.
+            seal_subpath()
             if len(operands) >= 2:
                 try:
                     path_points = [(float(operands[0]), float(operands[1]))]
@@ -671,16 +693,23 @@ def _extract_dieline_paths(
             except Exception:
                 pass
         elif op == "re":
+            # ``re`` is a complete, self-contained rectangular
+            # subpath. Treat like ``m ... l ... l ... l ... h``.
+            seal_subpath()
             if len(operands) >= 4:
                 try:
                     x, y, w, h = (float(v) for v in operands[:4])
                     path_points = [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+                    seal_subpath()
                 except Exception:
                     path_points = []
         elif op in ("S", "s", "B", "B*", "b", "b*"):
             flush_stroked()
         elif op in ("f", "F", "f*", "n"):
+            # Fill / no-op — discard any accumulated subpaths; they
+            # weren't stroked by the dieline ink.
             path_points = []
+            subpath_bboxes = []
 
     return dieline_bboxes, len(dieline_colors)
 

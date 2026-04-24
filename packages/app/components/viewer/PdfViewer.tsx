@@ -20,6 +20,7 @@ import { ColorPickerTool } from "./ColorPickerTool";
 import { DensitometerTool } from "./DensitometerTool";
 import { MeasureTool } from "./MeasureTool";
 import { BoxOverlay } from "./BoxOverlay";
+import { DielineOverlay } from "./DielineOverlay";
 import { LayerPanel } from "./LayerPanel";
 import { VerdictBar } from "./VerdictBar";
 import { ComparisonPanel } from "./ComparisonPanel";
@@ -897,6 +898,21 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                       }
                     />
                   )}
+
+                  {/* Dieline info icons — always rendered when the
+                      job exposes dieline regions. Independent of
+                      the Trim/Bleed overlay so operators see per-
+                      artwork sizes without flipping a tool on. */}
+                  {currentPageInfo && (
+                    <DielineOverlay
+                      page={currentPageInfo}
+                      canvasWidth={canvasWidth}
+                      canvasHeight={canvasHeight}
+                      dieline={
+                        (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
+                      }
+                    />
+                  )}
                   {measureMode === "color_picker" && currentPageInfo && (
                     <ColorPickerTool jobId={jobId} pageNum={currentPage} pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
                   )}
@@ -1165,6 +1181,20 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                 {/* Box overlay (trim/bleed/crop) */}
                 {showBoxOverlay && currentPageInfo && (
                   <BoxOverlay
+                    page={currentPageInfo}
+                    canvasWidth={canvasWidth}
+                    canvasHeight={canvasHeight}
+                    dieline={
+                      (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
+                    }
+                  />
+                )}
+
+                {/* Dieline info icons — always-on sibling of the
+                    Box overlay so the per-region size popovers
+                    appear whether or not Trim/Bleed is toggled. */}
+                {currentPageInfo && (
+                  <DielineOverlay
                     page={currentPageInfo}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
