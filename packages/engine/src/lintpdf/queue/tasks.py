@@ -883,7 +883,11 @@ def run_preflight(
                         spot_name=(job.dieline or {}).get("spot_name"),
                         source=(job.dieline or {}).get("source") or "missing",
                         regions=(job.dieline or {}).get("regions"),
+                        polylines=(job.dieline or {}).get("polylines"),
                         max_bleed_mm=profile.thresholds.max_bleed_mm,
+                        min_dieline_feature_mm=profile.thresholds.min_dieline_feature_mm,
+                        min_dieline_segment_length_mm=profile.thresholds.min_dieline_segment_length_mm,
+                        white_coverage_min=profile.thresholds.white_coverage_min,
                     )
                 except Exception:
                     logger.exception("Job %s dieline_quality check raised", job_id)
@@ -906,6 +910,39 @@ def run_preflight(
                     )
                     result_dict["summary"]["total_findings"] += 1
                     sev_key = f"{df.severity.value}_count"
+                    if sev_key in result_dict["summary"]:
+                        result_dict["summary"][sev_key] += 1
+
+            # Batch 7 — T3-D11 spot-name canonical-taxonomy advisories.
+            # Independent of dieline detection; runs on any PDF.
+            if pdf_bytes:
+                try:
+                    from lintpdf.analyzers.spot_name_normaliser import (
+                        check_spot_naming,
+                    )
+
+                    sn_findings = check_spot_naming(pdf_bytes)
+                except Exception:
+                    logger.exception("Job %s spot_name_normaliser raised", job_id)
+                    sn_findings = []
+
+                for sf in sn_findings:
+                    result_dict["findings"].append(
+                        {
+                            "inspection_id": sf.inspection_id,
+                            "severity": sf.severity.value,
+                            "message": sf.message,
+                            "page_num": sf.page_num,
+                            "bbox": list(sf.bbox) if sf.bbox else None,
+                            "details": sf.details,
+                            "source": "engine",
+                            "category": "spot_color",
+                            "object_id": sf.object_id,
+                            "object_type": sf.object_type,
+                        }
+                    )
+                    result_dict["summary"]["total_findings"] += 1
+                    sev_key = f"{sf.severity.value}_count"
                     if sev_key in result_dict["summary"]:
                         result_dict["summary"][sev_key] += 1
 
@@ -990,7 +1027,11 @@ def run_preflight(
                         spot_name=(job.dieline or {}).get("spot_name"),
                         source=(job.dieline or {}).get("source") or "missing",
                         regions=(job.dieline or {}).get("regions"),
+                        polylines=(job.dieline or {}).get("polylines"),
                         max_bleed_mm=profile.thresholds.max_bleed_mm,
+                        min_dieline_feature_mm=profile.thresholds.min_dieline_feature_mm,
+                        min_dieline_segment_length_mm=profile.thresholds.min_dieline_segment_length_mm,
+                        white_coverage_min=profile.thresholds.white_coverage_min,
                     ):
                         db.add(
                             JobFinding(
@@ -1008,6 +1049,31 @@ def run_preflight(
                         )
                 except Exception:
                     logger.exception("Job %s dieline_quality persistence raised", job_id)
+
+            # Batch 7 — persist spot-name canonical-taxonomy advisories.
+            if pdf_bytes:
+                try:
+                    from lintpdf.analyzers.spot_name_normaliser import (
+                        check_spot_naming,
+                    )
+
+                    for sf in check_spot_naming(pdf_bytes):
+                        db.add(
+                            JobFinding(
+                                job_id=job.id,
+                                inspection_id=sf.inspection_id,
+                                severity=sf.severity.value,
+                                message=sf.message,
+                                page_num=sf.page_num,
+                                details=sf.details,
+                                source="engine",
+                                category="spot_color",
+                                object_id=sf.object_id,
+                                object_type=sf.object_type,
+                            )
+                        )
+                except Exception:
+                    logger.exception("Job %s spot_name persistence raised", job_id)
 
             if (
                 job.dieline

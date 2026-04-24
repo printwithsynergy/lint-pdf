@@ -613,6 +613,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "TAC Exceeds Substrate Limit",
         "Observed max Total Area Coverage exceeds the limit typical for the declared substrate (uncoated offset 280%, coated 300%, newsprint 240%, digital 320%, flexo 260%, gravure 300%, large-format 280%).",
     ),
+    "LPDF_SPOT_NONCANONICAL": CheckInfo(
+        "Non-Canonical Spot Name",
+        "Spot colour name doesn't match the lintPDF canonical taxonomy (CutContour, Crease, Perforation, KissCut, ThroughCut, White, Varnish, VarnishFree). Renaming to canonical names improves cross-vendor compatibility (Esko, PackZ, ArtiosCAD).",
+    ),
+    "LPDF_DIE_TOO_SMALL": CheckInfo(
+        "Dieline Feature Below Cutter Resolution",
+        "Dieline polygon's bbox or perimeter is smaller than the cutting machine can track cleanly (default 1.0mm threshold). Tiny features tear surrounding stock or crumble during die-cutting.",
+    ),
+    "LPDF_DIE_WHITE_GAP": CheckInfo(
+        "White Underprint Gap",
+        "White / OpaqueWhite underprint covers less than the configured fraction of the dieline area (default 95%). On clear or foil substrates, gaps in white underprint let the substrate show through colour artwork.",
+    ),
     # ── AI File Classification ──────────────────────────────────────────────
     "AI_FCLASS_002": CheckInfo(
         "Document Classified",

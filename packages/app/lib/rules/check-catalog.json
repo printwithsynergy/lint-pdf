@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 394,
+  "total_checks": 397,
   "categories": [
     {
       "id": "image",
@@ -419,6 +419,12 @@
           "id": "LPDF_SPOT_011",
           "name": "Spot color used at 0% tint",
           "description": "Spot color 'N' used at 0% tint on page N (invisible)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_NONCANONICAL",
+          "name": "Non-Canonical Spot Name",
+          "description": "Spot colour name doesn't match the lintPDF canonical taxonomy (CutContour, Crease, Perforation, KissCut, ThroughCut, White, Varnish, VarnishFree). Renaming to canonical names improves cross-vendor compatibility (Esko, PackZ, ArtiosCAD).",
           "default_severity": "advisory"
         }
       ]
@@ -2264,9 +2270,21 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_DIE_TOO_SMALL",
+          "name": "Dieline Feature Below Cutter Resolution",
+          "description": "Dieline polygon's bbox or perimeter is smaller than the cutting machine can track cleanly (default 1.0mm threshold). Tiny features tear surrounding stock or crumble during die-cutting.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_DIE_VARNISH_COLLISION",
           "name": "Varnish Applied Inside VarnishFree Region",
           "description": "Varnish / coating spot overlaps a VarnishFree (no-coating) region. Remove varnish from the marked region in the source file before exporting.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_WHITE_GAP",
+          "name": "White Underprint Gap",
+          "description": "White / OpaqueWhite underprint covers less than the configured fraction of the dieline area (default 95%). On clear or foil substrates, gaps in white underprint let the substrate show through colour artwork.",
           "default_severity": "advisory"
         },
         {

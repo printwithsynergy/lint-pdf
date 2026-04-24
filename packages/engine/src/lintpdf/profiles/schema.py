@@ -165,6 +165,40 @@ class ThresholdConfig(BaseModel):
         ),
     )
 
+    # T3-D08 — minimum dieline feature size + segment length thresholds
+    # (cutter-resolution gate).
+    min_dieline_feature_mm: float = Field(
+        default=1.0,
+        ge=0,
+        description=(
+            "Minimum dieline polygon width / height in mm. Polygons below "
+            "this fire LPDF_DIE_TOO_SMALL (cutter blade can't track tiny "
+            "features cleanly). Default 1.0mm matches cardstock norms."
+        ),
+    )
+    min_dieline_segment_length_mm: float = Field(
+        default=1.0,
+        ge=0,
+        description=(
+            "Minimum dieline polygon perimeter in mm. Polygons below this "
+            "fire LPDF_DIE_TOO_SMALL. Default 1.0mm matches cardstock "
+            "norms."
+        ),
+    )
+
+    # T3-D09 — minimum white-underprint coverage of the dieline area.
+    # 0 disables the check; default 0.95 = 95% coverage required.
+    white_coverage_min: float = Field(
+        default=0.95,
+        ge=0,
+        le=1.0,
+        description=(
+            "Minimum fraction (0-1) of the dieline area that must be "
+            "covered by White / OpaqueWhite spots. Below this triggers "
+            "LPDF_DIE_WHITE_GAP. 0 disables the check."
+        ),
+    )
+
     # T3-D12 — target substrate. Enables substrate-aware TAC advisory.
     substrate: str | None = Field(
         default=None,

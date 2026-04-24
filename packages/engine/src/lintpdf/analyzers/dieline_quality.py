@@ -40,7 +40,7 @@ __all__ = ["check_dieline_quality"]
 logger = logging.getLogger(__name__)
 
 # Threshold below which a filled dieline area is emitted as advisory
-# rather than error. 50 pt² ≈ 7 × 7 pt ≈ 2.5mm square — below that
+# rather than error. 50 pt² ≈ 7 x 7 pt ≈ 2.5mm square — below that
 # it's almost certainly a tick-mark or trim marker, not actual
 # filled artwork in the cutter spot.
 _AS_ART_SMALL_AREA_PTS2 = 50.0
@@ -54,6 +54,10 @@ def check_dieline_quality(
     regions: list[dict[str, float]] | None = None,
     content_outside_tolerance_pts: float = 2.83,
     max_bleed_mm: float | None = None,
+    polylines: list[list[list[float]]] | None = None,
+    min_dieline_feature_mm: float = 1.0,
+    min_dieline_segment_length_mm: float = 1.0,
+    white_coverage_min: float = 0.95,
 ) -> list[Finding]:
     """Emit dieline-quality findings for a resolved dieline.
 
@@ -327,7 +331,138 @@ def check_dieline_quality(
                         )
                     )
 
+    # T3-D08 — small dieline features that won't die-cut cleanly.
+    # Walks DielineResult.polylines for any subpath whose perimeter
+    # < min_segment_length_mm OR whose bbox is < min_feature_size_mm
+    # in either dimension.
+    if polylines:
+        small_polys = _find_small_polygons(
+            polylines,
+            min_feature_mm=min_dieline_feature_mm,
+            min_perimeter_mm=min_dieline_segment_length_mm,
+        )
+        if small_polys:
+            smallest = min(small_polys, key=lambda p: min(p["width_mm"], p["height_mm"]))
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_DIE_TOO_SMALL",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"{len(small_polys)} dieline feature(s) below "
+                        f"{min_dieline_feature_mm:.1f}mm cutting threshold "
+                        f"(smallest: {smallest['width_mm']:.2f}x"
+                        f"{smallest['height_mm']:.2f}mm)"
+                    ),
+                    page_num=1,
+                    details={
+                        "feature_count": len(small_polys),
+                        "min_feature_size_mm": min_dieline_feature_mm,
+                        "min_segment_length_mm": min_dieline_segment_length_mm,
+                        "smallest_width_mm": round(smallest["width_mm"], 3),
+                        "smallest_height_mm": round(smallest["height_mm"], 3),
+                        "smallest_perimeter_mm": round(smallest["perimeter_mm"], 3),
+                    },
+                    iso_clause="ISO 19593-1 §5.3 / cutter resolution",
+                    object_type="dieline_polygon",
+                )
+            )
+
+    # T3-D09 — white underprint coverage gap. White-spot bbox area
+    # vs dieline envelope area; fires when coverage < threshold.
+    if signals.white_spots and signals.white_spots_bboxes and regions and white_coverage_min > 0:
+        envelope = _envelope_of_regions(regions)
+        if envelope is not None:
+            envelope_area = (envelope[2] - envelope[0]) * (envelope[3] - envelope[1])
+            if envelope_area > 0:
+                white_union = _bbox_union(signals.white_spots_bboxes)
+                if white_union is not None:
+                    intersection = _bbox_intersect(white_union, envelope)
+                    covered_area = (
+                        (intersection[2] - intersection[0]) * (intersection[3] - intersection[1])
+                        if intersection
+                        else 0.0
+                    )
+                    coverage_pct = (covered_area / envelope_area) * 100.0
+                    if coverage_pct < white_coverage_min * 100.0:
+                        findings.append(
+                            Finding(
+                                inspection_id="LPDF_DIE_WHITE_GAP",
+                                severity=Severity.WARNING,
+                                message=(
+                                    f"White underprint covers {coverage_pct:.1f}% "
+                                    f"of dieline area — gaps will let substrate "
+                                    f"show through colour artwork"
+                                ),
+                                page_num=1,
+                                details={
+                                    "white_spot": signals.white_spots[0],
+                                    "white_coverage_pct": round(coverage_pct, 2),
+                                    "white_coverage_min_pct": white_coverage_min * 100.0,
+                                    "dieline_area_pts2": round(envelope_area, 2),
+                                    "white_area_pts2": round(covered_area, 2),
+                                    "dieline_envelope_pts": list(envelope),
+                                },
+                                iso_clause="ISO 19593-1 §5.3 / White underprint",
+                                object_id=signals.white_spots[0],
+                                object_type="spot_color",
+                            )
+                        )
+
     return findings
+
+
+def _find_small_polygons(
+    polylines: list[list[list[float]]],
+    *,
+    min_feature_mm: float,
+    min_perimeter_mm: float,
+) -> list[dict[str, float]]:
+    """Return per-polygon size metrics for polygons below cutter
+    resolution thresholds.
+
+    A polygon counts as "too small" when ANY of:
+      - bbox width < min_feature_mm
+      - bbox height < min_feature_mm
+      - perimeter < min_perimeter_mm
+
+    Returns dicts with width_mm, height_mm, perimeter_mm, area_mm2 for
+    every too-small polygon (caller picks the worst).
+    """
+    import math
+
+    out: list[dict[str, float]] = []
+    pt_to_mm = 0.352778
+    for poly in polylines:
+        if not poly or len(poly) < 2:
+            continue
+        try:
+            xs = [float(p[0]) for p in poly]
+            ys = [float(p[1]) for p in poly]
+        except (IndexError, TypeError, ValueError):
+            continue
+        width_pts = max(xs) - min(xs)
+        height_pts = max(ys) - min(ys)
+        perim_pts = 0.0
+        for i in range(len(poly) - 1):
+            try:
+                dx = float(poly[i + 1][0]) - float(poly[i][0])
+                dy = float(poly[i + 1][1]) - float(poly[i][1])
+                perim_pts += math.hypot(dx, dy)
+            except (IndexError, TypeError, ValueError):
+                continue
+        width_mm = width_pts * pt_to_mm
+        height_mm = height_pts * pt_to_mm
+        perim_mm = perim_pts * pt_to_mm
+        if width_mm < min_feature_mm or height_mm < min_feature_mm or perim_mm < min_perimeter_mm:
+            out.append(
+                {
+                    "width_mm": width_mm,
+                    "height_mm": height_mm,
+                    "perimeter_mm": perim_mm,
+                    "area_mm2": width_mm * height_mm,
+                }
+            )
+    return out
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -413,6 +548,8 @@ class _QualitySignals:
         "varnish_free_spots_bboxes",
         "varnish_spots",
         "varnish_spots_bboxes",
+        "white_spots",
+        "white_spots_bboxes",
     )
 
     def __init__(self) -> None:
@@ -435,6 +572,9 @@ class _QualitySignals:
         self.varnish_spots_bboxes: list[tuple[float, float, float, float]] = []
         self.varnish_free_spots: list[str] = []
         self.varnish_free_spots_bboxes: list[tuple[float, float, float, float]] = []
+        # T3-D09 — white-spot bboxes for white-coverage calc.
+        self.white_spots: list[str] = []
+        self.white_spots_bboxes: list[tuple[float, float, float, float]] = []
 
 
 # Paint operators split into stroke-only, fill-only, both.
@@ -532,6 +672,27 @@ def _is_varnish_free_name(name: str) -> bool:
     return any(tok in norm for tok in _VARNISH_FREE_NAME_TOKENS)
 
 
+# T3-D09 — closed lexicon of white / underprint spot names.
+_WHITE_NAME_TOKENS = frozenset(
+    {
+        "white",
+        "opaque white",
+        "opaquewhite",
+        "whiteunder",
+        "white under",
+        "whiteunderprint",
+        "white underprint",
+    }
+)
+
+
+def _is_white_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return any(tok == norm or tok in norm.split(",") for tok in _WHITE_NAME_TOKENS) or (
+        norm in _WHITE_NAME_TOKENS
+    )
+
+
 def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
     import io
 
@@ -562,6 +723,8 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                 signals.varnish_free_spots.append(spot)
             elif _is_varnish_name(spot) and spot not in signals.varnish_spots:
                 signals.varnish_spots.append(spot)
+            if _is_white_name(spot) and spot not in signals.white_spots:
+                signals.white_spots.append(spot)
 
         # T3-D01 — build resource-name → OCG-name map so BDC /OC
         # /Resource blocks resolve to the actual optional-content
@@ -742,6 +905,8 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                             signals.varnish_spots_bboxes.append(paint_bbox)
                         if s in signals.varnish_free_spots:
                             signals.varnish_free_spots_bboxes.append(paint_bbox)
+                        if s in signals.white_spots:
+                            signals.white_spots_bboxes.append(paint_bbox)
 
                 path_subpath_areas_pts2.clear()
                 current_subpath_points_history.clear()
