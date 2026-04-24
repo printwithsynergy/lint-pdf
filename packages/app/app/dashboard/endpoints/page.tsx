@@ -377,8 +377,10 @@ export default function EndpointsPage() {
                       Created {new Date(ep.created_at).toLocaleDateString()}
                     </p>
                   </div>
-                  <div className="ml-4 flex shrink-0 gap-1">
-                    <button
+                  <div className="ml-4 flex shrink-0 gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => {
                         setEditingId(ep.id);
                         setEditSlug(ep.slug);
@@ -386,22 +388,23 @@ export default function EndpointsPage() {
                         setEditDescription(ep.description);
                         setEditBrandSpecId(ep.default_brand_spec_id ?? "");
                       }}
-                      className="rounded border px-2 py-1 text-xs hover:bg-muted"
                     >
                       Edit
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => handleToggle(ep.id, ep.is_active)}
-                      className="rounded border px-2 py-1 text-xs hover:bg-muted"
                     >
                       {ep.is_active ? "Disable" : "Enable"}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       onClick={() => handleDelete(ep.id)}
-                      className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
                     >
                       Delete
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}

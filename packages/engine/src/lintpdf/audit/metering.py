@@ -30,20 +30,20 @@ logger = logging.getLogger(__name__)
 # Cache-read is 10% of base input; cache-write is 125% of base input.
 _PRICES_THOUSANDTH_CENT_PER_MTOK: dict[str, dict[str, int]] = {
     "claude-haiku-4-5": {
-        "input": 80_000,        # $0.80  / 1M input  tokens
-        "output": 400_000,      # $4.00  / 1M output tokens
-        "cache_read": 8_000,    # 10% of input
+        "input": 80_000,  # $0.80  / 1M input  tokens
+        "output": 400_000,  # $4.00  / 1M output tokens
+        "cache_read": 8_000,  # 10% of input
         "cache_write": 100_000,  # 125% of input
     },
     "claude-sonnet-4-6": {
-        "input": 300_000,       # $3.00  / 1M input
-        "output": 1_500_000,    # $15.00 / 1M output
+        "input": 300_000,  # $3.00  / 1M input
+        "output": 1_500_000,  # $15.00 / 1M output
         "cache_read": 30_000,
         "cache_write": 375_000,
     },
     "claude-opus-4-7": {
-        "input": 1_500_000,     # $15.00 / 1M input
-        "output": 7_500_000,    # $75.00 / 1M output
+        "input": 1_500_000,  # $15.00 / 1M input
+        "output": 7_500_000,  # $75.00 / 1M output
         "cache_read": 150_000,
         "cache_write": 1_875_000,
     },
@@ -81,9 +81,7 @@ def compute_cost_cents(
         + cache_write_tokens * p["cache_write"]
     ) // 1_000_000
     cents = math.ceil(total_milli_cents / 1000)
-    any_tokens = (
-        input_tokens + output_tokens + cache_read_tokens + cache_write_tokens
-    ) > 0
+    any_tokens = (input_tokens + output_tokens + cache_read_tokens + cache_write_tokens) > 0
     return max(1, cents) if any_tokens else 0
 
 

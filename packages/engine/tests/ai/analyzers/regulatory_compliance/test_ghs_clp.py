@@ -48,10 +48,7 @@ def test_real_h_statement_still_triggers_even_alongside_prop65() -> None:
     H-statement must still produce AI_GHS_003 — the H-statement is
     CLP-regulated regardless of whether the signal words are
     suppressed as Prop 65."""
-    text = (
-        "WARNING: Proposition 65 cancer warning. "
-        "DANGER. Causes serious eye damage. H318."
-    )
+    text = "WARNING: Proposition 65 cancer warning. DANGER. Causes serious eye damage. H318."
     findings = GhsClpAnalyzer().analyze(_doc_with_text(text), [], pdf_bytes=b"")
     ghs003 = [f for f in findings if f.inspection_id == "AI_GHS_003"]
     assert len(ghs003) == 1

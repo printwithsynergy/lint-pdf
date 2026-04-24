@@ -44,19 +44,23 @@ def _make_nested_spot_pdf(spot_names: list[str]) -> bytes:
     # Separation colorspace declarations.
     inner_cs = pikepdf.Dictionary()
     for i, name in enumerate(spot_names):
-        inner_cs[f"/CS{i}"] = pikepdf.Array([
-            pikepdf.Name("/Separation"),
-            pikepdf.Name("/" + name),
-            pikepdf.Name("/DeviceCMYK"),
-            # Identity tint transform — good enough for the scanner.
-            pikepdf.Dictionary({
-                "/FunctionType": 2,
-                "/Domain": pikepdf.Array([0, 1]),
-                "/C0": pikepdf.Array([0, 0, 0, 0]),
-                "/C1": pikepdf.Array([0, 0, 0, 1]),
-                "/N": 1,
-            }),
-        ])
+        inner_cs[f"/CS{i}"] = pikepdf.Array(
+            [
+                pikepdf.Name("/Separation"),
+                pikepdf.Name("/" + name),
+                pikepdf.Name("/DeviceCMYK"),
+                # Identity tint transform — good enough for the scanner.
+                pikepdf.Dictionary(
+                    {
+                        "/FunctionType": 2,
+                        "/Domain": pikepdf.Array([0, 1]),
+                        "/C0": pikepdf.Array([0, 0, 0, 0]),
+                        "/C1": pikepdf.Array([0, 0, 0, 1]),
+                        "/N": 1,
+                    }
+                ),
+            ]
+        )
 
     form_b = pdf.make_stream(b"")
     form_b.Type = pikepdf.Name("/XObject")
@@ -69,13 +73,17 @@ def _make_nested_spot_pdf(spot_names: list[str]) -> bytes:
     form_a.Type = pikepdf.Name("/XObject")
     form_a.Subtype = pikepdf.Name("/Form")
     form_a.BBox = pikepdf.Array([0, 0, 100, 100])
-    form_a.Resources = pikepdf.Dictionary({
-        "/XObject": pikepdf.Dictionary({"/FormB": form_b}),
-    })
+    form_a.Resources = pikepdf.Dictionary(
+        {
+            "/XObject": pikepdf.Dictionary({"/FormB": form_b}),
+        }
+    )
 
-    page.Resources = pikepdf.Dictionary({
-        "/XObject": pikepdf.Dictionary({"/FormA": form_a}),
-    })
+    page.Resources = pikepdf.Dictionary(
+        {
+            "/XObject": pikepdf.Dictionary({"/FormA": form_a}),
+        }
+    )
 
     buf = io.BytesIO()
     pdf.save(buf)
@@ -139,33 +147,43 @@ class TestNestedFormSpotRecursion:
         pdf.add_blank_page(page_size=(100, 100))
         page = pdf.pages[0]
 
-        cs = pikepdf.Dictionary({
-            "/CS0": pikepdf.Array([
-                pikepdf.Name("/Separation"),
-                pikepdf.Name("/PANTONE_Reflex_Blue"),
-                pikepdf.Name("/DeviceCMYK"),
-                pikepdf.Dictionary({
-                    "/FunctionType": 2,
-                    "/Domain": pikepdf.Array([0, 1]),
-                    "/C0": pikepdf.Array([0, 0, 0, 0]),
-                    "/C1": pikepdf.Array([1, 0, 0, 0]),
-                    "/N": 1,
-                }),
-            ]),
-        })
+        cs = pikepdf.Dictionary(
+            {
+                "/CS0": pikepdf.Array(
+                    [
+                        pikepdf.Name("/Separation"),
+                        pikepdf.Name("/PANTONE_Reflex_Blue"),
+                        pikepdf.Name("/DeviceCMYK"),
+                        pikepdf.Dictionary(
+                            {
+                                "/FunctionType": 2,
+                                "/Domain": pikepdf.Array([0, 1]),
+                                "/C0": pikepdf.Array([0, 0, 0, 0]),
+                                "/C1": pikepdf.Array([1, 0, 0, 0]),
+                                "/N": 1,
+                            }
+                        ),
+                    ]
+                ),
+            }
+        )
 
         form = pdf.make_stream(b"")
         form.Type = pikepdf.Name("/XObject")
         form.Subtype = pikepdf.Name("/Form")
         form.BBox = pikepdf.Array([0, 0, 100, 100])
-        form.Resources = pikepdf.Dictionary({
-            "/ColorSpace": cs,
-            # Cyclic self-reference through the same XObject dict.
-            "/XObject": pikepdf.Dictionary({"/Self": form}),
-        })
-        page.Resources = pikepdf.Dictionary({
-            "/XObject": pikepdf.Dictionary({"/Root": form}),
-        })
+        form.Resources = pikepdf.Dictionary(
+            {
+                "/ColorSpace": cs,
+                # Cyclic self-reference through the same XObject dict.
+                "/XObject": pikepdf.Dictionary({"/Self": form}),
+            }
+        )
+        page.Resources = pikepdf.Dictionary(
+            {
+                "/XObject": pikepdf.Dictionary({"/Root": form}),
+            }
+        )
 
         buf = io.BytesIO()
         pdf.save(buf)

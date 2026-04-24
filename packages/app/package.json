@@ -30,7 +30,7 @@
     "@thinkneverland/pixie-dust-config": "^1.2.10",
     "@thinkneverland/pixie-dust-cookie-consent": "^1.0.10",
     "@thinkneverland/pixie-dust-core": "^1.2.11",
-    "@thinkneverland/pixie-dust-dashboard": "^1.21.1",
+    "@thinkneverland/pixie-dust-dashboard": "^1.22.0",
     "@thinkneverland/pixie-dust-database": "^2.4.0",
     "@thinkneverland/pixie-dust-devtools": "^1.0.12",
     "@thinkneverland/pixie-dust-email": "^1.6.0",

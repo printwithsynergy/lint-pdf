@@ -24,9 +24,7 @@ from lintpdf.audit.outage import record_outcome
 logger = logging.getLogger(__name__)
 
 
-_DEFAULT_MODEL = os.environ.get(
-    "LINTPDF_DIELINE_FALLBACK_MODEL", "claude-sonnet-4-6"
-)
+_DEFAULT_MODEL = os.environ.get("LINTPDF_DIELINE_FALLBACK_MODEL", "claude-sonnet-4-6")
 _PAGE_DPI = 150
 _CACHE_TTL = "1h"
 
@@ -92,9 +90,7 @@ def detect_dieline_via_claude(pdf_bytes: bytes) -> Any | None:
     try:
         import anthropic
     except ImportError:
-        logger.warning(
-            "dieline-claude: anthropic SDK not installed; skipping fallback"
-        )
+        logger.warning("dieline-claude: anthropic SDK not installed; skipping fallback")
         return None
 
     try:
@@ -127,8 +123,7 @@ def detect_dieline_via_claude(pdf_bytes: bytes) -> Any | None:
                         {
                             "type": "text",
                             "text": (
-                                "Inspect this rendered PDF page and "
-                                "report the dieline contour."
+                                "Inspect this rendered PDF page and report the dieline contour."
                             ),
                         },
                         {

@@ -1,9 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { SkeletonDashboard } from "@/components/skeleton";
-import { Button } from "@thinkneverland/pixie-dust-ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@thinkneverland/pixie-dust-ui";
 
 interface TenantSummary {
   id: string;
@@ -20,6 +26,7 @@ const PLANS = ["free", "starter", "growth", "scale", "enterprise"];
 const STATUSES = ["active", "suspended"];
 
 export default function AdminTenantsPage() {
+  const router = useRouter();
   const [tenants, setTenants] = useState<TenantSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -145,30 +152,34 @@ export default function AdminTenantsPage() {
         <SkeletonDashboard type="table" />
       ) : (
         <>
-          <div className="mt-6 overflow-x-auto">
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Organizations</CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 font-medium">Organization</th>
-                  <th className="pb-2 font-medium">Plan</th>
-                  <th className="pb-2 font-medium">Status</th>
-                  <th className="pb-2 font-medium">Daily Limit</th>
-                  <th className="pb-2 font-medium">Desktop App</th>
-                  <th className="pb-2 font-medium">AI Audit</th>
-                  <th className="pb-2 font-medium">Created</th>
-                  <th className="pb-2 font-medium"></th>
+                  <th className="pb-3 pr-3 font-medium">Organization</th>
+                  <th className="pb-3 pr-3 font-medium">Plan</th>
+                  <th className="pb-3 pr-3 font-medium">Status</th>
+                  <th className="pb-3 pr-3 font-medium">Daily Limit</th>
+                  <th className="pb-3 pr-3 font-medium">Desktop App</th>
+                  <th className="pb-3 pr-3 font-medium">AI Audit</th>
+                  <th className="pb-3 pr-3 font-medium">Created</th>
+                  <th className="pb-3 font-medium"></th>
                 </tr>
               </thead>
               <tbody>
                 {tenants.map((t) => (
-                  <tr key={t.id} className="border-b">
-                    <td className="py-2">
+                  <tr key={t.id} className="border-b last:border-b-0">
+                    <td className="py-3 pr-3">
                       <div className="font-medium">{t.name}</div>
                       <div className="text-xs text-muted-foreground">
                         {t.contact_email}
                       </div>
                     </td>
-                    <td className="py-2">
+                    <td className="py-3 pr-3">
                       <select
                         value={t.plan}
                         onChange={(e) => handlePlanChange(t.id, e.target.value)}
@@ -181,7 +192,7 @@ export default function AdminTenantsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="py-2">
+                    <td className="py-3 pr-3">
                       <select
                         value={t.is_active ? "active" : "suspended"}
                         onChange={(e) =>
@@ -196,10 +207,10 @@ export default function AdminTenantsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="py-2 text-xs">
+                    <td className="py-3 pr-3 text-xs">
                       {t.rate_limit_daily?.toLocaleString()}
                     </td>
-                    <td className="py-2">
+                    <td className="py-3 pr-3">
                       <label className="inline-flex items-center gap-2 text-xs">
                         <input
                           type="checkbox"
@@ -216,7 +227,7 @@ export default function AdminTenantsPage() {
                         <span>Enabled</span>
                       </label>
                     </td>
-                    <td className="py-2">
+                    <td className="py-3 pr-3">
                       <label
                         className="inline-flex items-center gap-2 text-xs"
                         title={
@@ -244,18 +255,21 @@ export default function AdminTenantsPage() {
                         <span>Override</span>
                       </label>
                     </td>
-                    <td className="py-2 text-xs text-muted-foreground">
+                    <td className="py-3 pr-3 text-xs text-muted-foreground">
                       {new Date(t.created_at).toLocaleDateString()}
                     </td>
-                    <td className="py-2">
+                    <td className="py-3">
                       <div className="flex items-center gap-2">
-                        <Link
-                          href={`/dashboard/admin/tenants/${t.id}`}
-                          className="rounded border px-2 py-1 text-xs hover:bg-muted"
+                        <Button
+                          variant="secondary"
+                          size="sm"
                           title="Edit every entitlement for this tenant"
+                          onClick={() =>
+                            router.push(`/dashboard/admin/tenants/${t.id}`)
+                          }
                         >
                           Edit
-                        </Link>
+                        </Button>
                         <Button
                           size="sm"
                           onClick={() => handleAssist(t.id)}
@@ -269,7 +283,8 @@ export default function AdminTenantsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </CardContent>
+          </Card>
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">

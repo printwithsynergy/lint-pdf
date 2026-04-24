@@ -216,13 +216,9 @@ def _render_page_via_ghostscript(
             ) from exc
         if proc.returncode != 0:
             stderr = proc.stderr.decode(errors="replace")[:500]
-            raise RuntimeError(
-                f"Ghostscript render failed (rc={proc.returncode}): {stderr}"
-            )
+            raise RuntimeError(f"Ghostscript render failed (rc={proc.returncode}): {stderr}")
         if not os.path.exists(png_path):
-            raise RuntimeError(
-                f"Ghostscript produced no output for page {page_num}"
-            )
+            raise RuntimeError(f"Ghostscript produced no output for page {page_num}")
         with open(png_path, "rb") as fh:
             return fh.read()
 
@@ -332,13 +328,10 @@ def render_isolated_layer_tile(
     """
     if not _has_ghostscript():
         raise RuntimeError(
-            "render_isolated_layer_tile requires Ghostscript. "
-            "Install ghostscript >= 9.50."
+            "render_isolated_layer_tile requires Ghostscript. Install ghostscript >= 9.50."
         )
     if layer_index not in all_layer_indices:
-        raise OCGError(
-            f"layer_index={layer_index} not in all_layer_indices={all_layer_indices}"
-        )
+        raise OCGError(f"layer_index={layer_index} not in all_layer_indices={all_layer_indices}")
 
     ocg_off = [i for i in all_layer_indices if i != layer_index]
     pdf_isolated = _apply_ocg_overrides(pdf_bytes, [layer_index], ocg_off)
@@ -356,9 +349,7 @@ def render_isolated_layer_tile(
             render_composite_via_separations,
         )
 
-        if any(
-            s.get("type") == "spot" for s in list_separations(pdf_isolated)
-        ):
+        if any(s.get("type") == "spot" for s in list_separations(pdf_isolated)):
             tile = render_composite_via_separations(
                 pdf_isolated,
                 page_num,
@@ -405,8 +396,7 @@ def render_isolated_layer_tile(
             proc = subprocess.run(cmd, capture_output=True, timeout=120)
         except subprocess.TimeoutExpired as exc:
             raise RuntimeError(
-                f"Ghostscript layer-tile render timed out for page "
-                f"{page_num} layer {layer_index}",
+                f"Ghostscript layer-tile render timed out for page {page_num} layer {layer_index}",
             ) from exc
         if proc.returncode != 0:
             stderr = proc.stderr.decode(errors="replace")[:500]

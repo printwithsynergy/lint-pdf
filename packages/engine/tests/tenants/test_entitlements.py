@@ -157,9 +157,7 @@ class TestCanUse:
 
     @staticmethod
     def test_master_switch_off_blocks_everything() -> None:
-        ent = TestCanUse._ent(
-            ai_enabled=False, ai_features=frozenset(AI_FEATURE_FLAGS)
-        )
+        ent = TestCanUse._ent(ai_enabled=False, ai_features=frozenset(AI_FEATURE_FLAGS))
         for flag in AI_FEATURE_FLAGS:
             assert ent.can_use(flag) is False, flag
 
@@ -175,16 +173,12 @@ class TestCanUse:
 
     @staticmethod
     def test_both_on_allows() -> None:
-        ent = TestCanUse._ent(
-            ai_enabled=True, ai_features=frozenset({"audit", "ocr"})
-        )
+        ent = TestCanUse._ent(ai_enabled=True, ai_features=frozenset({"audit", "ocr"}))
         assert ent.can_use("audit") is True
         assert ent.can_use("ocr") is True
         assert ent.can_use("dieline") is False
 
     @staticmethod
     def test_unknown_feature_always_false() -> None:
-        ent = TestCanUse._ent(
-            ai_enabled=True, ai_features=frozenset({"audit"})
-        )
+        ent = TestCanUse._ent(ai_enabled=True, ai_features=frozenset({"audit"}))
         assert ent.can_use("not_a_real_flag") is False

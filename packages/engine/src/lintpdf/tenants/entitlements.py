@@ -115,11 +115,7 @@ def _plan_tier_overrides(plan: TenantPlan) -> dict[str, Any]:
     import contextlib
 
     try:
-        row = (
-            session.query(PlanLimitOverride)
-            .filter(PlanLimitOverride.plan == plan.value)
-            .first()
-        )
+        row = session.query(PlanLimitOverride).filter(PlanLimitOverride.plan == plan.value).first()
         if row is None or not row.overrides:
             return {}
         return dict(row.overrides)

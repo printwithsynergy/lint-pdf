@@ -120,8 +120,13 @@ _DECLARATION_ANCHORS = (
 # claims, not allergen declarations.
 _CLAIM_PATTERNS = (
     re.compile(r"\b(?:gluten|dairy|nut|lactose|soy|egg|wheat|peanut)[-\s]*free\b", re.IGNORECASE),
-    re.compile(r"\bfree\s+from\s+(?:gluten|dairy|nuts?|lactose|soy|eggs?|wheat|peanuts?)\b", re.IGNORECASE),
-    re.compile(r"\bno\s+(?:added\s+)?(?:gluten|dairy|nuts?|lactose|soy|eggs?|wheat|peanuts?)\b", re.IGNORECASE),
+    re.compile(
+        r"\bfree\s+from\s+(?:gluten|dairy|nuts?|lactose|soy|eggs?|wheat|peanuts?)\b", re.IGNORECASE
+    ),
+    re.compile(
+        r"\bno\s+(?:added\s+)?(?:gluten|dairy|nuts?|lactose|soy|eggs?|wheat|peanuts?)\b",
+        re.IGNORECASE,
+    ),
 )
 
 

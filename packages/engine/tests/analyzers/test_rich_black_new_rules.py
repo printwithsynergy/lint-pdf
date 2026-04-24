@@ -75,9 +75,7 @@ def test_small_multi_ink_text_fires_both_008_and_021() -> None:
     """10pt CMYK text with 4 inks fires both the legacy warning
     (LPDF_COLOR_008) and the new universal advisory
     (LPDF_COLOR_021). Back-compat preserved; catalog grows."""
-    findings = ColorAnalyzer().analyze(
-        _doc(), [_text_event(font_size=10.0)]
-    )
+    findings = ColorAnalyzer().analyze(_doc(), [_text_event(font_size=10.0)])
     by_id = {f.inspection_id: f for f in findings}
     assert "LPDF_COLOR_008" in by_id
     assert "LPDF_COLOR_021" in by_id
@@ -89,9 +87,7 @@ def test_large_multi_ink_text_fires_only_021() -> None:
     """14pt CMYK text with 4 inks stays out of LPDF_COLOR_008
     (small-text scope unchanged) but still surfaces as an
     advisory via the new universal LPDF_COLOR_021 rule."""
-    findings = ColorAnalyzer().analyze(
-        _doc(), [_text_event(font_size=14.0)]
-    )
+    findings = ColorAnalyzer().analyze(_doc(), [_text_event(font_size=14.0)])
     ids = {f.inspection_id for f in findings}
     assert "LPDF_COLOR_008" not in ids
     assert "LPDF_COLOR_021" in ids

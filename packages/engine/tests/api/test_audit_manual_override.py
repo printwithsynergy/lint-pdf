@@ -66,9 +66,7 @@ class TestManualAuditOverride:
         assert resp.status_code == 401
 
     @staticmethod
-    def test_rejects_invalid_uuid(
-        client: TestClient, monkeypatch
-    ) -> None:
+    def test_rejects_invalid_uuid(client: TestClient, monkeypatch) -> None:
         monkeypatch.setenv("LINTPDF_ADMIN_API_KEY", ADMIN_KEY)
         resp = client.patch(
             "/api/v1/admin/findings/not-a-uuid/audit",
@@ -78,9 +76,7 @@ class TestManualAuditOverride:
         assert resp.status_code == 422
 
     @staticmethod
-    def test_rejects_unknown_status(
-        client: TestClient, db_session: Session, monkeypatch
-    ) -> None:
+    def test_rejects_unknown_status(client: TestClient, db_session: Session, monkeypatch) -> None:
         monkeypatch.setenv("LINTPDF_ADMIN_API_KEY", ADMIN_KEY)
         fid = _seed_finding(db_session)
         resp = client.patch(
@@ -122,9 +118,7 @@ class TestManualAuditOverride:
         assert body["audit_model"] == "manual:ops@lintpdf.com"
         assert "misread" in body["audit_rationale"]
 
-        finding = (
-            db_session.query(JobFinding).filter(JobFinding.id == fid).first()
-        )
+        finding = db_session.query(JobFinding).filter(JobFinding.id == fid).first()
         assert finding is not None
         assert finding.audit_status == "confirmed"
         assert finding.audit_model == "manual:ops@lintpdf.com"

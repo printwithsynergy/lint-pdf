@@ -92,3 +92,18 @@ aside[data-sidebar] nav.overflow-y-auto,
 [class*="dashboard-sidebar" i] nav.overflow-y-auto {
   padding-bottom: 1.5rem;
 }
+
+/*
+ * Pixie Dust dashboard header topSlot buttons (Public docs / Postman)
+ * were overlapping the user-avatar dropdown menu because the Radix
+ * popper portal landed under the header's stacking context. Raise the
+ * dropdown above the header. Temporary override — revert once
+ * @thinkneverland/pixie-dust-dashboard fixes the z-index upstream (see
+ * /root/.claude/plans/missing-obvious-crud-buttons-precious-newt.md,
+ * Phase 2.3).
+ */
+[data-radix-popper-content-wrapper],
+[data-radix-menu-content],
+[role="menu"][data-state="open"] {
+  z-index: 60 !important;
+}

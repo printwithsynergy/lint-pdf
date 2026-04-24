@@ -30,6 +30,16 @@ _redis_lock = threading.Lock()
 def configure_rate_limiter(redis_url: str) -> None:
     """Initialize the Redis client for rate limiting.
 
+    The client is probed once via ``PING`` (short timeout). If the probe
+    fails we leave ``_redis_state["client"]`` as ``None`` so every
+    downstream caller via ``get_redis_client()`` degrades gracefully
+    (e.g. the ``/admin/tile-warming`` routes return ``status="no_redis"``
+    and the dashboard renders an explanatory banner). Without this
+    probe the client always looks "live" because ``Redis.from_url`` is
+    lazy; the failure only surfaces on the first real command, which
+    makes the operator-facing warning look like a UI bug instead of the
+    missing ``LINTPDF_REDIS_URL`` env var it actually is.
+
     Args:
         redis_url: Redis connection URL (e.g. redis://localhost:6379/0).
     """
@@ -38,7 +48,24 @@ def configure_rate_limiter(redis_url: str) -> None:
             return
         import redis
 
-        _redis_state["client"] = redis.Redis.from_url(redis_url, decode_responses=True)
+        client = redis.Redis.from_url(
+            redis_url,
+            decode_responses=True,
+            socket_connect_timeout=2,
+            socket_timeout=2,
+        )
+        try:
+            client.ping()
+        except Exception as exc:
+            logger.warning(
+                "Redis probe failed for %s — rate limiting and tile-warming"
+                " observability will operate in degraded mode. Set"
+                " LINTPDF_REDIS_URL to a reachable Redis instance. (%s)",
+                redis_url,
+                exc,
+            )
+            return
+        _redis_state["client"] = client
 
 
 def set_rate_limiter(client: Any) -> None:

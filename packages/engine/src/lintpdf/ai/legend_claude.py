@@ -17,9 +17,7 @@ from lintpdf.audit.outage import record_outcome
 logger = logging.getLogger(__name__)
 
 
-_DEFAULT_MODEL = os.environ.get(
-    "LINTPDF_LEGEND_FALLBACK_MODEL", "claude-sonnet-4-6"
-)
+_DEFAULT_MODEL = os.environ.get("LINTPDF_LEGEND_FALLBACK_MODEL", "claude-sonnet-4-6")
 _CACHE_TTL = "1h"
 _PAGE_DPI = 150
 
@@ -51,9 +49,7 @@ _SYSTEM_PROMPT = (
 )
 
 
-def classify_swatches_via_claude(
-    pdf_bytes: bytes, swatches: list[dict[str, Any]]
-) -> list[Any]:
+def classify_swatches_via_claude(pdf_bytes: bytes, swatches: list[dict[str, Any]]) -> list[Any]:
     """Run Sonnet on a batch of ambiguous swatches.
 
     Returns ``[SwatchClassification | None, ...]`` aligned with
@@ -112,8 +108,7 @@ def classify_swatches_via_claude(
                             "type": "text",
                             "text": (
                                 "Ambiguous swatches (JSON). One verdict "
-                                "per index:\n"
-                                + _json_dump(payload)
+                                "per index:\n" + _json_dump(payload)
                             ),
                         },
                         {

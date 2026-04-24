@@ -31,8 +31,7 @@ def _make_document(pages: int = 1) -> SemanticDocument:
         page_count=pages,
         is_encrypted=False,
         pages=[
-            SemanticPage(page_num=i + 1, media_box=PdfBox(0, 0, 612, 792))
-            for i in range(pages)
+            SemanticPage(page_num=i + 1, media_box=PdfBox(0, 0, 612, 792)) for i in range(pages)
         ],
     )
 
@@ -91,9 +90,7 @@ class TestText001Aggregation:
 class TestText004Aggregation:
     @staticmethod
     def test_many_white_text_events_collapse() -> None:
-        events = [
-            _text(color_space="DeviceGray", color_values=(1.0,)) for _ in range(10)
-        ]
+        events = [_text(color_space="DeviceGray", color_values=(1.0,)) for _ in range(10)]
         findings = HairlineAnalyzer().analyze(_make_document(), events)
         rows = [f for f in findings if f.inspection_id == "LPDF_TEXT_004"]
         assert len(rows) == 1

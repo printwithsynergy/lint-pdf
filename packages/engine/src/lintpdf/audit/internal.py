@@ -113,9 +113,7 @@ def _finding_to_view(idx: int, f: JobFinding) -> _FindingView:
     )
 
 
-def _render_pages_for_audit(
-    pdf_bytes: bytes, page_numbers: list[int]
-) -> dict[int, bytes]:
+def _render_pages_for_audit(pdf_bytes: bytes, page_numbers: list[int]) -> dict[int, bytes]:
     """Render each required page once, return {page_num: png_bytes}."""
     from lintpdf.ai.rendering import render_page_to_image
 
@@ -124,9 +122,7 @@ def _render_pages_for_audit(
         if page_num <= 0:
             continue
         try:
-            cache[page_num] = render_page_to_image(
-                pdf_bytes, page_num, dpi=_PAGE_DPI
-            )
+            cache[page_num] = render_page_to_image(pdf_bytes, page_num, dpi=_PAGE_DPI)
         except Exception:
             logger.exception("audit: failed to render page %d for Opus", page_num)
     return cache

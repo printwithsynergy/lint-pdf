@@ -17,10 +17,12 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-
-from sqlalchemy.orm import Session
+from typing import TYPE_CHECKING
 
 from lintpdf.api.models import SystemProfile
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 _BUILTIN_DIR = Path(__file__).parent / "builtin"
 
@@ -42,9 +44,7 @@ def seed_system_profiles_from_bundled(db: Session) -> tuple[int, int]:
         )
         return (0, 0)
 
-    existing: set[str] = {
-        row.profile_id for row in db.query(SystemProfile.profile_id).all()
-    }
+    existing: set[str] = {row.profile_id for row in db.query(SystemProfile.profile_id).all()}
 
     inserted = 0
     skipped = 0
@@ -55,10 +55,8 @@ def seed_system_profiles_from_bundled(db: Session) -> tuple[int, int]:
             continue
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
-        except Exception:  # noqa: BLE001
-            logger.exception(
-                "seed_system_profiles_from_bundled: failed to parse %s", path
-            )
+        except Exception:
+            logger.exception("seed_system_profiles_from_bundled: failed to parse %s", path)
             continue
 
         # The bundled JSON carries its own "version" field inside the

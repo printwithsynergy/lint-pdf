@@ -113,9 +113,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                         )
                     )
             elif isinstance(event, TextRenderedEvent):
-                findings.extend(
-                    self._check_text_size(event, text001_agg, text004_agg)
-                )
+                findings.extend(self._check_text_size(event, text001_agg, text004_agg))
 
         findings.extend(self._emit_text001_aggregates(text001_agg))
         findings.extend(self._emit_text004_aggregates(text004_agg))
@@ -196,10 +194,7 @@ class HairlineAnalyzer(BaseAnalyzer):
         # the broader "thin elements shouldn't be rich black"
         # principle without drowning the findings panel on thicker
         # artwork.
-        if (
-            event.stroke_color_space == "DeviceCMYK"
-            and len(event.stroke_color_values) == 4
-        ):
+        if event.stroke_color_space == "DeviceCMYK" and len(event.stroke_color_values) == 4:
             non_zero = sum(1 for v in event.stroke_color_values if v > 0.01)
             if non_zero > 1:
                 multi_ink_details = {
@@ -560,8 +555,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                     inspection_id="LPDF_TEXT_004",
                     severity=Severity.ADVISORY,
                     message=(
-                        f"{count} white text instance{'s' if count != 1 else ''} "
-                        f"on page {page_num}"
+                        f"{count} white text instance{'s' if count != 1 else ''} on page {page_num}"
                     ),
                     page_num=page_num,
                     details={

@@ -12,6 +12,7 @@ ID to poll against.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import re
@@ -297,10 +298,8 @@ async def submit_batch(
                 spool,
             )
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 spool.close()
-            except Exception:
-                pass
 
         job = Job(
             id=job_id,

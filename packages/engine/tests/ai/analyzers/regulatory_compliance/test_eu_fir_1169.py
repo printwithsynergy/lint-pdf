@@ -86,6 +86,5 @@ def test_genuinely_tiny_text_still_flags() -> None:
     findings = EuFir1169Analyzer().analyze(doc, [event], pdf_bytes=b"")
     x_height_findings = [f for f in findings if f.inspection_id == "AI_EU1169_001"]
     assert len(x_height_findings) == 1, (
-        "expected a finding on 0.8pt body text; got "
-        f"{len(x_height_findings)}"
+        f"expected a finding on 0.8pt body text; got {len(x_height_findings)}"
     )

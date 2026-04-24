@@ -84,9 +84,7 @@ async def run_opus_audit(
 
     findings = db.query(JobFinding).filter(JobFinding.job_id == job.id).all()
     if not findings:
-        return OpusAuditResponse(
-            job_id=str(uid), findings_audited=0, model="claude-opus-4-7"
-        )
+        return OpusAuditResponse(job_id=str(uid), findings_audited=0, model="claude-opus-4-7")
 
     storage = get_storage()
     pdf_bytes = storage.download_pdf(job.file_key)
@@ -158,9 +156,7 @@ async def run_corpus_benchmark(
             message="Benchmark started; check tests/fixtures/accuracy/_runs/",
         )
     except Exception as exc:
-        return CorpusBenchmarkResponse(
-            started=False, message=f"Failed to start: {exc!s}"
-        )
+        return CorpusBenchmarkResponse(started=False, message=f"Failed to start: {exc!s}")
 
 
 class ClaudeProbeResponse(BaseModel):
@@ -175,9 +171,7 @@ async def claude_probe(
 ) -> ClaudeProbeResponse:
     """Fire one synthetic Haiku call and return status + latency."""
     if not os.environ.get("ANTHROPIC_API_KEY"):
-        return ClaudeProbeResponse(
-            status="unconfigured", error="ANTHROPIC_API_KEY is not set"
-        )
+        return ClaudeProbeResponse(status="unconfigured", error="ANTHROPIC_API_KEY is not set")
     try:
         import anthropic
 

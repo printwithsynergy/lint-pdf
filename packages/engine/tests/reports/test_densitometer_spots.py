@@ -33,13 +33,13 @@ class _FakeStorage:
     def download_raw(self, key: str) -> bytes | None:
         return self.blobs.get(key)
 
-    def upload_raw(self, key: str, data: bytes, *, content_type: str = "") -> None:  # noqa: ARG002
+    def upload_raw(self, key: str, data: bytes, *, content_type: str = "") -> None:
         self.blobs[key] = data
 
 
 def _solid_png_bytes(percent: float, width: int = 50, height: int = 50) -> bytes:
     """Produce a PNG that ``_pct_array_from_png_bytes`` decodes to a
-    constant-percent raster of ``width × height``.
+    constant-percent raster of ``width x height``.
 
     The module reads a grayscale PNG where pixel intensity maps back
     to ink percentage (0 black = 0 %, 255 white = 100 %). We want a
@@ -51,7 +51,7 @@ def _solid_png_bytes(percent: float, width: int = 50, height: int = 50) -> bytes
 
     # _pct_array_from_png_bytes computes percent = 100 - mean_gray/255*100
     # i.e. 0 intensity → 100 % ink; 255 intensity → 0 % ink.
-    intensity = int(round(255.0 - percent / 100.0 * 255.0))
+    intensity = round(255.0 - percent / 100.0 * 255.0)
     img = Image.new("L", (width, height), intensity)
     buf = BytesIO()
     img.save(buf, format="PNG")
@@ -79,9 +79,7 @@ class TestDensitometerSpotsOnCacheHit:
         blobs: dict[str, bytes] = {}
         cmyk_pcts = {"Cyan": 10.0, "Magenta": 25.0, "Yellow": 5.0, "Black": 40.0}
         for ch in PROCESS_CHANNEL_ORDER:
-            blobs[channel_cache_key(tenant, job, page, dpi, ch)] = _solid_png_bytes(
-                cmyk_pcts[ch]
-            )
+            blobs[channel_cache_key(tenant, job, page, dpi, ch)] = _solid_png_bytes(cmyk_pcts[ch])
         spot_pcts = {"PANTONE 185 C": 60.0, "PANTONE 485 C": 15.0}
         for spot, pct in spot_pcts.items():
             blobs[channel_cache_key(tenant, job, page, dpi, spot)] = _solid_png_bytes(pct)
@@ -114,7 +112,9 @@ class TestDensitometerSpotsOnCacheHit:
         for spot, pct in spot_pcts.items():
             assert channels[spot] == pytest.approx(pct, abs=1.0)
         # TAC sums every ink including spots.
-        assert result["tac"] == pytest.approx(sum(cmyk_pcts.values()) + sum(spot_pcts.values()), abs=2.0)
+        assert result["tac"] == pytest.approx(
+            sum(cmyk_pcts.values()) + sum(spot_pcts.values()), abs=2.0
+        )
 
     @staticmethod
     def test_spot_cache_miss_falls_back_to_tiffsep(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -141,7 +141,7 @@ class TestDensitometerSpotsOnCacheHit:
         # Flag so we can tell if _run_tiffsep was called.
         invoked = {"tiffsep": False}
 
-        def fake_run_tiffsep(*args: object, **kwargs: object) -> str:  # noqa: ARG001
+        def fake_run_tiffsep(*args: object, **kwargs: object) -> str:
             invoked["tiffsep"] = True
             raise RuntimeError("stop-test-here")
 
@@ -191,9 +191,7 @@ class TestCmykOnlyFileSkipsSpotWork:
         def must_not_run(*_a: object, **_k: object) -> None:
             raise AssertionError("tiffsep should not run on full cache hit")
 
-        monkeypatch.setattr(
-            "lintpdf.reports.separation_renderer._run_tiffsep", must_not_run
-        )
+        monkeypatch.setattr("lintpdf.reports.separation_renderer._run_tiffsep", must_not_run)
 
         storage = _FakeStorage(blobs=blobs)
         result = sample_densitometer(

@@ -126,10 +126,21 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       order: 45,
       requiredRole: "SUPER_ADMIN",
     });
-    // Admin-scoped Swagger: loads the FULL openapi.json so super-admins
-    // can exercise every route (including /api/v1/admin/*). The
-    // tenant-facing slice lives under /dashboard/api-reference + the
-    // marketing-site /swagger, which both read /openapi.tenant.json.
+    // Admin-scoped API reference: loads the FULL openapi.json so
+    // super-admins can exercise every route (including
+    // /api/v1/admin/*). The tenant-facing slice lives at
+    // /dashboard/api-reference + the marketing-site /swagger, which
+    // both read /openapi.tenant.json.
+    //
+    // Canonical path is /dashboard/admin/api-reference. The old
+    // /dashboard/admin/swagger path is kept as a page + redirect so
+    // internal bookmarks and the existing Postman page's back-link
+    // keep working.
+    ctx.addPage({
+      path: "/dashboard/admin/api-reference",
+      title: "API Reference (All)",
+      layout: "dashboard",
+    });
     ctx.addPage({
       path: "/dashboard/admin/swagger",
       title: "API Reference (All)",
@@ -137,11 +148,20 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     });
     ctx.addNavItem({
       label: "API Reference (All)",
-      href: "/dashboard/admin/swagger",
+      href: "/dashboard/admin/api-reference",
       icon: "code",
       section: "admin",
       group: "API & Integrations",
       order: 46,
+      requiredRole: "SUPER_ADMIN",
+    });
+    ctx.addNavItem({
+      label: "Postman (full)",
+      href: "/dashboard/admin/postman",
+      icon: "send",
+      section: "admin",
+      group: "API & Integrations",
+      order: 47,
       requiredRole: "SUPER_ADMIN",
     });
     // Cross-tenant views — group by tenant, grant super-admin access to

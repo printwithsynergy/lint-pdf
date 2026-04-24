@@ -193,7 +193,7 @@ def _mock_s3_storage(monkeypatch: pytest.MonkeyPatch) -> None:
         Fileobj: Any,  # noqa: N803
         Bucket: str,  # noqa: N803
         Key: str,  # noqa: N803
-        ExtraArgs: dict[str, Any] | None = None,  # noqa: N803, ARG001
+        ExtraArgs: dict[str, Any] | None = None,  # noqa: N803
     ) -> None:
         Fileobj.seek(0)
         storage._files[Key] = Fileobj.read()  # type: ignore[attr-defined]

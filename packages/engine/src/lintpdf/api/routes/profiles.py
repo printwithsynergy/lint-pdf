@@ -72,9 +72,7 @@ async def list_profiles(
         try:
             fp = PreflightProfile.model_validate(sp.preflight_profile_json)
         except Exception:
-            logger.warning(
-                "Skipping malformed system profile: %s", sp.profile_id, exc_info=True
-            )
+            logger.warning("Skipping malformed system profile: %s", sp.profile_id, exc_info=True)
             continue
         profiles.append(
             ProfileSummaryResponse(
@@ -101,9 +99,7 @@ async def list_profiles(
                 )
             )
         except Exception:
-            logger.warning(
-                "Skipping malformed custom profile: %s", row.profile_id, exc_info=True
-            )
+            logger.warning("Skipping malformed custom profile: %s", row.profile_id, exc_info=True)
 
     return ProfileListResponse(profiles=profiles)
 

@@ -74,9 +74,7 @@ def ocr_job_async(
         if not entitlements.can_use("ocr"):
             _emit_feature_locked(db, job, "ocr")
             return 0
-        if is_over_quota(
-            entitlements, current_month_usage_cents(db, job.tenant_id)
-        ):
+        if is_over_quota(entitlements, current_month_usage_cents(db, job.tenant_id)):
             _emit_quota_exceeded(db, job)
             return 0
 
@@ -87,9 +85,7 @@ def ocr_job_async(
             if not pages:
                 return 0
             ocr = ClaudeOCR()
-            result = ocr.extract(
-                pdf_bytes, pages, tenant_id=job.tenant_id, job_id=job.id
-            )
+            result = ocr.extract(pdf_bytes, pages, tenant_id=job.tenant_id, job_id=job.id)
             job.ocr_text_layer = ocr_result_to_json(result)
             db.commit()
             record_outcome(True)
@@ -98,9 +94,7 @@ def ocr_job_async(
             record_outcome(False)
             age_s = (datetime.now(UTC) - first_attempt).total_seconds()
             if age_s >= _MAX_WALL_CLOCK_S:
-                logger.warning(
-                    "ocr-async: giving up on job %s after %.0fs", job_id, age_s
-                )
+                logger.warning("ocr-async: giving up on job %s after %.0fs", job_id, age_s)
                 return 0
             countdown = _next_countdown(self.request.retries)
             logger.info(

@@ -181,6 +181,13 @@ function publicUrl(token: string, format: string): string {
 
 function GroupSection({ group }: { group: Group }) {
   const [expanded, setExpanded] = useState(true);
+  const totalViews = group.items.reduce(
+    (sum, t) => sum + (t.accessed_count ?? 0),
+    0,
+  );
+  const viewedTokens = group.items.filter(
+    (t) => (t.accessed_count ?? 0) > 0,
+  ).length;
   return (
     <div className="overflow-hidden rounded-lg border bg-card">
       <button
@@ -191,6 +198,20 @@ function GroupSection({ group }: { group: Group }) {
         <span className="truncate font-medium">{group.label}</span>
         <span className="text-xs text-muted-foreground">
           {group.count} token{group.count === 1 ? "" : "s"}
+        </span>
+        <span
+          className={`rounded px-1.5 py-0.5 text-xs font-medium ${
+            totalViews > 0
+              ? "bg-emerald-100 text-emerald-800"
+              : "bg-muted text-muted-foreground"
+          }`}
+          title={
+            totalViews > 0
+              ? `${viewedTokens} of ${group.count} token${group.count === 1 ? "" : "s"} opened`
+              : "no one has opened any report in this tenant yet"
+          }
+        >
+          {totalViews} view{totalViews === 1 ? "" : "s"}
         </span>
         <svg
           className={`ml-auto h-4 w-4 text-muted-foreground transition-transform ${

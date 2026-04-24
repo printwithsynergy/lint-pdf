@@ -247,9 +247,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
 
         # LPDF_BOX_005: Content within safety margin of trim edge.
         if trim_box is not None:
-            violation = _safety_margin_violation(
-                bbox, trim_box, self.safety_margin_pts
-            )
+            violation = _safety_margin_violation(bbox, trim_box, self.safety_margin_pts)
             if violation is not None:
                 findings.append(
                     Finding(

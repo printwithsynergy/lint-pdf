@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
-import { Button } from "@thinkneverland/pixie-dust-ui";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@thinkneverland/pixie-dust-ui";
 
 interface AdminJob {
   id: string;
@@ -168,34 +174,38 @@ export default function AdminJobsPage() {
         <SkeletonDashboard type="table" />
       ) : (
         <>
-          <div className="mt-6 overflow-x-auto">
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Jobs</CardTitle>
+            </CardHeader>
+            <CardContent className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">
-                  <th className="pb-2 font-medium">File</th>
-                  <th className="pb-2 font-medium">Tenant</th>
-                  <th className="pb-2 font-medium">Profile</th>
-                  <th className="pb-2 font-medium">Status</th>
-                  <th className="pb-2 font-medium">Date</th>
-                  <th className="pb-2 font-medium" />
+                  <th className="pb-3 pr-3 font-medium">File</th>
+                  <th className="pb-3 pr-3 font-medium">Tenant</th>
+                  <th className="pb-3 pr-3 font-medium">Profile</th>
+                  <th className="pb-3 pr-3 font-medium">Status</th>
+                  <th className="pb-3 pr-3 font-medium">Date</th>
+                  <th className="pb-3 font-medium" />
                 </tr>
               </thead>
               <tbody>
                 {jobs.map((job) => (
                   <tr
                     key={job.id}
-                    className={`border-b hover:bg-muted/30 ${
+                    className={`border-b last:border-b-0 hover:bg-muted/30 ${
                       selectedId === job.id ? "bg-muted/50" : ""
                     }`}
                   >
-                    <td className="py-2 font-medium">{job.file_name}</td>
-                    <td className="py-2 text-xs">
+                    <td className="py-3 pr-3 font-medium">{job.file_name}</td>
+                    <td className="py-3 pr-3 text-xs">
                       {job.tenant_name ?? job.tenant_id.slice(0, 8)}
                     </td>
-                    <td className="py-2">
+                    <td className="py-3 pr-3">
                       <code className="text-xs">{job.profile_id}</code>
                     </td>
-                    <td className="py-2">
+                    <td className="py-3 pr-3">
                       <span
                         className={`rounded px-1.5 py-0.5 text-xs font-medium ${
                           job.status === "complete"
@@ -208,10 +218,10 @@ export default function AdminJobsPage() {
                         {job.status}
                       </span>
                     </td>
-                    <td className="py-2 text-xs text-muted-foreground">
+                    <td className="py-3 pr-3 text-xs text-muted-foreground">
                       {new Date(job.created_at).toLocaleDateString()}
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="py-3 text-right">
                       <Button
                         variant="secondary"
                         size="sm"
@@ -224,7 +234,8 @@ export default function AdminJobsPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+            </CardContent>
+          </Card>
 
           {totalPages > 1 && (
             <div className="mt-4 flex items-center justify-between">

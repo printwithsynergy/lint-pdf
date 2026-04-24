@@ -20,9 +20,7 @@ from lintpdf.semantic.events import PathPaintingEvent
 from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
-def _path_event(
-    *, page_num: int, k: float, op_index: int = 0
-) -> PathPaintingEvent:
+def _path_event(*, page_num: int, k: float, op_index: int = 0) -> PathPaintingEvent:
     return PathPaintingEvent(
         operator="f",
         page_num=page_num,
@@ -127,8 +125,7 @@ def test_advanced_color_suppresses_when_rendered_page_has_no_dark() -> None:
     pure_k = [
         f
         for f in findings
-        if f.inspection_id == "LPDF_ADV_005"
-        and (f.details or {}).get("classification") == "pure_k"
+        if f.inspection_id == "LPDF_ADV_005" and (f.details or {}).get("classification") == "pure_k"
     ]
     assert pure_k == []
 
@@ -150,8 +147,7 @@ def test_advanced_color_emits_when_rendered_page_has_dark_patch() -> None:
     pure_k = [
         f
         for f in findings
-        if f.inspection_id == "LPDF_ADV_005"
-        and (f.details or {}).get("classification") == "pure_k"
+        if f.inspection_id == "LPDF_ADV_005" and (f.details or {}).get("classification") == "pure_k"
     ]
     assert len(pure_k) == 1
     details = pure_k[0].details or {}
@@ -176,8 +172,7 @@ def test_advanced_color_degrades_gracefully_when_render_fails() -> None:
     pure_k = [
         f
         for f in findings
-        if f.inspection_id == "LPDF_ADV_005"
-        and (f.details or {}).get("classification") == "pure_k"
+        if f.inspection_id == "LPDF_ADV_005" and (f.details or {}).get("classification") == "pure_k"
     ]
     assert len(pure_k) == 1
     # No ``rendered_dark_fraction`` in details when the gate didn't run.
@@ -208,8 +203,7 @@ def test_no_pdf_bytes_means_pixel_gate_is_skipped() -> None:
     pure_k = [
         f
         for f in findings
-        if f.inspection_id == "LPDF_ADV_005"
-        and (f.details or {}).get("classification") == "pure_k"
+        if f.inspection_id == "LPDF_ADV_005" and (f.details or {}).get("classification") == "pure_k"
     ]
     assert len(pure_k) == 1
     # Renderer was never invoked.

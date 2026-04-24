@@ -6,6 +6,7 @@ attack prevention, SVG safety validation, and optional ClamAV virus scanning.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import re
@@ -301,7 +302,7 @@ def _detect_custom_mime(content: bytes) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def _scan_with_clamd(scan_input: "BytesIO | IO[bytes]", settings: Settings) -> None:
+def _scan_with_clamd(scan_input: BytesIO | IO[bytes], settings: Settings) -> None:
     """Shared body for both the bytes and streaming scan variants.
 
     ``scan_input`` is anything ``clamd.instream`` accepts (BytesIO or a
@@ -321,9 +322,7 @@ def _scan_with_clamd(scan_input: "BytesIO | IO[bytes]", settings: Settings) -> N
     strict = bool(getattr(settings, "clamav_required", False))
     if not settings.clamav_url:
         if strict:
-            logger.error(
-                "ClamAV is REQUIRED but LINTPDF_CLAMAV_URL is unset — rejecting upload"
-            )
+            logger.error("ClamAV is REQUIRED but LINTPDF_CLAMAV_URL is unset — rejecting upload")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Malware scanner is not configured.",
@@ -372,7 +371,7 @@ def scan_for_malware(content: bytes, settings: Settings) -> None:
     _scan_with_clamd(BytesIO(content), settings)
 
 
-def scan_for_malware_stream(fileobj: "IO[bytes]", settings: Settings) -> None:
+def scan_for_malware_stream(fileobj: IO[bytes], settings: Settings) -> None:
     """Scan a seekable file-like with ClamAV.
 
     Avoids the ~50 MB-per-scan RSS spike that ``scan_for_malware`` takes
@@ -385,10 +384,8 @@ def scan_for_malware_stream(fileobj: "IO[bytes]", settings: Settings) -> None:
     try:
         _scan_with_clamd(fileobj, settings)
     finally:
-        try:
+        with contextlib.suppress(Exception):
             fileobj.seek(pos)
-        except Exception:
-            pass
 
 
 # ---------------------------------------------------------------------------
@@ -633,7 +630,11 @@ async def validate_upload_streaming(
     from lintpdf.api.config import get_settings as _get_upload_settings
 
     chunk_size = _get_upload_settings().max_upload_stream_chunk_bytes
-    spool: IO[bytes] = tempfile.SpooledTemporaryFile(
+    # SIM115 false positive: the spool is returned to the caller which is
+    # responsible for closing it (or letting the GC do so after the
+    # tempfile unlinks on disk). Wrapping in `with` here would close the
+    # file before the caller can read it.
+    spool: IO[bytes] = tempfile.SpooledTemporaryFile(  # noqa: SIM115
         max_size=_SPOOL_RAM_THRESHOLD_BYTES,
         mode="w+b",
     )
@@ -746,14 +747,10 @@ async def validate_upload_streaming(
         spool.seek(0)
         return spool, total
     except HTTPException:
-        try:
+        with contextlib.suppress(Exception):
             spool.close()
-        except Exception:
-            pass
         raise
     except Exception:
-        try:
+        with contextlib.suppress(Exception):
             spool.close()
-        except Exception:
-            pass
         raise

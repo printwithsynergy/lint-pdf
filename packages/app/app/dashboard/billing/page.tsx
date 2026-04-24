@@ -142,7 +142,10 @@ export default function BillingPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Billing & Plan</h1>
+      <h1 className="font-display text-2xl font-bold">Billing & Plan</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Manage your subscription plan, payment method, and invoices.
+      </p>
 
       {error && (
         <Alert variant="destructive" className="mt-4">

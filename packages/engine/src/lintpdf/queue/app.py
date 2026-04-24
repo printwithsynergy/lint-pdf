@@ -185,24 +185,18 @@ def _drain_rerun_queue() -> None:
     try:
         exists = session.execute(
             text(
-                "SELECT 1 FROM information_schema.tables "
-                "WHERE table_name = 'ai_audit_rerun_queue'"
+                "SELECT 1 FROM information_schema.tables WHERE table_name = 'ai_audit_rerun_queue'"
             )
         ).first()
         if not exists:
             return
 
-        rows = session.execute(
-            text("SELECT job_id::text FROM ai_audit_rerun_queue")
-        ).fetchall()
+        rows = session.execute(text("SELECT job_id::text FROM ai_audit_rerun_queue")).fetchall()
         for (jid,) in rows:
             try:
                 audit_findings_async.delay(jid)
                 session.execute(
-                    text(
-                        "DELETE FROM ai_audit_rerun_queue "
-                        "WHERE job_id = :jid"
-                    ),
+                    text("DELETE FROM ai_audit_rerun_queue WHERE job_id = :jid"),
                     {"jid": jid},
                 )
                 session.commit()

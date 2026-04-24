@@ -94,9 +94,7 @@ class TestEndpointCrud:
 # ---------------------------------------------------------------------------
 
 
-def _submit_with_wait(
-    client: TestClient, pdf: bytes, wait: float
-) -> tuple[int, dict[str, object]]:
+def _submit_with_wait(client: TestClient, pdf: bytes, wait: float) -> tuple[int, dict[str, object]]:
     response = client.post(
         f"/api/v1/jobs?wait={wait}",
         files={"file": ("test.pdf", BytesIO(pdf), "application/pdf")},
@@ -271,11 +269,7 @@ class TestWhitelabelReportUrls:
         from lintpdf.tenants.models import TenantPlan
         from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
-        tenant = (
-            db_session.query(Tenant)
-            .filter(Tenant.id == PLACEHOLDER_TENANT_ID)
-            .first()
-        )
+        tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         assert tenant is not None
         # Upgrade the seeded tenant to SCALE so whitelabel_enabled=True
         # and set a verified custom report domain.
@@ -323,9 +317,7 @@ class TestWhitelabelReportUrls:
         body = response.json()
         reports = body.get("reports")
         assert reports, "expected reports field on a complete job"
-        assert reports["pdf"].startswith(
-            "https://preflight.acme-print.com/r/"
-        ), (
+        assert reports["pdf"].startswith("https://preflight.acme-print.com/r/"), (
             "Whitelabel custom domain must win over the global report_base_url"
             f" — got {reports['pdf']!r}"
         )
@@ -342,11 +334,7 @@ class TestWhitelabelReportUrls:
         # when we touch the resolver again.
         from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
-        tenant = (
-            db_session.query(Tenant)
-            .filter(Tenant.id == PLACEHOLDER_TENANT_ID)
-            .first()
-        )
+        tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         assert tenant is not None
         # A GROWTH tenant that happens to have a ``brand_custom_domain``
         # set must still fall through to the global default because
