@@ -126,7 +126,11 @@ export default function AccountPage() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold">Account Settings</h1>
+      <h1 className="font-display text-2xl font-bold">Account Settings</h1>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Organization profile and plan overview. Manage billing and invoices on
+        the <a href="/dashboard/billing" className="underline">Billing</a> page.
+      </p>
 
       {/* Plan overview */}
       {account && (

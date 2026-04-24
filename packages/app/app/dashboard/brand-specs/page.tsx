@@ -172,8 +172,8 @@ export default function BrandSpecsPage() {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="md:flex-1">
           <h1 className="font-display text-2xl font-bold">Brand Specs</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Named colour specifications, one per end-customer. Specs plug into
@@ -183,7 +183,11 @@ export default function BrandSpecsPage() {
             <code>brand_spec_id</code> to override both.
           </p>
         </div>
-        {!isEditing && <Button onClick={openCreate}>New Brand Spec</Button>}
+        {!isEditing && (
+          <Button onClick={openCreate} className="shrink-0 whitespace-nowrap">
+            New Brand Spec
+          </Button>
+        )}
       </div>
 
       {error && (

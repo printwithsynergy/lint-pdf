@@ -285,3 +285,21 @@ connections than expected and blow the budget.
   needed during Railway deploys
 - App healthcheck: `/api/health`; engine healthcheck: `/ready`
   (exercises DB + Redis, returns 503 when a dependency is down)
+
+---
+
+## Working Agreements (assistant-facing)
+
+- **Large file writes time out.** Prefer incremental edits: initial
+  `Write` for the skeleton, then `Edit` calls for each section. A
+  single `Write` over ~300 lines / ~50KB in this sandbox routinely
+  times out before the tool returns. Applies to playbooks, migration
+  scripts, and any generated documentation. If a file must exceed
+  that, split it into multiple `Edit` passes.
+- **Never bypass the sandbox with `--no-verify`, `--no-gpg-sign`, or
+  `--accept-data-loss`.** The shared Prisma/engine schema in
+  particular will silently drop engine tables if `--accept-data-loss`
+  is used.
+- **Plan mode vs. execute mode.** In plan mode only the named plan
+  file is writable; do not edit CLAUDE.md or source in plan mode even
+  if asked — call it out and defer to execute mode.

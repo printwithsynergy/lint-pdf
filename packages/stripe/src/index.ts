@@ -118,10 +118,9 @@ export const lintpdfBillingPlugin: PixieDustPlugin = {
       label: "Billing",
       href: "/dashboard/billing",
       icon: "credit-card",
-      section: "admin",
-      order: 50,
+      section: "tenant",
+      order: 15,
       requiredPermission: "billing:manage",
-      excludeRoles: ["SUPER_ADMIN"],
     });
 
     ctx.addPage({
