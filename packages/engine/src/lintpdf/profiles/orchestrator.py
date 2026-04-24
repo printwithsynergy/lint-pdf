@@ -539,7 +539,7 @@ class PreflightOrchestrator:
                 tac_limit=t.tac_limit,
                 brand_palette_present=brand_palette_present,
             ),
-            FontAnalyzer(),
+            FontAnalyzer(pdf_bytes=self._pdf_bytes),
             PageGeometryAnalyzer(min_bleed_pts=bleed_pts, safety_margin_pts=safety_pts),
             HairlineAnalyzer(
                 hairline_threshold=t.hairline_threshold,

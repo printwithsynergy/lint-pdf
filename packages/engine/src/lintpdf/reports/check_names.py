@@ -134,6 +134,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_FONT_014": CheckInfo(
         "Damaged Font", "The font program appears corrupt or has a type mismatch."
     ),
+    "LPDF_FONT_015": CheckInfo(
+        "Restricted Font Embedding Licence",
+        "Font's OS/2 fsType bit advertises a licence restriction (restricted / preview-and-print / editable embedding). Verify vendor licensing before distributing this PDF.",
+    ),
     # ── Color ─────────────────────────────────────────────────────────────
     "LPDF_COLOR_001": CheckInfo(
         "Device-Dependent Color",

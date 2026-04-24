@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 374,
+  "total_checks": 375,
   "categories": [
     {
       "id": "image",
@@ -593,6 +593,12 @@
           "id": "LPDF_FONT_014",
           "name": "Damaged Font",
           "description": "The font program appears corrupt or has a type mismatch.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_015",
+          "name": "Restricted Font Embedding Licence",
+          "description": "Font's OS/2 fsType bit advertises a licence restriction (restricted / preview-and-print / editable embedding). Verify vendor licensing before distributing this PDF.",
           "default_severity": "warning"
         }
       ]
