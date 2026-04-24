@@ -123,6 +123,36 @@ class ThresholdConfig(BaseModel):
         ),
     )
 
+    # Expected page size — T1-STR04 / LPDF_BOX_010. Compare the page's
+    # effective trim/media dimensions against the tenant's declared
+    # target product size. Either both dims must be set together, or
+    # the check is disabled. Tolerance defaults to 0.5 mm.
+    expected_page_width_mm: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Expected page width in mm (measured against effective_width_mm, "
+            "which respects rotation and UserUnit). Pair with "
+            "expected_page_height_mm. Absent → LPDF_BOX_010 disabled."
+        ),
+    )
+    expected_page_height_mm: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Expected page height in mm. Pair with expected_page_width_mm. "
+            "Absent → LPDF_BOX_010 disabled."
+        ),
+    )
+    expected_page_size_tolerance_mm: float = Field(
+        default=0.5,
+        ge=0,
+        description=(
+            "Tolerance in mm when comparing actual vs expected page size. "
+            "0.5mm matches PitStop's default."
+        ),
+    )
+
     # Color management thresholds
     target_output_condition: str = Field(
         default="",

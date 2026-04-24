@@ -540,7 +540,13 @@ class PreflightOrchestrator:
                 brand_palette_present=brand_palette_present,
             ),
             FontAnalyzer(pdf_bytes=self._pdf_bytes),
-            PageGeometryAnalyzer(min_bleed_pts=bleed_pts, safety_margin_pts=safety_pts),
+            PageGeometryAnalyzer(
+                min_bleed_pts=bleed_pts,
+                safety_margin_pts=safety_pts,
+                expected_page_width_mm=t.expected_page_width_mm,
+                expected_page_height_mm=t.expected_page_height_mm,
+                expected_page_size_tolerance_mm=t.expected_page_size_tolerance_mm,
+            ),
             HairlineAnalyzer(
                 hairline_threshold=t.hairline_threshold,
                 small_text_threshold=t.small_text_threshold,

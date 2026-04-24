@@ -247,6 +247,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Inconsistent Page Sizes",
         "Pages have different dimensions which may cause printing issues.",
     ),
+    "LPDF_BOX_010": CheckInfo(
+        "Page Size Mismatch",
+        "Page dimensions don't match the product size declared on the profile (expected_page_width_mm / expected_page_height_mm). Tolerance defaults to 0.5mm; either orientation is accepted.",
+    ),
     # ── Transparency ──────────────────────────────────────────────────────
     "LPDF_TRANS_001": CheckInfo(
         "Transparency Used", "Page uses transparency which must be flattened for older workflows."

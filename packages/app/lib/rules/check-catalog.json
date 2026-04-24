@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 380,
+  "total_checks": 381,
   "categories": [
     {
       "id": "image",
@@ -809,6 +809,12 @@
           "id": "LPDF_BOX_009",
           "name": "Inconsistent Page Sizes",
           "description": "Pages have different dimensions which may cause printing issues.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BOX_010",
+          "name": "Page Size Mismatch",
+          "description": "Page dimensions don't match the product size declared on the profile (expected_page_width_mm / expected_page_height_mm). Tolerance defaults to 0.5mm; either orientation is accepted.",
           "default_severity": "warning"
         }
       ]
