@@ -843,6 +843,33 @@ def run_preflight(
                 ],
             }
 
+            # WS-die-multi-color — append a post-detection warning
+            # when the dieline layer paints its strokes in more than
+            # one colour. A clean dieline is always a single ink; a
+            # multi-colour cut layer typically means misplaced
+            # artwork on the cutter plate.
+            if job.dieline and job.dieline.get("multi_color"):
+                result_dict["findings"].append({
+                    "inspection_id": "LPDF_DIE_MULTI_COLOR",
+                    "severity": "warning",
+                    "message": (
+                        "Dieline layer / spot contains multiple stroke "
+                        "colours — expected exactly one ink on a cut path."
+                    ),
+                    "page_num": 1,
+                    "bbox": None,
+                    "details": {
+                        "spot_name": job.dieline.get("spot_name"),
+                        "source": job.dieline.get("source"),
+                    },
+                    "source": "engine",
+                    "category": "dieline",
+                    "object_id": None,
+                    "object_type": None,
+                })
+                result_dict["summary"]["total_findings"] += 1
+                result_dict["summary"]["warning_count"] += 1
+
             # Upload results JSON to storage (best-effort — results are in DB too)
             try:
                 storage.upload_results(
@@ -884,6 +911,29 @@ def run_preflight(
                         bbox_y1=bbox[3] if bbox else None,
                         object_id=finding.object_id,
                         object_type=finding.object_type,
+                    )
+                )
+
+            # Persist the multi-colour dieline finding alongside the
+            # orchestrator outputs so it shows up in the Findings
+            # panel + the report bundle.
+            if job.dieline and job.dieline.get("multi_color"):
+                db.add(
+                    JobFinding(
+                        job_id=job.id,
+                        inspection_id="LPDF_DIE_MULTI_COLOR",
+                        severity="warning",
+                        message=(
+                            "Dieline layer / spot contains multiple stroke "
+                            "colours — expected exactly one ink on a cut path."
+                        ),
+                        page_num=1,
+                        details={
+                            "spot_name": job.dieline.get("spot_name"),
+                            "source": job.dieline.get("source"),
+                        },
+                        source="engine",
+                        category="dieline",
                     )
                 )
                 if finding.source == "ai" and finding.category:

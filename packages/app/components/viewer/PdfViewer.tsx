@@ -888,7 +888,14 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                     <TACHeatmapOverlay jobId={jobId} pageNum={currentPage} width={canvasWidth} height={canvasHeight} pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} tacLimit={config.default_tac_limit} />
                   )}
                   {showBoxOverlay && currentPageInfo && (
-                    <BoxOverlay page={currentPageInfo} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
+                    <BoxOverlay
+                      page={currentPageInfo}
+                      canvasWidth={canvasWidth}
+                      canvasHeight={canvasHeight}
+                      dieline={
+                        (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
+                      }
+                    />
                   )}
                   {measureMode === "color_picker" && currentPageInfo && (
                     <ColorPickerTool jobId={jobId} pageNum={currentPage} pageWidthPts={currentPageInfo.width_pts} pageHeightPts={currentPageInfo.height_pts} canvasWidth={canvasWidth} canvasHeight={canvasHeight} />
@@ -1161,6 +1168,9 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                     page={currentPageInfo}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
+                    dieline={
+                      (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
+                    }
                   />
                 )}
 

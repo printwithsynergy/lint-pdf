@@ -83,12 +83,24 @@ class DielineResult:
     * ``confidence`` — 1.0 for the name-match path; the Sonnet
       verdict's self-scored confidence for the vision path; 0.0
       for ``missing``.
+    * ``regions`` — per-island bboxes derived from clustering
+      ``polylines``. One entry per distinct cut area — used by
+      the viewer's Art Info overlay to drop one info icon per
+      region so multi-artwork files (circle + rectangle in the
+      same PDF) show each size separately.
+    * ``multi_color`` — True when the dieline layer paints its
+      strokes in more than one distinct colour. Triggers
+      ``LPDF_DIE_MULTI_COLOR`` downstream because a dieline
+      should be a single ink; mixed colours on the cut layer
+      are usually misplaced artwork.
     """
 
     source: str
     polylines: list[list[list[float]]] = field(default_factory=list)
     spot_name: str | None = None
     confidence: float = 0.0
+    regions: list[dict[str, float]] = field(default_factory=list)
+    multi_color: bool = False
 
 
 def _collect_spot_names(pdf: Any) -> list[str]:
@@ -438,6 +450,223 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
     return None
 
 
+# ── Dieline geometry + multi-colour extractor ────────────────────
+
+def _merge_overlapping(
+    bboxes: list[tuple[float, float, float, float]],
+    *,
+    fuzz: float = 20.0,
+) -> list[tuple[float, float, float, float]]:
+    """Cluster axis-aligned bboxes that overlap (with a ``fuzz`` pt
+    expansion) into their union bounding boxes. Used by the dieline
+    extractor to turn per-subpath bboxes into per-region "islands"
+    so a multi-artwork file (circle + rectangle on one sheet) ends
+    up with one region per artwork rather than one big enveloping
+    rectangle.
+    """
+    if not bboxes:
+        return []
+    remaining = list(bboxes)
+    merged: list[tuple[float, float, float, float]] = []
+    while remaining:
+        cur = list(remaining.pop())
+        changed = True
+        while changed:
+            changed = False
+            still: list[tuple[float, float, float, float]] = []
+            for b in remaining:
+                overlaps = (
+                    cur[0] - fuzz <= b[2]
+                    and b[0] - fuzz <= cur[2]
+                    and cur[1] - fuzz <= b[3]
+                    and b[1] - fuzz <= cur[3]
+                )
+                if overlaps:
+                    cur[0] = min(cur[0], b[0])
+                    cur[1] = min(cur[1], b[1])
+                    cur[2] = max(cur[2], b[2])
+                    cur[3] = max(cur[3], b[3])
+                    changed = True
+                else:
+                    still.append(b)
+            remaining = still
+        merged.append(tuple(cur))  # type: ignore[arg-type]
+    return merged
+
+
+def _extract_dieline_paths(
+    pdf: Any,
+    spot_name: str | None,
+    *,
+    page_num: int = 0,
+) -> tuple[list[tuple[float, float, float, float]], int]:
+    """Walk page-``page_num`` content stream and return the dieline
+    sub-path bboxes plus the count of distinct stroke colours seen
+    inside a dieline OCG.
+
+    A path counts as dieline when EITHER:
+
+    * its current stroking colour-space resolves to a Separation
+      whose colourant name matches ``spot_name``, OR
+    * it is painted inside a Marked-Content block whose OCG name
+      matches one of the dieline tokens (``dieline``, ``cut``,
+      ``crease``, ``perf``, …).
+
+    The second outcome — distinct-colour count inside a dieline OCG
+    — lets the caller decide whether to emit
+    ``LPDF_DIE_MULTI_COLOR``. A clean dieline layer has exactly one
+    stroke colour; multi-colour layers signal misplaced artwork.
+
+    Co-ordinates come from raw operator operands (no CTM
+    composition) — axis-aligned layouts work; rotated or
+    heavily-transformed art may miss. That's a known scope limit
+    called out in the WS-19 geometry fallback.
+    """
+    try:
+        import pikepdf
+    except ImportError:
+        return [], 0
+
+    try:
+        page = pdf.pages[page_num]
+    except Exception:
+        return [], 0
+
+    resources = page.get("/Resources") if hasattr(page, "get") else None
+    cs_dict = (
+        resources.get("/ColorSpace") if resources and hasattr(resources, "get") else None
+    )
+    props_dict = (
+        resources.get("/Properties") if resources and hasattr(resources, "get") else None
+    )
+
+    # Resource-name → spot name for Separation color spaces only.
+    cs_to_spot: dict[str, str] = {}
+    if cs_dict is not None:
+        try:
+            for res_name, cs_obj in cs_dict.items():
+                try:
+                    arr = list(cs_obj)
+                except Exception:
+                    continue
+                if len(arr) >= 2 and str(arr[0]).lstrip("/").lower() == "separation":
+                    cs_to_spot[str(res_name).lstrip("/")] = str(arr[1]).lstrip("/")
+        except Exception:
+            pass
+
+    # Resource-name → OCG name for marked-content references.
+    mc_to_ocg: dict[str, str] = {}
+    if props_dict is not None:
+        try:
+            for prop_name, prop_ref in props_dict.items():
+                try:
+                    name = prop_ref.get("/Name") if hasattr(prop_ref, "get") else None
+                except Exception:
+                    name = None
+                if name:
+                    mc_to_ocg[str(prop_name).lstrip("/")] = str(name)
+        except Exception:
+            pass
+
+    try:
+        instrs = pikepdf.parse_content_stream(page)
+    except Exception:
+        return [], 0
+
+    current_stroke_cs: str | None = None
+    current_stroke_color: tuple[float, ...] = ()
+    ocg_stack: list[str] = []
+    path_points: list[tuple[float, float]] = []
+
+    dieline_bboxes: list[tuple[float, float, float, float]] = []
+    dieline_colors: set[tuple[str | None, tuple[float, ...]]] = set()
+
+    def in_dieline_layer() -> bool:
+        return any(_name_matches(n) for n in ocg_stack)
+
+    def cur_is_dieline_spot() -> bool:
+        if spot_name is None:
+            return False
+        if current_stroke_cs is None:
+            return False
+        cs_spot = cs_to_spot.get(current_stroke_cs)
+        return cs_spot == spot_name
+
+    def flush_stroked() -> None:
+        nonlocal path_points
+        if not path_points:
+            return
+        hit_layer = in_dieline_layer()
+        hit_spot = cur_is_dieline_spot()
+        if hit_layer or hit_spot:
+            xs = [p[0] for p in path_points]
+            ys = [p[1] for p in path_points]
+            dieline_bboxes.append((min(xs), min(ys), max(xs), max(ys)))
+            if hit_layer:
+                dieline_colors.add((current_stroke_cs, current_stroke_color))
+        path_points = []
+
+    for inst in instrs:
+        try:
+            op = str(getattr(inst, "operator"))
+            operands = list(getattr(inst, "operands", []))
+        except Exception:
+            continue
+
+        if op == "BDC":
+            if len(operands) >= 2:
+                prop = operands[1]
+                prop_name = str(prop).lstrip("/")
+                ocg_stack.append(mc_to_ocg.get(prop_name, ""))
+        elif op == "BMC":
+            ocg_stack.append("")
+        elif op == "EMC":
+            if ocg_stack:
+                ocg_stack.pop()
+        elif op == "CS":
+            if operands:
+                current_stroke_cs = str(operands[0]).lstrip("/")
+        elif op in ("SC", "SCN"):
+            floats: list[float] = []
+            for v in operands:
+                try:
+                    floats.append(float(v))
+                except Exception:
+                    # Ignore pattern names etc.
+                    pass
+            current_stroke_color = tuple(floats)
+        elif op == "m":
+            if len(operands) >= 2:
+                try:
+                    path_points = [(float(operands[0]), float(operands[1]))]
+                except Exception:
+                    path_points = []
+        elif op == "l":
+            if len(operands) >= 2:
+                try:
+                    path_points.append((float(operands[0]), float(operands[1])))
+                except Exception:
+                    pass
+        elif op in ("c", "v", "y"):
+            try:
+                path_points.append((float(operands[-2]), float(operands[-1])))
+            except Exception:
+                pass
+        elif op == "re":
+            if len(operands) >= 4:
+                try:
+                    x, y, w, h = (float(v) for v in operands[:4])
+                    path_points = [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+                except Exception:
+                    path_points = []
+        elif op in ("S", "s", "B", "B*", "b", "b*"):
+            flush_stroked()
+        elif op in ("f", "F", "f*", "n"):
+            path_points = []
+
+    return dieline_bboxes, len(dieline_colors)
+
+
 def detect_dieline(pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] | None = None) -> DielineResult:
     """Run the dieline detection pipeline.
 
@@ -464,14 +693,44 @@ def detect_dieline(pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] |
     for name in (*spot_names, *layer_names):
         if _name_matches(name):
             logger.info("dieline: name-match hit on '%s'", name)
+            # Walk the page-1 content stream to pick up the actual
+            # stroked subpaths painted with this spot / on this OCG,
+            # cluster them into region bboxes, and flag multi-colour
+            # dielines. The polylines feed the art-size inspector
+            # and the viewer's per-region info icons; the
+            # colour-count feeds LPDF_DIE_MULTI_COLOR downstream.
+            bboxes, distinct_color_count = _extract_dieline_paths(
+                pdf, spot_name=name
+            )
+            region_bboxes = _merge_overlapping(bboxes)
+            polylines: list[list[list[float]]] = [
+                [
+                    [float(b[0]), float(b[1])],
+                    [float(b[2]), float(b[1])],
+                    [float(b[2]), float(b[3])],
+                    [float(b[0]), float(b[3])],
+                    [float(b[0]), float(b[1])],
+                ]
+                for b in region_bboxes
+            ]
+            regions = [
+                {
+                    "x0": float(b[0]),
+                    "y0": float(b[1]),
+                    "x1": float(b[2]),
+                    "y1": float(b[3]),
+                    "width_mm": round((b[2] - b[0]) * 25.4 / 72, 3),
+                    "height_mm": round((b[3] - b[1]) * 25.4 / 72, 3),
+                }
+                for b in region_bboxes
+            ]
             return DielineResult(
                 source="name",
                 spot_name=name,
-                # Polylines from the name-match path are computed
-                # downstream (art_size needs them). For the base
-                # detection result we just flag the hit.
-                polylines=[],
+                polylines=polylines,
                 confidence=1.0,
+                regions=regions,
+                multi_color=distinct_color_count > 1,
             )
 
     # WS-19 geometry fallback — detect the textbook
@@ -540,4 +799,6 @@ def result_to_json(result: DielineResult) -> dict[str, Any]:
         "polylines": result.polylines,
         "spot_name": result.spot_name,
         "confidence": result.confidence,
+        "regions": result.regions,
+        "multi_color": result.multi_color,
     }
