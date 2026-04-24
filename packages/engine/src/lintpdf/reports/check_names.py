@@ -146,6 +146,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Restricted Font Embedding Licence",
         "Font's OS/2 fsType bit advertises a licence restriction (restricted / preview-and-print / editable embedding). Verify vendor licensing before distributing this PDF.",
     ),
+    "LPDF_FONT_016": CheckInfo(
+        "Font Subset Violates No-Subsetting Policy",
+        "Font vendor set the OS/2 no_subsetting bit, but the PDF subsetted this font anyway. Disabled by default; enable for licensed-font-only workflows.",
+    ),
+    "LPDF_FONT_017": CheckInfo(
+        "Outline Embed Violates Bitmap-Only Policy",
+        "Font vendor set the OS/2 bitmap_only bit, but the PDF embedded outline data. Disabled by default; enable for licensed-font-only workflows.",
+    ),
     # ── Color ─────────────────────────────────────────────────────────────
     "LPDF_COLOR_001": CheckInfo(
         "Device-Dependent Color",

@@ -5,8 +5,14 @@
   "conformance": null,
   "workflow": "auto",
   "checks": {
-    "enabled": ["LPDF_*"],
-    "disabled": ["PDFX4-*"],
+    "enabled": [
+      "LPDF_*"
+    ],
+    "disabled": [
+      "PDFX4-*",
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
+    ],
     "severity_overrides": {},
     "max_severity": "advisory"
   },

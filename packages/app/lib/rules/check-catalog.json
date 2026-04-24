@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 378,
+  "total_checks": 380,
   "categories": [
     {
       "id": "image",
@@ -611,6 +611,18 @@
           "id": "LPDF_FONT_015",
           "name": "Restricted Font Embedding Licence",
           "description": "Font's OS/2 fsType bit advertises a licence restriction (restricted / preview-and-print / editable embedding). Verify vendor licensing before distributing this PDF.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_016",
+          "name": "Font Subset Violates No-Subsetting Policy",
+          "description": "Font vendor set the OS/2 no_subsetting bit, but the PDF subsetted this font anyway. Disabled by default; enable for licensed-font-only workflows.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_FONT_017",
+          "name": "Outline Embed Violates Bitmap-Only Policy",
+          "description": "Font vendor set the OS/2 bitmap_only bit, but the PDF embedded outline data. Disabled by default; enable for licensed-font-only workflows.",
           "default_severity": "warning"
         }
       ]

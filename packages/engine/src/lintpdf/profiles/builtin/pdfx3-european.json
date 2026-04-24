@@ -11,7 +11,9 @@
     ],
     "disabled": [
       "PDFX4-*",
-      "PDFX1A-*"
+      "PDFX1A-*",
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
     ],
     "severity_overrides": {}
   },

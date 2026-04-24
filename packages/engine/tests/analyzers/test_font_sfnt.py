@@ -216,9 +216,16 @@ class TestCheckFstypeBranch:
         assert FontAnalyzer._check_fstype(font, page_num=1, font_file_bytes=bytes_) == []
 
     @staticmethod
-    def test_no_subsetting_bit_alone_is_silent() -> None:
-        """no_subsetting on its own is info-only — no finding emitted."""
-        font = _make_font()
+    def test_no_subsetting_without_subset_is_silent() -> None:
+        """no_subsetting bit set + font.subset=False → no 015, no 016."""
+        font = PdfFont(
+            name="F1",
+            base_font="Helvetica",  # no subset prefix
+            font_type="TrueType",
+            embedded=True,
+            subset=False,  # font was embedded whole — no violation
+            font_descriptor={"/FontFile2": {"/Length": 1000}},
+        )
         bytes_ = _build_minimal_sfnt(fs_type=0x0100)
         assert FontAnalyzer._check_fstype(font, page_num=1, font_file_bytes=bytes_) == []
 
@@ -247,6 +254,68 @@ class TestCheckFstypeBranch:
         """Corrupt font bytes → parser returns None → no finding."""
         font = _make_font()
         assert FontAnalyzer._check_fstype(font, page_num=1, font_file_bytes=b"garbage") == []
+
+
+class TestNoSubsetting016:
+    """LPDF_FONT_016 — no_subsetting bit AND font was actually subsetted."""
+
+    @staticmethod
+    def test_fires_on_real_violation() -> None:
+        font = _make_font()  # subset=True (default)
+        bytes_ = _build_minimal_sfnt(fs_type=0x0100)  # bit 8 only
+        findings = FontAnalyzer._check_fstype(font, page_num=1, font_file_bytes=bytes_)
+        # Only 016 fires — no embedding restriction so 015 silent.
+        ids = {f.inspection_id for f in findings}
+        assert ids == {"LPDF_FONT_016"}
+        f = next(f for f in findings if f.inspection_id == "LPDF_FONT_016")
+        assert f.severity == Severity.WARNING
+        assert f.details["no_subsetting"] is True
+
+    @staticmethod
+    def test_silent_when_font_not_subsetted() -> None:
+        """Vendor said no subsetting; PDF honoured that (subset=False). Silent."""
+        font = PdfFont(
+            name="F1",
+            base_font="Helvetica",
+            font_type="TrueType",
+            embedded=True,
+            subset=False,
+            font_descriptor={"/FontFile2": {"/Length": 1000}},
+        )
+        bytes_ = _build_minimal_sfnt(fs_type=0x0100)
+        assert FontAnalyzer._check_fstype(font, page_num=1, font_file_bytes=bytes_) == []
+
+    @staticmethod
+    def test_coexists_with_015_when_both_bits_set() -> None:
+        """bit 2 (preview) + bit 8 (no_subsetting) + subset=True → both 015 and 016."""
+        font = _make_font()
+        bytes_ = _build_minimal_sfnt(fs_type=0x0104)
+        findings = FontAnalyzer._check_fstype(font, page_num=1, font_file_bytes=bytes_)
+        ids = {f.inspection_id for f in findings}
+        assert ids == {"LPDF_FONT_015", "LPDF_FONT_016"}
+
+
+class TestBitmapOnly017:
+    """LPDF_FONT_017 — bitmap_only bit AND font is outline-format."""
+
+    @staticmethod
+    def test_fires_on_outline_font() -> None:
+        font = _make_font(font_type="TrueType")
+        bytes_ = _build_minimal_sfnt(fs_type=0x0200)  # bit 9 only
+        findings = FontAnalyzer._check_fstype(font, page_num=1, font_file_bytes=bytes_)
+        ids = {f.inspection_id for f in findings}
+        assert ids == {"LPDF_FONT_017"}
+        f = next(f for f in findings if f.inspection_id == "LPDF_FONT_017")
+        assert f.severity == Severity.WARNING
+        assert f.details["bitmap_only"] is True
+
+    @staticmethod
+    def test_fires_on_cid_font() -> None:
+        font = _make_font(font_type="CIDFontType2")
+        bytes_ = _build_minimal_sfnt(fs_type=0x0200)
+        findings = FontAnalyzer._check_fstype(font, page_num=1, font_file_bytes=bytes_)
+        ids = {f.inspection_id for f in findings}
+        assert "LPDF_FONT_017" in ids
 
 
 class TestAnalyzeIntegration:

@@ -9,7 +9,10 @@
       "LPDF_*",
       "PDFX4-*"
     ],
-    "disabled": [],
+    "disabled": [
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
+    ],
     "severity_overrides": {}
   },
   "thresholds": {

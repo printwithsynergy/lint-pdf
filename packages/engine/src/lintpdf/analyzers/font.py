@@ -17,7 +17,9 @@ Check IDs:
     LPDF_FONT_012 — Faux bold detected
     LPDF_FONT_013 — Faux italic detected
     LPDF_FONT_014 — Corrupt/damaged font program (type/stream mismatch)
-    LPDF_FONT_015 — Restricted font-embedding licence (OS/2 fsType)
+    LPDF_FONT_015 — Restricted font-embedding licence (OS/2 fsType bits 1-3)
+    LPDF_FONT_016 — Font subsetted against vendor's no_subsetting policy (bit 8)
+    LPDF_FONT_017 — Outline data embedded against vendor's bitmap-only policy (bit 9)
 """
 
 from __future__ import annotations
@@ -154,13 +156,22 @@ class FontAnalyzer(BaseAnalyzer):
 
     @staticmethod
     def _check_fstype(font: PdfFont, page_num: int, font_file_bytes: bytes | None) -> list[Finding]:
-        """LPDF_FONT_015 — restricted font-embedding licence.
+        """fsType licence-bit checks.
 
-        Reads the embedded font program's OS/2 fsType field. When bits
-        1-3 are set the font vendor advertises a licence restriction
-        (restricted / preview-and-print / editable embedding). Bit 8
-        (no-subsetting) and bit 9 (bitmap-only) are reported as details
-        but don't change severity.
+        Reads the embedded font program's OS/2 fsType field and emits up
+        to three distinct findings:
+
+          - LPDF_FONT_015 — bits 1/2/3 (restricted / preview-and-print /
+            editable embedding). Advisory. Enabled by default.
+          - LPDF_FONT_016 — bit 8 (no_subsetting) AND the PDF actually
+            subset this font. Real licence violation — the vendor said
+            don't subset, and the embedder did anyway. Default-OFF in
+            bundled profiles; tenants with licensed-font-only workflows
+            enable it via the rules editor.
+          - LPDF_FONT_017 — bit 9 (bitmap_only) on an outline-format
+            font (TrueType / OpenType CFF). Advertises that only bitmap
+            data should be embedded; the PDF embedded outlines. Same
+            default-OFF as LPDF_FONT_016.
         """
         if font_file_bytes is None:
             return []
@@ -169,32 +180,85 @@ class FontAnalyzer(BaseAnalyzer):
             return []
 
         info = parse_fstype(font_file_bytes)
-        if info is None or not info.has_embedding_restriction:
+        if info is None:
             return []
 
-        return [
-            Finding(
-                inspection_id="LPDF_FONT_015",
-                severity=Severity.ADVISORY,
-                message=(
-                    f"Font '{font.base_font}' has restricted embedding licence "
-                    f"(fsType=0x{info.value:04x}: {', '.join(info.flags)})"
-                ),
-                page_num=page_num,
-                details={
-                    "font_name": font.name,
-                    "base_font": font.base_font,
-                    "font_type": font.font_type,
-                    "fs_type_value": info.value,
-                    "fs_type_flags": info.flags,
-                    "no_subsetting": info.no_subsetting,
-                    "bitmap_only": info.bitmap_only,
-                },
-                iso_clause="ISO 32000-2:2020 9.8.2 / OpenType OS/2 §1.2",
-                object_id=font.name,
-                object_type="font",
+        findings: list[Finding] = []
+        common_details = {
+            "font_name": font.name,
+            "base_font": font.base_font,
+            "font_type": font.font_type,
+            "fs_type_value": info.value,
+            "fs_type_flags": info.flags,
+            "no_subsetting": info.no_subsetting,
+            "bitmap_only": info.bitmap_only,
+        }
+
+        # LPDF_FONT_015 — generic licence-restriction advisory (bits 1-3).
+        if info.has_embedding_restriction:
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_FONT_015",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Font '{font.base_font}' has restricted embedding licence "
+                        f"(fsType=0x{info.value:04x}: {', '.join(info.flags)})"
+                    ),
+                    page_num=page_num,
+                    details=common_details,
+                    iso_clause="ISO 32000-2:2020 9.8.2 / OpenType OS/2 §1.2",
+                    object_id=font.name,
+                    object_type="font",
+                )
             )
-        ]
+
+        # LPDF_FONT_016 — no-subsetting bit set AND the embedder subset
+        # the font anyway. Conditional on font.subset so this fires only
+        # on actual violations, not on "vendor declared it, we honoured
+        # it" cases.
+        if info.no_subsetting and font.subset:
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_FONT_016",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Font '{font.base_font}' was subsetted but the vendor "
+                        f"forbids subsetting (fsType no_subsetting bit set)"
+                    ),
+                    page_num=page_num,
+                    details=common_details,
+                    iso_clause="OpenType OS/2 §1.2 (bit 8)",
+                    object_id=font.name,
+                    object_type="font",
+                )
+            )
+
+        # LPDF_FONT_017 — bitmap-only bit set AND the font is an outline
+        # format. The embedder included outlines against the vendor's
+        # declared policy.
+        if info.bitmap_only and font.font_type in (
+            "TrueType",
+            "Type0",
+            "CIDFontType0",
+            "CIDFontType2",
+        ):
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_FONT_017",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Font '{font.base_font}' embeds outline data but the "
+                        f"vendor declares bitmap-only embedding (fsType bit 9)"
+                    ),
+                    page_num=page_num,
+                    details=common_details,
+                    iso_clause="OpenType OS/2 §1.2 (bit 9)",
+                    object_id=font.name,
+                    object_type="font",
+                )
+            )
+
+        return findings
 
     @staticmethod
     def _check_font(font: PdfFont, page_num: int) -> list[Finding]:  # skipcq: PY-R1000
