@@ -455,7 +455,8 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
 def _merge_overlapping(
     bboxes: list[tuple[float, float, float, float]],
     *,
-    fuzz: float = 20.0,
+    fuzz: float = 5.0,
+    min_area: float = 100.0,
 ) -> list[tuple[float, float, float, float]]:
     """Cluster axis-aligned bboxes that overlap (with a ``fuzz`` pt
     expansion) into their union bounding boxes. Used by the dieline
@@ -463,6 +464,19 @@ def _merge_overlapping(
     so a multi-artwork file (circle + rectangle on one sheet) ends
     up with one region per artwork rather than one big enveloping
     rectangle.
+
+    ``fuzz`` is deliberately small (5 pt ≈ 1.8 mm) — tightly-spaced
+    multi-artwork files (Pavette's circle-over-rectangle layout sits
+    ~10 mm apart) need to stay separated. The previous 20 pt default
+    merged them into a single 169×186 mm bbox. Individual bezier
+    segments of a circle still cluster because they *touch* at
+    shared endpoints (0 pt gap).
+
+    ``min_area`` drops noise from stray short subpaths — a single
+    curve control-point pickup or a ``m...m`` with no painted
+    operators. 100 pt² (~10×10 pt ≈ 3.5×3.5 mm) keeps the cluster
+    list honest without silently dropping thin dielines; a
+    real cut contour is always far larger.
     """
     if not bboxes:
         return []
@@ -491,7 +505,11 @@ def _merge_overlapping(
                     still.append(b)
             remaining = still
         merged.append(tuple(cur))  # type: ignore[arg-type]
-    return merged
+    # Drop regions below the min-area floor.
+    return [
+        b for b in merged
+        if max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1]) >= min_area
+    ]
 
 
 def _extract_dieline_paths(
