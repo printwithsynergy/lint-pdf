@@ -503,10 +503,24 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
     setCanRedo(redo);
   }, []);
 
-  // Mode toggles
+  // Mode toggles. Pre-fix this unconditionally reset ``measureMode``
+  // to "none" on every view switch, so an active Densitometer /
+  // Color Picker / Ruler would deactivate the moment the user
+  // flipped to Separations or Layers. Preserve the measure tool
+  // across the canvas-rendering modes (normal / separation /
+  // layers) and only drop it when switching into a mode where the
+  // tool doesn't have a canvas to measure against (annotation,
+  // comparison, health, chain).
   const toggleMode = useCallback((mode: ViewerMode) => {
-    setViewerMode((prev) => (prev === mode ? "normal" : mode));
-    setMeasureMode("none");
+    const nextMode: ViewerMode =
+      // Self-toggle folds back to "normal" so the user can tap the
+      // active button again to close it.
+      mode === "normal" ? "normal" : mode;
+    setViewerMode((prev) => (prev === nextMode ? "normal" : nextMode));
+    const toolsSupported = new Set<ViewerMode>(["normal", "separation", "layers"]);
+    if (!toolsSupported.has(nextMode)) {
+      setMeasureMode("none");
+    }
   }, []);
 
   const toggleMeasure = useCallback((mode: MeasureMode) => {
