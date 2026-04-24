@@ -572,6 +572,27 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "No Dieline Detected",
         "Expected dieline not found in a packaging file. Verify spot naming or AI detection availability.",
     ),
+    # ── Dieline Quality (Batch 4 — T3) ─────────────────────────────────────
+    "LPDF_DIE_MISSING": CheckInfo(
+        "Dieline Missing",
+        "Expected dieline not present in a packaging file. Neither name-match nor vision fallback detected a cut contour.",
+    ),
+    "LPDF_DIE_MULTI_COLOR": CheckInfo(
+        "Dieline Multi-Colour",
+        "Dieline layer / spot contains multiple stroke colours — a clean cut path should be exactly one ink.",
+    ),
+    "LPDF_DIE_ZORDER": CheckInfo(
+        "Dieline Below Artwork",
+        "Dieline is painted before artwork in the content stream — the cutter marker should sit on top of all content. Move the dieline layer to the top of the layer stack before exporting.",
+    ),
+    "LPDF_DIE_KNOCKOUT": CheckInfo(
+        "Dieline Set To Knockout",
+        "Dieline stroke is set to knockout (OP=false) — underlying inks will have gaps along cut lines. Enable 'Overprint Stroke' on the dieline layer in Illustrator / InDesign.",
+    ),
+    "LPDF_DIE_AS_ART": CheckInfo(
+        "Dieline Spot Used As Fill",
+        "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
+    ),
     # ── AI File Classification ──────────────────────────────────────────────
     "AI_FCLASS_002": CheckInfo(
         "Document Classified",

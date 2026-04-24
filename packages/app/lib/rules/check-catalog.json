@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 384,
+  "total_checks": 389,
   "categories": [
     {
       "id": "image",
@@ -2213,6 +2213,36 @@
           "id": "LPDF_BD_004",
           "name": "Barcode on page right quiet zone",
           "description": "N barcode on page N: right quiet zone ~N modules, minimum N required",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_AS_ART",
+          "name": "Dieline Spot Used As Fill",
+          "description": "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_KNOCKOUT",
+          "name": "Dieline Set To Knockout",
+          "description": "Dieline stroke is set to knockout (OP=false) \u2014 underlying inks will have gaps along cut lines. Enable 'Overprint Stroke' on the dieline layer in Illustrator / InDesign.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_MISSING",
+          "name": "Dieline Missing",
+          "description": "Expected dieline not present in a packaging file. Neither name-match nor vision fallback detected a cut contour.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_MULTI_COLOR",
+          "name": "Dieline Multi-Colour",
+          "description": "Dieline layer / spot contains multiple stroke colours \u2014 a clean cut path should be exactly one ink.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_ZORDER",
+          "name": "Dieline Below Artwork",
+          "description": "Dieline is painted before artwork in the content stream \u2014 the cutter marker should sit on top of all content. Move the dieline layer to the top of the layer stack before exporting.",
           "default_severity": "advisory"
         },
         {

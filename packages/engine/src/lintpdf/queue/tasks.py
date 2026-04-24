@@ -867,6 +867,46 @@ def run_preflight(
                 result_dict["summary"]["total_findings"] += 1
                 result_dict["summary"]["warning_count"] += 1
 
+            # Batch 4 — T3-D02 / T3-D03 / T3-D15 dieline-quality findings.
+            # Runs after detection, uses the persisted DielineResult +
+            # raw PDF bytes to emit z-order / knockout / as-art findings.
+            # Independent of the multi-colour check above; both are
+            # post-detection quality signals.
+            if job.dieline and job.dieline.get("spot_name"):
+                try:
+                    from lintpdf.analyzers.dieline_quality import (
+                        check_dieline_quality,
+                    )
+
+                    dq_findings = check_dieline_quality(
+                        pdf_bytes,
+                        spot_name=job.dieline.get("spot_name"),
+                        source=job.dieline.get("source") or "missing",
+                    )
+                except Exception:
+                    logger.exception("Job %s dieline_quality check raised", job_id)
+                    dq_findings = []
+
+                for df in dq_findings:
+                    result_dict["findings"].append(
+                        {
+                            "inspection_id": df.inspection_id,
+                            "severity": df.severity.value,
+                            "message": df.message,
+                            "page_num": df.page_num,
+                            "bbox": list(df.bbox) if df.bbox else None,
+                            "details": df.details,
+                            "source": "engine",
+                            "category": "dieline",
+                            "object_id": df.object_id,
+                            "object_type": df.object_type,
+                        }
+                    )
+                    result_dict["summary"]["total_findings"] += 1
+                    sev_key = f"{df.severity.value}_count"
+                    if sev_key in result_dict["summary"]:
+                        result_dict["summary"][sev_key] += 1
+
             # Upload results JSON to storage (best-effort — results are in DB too)
             try:
                 storage.upload_results(
@@ -933,15 +973,51 @@ def run_preflight(
                         category="dieline",
                     )
                 )
-                if finding.source == "ai" and finding.category:
-                    ai_features_used.add(
-                        (
-                            finding.category,
-                            finding.inspection_id.split(".")[1]
-                            if "." in finding.inspection_id
-                            else finding.category,
-                        )
+
+            # Batch 4 — persist dieline-quality findings (T3-D02/03/15).
+            # Same pattern as LPDF_DIE_MULTI_COLOR above.
+            if job.dieline and job.dieline.get("spot_name"):
+                try:
+                    from lintpdf.analyzers.dieline_quality import (
+                        check_dieline_quality,
                     )
+
+                    for df in check_dieline_quality(
+                        pdf_bytes,
+                        spot_name=job.dieline.get("spot_name"),
+                        source=job.dieline.get("source") or "missing",
+                    ):
+                        db.add(
+                            JobFinding(
+                                job_id=job.id,
+                                inspection_id=df.inspection_id,
+                                severity=df.severity.value,
+                                message=df.message,
+                                page_num=df.page_num,
+                                details=df.details,
+                                source="engine",
+                                category="dieline",
+                                object_id=df.object_id,
+                                object_type=df.object_type,
+                            )
+                        )
+                except Exception:
+                    logger.exception("Job %s dieline_quality persistence raised", job_id)
+
+            if (
+                job.dieline
+                and job.dieline.get("multi_color")
+                and finding.source == "ai"
+                and finding.category
+            ):
+                ai_features_used.add(
+                    (
+                        finding.category,
+                        finding.inspection_id.split(".")[1]
+                        if "." in finding.inspection_id
+                        else finding.category,
+                    )
+                )
 
             # Deduct AI credits for features used
             if ai_features_used and ai_config:
