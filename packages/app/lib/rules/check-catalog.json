@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 381,
+  "total_checks": 384,
   "categories": [
     {
       "id": "image",
@@ -2450,6 +2450,18 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_PDFA_CONF",
+          "name": "PDF/A Non-Conformant",
+          "description": "veraPDF reported one or more PDF/A rule failures (1b / 2b / 2u / 3b / 3u / 4). See details.failures for the clause + test-number list.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PDFX_CONF",
+          "name": "PDF/X Non-Conformant",
+          "description": "veraPDF reported one or more PDF/X rule failures (X-1a / X-3 / X-4 / X-6). See details.failures for the clause + test-number list.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_PRESS_001",
           "name": "Custom halftone dictionary detected",
           "description": "Custom halftone dictionary detected on page N",
@@ -2567,6 +2579,12 @@
           "id": "LPDF_QR_004",
           "name": "Duplicate QR code found on pages",
           "description": "Duplicate QR code found on pages N: 'NN'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_UA_CONF",
+          "name": "PDF/UA Non-Conformant",
+          "description": "veraPDF Matterhorn reported one or more PDF/UA-1 checkpoint failures (accessibility). See details.failures for the list.",
           "default_severity": "advisory"
         }
       ]

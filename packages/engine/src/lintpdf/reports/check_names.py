@@ -1017,6 +1017,19 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "PDF Version Outside Profile Range",
         "The PDF header version sits outside the range the active preflight profile expects (below min_pdf_version or above max_pdf_version). Re-save with a matching compatibility setting.",
     ),
+    # ── veraPDF-backed Conformance ─────────────────────────────────────────
+    "LPDF_PDFX_CONF": CheckInfo(
+        "PDF/X Non-Conformant",
+        "veraPDF reported one or more PDF/X rule failures (X-1a / X-3 / X-4 / X-6). See details.failures for the clause + test-number list.",
+    ),
+    "LPDF_PDFA_CONF": CheckInfo(
+        "PDF/A Non-Conformant",
+        "veraPDF reported one or more PDF/A rule failures (1b / 2b / 2u / 3b / 3u / 4). See details.failures for the clause + test-number list.",
+    ),
+    "LPDF_UA_CONF": CheckInfo(
+        "PDF/UA Non-Conformant",
+        "veraPDF Matterhorn reported one or more PDF/UA-1 checkpoint failures (accessibility). See details.failures for the list.",
+    ),
     # ── Extended Colour Gamut ───────────────────────────────────────────────
     "LPDF_ECG_001": CheckInfo(
         "ECG readiness spot color(s found",

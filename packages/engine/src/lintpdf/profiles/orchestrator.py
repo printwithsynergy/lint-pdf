@@ -262,6 +262,22 @@ class PreflightOrchestrator:
             validator = PdfAValidator(level=_level_map[self._plan.conformance])
             raw_findings.extend(validator.validate(document, events, raw_findings))
 
+        # Step 5b: veraPDF-backed PDF/X / PDF/A / PDF/UA conformance
+        # (T1-CMP01, T4-A01, T4-A02). Silent no-op when the sidecar
+        # isn't configured or isn't reachable.
+        from lintpdf.conformance.verapdf_runner import run_verapdf_checks
+
+        ua_enabled = any(
+            p.startswith("LPDF_UA_") or p == "LPDF_UA_*" for p in self._plan.checks.enabled
+        ) and not any(p == "LPDF_UA_*" or p == "LPDF_UA_CONF" for p in self._plan.checks.disabled)
+        raw_findings.extend(
+            run_verapdf_checks(
+                pdf_bytes,
+                conformance=self._plan.conformance,
+                enabled_ua=ua_enabled,
+            )
+        )
+
         # Step 6: Run AI analyzers (if AI enabled in profile)
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
         raw_findings.extend(ai_findings)
