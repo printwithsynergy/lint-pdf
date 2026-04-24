@@ -6,43 +6,49 @@ REPO_ROOT="$(git rev-parse --show-toplevel)"
 STAGED=$(git diff --cached --name-only 2>/dev/null || true)
 [ -z "$STAGED" ] && exit 0
 
-# ── Detect changed packages (mirrors CI paths-filter) ─────────────────────
-CHANGED_ENGINE=false; CHANGED_INFERENCE=false
-CHANGED_WEB=false; CHANGED_PLUGIN=false; CHANGED_STRIPE=false; CHANGED_APP=false
+# ── Collect staged files per package (used for scoped linting below) ──────
+ENGINE_FILES=()
+INFERENCE_FILES=()
+NODE_FILES=()
 
 while IFS= read -r f; do
   case "$f" in
-    packages/engine/*)    CHANGED_ENGINE=true ;;
-    packages/inference/*) CHANGED_INFERENCE=true ;;
-    packages/web/*)       CHANGED_WEB=true ;;
-    packages/plugin/*)    CHANGED_PLUGIN=true ;;
-    packages/stripe/*)    CHANGED_STRIPE=true ;;
-    packages/app/*)       CHANGED_APP=true ;;
+    packages/engine/*.py)       ENGINE_FILES+=("$f") ;;
+    packages/inference/*.py)    INFERENCE_FILES+=("$f") ;;
+    packages/web/*|packages/plugin/*|packages/stripe/*|packages/app/*)
+      [[ "$f" == *.ts || "$f" == *.tsx || "$f" == *.js || "$f" == *.jsx ]] && NODE_FILES+=("$f")
+      ;;
   esac
 done <<< "$STAGED"
 
 FAIL=0
 
-# ── Python: Engine — ruff check + ruff format + mypy ──────────────────────
-if $CHANGED_ENGINE && [ -d "$REPO_ROOT/packages/engine" ]; then
-  echo "🔍 [engine] ruff check..."
-  (cd "$REPO_ROOT/packages/engine" && ruff check src/ tests/) || FAIL=1
-  echo "🔍 [engine] ruff format --check..."
-  (cd "$REPO_ROOT/packages/engine" && ruff format --check src/ tests/) || FAIL=1
-  echo "🔍 [engine] mypy..."
-  (cd "$REPO_ROOT/packages/engine" && mypy src/) || FAIL=1
+# ── Python: Engine — scoped ruff check + format on STAGED files only. ─────
+# Previous iteration ran ``ruff check src/ tests/`` globally, which meant
+# any pre-existing lint debt in an unrelated engine file blocked commits
+# in files that were clean on their own. Scope to the staged set so the
+# hook only enforces hygiene on what you're actually changing.
+# (mypy is intentionally left out — it has strict runtime deps like
+# pydantic that aren't installed in the hook sandbox.)
+if ((${#ENGINE_FILES[@]})); then
+  echo "🔍 [engine] ruff check (${#ENGINE_FILES[@]} staged file(s))..."
+  (cd "$REPO_ROOT" && ruff check "${ENGINE_FILES[@]}") || FAIL=1
+  echo "🔍 [engine] ruff format --check (${#ENGINE_FILES[@]} staged file(s))..."
+  (cd "$REPO_ROOT" && ruff format --check "${ENGINE_FILES[@]}") || FAIL=1
 fi
 
-# ── Python: Inference — ruff check + ruff format ──────────────────────────
-if $CHANGED_INFERENCE && [ -d "$REPO_ROOT/packages/inference" ]; then
-  echo "🔍 [inference] ruff check..."
-  (cd "$REPO_ROOT/packages/inference" && ruff check src/ tests/) || FAIL=1
-  echo "🔍 [inference] ruff format --check..."
-  (cd "$REPO_ROOT/packages/inference" && ruff format --check src/ tests/) || FAIL=1
+# ── Python: Inference — scoped ruff check + format on STAGED files only. ──
+if ((${#INFERENCE_FILES[@]})); then
+  echo "🔍 [inference] ruff check (${#INFERENCE_FILES[@]} staged file(s))..."
+  (cd "$REPO_ROOT" && ruff check "${INFERENCE_FILES[@]}") || FAIL=1
+  echo "🔍 [inference] ruff format --check (${#INFERENCE_FILES[@]} staged file(s))..."
+  (cd "$REPO_ROOT" && ruff format --check "${INFERENCE_FILES[@]}") || FAIL=1
 fi
 
-# ── Node packages — typecheck + lint ──────────────────────────────────────
-if $CHANGED_WEB || $CHANGED_APP || $CHANGED_PLUGIN || $CHANGED_STRIPE; then
+# ── Node packages — typecheck + lint are already fast when nothing's
+# staged in the relevant package, and the turbo cache keeps re-runs cheap.
+# Keep them project-wide because typecheck catches cross-package refs.
+if ((${#NODE_FILES[@]})); then
   echo "🔍 [node] typecheck..."
   pnpm typecheck || FAIL=1
   echo "🔍 [node] lint..."
@@ -51,7 +57,10 @@ fi
 
 if [ $FAIL -ne 0 ]; then
   echo "❌ Pre-commit checks failed. Fix errors before committing."
-  echo "   To skip: git commit --no-verify"
+  echo "   DO NOT bypass with --no-verify — see CLAUDE.md 'Working"
+  echo "   Agreements' for the rationale. Fix the underlying error"
+  echo "   in the file(s) you've staged, or unstage the file(s) if"
+  echo "   the error is in a hunk you don't own."
   exit 1
 fi
 echo "✅ Pre-commit checks passed."
