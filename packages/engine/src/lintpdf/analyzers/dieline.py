@@ -22,6 +22,7 @@ and the art-size inspector returns ``None`` — strict, no guessing.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import re
 from dataclasses import dataclass, field
@@ -126,7 +127,7 @@ def _collect_spot_names(pdf: Any) -> list[str]:
         # Names, and Dictionaries must NOT land here (pikepdf.Array
         # exposes both ``__iter__`` and ``items``, which made the
         # earlier hasattr check ambiguous).
-        return isinstance(obj, list) or isinstance(obj, pikepdf.Array)
+        return isinstance(obj, (list, pikepdf.Array))
 
     def _is_dictlike(obj: Any) -> bool:
         return isinstance(obj, (pikepdf.Dictionary, pikepdf.Stream)) or (
@@ -155,10 +156,8 @@ def _collect_spot_names(pdf: Any) -> list[str]:
             if len(arr) >= 2:
                 subtype = str(arr[0])
                 if subtype in ("/Separation", "Separation"):
-                    try:
+                    with contextlib.suppress(Exception):
                         names.append(str(arr[1]).lstrip("/"))
-                    except Exception:
-                        pass
                 elif subtype in ("/DeviceN", "DeviceN"):
                     comp = arr[1]
                     if _is_array(comp):
@@ -326,9 +325,7 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
 
     try:
         mb = page.mediabox
-        mb_x0, mb_y0, mb_x1, mb_y1 = (
-            float(mb[0]), float(mb[1]), float(mb[2]), float(mb[3])
-        )
+        mb_x0, mb_y0, mb_x1, mb_y1 = (float(mb[0]), float(mb[1]), float(mb[2]), float(mb[3]))
     except Exception:
         return None
     mb_w = mb_x1 - mb_x0
@@ -370,10 +367,8 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
         # Line to — l x y
         if op == "l":
             if len(operands) >= 2:
-                try:
+                with contextlib.suppress(Exception):
                     path_points.append((float(operands[0]), float(operands[1])))
-                except Exception:
-                    pass
             continue
         # Curve to (approximated by endpoints for bbox purposes)
         if op in ("c", "v", "y"):
@@ -427,12 +422,8 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
             if bw > mb_w * 0.1 or bh > mb_h * 0.1:
                 continue
             close = (
-                abs(bx0 - cx) <= _CORNER_TOLERANCE_PT
-                or abs(bx1 - cx) <= _CORNER_TOLERANCE_PT
-            ) and (
-                abs(by0 - cy) <= _CORNER_TOLERANCE_PT
-                or abs(by1 - cy) <= _CORNER_TOLERANCE_PT
-            )
+                abs(bx0 - cx) <= _CORNER_TOLERANCE_PT or abs(bx1 - cx) <= _CORNER_TOLERANCE_PT
+            ) and (abs(by0 - cy) <= _CORNER_TOLERANCE_PT or abs(by1 - cy) <= _CORNER_TOLERANCE_PT)
             if close:
                 hits += 1
                 break  # don't double-count a corner
@@ -452,6 +443,7 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
 
 # ── Dieline geometry + multi-colour extractor ────────────────────
 
+
 def _merge_overlapping(
     bboxes: list[tuple[float, float, float, float]],
     *,
@@ -468,13 +460,13 @@ def _merge_overlapping(
     ``fuzz`` is deliberately small (5 pt ≈ 1.8 mm) — tightly-spaced
     multi-artwork files (Pavette's circle-over-rectangle layout sits
     ~10 mm apart) need to stay separated. The previous 20 pt default
-    merged them into a single 169×186 mm bbox. Individual bezier
+    merged them into a single 169x186 mm bbox. Individual bezier
     segments of a circle still cluster because they *touch* at
     shared endpoints (0 pt gap).
 
     ``min_area`` drops noise from stray short subpaths — a single
     curve control-point pickup or a ``m...m`` with no painted
-    operators. 100 pt² (~10×10 pt ≈ 3.5×3.5 mm) keeps the cluster
+    operators. 100 pt² (~10x10 pt ≈ 3.5x3.5 mm) keeps the cluster
     list honest without silently dropping thin dielines; a
     real cut contour is always far larger.
     """
@@ -506,10 +498,7 @@ def _merge_overlapping(
             remaining = still
         merged.append(tuple(cur))  # type: ignore[arg-type]
     # Drop regions below the min-area floor.
-    return [
-        b for b in merged
-        if max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1]) >= min_area
-    ]
+    return [b for b in merged if max(0.0, b[2] - b[0]) * max(0.0, b[3] - b[1]) >= min_area]
 
 
 def _extract_dieline_paths(
@@ -551,12 +540,8 @@ def _extract_dieline_paths(
         return [], 0
 
     resources = page.get("/Resources") if hasattr(page, "get") else None
-    cs_dict = (
-        resources.get("/ColorSpace") if resources and hasattr(resources, "get") else None
-    )
-    props_dict = (
-        resources.get("/Properties") if resources and hasattr(resources, "get") else None
-    )
+    cs_dict = resources.get("/ColorSpace") if resources and hasattr(resources, "get") else None
+    props_dict = resources.get("/Properties") if resources and hasattr(resources, "get") else None
 
     # Resource-name → spot name for Separation color spaces only.
     cs_to_spot: dict[str, str] = {}
@@ -609,9 +594,7 @@ def _extract_dieline_paths(
     # Matrix layout: ``[a, b, c, d, e, f]`` where point (x, y)
     # transforms to ``(x*a + y*c + e, x*b + y*d + f)``.
     ctm_stack: list[tuple[float, float, float, float, float, float]] = []
-    ctm: tuple[float, float, float, float, float, float] = (
-        1.0, 0.0, 0.0, 1.0, 0.0, 0.0
-    )
+    ctm: tuple[float, float, float, float, float, float] = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
 
     def apply_ctm(x: float, y: float) -> tuple[float, float]:
         a, b, c, d, e, f = ctm
@@ -622,7 +605,7 @@ def _extract_dieline_paths(
         m2: tuple[float, float, float, float, float, float],
     ) -> tuple[float, float, float, float, float, float]:
         """Post-multiply ``m2`` onto ``m1``. PDF ``cm`` semantics:
-        the new matrix is applied as ``m2 × m1``."""
+        the new matrix is applied as ``m2 x m1``."""
         a1, b1, c1, d1, e1, f1 = m1
         a2, b2, c2, d2, e2, f2 = m2
         return (
@@ -678,7 +661,7 @@ def _extract_dieline_paths(
 
     for inst in instrs:
         try:
-            op = str(getattr(inst, "operator"))
+            op = str(inst.operator)
             operands = list(getattr(inst, "operands", []))
         except Exception:
             continue
@@ -692,9 +675,12 @@ def _extract_dieline_paths(
             if len(operands) >= 6:
                 try:
                     m2 = (
-                        float(operands[0]), float(operands[1]),
-                        float(operands[2]), float(operands[3]),
-                        float(operands[4]), float(operands[5]),
+                        float(operands[0]),
+                        float(operands[1]),
+                        float(operands[2]),
+                        float(operands[3]),
+                        float(operands[4]),
+                        float(operands[5]),
                     )
                     ctm = compose(ctm, m2)
                 except Exception:
@@ -715,11 +701,9 @@ def _extract_dieline_paths(
         elif op in ("SC", "SCN"):
             floats: list[float] = []
             for v in operands:
-                try:
-                    floats.append(float(v))
-                except Exception:
+                with contextlib.suppress(Exception):
                     # Ignore pattern names etc.
-                    pass
+                    floats.append(float(v))
             current_stroke_color = tuple(floats)
         elif op == "m":
             # New subpath — freeze the previous one if any.
@@ -731,17 +715,11 @@ def _extract_dieline_paths(
                     path_points = []
         elif op == "l":
             if len(operands) >= 2:
-                try:
+                with contextlib.suppress(Exception):
                     path_points.append(apply_ctm(float(operands[0]), float(operands[1])))
-                except Exception:
-                    pass
         elif op in ("c", "v", "y"):
-            try:
-                path_points.append(
-                    apply_ctm(float(operands[-2]), float(operands[-1]))
-                )
-            except Exception:
-                pass
+            with contextlib.suppress(Exception):
+                path_points.append(apply_ctm(float(operands[-2]), float(operands[-1])))
         elif op == "re":
             # ``re`` is a complete, self-contained rectangular
             # subpath. Treat like ``m ... l ... l ... l ... h``.
@@ -769,7 +747,9 @@ def _extract_dieline_paths(
     return dieline_bboxes, len(dieline_colors)
 
 
-def detect_dieline(pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] | None = None) -> DielineResult:
+def detect_dieline(
+    pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] | None = None
+) -> DielineResult:
     """Run the dieline detection pipeline.
 
     When the name-match heuristic fires, returns immediately — no
@@ -803,9 +783,7 @@ def detect_dieline(pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] |
             # behaviour so a single corrupt content stream can't
             # wipe a valid name-match detection.
             try:
-                bboxes, distinct_color_count = _extract_dieline_paths(
-                    pdf, spot_name=name
-                )
+                bboxes, distinct_color_count = _extract_dieline_paths(pdf, spot_name=name)
                 region_bboxes = _merge_overlapping(bboxes)
                 polylines: list[list[list[float]]] = [
                     [
@@ -893,9 +871,7 @@ def detect_dieline(pdf_bytes: bytes, *, ai_features: set[str] | frozenset[str] |
         except Exception:
             logger.exception("dieline: vision fallback failed")
     else:
-        logger.info(
-            "dieline: name + geometry missed and sonnet_fallback not granted"
-        )
+        logger.info("dieline: name + geometry missed and sonnet_fallback not granted")
 
     return DielineResult(source="missing")
 

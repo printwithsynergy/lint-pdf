@@ -46,10 +46,7 @@ def _corner_mark_ops(
     """
     x1 = cx + size * inward_x
     y1 = cy + size * inward_y
-    return (
-        f"{cx} {cy} m {x1} {cy} l S\n"
-        f"{cx} {cy} m {cx} {y1} l S\n"
-    )
+    return f"{cx} {cy} m {x1} {cy} l S\n{cx} {cy} m {cx} {y1} l S\n"
 
 
 def _bounding_rect_ops(x0: float, y0: float, x1: float, y1: float) -> str:
@@ -130,9 +127,8 @@ class TestGeometryFallbackMisses:
         """Incomplete corner set (2 of 4). Heuristic must NOT fire —
         geometry confidence would be wrong if it did."""
         w, h = 612.0, 792.0
-        marks = (
-            _corner_mark_ops(10, 10, size=10, inward_x=1, inward_y=1)
-            + _corner_mark_ops(w - 10, 10, size=10, inward_x=-1, inward_y=1)
+        marks = _corner_mark_ops(10, 10, size=10, inward_x=1, inward_y=1) + _corner_mark_ops(
+            w - 10, 10, size=10, inward_x=-1, inward_y=1
         )
         rect = _bounding_rect_ops(30, 30, w - 30, h - 30)
         pdf_bytes = _build_pdf(marks + rect, width=w, height=h)

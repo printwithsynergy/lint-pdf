@@ -18,7 +18,6 @@ from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit
 from lintpdf.api.models import (
     BrandSpec,
     CustomEndpoint,
-    CustomProfile,
     Job,
     JobStatus,
     Tenant,
@@ -114,9 +113,7 @@ async def create_endpoint(
             detail=f"Endpoint slug '{request.slug}' already exists.",
         )
 
-    default_brand_spec_id = _resolve_brand_spec_id(
-        db, tenant.id, request.default_brand_spec_id
-    )
+    default_brand_spec_id = _resolve_brand_spec_id(db, tenant.id, request.default_brand_spec_id)
 
     endpoint = CustomEndpoint(
         id=uuid_mod.uuid4(),

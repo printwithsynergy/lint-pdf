@@ -41,18 +41,14 @@ def _redis_client() -> object | None:
     we don't reopen the socket per call.
     """
     if _redis_client._cached is not None:  # type: ignore[attr-defined]
-        return _redis_client._cached  # type: ignore[attr-defined]
+        return _redis_client._cached  # type: ignore[attr-defined,no-any-return]
     try:
         import redis
 
-        url = (
-            os.environ.get("LINTPDF_REDIS_URL")
-            or os.environ.get("REDIS_URL")
-            or ""
-        )
+        url = os.environ.get("LINTPDF_REDIS_URL") or os.environ.get("REDIS_URL") or ""
         if not url:
             return None
-        client = redis.Redis.from_url(url, decode_responses=True)
+        client: object = redis.Redis.from_url(url, decode_responses=True)
         _redis_client._cached = client  # type: ignore[attr-defined]
         return client
     except Exception:
@@ -74,7 +70,7 @@ def record_outcome(success: bool) -> None:
         return
     try:
         marker = "1" if success else "0"
-        pipe = client.pipeline()
+        pipe = client.pipeline()  # type: ignore[attr-defined]
         pipe.lpush(_OUTCOMES_KEY, marker)
         pipe.ltrim(_OUTCOMES_KEY, 0, _WINDOW_SIZE - 1)
         pipe.execute()

@@ -81,9 +81,9 @@ class TestBrandSpecCrud:
         client.delete(f"/api/v1/brand-specs/{created['id']}")
         listed = client.get("/api/v1/brand-specs").json()["brand_specs"]
         assert all(s["id"] != created["id"] for s in listed)
-        with_archived = client.get(
-            "/api/v1/brand-specs?include_archived=true"
-        ).json()["brand_specs"]
+        with_archived = client.get("/api/v1/brand-specs?include_archived=true").json()[
+            "brand_specs"
+        ]
         assert any(s["id"] == created["id"] for s in with_archived)
 
     def test_update_replaces_colors(self, client: TestClient) -> None:
@@ -97,9 +97,7 @@ class TestBrandSpecCrud:
         assert len(body["colors"]) == 1
         assert body["colors"][0]["value"] == "#000000"
 
-    def test_default_is_mutually_exclusive(
-        self, client: TestClient, db_session: Session
-    ) -> None:
+    def test_default_is_mutually_exclusive(self, client: TestClient, db_session: Session) -> None:
         first = self._create(client, name="First", is_default=True)
         second = self._create(client, name="Second", is_default=True)
         # First should have been demoted.
@@ -123,9 +121,7 @@ class TestBrandSpecCrud:
         first_row = db_session.get(BrandSpec, uuid.UUID(first["id"]))
         assert first_row is not None and not first_row.is_default
 
-    def test_archive_clears_default(
-        self, client: TestClient, db_session: Session
-    ) -> None:
+    def test_archive_clears_default(self, client: TestClient, db_session: Session) -> None:
         created = self._create(client, name="Default", is_default=True)
         client.delete(f"/api/v1/brand-specs/{created['id']}")
         db_session.expire_all()
@@ -191,9 +187,7 @@ class TestEndpointBrandSpecBinding:
         assert response.status_code == 201, response.text
         assert response.json()["default_brand_spec_id"] == str(spec.id)
 
-    def test_create_endpoint_rejects_foreign_brand_spec(
-        self, client: TestClient
-    ) -> None:
+    def test_create_endpoint_rejects_foreign_brand_spec(self, client: TestClient) -> None:
         response = client.post(
             "/api/v1/endpoints",
             json={
@@ -375,9 +369,7 @@ class TestJobSubmissionBrandSpec:
             )
         assert response.status_code == 404
 
-    def test_submit_persists_brand_spec_id(
-        self, client: TestClient, db_session: Session
-    ) -> None:
+    def test_submit_persists_brand_spec_id(self, client: TestClient, db_session: Session) -> None:
         spec = client.post(
             "/api/v1/brand-specs",
             json={"name": "submit-spec", "colors": []},

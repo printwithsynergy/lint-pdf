@@ -127,7 +127,7 @@ class TestSpotColorAnalyzer:
             name="CS1",
             cs_type="Separation",
             components=1,
-            colorant_names=("/Pantone 485 C",),
+            colorant_names=("/Pantone 485 C",),
             alternate=PdfColorSpace(name=None, cs_type="DeviceCMYK", components=4),
         )
         doc = _make_doc(color_spaces_by_page=[{"CS1": cs}])

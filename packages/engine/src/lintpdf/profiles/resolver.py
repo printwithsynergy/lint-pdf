@@ -10,13 +10,15 @@ isolation; nothing in the request path calls it directly anymore.
 from __future__ import annotations
 
 import uuid as uuid_mod
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import and_, or_
-from sqlalchemy.orm import Session
 
 from lintpdf.api.models import CustomProfile, SystemProfile, Tenant
 from lintpdf.tenants.models import TenantPlan
+
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
 
 # Cheapest possible implementation of "is tenant.plan >= min_plan". Explicit
 # order keeps the list a one-liner to audit, and decouples the visibility
@@ -39,9 +41,7 @@ def _plans_at_or_above(min_plan: str) -> list[str]:
     a visibility filter.
     """
     try:
-        idx = next(
-            i for i, p in enumerate(_PLAN_ORDER) if p.value == min_plan
-        )
+        idx = next(i for i, p in enumerate(_PLAN_ORDER) if p.value == min_plan)
     except StopIteration:
         return []
     return [p.value for p in _PLAN_ORDER[idx:]]
@@ -55,13 +55,8 @@ def _tenant_qualifies(sp: SystemProfile, tenant: Tenant) -> bool:
     """
     if sp.visibility_mode == "all":
         return True
-    plan_ok = sp.min_plan is None or (
-        str(tenant.plan) in _plans_at_or_above(sp.min_plan)
-    )
-    allow_list_ok = (
-        sp.visible_tenant_ids is not None
-        and tenant.id in sp.visible_tenant_ids
-    )
+    plan_ok = sp.min_plan is None or (str(tenant.plan) in _plans_at_or_above(sp.min_plan))
+    allow_list_ok = sp.visible_tenant_ids is not None and tenant.id in sp.visible_tenant_ids
     if sp.visibility_mode == "plan":
         return plan_ok
     if sp.visibility_mode == "tenants":
@@ -72,17 +67,16 @@ def _tenant_qualifies(sp: SystemProfile, tenant: Tenant) -> bool:
     return False
 
 
-def list_visible_system_profiles(
-    db: Session, tenant: Tenant
-) -> list[SystemProfile]:
+def list_visible_system_profiles(db: Session, tenant: Tenant) -> list[SystemProfile]:
     """Return every :class:`SystemProfile` this tenant can see."""
     tenant_plan = str(tenant.plan)
     # Plans that qualify for ``plan`` / ``plan_and_tenants`` visibility
     # when ``min_plan`` is ``tenant.plan`` or lower.
-    plans_at_or_above_tenant = [
-        p.value
-        for p in _PLAN_ORDER[: _PLAN_ORDER.index(TenantPlan(tenant_plan)) + 1]
-    ] if tenant_plan in [p.value for p in _PLAN_ORDER] else []
+    plans_at_or_above_tenant = (
+        [p.value for p in _PLAN_ORDER[: _PLAN_ORDER.index(TenantPlan(tenant_plan)) + 1]]
+        if tenant_plan in [p.value for p in _PLAN_ORDER]
+        else []
+    )
 
     return (
         db.query(SystemProfile)
@@ -119,18 +113,14 @@ def get_visible_system_profile(
     :func:`list_visible_system_profiles`.
     """
     row: SystemProfile | None = (
-        db.query(SystemProfile)
-        .filter(SystemProfile.profile_id == profile_id)
-        .first()
+        db.query(SystemProfile).filter(SystemProfile.profile_id == profile_id).first()
     )
     if row is None:
         return None
     return row if _tenant_qualifies(row, tenant) else None
 
 
-def get_custom_profile(
-    db: Session, tenant: Tenant, profile_id: str
-) -> CustomProfile | None:
+def get_custom_profile(db: Session, tenant: Tenant, profile_id: str) -> CustomProfile | None:
     return (
         db.query(CustomProfile)
         .filter(
@@ -141,9 +131,7 @@ def get_custom_profile(
     )
 
 
-def profile_exists_for_tenant(
-    db: Session, tenant: Tenant, profile_id: str
-) -> bool:
+def profile_exists_for_tenant(db: Session, tenant: Tenant, profile_id: str) -> bool:
     """Checks whether ``tenant`` can submit a job against ``profile_id``.
 
     Precedence mirrors the tenant-facing list endpoint: a tenant's
@@ -158,9 +146,7 @@ def profile_exists_for_tenant(
     return get_visible_system_profile(db, tenant, profile_id) is not None
 
 
-def resolve_profile_json(
-    db: Session, tenant: Tenant, profile_id: str
-) -> dict[str, Any] | None:
+def resolve_profile_json(db: Session, tenant: Tenant, profile_id: str) -> dict[str, Any] | None:
     """Return the raw :class:`PreflightProfile` JSON for ``profile_id``
     as visible to ``tenant``. Custom wins over system on collision."""
     custom = get_custom_profile(db, tenant, profile_id)
@@ -172,9 +158,7 @@ def resolve_profile_json(
     return None
 
 
-def resolve_effective_profile_id(
-    db: Session, tenant: Tenant, requested: str | None
-) -> str:
+def resolve_effective_profile_id(db: Session, tenant: Tenant, requested: str | None) -> str:
     """Pick the profile_id to use for a job submission.
 
     Precedence:

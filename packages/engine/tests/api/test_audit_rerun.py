@@ -65,9 +65,7 @@ class TestAuditRerun:
         assert resp.status_code == 404
 
     @staticmethod
-    def test_rejects_non_complete_job(
-        client: TestClient, db_session: Session
-    ) -> None:
+    def test_rejects_non_complete_job(client: TestClient, db_session: Session) -> None:
         tenant = db_session.query(Tenant).first()
         assert tenant is not None
         job_id = uuid.uuid4()
@@ -144,11 +142,7 @@ class TestAuditRerun:
         assert body["job_id"] == str(job_id)
 
         # Verdicts actually landed in the DB.
-        findings = (
-            db_session.query(JobFinding)
-            .filter(JobFinding.job_id == job_id)
-            .all()
-        )
+        findings = db_session.query(JobFinding).filter(JobFinding.job_id == job_id).all()
         assert all(f.audit_status == "confirmed" for f in findings)
 
     @staticmethod

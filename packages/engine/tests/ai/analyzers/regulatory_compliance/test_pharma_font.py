@@ -65,9 +65,7 @@ def test_large_logo_does_not_flag_pharma_min() -> None:
     event = _text_event(font_size=1.0, tm_scale=72.0, ctm_scale=1.5)
     findings = PharmaFontAnalyzer().analyze(doc, [event], pdf_bytes=b"")
     pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
-    assert pharma == [], (
-        f"expected no pharma finding for 108pt logo; got {len(pharma)}"
-    )
+    assert pharma == [], f"expected no pharma finding for 108pt logo; got {len(pharma)}"
 
 
 def test_tiny_text_still_flags_pharma_min() -> None:
@@ -97,9 +95,7 @@ def test_dietary_supplement_industry_skips_analyzer() -> None:
     doc = _doc_eu()
     event = _text_event(font_size=6.0)
     cfg = _Cfg(industry_type="dietary_supplement")
-    findings = PharmaFontAnalyzer().analyze(
-        doc, [event], pdf_bytes=b"", ai_config=cfg
-    )
+    findings = PharmaFontAnalyzer().analyze(doc, [event], pdf_bytes=b"", ai_config=cfg)
     pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
     assert pharma == []
 
@@ -109,8 +105,6 @@ def test_unknown_industry_runs_analyzer() -> None:
     doc = _doc_eu()
     event = _text_event(font_size=6.0)
     cfg = _Cfg(industry_type=None)
-    findings = PharmaFontAnalyzer().analyze(
-        doc, [event], pdf_bytes=b"", ai_config=cfg
-    )
+    findings = PharmaFontAnalyzer().analyze(doc, [event], pdf_bytes=b"", ai_config=cfg)
     pharma = [f for f in findings if f.inspection_id == "AI_PHARMA_001"]
     assert len(pharma) == 1

@@ -125,9 +125,7 @@ class ColorAnalyzer(BaseAnalyzer):
                 findings.extend(self._check_path_tac(event))
                 findings.extend(self._check_registration_color(event))
                 if self.brand_palette_present:
-                    self._accumulate_knockout_black(
-                        event, overprint_non_stroking, knockout_agg
-                    )
+                    self._accumulate_knockout_black(event, overprint_non_stroking, knockout_agg)
                     self._accumulate_pure_k_fill(event, pure_k_agg)
                 findings.extend(self._check_impure_gray(event))
                 findings.extend(self._check_impure_black(event))
@@ -548,9 +546,7 @@ class ColorAnalyzer(BaseAnalyzer):
         return findings
 
     @staticmethod
-    def _bucket_for_page(
-        agg: dict[int, dict[str, object]], page_num: int
-    ) -> dict[str, object]:
+    def _bucket_for_page(agg: dict[int, dict[str, object]], page_num: int) -> dict[str, object]:
         """Return the per-page accumulator slot, creating a fresh
         {count, max_k_percent, bboxes} dict if needed."""
         bucket = agg.get(page_num)

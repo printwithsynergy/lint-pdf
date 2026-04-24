@@ -1864,11 +1864,7 @@ async def update_plan_limit(
             detail=f"Unknown plan: {plan!r}",
         ) from exc
 
-    row = (
-        db.query(PlanLimitOverride)
-        .filter(PlanLimitOverride.plan == plan_enum.value)
-        .first()
-    )
+    row = db.query(PlanLimitOverride).filter(PlanLimitOverride.plan == plan_enum.value).first()
     current = dict(row.overrides) if row and row.overrides else {}
     current.update(body.overrides)
 
@@ -1899,9 +1895,7 @@ async def reset_plan_limit(
             detail=f"Unknown plan: {plan!r}",
         ) from exc
 
-    db.query(PlanLimitOverride).filter(
-        PlanLimitOverride.plan == plan_enum.value
-    ).delete()
+    db.query(PlanLimitOverride).filter(PlanLimitOverride.plan == plan_enum.value).delete()
     db.commit()
     return _plan_limit_response(db, plan_enum.value)
 
@@ -1955,10 +1949,7 @@ async def admin_rerun_audit(
     if job.status != JobStatus.COMPLETE:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Job '{job_id}' is {job.status}; can only re-audit "
-                "complete jobs."
-            ),
+            detail=(f"Job '{job_id}' is {job.status}; can only re-audit complete jobs."),
         )
 
     from lintpdf.queue.tasks import run_customer_audit
@@ -1991,8 +1982,7 @@ class ManualAuditOverrideRequest(BaseModel):
     status: str | None = Field(
         default=None,
         description=(
-            "One of ``confirmed`` / ``disputed`` / ``needs_context`` "
-            "/ ``error``, or null to clear."
+            "One of ``confirmed`` / ``disputed`` / ``needs_context`` / ``error``, or null to clear."
         ),
     )
     rationale: str | None = Field(
@@ -2017,9 +2007,7 @@ class ManualAuditOverrideResponse(BaseModel):
     audit_model: str | None
 
 
-_ALLOWED_MANUAL_STATUSES = frozenset(
-    {"confirmed", "disputed", "needs_context", "error"}
-)
+_ALLOWED_MANUAL_STATUSES = frozenset({"confirmed", "disputed", "needs_context", "error"})
 
 
 @router.patch(
@@ -3772,8 +3760,6 @@ async def list_admin_report_tokens(
     )
 
 
-
-
 # ── Cross-tenant webhook endpoint CRUD ────────────────────────
 
 
@@ -3817,9 +3803,7 @@ async def admin_list_webhooks_for_tenant(
 
     tenant = _get_tenant_or_404(db, tenant_id)
     endpoints = list_webhooks_for_tenant(db, tenant)
-    return WebhookListResponse(
-        webhooks=[_webhook_to_response(e) for e in endpoints]
-    )
+    return WebhookListResponse(webhooks=[_webhook_to_response(e) for e in endpoints])
 
 
 @router.post(
@@ -3895,7 +3879,7 @@ async def admin_rotate_webhook_secret_for_tenant(
     webhook_id: str,
     db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
-):
+) -> Any:
     from lintpdf.api.routes.webhooks import (
         WebhookSecretResponse,
         rotate_webhook_secret_for_tenant,
@@ -3912,7 +3896,7 @@ async def admin_test_webhook_for_tenant(
     webhook_id: str,
     db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
-):
+) -> Any:
     from lintpdf.api.routes.webhooks import test_webhook_for_tenant
 
     tenant = _get_tenant_or_404(db, tenant_id)
@@ -3978,7 +3962,7 @@ class AdminTenantDefaultProfileResponse(BaseModel):
 _VALID_VISIBILITY_MODES = {"all", "plan", "tenants", "plan_and_tenants"}
 
 
-def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:
+def _system_profile_row_to_summary(sp: Any) -> AdminSystemProfileSummary:
     from lintpdf.profiles.schema import PreflightProfile
 
     try:
@@ -4238,7 +4222,7 @@ async def clone_system_profile_to_tenant(
     body: AdminCloneToTenantRequest,
     db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
-):
+) -> Any:
     """Copy a system preset into ``tenant``'s ``custom_profiles`` table.
 
     One-shot hand-off — after the clone, the tenant owns + edits the

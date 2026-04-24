@@ -48,9 +48,7 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
         return 0
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
-        logger.info(
-            "audit: ANTHROPIC_API_KEY unset; skipping job %s", job_id
-        )
+        logger.info("audit: ANTHROPIC_API_KEY unset; skipping job %s", job_id)
         return 0
 
     # Quota gate. Skip silently (no 402) — the preflight itself
@@ -58,9 +56,7 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     # The LPDF_AI_QUOTA_EXCEEDED finding surfaces the cap hit.
     from lintpdf.audit.quota import current_month_usage_cents, is_over_quota
 
-    if not force and is_over_quota(
-        entitlements, current_month_usage_cents(db, job.tenant_id)
-    ):
+    if not force and is_over_quota(entitlements, current_month_usage_cents(db, job.tenant_id)):
         _emit_quota_exceeded(db, job)
         return 0
 
@@ -74,9 +70,7 @@ def run_customer_audit(db: Any, job: Any, job_id: str, *, force: bool = False) -
     from lintpdf.audit.claude import ClaudeAuditor
 
     auditor = ClaudeAuditor()
-    verdicts = auditor.audit(
-        pdf_bytes, findings, tenant_id=job.tenant_id, job_id=job.id
-    )
+    verdicts = auditor.audit(pdf_bytes, findings, tenant_id=job.tenant_id, job_id=job.id)
 
     changed = 0
     for finding, verdict in zip(findings, verdicts, strict=False):
@@ -120,15 +114,9 @@ _FEATURE_LOCKED_COPY: dict[str, str] = {
         "Legend-vs-art swatch classification is a Scale-tier AI feature. "
         "Upgrade to distinguish colour legend blocks from real artwork."
     ),
-    "similarity": (
-        "Asset similarity (CLIP embedding) is an Enterprise AI feature."
-    ),
-    "sonnet_fallback": (
-        "Sonnet-tier vision reasoning is an Enterprise AI feature."
-    ),
-    "internal_opus": (
-        "Opus-backed internal auditing is operator-only."
-    ),
+    "similarity": ("Asset similarity (CLIP embedding) is an Enterprise AI feature."),
+    "sonnet_fallback": ("Sonnet-tier vision reasoning is an Enterprise AI feature."),
+    "internal_opus": ("Opus-backed internal auditing is operator-only."),
 }
 
 
@@ -206,9 +194,7 @@ def _emit_feature_locked(db: Any, job: Any, feature: str) -> None:
         )
         db.commit()
     except Exception:
-        logger.exception(
-            "audit: failed to emit LPDF_FEATURE_LOCKED finding for %s", feature
-        )
+        logger.exception("audit: failed to emit LPDF_FEATURE_LOCKED finding for %s", feature)
 
 
 def _auto_generate_reports(
@@ -416,6 +402,7 @@ def run_preflight(
     # the hang is in Celery's task dispatch, not my code. flush=True
     # to avoid stdout buffering swallowing us if a crash follows.
     import sys
+
     print(f"[PFPRINT 0] task entered job_id={job_id}", file=sys.stderr, flush=True)
     logger.warning("[PFDIAG 0] task entered job_id=%s", job_id)
     logger.info("Starting preflight job %s with profile %s", job_id, profile_id)
@@ -669,8 +656,7 @@ def run_preflight(
                 resolved_brand_spec = resolve_brand_spec_for_job(db, job=job)
             except Exception:
                 logger.debug(
-                    "BrandSpec resolver failed for job %s — falling back "
-                    "to no-spec behaviour",
+                    "BrandSpec resolver failed for job %s — falling back to no-spec behaviour",
                     job_id,
                     exc_info=True,
                 )
@@ -763,27 +749,38 @@ def run_preflight(
             try:
                 from lintpdf.analyzers.art_size import (
                     compute_art_size,
+                )
+                from lintpdf.analyzers.art_size import (
                     result_to_json as art_size_to_json,
                 )
 
                 if job.dieline:
                     art_size = compute_art_size(dieline_result)
-                    if art_size is None and (job.dieline.get("source") if job.dieline else None) == "name":
+                    if (
+                        art_size is None
+                        and (job.dieline.get("source") if job.dieline else None) == "name"
+                    ):
                         # Name-match path returns no polylines; fall
                         # back to TrimBox via pikepdf.
                         try:
                             import pikepdf
+
                             with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
                                 page = pdf.pages[0]
                                 tb = page.get("/TrimBox") or page.get("/MediaBox")
                                 if tb is not None and len(tb) == 4:
                                     x0, y0, x1, y1 = (float(tb[i]) for i in range(4))
-                                    fake_polys = [[
-                                        [x0, y0], [x1, y0],
-                                        [x1, y1], [x0, y1],
-                                        [x0, y0],
-                                    ]]
+                                    fake_polys = [
+                                        [
+                                            [x0, y0],
+                                            [x1, y0],
+                                            [x1, y1],
+                                            [x0, y1],
+                                            [x0, y0],
+                                        ]
+                                    ]
                                     from lintpdf.analyzers.dieline import DielineResult
+
                                     art_size = compute_art_size(
                                         DielineResult(
                                             source="name+trimbox",
@@ -792,9 +789,7 @@ def run_preflight(
                                         )
                                     )
                         except Exception:
-                            logger.exception(
-                                "Job %s trimbox fallback for art_size raised", job_id
-                            )
+                            logger.exception("Job %s trimbox fallback for art_size raised", job_id)
                     job.art_size_mm = art_size_to_json(art_size)
                 else:
                     job.art_size_mm = None
@@ -849,24 +844,26 @@ def run_preflight(
             # multi-colour cut layer typically means misplaced
             # artwork on the cutter plate.
             if job.dieline and job.dieline.get("multi_color"):
-                result_dict["findings"].append({
-                    "inspection_id": "LPDF_DIE_MULTI_COLOR",
-                    "severity": "warning",
-                    "message": (
-                        "Dieline layer / spot contains multiple stroke "
-                        "colours — expected exactly one ink on a cut path."
-                    ),
-                    "page_num": 1,
-                    "bbox": None,
-                    "details": {
-                        "spot_name": job.dieline.get("spot_name"),
-                        "source": job.dieline.get("source"),
-                    },
-                    "source": "engine",
-                    "category": "dieline",
-                    "object_id": None,
-                    "object_type": None,
-                })
+                result_dict["findings"].append(
+                    {
+                        "inspection_id": "LPDF_DIE_MULTI_COLOR",
+                        "severity": "warning",
+                        "message": (
+                            "Dieline layer / spot contains multiple stroke "
+                            "colours — expected exactly one ink on a cut path."
+                        ),
+                        "page_num": 1,
+                        "bbox": None,
+                        "details": {
+                            "spot_name": job.dieline.get("spot_name"),
+                            "source": job.dieline.get("source"),
+                        },
+                        "source": "engine",
+                        "category": "dieline",
+                        "object_id": None,
+                        "object_type": None,
+                    }
+                )
                 result_dict["summary"]["total_findings"] += 1
                 result_dict["summary"]["warning_count"] += 1
 
@@ -989,9 +986,7 @@ def run_preflight(
                 audit_findings_async.delay(job_id)
                 ocr_job_async.delay(job_id)
             except Exception:
-                logger.exception(
-                    "audit: failed to enqueue async AI tasks for job %s", job_id
-                )
+                logger.exception("audit: failed to enqueue async AI tasks for job %s", job_id)
 
             logger.info("Completed preflight job %s in %dms", job_id, duration_ms)
 

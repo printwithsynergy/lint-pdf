@@ -72,9 +72,9 @@ def _canonical_colorant(raw: str | None) -> str:
         return ""
     s = str(raw).strip().lstrip("/").strip()
     # Treat non-breaking space + registered-trademark glyph as plain
-    # variants so "PANTONE® 485 C" / "PANTONE 485 C" both
+    # variants so "PANTONE® 485 C" / "PANTONE 485 C" both
     # canonicalise to "PANTONE 485 C".
-    s = s.replace(" ", " ").replace("®", "").replace("™", "")
+    s = s.replace(" ", " ").replace("®", "").replace("™", "")
     # Collapse interior whitespace runs so "PANTONE  485  C" matches
     # "PANTONE 485 C".
     s = re.sub(r"\s+", " ", s).strip()

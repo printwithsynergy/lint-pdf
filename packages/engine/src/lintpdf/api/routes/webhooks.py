@@ -139,14 +139,10 @@ def create_webhook_for_tenant(
 
 
 def list_webhooks_for_tenant(db: Session, tenant: Tenant) -> list[WebhookEndpoint]:
-    return (
-        db.query(WebhookEndpoint).filter(WebhookEndpoint.tenant_id == tenant.id).all()
-    )
+    return db.query(WebhookEndpoint).filter(WebhookEndpoint.tenant_id == tenant.id).all()
 
 
-def _resolve_webhook(
-    db: Session, tenant: Tenant, webhook_id: str
-) -> WebhookEndpoint:
+def _resolve_webhook(db: Session, tenant: Tenant, webhook_id: str) -> WebhookEndpoint:
     try:
         uid = uuid_mod.UUID(webhook_id)
     except ValueError as exc:
@@ -206,9 +202,7 @@ def update_webhook_for_tenant(
     return endpoint
 
 
-def delete_webhook_for_tenant(
-    db: Session, tenant: Tenant, webhook_id: str
-) -> None:
+def delete_webhook_for_tenant(db: Session, tenant: Tenant, webhook_id: str) -> None:
     endpoint = _resolve_webhook(db, tenant, webhook_id)
     db.delete(endpoint)
     db.commit()
@@ -225,9 +219,7 @@ def rotate_webhook_secret_for_tenant(
     return endpoint, new_secret
 
 
-def test_webhook_for_tenant(
-    db: Session, tenant: Tenant, webhook_id: str
-) -> WebhookTestResponse:
+def test_webhook_for_tenant(db: Session, tenant: Tenant, webhook_id: str) -> WebhookTestResponse:
     endpoint = _resolve_webhook(db, tenant, webhook_id)
 
     test_payload = {

@@ -740,7 +740,7 @@ async def batch_mint_reports(
                 )
             )
             failed_count += 1
-        except Exception as exc:  # noqa: BLE001 — we *want* to report any downstream blow-up per-job
+        except Exception as exc:
             results.append(
                 BatchMintResult(
                     job_id=job_id,

@@ -63,9 +63,7 @@ class TestRendererSelection:
 
         monkeypatch.setattr(rendering, "_render_page_via_ghostscript", gs_mock)
         monkeypatch.setattr(rendering, "_HAS_PDF2IMAGE", True)
-        monkeypatch.setattr(
-            rendering, "_convert_from_bytes", MagicMock(return_value=[fake_img])
-        )
+        monkeypatch.setattr(rendering, "_convert_from_bytes", MagicMock(return_value=[fake_img]))
 
         out = render_page_to_image(b"%PDF-fake", page_num=1, dpi=150)
         assert out == b"PNG-from-poppler"
@@ -111,13 +109,9 @@ class TestRendererSelection:
 
         monkeypatch.setattr(rendering, "_render_page_via_ghostscript", gs_mock)
         monkeypatch.setattr(rendering, "_HAS_PDF2IMAGE", True)
-        monkeypatch.setattr(
-            rendering, "_convert_from_bytes", MagicMock(return_value=[fake_img])
-        )
+        monkeypatch.setattr(rendering, "_convert_from_bytes", MagicMock(return_value=[fake_img]))
 
-        render_page_to_image(
-            b"%PDF-fake", page_num=1, dpi=150, simulate_overprint=False
-        )
+        render_page_to_image(b"%PDF-fake", page_num=1, dpi=150, simulate_overprint=False)
         gs_mock.assert_not_called()
 
 
@@ -134,9 +128,7 @@ class TestTileCacheKeyVersion:
     def test_key_includes_render_version() -> None:
         key = _tile_cache_key("tenant-1", "job-1", 1, 150)
         assert f"_rv{_TILE_RENDER_VERSION}" in key
-        assert key == (
-            f"tenant-1/job-1/tiles/p1_d150_rv{_TILE_RENDER_VERSION}.png"
-        )
+        assert key == (f"tenant-1/job-1/tiles/p1_d150_rv{_TILE_RENDER_VERSION}.png")
 
     @staticmethod
     def test_key_versioning_buckets_ocg_override_separately() -> None:

@@ -343,7 +343,12 @@ def _scan_resources_dict(
                     pat_cs = pat.get("/Resources")
                     if pat_cs is not None:
                         _scan_resources_dict(
-                            pat_cs, seen_names, channels, families, visited, depth + 1,
+                            pat_cs,
+                            seen_names,
+                            channels,
+                            families,
+                            visited,
+                            depth + 1,
                         )
         except Exception:
             pass
@@ -964,11 +969,7 @@ def sample_densitometer(
     spot_names: list[str] = []
     if cache_ok and tenant_id and job_id and storage:
         try:
-            spot_names = [
-                s["name"]
-                for s in list_separations(pdf_bytes)
-                if s.get("type") == "spot"
-            ]
+            spot_names = [s["name"] for s in list_separations(pdf_bytes) if s.get("type") == "spot"]
         except Exception:
             spot_names = []
 
@@ -1134,14 +1135,14 @@ def sample_densitometer(
 # Subtractive ink → RGB absorption coefficients. Each value is the
 # amount of R, G, B (0-255) absorbed at 100% tint. White paper
 # reflects (255, 255, 255); every 1 % of tint applied removes
-# ``coef × 2.55`` units of reflected light per channel.
+# ``coef x 2.55`` units of reflected light per channel.
 _INK_ABSORPTION_RGB: dict[str, tuple[int, int, int]] = {
     # CMYK process inks — absorption is the complement of the
     # ink's visible RGB ("cyan absorbs red light", etc.).
-    "Cyan":    (255,   0,   0),
-    "Magenta": (  0, 255,   0),
-    "Yellow":  (  0,   0, 255),
-    "Black":   (255, 255, 255),
+    "Cyan": (255, 0, 0),
+    "Magenta": (0, 255, 0),
+    "Yellow": (0, 0, 255),
+    "Black": (255, 255, 255),
 }
 
 
@@ -1159,26 +1160,26 @@ def _spot_absorption_rgb(name: str) -> tuple[int, int, int]:
     """
     lowered = name.strip().lower()
     exact: dict[str, tuple[int, int, int]] = {
-        "black":   (255, 255, 255),
-        "k":       (255, 255, 255),
-        "cyan":    (255,   0,   0),
-        "c":       (255,   0,   0),
-        "magenta": (  0, 255,   0),
-        "m":       (  0, 255,   0),
-        "yellow":  (  0,   0, 255),
-        "y":       (  0,   0, 255),
-        "white":   (  0,   0,   0),  # paper — absorbs nothing.
+        "black": (255, 255, 255),
+        "k": (255, 255, 255),
+        "cyan": (255, 0, 0),
+        "c": (255, 0, 0),
+        "magenta": (0, 255, 0),
+        "m": (0, 255, 0),
+        "yellow": (0, 0, 255),
+        "y": (0, 0, 255),
+        "white": (0, 0, 0),  # paper — absorbs nothing.
     }
     if lowered in exact:
         return exact[lowered]
 
     patterns: list[tuple[str, tuple[int, int, int]]] = [
-        ("cut", (0, 200, 200)),        # dieline / cut — red ink preview
+        ("cut", (0, 200, 200)),  # dieline / cut — red ink preview
         ("dieline", (0, 200, 200)),
         ("crease", (0, 200, 200)),
         ("perf", (0, 200, 200)),
         ("fold", (0, 200, 200)),
-        ("foil", (128, 128, 128)),     # metallic → neutral grey
+        ("foil", (128, 128, 128)),  # metallic → neutral grey
         ("silver", (128, 128, 128)),
         ("gold", (40, 80, 200)),
         ("copper", (40, 80, 150)),
@@ -1218,15 +1219,21 @@ def _spot_absorption_rgb(name: str) -> tuple[int, int, int]:
     c = (1 - abs(2 * light - 1)) * s
     x = c * (1 - abs(((hue / 60) % 2) - 1))
     m = light - c / 2
-    if hue < 60:     r, g, b = c, x, 0
-    elif hue < 120:  r, g, b = x, c, 0
-    elif hue < 180:  r, g, b = 0, c, x
-    elif hue < 240:  r, g, b = 0, x, c
-    elif hue < 300:  r, g, b = x, 0, c
-    else:            r, g, b = c, 0, x
-    ink_r = int(round((r + m) * 255))
-    ink_g = int(round((g + m) * 255))
-    ink_b = int(round((b + m) * 255))
+    if hue < 60:
+        r, g, b = c, x, 0
+    elif hue < 120:
+        r, g, b = x, c, 0
+    elif hue < 180:
+        r, g, b = 0, c, x
+    elif hue < 240:
+        r, g, b = 0, x, c
+    elif hue < 300:
+        r, g, b = x, 0, c
+    else:
+        r, g, b = c, 0, x
+    ink_r = round((r + m) * 255)
+    ink_g = round((g + m) * 255)
+    ink_b = round((b + m) * 255)
     # Absorption = 255 - ink colour.
     return (255 - ink_r, 255 - ink_g, 255 - ink_b)
 
@@ -1256,7 +1263,7 @@ def render_composite_via_separations(
     for the default page preview.
 
     The composite honours the subtractive ink model: every 1 % of
-    tint applied to a plate removes ``absorption_coef × 0.01`` from
+    tint applied to a plate removes ``absorption_coef x 0.01`` from
     the paper's reflected light in each RGB channel. This approximates
     "what the page will look like on a press, viewed under D50"
     without needing a proper OutputIntent — which most packaging
@@ -1275,9 +1282,7 @@ def render_composite_via_separations(
     cache_ok = bool(tenant_id and job_id and storage)
 
     try:
-        spot_names = [
-            s["name"] for s in list_separations(pdf_bytes) if s.get("type") == "spot"
-        ]
+        spot_names = [s["name"] for s in list_separations(pdf_bytes) if s.get("type") == "spot"]
     except Exception:
         spot_names = []
 
@@ -1319,9 +1324,7 @@ def render_composite_via_separations(
             try:
                 output_base = _run_tiffsep(pdf_bytes, page_num, dpi, tmpdir)
             except Exception:
-                logger.exception(
-                    "render_composite_via_separations: tiffsep failed"
-                )
+                logger.exception("render_composite_via_separations: tiffsep failed")
                 return None
 
             for ch in PROCESS_CHANNEL_ORDER:

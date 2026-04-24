@@ -100,13 +100,9 @@ def _render_pages(pdf_bytes: bytes, page_numbers: list[int]) -> dict[int, bytes]
         if page_num <= 0:
             continue
         try:
-            cache[page_num] = render_page_to_image(
-                pdf_bytes, page_num, dpi=_PAGE_DPI
-            )
+            cache[page_num] = render_page_to_image(pdf_bytes, page_num, dpi=_PAGE_DPI)
         except Exception:
-            logger.exception(
-                "claude-audit: failed to render page %d", page_num
-            )
+            logger.exception("claude-audit: failed to render page %d", page_num)
     return cache
 
 
@@ -168,8 +164,7 @@ class ClaudeAuditor:
             import anthropic
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError(
-                "ClaudeAuditor requires the ``anthropic`` package. "
-                "Run ``uv sync --extra ai``."
+                "ClaudeAuditor requires the ``anthropic`` package. Run ``uv sync --extra ai``."
             ) from exc
 
         resolved_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
@@ -199,9 +194,7 @@ class ClaudeAuditor:
         for batch_start in range(0, len(findings), _MAX_FINDINGS_PER_CALL):
             batch = list(findings[batch_start : batch_start + _MAX_FINDINGS_PER_CALL])
             try:
-                verdicts = self._audit_batch(
-                    batch, pages, tenant_id=tenant_id, job_id=job_id
-                )
+                verdicts = self._audit_batch(batch, pages, tenant_id=tenant_id, job_id=job_id)
             except Exception:
                 logger.exception(
                     "claude-audit: batch %d..%d failed; leaving verdicts NULL",
@@ -248,8 +241,7 @@ class ClaudeAuditor:
                 "text": (
                     "Findings to audit (JSON). Call ``record_verdict`` "
                     "once per entry using the ``index`` field as "
-                    "``finding_index``:\n\n"
-                    + json.dumps(payload, indent=2)
+                    "``finding_index``:\n\n" + json.dumps(payload, indent=2)
                 ),
             }
         )
@@ -257,7 +249,7 @@ class ClaudeAuditor:
         from lintpdf.audit.outage import record_outcome
 
         try:
-            response = self._client.messages.create(
+            response = self._client.messages.create(  # type: ignore[call-overload]
                 model=self._model,
                 max_tokens=1536,
                 system=[
@@ -292,17 +284,12 @@ class ClaudeAuditor:
                     model=self._model,
                     input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
                     output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
-                    cache_read_tokens=int(
-                        getattr(usage, "cache_read_input_tokens", 0) or 0
-                    ),
-                    cache_write_tokens=int(
-                        getattr(usage, "cache_creation_input_tokens", 0) or 0
-                    ),
+                    cache_read_tokens=int(getattr(usage, "cache_read_input_tokens", 0) or 0),
+                    cache_write_tokens=int(getattr(usage, "cache_creation_input_tokens", 0) or 0),
                 )
             except Exception:
                 logger.warning(
-                    "claude-audit: metering write failed; audit verdicts "
-                    "still land (fail-open)",
+                    "claude-audit: metering write failed; audit verdicts still land (fail-open)",
                     exc_info=True,
                 )
 
@@ -312,10 +299,11 @@ class ClaudeAuditor:
                 continue
             if getattr(block, "name", None) != "record_verdict":
                 continue
-            payload = getattr(block, "input", None) or {}
-            idx = payload.get("finding_index")
-            status = payload.get("status")
-            rationale = _strip_ansi(str(payload.get("rationale", ""))).strip()
+            block_input = getattr(block, "input", None) or {}
+            tool_input: dict[str, Any] = block_input if isinstance(block_input, dict) else {}
+            idx = tool_input.get("finding_index")
+            status = tool_input.get("status")
+            rationale = _strip_ansi(str(tool_input.get("rationale", ""))).strip()
             if not isinstance(idx, int):
                 continue
             if status not in ("confirmed", "disputed", "needs_context"):

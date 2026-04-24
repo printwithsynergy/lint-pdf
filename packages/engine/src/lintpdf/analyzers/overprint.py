@@ -269,7 +269,11 @@ class OverprintAnalyzer(BaseAnalyzer):
                     )
                     bucket["count"] = int(bucket["count"]) + 1  # type: ignore[arg-type]
                     bboxes = bucket["bboxes"]
-                    if isinstance(bboxes, list) and len(bboxes) < 5 and getattr(event, "bbox", None):
+                    if (
+                        isinstance(bboxes, list)
+                        and len(bboxes) < 5
+                        and getattr(event, "bbox", None)
+                    ):
                         bboxes.append(list(event.bbox))
                     if event.font_size < float(bucket["min_font_size"]):  # type: ignore[arg-type]
                         bucket["min_font_size"] = event.font_size

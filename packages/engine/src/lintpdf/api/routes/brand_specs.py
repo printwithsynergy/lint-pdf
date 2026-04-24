@@ -54,9 +54,7 @@ def _to_response(spec: BrandSpec) -> BrandSpecResponse:
         description=spec.description,
         colors=[BrandSpecColorEntry(**c) for c in (spec.colors or [])],
         rich_black_spec=(
-            BrandSpecRichBlackSpec(**spec.rich_black_spec)
-            if spec.rich_black_spec
-            else None
+            BrandSpecRichBlackSpec(**spec.rich_black_spec) if spec.rich_black_spec else None
         ),
         is_default=spec.is_default,
         is_archived=spec.is_archived,
@@ -122,9 +120,7 @@ async def create_brand_spec(
         description=request.description,
         colors=[c.model_dump() for c in request.colors],
         rich_black_spec=(
-            request.rich_black_spec.model_dump()
-            if request.rich_black_spec is not None
-            else None
+            request.rich_black_spec.model_dump() if request.rich_black_spec is not None else None
         ),
         is_default=request.is_default,
         is_archived=False,
@@ -135,9 +131,7 @@ async def create_brand_spec(
     return _to_response(spec)
 
 
-def _get_spec_or_404(
-    db: Session, spec_id: str, tenant_id: uuid_mod.UUID
-) -> BrandSpec:
+def _get_spec_or_404(db: Session, spec_id: str, tenant_id: uuid_mod.UUID) -> BrandSpec:
     try:
         uid = uuid_mod.UUID(spec_id)
     except ValueError as exc:
@@ -147,9 +141,7 @@ def _get_spec_or_404(
         ) from exc
 
     spec: BrandSpec | None = (
-        db.query(BrandSpec)
-        .filter(BrandSpec.id == uid, BrandSpec.tenant_id == tenant_id)
-        .first()
+        db.query(BrandSpec).filter(BrandSpec.id == uid, BrandSpec.tenant_id == tenant_id).first()
     )
     if spec is None:
         raise HTTPException(

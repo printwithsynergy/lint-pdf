@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import os
 import uuid as uuid_mod
@@ -283,10 +284,8 @@ async def submit_trial(
                 ),
             )
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 spool.close()
-            except Exception:
-                pass
 
         trial_files.append(
             TrialFile(

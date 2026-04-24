@@ -392,7 +392,10 @@ class GhsClpAnalyzer(BaseAIAnalyzer):
 
         def _near_anchor(pos: int) -> bool:
             for a_start, a_end in anchor_spans:
-                if abs(pos - a_start) <= _PROP65_WINDOW_CHARS or abs(pos - a_end) <= _PROP65_WINDOW_CHARS:
+                if (
+                    abs(pos - a_start) <= _PROP65_WINDOW_CHARS
+                    or abs(pos - a_end) <= _PROP65_WINDOW_CHARS
+                ):
                     return True
             return False
 

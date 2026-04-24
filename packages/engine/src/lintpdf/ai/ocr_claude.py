@@ -96,15 +96,11 @@ class ClaudeOCR:
         try:
             import anthropic
         except ImportError as exc:  # pragma: no cover
-            raise RuntimeError(
-                "ClaudeOCR requires the ``anthropic`` package."
-            ) from exc
+            raise RuntimeError("ClaudeOCR requires the ``anthropic`` package.") from exc
 
         resolved_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not resolved_key:
-            raise RuntimeError(
-                "ANTHROPIC_API_KEY is required for ClaudeOCR."
-            )
+            raise RuntimeError("ANTHROPIC_API_KEY is required for ClaudeOCR.")
         self._client = anthropic.Anthropic(api_key=resolved_key)
         self._model = model
 
@@ -125,18 +121,12 @@ class ClaudeOCR:
             try:
                 png = render_page_to_image(pdf_bytes, page_num, dpi=_PAGE_DPI)
             except Exception:
-                logger.exception(
-                    "claude-ocr: failed to render page %d", page_num
-                )
+                logger.exception("claude-ocr: failed to render page %d", page_num)
                 continue
             try:
-                blocks = self._ocr_page(
-                    page_num, png, tenant_id=tenant_id, job_id=job_id
-                )
+                blocks = self._ocr_page(page_num, png, tenant_id=tenant_id, job_id=job_id)
             except Exception:
-                logger.exception(
-                    "claude-ocr: Claude call for page %d failed", page_num
-                )
+                logger.exception("claude-ocr: Claude call for page %d failed", page_num)
                 continue
             out.append(OCRPage(page_num=page_num, blocks=blocks))
         return out
@@ -197,12 +187,8 @@ class ClaudeOCR:
                     model=self._model,
                     input_tokens=int(getattr(usage, "input_tokens", 0) or 0),
                     output_tokens=int(getattr(usage, "output_tokens", 0) or 0),
-                    cache_read_tokens=int(
-                        getattr(usage, "cache_read_input_tokens", 0) or 0
-                    ),
-                    cache_write_tokens=int(
-                        getattr(usage, "cache_creation_input_tokens", 0) or 0
-                    ),
+                    cache_read_tokens=int(getattr(usage, "cache_read_input_tokens", 0) or 0),
+                    cache_write_tokens=int(getattr(usage, "cache_creation_input_tokens", 0) or 0),
                 )
             except Exception:
                 logger.warning("claude-ocr: metering write failed", exc_info=True)

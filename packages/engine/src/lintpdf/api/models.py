@@ -235,9 +235,7 @@ class Job(Base):
     # JSONB: [{page_num, blocks: [{text, bbox, confidence}, ...]}, ...].
     # NULL when OCR didn't run (text-extraction succeeded, or the
     # tenant doesn't have the ``ocr`` AI feature).
-    ocr_text_layer: Mapped[list[dict[str, Any]] | None] = mapped_column(
-        JSON, nullable=True
-    )
+    ocr_text_layer: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     # Opt-in override from ``POST /jobs?ocr=force``. When True the
     # OCR async task runs regardless of the extractable-char check.
     ocr_force: Mapped[bool] = mapped_column(
@@ -247,15 +245,9 @@ class Job(Base):
     # or Sonnet-fallback verdict; ``art_size_mm`` is NULL when the
     # dieline is missing (strict — see LPDF_DIE_MISSING);
     # ``legend_swatches`` carries the position/vision verdicts.
-    dieline: Mapped[dict[str, Any] | None] = mapped_column(
-        JSON, nullable=True
-    )
-    art_size_mm: Mapped[dict[str, float] | None] = mapped_column(
-        JSON, nullable=True
-    )
-    legend_swatches: Mapped[list[dict[str, Any]] | None] = mapped_column(
-        JSON, nullable=True
-    )
+    dieline: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    art_size_mm: Mapped[dict[str, float] | None] = mapped_column(JSON, nullable=True)
+    legend_swatches: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -385,9 +377,7 @@ class JobFinding(Base):
     audit_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
     audit_rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
     audit_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    audit_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    audit_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Relationships
     job: Mapped[Job] = relationship(back_populates="findings")
@@ -554,13 +544,9 @@ class SystemProfile(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     profile_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     preflight_profile_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
-    source: Mapped[str] = mapped_column(
-        String(16), nullable=False, server_default="bundled"
-    )
+    source: Mapped[str] = mapped_column(String(16), nullable=False, server_default="bundled")
     bundled_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
-    visibility_mode: Mapped[str] = mapped_column(
-        String(32), nullable=False, server_default="all"
-    )
+    visibility_mode: Mapped[str] = mapped_column(String(32), nullable=False, server_default="all")
     min_plan: Mapped[str | None] = mapped_column(String(32), nullable=True)
     visible_tenant_ids: Mapped[list[uuid.UUID] | None] = mapped_column(
         _PG_UUID_ARRAY, nullable=True
@@ -657,16 +643,12 @@ class BrandSpec(Base):
     # "notes": str | None}`` rows. Kept as JSONB so the shape can
     # evolve (e.g. Lab coordinates, ΔE tolerances) without schema
     # churn, while still being queryable.
-    colors: Mapped[list[dict[str, Any]]] = mapped_column(
-        JSON, nullable=False, default=list
-    )
+    colors: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
     # Optional target rich-black composition — ``{"c": 60, "m": 50,
     # "y": 50, "k": 100}`` style. When set, print-production
     # advisories can measure the document's rich black against this
     # reference instead of the profile's defaults.
-    rich_black_spec: Mapped[dict[str, float] | None] = mapped_column(
-        JSON, nullable=True
-    )
+    rich_black_spec: Mapped[dict[str, float] | None] = mapped_column(JSON, nullable=True)
     # Tenant-level default. At most one row per tenant with
     # ``is_default=True``; a Postgres partial-unique index enforces
     # this. When no endpoint or submit override applies, the

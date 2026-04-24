@@ -77,9 +77,7 @@ def classify_swatches(
     tenant has ``sonnet_fallback``.
     """
     ai_features = frozenset(ai_features or frozenset())
-    outer = _outer_bbox_of(
-        list(getattr(dieline, "polylines", []) or [])
-    )
+    outer = _outer_bbox_of(list(getattr(dieline, "polylines", []) or []))
 
     out: list[SwatchClassification] = []
     ambiguous: list[tuple[int, dict[str, Any]]] = []
@@ -138,9 +136,7 @@ def classify_swatches(
         try:
             from lintpdf.ai.legend_claude import classify_swatches_via_claude
 
-            verdicts = classify_swatches_via_claude(
-                pdf_bytes, [sw for _i, sw in ambiguous]
-            )
+            verdicts = classify_swatches_via_claude(pdf_bytes, [sw for _i, sw in ambiguous])
             for (slot_idx, _sw), verdict in zip(ambiguous, verdicts, strict=False):
                 if verdict is None:
                     continue

@@ -38,9 +38,7 @@ def current_month_usage_cents(db: Any, tenant_id: Any) -> int:
         from lintpdf.api.models import AIUsageLog
 
         now = datetime.now(UTC)
-        month_start = now.replace(
-            day=1, hour=0, minute=0, second=0, microsecond=0
-        )
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         total = (
             db.query(func.coalesce(func.sum(AIUsageLog.cost_cents), 0))
             .filter(

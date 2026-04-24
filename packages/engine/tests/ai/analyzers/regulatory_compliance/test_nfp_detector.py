@@ -68,10 +68,7 @@ def test_detector_rejects_header_only() -> None:
 
 
 def test_detector_rejects_nutrients_without_values() -> None:
-    text = (
-        "Nutrition Facts\n"
-        "Calories, Total Fat, Protein - see label.\n"
-    )
+    text = "Nutrition Facts\nCalories, Total Fat, Protein - see label.\n"
     assert detect_nfp_regions(_page(text)) == []
 
 
