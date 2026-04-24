@@ -632,11 +632,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                     # at the end instead of one per object. Skip
                     # entirely when no brand palette is configured
                     # -- the rule is ambiguous without one.
-                    if (
-                        obj_type == "path"
-                        and k_pct > 80.0
-                        and self.brand_palette_present
-                    ):
+                    if obj_type == "path" and k_pct > 80.0 and self.brand_palette_present:
                         bucket = large_k_agg.get(page_num)
                         if bucket is None:
                             bucket = {
@@ -689,9 +685,7 @@ class AdvancedColorAnalyzer(BaseAnalyzer):
                 "representative_bboxes": bucket["bboxes"],
             }
             if rendered_dark_fraction is not None:
-                details["rendered_dark_fraction"] = round(
-                    rendered_dark_fraction, 4
-                )
+                details["rendered_dark_fraction"] = round(rendered_dark_fraction, 4)
             findings.append(
                 Finding(
                     inspection_id="LPDF_ADV_005",

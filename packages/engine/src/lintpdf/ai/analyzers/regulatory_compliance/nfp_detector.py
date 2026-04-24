@@ -63,9 +63,7 @@ _NUTRIENT_TOKENS = (
 # ``15%``. The detector requires >= 2 distinct matches on the page
 # so a header plus one stray "0g" from marketing copy doesn't
 # qualify.
-_VALUE_PATTERN = re.compile(
-    r"\b\d+(?:\.\d+)?\s*(?:g\b|mg\b|mcg\b|kcal\b|%)", re.IGNORECASE
-)
+_VALUE_PATTERN = re.compile(r"\b\d+(?:\.\d+)?\s*(?:g\b|mg\b|mcg\b|kcal\b|%)", re.IGNORECASE)
 
 _MIN_NUTRIENT_TOKENS = 3
 _MIN_NUMERIC_VALUES = 2

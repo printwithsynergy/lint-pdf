@@ -30,7 +30,9 @@ class ArtSizeMM:
 _POINT_TO_MM = 25.4 / 72.0
 
 
-def _bbox_of_polygons(polylines: list[list[list[float]]]) -> tuple[float, float, float, float] | None:
+def _bbox_of_polygons(
+    polylines: list[list[list[float]]],
+) -> tuple[float, float, float, float] | None:
     if not polylines:
         return None
     xs: list[float] = []

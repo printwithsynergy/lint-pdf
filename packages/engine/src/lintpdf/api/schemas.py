@@ -647,9 +647,7 @@ class EndpointCreateRequest(BaseModel):
     @classmethod
     def _validate_response_mode(cls, v: str) -> str:
         if v not in ENDPOINT_RESPONSE_MODES:
-            raise ValueError(
-                f"response_mode must be one of {ENDPOINT_RESPONSE_MODES}, got {v!r}"
-            )
+            raise ValueError(f"response_mode must be one of {ENDPOINT_RESPONSE_MODES}, got {v!r}")
         return v
 
 
@@ -695,9 +693,7 @@ class EndpointUpdateRequest(BaseModel):
     @classmethod
     def _validate_response_mode(cls, v: str | None) -> str | None:
         if v is not None and v not in ENDPOINT_RESPONSE_MODES:
-            raise ValueError(
-                f"response_mode must be one of {ENDPOINT_RESPONSE_MODES}, got {v!r}"
-            )
+            raise ValueError(f"response_mode must be one of {ENDPOINT_RESPONSE_MODES}, got {v!r}")
         return v
 
 

@@ -256,10 +256,7 @@ def _tile_cache_key(
     R2 on their own lifecycle rule.
     """
     suffix = _ocg_cache_suffix(ocg_on, ocg_off)
-    return (
-        f"{tenant_id}/{job_id}/tiles/"
-        f"p{page_num}_d{dpi}_rv{_TILE_RENDER_VERSION}{suffix}.png"
-    )
+    return f"{tenant_id}/{job_id}/tiles/p{page_num}_d{dpi}_rv{_TILE_RENDER_VERSION}{suffix}.png"
 
 
 def _channel_cache_key(
@@ -498,9 +495,7 @@ async def get_page_tile(
                 render_composite_via_separations,
             )
 
-            spots = [
-                s for s in list_separations(pdf_bytes) if s.get("type") == "spot"
-            ]
+            spots = [s for s in list_separations(pdf_bytes) if s.get("type") == "spot"]
             if spots:
                 tile_bytes = render_composite_via_separations(
                     pdf_bytes,
@@ -516,9 +511,7 @@ async def get_page_tile(
                         len(spots),
                     )
         except Exception:
-            logger.exception(
-                "get_page_tile: software composite failed; falling back to GS"
-            )
+            logger.exception("get_page_tile: software composite failed; falling back to GS")
             tile_bytes = None
 
     if tile_bytes is None:
@@ -1729,9 +1722,7 @@ async def _get_layer_tile_bytes(
     _validate_page_num(pdf_bytes, page_num)
     storage = get_storage()
 
-    cache_key = _layer_tile_cache_key(
-        str(tenant.id), str(job.id), page_num, dpi, layer_index
-    )
+    cache_key = _layer_tile_cache_key(str(tenant.id), str(job.id), page_num, dpi, layer_index)
     try:
         cached = storage.download_raw(cache_key)
     except Exception:
@@ -1801,9 +1792,7 @@ async def get_layer_tile(
     background. Used by ``LayerCanvas`` (WS-17C) so the browser can
     composite the active layers locally and toggle visibility
     instantly without re-rendering."""
-    png_bytes = await _get_layer_tile_bytes(
-        job_id, page_num, layer_index, dpi, tenant, db
-    )
+    png_bytes = await _get_layer_tile_bytes(job_id, page_num, layer_index, dpi, tenant, db)
     etag = hashlib.md5(png_bytes[:1024]).hexdigest()
     return Response(
         content=png_bytes,
@@ -2136,9 +2125,7 @@ async def public_get_tile(
                 storage=storage,
             )
     except Exception:
-        logger.exception(
-            "public_get_tile: software composite failed; falling back to GS"
-        )
+        logger.exception("public_get_tile: software composite failed; falling back to GS")
         png = None
 
     if png is None:
@@ -2449,9 +2436,7 @@ async def public_layer_tile(
     _validate_page_num(pdf_bytes, page_num)
 
     storage = get_storage()
-    cache_key = _layer_tile_cache_key(
-        str(job.tenant_id), str(job.id), page_num, dpi, layer_index
-    )
+    cache_key = _layer_tile_cache_key(str(job.tenant_id), str(job.id), page_num, dpi, layer_index)
     try:
         cached = storage.download_raw(cache_key)
     except Exception:
@@ -2471,10 +2456,7 @@ async def public_layer_tile(
     if layer_index not in all_layer_indices:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Layer index {layer_index} not in this PDF "
-                f"(valid: {all_layer_indices})."
-            ),
+            detail=(f"Layer index {layer_index} not in this PDF (valid: {all_layer_indices})."),
         )
 
     from lintpdf.ai.rendering import render_isolated_layer_tile

@@ -45,11 +45,7 @@ def _redis_client() -> object | None:
     try:
         import redis
 
-        url = (
-            os.environ.get("LINTPDF_REDIS_URL")
-            or os.environ.get("REDIS_URL")
-            or ""
-        )
+        url = os.environ.get("LINTPDF_REDIS_URL") or os.environ.get("REDIS_URL") or ""
         if not url:
             return None
         client = redis.Redis.from_url(url, decode_responses=True)

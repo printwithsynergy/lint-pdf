@@ -111,8 +111,7 @@ class TestDielineSpotNameWalk:
 
         result = detect_dieline(pdf_bytes)
         assert result.source == "name", (
-            f"expected source='name' for a /Dieline spot in a Form XObject; "
-            f"got {result.source!r}"
+            f"expected source='name' for a /Dieline spot in a Form XObject; got {result.source!r}"
         )
         assert result.spot_name is not None
         assert "die" in result.spot_name.lower()
@@ -129,9 +128,7 @@ class TestArtSize:
         # 144pt x 72pt rectangle = 50.8mm x 25.4mm (before inset).
         d = _D(
             source="name",
-            polylines=[
-                [[0.0, 0.0], [144.0, 0.0], [144.0, 72.0], [0.0, 72.0], [0.0, 0.0]]
-            ],
+            polylines=[[[0.0, 0.0], [144.0, 0.0], [144.0, 72.0], [0.0, 72.0], [0.0, 0.0]]],
         )
         size = compute_art_size(d, stroke_pts=0.0)
         assert size == ArtSizeMM(width_mm=50.8, height_mm=25.4)
@@ -140,9 +137,7 @@ class TestArtSize:
     def test_stroke_inset_reduces_centerline_size() -> None:
         d = _D(
             source="name",
-            polylines=[
-                [[0.0, 0.0], [144.0, 0.0], [144.0, 72.0], [0.0, 72.0]]
-            ],
+            polylines=[[[0.0, 0.0], [144.0, 0.0], [144.0, 72.0], [0.0, 72.0]]],
         )
         size = compute_art_size(d, stroke_pts=2.0)
         # Inset by 1pt on each side → 142pt x 70pt.

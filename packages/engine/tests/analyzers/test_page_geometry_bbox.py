@@ -15,7 +15,6 @@ from lintpdf.analyzers.page_geometry import (
 )
 from lintpdf.semantic.model import PdfBox
 
-
 # -- safety margin ------------------------------------------------------------
 
 

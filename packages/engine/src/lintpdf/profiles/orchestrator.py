@@ -528,11 +528,9 @@ class PreflightOrchestrator:
         # ``ai_config.brand_palette`` column is a fallback for
         # tenants whose migration hasn't touched their row yet.
         brand_palette_present = False
-        if self._brand_spec is not None and getattr(
-            self._brand_spec, "has_colors", False
-        ):
-            brand_palette_present = True
-        elif getattr(self._ai_config, "brand_palette", None):
+        if (
+            self._brand_spec is not None and getattr(self._brand_spec, "has_colors", False)
+        ) or getattr(self._ai_config, "brand_palette", None):
             brand_palette_present = True
 
         analyzers: list[Any] = [

@@ -23,11 +23,12 @@ at submit time keep resolving to it regardless of archive state.
 
 from __future__ import annotations
 
-import uuid as uuid_mod
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    import uuid as uuid_mod
+
     from sqlalchemy.orm import Session
 
     from lintpdf.api.models import BrandSpec, CustomEndpoint, Job

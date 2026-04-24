@@ -891,9 +891,7 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
         )
         if report_tokens:
             settings = _get_settings()
-            tenant = (
-                db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
-            )
+            tenant = db.query(Tenant).filter(Tenant.id == job.tenant_id).first()
             base_url = settings.report_base_url
             if tenant is not None:
                 entitlements = resolve_entitlements(tenant)
@@ -907,9 +905,7 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
                         )
                         .first()
                     )
-                base_url = resolve_report_base_url(
-                    tenant, active_profile, entitlements, settings
-                )
+                base_url = resolve_report_base_url(tenant, active_profile, entitlements, settings)
             response.reports = {
                 t.format: f"{base_url}/r/{t.token}{'.pdf' if t.format == 'pdf' else ''}"
                 for t in report_tokens
@@ -1350,10 +1346,7 @@ async def rerun_audit(
     if job.status != JobStatus.COMPLETE:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Job '{job_id}' is {job.status}; can only re-audit "
-                "complete jobs."
-            ),
+            detail=(f"Job '{job_id}' is {job.status}; can only re-audit complete jobs."),
         )
 
     from lintpdf.queue.tasks import run_customer_audit

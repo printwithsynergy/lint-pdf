@@ -59,9 +59,7 @@ def test_nutrops_logo_scenario_composes_matrices() -> None:
 def test_rotated_matrix_uses_sqrt_scale() -> None:
     # 45-deg rotation with scale 10: a=c=~7.07, b=-c, d=a.
     # extract_scale returns sqrt(a^2 + c^2) = 10 on both axes.
-    r = TransformationMatrix(
-        a=7.0710678, b=-7.0710678, c=7.0710678, d=7.0710678
-    )
+    r = TransformationMatrix(a=7.0710678, b=-7.0710678, c=7.0710678, d=7.0710678)
     event = _FakeEvent(font_size=1.0, text_matrix=r)
     assert math.isclose(effective_font_size_pt(event), 10.0, rel_tol=1e-5)
 

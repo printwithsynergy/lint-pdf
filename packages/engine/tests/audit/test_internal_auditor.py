@@ -82,7 +82,11 @@ def opus_response() -> Any:
         _Block(
             type="tool_use",
             name="record_verdict",
-            input={"finding_index": 1, "status": "disputed", "rationale": "Engine misread the color stack."},
+            input={
+                "finding_index": 1,
+                "status": "disputed",
+                "rationale": "Engine misread the color stack.",
+            },
         ),
     ]
     return resp

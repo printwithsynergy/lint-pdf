@@ -122,11 +122,7 @@ def _probe(spec: WarmSpec) -> int:
             spec.probe_url,
             method=spec.method,
             data=spec.wake_payload,
-            headers=(
-                {"Content-Type": "application/json"}
-                if spec.wake_payload is not None
-                else {}
-            ),
+            headers=({"Content-Type": "application/json"} if spec.wake_payload is not None else {}),
         )
         with urllib.request.urlopen(req, timeout=spec.timeout_s) as resp:
             return int(resp.status)

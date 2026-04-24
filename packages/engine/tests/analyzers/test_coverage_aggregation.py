@@ -40,8 +40,7 @@ def _path_event(
 
 def _doc(page_count: int = 1) -> SemanticDocument:
     pages = [
-        SemanticPage(page_num=i, media_box=PdfBox(0, 0, 612, 792))
-        for i in range(1, page_count + 1)
+        SemanticPage(page_num=i, media_box=PdfBox(0, 0, 612, 792)) for i in range(1, page_count + 1)
     ]
     return SemanticDocument(
         version="1.7",
@@ -57,10 +56,7 @@ def _doc(page_count: int = 1) -> SemanticDocument:
 def test_lpdf_color_010_aggregates_to_one_per_page() -> None:
     """1,000 matching K-only fills on page 1 should produce exactly
     one LPDF_COLOR_010 finding, not 1,000."""
-    events = [
-        _path_event(page_num=1, cmyk=(0.0, 0.0, 0.0, 0.9), op_index=i)
-        for i in range(1000)
-    ]
+    events = [_path_event(page_num=1, cmyk=(0.0, 0.0, 0.0, 0.9), op_index=i) for i in range(1000)]
     findings = ColorAnalyzer(brand_palette_present=True).analyze(_doc(), events)
     color_010 = [f for f in findings if f.inspection_id == "LPDF_COLOR_010"]
     assert len(color_010) == 1
@@ -100,10 +96,7 @@ def test_lpdf_color_010_silent_when_no_matches() -> None:
 
 
 def test_lpdf_color_009_aggregates_to_one_per_page() -> None:
-    events = [
-        _path_event(page_num=1, cmyk=(0.0, 0.0, 0.0, 1.0), op_index=i)
-        for i in range(500)
-    ]
+    events = [_path_event(page_num=1, cmyk=(0.0, 0.0, 0.0, 1.0), op_index=i) for i in range(500)]
     findings = ColorAnalyzer(brand_palette_present=True).analyze(_doc(), events)
     color_009 = [f for f in findings if f.inspection_id == "LPDF_COLOR_009"]
     assert len(color_009) == 1
@@ -121,20 +114,18 @@ def test_no_brand_palette_suppresses_ambiguous_advisories() -> None:
     small-text / thin-stroke multi-ink (LPDF_COLOR_008,
     LPDF_STROKE_004, LPDF_TEXT_006) still run regardless -- they
     enforce print-production invariants that aren't brand-specific."""
-    events = [
-        _path_event(page_num=1, cmyk=(0.0, 0.0, 0.0, 0.99), op_index=i)
-        for i in range(50)
-    ]
+    events = [_path_event(page_num=1, cmyk=(0.0, 0.0, 0.0, 0.99), op_index=i) for i in range(50)]
     # Default: brand_palette_present=False -> silent.
     color_findings = ColorAnalyzer().analyze(_doc(), events)
-    assert [f for f in color_findings if f.inspection_id in {"LPDF_COLOR_009", "LPDF_COLOR_010"}] == []
+    assert [
+        f for f in color_findings if f.inspection_id in {"LPDF_COLOR_009", "LPDF_COLOR_010"}
+    ] == []
 
     adv_findings = AdvancedColorAnalyzer().analyze(_doc(), events)
     pure_k_adv = [
         f
         for f in adv_findings
-        if f.inspection_id == "LPDF_ADV_005"
-        and (f.details or {}).get("classification") == "pure_k"
+        if f.inspection_id == "LPDF_ADV_005" and (f.details or {}).get("classification") == "pure_k"
     ]
     assert pure_k_adv == []
 
@@ -143,16 +134,12 @@ def test_lpdf_adv_005_large_k_aggregates_to_one_per_page() -> None:
     """The advanced-color advisory about large pure K fills also
     aggregates per page."""
     # Classifier needs K > 95% for pure_k; 99% matches.
-    events = [
-        _path_event(page_num=1, cmyk=(0.0, 0.0, 0.0, 0.99), op_index=i)
-        for i in range(200)
-    ]
+    events = [_path_event(page_num=1, cmyk=(0.0, 0.0, 0.0, 0.99), op_index=i) for i in range(200)]
     findings = AdvancedColorAnalyzer(brand_palette_present=True).analyze(_doc(), events)
     large_k = [
         f
         for f in findings
-        if f.inspection_id == "LPDF_ADV_005"
-        and (f.details or {}).get("classification") == "pure_k"
+        if f.inspection_id == "LPDF_ADV_005" and (f.details or {}).get("classification") == "pure_k"
     ]
     assert len(large_k) == 1
     assert (large_k[0].details or {}).get("object_count") == 200

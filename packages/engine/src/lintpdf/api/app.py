@@ -210,9 +210,7 @@ def create_app() -> FastAPI:
     from lintpdf.api.config import get_settings
 
     cors_origins = [
-        origin.strip()
-        for origin in get_settings().cors_allow_origins.split(",")
-        if origin.strip()
+        origin.strip() for origin in get_settings().cors_allow_origins.split(",") if origin.strip()
     ]
     app.add_middleware(
         CORSMiddleware,
@@ -243,6 +241,7 @@ def create_app() -> FastAPI:
     # container mounts every router. White-label tenant domains
     # continue to hit the full API with no routing change required.
     import os as _os
+
     control_plane_only = _os.environ.get("LINTPDF_CONTROL_PLANE_ONLY", "").lower() in (
         "1",
         "true",

@@ -31,10 +31,10 @@ from prometheus_client import (
     Histogram,
     generate_latest,
 )
-from starlette.types import ASGIApp, Receive, Scope, Send
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
+    from starlette.types import ASGIApp, Receive, Scope, Send
 
 # Module-level registry so tests can inspect + reset without monkeypatching
 # the global prometheus_client.REGISTRY.
@@ -45,7 +45,18 @@ REGISTRY = CollectorRegistry(auto_describe=True)
 # land in the +Inf bucket and trigger an "operations long tail" alert
 # in the scraping stack rather than showing up as a discrete bucket.
 _DEFAULT_BUCKETS = (
-    0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0,
+    0.005,
+    0.01,
+    0.025,
+    0.05,
+    0.1,
+    0.25,
+    0.5,
+    1.0,
+    2.5,
+    5.0,
+    10.0,
+    30.0,
 )
 
 HTTP_REQUESTS = Counter(
@@ -108,13 +119,13 @@ class PrometheusMiddleware:
         finally:
             elapsed = time.perf_counter() - start
             route = scope.get("route")
-            path_template = (
-                getattr(route, "path", None) or scope.get("path", "/") or "/"
-            )
+            path_template = getattr(route, "path", None) or scope.get("path", "/") or "/"
             method = scope.get("method", "GET")
             code = status_holder["code"]
             status_class = f"{code // 100}xx"
-            HTTP_REQUESTS.labels(method=method, path_template=path_template, status=status_class).inc()
+            HTTP_REQUESTS.labels(
+                method=method, path_template=path_template, status=status_class
+            ).inc()
             HTTP_DURATION.labels(method=method, path_template=path_template).observe(elapsed)
 
 
