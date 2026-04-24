@@ -9,7 +9,7 @@ import type {
   RouteRequest,
   RouteResponse,
 } from "@thinkneverland/pixie-dust-fairy-ring";
-import { getClient, resolveEngineTenantId } from "../../index";
+import { resolveEngineTenantId } from "../../index";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
@@ -26,11 +26,6 @@ type RouteHandler = (req: RouteRequest) => Promise<RouteResponse>;
 // engine admin endpoint `/api/v1/admin/tenants/{tenant_id}/usage` with
 // the admin key and the resolved engine tenant id from
 // `req.auth.tenantId`.
-//
-// The admin endpoint was added in the same PR. If the engine ahead of
-// the app in a rolling deploy hasn't received it yet, a 404 falls back
-// to the legacy shared-key path so /dashboard/usage never goes blank
-// during the deploy window.
 function adminFetch(path: string, init?: RequestInit): Promise<Response> {
   const baseUrl = (
     process.env.LINTPDF_API_URL ?? "https://api.lintpdf.com"
@@ -101,39 +96,16 @@ export const lintpdfUsagePlugin: PixieDustPlugin = {
           }
           const engineId = await resolveEngineTenantId(tenantId);
           ctx.services.logger.info("Usage: resolve", {
-            data: {
-              appTenantId: tenantId,
-              engineTenantId: engineId,
-              fallbackToSharedKey: engineId === tenantId,
-            },
+            data: { appTenantId: tenantId, engineTenantId: engineId },
           });
           const resp = await adminFetch(
             `/api/v1/admin/tenants/${encodeURIComponent(engineId)}/usage`,
           );
-          if (resp.ok) {
-            return { status: 200, body: await resp.json() };
+          if (!resp.ok) {
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
           }
-          // 404 = engine hasn't deployed the admin usage endpoint yet.
-          // Fall back to the legacy shared-key path so /dashboard/usage
-          // doesn't go blank during a rolling deploy. Remove once the
-          // engine rollout has stabilized.
-          if (resp.status === 404) {
-            ctx.services.logger.warn(
-              "Usage: admin endpoint 404, falling back to shared-key client",
-              { data: { engineTenantId: engineId } },
-            );
-            const client = getClient();
-            if (!client) {
-              return {
-                status: 503,
-                body: { error: "LintPDF API not configured" },
-              };
-            }
-            const usage = await client.getUsage();
-            return { status: 200, body: usage };
-          }
-          const detail = await resp.text();
-          return { status: resp.status, body: { error: detail } };
+          return { status: 200, body: await resp.json() };
         }) as RouteHandler,
       },
     ];
