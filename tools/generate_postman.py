@@ -331,12 +331,29 @@ def main() -> None:
         json.dumps(tenant_collection, indent=2), encoding="utf-8"
     )
 
+    # Mirror into packages/app/public/postman/ so the dashboard's
+    # /dashboard/admin/postman page serves the same bytes Next.js
+    # static-serves. Silently skip if the dashboard workspace isn't
+    # present (e.g. someone ran this against a slim checkout).
+    repo_root = Path(__file__).resolve().parent.parent
+    app_public_postman = repo_root / "packages" / "app" / "public" / "postman"
+    if app_public_postman.parent.exists():
+        app_public_postman.mkdir(parents=True, exist_ok=True)
+        (app_public_postman / "lintpdf-all.postman_collection.json").write_text(
+            json.dumps(full_collection, indent=2), encoding="utf-8"
+        )
+        (app_public_postman / "lintpdf-tenant.postman_collection.json").write_text(
+            json.dumps(tenant_collection, indent=2), encoding="utf-8"
+        )
+
     full_count = sum(len(f["item"]) for f in full_collection["item"])
     tenant_count = sum(len(f["item"]) for f in tenant_collection["item"])
     print(f"Wrote {out_dir}/lintpdf-all.postman_collection.json ({full_count} requests)")
     print(
         f"Wrote {out_dir}/lintpdf-tenant.postman_collection.json ({tenant_count} requests)"
     )
+    if app_public_postman.parent.exists():
+        print(f"Mirrored to {app_public_postman}/")
 
 
 if __name__ == "__main__":

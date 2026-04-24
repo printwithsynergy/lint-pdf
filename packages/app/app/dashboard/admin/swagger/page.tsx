@@ -19,6 +19,9 @@ export const metadata: Metadata = {
  * which hits ``/openapi.tenant.json`` and excludes admin routes.
  */
 export default function AdminSwaggerPage() {
+  const openapiUrl = `${
+    process.env.NEXT_PUBLIC_LINTPDF_API_URL ?? "https://api.lintpdf.com"
+  }/openapi.json`;
   return (
     <div className="min-h-screen">
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -73,7 +76,7 @@ export default function AdminSwaggerPage() {
               return;
             }
             window.SwaggerUIBundle({
-              url: 'https://api.lintpdf.com/openapi.json',
+              url: ${JSON.stringify(openapiUrl)},
               dom_id: '#swagger-ui',
               deepLinking: true,
               displayOperationId: false,
