@@ -105,16 +105,24 @@ Recorded as Phase-1.A item #1 (cheap deterministic cleanup, blocks nothing).
 
 **Operator:** Rerun as baseline or pull latest complete results if available.
 
-**Resolution.**
+**Resolution.** Captured in `audit/phase-0/test-baseline.txt`. Headline:
 
-- **Cached pytest data** (`packages/engine/.pytest_cache/v/cache/lastfailed`, dated 2026-04-23 21:01 UTC, day before this audit): three known-failing tests, all WS-8 / WS-15 work-in-progress that hasn't merged:
-  - `tests/analyzers/test_large_k_pixel_gate.py::test_dark_fraction_fully_dark_render`
-  - `tests/reports/test_densitometer_spots.py::TestDensitometerSpotsOnCacheHit`
-  - `tests/reports/test_densitometer_spots.py::TestCmykOnlyFileSkipsSpotWork`
-- **GitHub Actions / CI:** `mcp__github__pull_request_read get_check_runs` against PRs #190, #191 returns `total_count: 0` — no automated pipeline configured for this repo. Cannot pull a fresh "main green" run from CI.
-- **Local re-baseline:** kicked off `cd packages/engine && uv run pytest -m "not slow and not corpus" --tb=no -q` in background (10-minute window). Result will be captured into `audit/phase-0/test-baseline.txt` and amended onto this doc once it lands.
+- **Full-suite run not feasible locally** — Postgres / Redis / ClamAV sidecars (per `packages/engine/docker-compose.yml`) are not running in this environment. Two attempts to run the full 2,166-test suite both hung at exactly 33% completion (22 min wall-clock, 0:42 CPU) — one specific service-dependent test opens a real connection without a timeout and blocks forever when the broker is absent.
+- **Deps-free subset run** (1,391 of 2,166 tests, 64% coverage; ignored `tests/api`, `tests/queue`, `tests/webhooks`, `tests/integrations`, `tests/billing`, `tests/email`, `tests/tenants`, plus three root-level service-touching tests): **1,387 passed, 4 failed in 25.98 s.**
+- **GitHub Actions / CI:** `mcp__github__pull_request_read get_check_runs` on PRs #190, #191 returns `total_count: 0` — no CI pipeline is configured. Cannot pull a "fresh green main" alternative.
 
-If the re-baseline finishes red beyond the three known WS-8/WS-15 failures, treat as a Phase-1.A blocker (fix or skip the offending tests with documented reason before any check change).
+**Failure breakdown:**
+
+| Test | Verdict |
+|---|---|
+| `tests/ai/test_ai_routes.py::TestAICreditRoutes::test_topup_credits` | Mis-classified — needs Postgres. Re-include in service-dependent skip list for next baseline. |
+| `tests/overrides/test_resolver.py::TestEnforceReportEntitlements::test_none_passes` | **Real pre-existing bug:** test helper `_entitlements()` at `tests/overrides/test_resolver.py:179` instantiates `TenantEntitlements` with 3 missing required fields (`allowed_preflight_sources`, `capability_fillin_enabled`, `annotations_enabled`). Production model schema gained the fields; helper never updated. |
+| `tests/overrides/test_resolver.py::TestEnforceReportEntitlements::test_allowed_formats_pass` | Same root cause. |
+| `tests/overrides/test_resolver.py::TestEnforceReportEntitlements::test_disallowed_format_raises_entitlement_denied` | Same root cause. |
+
+**Cached failures resolved.** The pre-audit `.pytest_cache/lastfailed` (2026-04-23 21:01) listed 3 WS-8 / WS-15 tests as failing — `test_large_k_pixel_gate.py::test_dark_fraction_fully_dark_render`, two cases in `test_densitometer_spots.py`. **All three pass in this run.** Cache was stale from an in-progress branch state.
+
+**Bottom line.** Deterministic + AI analyzer test paths (the actual check-emission surface this audit cares about) are GREEN. The one real failure (overrides resolver helper drift) is unrelated to check-emission and lands in Phase-1.A as cheap cleanup alongside the `LPDF_HAIR_*` registry fix. Recommendation: stand up the docker-compose sidecars and capture the full 2,166-test baseline before Phase 2 changes any analyzer.
 
 ---
 
@@ -123,7 +131,7 @@ If the re-baseline finishes red beyond the three known WS-8/WS-15 failures, trea
 - 1.A.0 — Populate `check_names.py` with the 227 implemented-uncatalogued IDs (per-check research note required for each).
 - 1.A.1 — Drop `LPDF_HAIR_001/002`; add registry entries for `LPDF_STROKE_001/002/004/005/006`. Refresh catalog.
 - 1.A.2 — Triage 8 AI stubs per the research-approach template; produce one `audit/phase-1/check-research/<id>.md` note per stub before Phase 2 picks one for implementation.
-- 1.A.3 — Capture local pytest baseline (test-baseline.txt). Investigate any failure beyond the three known WS-8/WS-15 cases.
+- 1.A.3 — Fix `tests/overrides/test_resolver.py:179` `_entitlements()` helper: add the three missing `TenantEntitlements` fields (`allowed_preflight_sources`, `capability_fillin_enabled`, `annotations_enabled`). Re-run baseline to confirm clean. Optionally stand up docker-compose sidecars (postgres, redis, clamav) and capture the full 2,166-test baseline before Phase 2.
 - 1.A.4 — Trace `AI_RSYM_001`, `AI_SCAN_001`, `AI_TAO_001` runtime emission path to confirm whether the analyzer actually emits the catalogued ID (non-literal `inspection_id` pattern means grep missed them; runtime trace required).
 
 Phase 1 starts with these five items resolved.
