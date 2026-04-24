@@ -179,7 +179,8 @@
       "source_files": [
         "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/alcohol.py"
       ],
-      "needs_clarification": false
+      "needs_clarification": false,
+      "phase_0_diagnosis": "Stub: ai/analyzers/regulatory_compliance/alcohol.py:40 returns []. Catalog + registry advertise the check; tenants who toggle severity see no effect. Phase 1 research: TTB COLA / EU wine-spirits required-elements list before any implementation."
     },
     {
       "id": "AI_ALC_002",
@@ -289,7 +290,8 @@
       "source_files": [
         "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/cannabis.py"
       ],
-      "needs_clarification": false
+      "needs_clarification": false,
+      "phase_0_diagnosis": "Stub: ai/analyzers/regulatory_compliance/cannabis.py:39 returns []. Phase 1 research: per-state cannabis warning symbols + statements (CA Prop 65, CO, WA differ)."
     },
     {
       "id": "AI_CANN_002",
@@ -333,7 +335,8 @@
       "source_files": [
         "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/cosmetics.py"
       ],
-      "needs_clarification": false
+      "needs_clarification": false,
+      "phase_0_diagnosis": "Stub: ai/analyzers/regulatory_compliance/cosmetics.py:40 returns []. Phase 1 research: EU Cosmetics Reg 1223/2009 mandatory elements (INCI list, PAO symbol, batch code, RP address)."
     },
     {
       "id": "AI_COSM_002",
@@ -1179,7 +1182,8 @@
       "source_files": [
         "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/organic.py"
       ],
-      "needs_clarification": false
+      "needs_clarification": false,
+      "phase_0_diagnosis": "Stub: ai/analyzers/regulatory_compliance/organic.py:41 returns []. Phase 1 research: USDA NOP 7 CFR 205 + EU 2018/848 organic seal placement and claim threshold rules."
     },
     {
       "id": "AI_ORG_002",
@@ -1370,7 +1374,8 @@
       "emit_sites": [],
       "docstring_declarations": [],
       "source_files": [],
-      "needs_clarification": true
+      "needs_clarification": true,
+      "phase_0_diagnosis": "Real analyzer exists at ai/analyzers/symbol_detection/regulatory_symbols.py + text_analysis/text_as_outlines.py docstring. Emit pattern uses non-literal inspection_id (likely a constant lookup or an indirection through a base class) \u2014 needs Phase 1 trace to confirm runtime emission."
     },
     {
       "id": "AI_RSYM_002",
@@ -1451,7 +1456,8 @@
       "emit_sites": [],
       "docstring_declarations": [],
       "source_files": [],
-      "needs_clarification": true
+      "needs_clarification": true,
+      "phase_0_diagnosis": "Real analyzer at ai/analyzers/symbol_detection/regulatory_symbols.py + cross-referenced from profiles/orchestrator.py. Emit pattern is non-literal \u2014 same trace requirement as AI_RSYM_001."
     },
     {
       "id": "AI_SIM_001",
@@ -1690,7 +1696,8 @@
       "emit_sites": [],
       "docstring_declarations": [],
       "source_files": [],
-      "needs_clarification": true
+      "needs_clarification": true,
+      "phase_0_diagnosis": "Registry entry only (in check_names.py); no analyzer file located. Likely planned-but-not-built. Phase 1: confirm intent (text-as-outlines aggregate counter?) and either implement or drop."
     },
     {
       "id": "AI_TAO_002",
@@ -5755,7 +5762,8 @@
       "emit_sites": [],
       "docstring_declarations": [],
       "source_files": [],
-      "needs_clarification": true
+      "needs_clarification": true,
+      "phase_0_diagnosis": "Stale registry entry. Analyzer was renamed to LPDF_STROKE_* during commit 570ca10 (Mar 24, GRD_->LPDF_ rename). Registry entry added later at 6833d28 (Apr 11) without cross-checking live emit IDs. Live equivalent: LPDF_STROKE_001 (hairline stroke). Phase 1 cleanup: drop from check_names.py."
     },
     {
       "id": "LPDF_HAIR_002",
@@ -5770,7 +5778,8 @@
       "emit_sites": [],
       "docstring_declarations": [],
       "source_files": [],
-      "needs_clarification": true
+      "needs_clarification": true,
+      "phase_0_diagnosis": "Stale registry entry \u2014 same root cause as LPDF_HAIR_001. No live equivalent (multi-condition 'small text on thin stroke' was never split into its own ID; covered today by LPDF_TEXT_001 + LPDF_STROKE_001 firing together). Phase 1 cleanup: drop or re-implement explicitly."
     },
     {
       "id": "LPDF_ICC_001",
@@ -8566,5 +8575,7 @@
       ],
       "needs_clarification": false
     }
-  ]
+  ],
+  "needs_clarification_diagnosed": 9,
+  "needs_clarification_remaining": 0
 }

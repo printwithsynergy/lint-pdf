@@ -1,0 +1,807 @@
+{
+  "modules": [
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content.py",
+      "subdir": "barcode",
+      "loc": 345,
+      "check_count": 3,
+      "check_ids": [
+        "LPDF_BCV_001",
+        "LPDF_BCV_002",
+        "LPDF_BCV_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py",
+      "subdir": "barcode",
+      "loc": 331,
+      "check_count": 4,
+      "check_ids": [
+        "LPDF_BCQM_001",
+        "LPDF_BCQM_002",
+        "LPDF_BCQM_003",
+        "LPDF_BCQM_004"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_decode.py",
+      "subdir": "barcode",
+      "loc": 136,
+      "check_count": 1,
+      "check_ids": [
+        "LPDF_BC_001"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": "packages/engine/tests/ai/analyzers/test_barcode_decode.py",
+      "has_test": true,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py",
+      "subdir": "barcode",
+      "loc": 329,
+      "check_count": 4,
+      "check_ids": [
+        "LPDF_BD_001",
+        "LPDF_BD_002",
+        "LPDF_BD_003",
+        "LPDF_BD_004"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/barcode/pharma_serialization.py",
+      "subdir": "barcode",
+      "loc": 263,
+      "check_count": 6,
+      "check_ids": [
+        "LPDF_PS_001",
+        "LPDF_PS_002",
+        "LPDF_PS_003",
+        "LPDF_PS_004",
+        "LPDF_PS_005",
+        "LPDF_PS_006"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_human_readable.py",
+      "subdir": "barcode",
+      "loc": 204,
+      "check_count": 3,
+      "check_ids": [
+        "LPDF_QHR_001",
+        "LPDF_QHR_002",
+        "LPDF_QHR_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_validation.py",
+      "subdir": "barcode",
+      "loc": 217,
+      "check_count": 4,
+      "check_ids": [
+        "LPDF_QR_001",
+        "LPDF_QR_002",
+        "LPDF_QR_003",
+        "LPDF_QR_004"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/color_analysis/banding_detection.py",
+      "subdir": "color_analysis",
+      "loc": 89,
+      "check_count": 1,
+      "check_ids": [
+        "LPDF_AI_BAND_001"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/color_analysis/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py",
+      "subdir": "color_analysis",
+      "loc": 111,
+      "check_count": 1,
+      "check_ids": [
+        "LPDF_AI_CAST_001"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/color_analysis/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py",
+      "subdir": "color_analysis",
+      "loc": 102,
+      "check_count": 1,
+      "check_ids": [
+        "LPDF_AI_CDCC_001"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/color_analysis/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py",
+      "subdir": "color_analysis",
+      "loc": 83,
+      "check_count": 1,
+      "check_ids": [
+        "LPDF_AI_SKIN_001"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/color_analysis/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/color_compliance/brand_palette.py",
+      "subdir": "color_compliance",
+      "loc": 213,
+      "check_count": 3,
+      "check_ids": [
+        "AI_BRAND_001",
+        "AI_BRAND_002",
+        "AI_BRAND_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/color_compliance/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/ai/analyzers/test_brand_palette.py",
+      "has_test": true,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/color_compliance/dieline_by_color_name.py",
+      "subdir": "color_compliance",
+      "loc": 83,
+      "check_count": 1,
+      "check_ids": [
+        "LPDF_AI_DIEL_002"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/color_compliance/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/color_compliance/wcag_contrast.py",
+      "subdir": "color_compliance",
+      "loc": 163,
+      "check_count": 2,
+      "check_ids": [
+        "AI_WCAG_001",
+        "AI_WCAG_002"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/color_compliance/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/content_quality/duplicate_detection.py",
+      "subdir": "content_quality",
+      "loc": 92,
+      "check_count": 1,
+      "check_ids": [
+        "AI_DUP_001"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/content_quality/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/ai/analyzers/test_duplicate_detection.py",
+      "has_test": true,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/content_quality/language_detection.py",
+      "subdir": "content_quality",
+      "loc": 164,
+      "check_count": 2,
+      "check_ids": [
+        "AI_LANG_001",
+        "AI_LANG_002"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/content_quality/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/content_quality/spell_check.py",
+      "subdir": "content_quality",
+      "loc": 168,
+      "check_count": 2,
+      "check_ids": [
+        "AI_SPELL_001",
+        "AI_SPELL_002"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/content_quality/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/ai/analyzers/test_spell_check.py",
+      "has_test": true,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/dieline_detection/dieline_by_name.py",
+      "subdir": "dieline_detection",
+      "loc": 212,
+      "check_count": 3,
+      "check_ids": [
+        "AI_DIE_001",
+        "AI_DIE_002",
+        "AI_DIE_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/dieline_detection/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/ai/analyzers/test_dieline_by_name.py",
+      "has_test": true,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py",
+      "subdir": "document_classification",
+      "loc": 143,
+      "check_count": 3,
+      "check_ids": [
+        "AI_AFP_001",
+        "AI_AFP_002",
+        "AI_AFP_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/document_classification/file_classification.py",
+      "subdir": "document_classification",
+      "loc": 98,
+      "check_count": 3,
+      "check_ids": [
+        "AI_FCLASS_001",
+        "AI_FCLASS_002",
+        "AI_FCLASS_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/file_comparison/version_diff.py",
+      "subdir": "file_comparison",
+      "loc": 152,
+      "check_count": 3,
+      "check_ids": [
+        "AI_VDIFF_001",
+        "AI_VDIFF_002",
+        "AI_VDIFF_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/file_comparison/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_quality.py",
+      "subdir": "image_analysis",
+      "loc": 108,
+      "check_count": 3,
+      "check_ids": [
+        "AI_IQ_001",
+        "AI_IQ_002",
+        "AI_IQ_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_similarity.py",
+      "subdir": "image_analysis",
+      "loc": 89,
+      "check_count": 2,
+      "check_ids": [
+        "AI_SIM_001",
+        "AI_SIM_002"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py",
+      "subdir": "image_analysis",
+      "loc": 128,
+      "check_count": 3,
+      "check_ids": [
+        "AI_NSFW_001",
+        "AI_NSFW_002",
+        "AI_NSFW_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/logo_verification/logo_detection.py",
+      "subdir": "logo_verification",
+      "loc": 125,
+      "check_count": 3,
+      "check_ids": [
+        "AI_LOGO_001",
+        "AI_LOGO_002",
+        "AI_LOGO_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py",
+      "subdir": "nlp_interfaces",
+      "loc": 144,
+      "check_count": 4,
+      "check_ids": [
+        "AI_LANG_001",
+        "AI_LANG_002",
+        "AI_LANG_003",
+        "AI_LANG_004"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/nl_preflight_profile.py",
+      "subdir": "nlp_interfaces",
+      "loc": 37,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": true,
+      "risk": "stub"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/nl_report_interpret.py",
+      "subdir": "nlp_interfaces",
+      "loc": 36,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": true,
+      "risk": "stub"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/_gates.py",
+      "subdir": "regulatory_compliance",
+      "loc": 58,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [],
+      "importer_count": 2,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py",
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/alcohol.py",
+      "subdir": "regulatory_compliance",
+      "loc": 31,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [
+        "AI_ALC_001",
+        "AI_ALC_002"
+      ],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": true,
+      "risk": "stub"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/cannabis.py",
+      "subdir": "regulatory_compliance",
+      "loc": 30,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [
+        "AI_CANN_001",
+        "AI_CANN_002"
+      ],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": true,
+      "risk": "stub"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/cosmetics.py",
+      "subdir": "regulatory_compliance",
+      "loc": 31,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [
+        "AI_COSM_001",
+        "AI_COSM_002"
+      ],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": true,
+      "risk": "stub"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/eu_fir_1169.py",
+      "subdir": "regulatory_compliance",
+      "loc": 328,
+      "check_count": 3,
+      "check_ids": [
+        "AI_EU1169_001",
+        "AI_EU1169_002",
+        "AI_EU1169_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/ai/analyzers/regulatory_compliance/test_eu_fir_1169.py",
+      "has_test": true,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py",
+      "subdir": "regulatory_compliance",
+      "loc": 254,
+      "check_count": 5,
+      "check_ids": [
+        "AI_FDA_001",
+        "AI_FDA_002",
+        "AI_FDA_003",
+        "AI_FDA_004",
+        "AI_FDA_005"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "high"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_otc.py",
+      "subdir": "regulatory_compliance",
+      "loc": 26,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": true,
+      "risk": "stub"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py",
+      "subdir": "regulatory_compliance",
+      "loc": 378,
+      "check_count": 8,
+      "check_ids": [
+        "AI_GHS_001",
+        "AI_GHS_002",
+        "AI_GHS_003",
+        "AI_GHS_004",
+        "AI_GHS_005",
+        "AI_GHS_006",
+        "AI_GHS_007",
+        "AI_GHS_008"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/ai/analyzers/regulatory_compliance/test_ghs_clp.py",
+      "has_test": true,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/nfp_detector.py",
+      "subdir": "regulatory_compliance",
+      "loc": 120,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py"
+      ],
+      "test_file": "packages/engine/tests/ai/analyzers/regulatory_compliance/test_nfp_detector.py",
+      "has_test": true,
+      "is_stub": true,
+      "risk": "stub"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/organic.py",
+      "subdir": "regulatory_compliance",
+      "loc": 32,
+      "check_count": 0,
+      "check_ids": [],
+      "docstring_only_ids": [
+        "AI_ORG_001",
+        "AI_ORG_002"
+      ],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": true,
+      "risk": "stub"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py",
+      "subdir": "regulatory_compliance",
+      "loc": 278,
+      "check_count": 4,
+      "check_ids": [
+        "AI_PHARMA_001",
+        "AI_PHARMA_002",
+        "AI_PHARMA_003",
+        "AI_PHARMA_004"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/__init__.py"
+      ],
+      "test_file": "packages/engine/tests/ai/analyzers/regulatory_compliance/test_pharma_font.py",
+      "has_test": true,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py",
+      "subdir": "spatial_analysis",
+      "loc": 139,
+      "check_count": 2,
+      "check_ids": [
+        "AI_SZ_001",
+        "AI_SZ_002"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "low"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/symbol_detection/processing_steps_fallback.py",
+      "subdir": "symbol_detection",
+      "loc": 204,
+      "check_count": 3,
+      "check_ids": [
+        "AI_PSTEP_001",
+        "AI_PSTEP_002",
+        "AI_PSTEP_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py",
+      "subdir": "symbol_detection",
+      "loc": 196,
+      "check_count": 3,
+      "check_ids": [
+        "AI_RSYM_002",
+        "AI_RSYM_003",
+        "AI_RSYM_004"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/text_analysis/text_as_outlines.py",
+      "subdir": "text_analysis",
+      "loc": 151,
+      "check_count": 2,
+      "check_ids": [
+        "AI_TAO_002",
+        "AI_TAO_003"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 0,
+      "importers": [],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "medium"
+    },
+    {
+      "file": "packages/engine/src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py",
+      "subdir": "trend_analysis",
+      "loc": 305,
+      "check_count": 4,
+      "check_ids": [
+        "AI_SPC_001",
+        "AI_SPC_002",
+        "AI_SPC_003",
+        "AI_SPC_004"
+      ],
+      "docstring_only_ids": [],
+      "importer_count": 1,
+      "importers": [
+        "packages/engine/src/lintpdf/ai/analyzers/trend_analysis/__init__.py"
+      ],
+      "test_file": null,
+      "has_test": false,
+      "is_stub": false,
+      "risk": "high"
+    }
+  ]
+}
