@@ -601,6 +601,38 @@ def _extract_dieline_paths(
     # entry so compound paths (``m ... m ... S``) register each
     # artwork separately instead of collapsing onto the last subpath.
     subpath_bboxes: list[tuple[float, float, float, float]] = []
+    # CTM composition — Pavette places its circle and rectangle
+    # dielines via ``cm`` operators, so raw operand coordinates
+    # land at ``(0, 0)`` / ``(0, -144)`` etc. instead of the actual
+    # page positions. Without composing the CTM, the circle and
+    # rectangle's raw bboxes overlap and merge into one region.
+    # Matrix layout: ``[a, b, c, d, e, f]`` where point (x, y)
+    # transforms to ``(x*a + y*c + e, x*b + y*d + f)``.
+    ctm_stack: list[tuple[float, float, float, float, float, float]] = []
+    ctm: tuple[float, float, float, float, float, float] = (
+        1.0, 0.0, 0.0, 1.0, 0.0, 0.0
+    )
+
+    def apply_ctm(x: float, y: float) -> tuple[float, float]:
+        a, b, c, d, e, f = ctm
+        return (x * a + y * c + e, x * b + y * d + f)
+
+    def compose(
+        m1: tuple[float, float, float, float, float, float],
+        m2: tuple[float, float, float, float, float, float],
+    ) -> tuple[float, float, float, float, float, float]:
+        """Post-multiply ``m2`` onto ``m1``. PDF ``cm`` semantics:
+        the new matrix is applied as ``m2 × m1``."""
+        a1, b1, c1, d1, e1, f1 = m1
+        a2, b2, c2, d2, e2, f2 = m2
+        return (
+            a2 * a1 + b2 * c1,
+            a2 * b1 + b2 * d1,
+            c2 * a1 + d2 * c1,
+            c2 * b1 + d2 * d1,
+            e2 * a1 + f2 * c1 + e1,
+            e2 * b1 + f2 * d1 + f1,
+        )
 
     dieline_bboxes: list[tuple[float, float, float, float]] = []
     dieline_colors: set[tuple[str | None, tuple[float, ...]]] = set()
@@ -651,7 +683,23 @@ def _extract_dieline_paths(
         except Exception:
             continue
 
-        if op == "BDC":
+        if op == "q":
+            ctm_stack.append(ctm)
+        elif op == "Q":
+            if ctm_stack:
+                ctm = ctm_stack.pop()
+        elif op == "cm":
+            if len(operands) >= 6:
+                try:
+                    m2 = (
+                        float(operands[0]), float(operands[1]),
+                        float(operands[2]), float(operands[3]),
+                        float(operands[4]), float(operands[5]),
+                    )
+                    ctm = compose(ctm, m2)
+                except Exception:
+                    pass
+        elif op == "BDC":
             if len(operands) >= 2:
                 prop = operands[1]
                 prop_name = str(prop).lstrip("/")
@@ -678,18 +726,20 @@ def _extract_dieline_paths(
             seal_subpath()
             if len(operands) >= 2:
                 try:
-                    path_points = [(float(operands[0]), float(operands[1]))]
+                    path_points = [apply_ctm(float(operands[0]), float(operands[1]))]
                 except Exception:
                     path_points = []
         elif op == "l":
             if len(operands) >= 2:
                 try:
-                    path_points.append((float(operands[0]), float(operands[1])))
+                    path_points.append(apply_ctm(float(operands[0]), float(operands[1])))
                 except Exception:
                     pass
         elif op in ("c", "v", "y"):
             try:
-                path_points.append((float(operands[-2]), float(operands[-1])))
+                path_points.append(
+                    apply_ctm(float(operands[-2]), float(operands[-1]))
+                )
             except Exception:
                 pass
         elif op == "re":
@@ -699,7 +749,12 @@ def _extract_dieline_paths(
             if len(operands) >= 4:
                 try:
                     x, y, w, h = (float(v) for v in operands[:4])
-                    path_points = [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
+                    path_points = [
+                        apply_ctm(x, y),
+                        apply_ctm(x + w, y),
+                        apply_ctm(x + w, y + h),
+                        apply_ctm(x, y + h),
+                    ]
                     seal_subpath()
                 except Exception:
                     path_points = []
