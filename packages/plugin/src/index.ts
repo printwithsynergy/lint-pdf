@@ -93,6 +93,71 @@ export async function resolveEngineTenantId(tenantId: string): Promise<string> {
   }
 }
 
+/**
+ * Effective feature flags + limits for a tenant, as resolved by the engine.
+ *
+ * ``GET /api/v1/admin/tenants/{id}/entitlements`` returns a payload whose
+ * ``effective`` field merges plan defaults with per-tenant overrides. We
+ * only surface the feature booleans the dashboard cares about today —
+ * extend this shape as more nav items or UI affordances grow tenant
+ * gates.
+ */
+export interface TenantFeatureFlags {
+  desktop_app_enabled: boolean;
+  ai_enabled: boolean;
+  whitelabel_enabled: boolean;
+  webhooks_enabled: boolean;
+  approval_chains_enabled: boolean;
+}
+
+const DEFAULT_TENANT_FLAGS: TenantFeatureFlags = {
+  desktop_app_enabled: false,
+  ai_enabled: false,
+  whitelabel_enabled: false,
+  webhooks_enabled: false,
+  approval_chains_enabled: false,
+};
+
+/**
+ * Fetch a tenant's effective feature flags from the engine admin
+ * entitlements endpoint. Never throws — returns safe defaults (all
+ * ``false``) on any engine error so nav-item gating degrades closed
+ * rather than accidentally exposing a feature to a tenant that hasn't
+ * paid for it.
+ *
+ * ``engineTenantId`` must already be an engine UUID — call
+ * ``resolveEngineTenantId`` first if you're holding a Prisma tenant id.
+ */
+export async function getTenantFeatureFlags(
+  engineTenantId: string,
+): Promise<TenantFeatureFlags> {
+  const baseUrl = (
+    process.env.LINTPDF_API_URL ?? "https://api.lintpdf.com"
+  ).replace(/\/$/, "");
+  const adminKey = process.env.LINTPDF_ADMIN_API_KEY;
+  if (!adminKey) return DEFAULT_TENANT_FLAGS;
+  try {
+    const resp = await fetch(
+      `${baseUrl}/api/v1/admin/tenants/${encodeURIComponent(engineTenantId)}/entitlements`,
+      { headers: { "X-Admin-Key": adminKey } },
+    );
+    if (!resp.ok) return DEFAULT_TENANT_FLAGS;
+    const body = (await resp.json()) as {
+      effective?: Partial<TenantFeatureFlags>;
+    };
+    const eff = body.effective ?? {};
+    return {
+      desktop_app_enabled: Boolean(eff.desktop_app_enabled),
+      ai_enabled: Boolean(eff.ai_enabled),
+      whitelabel_enabled: Boolean(eff.whitelabel_enabled),
+      webhooks_enabled: Boolean(eff.webhooks_enabled),
+      approval_chains_enabled: Boolean(eff.approval_chains_enabled),
+    };
+  } catch {
+    return DEFAULT_TENANT_FLAGS;
+  }
+}
+
 // ── Core plugin ─────────────────────────────────────────────
 
 export const lintpdfPlugin: PixieDustPlugin = {
