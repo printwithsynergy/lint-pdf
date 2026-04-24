@@ -41,7 +41,10 @@ jobs:
       matrix:
         include:
           - platform: macos-14
-            rust-target: "universal-apple-darwin"
+            # ``universal-apple-darwin`` is a Tauri-level alias, NOT a real
+            # rustup target — install both arch targets and let
+            # tauri-action lipo them together via ``--target``.
+            rust-target: "aarch64-apple-darwin x86_64-apple-darwin"
             args: "--target universal-apple-darwin"
           - platform: ubuntu-22.04
             rust-target: "x86_64-unknown-linux-gnu"
