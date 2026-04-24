@@ -1102,3 +1102,272 @@ def sample_densitometer(
         "tac_limit": tac_limit,
         "limit_exceeded": tac > tac_limit,
     }
+
+
+# WS-17A software-composite tile renderer.
+#
+# Ghostscript's ``png16m`` + ``-dSimulateOverprint=true`` path is
+# supposed to produce an on-screen preview that faithfully simulates
+# how the page will print — including spot-ink overprinting. In
+# practice, on files with no /OutputIntent declared (which every
+# file in the 2026-04-23 Test3 / Amalgam_Catalyst / Pink-Slush
+# corpus is), Ghostscript collapses every Separation alternate onto
+# a single CMYK intermediate and the composite comes out a single
+# tint (flat blue for Test3).
+#
+# Per ISO 32000-2:2020 §8.6.6.4 ("Separation colour spaces"), "For
+# an additive device such as a computer display, a Separation
+# colour space never applies a process colourant directly; it
+# always reverts to the alternate colour space". The alternate +
+# tint-transform approach ONLY works when the alternates are
+# well-defined + the output intent supplies a reference CMYK
+# profile. Neither is reliable for real-world packaging PDFs.
+#
+# This function bypasses the tint transform entirely by rendering
+# each ink as its own plate via tiffsep (already battle-tested for
+# the densitometer + TAC + per-channel viewer), then compositing
+# the plates into RGB using a fixed-per-ink absorption model.
+# Mirrors the pixel math the browser's SeparationCanvas does when
+# the user enters separation mode, so "normal" composite preview
+# and "separation" preview converge.
+
+# Subtractive ink → RGB absorption coefficients. Each value is the
+# amount of R, G, B (0-255) absorbed at 100% tint. White paper
+# reflects (255, 255, 255); every 1 % of tint applied removes
+# ``coef × 2.55`` units of reflected light per channel.
+_INK_ABSORPTION_RGB: dict[str, tuple[int, int, int]] = {
+    # CMYK process inks — absorption is the complement of the
+    # ink's visible RGB ("cyan absorbs red light", etc.).
+    "Cyan":    (255,   0,   0),
+    "Magenta": (  0, 255,   0),
+    "Yellow":  (  0,   0, 255),
+    "Black":   (255, 255, 255),
+}
+
+
+def _spot_absorption_rgb(name: str) -> tuple[int, int, int]:
+    """Best-effort absorption triple for a spot ink named ``name``.
+
+    Mirrors the rules in ``SeparationPanel.spotSwatchColor``:
+    semantic colour words ("black", "cyan", "foil", "beige", ...)
+    map to curated absorption tuples; everything else falls back
+    to a stable hash-driven HSL → RGB. The goal is a reasonable
+    preview, not printing fidelity — a press-accurate composite
+    needs the real alternate CMYK tint transform, which the
+    ``-dSimulateOverprint=true`` path already handles when the
+    file carries a valid OutputIntent.
+    """
+    lowered = name.strip().lower()
+    exact: dict[str, tuple[int, int, int]] = {
+        "black":   (255, 255, 255),
+        "k":       (255, 255, 255),
+        "cyan":    (255,   0,   0),
+        "c":       (255,   0,   0),
+        "magenta": (  0, 255,   0),
+        "m":       (  0, 255,   0),
+        "yellow":  (  0,   0, 255),
+        "y":       (  0,   0, 255),
+        "white":   (  0,   0,   0),  # paper — absorbs nothing.
+    }
+    if lowered in exact:
+        return exact[lowered]
+
+    patterns: list[tuple[str, tuple[int, int, int]]] = [
+        ("cut", (0, 200, 200)),        # dieline / cut — red ink preview
+        ("dieline", (0, 200, 200)),
+        ("crease", (0, 200, 200)),
+        ("perf", (0, 200, 200)),
+        ("fold", (0, 200, 200)),
+        ("foil", (128, 128, 128)),     # metallic → neutral grey
+        ("silver", (128, 128, 128)),
+        ("gold", (40, 80, 200)),
+        ("copper", (40, 80, 150)),
+        ("varnish", (200, 200, 200)),  # gloss / UV — nearly invisible
+        ("matte", (200, 200, 200)),
+        ("beige", (30, 80, 140)),
+        ("tan", (30, 80, 140)),
+        ("buff", (30, 60, 120)),
+        ("cream", (10, 30, 80)),
+        ("ivory", (10, 30, 80)),
+        ("red", (0, 200, 200)),
+        ("orange", (0, 150, 230)),
+        ("blue", (220, 140, 0)),
+        ("navy", (220, 140, 0)),
+        ("green", (220, 40, 210)),
+        ("teal", (220, 80, 120)),
+        ("mint", (220, 80, 120)),
+        ("purple", (120, 220, 80)),
+        ("violet", (120, 220, 80)),
+        ("pink", (40, 200, 100)),
+        ("rose", (40, 200, 100)),
+        ("brown", (80, 140, 200)),
+        ("grey", (128, 128, 128)),
+        ("gray", (128, 128, 128)),
+        ("slate", (128, 128, 128)),
+    ]
+    for key, coef in patterns:
+        if key in lowered:
+            return coef
+
+    # Hash → HSL(hue, 60%, 45%) → RGB absorption coefficient.
+    h = 0
+    for ch in name:
+        h = ord(ch) + ((h << 5) - h)
+    hue = abs(h) % 360
+    s, light = 0.6, 0.45
+    c = (1 - abs(2 * light - 1)) * s
+    x = c * (1 - abs(((hue / 60) % 2) - 1))
+    m = light - c / 2
+    if hue < 60:     r, g, b = c, x, 0
+    elif hue < 120:  r, g, b = x, c, 0
+    elif hue < 180:  r, g, b = 0, c, x
+    elif hue < 240:  r, g, b = 0, x, c
+    elif hue < 300:  r, g, b = x, 0, c
+    else:            r, g, b = c, 0, x
+    ink_r = int(round((r + m) * 255))
+    ink_g = int(round((g + m) * 255))
+    ink_b = int(round((b + m) * 255))
+    # Absorption = 255 - ink colour.
+    return (255 - ink_r, 255 - ink_g, 255 - ink_b)
+
+
+def render_composite_via_separations(
+    pdf_bytes: bytes,
+    page_num: int,
+    dpi: int = 150,
+    *,
+    tenant_id: str | None = None,
+    job_id: str | None = None,
+    storage: StorageBackend | None = None,
+) -> bytes | None:
+    """Software-composite the page from per-channel separations.
+
+    Returns the PNG bytes of a white-paper RGB composite built from
+    the tiffsep output, or ``None`` when there are no separations
+    to composite (the caller should then fall back to the regular
+    Ghostscript path).
+
+    The composite honours the subtractive ink model: every 1 % of
+    tint applied to a plate removes ``absorption_coef × 0.01`` from
+    the paper's reflected light in each RGB channel. This approximates
+    "what the page will look like on a press, viewed under D50"
+    without needing a proper OutputIntent — which most packaging
+    PDFs sadly lack (confirmed by LPDF_COLOR_006 on every file in
+    the 2026-04-23 corpus).
+
+    Uses the CMYK + spot cache populated by :func:`sample_densitometer`
+    when available; falls back to a fresh tiffsep run on miss.
+    """
+    import numpy as np
+
+    # Try cache first (CMYK + all declared spots).
+    cache_ok = bool(tenant_id and job_id and storage)
+
+    try:
+        spot_names = [
+            s["name"] for s in list_separations(pdf_bytes) if s.get("type") == "spot"
+        ]
+    except Exception:
+        spot_names = []
+
+    plates: list[tuple[str, np.ndarray]] = []
+    if cache_ok and tenant_id and job_id and storage:
+        cmyk_ok = True
+        for ch in PROCESS_CHANNEL_ORDER:
+            key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch)
+            try:
+                raw = storage.download_raw(key)
+            except Exception:
+                raw = None
+            if raw is None:
+                cmyk_ok = False
+                break
+            plates.append((ch, _pct_array_from_png_bytes(raw)))
+        if cmyk_ok and spot_names:
+            for spot in spot_names:
+                key = channel_cache_key(tenant_id, job_id, page_num, dpi, spot)
+                try:
+                    raw = storage.download_raw(key)
+                except Exception:
+                    raw = None
+                if raw is None:
+                    # Spot missing — drop the cache path and run tiffsep
+                    # so every plate comes from the same render.
+                    plates = []
+                    break
+                plates.append((spot, _pct_array_from_png_bytes(raw)))
+        elif not cmyk_ok:
+            plates = []
+
+    if not plates:
+        with tempfile.TemporaryDirectory(prefix="lintpdf_comp_") as tmpdir:
+            try:
+                output_base = _run_tiffsep(pdf_bytes, page_num, dpi, tmpdir)
+            except Exception:
+                logger.exception(
+                    "render_composite_via_separations: tiffsep failed"
+                )
+                return None
+
+            for ch in PROCESS_CHANNEL_ORDER:
+                tif = _find_channel_tif(tmpdir, ch, output_base)
+                if tif is not None:
+                    plates.append((ch, _pct_array_from_tiff(tif)))
+
+            process_lower = {n.lower() for n in PROCESS_CHANNEL_ORDER}
+            already = {name.lower() for name, _ in plates}
+            for name in sorted(os.listdir(tmpdir)):
+                if not name.endswith(".tif"):
+                    continue
+                if "(" not in name or ")" not in name:
+                    continue
+                spot = name[name.index("(") + 1 : name.rindex(")")]
+                if not spot or spot.lower() in process_lower or spot.lower() in already:
+                    continue
+                plates.append((spot, _pct_array_from_tiff(os.path.join(tmpdir, name))))
+                already.add(spot.lower())
+
+            # Warm the cache for subsequent densitometer / TAC hits.
+            if cache_ok and tenant_id and job_id and storage:
+                for ch_name, arr in plates:
+                    key = channel_cache_key(tenant_id, job_id, page_num, dpi, ch_name)
+                    try:
+                        storage.upload_raw(
+                            key,
+                            _pct_array_to_png_bytes(arr),
+                            content_type="image/png",
+                        )
+                    except Exception:
+                        logger.warning(
+                            "render_composite_via_separations: failed to cache %s",
+                            ch_name,
+                        )
+
+    if not plates:
+        return None
+
+    # Start from white paper and subtract each ink's absorption.
+    height, width = plates[0][1].shape
+    rgb = np.full((height, width, 3), 255.0, dtype=np.float32)
+
+    for name, plate in plates:
+        absorption = (
+            _INK_ABSORPTION_RGB.get(name)
+            if name in PROCESS_CHANNEL_ORDER
+            else _spot_absorption_rgb(name)
+        )
+        if absorption is None:
+            continue
+        # ``plate`` is 0..100 (% tint). Scale to 0..1.
+        tint = np.clip(plate, 0.0, 100.0) / 100.0
+        for channel_idx, coef in enumerate(absorption):
+            # Every 1% of tint absorbs coef/100 of the channel's
+            # current value — a multiplicative "stack more ink" model
+            # that stays sane when plates overlap (e.g. registration
+            # tick marks that paint every separation at 100%).
+            rgb[:, :, channel_idx] *= 1.0 - (tint * (coef / 255.0))
+
+    rgb_uint8 = np.clip(rgb, 0.0, 255.0).astype(np.uint8)
+    buf = io.BytesIO()
+    Image.fromarray(rgb_uint8, mode="RGB").save(buf, format="PNG")
+    return buf.getvalue()
