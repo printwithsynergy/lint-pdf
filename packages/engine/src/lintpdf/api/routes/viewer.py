@@ -1619,6 +1619,155 @@ class VerdictResponse(BaseModel):
     notes: str | None = None
 
 
+def _layer_tile_cache_key(
+    tenant_id: str,
+    job_id: str,
+    page_num: int,
+    dpi: int,
+    layer_index: int,
+) -> str:
+    """S3 key for a per-layer isolated tile (WS-17C).
+
+    Distinct from the regular ``_tile_cache_key`` shape so a normal
+    full-page tile and a per-layer tile never collide. The version
+    suffix tracks the same ``_TILE_RENDER_VERSION`` so both caches
+    invalidate together on render-pipeline upgrades.
+    """
+    return (
+        f"{tenant_id}/{job_id}/tiles/"
+        f"p{page_num}_d{dpi}_rv{_TILE_RENDER_VERSION}_l{layer_index}_iso.png"
+    )
+
+
+def _list_all_layer_indices(pdf_bytes: bytes) -> list[int]:
+    """Return every OCG index for the document's first layer config.
+
+    Mirrors the index space used by ``/jobs/{id}/layers``: position
+    in ``/Root/OCProperties/OCGs``.
+    """
+    indices: list[int] = []
+    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+        oc_props = pdf.Root.get("/OCProperties")
+        if oc_props is None:
+            return indices
+        ocgs = oc_props.get("/OCGs")
+        if ocgs is None:
+            return indices
+        try:
+            for idx, _ in enumerate(ocgs):
+                indices.append(idx)
+        except Exception:
+            pass
+    return indices
+
+
+async def _get_layer_tile_bytes(
+    job_id: str,
+    page_num: int,
+    layer_index: int,
+    dpi: int,
+    tenant: Tenant,
+    db: Session,
+) -> bytes:
+    """Shared body for the auth + public layer-tile endpoints.
+
+    Reads the S3 cache first; on miss renders via
+    :func:`render_isolated_layer_tile` and writes the result back so
+    subsequent toggles are a sub-100ms cache hit. Layer-tile renders
+    take ~1-3 s on first hit (Ghostscript + OCG override); the
+    instant-toggle UX comes from the post-warm cache, not from the
+    render speed itself.
+    """
+    job, pdf_bytes = _get_job_pdf(job_id, tenant, db)
+    _validate_page_num(pdf_bytes, page_num)
+    storage = get_storage()
+
+    cache_key = _layer_tile_cache_key(
+        str(tenant.id), str(job.id), page_num, dpi, layer_index
+    )
+    try:
+        cached = storage.download_raw(cache_key)
+    except Exception:
+        cached = None
+    if cached:
+        return cached
+
+    all_layer_indices = _list_all_layer_indices(pdf_bytes)
+    if not all_layer_indices:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="PDF has no layers — nothing to isolate.",
+        )
+    if layer_index not in all_layer_indices:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Layer index {layer_index} not in this PDF's OCG set "
+                f"(valid range 0..{max(all_layer_indices)})."
+            ),
+        )
+
+    from lintpdf.ai.rendering import render_isolated_layer_tile
+
+    loop = asyncio.get_running_loop()
+    try:
+        png_bytes = await loop.run_in_executor(
+            None,
+            lambda: render_isolated_layer_tile(
+                pdf_bytes,
+                page_num,
+                dpi,
+                layer_index,
+                all_layer_indices,
+            ),
+        )
+    except Exception as exc:
+        logger.exception(
+            "Layer-tile render failed for job=%s page=%d layer=%d",
+            job.id,
+            page_num,
+            layer_index,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Layer-tile render failed: {exc}",
+        ) from exc
+
+    try:
+        storage.upload_raw(cache_key, png_bytes, content_type="image/png")
+    except Exception:
+        logger.warning("Failed to cache layer tile key=%s", cache_key)
+
+    return png_bytes
+
+
+@router.get("/jobs/{job_id}/pages/{page_num}/layers/{layer_index}")
+async def get_layer_tile(
+    job_id: str,
+    page_num: int,
+    layer_index: int,
+    dpi: int = Query(default=150, ge=36, le=600),
+    tenant: Tenant = Depends(get_current_tenant),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Render one OCG (layer) in isolation against a transparent
+    background. Used by ``LayerCanvas`` (WS-17C) so the browser can
+    composite the active layers locally and toggle visibility
+    instantly without re-rendering."""
+    png_bytes = await _get_layer_tile_bytes(
+        job_id, page_num, layer_index, dpi, tenant, db
+    )
+    etag = hashlib.md5(png_bytes[:1024]).hexdigest()
+    return Response(
+        content=png_bytes,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "private, max-age=86400",
+            "ETag": f'"{etag}"',
+        },
+    )
+
+
 @router.get("/jobs/{job_id}/verdict", response_model=VerdictResponse)
 async def get_verdict(
     job_id: str,
@@ -2205,6 +2354,85 @@ async def public_layers(token: str, db: Session = Depends(get_db)) -> dict:
                 name = str(ocg.get("/Name", f"Layer {i + 1}"))
                 layers.append({"name": name, "ocg_index": i, "default_on": True})
     return {"layers": layers}
+
+
+@router.get("/public/{token}/pages/{page_num}/layers/{layer_index}")
+async def public_layer_tile(
+    token: str,
+    page_num: int,
+    layer_index: int,
+    dpi: int = Query(default=150, ge=36, le=600),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Public-token sibling of ``get_layer_tile``. Same caching shape;
+    no auth required because the token already proves access to the
+    full job."""
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    _validate_page_num(pdf_bytes, page_num)
+
+    storage = get_storage()
+    cache_key = _layer_tile_cache_key(
+        str(job.tenant_id), str(job.id), page_num, dpi, layer_index
+    )
+    try:
+        cached = storage.download_raw(cache_key)
+    except Exception:
+        cached = None
+    if cached:
+        etag = hashlib.md5(cached[:1024]).hexdigest()
+        return Response(
+            content=cached,
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "ETag": f'"{etag}"',
+            },
+        )
+
+    all_layer_indices = _list_all_layer_indices(pdf_bytes)
+    if layer_index not in all_layer_indices:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Layer index {layer_index} not in this PDF "
+                f"(valid: {all_layer_indices})."
+            ),
+        )
+
+    from lintpdf.ai.rendering import render_isolated_layer_tile
+
+    loop = asyncio.get_running_loop()
+    try:
+        png_bytes = await loop.run_in_executor(
+            None,
+            lambda: render_isolated_layer_tile(
+                pdf_bytes,
+                page_num,
+                dpi,
+                layer_index,
+                all_layer_indices,
+            ),
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Layer-tile render failed: {exc}",
+        ) from exc
+
+    try:
+        storage.upload_raw(cache_key, png_bytes, content_type="image/png")
+    except Exception:
+        logger.warning("Failed to cache public layer tile key=%s", cache_key)
+
+    etag = hashlib.md5(png_bytes[:1024]).hexdigest()
+    return Response(
+        content=png_bytes,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "ETag": f'"{etag}"',
+        },
+    )
 
 
 @router.get("/public/{token}/verdict")

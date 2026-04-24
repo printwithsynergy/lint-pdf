@@ -175,6 +175,17 @@ def _render_page_via_ghostscript(
         with open(pdf_path, "wb") as fh:
             fh.write(pdf_bytes)
 
+        # WS-17A — ``-sColorConversionStrategy=RGB`` forces every
+        # device colour space (DeviceCMYK, DeviceN, Separation
+        # alternates) to convert to DeviceRGB at composition time.
+        # Without it, Ghostscript can render a spot-heavy page (the
+        # 2026-04-23 Test3 DailyFiber 10-up + Amalgam_Catalyst
+        # surfaces) as a single tinted shade because the page's
+        # Separation alternates collapse onto the same intermediate
+        # CMYK channel. ``-dRenderIntent=0`` (perceptual) keeps
+        # gamut mapping smooth so highly saturated spots stay
+        # distinguishable in the RGB preview.
+        #
         # ``-dSimulateOverprint=true`` is the current flag; older GS
         # builds (9.x) only honour ``-dOverprint=/simulate``. Passing
         # both is safe — unknown flags are ignored.
@@ -185,6 +196,8 @@ def _render_page_via_ghostscript(
             "-dBATCH",
             "-dSAFER",
             "-sDEVICE=png16m",
+            "-sColorConversionStrategy=RGB",
+            "-dRenderIntent=0",
             "-dSimulateOverprint=true",
             "-dOverprint=/simulate",
             "-dTextAlphaBits=4",
@@ -278,6 +291,104 @@ def render_page_to_image(
         return buf.getvalue()
 
     raise RuntimeError("No PDF rendering backend available. Install pdf2image and poppler-utils.")
+
+
+def render_isolated_layer_tile(
+    pdf_bytes: bytes,
+    page_num: int,
+    dpi: int,
+    layer_index: int,
+    all_layer_indices: list[int],
+) -> bytes:
+    """Render a single OCG (layer) in isolation against a transparent
+    background. WS-17C uses these per-layer tiles to give the viewer
+    instant layer-toggle response — the browser fetches one PNG per
+    layer once, then composites the active subset client-side via
+    canvas ``source-over`` blending. Toggling a layer afterwards is
+    a single canvas redraw with no API round-trip.
+
+    The "isolation" is achieved by hiding every OCG except the
+    requested one. Ghostscript ``pngalpha`` device emits an RGBA
+    image, so non-layer pixels (and gaps inside the layer's
+    geometry) come back transparent — exactly what the browser
+    compositor needs.
+
+    Args:
+        pdf_bytes: Raw PDF file bytes.
+        page_num: 1-indexed page number.
+        dpi: Render resolution.
+        layer_index: Index into ``/Root/OCProperties/OCGs`` for the
+            layer to keep visible. Same indices as
+            :func:`viewer.list_layers` returns as ``ocg_index``.
+        all_layer_indices: Every OCG index on the page; everything
+            other than ``layer_index`` is forced hidden.
+
+    Returns:
+        PNG bytes (RGBA, transparent where the layer doesn't paint).
+
+    Raises:
+        OCGError: ``layer_index`` is out of range / not an OCG.
+        RuntimeError: Ghostscript not available or failed.
+    """
+    if not _has_ghostscript():
+        raise RuntimeError(
+            "render_isolated_layer_tile requires Ghostscript. "
+            "Install ghostscript >= 9.50."
+        )
+    if layer_index not in all_layer_indices:
+        raise OCGError(
+            f"layer_index={layer_index} not in all_layer_indices={all_layer_indices}"
+        )
+
+    ocg_off = [i for i in all_layer_indices if i != layer_index]
+    pdf_isolated = _apply_ocg_overrides(pdf_bytes, [layer_index], ocg_off)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = os.path.join(tmpdir, "input.pdf")
+        png_path = os.path.join(tmpdir, "page.png")
+        with open(pdf_path, "wb") as fh:
+            fh.write(pdf_isolated)
+
+        # ``pngalpha`` keeps non-painted pixels transparent so the
+        # browser compositor can layer multiple isolated tiles via
+        # ``ctx.drawImage`` without darkening accumulating areas.
+        cmd = [
+            "gs",
+            "-q",
+            "-dNOPAUSE",
+            "-dBATCH",
+            "-dSAFER",
+            "-sDEVICE=pngalpha",
+            "-sColorConversionStrategy=RGB",
+            "-dRenderIntent=0",
+            "-dSimulateOverprint=true",
+            "-dOverprint=/simulate",
+            "-dTextAlphaBits=4",
+            "-dGraphicsAlphaBits=4",
+            f"-r{dpi}",
+            f"-dFirstPage={page_num}",
+            f"-dLastPage={page_num}",
+            f"-sOutputFile={png_path}",
+            pdf_path,
+        ]
+        try:
+            proc = subprocess.run(cmd, capture_output=True, timeout=120)
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(
+                f"Ghostscript layer-tile render timed out for page "
+                f"{page_num} layer {layer_index}",
+            ) from exc
+        if proc.returncode != 0:
+            stderr = proc.stderr.decode(errors="replace")[:500]
+            raise RuntimeError(
+                f"Ghostscript layer-tile render failed (rc={proc.returncode}): {stderr}"
+            )
+        if not os.path.exists(png_path):
+            raise RuntimeError(
+                f"Ghostscript produced no output for page {page_num} layer {layer_index}"
+            )
+        with open(png_path, "rb") as fh:
+            return fh.read()
 
 
 def render_all_pages(
