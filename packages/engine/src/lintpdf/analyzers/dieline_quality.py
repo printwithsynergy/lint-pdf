@@ -53,6 +53,7 @@ def check_dieline_quality(
     source: str,
     regions: list[dict[str, float]] | None = None,
     content_outside_tolerance_pts: float = 2.83,
+    max_bleed_mm: float | None = None,
 ) -> list[Finding]:
     """Emit dieline-quality findings for a resolved dieline.
 
@@ -208,6 +209,13 @@ def check_dieline_quality(
     # T3-D05 — content outside dieline polygon (envelope-based).
     # Uses DielineResult.regions to compute the axis-aligned envelope
     # and flags paint bboxes that extend past it by >tolerance.
+    #
+    # T3-D04 (LPDF_DIE_EXCESSIVE_BLEED) rides the same envelope
+    # computation but measures overhang against ``max_bleed_mm``
+    # instead of the smaller `content_outside_tolerance_pts`. Both
+    # findings can co-fire when content both crosses the envelope AND
+    # exceeds the max-bleed allowance.
+    envelope: tuple[float, float, float, float] | None = None
     if regions and signals.foreign_content_bboxes:
         envelope = _envelope_of_regions(regions)
         if envelope is not None:
@@ -241,6 +249,49 @@ def check_dieline_quality(
                         object_type="dieline_polygon",
                     )
                 )
+
+    # T3-D04 — excessive bleed past the dieline. Uses the same
+    # envelope computed above, measures overhang against max_bleed_mm
+    # (1mm ≈ 2.83pt).
+    if (
+        max_bleed_mm is not None
+        and max_bleed_mm > 0
+        and envelope is not None
+        and signals.foreign_content_bboxes
+    ):
+        max_bleed_pts = max_bleed_mm / 0.352778
+        excessive: list[tuple[float, float, float, float]] = []
+        worst_overhang_pts = 0.0
+        for bbox in signals.foreign_content_bboxes:
+            overhang = _bbox_overhang(bbox, envelope)
+            if overhang > max_bleed_pts:
+                excessive.append(bbox)
+                worst_overhang_pts = max(worst_overhang_pts, overhang)
+        if excessive:
+            worst_bbox = max(excessive, key=lambda b: _bbox_overhang(b, envelope))
+            worst_overhang_mm = worst_overhang_pts * 0.352778
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_DIE_EXCESSIVE_BLEED",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"{len(excessive)} content region(s) extend past the "
+                        f"dieline by more than {max_bleed_mm:.2f}mm on page 1 "
+                        f"(max overhang {worst_overhang_mm:.2f}mm)"
+                    ),
+                    page_num=1,
+                    details={
+                        "excessive_count": len(excessive),
+                        "max_overhang_mm": round(worst_overhang_mm, 3),
+                        "max_overhang_pts": round(worst_overhang_pts, 2),
+                        "max_bleed_mm": max_bleed_mm,
+                        "dieline_envelope_pts": list(envelope),
+                        "worst_paint_bbox_pts": list(worst_bbox),
+                    },
+                    iso_clause="ISO 15930-7:2010 6.2.4",
+                    object_type="dieline_polygon",
+                )
+            )
 
     # T3-D10 — varnish / VarnishFree collision.
     if signals.varnish_spots and signals.varnish_free_spots:

@@ -605,6 +605,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Varnish Applied Inside VarnishFree Region",
         "Varnish / coating spot overlaps a VarnishFree (no-coating) region. Remove varnish from the marked region in the source file before exporting.",
     ),
+    "LPDF_DIE_EXCESSIVE_BLEED": CheckInfo(
+        "Excessive Bleed Past Dieline",
+        "Artwork extends past the dieline polygon by more than the configured max_bleed_mm. Excessive bleed wastes paper and may complicate multi-up imposition.",
+    ),
+    "LPDF_INK_SUBSTRATE": CheckInfo(
+        "TAC Exceeds Substrate Limit",
+        "Observed max Total Area Coverage exceeds the limit typical for the declared substrate (uncoated offset 280%, coated 300%, newsprint 240%, digital 320%, flexo 260%, gravure 300%, large-format 280%).",
+    ),
     # ── AI File Classification ──────────────────────────────────────────────
     "AI_FCLASS_002": CheckInfo(
         "Document Classified",

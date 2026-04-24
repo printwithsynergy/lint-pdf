@@ -153,6 +153,29 @@ class ThresholdConfig(BaseModel):
         ),
     )
 
+    # T3-D04 — maximum acceptable bleed past the dieline polygon. When
+    # absent the LPDF_DIE_EXCESSIVE_BLEED check silently no-ops.
+    max_bleed_mm: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Maximum bleed extent past the dieline polygon in mm. Artwork "
+            "extending further than this triggers LPDF_DIE_EXCESSIVE_BLEED. "
+            "Typical range: 5-15mm. Absent disables the check."
+        ),
+    )
+
+    # T3-D12 — target substrate. Enables substrate-aware TAC advisory.
+    substrate: str | None = Field(
+        default=None,
+        description=(
+            "Target substrate for this profile. One of: uncoated_offset, "
+            "coated_offset, newsprint, digital, flexo, gravure, "
+            "large_format. Absent → LPDF_INK_SUBSTRATE advisory is "
+            "disabled."
+        ),
+    )
+
     # Color management thresholds
     target_output_condition: str = Field(
         default="",

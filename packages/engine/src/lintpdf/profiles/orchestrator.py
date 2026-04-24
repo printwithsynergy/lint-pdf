@@ -588,7 +588,7 @@ class PreflightOrchestrator:
             # Color management analyzers
             IccProfileAnalyzer(),
             SpotColorAnalyzer(custom_pantone_data=self._custom_pantone_overrides),
-            InkCoverageAnalyzer(tac_limit=t.tac_limit),
+            InkCoverageAnalyzer(tac_limit=t.tac_limit, substrate=t.substrate),
             AdvancedColorAnalyzer(
                 rich_black_c=t.rich_black_c,
                 rich_black_m=t.rich_black_m,

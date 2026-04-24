@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 392,
+  "total_checks": 394,
   "categories": [
     {
       "id": "image",
@@ -341,6 +341,12 @@
           "id": "LPDF_INK_003",
           "name": "Ink Channel Inventory",
           "description": "Summary of all ink channels used in the document.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_INK_SUBSTRATE",
+          "name": "TAC Exceeds Substrate Limit",
+          "description": "Observed max Total Area Coverage exceeds the limit typical for the declared substrate (uncoated offset 280%, coated 300%, newsprint 240%, digital 320%, flexo 260%, gravure 300%, large-format 280%).",
           "default_severity": "warning"
         }
       ]
@@ -2225,6 +2231,12 @@
           "id": "LPDF_DIE_CONTENT_OUTSIDE",
           "name": "Content Outside Dieline",
           "description": "Paint bbox extends beyond the dieline polygon envelope by more than the configured tolerance. Content may be clipped or trimmed in production.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_EXCESSIVE_BLEED",
+          "name": "Excessive Bleed Past Dieline",
+          "description": "Artwork extends past the dieline polygon by more than the configured max_bleed_mm. Excessive bleed wastes paper and may complicate multi-up imposition.",
           "default_severity": "advisory"
         },
         {

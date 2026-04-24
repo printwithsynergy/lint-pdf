@@ -883,6 +883,7 @@ def run_preflight(
                         spot_name=(job.dieline or {}).get("spot_name"),
                         source=(job.dieline or {}).get("source") or "missing",
                         regions=(job.dieline or {}).get("regions"),
+                        max_bleed_mm=profile.thresholds.max_bleed_mm,
                     )
                 except Exception:
                     logger.exception("Job %s dieline_quality check raised", job_id)
@@ -989,6 +990,7 @@ def run_preflight(
                         spot_name=(job.dieline or {}).get("spot_name"),
                         source=(job.dieline or {}).get("source") or "missing",
                         regions=(job.dieline or {}).get("regions"),
+                        max_bleed_mm=profile.thresholds.max_bleed_mm,
                     ):
                         db.add(
                             JobFinding(
