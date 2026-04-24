@@ -3,54 +3,56 @@ import Link from "next/link";
 import Script from "next/script";
 
 export const metadata: Metadata = {
-  title: "API Reference — LintPDF",
+  title: "API Reference (All Routes) — LintPDF Admin",
   description:
-    "Interactive OpenAPI reference for every tenant-facing LintPDF route.",
+    "Complete OpenAPI reference for every engine route including admin surface.",
 };
 
 /**
- * Tenant Swagger inside the authenticated dashboard. Identical payload
- * to the marketing-site ``/swagger`` page (same ``/openapi.tenant.json``
- * slice), but embedded in the dashboard chrome so customers can keep
- * their auth cookie + API key side by side while experimenting.
+ * Admin-only Swagger UI — loads the FULL ``/openapi.json`` from the
+ * engine, so every admin-scoped endpoint is visible and try-it-outable.
  *
- * Admin-only Swagger lives at ``/dashboard/admin/swagger``.
+ * Access is gated by the authenticated-admin layout that protects
+ * ``/dashboard/admin/*`` (see ``dashboard/admin/layout.tsx``).
+ *
+ * Tenants get a filtered slice at ``/dashboard/api-reference`` which
+ * loads ``/openapi.tenant.json`` and excludes admin routes.
+ *
+ * NB: the old path ``/dashboard/admin/swagger`` redirects here —
+ * Swagger UI is still what renders under the hood, but the URL and
+ * page title are aligned around "API Reference" now.
  */
-export default function TenantApiReferencePage() {
+export default function AdminApiReferencePage() {
   const openapiUrl = `${
     process.env.NEXT_PUBLIC_LINTPDF_API_URL ?? "https://api.lintpdf.com"
-  }/openapi.tenant.json`;
+  }/openapi.json`;
   return (
     <div className="min-h-screen">
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">API Reference</h1>
+          <h1 className="font-display text-2xl font-bold">
+            API Reference (All Routes)
+          </h1>
           <p className="text-sm text-muted-foreground">
-            Every endpoint your API key can call, backed by the live
-            OpenAPI spec. Use the Authorize button to paste your key and
-            try requests directly from this page.
+            Every route in the engine &mdash; tenant-facing and admin.
+            Authorize with your admin key to exercise{" "}
+            <code>/admin/*</code> endpoints. Tenant-facing copy:{" "}
+            <Link
+              href="/dashboard/api-reference"
+              className="underline underline-offset-2"
+            >
+              /dashboard/api-reference
+            </Link>
+            .
           </p>
         </div>
         <div className="flex gap-2 text-sm">
-          <Link
-            href="/dashboard/api-keys"
-            className="rounded border px-3 py-1 hover:bg-muted"
-          >
-            API keys
-          </Link>
           <Link
             href="/dashboard/webhooks"
             className="rounded border px-3 py-1 hover:bg-muted"
           >
             Webhooks
           </Link>
-          <a
-            href="/postman/lintpdf-tenant.postman_collection.json"
-            download="lintpdf-tenant.postman_collection.json"
-            className="rounded border px-3 py-1 hover:bg-muted"
-          >
-            Postman collection
-          </a>
           <a
             href="https://lintpdf.com/docs"
             target="_blank"
@@ -59,6 +61,12 @@ export default function TenantApiReferencePage() {
           >
             Public docs
           </a>
+          <Link
+            href="/dashboard/admin/postman"
+            className="rounded border px-3 py-1 hover:bg-muted"
+          >
+            Postman (full)
+          </Link>
         </div>
       </div>
 
@@ -85,7 +93,7 @@ export default function TenantApiReferencePage() {
               deepLinking: true,
               displayOperationId: false,
               defaultModelsExpandDepth: 0,
-              docExpansion: 'list',
+              docExpansion: 'none',
               filter: true,
               tryItOutEnabled: true,
               persistAuthorization: true
