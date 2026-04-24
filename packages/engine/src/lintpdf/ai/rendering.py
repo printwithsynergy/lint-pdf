@@ -175,6 +175,17 @@ def _render_page_via_ghostscript(
         with open(pdf_path, "wb") as fh:
             fh.write(pdf_bytes)
 
+        # WS-17A — ``-sColorConversionStrategy=RGB`` forces every
+        # device colour space (DeviceCMYK, DeviceN, Separation
+        # alternates) to convert to DeviceRGB at composition time.
+        # Without it, Ghostscript can render a spot-heavy page (the
+        # 2026-04-23 Test3 DailyFiber 10-up + Amalgam_Catalyst
+        # surfaces) as a single tinted shade because the page's
+        # Separation alternates collapse onto the same intermediate
+        # CMYK channel. ``-dRenderIntent=0`` (perceptual) keeps
+        # gamut mapping smooth so highly saturated spots stay
+        # distinguishable in the RGB preview.
+        #
         # ``-dSimulateOverprint=true`` is the current flag; older GS
         # builds (9.x) only honour ``-dOverprint=/simulate``. Passing
         # both is safe — unknown flags are ignored.
@@ -185,6 +196,8 @@ def _render_page_via_ghostscript(
             "-dBATCH",
             "-dSAFER",
             "-sDEVICE=png16m",
+            "-sColorConversionStrategy=RGB",
+            "-dRenderIntent=0",
             "-dSimulateOverprint=true",
             "-dOverprint=/simulate",
             "-dTextAlphaBits=4",

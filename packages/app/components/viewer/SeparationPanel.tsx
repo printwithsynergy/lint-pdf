@@ -16,8 +16,66 @@ const CHANNEL_COLORS: Record<string, string> = {
   Black: "#212121",
 };
 
-/** Generate a distinct hue for spot colors based on name hash. */
-function spotColorHue(name: string): string {
+/**
+ * Map a spot-color name to a swatch colour.
+ *
+ * Pre-WS-17 the swatch was always derived from a hash of the
+ * spot's name (`spotColorHue`), which produced absurd results for
+ * spots whose name *is* the colour: "Black" landed as a
+ * mid-saturation green, "Foil 425" as bright green, etc.
+ *
+ * The new precedence order:
+ *  1. Exact / case-insensitive match against known process
+ *     channels ("Black", "Cyan", "Magenta", "Yellow", "K", "C",
+ *     "M", "Y", "White") — render the actual ink colour.
+ *  2. Substring match against common colour words ("black",
+ *     "white", "silver", "gold", "foil", "beige", "buff", "cream",
+ *     "tan") and well-known print-process tokens ("cut", "die",
+ *     "crease", "perf", "varnish", "uv") — pick a sensible
+ *     representative.
+ *  3. Hash-based hue fallback for everything else, kept stable so
+ *     the same spot name always renders the same swatch.
+ */
+function spotSwatchColor(name: string): string {
+  const lowered = name.trim().toLowerCase();
+  const exact: Record<string, string> = {
+    black: "#212121",
+    k: "#212121",
+    cyan: "#00bcd4",
+    c: "#00bcd4",
+    magenta: "#e91e63",
+    m: "#e91e63",
+    yellow: "#fdd835",
+    y: "#fdd835",
+    white: "#f8fafc",
+  };
+  if (lowered in exact) return exact[lowered]!;
+
+  // Substring matchers (ordered most → least specific).
+  const substringMatchers: [RegExp, string][] = [
+    [/cut\s*contour|dieline|die\s*line|kiss\s*cut|\bdie\b|\bcut\b|crease|perf|fold|score/, "#dc2626"], // print-process / dieline → red
+    [/varnish|spot\s*uv|gloss|matte/, "#a3a3a3"],
+    [/foil|silver|metal|chrome/, "#9ca3af"],
+    [/gold/, "#d4af37"],
+    [/copper|bronze/, "#b87333"],
+    [/black|noir|onyx/, "#212121"],
+    [/white|ivory|cream/, "#f8fafc"],
+    [/beige|tan|sand/, "#d4a373"],
+    [/buff/, "#ddc593"],
+    [/red|crimson|maroon/, "#dc2626"],
+    [/orange/, "#ea580c"],
+    [/blue|navy|cobalt/, "#2563eb"],
+    [/green|teal|mint|sage/, "#16a34a"],
+    [/purple|violet|lavender/, "#7c3aed"],
+    [/pink|rose|fuchsia/, "#ec4899"],
+    [/brown/, "#8b5a2b"],
+    [/grey|gray|slate/, "#64748b"],
+  ];
+  for (const [re, color] of substringMatchers) {
+    if (re.test(lowered)) return color;
+  }
+
+  // Stable hash → HSL for unknown spots.
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -107,7 +165,7 @@ export function SeparationPanel({
           <ChannelToggle
             key={ch.name}
             name={ch.name}
-            color={CHANNEL_COLORS[ch.name] ?? spotColorHue(ch.name)}
+            color={CHANNEL_COLORS[ch.name] ?? spotSwatchColor(ch.name)}
             enabled={enabledChannels.has(ch.name)}
             onToggle={() => onToggleChannel(ch.name)}
           />
@@ -126,7 +184,7 @@ export function SeparationPanel({
             <ChannelToggle
               key={ch.name}
               name={ch.name}
-              color={spotColorHue(ch.name)}
+              color={spotSwatchColor(ch.name)}
               enabled={enabledChannels.has(ch.name)}
               onToggle={() => onToggleChannel(ch.name)}
             />

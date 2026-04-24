@@ -717,6 +717,39 @@ def run_preflight(
 
             duration_ms = int((time.monotonic() - start) * 1000)
 
+            # WS-19b — populate ``job.dieline`` so the viewer's Art
+            # Info panel can highlight the dieline polygon. The
+            # detect_dieline() pipeline runs name-match → geometry
+            # fallback → Sonnet (gated on the ``sonnet_fallback``
+            # feature). Failures are non-fatal: the preflight
+            # already finished and the absence of a dieline payload
+            # just means the panel renders the "No dieline detected"
+            # state.
+            try:
+                from lintpdf.analyzers.dieline import (
+                    detect_dieline,
+                    result_to_json,
+                )
+
+                tenant_features = frozenset(job.tenant.ai_features or [])
+                dieline_result = detect_dieline(pdf_bytes, ai_features=tenant_features)
+                if dieline_result.source != "missing":
+                    job.dieline = result_to_json(dieline_result)
+                    logger.info(
+                        "Job %s dieline detected via %s (confidence=%.2f)",
+                        job_id,
+                        dieline_result.source,
+                        dieline_result.confidence,
+                    )
+                else:
+                    job.dieline = None
+            except Exception:
+                logger.exception(
+                    "Job %s dieline detection raised — leaving job.dieline=None",
+                    job_id,
+                )
+                job.dieline = None
+
             # Serialize result for storage. Findings are denormalised
             # into a plain dict list so downstream report generators
             # (annotated_pdf, annotated_pdf_markup, html, json, xml) can
