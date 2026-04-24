@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import type { ComparisonState, PageInfo, ViewerConfig, ViewerFinding } from "./types";
 import { DEFAULT_VIEWER_CONFIG, DEFAULT_DPI, ViewerApiContext } from "./types";
 import { PageCanvas } from "./PageCanvas";
-import { ArtInfoPanel } from "./ArtInfoPanel";
 import { FindingsPanel } from "./FindingsPanel";
 import { PageNavigator } from "./PageNavigator";
 import { ViewerToolbar } from "./ViewerToolbar";
@@ -31,7 +30,7 @@ import { useTilePrefetch, useTileWarmingStatus } from "./useTileWarming";
 import { ShareDialog } from "./ShareDialog";
 import { ApprovalChainPanel } from "./ApprovalChainPanel";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain" | "artinfo";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
 
 interface PdfViewerProps {
@@ -643,6 +642,12 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
           enabledChannels={enabledChannels}
           onToggleChannel={handleToggleChannel}
           onSetAllChannels={handleSetAllChannels}
+          legendSwatches={
+            (config as { legend_swatches?: import("./types").SwatchClassification[] }).legend_swatches ?? []
+          }
+          dieline={
+            (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
+          }
         />
       );
     }
@@ -666,30 +671,6 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
           onModeChange={setComparisonMode}
           currentPage={currentPage}
           onPageChange={setCurrentPage}
-        />
-      );
-    }
-    if (viewerMode === "artinfo") {
-      // Art Info promoted to a top-level side-panel mode (per
-      // 2026-04-24 walkthrough): trim size + dieline + OCR + legend
-      // swatches now live in their own panel rather than tucked
-      // under the findings list, so operators can review the
-      // packaging metadata without scrolling past every finding.
-      return (
-        <ArtInfoPanel
-          jobId={jobId}
-          dieline={
-            (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
-          }
-          artSize={
-            (config as { art_size_mm?: import("./types").ArtSizeMM | null }).art_size_mm ?? null
-          }
-          swatches={
-            (config as { legend_swatches?: import("./types").SwatchClassification[] }).legend_swatches ?? []
-          }
-          ocrLayer={
-            (config as { ocr_text_layer?: import("./types").OCRPage[] | null }).ocr_text_layer ?? null
-          }
         />
       );
     }
@@ -738,11 +719,10 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             activeTab={findingsSeverity}
             onActiveTabChange={setFindingsSeverity}
           />
-          {/* Art Info panel moved to its own top-level "Art Info" mode
-              (toolbar) per the 2026-04-24 walkthrough — operators
-              wanted it in the menu rather than tucked under the
-              findings list. The panel itself now mounts at
-              ``viewerMode === "artinfo"`` above. */}
+          {/* Art Info was removed per 2026-04-24 walkthrough —
+              legend swatches moved into SeparationPanel and trim
+              size now lives as a clickable badge on the Trim/Bleed
+              box overlay. */}
         </>
       );
     }
@@ -856,7 +836,18 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
           <div className="flex-1 overflow-auto bg-neutral-800">
             <div className="flex min-h-full items-start justify-center p-2 pb-20">
               {currentPageInfo && (
-                <div className="relative">
+                // Stage always sized to canvasWidth × canvasHeight so
+                // tool overlays (Densitometer / Color Picker / Ruler /
+                // TAC Heatmap / Box Overlay) stay pinned regardless of
+                // which canvas (Separation / Layer / Page) is the
+                // primary. Before this, SeparationCanvas + LayerCanvas
+                // were absolute-positioned children of a zero-size
+                // container, so the tool overlays had no coordinate
+                // space to anchor to and drew off-viewport.
+                <div
+                  className="relative"
+                  style={{ width: canvasWidth, height: canvasHeight }}
+                >
                   {viewerMode === "separation" ? (
                     <SeparationCanvas jobId={jobId} pageNum={currentPage} enabledChannels={enabledChannels} allChannels={allChannelNames} width={canvasWidth} height={canvasHeight} />
                   ) : viewerMode === "layers" ? (

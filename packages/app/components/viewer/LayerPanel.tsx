@@ -92,7 +92,6 @@ export function LayerPanel({
               onChange={() => onToggleLayer(layer.ocg_index)}
               className="rounded border-white/10"
             />
-            <span className="inline-block h-3 w-3 shrink-0 rounded border border-white/10 bg-violet-400/40" />
             <span className="truncate text-xs">{layer.name}</span>
           </label>
         ))}

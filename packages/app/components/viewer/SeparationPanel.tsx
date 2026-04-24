@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { DielineResult, SwatchClassification } from "./types";
 import { useViewerApi } from "./types";
 
 interface SeparationChannel {
@@ -89,6 +90,15 @@ interface SeparationPanelProps {
   enabledChannels: Set<string>;
   onToggleChannel: (channel: string) => void;
   onSetAllChannels: (enabled: boolean) => void;
+  /** WS-legends: per-swatch legend/art classification shown as a
+   *  division under the Spot Colors list. Empty array hides the
+   *  section so CMYK-only files stay clean. */
+  legendSwatches?: SwatchClassification[];
+  /** Dieline result from the preflight pipeline. Used to call out
+   *  the spot ink acting as the dieline (e.g. "Dieline: Cutting")
+   *  inside the Separations panel so operators don't have to hop
+   *  back to a separate menu. */
+  dieline?: DielineResult | null;
 }
 
 export function SeparationPanel({
@@ -96,6 +106,8 @@ export function SeparationPanel({
   enabledChannels,
   onToggleChannel,
   onSetAllChannels,
+  legendSwatches = [],
+  dieline,
 }: SeparationPanelProps) {
   const { apiBase } = useViewerApi();
   const [channels, setChannels] = useState<SeparationChannel[]>([]);
@@ -189,6 +201,64 @@ export function SeparationPanel({
               onToggle={() => onToggleChannel(ch.name)}
             />
           ))}
+          </div>
+        </div>
+      )}
+
+      {/* Dieline — note which ink acts as the cutter path. */}
+      {dieline && dieline.source !== "missing" && (
+        <div className="space-y-1">
+          <p className="mb-1 text-xs font-medium text-slate-400">Dieline</p>
+          <div className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-slate-300">
+            <span
+              className="inline-block h-3 w-3 shrink-0 rounded-sm"
+              style={{
+                backgroundColor: dieline.spot_name
+                  ? spotSwatchColor(dieline.spot_name)
+                  : "#dc2626",
+              }}
+            />
+            <span className="truncate">
+              {dieline.spot_name ?? (dieline.source === "vision" ? "Detected by vision" : "Detected by shape")}
+            </span>
+            <span className="ml-auto text-[10px] text-slate-500">
+              {dieline.source}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Legend swatches — designer-drawn "see-what-prints" panels. */}
+      {legendSwatches.length > 0 && (
+        <div className="space-y-1">
+          <p className="mb-1 text-xs font-medium text-slate-400">
+            Legend Swatches ({legendSwatches.length})
+          </p>
+          <div className="flex flex-col gap-0.5">
+            {legendSwatches.map((sw, i) => (
+              <div
+                key={`${sw.spot_name}-${i}`}
+                className="flex items-center gap-2 rounded px-2 py-1.5 text-xs text-slate-300 hover:bg-slate-800"
+                title={`${sw.kind} — ${(sw.confidence * 100).toFixed(0)}% confident (${sw.source})`}
+              >
+                <span
+                  className="inline-block h-3 w-3 shrink-0 rounded-sm"
+                  style={{ backgroundColor: spotSwatchColor(sw.spot_name) }}
+                />
+                <span className="truncate">{sw.spot_name}</span>
+                <span
+                  className={`ml-auto text-[10px] ${
+                    sw.kind === "legend"
+                      ? "text-emerald-400"
+                      : sw.kind === "art"
+                        ? "text-blue-400"
+                        : "text-slate-500"
+                  }`}
+                >
+                  {sw.kind}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
