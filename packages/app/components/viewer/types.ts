@@ -85,6 +85,22 @@ export interface DielineResult {
   polylines: number[][][];
   spot_name: string | null;
   confidence: number;
+  /** Per-artwork bboxes extracted from dieline strokes. Multi-
+   *  artwork PDFs (circle + rectangle on one sheet) expose one
+   *  entry per island so the viewer can anchor a size popover
+   *  per region. */
+  regions?: Array<{
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+    width_mm: number;
+    height_mm: number;
+  }>;
+  /** True when the dieline layer paints in more than one colour.
+   *  Real dielines are single-ink cut paths, so this flags
+   *  misplaced artwork on the cut layer. */
+  multi_color?: boolean;
 }
 
 /** WS-D art size derived from the dieline centerline. */
