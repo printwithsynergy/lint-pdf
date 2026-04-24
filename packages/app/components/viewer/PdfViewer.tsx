@@ -31,7 +31,7 @@ import { useTilePrefetch, useTileWarmingStatus } from "./useTileWarming";
 import { ShareDialog } from "./ShareDialog";
 import { ApprovalChainPanel } from "./ApprovalChainPanel";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain" | "artinfo";
 type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
 
 interface PdfViewerProps {
@@ -669,6 +669,30 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
         />
       );
     }
+    if (viewerMode === "artinfo") {
+      // Art Info promoted to a top-level side-panel mode (per
+      // 2026-04-24 walkthrough): trim size + dieline + OCR + legend
+      // swatches now live in their own panel rather than tucked
+      // under the findings list, so operators can review the
+      // packaging metadata without scrolling past every finding.
+      return (
+        <ArtInfoPanel
+          jobId={jobId}
+          dieline={
+            (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
+          }
+          artSize={
+            (config as { art_size_mm?: import("./types").ArtSizeMM | null }).art_size_mm ?? null
+          }
+          swatches={
+            (config as { legend_swatches?: import("./types").SwatchClassification[] }).legend_swatches ?? []
+          }
+          ocrLayer={
+            (config as { ocr_text_layer?: import("./types").OCRPage[] | null }).ocr_text_layer ?? null
+          }
+        />
+      );
+    }
     if (config.enable_findings_panel) {
       return (
         <>
@@ -714,26 +738,11 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
             activeTab={findingsSeverity}
             onActiveTabChange={setFindingsSeverity}
           />
-          {/* WS-E Art Info — trim size + dieline toggle + OCR text toggle +
-              legend/art badged swatches. Data flows from the WS-D JobResponse
-              fields (dieline, art_size_mm, legend_swatches) and WS-C
-              (ocr_text_layer). Props default to safe empty values so the
-              panel is a no-op when the job doesn't carry packaging data. */}
-          <ArtInfoPanel
-            jobId={jobId}
-            dieline={
-              (config as { dieline?: import("./types").DielineResult | null }).dieline ?? null
-            }
-            artSize={
-              (config as { art_size_mm?: import("./types").ArtSizeMM | null }).art_size_mm ?? null
-            }
-            swatches={
-              (config as { legend_swatches?: import("./types").SwatchClassification[] }).legend_swatches ?? []
-            }
-            ocrLayer={
-              (config as { ocr_text_layer?: import("./types").OCRPage[] | null }).ocr_text_layer ?? null
-            }
-          />
+          {/* Art Info panel moved to its own top-level "Art Info" mode
+              (toolbar) per the 2026-04-24 walkthrough — operators
+              wanted it in the menu rather than tucked under the
+              findings list. The panel itself now mounts at
+              ``viewerMode === "artinfo"`` above. */}
         </>
       );
     }

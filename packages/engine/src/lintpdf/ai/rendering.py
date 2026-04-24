@@ -343,6 +343,36 @@ def render_isolated_layer_tile(
     ocg_off = [i for i in all_layer_indices if i != layer_index]
     pdf_isolated = _apply_ocg_overrides(pdf_bytes, [layer_index], ocg_off)
 
+    # Prefer the software composite (per-channel separations + RGBA
+    # blend) — same path the regular tile uses. ``pngalpha`` collapses
+    # spot inks to a flat single tint when the file has no
+    # OutputIntent (every file in the curated corpus per
+    # LPDF_COLOR_006), which leaves the layer tile blank or wrongly
+    # tinted. The software composite resolves spot colours via tiffsep
+    # and produces a transparent-RGBA tile where no ink lands.
+    try:
+        from lintpdf.reports.separation_renderer import (
+            list_separations,
+            render_composite_via_separations,
+        )
+
+        if any(
+            s.get("type") == "spot" for s in list_separations(pdf_isolated)
+        ):
+            tile = render_composite_via_separations(
+                pdf_isolated,
+                page_num,
+                dpi=dpi,
+                rgba=True,
+            )
+            if tile is not None:
+                return tile
+    except Exception:
+        logger.exception(
+            "render_isolated_layer_tile: software composite raised; "
+            "falling back to Ghostscript pngalpha"
+        )
+
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_path = os.path.join(tmpdir, "input.pdf")
         png_path = os.path.join(tmpdir, "page.png")

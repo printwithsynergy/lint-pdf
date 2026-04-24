@@ -1239,6 +1239,7 @@ def render_composite_via_separations(
     tenant_id: str | None = None,
     job_id: str | None = None,
     storage: StorageBackend | None = None,
+    rgba: bool = False,
 ) -> bytes | None:
     """Software-composite the page from per-channel separations.
 
@@ -1246,6 +1247,13 @@ def render_composite_via_separations(
     the tiffsep output, or ``None`` when there are no separations
     to composite (the caller should then fall back to the regular
     Ghostscript path).
+
+    Set ``rgba=True`` to return an RGBA image where pixels with no
+    ink across any plate come back transparent — used by the WS-17C
+    layer compositor so isolated-layer tiles can stack via
+    ``source-over`` without painting white over the base. The RGB
+    branch (``rgba=False``) keeps the regular composite-tile shape
+    for the default page preview.
 
     The composite honours the subtractive ink model: every 1 % of
     tint applied to a plate removes ``absorption_coef × 0.01`` from
@@ -1257,6 +1265,9 @@ def render_composite_via_separations(
 
     Uses the CMYK + spot cache populated by :func:`sample_densitometer`
     when available; falls back to a fresh tiffsep run on miss.
+    Caching is skipped when ``rgba=True`` because the RGBA tile is
+    OCG-overridden — the input PDF differs from the canonical job
+    PDF and the cached plates wouldn't apply.
     """
     import numpy as np
 
@@ -1271,6 +1282,10 @@ def render_composite_via_separations(
         spot_names = []
 
     plates: list[tuple[str, np.ndarray]] = []
+    # OCG-overridden inputs (rgba=True path) can't reuse the cached
+    # plates because the cache keys ignore the override.
+    if rgba:
+        cache_ok = False
     if cache_ok and tenant_id and job_id and storage:
         cmyk_ok = True
         for ch in PROCESS_CHANNEL_ORDER:
@@ -1369,5 +1384,17 @@ def render_composite_via_separations(
 
     rgb_uint8 = np.clip(rgb, 0.0, 255.0).astype(np.uint8)
     buf = io.BytesIO()
-    Image.fromarray(rgb_uint8, mode="RGB").save(buf, format="PNG")
+    if rgba:
+        # Alpha = max ink density across every plate. Pixels with no
+        # ink (which the subtractive model leaves at pure white) come
+        # back transparent so the browser's source-over compositor
+        # can stack isolated layer tiles cleanly.
+        max_ink = np.zeros((rgb.shape[0], rgb.shape[1]), dtype=np.float32)
+        for _name, plate in plates:
+            np.maximum(max_ink, np.clip(plate, 0.0, 100.0), out=max_ink)
+        alpha = (max_ink * 2.55).astype(np.uint8)  # 0-100 → 0-255
+        rgba_uint8 = np.dstack([rgb_uint8, alpha])
+        Image.fromarray(rgba_uint8, mode="RGBA").save(buf, format="PNG")
+    else:
+        Image.fromarray(rgb_uint8, mode="RGB").save(buf, format="PNG")
     return buf.getvalue()
