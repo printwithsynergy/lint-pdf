@@ -142,10 +142,20 @@ export default function DownloadsPage() {
           <CardHeader>
             <CardTitle>No release available yet</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
               Your account has the desktop add-on enabled, but no release has
               been published yet. Please check back shortly.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Expecting a release?{" "}
+              <a
+                href="mailto:support@lintpdf.com?subject=Desktop%20App%20-%20missing%20release"
+                className="underline"
+              >
+                Contact support
+              </a>{" "}
+              and we&rsquo;ll get it pushed out.
             </p>
           </CardContent>
         </Card>
