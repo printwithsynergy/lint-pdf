@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { PageInfo } from "./types";
 
 interface BoxOverlayProps {
@@ -27,11 +28,34 @@ function boxToPixels(
   };
 }
 
-function ptToMm(pts: number): string {
-  return (pts * 25.4 / 72).toFixed(1);
+function ptToMm(pts: number): number {
+  return pts * 25.4 / 72;
 }
 
+function ptToInches(pts: number): number {
+  return pts / 72;
+}
+
+function formatSize(widthPts: number, heightPts: number): {
+  mm: string;
+  inches: string;
+} {
+  return {
+    mm: `${ptToMm(widthPts).toFixed(2)} × ${ptToMm(heightPts).toFixed(2)} mm`,
+    inches: `${ptToInches(widthPts).toFixed(3)} × ${ptToInches(heightPts).toFixed(3)} in`,
+  };
+}
+
+/**
+ * BoxOverlay — Trim / Bleed / Crop box indicators with a clickable
+ * info icon per box that reveals the dimensions in both millimetres
+ * and inches. Multi-artwork files (front + back in one PDF) can have
+ * different trim/bleed regions per page; the per-box popover lets
+ * operators verify each one without mental conversion.
+ */
 export function BoxOverlay({ page, canvasWidth, canvasHeight }: BoxOverlayProps) {
+  const [openPopover, setOpenPopover] = useState<string | null>(null);
+
   const boxes: {
     label: string;
     color: string;
@@ -70,15 +94,16 @@ export function BoxOverlay({ page, canvasWidth, canvasHeight }: BoxOverlayProps)
 
   return (
     <div
-      className="pointer-events-none absolute inset-0"
+      className="absolute inset-0"
       style={{ zIndex: 15 }}
     >
-      <svg width={canvasWidth} height={canvasHeight}>
+      <svg
+        width={canvasWidth}
+        height={canvasHeight}
+        style={{ pointerEvents: "none" }}
+      >
         {boxes.map(({ label, color, dashArray, box }) => {
           const px = boxToPixels(box, page, canvasWidth, canvasHeight);
-          const widthMm = ptToMm(box.x1 - box.x0);
-          const heightMm = ptToMm(box.y1 - box.y0);
-
           return (
             <g key={label}>
               <rect
@@ -92,47 +117,72 @@ export function BoxOverlay({ page, canvasWidth, canvasHeight }: BoxOverlayProps)
                 strokeDasharray={dashArray}
                 opacity={0.8}
               />
-              {/* Label */}
               <text
-                x={px.left + 4}
+                x={px.left + 22}
                 y={px.top - 4}
                 fill={color}
                 fontSize={10}
                 fontWeight="bold"
                 fontFamily="sans-serif"
               >
-                {label} ({widthMm} x {heightMm} mm)
-              </text>
-              {/* Width dimension */}
-              <text
-                x={px.left + px.width / 2}
-                y={px.top + px.height + 14}
-                fill={color}
-                fontSize={9}
-                textAnchor="middle"
-                fontFamily="sans-serif"
-              >
-                {widthMm} mm
-              </text>
-              {/* Height dimension */}
-              <text
-                x={px.left - 4}
-                y={px.top + px.height / 2}
-                fill={color}
-                fontSize={9}
-                textAnchor="end"
-                fontFamily="sans-serif"
-                transform={`rotate(-90, ${px.left - 4}, ${px.top + px.height / 2})`}
-              >
-                {heightMm} mm
+                {label}
               </text>
             </g>
           );
         })}
       </svg>
 
+      {/* Per-box info icons. Separate from the SVG so they can
+          receive pointer events while the SVG grid stays
+          non-interactive. */}
+      {boxes.map(({ label, color, box }) => {
+        const px = boxToPixels(box, page, canvasWidth, canvasHeight);
+        const size = formatSize(box.x1 - box.x0, box.y1 - box.y0);
+        const isOpen = openPopover === label;
+        return (
+          <div key={`icon-${label}`} className="absolute" style={{
+            left: Math.max(0, px.left + 4),
+            top: Math.max(0, px.top - 20),
+          }}>
+            <button
+              type="button"
+              aria-label={`${label} size`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenPopover(isOpen ? null : label);
+              }}
+              className="flex h-4 w-4 items-center justify-center rounded-full text-[10px] font-bold text-white shadow ring-1 ring-black/20"
+              style={{ backgroundColor: color }}
+              title={`Show ${label.toLowerCase()} size`}
+            >
+              i
+            </button>
+            {isOpen && (
+              <div
+                className="absolute left-5 top-0 z-20 w-max rounded-md bg-black/90 px-3 py-2 text-xs text-white shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="mb-1 flex items-center gap-2 border-b border-white/10 pb-1">
+                  <span
+                    className="inline-block h-2 w-2 rounded-sm"
+                    style={{ backgroundColor: color }}
+                  />
+                  <span className="font-semibold">{label} size</span>
+                </div>
+                <div className="grid grid-cols-[auto_auto] gap-x-3 gap-y-0.5">
+                  <span className="text-slate-400">Metric</span>
+                  <span className="font-mono">{size.mm}</span>
+                  <span className="text-slate-400">Imperial</span>
+                  <span className="font-mono">{size.inches}</span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
       {/* Legend */}
-      <div className="absolute bottom-2 left-2 rounded bg-black/70 p-2 text-xs text-white">
+      <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/70 p-2 text-xs text-white">
         <p className="mb-1 font-semibold">Page Boxes</p>
         {boxes.map(({ label, color }) => (
           <div key={label} className="flex items-center gap-1">

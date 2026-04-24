@@ -5,7 +5,7 @@ import { ZoomControls } from "./ZoomControls";
 import type { ViewerCapabilityKey, ViewerConfig } from "./types";
 import { DEFAULT_VIEWER_CONFIG, FILLABLE_CAPABILITIES, useViewerApi } from "./types";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain" | "artinfo";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
 
 interface ViewerToolbarProps {
@@ -330,15 +330,6 @@ export function ViewerToolbar({
             icon="Layers"
             active={viewerMode === "layers"}
             onClick={() => onToggleMode("layers")}
-          />
-        )}
-
-        {onToggleMode && (
-          <ToolButton
-            label="Art Info"
-            icon="ArtInfo"
-            active={viewerMode === "artinfo"}
-            onClick={() => onToggleMode("artinfo")}
           />
         )}
 
