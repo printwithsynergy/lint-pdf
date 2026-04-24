@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 142,
+  "total_checks": 373,
   "categories": [
     {
       "id": "image",
@@ -270,6 +270,36 @@
           "name": "Wrong ICC Device Class",
           "description": "ICC profile device class doesn't match usage context.",
           "default_severity": "error"
+        },
+        {
+          "id": "LPDF_ICC_005",
+          "name": "Output intent # has unrecognized condition",
+          "description": "Output intent #N has unrecognized condition 'N'",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_ICC_006",
+          "name": "Multiple output intents have inconsistent color space",
+          "description": "Multiple output intents have inconsistent color space types: N",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_ICC_007",
+          "name": "ICC profile",
+          "description": "ICC profile 'N' on page N is missing required tag(s): N",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_ICC_008",
+          "name": "Document uses ICC profiles with different rendering",
+          "description": "Document uses ICC profiles with different rendering intents: N",
+          "default_severity": "error"
+        },
+        {
+          "id": "LPDF_ICC_009",
+          "name": "ICC profile has non-D50 PCS illuminant",
+          "description": "ICC profile 'N' has non-D50 PCS illuminant: X=N, Y=N, Z=N (expected X=0.9642, Y=1.0, Z=0.8249)",
+          "default_severity": "error"
         }
       ]
     },
@@ -318,6 +348,54 @@
           "name": "Similar Spot Names",
           "description": "Multiple spot colors have very similar names \u2014 may be duplicates.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_004",
+          "name": "DeviceN on page colorant count",
+          "description": "DeviceN 'N' on page N: colorant count (N) does not match components (N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_005",
+          "name": "DeviceN on page includes process",
+          "description": "DeviceN 'N' on page N includes process colors: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_006",
+          "name": "Pantone spot color not found",
+          "description": "Pantone spot color 'N' not found in reference database \u2014 upload custom Pantone data for Delta-E validation",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_007",
+          "name": "Unknown spot color does not match",
+          "description": "Unknown spot color 'N' does not match any known color library (PANTONE, HKS, TOYO, DIC, RAL)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_008",
+          "name": "Spot color library has alternate",
+          "description": "Spot color 'N' (N library) has alternate space 'N' which is not expected (expected: N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_009",
+          "name": "Duplicate spot color",
+          "description": "Duplicate spot color 'N' on page N defined N time(s) with different parameters: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_010",
+          "name": "Document uses spot color(s exceeding",
+          "description": "Document uses N spot color(s), exceeding the maximum of N: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_011",
+          "name": "Spot color used at 0% tint",
+          "description": "Spot color 'N' used at 0% tint on page N (invisible)",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -341,6 +419,36 @@
           "id": "LPDF_OVER_003",
           "name": "Overprint Mode Mismatch",
           "description": "Overprint mode setting is inconsistent.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_OVER_004",
+          "name": "White overprint on page fill",
+          "description": "White overprint on page N (fill is white with overprint active \u2014 content underneath will show through)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_OVER_005",
+          "name": "Overprint inventory object(s with overprint enabled",
+          "description": "Overprint inventory: N object(s) with overprint enabled across N color space type(s)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_OVER_006",
+          "name": "Overprint active with DeviceRGB",
+          "description": "Overprint active with DeviceRGB on page N (undefined behavior on press)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_OVER_007",
+          "name": "Small black text instance min",
+          "description": "N small black text instanceN (min Npt) in knockout mode on page N (overprint not active \u2014 risk of misregistration)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_OVER_008",
+          "name": "Registration color with overprint active",
+          "description": "Registration color with overprint active on page N (registration color outside marks is dangerous)",
           "default_severity": "warning"
         }
       ]
@@ -377,6 +485,18 @@
           "id": "LPDF_TRANS_005",
           "name": "Transparency Group",
           "description": "A transparency group is defined on this page.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_TRANS_006",
+          "name": "Knockout transparency group on page may",
+          "description": "Knockout transparency group on page N (may cause unexpected rendering)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_TRANS_007",
+          "name": "Shading pattern detected",
+          "description": "Shading pattern detected on page N (N shadingN, potential gradient banding risk)",
           "default_severity": "warning"
         }
       ]
@@ -482,9 +602,33 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_TEXT_002",
+          "name": "Very small text pt effective",
+          "description": "Very small text (Npt effective) on page N (below Npt)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_TEXT_003",
+          "name": "Invisible text rendering mode 3",
+          "description": "Invisible text (rendering mode 3) on page N (text is neither filled nor stroked)",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_TEXT_004",
           "name": "White Text",
           "description": "White text detected \u2014 verify it's intentional and not hidden content.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_TEXT_005",
+          "name": "Text on registration color 100% all CMYK",
+          "description": "Text on registration color (100% all CMYK) on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_TEXT_006",
+          "name": "Small multi-ink text pt inks",
+          "description": "Small multi-ink text (Npt, N inks) on page N (risk of misregistration)",
           "default_severity": "advisory"
         }
       ]
@@ -512,9 +656,39 @@
       "label": "Strokes",
       "checks": [
         {
+          "id": "LPDF_STROKE_001",
+          "name": "Hairline stroke",
+          "description": "Hairline stroke (Npt) on page N (below Npt minimum)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_STROKE_002",
+          "name": "Zero-width stroke on page will not",
+          "description": "Zero-width stroke on page N (will not render in print)",
+          "default_severity": "warning"
+        },
+        {
           "id": "LPDF_STROKE_003",
           "name": "Butt Cap on Thin Line",
           "description": "A butt line cap on a thin stroke may cause visible gaps \u2014 round cap recommended.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_STROKE_004",
+          "name": "Multi-ink thin stroke pt inks",
+          "description": "Multi-ink thin stroke (Npt, N inks) on page N (risk of misregistration on thin lines)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_STROKE_005",
+          "name": "Invisible stroke white/zero-opacity on page renders",
+          "description": "Invisible stroke (white/zero-opacity) on page N (renders as white line art)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_STROKE_006",
+          "name": "Non-default flatness tolerance",
+          "description": "Non-default flatness tolerance (N) on page N (may affect curve rendering quality)",
           "default_severity": "warning"
         },
         {
@@ -529,6 +703,12 @@
       "id": "paths",
       "label": "Paths & vectors",
       "checks": [
+        {
+          "id": "LPDF_PATH_001",
+          "name": "Excessive path points",
+          "description": "Excessive path points (N) on page N (may cause RIP slowdown or failure)",
+          "default_severity": "advisory"
+        },
         {
           "id": "LPDF_PATH_002",
           "name": "White Fill Path",
@@ -606,6 +786,48 @@
           "name": "Multiple Page Sizes",
           "description": "Document contains pages of different sizes which may complicate imposition.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DOC_002",
+          "name": "Document has inconsistent page rotations",
+          "description": "Document has inconsistent page rotations: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DOC_003",
+          "name": "Document has no title in Info dictionary",
+          "description": "Document has no title in Info dictionary",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DOC_004",
+          "name": "Document is encrypted not allowed in print",
+          "description": "Document is encrypted (not allowed in print workflows)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DOC_005",
+          "name": "Linearized PDF detected web-optimized may need",
+          "description": "Linearized PDF detected (web-optimized, may need re-saving for print)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DOC_006",
+          "name": "Incremental updates detected trailer has /Prev",
+          "description": "Incremental updates detected (trailer has /Prev reference, file may contain stale data)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DOC_007",
+          "name": "File size MB exceeds threshold",
+          "description": "File size (N MB) exceeds threshold (N MB)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DOC_008",
+          "name": "Pre-separated pages detected pages with single",
+          "description": "Pre-separated pages detected (N pages with single Separation color space)",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -636,6 +858,66 @@
           "name": "Embedded Files",
           "description": "Document contains embedded file attachments.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_005",
+          "name": "3D annotation found",
+          "description": "3D annotation found on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_006",
+          "name": "Document contains XFA forms not supported",
+          "description": "Document contains XFA forms (not supported in print workflows)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_007",
+          "name": "Document is a tagged PDF structure tree",
+          "description": "Document is a tagged PDF (structure tree present)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_008",
+          "name": "JavaScript action detected in page actions",
+          "description": "JavaScript action detected in page N actions (security and print workflow risk)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_009",
+          "name": "Document contains interactive form field(s text",
+          "description": "Document contains N interactive form field(s) (text inputs, buttons, dropdowns, or signatures)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_010",
+          "name": "Layer configuration has print-specific visibility",
+          "description": "Layer configuration has print-specific visibility rules for N layer(s)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_011",
+          "name": "PostScript fragment Type 1 XObject detected",
+          "description": "PostScript fragment (Type 1 XObject) detected on page N (prohibited in modern PDF/X workflows)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_012",
+          "name": "Document contains bookmarks/outlines entries",
+          "description": "Document contains bookmarks/outlines (N entries)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_013",
+          "name": "Embedded page thumbnails detected starting",
+          "description": "Embedded page thumbnails detected (starting on page N \u2014 increases file size unnecessarily)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_STRUCT_014",
+          "name": "Non-JavaScript action detected in document catalog",
+          "description": "Non-JavaScript action 'N' detected in document catalog (may cause unexpected behavior in print workflow)",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -647,6 +929,24 @@
           "id": "LPDF_META_001",
           "name": "No XMP Metadata",
           "description": "XMP metadata stream is missing \u2014 may be required by some standards.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_META_002",
+          "name": "Title mismatch Info dict vs XMP",
+          "description": "Title mismatch: Info dict 'N' vs XMP 'N'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_META_003",
+          "name": "Trapped key is in XMP metadata",
+          "description": "Trapped key is N in XMP metadata",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_META_004",
+          "name": "PDF version mismatch header vs XMP",
+          "description": "PDF version mismatch: header 'N' vs XMP 'N'",
           "default_severity": "advisory"
         }
       ]
@@ -662,9 +962,33 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_ANNOT_002",
+          "name": "Multimedia annotation",
+          "description": "Multimedia annotation (N) on page N",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_ANNOT_003",
           "name": "Link Annotation",
           "description": "A clickable link annotation is present on this page.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ANNOT_004",
+          "name": "Stamp annotation",
+          "description": "Stamp annotation on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ANNOT_005",
+          "name": "Non-printing annotation in trim area",
+          "description": "Non-printing N annotation in trim area on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ANNOT_006",
+          "name": "TrapNet annotation on page embedded trapping",
+          "description": "TrapNet annotation on page N (embedded trapping may conflict with RIP trapping settings)",
           "default_severity": "advisory"
         }
       ]
@@ -686,15 +1010,69 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_ACCESS_003",
+          "name": "Document is a tagged PDF StructTreeRoot",
+          "description": "Document is a tagged PDF (StructTreeRoot and MarkInfo present)",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_ACCESS_004",
           "name": "Missing Document Language",
           "description": "The /Lang entry is missing from the document catalog.",
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_ACCESS_005",
+          "name": "Image on page may lack",
+          "description": "Image 'N' on page N may lack alternative text (/Alt)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_006",
+          "name": "No heading structure found in document missing",
+          "description": "No heading structure found in document (missing /H1../H6 tags)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_007",
+          "name": "Table structure found but no table header",
+          "description": "Table structure found but no table header (/TH) elements present",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_008",
+          "name": "List items found without proper list container",
+          "description": "List items found without proper list container (/L) structure",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_009",
+          "name": "No Artifact markings found in structure tree",
+          "description": "No Artifact markings found in structure tree; decorative elements may not be properly excluded",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_010",
+          "name": "Reading order undefined /StructTreeRoot has no /K",
+          "description": "Reading order undefined (/StructTreeRoot has no /K children)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_011",
+          "name": "No structural emphasis tags /Em /Strong found",
+          "description": "No structural emphasis tags (/Em, /Strong) found; information may be conveyed by color alone",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_ACCESS_012",
           "name": "No Output Intent for Contrast",
           "description": "Cannot verify text-background contrast for accessibility without an output intent.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_013",
+          "name": "Tab order not specified",
+          "description": "Tab order not specified on page N (/Tabs missing)",
           "default_severity": "advisory"
         }
       ]
@@ -710,9 +1088,165 @@
           "default_severity": "warning"
         },
         {
+          "id": "LPDF_BARCODE_004",
+          "name": "Barcode decode failed",
+          "description": "Barcode decode failed on page N \u2014 candidate region could not be decoded",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_005",
+          "name": "Barcode grade",
+          "description": "Barcode grade 'N' on page N is below minimum 'N'",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_006",
+          "name": "Barcode quiet zone",
+          "description": "Barcode quiet zone on page N is Nmm, below required Nmm",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_007",
+          "name": "Barcode symbol contrast below B grade",
+          "description": "Barcode symbol contrast N below B grade on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_008",
+          "name": "Poor barcode edge contrast CV=",
+          "description": "Poor barcode edge contrast (CV=N) on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_009",
+          "name": "Barcode quiet zone mm below ISO minimum",
+          "description": "Barcode quiet zone Nmm below ISO minimum Nmm on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_010",
+          "name": "Barcode bar width deviation %",
+          "description": "Barcode bar width deviation N% on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_011",
+          "name": "Possible barcode defect",
+          "description": "Possible barcode defect on page N \u2014 only N strokes detected",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_012",
+          "name": "Barcode modulation below C grade",
+          "description": "Barcode modulation N below C grade on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_013",
+          "name": "Barcode decodability below C grade",
+          "description": "Barcode decodability N below C grade on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_014",
+          "name": "Potential 2D barcode detected",
+          "description": "Potential 2D barcode detected on page N (N modules in NxNpt region)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_015",
+          "name": "2D barcode grid irregularity",
+          "description": "2D barcode grid irregularity on page N (width CV=N, height CV=N)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_016",
+          "name": "2D barcode on page contains",
+          "description": "2D barcode on page N contains N modules",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_017",
+          "name": "2D barcode aspect ratio",
+          "description": "2D barcode aspect ratio N on page N (expected near 1.0 for most 2D symbologies)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_018",
+          "name": "2D barcode size xmm",
+          "description": "2D barcode size NxNmm on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_019",
+          "name": "Barcode candidate on page \u2014 verify",
+          "description": "Barcode candidate on page N \u2014 verify GS1 format compliance if applicable",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_020",
+          "name": "Barcode candidate on page \u2014 verify",
+          "description": "Barcode candidate on page N \u2014 verify application identifier if applicable",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_021",
+          "name": "Barcode placement on page \u2014 center",
+          "description": "Barcode placement on page N \u2014 center at (N, N)pt",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_022",
+          "name": "Barcode symbology on page \u2014 verify",
+          "description": "Barcode symbology on page N \u2014 verify symbology meets specification requirements",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_023",
+          "name": "Barcode data length",
+          "description": "Barcode data length on page N \u2014 verify encoded data length meets requirements",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_024",
+          "name": "Barcode color compliance",
+          "description": "Barcode color compliance on page N \u2014 verify dark bars (K>0.7 or Gray<0.3) on light background",
+          "default_severity": "warning"
+        },
+        {
           "id": "LPDF_BARCODE_025",
           "name": "Low Barcode Resolution",
           "description": "The barcode area resolution is below the minimum for reliable scanning.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_026",
+          "name": "Barcode in portrait orientation",
+          "description": "Barcode in portrait orientation on page N (may affect scanning)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_027",
+          "name": "Multiple barcode candidates",
+          "description": "Multiple barcode candidates (N) on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_028",
+          "name": "Barcode extends beyond trim box",
+          "description": "Barcode extends beyond trim box on page N (will be trimmed)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_029",
+          "name": "Barcode center is mm from page center",
+          "description": "Barcode center is Nmm from page center on page N \u2014 may be near a fold",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_030",
+          "name": "Barcode height mm below ISO minimum",
+          "description": "Barcode height Nmm below ISO minimum on page N",
           "default_severity": "warning"
         }
       ]
@@ -732,6 +1266,54 @@
           "name": "Missing Dieline",
           "description": "No die line detected \u2014 expected for packaging artwork.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_003",
+          "name": "Dieline layer is on a non-printing",
+          "description": "Dieline layer 'N' is on a non-printing layer. Verify this is intentional for your packaging workflow.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_004",
+          "name": "Content on page is positioned significantly",
+          "description": "Content on page N is positioned significantly outside the trim box \u2014 may be outside the dieline boundary",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_005",
+          "name": "Content within mm packaging safe zone",
+          "description": "Content within Nmm packaging safe zone on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_006",
+          "name": "Packaging bleed insufficient on page minimum",
+          "description": "Packaging bleed insufficient on page N: (minimum Npt / Nmm for packaging)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_007",
+          "name": "Multiple distinct panel sizes detected across",
+          "description": "Multiple distinct panel sizes detected across N pages (N unique sizes) \u2014 common in multi-panel packaging",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_008",
+          "name": "Multi-page packaging layout detected Verify crossover",
+          "description": "Multi-page packaging layout detected. Verify crossover alignment between adjacent panels to ensure seamless print across fold/cut lines.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_009",
+          "name": "Varnish/coating layer detected",
+          "description": "Varnish/coating layer detected: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PKG_010",
+          "name": "White ink separation detected Ensure white ink",
+          "description": "White ink separation detected. Ensure white ink layer is correctly configured for your substrate and print process.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -740,9 +1322,21 @@
       "label": "Advanced print production",
       "checks": [
         {
+          "id": "LPDF_ADV_001",
+          "name": "CMYK image on page xpx",
+          "description": "CMYK image 'N' on page N (NxNpx) could be analyzed for GCR/UCR black generation strategy",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_ADV_002",
           "name": "Ink Savings Estimate",
           "description": "Analysis of potential ink savings through GCR optimization.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_003",
+          "name": "Trapping risk small text",
+          "description": "Trapping risk: small text (Npt) on page N uses N non-K process colors (misregistration risk without trapping)",
           "default_severity": "advisory"
         },
         {
@@ -755,6 +1349,66 @@
           "id": "LPDF_ADV_005",
           "name": "Black Composition",
           "description": "Breakdown of how black is built (pure K, rich black, registration).",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_006",
+          "name": "CxF defines spot color but no",
+          "description": "CxF defines spot color 'N' but no matching Separation space found in document",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_007",
+          "name": "CxF spectral data is embedded",
+          "description": "CxF spectral data is embedded in the document",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_008",
+          "name": "CxF spectral range for is -nm",
+          "description": "CxF spectral range for 'N' is N-Nnm, does not cover required 380-730nm",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_009",
+          "name": "CxF spectral data does not specify measurement",
+          "description": "CxF spectral data does not specify measurement geometry (e.g., 45/0, d/8)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_010",
+          "name": "CxF illuminant does not match output",
+          "description": "CxF illuminant 'N' does not match output intent illuminant 'N'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_011",
+          "name": "CxF observer angle \u00b0 is non-standard expected",
+          "description": "CxF observer angle N\u00b0 is non-standard (expected 2\u00b0 or 10\u00b0)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_012",
+          "name": "CxF spot spectral vs colorimetric Delta-E",
+          "description": "CxF spot 'N' spectral vs colorimetric Delta-E = N exceeds threshold N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_013",
+          "name": "CxF spectral data references library color",
+          "description": "CxF spectral data references N library color 'N'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_014",
+          "name": "CxF spectral data includes substrate paper white",
+          "description": "CxF spectral data includes substrate (paper white) measurement",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ADV_015",
+          "name": "CxF version may not be fully",
+          "description": "CxF version 'N' may not be fully compatible (supported: N)",
           "default_severity": "advisory"
         }
       ]
@@ -798,6 +1452,12 @@
           "name": "Brand Color Deviation",
           "description": "A color deviates from the configured brand palette.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_BRAND_003",
+          "name": "Brand Spec Deviation",
+          "description": "Artwork deviates from the active brand specification.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -809,6 +1469,12 @@
           "id": "AI_COSM_001",
           "name": "Cosmetics Label Issue",
           "description": "Required cosmetics labeling elements may be missing.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_COSM_002",
+          "name": "Cosmetic Ingredient List Issue",
+          "description": "Cosmetic ingredient list deviates from INCI ordering or minimum-type-size rules.",
           "default_severity": "advisory"
         }
       ]
@@ -858,6 +1524,48 @@
           "name": "Missing GHS Elements",
           "description": "Required GHS hazard label elements may be missing.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_GHS_002",
+          "name": "GHS Mutual Exclusion Violation",
+          "description": "Two mutually-exclusive GHS elements detected on the same label.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_GHS_003",
+          "name": "GHS Statement Without Pictogram",
+          "description": "H-statements or signal words detected but no GHS pictogram is present.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_GHS_004",
+          "name": "GHS H-Statements Detected",
+          "description": "H-statements detected on the label.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_GHS_005",
+          "name": "GHS P-Statements Detected",
+          "description": "P-statements detected on the label.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_GHS_006",
+          "name": "Multiple GHS Signal Words",
+          "description": "Multiple signal words detected. CLP allows only one signal word per label.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_GHS_007",
+          "name": "GHS Signal Word Detected",
+          "description": "A GHS signal word is present.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_GHS_008",
+          "name": "GHS Pictogram Below Minimum Size",
+          "description": "GHS pictogram below minimum size for the package dimensions.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -869,6 +1577,24 @@
           "id": "AI_PHARMA_001",
           "name": "Pharma Font Too Small",
           "description": "Text is below the minimum size required for pharmaceutical labeling.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_PHARMA_002",
+          "name": "FDA Body Text Below Minimum",
+          "description": "FDA Drug Facts body text point size is below the required minimum.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_PHARMA_003",
+          "name": "FDA Heading Below Minimum",
+          "description": "FDA Drug Facts heading point size is below the required minimum.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_PHARMA_004",
+          "name": "FDA Text Density Excessive",
+          "description": "FDA Drug Facts text exceeds the maximum characters-per-inch readability threshold.",
           "default_severity": "advisory"
         }
       ]
@@ -882,6 +1608,12 @@
           "name": "Alcohol Label Issue",
           "description": "Required alcohol labeling elements may be missing.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_ALC_002",
+          "name": "TTB/EU Alcohol Label Format",
+          "description": "Alcohol label format deviates from TTB COLA or EU wine/spirits requirements.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -893,6 +1625,12 @@
           "id": "AI_CANN_001",
           "name": "Cannabis Warning Missing",
           "description": "Required cannabis warning symbols or statements may be missing.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_CANN_002",
+          "name": "Cannabis Potency/Dosage Issue",
+          "description": "Potency or dosage labeling deviates from state cannabis requirements.",
           "default_severity": "advisory"
         }
       ]
@@ -906,6 +1644,18 @@
           "name": "Auto Profile Suggestion",
           "description": "An automatic preflight profile recommendation was generated.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_AFP_002",
+          "name": "Recommended Preflight Profile",
+          "description": "Preflight profile recommendation emitted with confidence score.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_AFP_003",
+          "name": "Preflight profile recommendation has low confidence",
+          "description": "Preflight profile recommendation has low confidence (N). Manual selection may be more appropriate.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -917,6 +1667,18 @@
           "id": "AI_FCLASS_001",
           "name": "Document Classification",
           "description": "The document type has been automatically classified.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_FCLASS_002",
+          "name": "Document Classified",
+          "description": "Document classification result with confidence score.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_FCLASS_003",
+          "name": "Low Document Classification Confidence",
+          "description": "Document classification confidence is low. Manual review recommended.",
           "default_severity": "advisory"
         }
       ]
@@ -930,6 +1692,18 @@
           "name": "Logo Not Found",
           "description": "Expected logo was not detected on this page.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_LOGO_002",
+          "name": "Logo Detected",
+          "description": "A logo was detected on this page with an associated confidence score.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_LOGO_003",
+          "name": "Expected Logo Missing",
+          "description": "An expected brand logo was not detected in the document.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -942,6 +1716,12 @@
           "name": "Misspelled Word",
           "description": "A potentially misspelled word was detected in the document text.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_SPELL_002",
+          "name": "Suspicious text",
+          "description": "Suspicious text on page N: 'N' (N)",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -953,6 +1733,24 @@
           "id": "AI_LANG_001",
           "name": "Language Detected",
           "description": "The document language has been identified.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_LANG_002",
+          "name": "Page Language Mismatch",
+          "description": "Page language differs from the document-level language metadata.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_LANG_003",
+          "name": "Translation Service Unavailable",
+          "description": "GPU inference service unavailable for translation of the target language.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_LANG_004",
+          "name": "Document Translated",
+          "description": "Document text translated from one language to another (informational).",
           "default_severity": "advisory"
         }
       ]
@@ -978,6 +1776,18 @@
           "name": "Content Safety Flag",
           "description": "Potentially inappropriate content was flagged for review.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_NSFW_002",
+          "name": "Explicit Content Detected",
+          "description": "Explicit content detected on this page.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_NSFW_003",
+          "name": "Suggestive Content Detected",
+          "description": "Suggestive content detected on this page.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -989,6 +1799,18 @@
           "id": "AI_IQ_001",
           "name": "Image Quality Issue",
           "description": "An image quality concern was detected (blur, noise, or artifacts).",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_IQ_002",
+          "name": "Image Quality Below Minimum",
+          "description": "Page image quality score is below the configured minimum threshold.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_IQ_003",
+          "name": "Image Quality Score",
+          "description": "Page image quality score reported with threshold.",
           "default_severity": "advisory"
         }
       ]
@@ -1014,6 +1836,18 @@
           "name": "Processing Steps",
           "description": "Processing step layer or instruction detected.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_PSTEP_002",
+          "name": "Processing step detected source detail",
+          "description": "Processing step detected: 'N' (source: N, detail: 'N')",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_PSTEP_003",
+          "name": "No processing steps detected in document",
+          "description": "No processing steps detected in document.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -1025,6 +1859,24 @@
           "id": "AI_RSYM_001",
           "name": "Missing Regulatory Symbol",
           "description": "A required regulatory symbol may be missing from the artwork.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_RSYM_002",
+          "name": "Regulatory symbol",
+          "description": "Regulatory symbol 'N' on page N is undersized (Nmm, minimum: Nmm)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_RSYM_003",
+          "name": "Regulatory symbol detected",
+          "description": "Regulatory symbol 'N' detected on page N (confidence: N, size: Nmm)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_RSYM_004",
+          "name": "Expected regulatory symbol was not detected",
+          "description": "Expected regulatory symbol 'N' was not detected in the document",
           "default_severity": "advisory"
         }
       ]
@@ -1038,6 +1890,12 @@
           "name": "Safe Zone Violation",
           "description": "Content is placed in a restricted bleed or safety zone area.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_SZ_002",
+          "name": "On page encroaches the safe",
+          "description": "'N' on page N encroaches the safe zone (Nmm)",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -1049,6 +1907,12 @@
           "id": "AI_SIM_001",
           "name": "Similar Images",
           "description": "Very similar or duplicate images detected in the document.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_SIM_002",
+          "name": "Generated visual embedding for page -dimensional",
+          "description": "Generated visual embedding for page N (N-dimensional, model: N)",
           "default_severity": "advisory"
         }
       ]
@@ -1062,6 +1926,18 @@
           "name": "No Reference File",
           "description": "No reference file provided for version comparison.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_VDIFF_002",
+          "name": "Page count changed reference has page(s",
+          "description": "Page count changed: reference has N page(s), current has N page(s)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_VDIFF_003",
+          "name": "Page differs from reference SSIM= %",
+          "description": "Page N differs from reference (SSIM=N, N% pixels changed)",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -1074,6 +1950,18 @@
           "name": "Text Not Outlined",
           "description": "Text has not been converted to outlines for guaranteed rendering.",
           "default_severity": "advisory"
+        },
+        {
+          "id": "AI_TAO_002",
+          "name": "Page contains text converted to outlines",
+          "description": "Page N contains text converted to outlines. OCR detected N characters of visible text but only N characters are extractable as live text.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_TAO_003",
+          "name": "Outlined text region",
+          "description": "Outlined text region on page N: 'N'",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -1081,6 +1969,18 @@
       "id": "ai:dieline",
       "label": "AI \u2014 dieline",
       "checks": [
+        {
+          "id": "AI_DIE_001",
+          "name": "Dieline Detected",
+          "description": "A dieline was detected via spot name, layer name, or AI vision fallback.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_DIE_002",
+          "name": "No Dieline Detected",
+          "description": "Expected dieline not found in a packaging file. Verify spot naming or AI detection availability.",
+          "default_severity": "advisory"
+        },
         {
           "id": "AI_DIE_003",
           "name": "No Dieline Found",
@@ -1097,6 +1997,12 @@
           "id": "AI_ORG_001",
           "name": "Organic Seal Issue",
           "description": "Organic certification mark may be missing or incorrectly placed.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_ORG_002",
+          "name": "USDA Organic Seal Misuse",
+          "description": "USDA organic seal used on a product below the required organic-content threshold.",
           "default_severity": "advisory"
         }
       ]
@@ -1124,6 +2030,30 @@
           "default_severity": "advisory"
         },
         {
+          "id": "AI_SPC_001",
+          "name": "Only historical submissions available need",
+          "description": "Only N historical submissions available (need N for SPC). Trend analysis will improve with more data.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_SPC_002",
+          "name": "All historical submissions have identical finding",
+          "description": "All historical submissions have identical finding counts \u2014 no variation to analyze.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_SPC_003",
+          "name": "Quality trend summary submissions pass rate",
+          "description": "Quality trend summary: N submissions, pass rate N%, mean findings N (sigma=N), N control chart violation(s)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_SPC_004",
+          "name": "Western Electric Rule violation",
+          "description": "Western Electric Rule N violation: N",
+          "default_severity": "advisory"
+        },
+        {
           "id": "AI_WCAG_001",
           "name": "Low Color Contrast",
           "description": "Text doesn't have enough contrast against its background for comfortable reading.",
@@ -1133,6 +2063,462 @@
           "id": "AI_WCAG_002",
           "name": "Below WCAG AA",
           "description": "Text-background contrast is below the WCAG AA accessibility standard.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_AI_BAND_001",
+          "name": "Visible banding detected on page CAMBI",
+          "description": "Visible banding detected on page N: CAMBI score N exceeds threshold (N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_AI_CAST_001",
+          "name": "Significant color cast detected",
+          "description": "Significant color cast detected on page N: N cast (deviation N, CLIP-IQA score N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_AI_CDCC_001",
+          "name": "Spot color inventory for cross-document tracking",
+          "description": "Spot color inventory for cross-document tracking: N (N spot color(s) found)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_AI_DIEL_002",
+          "name": "Dieline spot color detected color space",
+          "description": "Dieline spot color detected: 'N' (color space 'N', type N) on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_AI_SKIN_001",
+          "name": "Skin tone analysis",
+          "description": "Skin tone analysis for page N: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BCQM_001",
+          "name": "DataMatrix on page GTIN",
+          "description": "DataMatrix on page N: GTIN N has invalid check digit (expected N, got N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BCQM_002",
+          "name": "QR code on page contains invalid",
+          "description": "QR code on page N contains invalid URL: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BCQM_003",
+          "name": "No human-readable text detected near QR code",
+          "description": "No human-readable text detected near QR code on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BCQM_004",
+          "name": "QR code on page human-readable text",
+          "description": "QR code on page N: human-readable text does not match decoded data (similarity N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BCV_001",
+          "name": "DataMatrix on page GTIN",
+          "description": "DataMatrix on page N: GTIN N has invalid check digit (expected N, got N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BCV_002",
+          "name": "QR code on page contains invalid",
+          "description": "QR code on page N contains invalid URL: N \u2014 'N'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BCV_003",
+          "name": "DataMatrix on page GS1 AI",
+          "description": "DataMatrix on page N: GS1 AI (N) has invalid value 'N'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BC_001",
+          "name": "Decoded DataMatrix barcode",
+          "description": "Decoded DataMatrix barcode on page N: 'N'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BD_001",
+          "name": "Barcode on page X-dimension",
+          "description": "N barcode on page N: X-dimension N mm is below absolute minimum N mm (80% magnification)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BD_002",
+          "name": "Barcode on page magnification",
+          "description": "N barcode on page N: magnification N is below absolute minimum N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BD_003",
+          "name": "Barcode on page height",
+          "description": "N barcode on page N: height N mm is critically below minimum N mm",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BD_004",
+          "name": "Barcode on page right quiet zone",
+          "description": "N barcode on page N: right quiet zone ~N modules, minimum N required",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_001",
+          "name": "ECG readiness spot color(s found",
+          "description": "ECG readiness: N spot color(s) found, N CMYKOGV-like DeviceN space(s) detected. N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_002",
+          "name": "ECG achievability Spot color could not",
+          "description": "ECG achievability: Spot color 'N' could not be mapped to a Lab value for gamut testing (found on page(s) N). Provide an ICC profile or\u2026",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_003",
+          "name": "ECG TAC % exceeds % limit",
+          "description": "ECG TAC N% exceeds N% limit on page N (N-channel DeviceN)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_004",
+          "name": "DeviceN 7-colorant space",
+          "description": "DeviceN 7-colorant space 'N' on page N has inconsistent naming: N. NN",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_005",
+          "name": "ECG ink build active inks >%",
+          "description": "ECG ink build: N active inks (>N%) on page N exceeds 3-ink maximum for color stability",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_006",
+          "name": "Spot color could be replaced",
+          "description": "Spot color 'N' could be replaced by ECG process color 'N' on page(s) N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_007",
+          "name": "ECG color out of build range CMYK+OGV",
+          "description": "ECG color out of build range: CMYK+OGV TAC N% exceeds maximum allowable 400% on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_008",
+          "name": "ECG gray balance drift risk object(s",
+          "description": "ECG gray balance drift risk: N object(s) with near-equal C/M/Y components above N% across N page(s) may exhibit gray balance instability in\u2026",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_009",
+          "name": "ECG overinking TAC % exceeds ECG threshold",
+          "description": "ECG overinking: TAC N% exceeds ECG threshold N% on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_010",
+          "name": "Missing ECG characterization data no ECG-specific",
+          "description": "Missing ECG characterization data: no ECG-specific output intent or characterization reference (e.g., FOGRA55) found in document metadata",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_011",
+          "name": "ECG ink channel limit exceeded channel(s",
+          "description": "ECG ink channel limit exceeded: channel(s) N above N% on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_012",
+          "name": "Gamut boundary mapping required spot color",
+          "description": "Gamut boundary mapping required: spot color 'N' on page(s) N may be out of ECG gamut and would need gamut mapping for accurate reproduction",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_013",
+          "name": "ECG multi-ink small text text object(s",
+          "description": "ECG multi-ink small text: N text object(s) below Npt use multi-ink instead of K-only across N page(s)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_014",
+          "name": "ECG rich black recipe object(s use",
+          "description": "ECG rich black recipe: N object(s) use non-standard rich black recipe across N page(s). ECG recommends C=N% M=N% Y=N% K=N%",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_015",
+          "name": "ECG trap zone warning path element(s",
+          "description": "ECG trap zone warning: N path element(s) with stroke width below Npt across N page(s) may need special trapping in ECG workflow",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_016",
+          "name": "ECG ICC profile version",
+          "description": "ECG ICC profile version N is below v4.0; ECG workflows require ICC v4 or later for accurate multicolor profiling",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_017",
+          "name": "DeviceN colorant order",
+          "description": "DeviceN colorant order N on page N does not follow CMYKOGV convention N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ECG_018",
+          "name": "ECG high ink per channel channel(s",
+          "description": "ECG high ink per channel: channel(s) N exceed N% on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_001",
+          "name": "EPM K-channel dependency object(s use K",
+          "description": "EPM K-channel dependency: N object(s) use K across N page(s)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_002",
+          "name": "EPM pure black text text object(s",
+          "description": "EPM pure black text: N text object(s) use pure K-only or DeviceGray black and will not print in EPM mode (CMY-only) across N page(s)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_003",
+          "name": "EPM weak CMY black object(s",
+          "description": "EPM weak CMY black: N object(s) with K=0 and C+M+Y < 200% may produce weak blacks in CMY-only mode across N page(s) (good density requires\u2026",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_004",
+          "name": "EPM CMY TAC % exceeds % threshold",
+          "description": "EPM CMY TAC N% exceeds N% threshold on page N (K excluded)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_005",
+          "name": "EPM spot color K-dependency Spot color",
+          "description": "EPM spot color K-dependency: Spot color 'N' has a CMYK fallback (alternate: N) which may include K channel",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_006",
+          "name": "EPM image K-dependency CMYK image(s across",
+          "description": "EPM image K-dependency: N CMYK image(s) across N page(s) have K channel dependency that affects EPM output",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_007",
+          "name": "EPM registration color object(s use registration",
+          "description": "EPM registration color: N object(s) use registration color (all CMYK components >=N%) across N page(s); in EPM mode only CMY channels will\u2026",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_008",
+          "name": "EPM gray balance risk object(s",
+          "description": "EPM gray balance risk: N object(s) with neutral CMY mix (CNMNY within N%, all >N%) across N page(s) are high risk for color shift without K\u2026",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_009",
+          "name": "EPM toner limit exceeded total toner area",
+          "description": "EPM toner limit exceeded: total toner area coverage N% exceeds EPM device limit N% on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_010",
+          "name": "EPM substrate ink limit object(s",
+          "description": "EPM substrate ink limit: N object(s) with individual ink channel >95% across N page(s) may exceed substrate-specific limits for digital\u2026",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_011",
+          "name": "EPM spot color fidelity spot color",
+          "description": "EPM spot color fidelity: spot color 'N' may not reproduce accurately on digital devices",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_012",
+          "name": "EPM variable data document contains variable data",
+          "description": "EPM variable data: document contains variable data indicators (N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_013",
+          "name": "EPM halftone incompatibility custom halftone",
+          "description": "EPM halftone incompatibility: custom halftone in ExtGState 'N' on page N; digital presses use their own screening",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_014",
+          "name": "EPM ICC profile class mismatch output intent",
+          "description": "EPM ICC profile class mismatch: output intent has profile class 'N' (expected 'prtr' or 'mntr'); digital presses need device-specific\u2026",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_015",
+          "name": "EPM white ink underlayer Separation color space",
+          "description": "EPM white ink underlayer: Separation color space with colorant 'N' detected on page N; white ink separations are used for dark substrate\u2026",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_016",
+          "name": "EPM overprint simulation ExtGState",
+          "description": "EPM overprint simulation: ExtGState 'N' on page N has overprint enabled (OP=true, OPM=N); digital presses simulate overprint",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_017",
+          "name": "EPM high object count",
+          "description": "EPM high object count: page N has N objects (threshold N) which may slow digital press RIP processing",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_018",
+          "name": "EPM thin line weight stroked path(s",
+          "description": "EPM thin line weight: N stroked path(s) have line width below Npt across N page(s)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_GAMUT_001",
+          "name": "CMYK color",
+          "description": "CMYK color (N, N, N, N) is out of gamut for N (Lab N, N, N, distance N, N conversion)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_GAMUT_002",
+          "name": "Target gamut volume for Lab^3",
+          "description": "Target gamut volume for N: N Lab^3 units",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_GAMUT_003",
+          "name": "Gamut summary for / colors out",
+          "description": "Gamut summary for N: N/N colors out of gamut (N RGB, N CMYK)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PRESS_001",
+          "name": "Custom halftone dictionary detected",
+          "description": "Custom halftone dictionary detected on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PRESS_002",
+          "name": "Transfer function detected on page prohibited",
+          "description": "Transfer function detected on page N (prohibited in PDF/X)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PRESS_003",
+          "name": "Custom BG/UCR function detected",
+          "description": "Custom BG/UCR function detected on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PRESS_004",
+          "name": "Custom halftone HalftoneType detected in ExtGState",
+          "description": "Custom halftone (HalftoneType N) detected in ExtGState 'N' on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PRESS_005",
+          "name": "Custom transfer curve detected in ExtGState",
+          "description": "Custom transfer curve (N) detected in ExtGState 'N' on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PROC_001",
+          "name": "Processing step layers detected",
+          "description": "Processing step layers detected: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PROC_002",
+          "name": "White ink layer detected",
+          "description": "White ink layer detected: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PS_001",
+          "name": "Pharma DataMatrix on page is missing",
+          "description": "Pharma DataMatrix on page N is missing required EU FMD fields: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PS_002",
+          "name": "Pharma DataMatrix on page GTIN",
+          "description": "Pharma DataMatrix on page N: GTIN N has invalid check digit (expected N, got N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PS_003",
+          "name": "Pharma DataMatrix on page invalid expiry",
+          "description": "Pharma DataMatrix on page N: invalid expiry date format 'N' (expected YYMMDD)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PS_004",
+          "name": "Pharma DataMatrix on page all EU",
+          "description": "Pharma DataMatrix on page N: all EU FMD fields present \u2014 GTIN N, Serial N, Batch N, Expiry N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PS_005",
+          "name": "No DataMatrix barcode found \u2014 EU FMD",
+          "description": "No DataMatrix barcode found \u2014 EU FMD requires a GS1 DataMatrix (ECC200) on pharmaceutical packaging",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PS_006",
+          "name": "Found non-DataMatrix 2D barcode(s alongside pharma",
+          "description": "Found N non-DataMatrix 2D barcode(s) alongside pharma DataMatrix \u2014 may cause scanning confusion",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_QHR_001",
+          "name": "No human-readable text detected near QR code",
+          "description": "No human-readable text detected near QR code on page N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_QHR_002",
+          "name": "QR code on page human-readable text",
+          "description": "QR code on page N: human-readable text matches decoded data (similarity N)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_QHR_003",
+          "name": "QR code on page human-readable text",
+          "description": "QR code on page N: human-readable text does not match decoded data (similarity N). QR contains 'NN', nearby text: 'NN'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_QR_001",
+          "name": "QR code on page has insufficient",
+          "description": "QR code on page N has insufficient left quiet zone: N modules (minimum N per ISO 18004)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_QR_002",
+          "name": "QR code on page module size",
+          "description": "QR code on page N: module size N mm (N px at N DPI)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_QR_003",
+          "name": "QR code on page contains GS1",
+          "description": "QR code on page N contains GS1 Digital Link with GTIN N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_QR_004",
+          "name": "Duplicate QR code found on pages",
+          "description": "Duplicate QR code found on pages N: 'NN'",
           "default_severity": "advisory"
         }
       ]
