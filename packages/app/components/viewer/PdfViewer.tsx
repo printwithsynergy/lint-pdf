@@ -10,6 +10,7 @@ import { PageNavigator } from "./PageNavigator";
 import { ViewerToolbar } from "./ViewerToolbar";
 import { SeparationPanel } from "./SeparationPanel";
 import { SeparationCanvas } from "./SeparationCanvas";
+import { LayerCanvas } from "./LayerCanvas";
 import { TACHeatmapOverlay } from "./TACHeatmapOverlay";
 import { AnnotationCanvas } from "./AnnotationCanvas";
 import { AnnotationToolbar } from "./AnnotationToolbar";
@@ -849,6 +850,8 @@ export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
                 <div className="relative">
                   {viewerMode === "separation" ? (
                     <SeparationCanvas jobId={jobId} pageNum={currentPage} enabledChannels={enabledChannels} allChannels={allChannelNames} width={canvasWidth} height={canvasHeight} />
+                  ) : viewerMode === "layers" ? (
+                    <LayerCanvas jobId={jobId} pageNum={currentPage} enabledLayers={enabledLayers} allLayers={allLayerIndices} width={canvasWidth} height={canvasHeight} />
                   ) : (
                     <PageCanvas jobId={jobId} page={currentPageInfo} zoom={zoom} findings={findings} selectedFinding={selectedFinding} onFindingClick={handleSelectFinding} onZoomChange={measureMode === "none" ? setZoom : undefined} onPageChange={measureMode === "none" ? (d) => setCurrentPage((p) => Math.max(1, Math.min(pages.length, p + d))) : undefined} tileDpi={effectiveDpi} tileCdnBase={config.tile_cdn_base} cropToTrim />
                   )}
