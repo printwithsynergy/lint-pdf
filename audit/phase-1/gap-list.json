@@ -1,0 +1,750 @@
+{
+  "version": 1,
+  "total": 93,
+  "gaps": [
+    {
+      "gap_id": "T1-F01",
+      "tier": 1,
+      "human_name": "Font not embedded",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "fonts"
+    },
+    {
+      "gap_id": "T1-F02",
+      "tier": 1,
+      "human_name": "Type 3 font usage",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "fonts"
+    },
+    {
+      "gap_id": "T1-F03",
+      "tier": 1,
+      "human_name": "Subset vs full embedding detection",
+      "difficulty": "easy",
+      "notes": "BaseFont name tag prefix",
+      "category_hint": "fonts"
+    },
+    {
+      "gap_id": "T1-F04",
+      "tier": 1,
+      "human_name": "Protected font (no-embed license bit)",
+      "difficulty": "medium",
+      "notes": "OS/2 fsType",
+      "category_hint": "fonts"
+    },
+    {
+      "gap_id": "T1-F05",
+      "tier": 1,
+      "human_name": "Text below minimum point size",
+      "difficulty": "medium",
+      "notes": "needs CTM math",
+      "category_hint": "text"
+    },
+    {
+      "gap_id": "T1-F06",
+      "tier": 1,
+      "human_name": "ToUnicode missing",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "fonts"
+    },
+    {
+      "gap_id": "T1-C01",
+      "tier": 1,
+      "human_name": "DeviceRGB in CMYK workflow",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "color"
+    },
+    {
+      "gap_id": "T1-C02",
+      "tier": 1,
+      "human_name": "Spot color list + count",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "color"
+    },
+    {
+      "gap_id": "T1-C03",
+      "tier": 1,
+      "human_name": "Ambiguous spot name definitions",
+      "difficulty": "medium",
+      "notes": "need name normalizer",
+      "category_hint": "color"
+    },
+    {
+      "gap_id": "T1-C04",
+      "tier": 1,
+      "human_name": "Total Area Coverage above threshold",
+      "difficulty": "medium",
+      "notes": "requires raster pipeline",
+      "category_hint": "ink_coverage"
+    },
+    {
+      "gap_id": "T1-C05",
+      "tier": 1,
+      "human_name": "Overprint on white / 0% fill",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "overprint"
+    },
+    {
+      "gap_id": "T1-C06",
+      "tier": 1,
+      "human_name": "Black text not overprinting / 100%K knockout",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "overprint"
+    },
+    {
+      "gap_id": "T1-C07",
+      "tier": 1,
+      "human_name": "Output intent missing or wrong ICC",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "color"
+    },
+    {
+      "gap_id": "T1-C08",
+      "tier": 1,
+      "human_name": "Registration color used in print content",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "color"
+    },
+    {
+      "gap_id": "T1-I01",
+      "tier": 1,
+      "human_name": "Effective resolution below min \u2014 color images",
+      "difficulty": "medium",
+      "notes": "CTM \u00d7 image W/H",
+      "category_hint": "image"
+    },
+    {
+      "gap_id": "T1-I02",
+      "tier": 1,
+      "human_name": "Effective resolution below min \u2014 gray images",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "image"
+    },
+    {
+      "gap_id": "T1-I03",
+      "tier": 1,
+      "human_name": "Effective resolution below min \u2014 1-bit images",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "image"
+    },
+    {
+      "gap_id": "T1-I04",
+      "tier": 1,
+      "human_name": "Image color space mismatch (RGB in CMYK job)",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "image"
+    },
+    {
+      "gap_id": "T1-I05",
+      "tier": 1,
+      "human_name": "JPEG compression quality below threshold",
+      "difficulty": "hard",
+      "notes": "inspect DCT tables",
+      "category_hint": "image"
+    },
+    {
+      "gap_id": "T1-I06",
+      "tier": 1,
+      "human_name": "Non-90\u00b0 rotation / shear on image",
+      "difficulty": "medium",
+      "notes": "CTM decomposition",
+      "category_hint": "image"
+    },
+    {
+      "gap_id": "T1-I07",
+      "tier": 1,
+      "human_name": "Missing image / broken reference",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "image"
+    },
+    {
+      "gap_id": "T1-STR01",
+      "tier": 1,
+      "human_name": "TrimBox / BleedBox presence",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "page_geometry"
+    },
+    {
+      "gap_id": "T1-STR02",
+      "tier": 1,
+      "human_name": "Box nesting Media\u2287Bleed\u2287Trim\u2287Art",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "page_geometry"
+    },
+    {
+      "gap_id": "T1-STR03",
+      "tier": 1,
+      "human_name": "Bleed amount insufficient",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "page_geometry"
+    },
+    {
+      "gap_id": "T1-STR04",
+      "tier": 1,
+      "human_name": "Page size matches expected",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "page_geometry"
+    },
+    {
+      "gap_id": "T1-STR05",
+      "tier": 1,
+      "human_name": "Page size consistency across pages",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "page_geometry"
+    },
+    {
+      "gap_id": "T1-STR06",
+      "tier": 1,
+      "human_name": "Empty pages detection",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "page_geometry"
+    },
+    {
+      "gap_id": "T1-STR07",
+      "tier": 1,
+      "human_name": "Hairline strokes under minimum width",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "stroke"
+    },
+    {
+      "gap_id": "T1-CMP01",
+      "tier": 1,
+      "human_name": "PDF/X conformance verify (X-1a\u2026X-6)",
+      "difficulty": "hard",
+      "notes": "consider embedding vPDF",
+      "category_hint": "pdfx_conformance"
+    },
+    {
+      "gap_id": "T1-CMP02",
+      "tier": 1,
+      "human_name": "PDF version check",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "document"
+    },
+    {
+      "gap_id": "T1-CMP03",
+      "tier": 1,
+      "human_name": "Encryption / password set",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "document"
+    },
+    {
+      "gap_id": "T1-CMP04",
+      "tier": 1,
+      "human_name": "JavaScript / action dictionaries present",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "document"
+    },
+    {
+      "gap_id": "T1-CMP05",
+      "tier": 1,
+      "human_name": "Annotations / form fields inside BleedBox",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "annotations"
+    },
+    {
+      "gap_id": "T1-CMP06",
+      "tier": 1,
+      "human_name": "Embedded files / attachments",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "document"
+    },
+    {
+      "gap_id": "T1-TRN01",
+      "tier": 1,
+      "human_name": "Live transparency present",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "transparency"
+    },
+    {
+      "gap_id": "T1-TRN02",
+      "tier": 1,
+      "human_name": "Blend modes other than Normal",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "transparency"
+    },
+    {
+      "gap_id": "T1-TRN03",
+      "tier": 1,
+      "human_name": "Blending color space defined on transparency group",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "transparency"
+    },
+    {
+      "gap_id": "T2-GWG01",
+      "tier": 2,
+      "human_name": "Full GWG 2022 profile set (sheet/web/mag/news/digital/large-format)",
+      "difficulty": "medium",
+      "notes": "ship all 30 profiles",
+      "category_hint": "profiles"
+    },
+    {
+      "gap_id": "T2-GWG02",
+      "tier": 2,
+      "human_name": "Full GWG 2022 packaging profiles (offset/flexo/gravure \u00d7 product)",
+      "difficulty": "medium",
+      "notes": "15 variants",
+      "category_hint": "profiles"
+    },
+    {
+      "gap_id": "T2-ISO01",
+      "tier": 2,
+      "human_name": "ISO 19593-1 full Structural Type taxonomy (all 23 types)",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "iso19593"
+    },
+    {
+      "gap_id": "T2-ISO02",
+      "tier": 2,
+      "human_name": "ISO 19593-1 Positions taxonomy",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "iso19593"
+    },
+    {
+      "gap_id": "T2-ISO03",
+      "tier": 2,
+      "human_name": "ISO 19593-1 White subtypes",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "iso19593"
+    },
+    {
+      "gap_id": "T2-ISO04",
+      "tier": 2,
+      "human_name": "ISO 19593-1 Varnish/Coating types",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "iso19593"
+    },
+    {
+      "gap_id": "T2-ISO05",
+      "tier": 2,
+      "human_name": "Auto-suggest ISO 19593-1 tagging from spot name",
+      "difficulty": "medium",
+      "notes": "UNIQUE differentiator",
+      "category_hint": "iso19593"
+    },
+    {
+      "gap_id": "T2-SPT01",
+      "tier": 2,
+      "human_name": "Pantone library matching",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "spot_colors"
+    },
+    {
+      "gap_id": "T2-SPT02",
+      "tier": 2,
+      "human_name": "Spot suffix convention (C/U/CP/HC)",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "spot_colors"
+    },
+    {
+      "gap_id": "T2-SPT03",
+      "tier": 2,
+      "human_name": "Deprecated name detection (CV/CVC)",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "spot_colors"
+    },
+    {
+      "gap_id": "T2-SPT04",
+      "tier": 2,
+      "human_name": "Spot-as-process warning",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "spot_colors"
+    },
+    {
+      "gap_id": "T2-TRN04",
+      "tier": 2,
+      "human_name": "Blending CS vs OutputIntent mismatch",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "transparency"
+    },
+    {
+      "gap_id": "T2-TRN05",
+      "tier": 2,
+      "human_name": "Transparency on spot color",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "transparency"
+    },
+    {
+      "gap_id": "T2-TRN06",
+      "tier": 2,
+      "human_name": "Soft mask on text",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "transparency"
+    },
+    {
+      "gap_id": "T2-TRN07",
+      "tier": 2,
+      "human_name": "Page-level transparency group knockout flag",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "transparency"
+    },
+    {
+      "gap_id": "T2-RB01",
+      "tier": 2,
+      "human_name": "Rich black construction recommendation",
+      "difficulty": "medium",
+      "notes": "substrate-tied defaults",
+      "category_hint": "color"
+    },
+    {
+      "gap_id": "T2-RB02",
+      "tier": 2,
+      "human_name": "Reverse (knockout) text minimum stroke",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "color"
+    },
+    {
+      "gap_id": "T2-RB03",
+      "tier": 2,
+      "human_name": "White text below minimum size combo check",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "text"
+    },
+    {
+      "gap_id": "T2-XMP01",
+      "tier": 2,
+      "human_name": "GWG XMP audit-trail namespace",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "metadata"
+    },
+    {
+      "gap_id": "T2-XMP02",
+      "tier": 2,
+      "human_name": "Info dict vs XMP consistency",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "metadata"
+    },
+    {
+      "gap_id": "T2-XMP03",
+      "tier": 2,
+      "human_name": "Trapped flag True/False required (not Unknown)",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "metadata"
+    },
+    {
+      "gap_id": "T3-D01",
+      "tier": 3,
+      "human_name": "Content on dieline layer (rendered)",
+      "difficulty": "medium",
+      "notes": "per-separation raster compare",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D02",
+      "tier": 3,
+      "human_name": "Dieline z-order on top",
+      "difficulty": "easy",
+      "notes": "content stream order scan",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D03",
+      "tier": 3,
+      "human_name": "Dieline overprint (not knockout) \u2014 detect + recommend",
+      "difficulty": "easy",
+      "notes": "report emits remediation",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D04",
+      "tier": 3,
+      "human_name": "Bleed extending beyond dieline by X mm",
+      "difficulty": "medium",
+      "notes": "path offset math",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D05",
+      "tier": 3,
+      "human_name": "Content outside dieline polygon",
+      "difficulty": "medium",
+      "notes": "containment test",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D06",
+      "tier": 3,
+      "human_name": "Barcode quiet zone vs dieline/fold/crease",
+      "difficulty": "hard",
+      "notes": "**UNCLAIMED \u2014 high differentiator**",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D07",
+      "tier": 3,
+      "human_name": "Text near fold line",
+      "difficulty": "medium",
+      "notes": "**UNCLAIMED \u2014 high differentiator**",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D08",
+      "tier": 3,
+      "human_name": "Small vector element won't die-cut cleanly",
+      "difficulty": "medium",
+      "notes": "**UNIQUE**",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D09",
+      "tier": 3,
+      "human_name": "White underprint coverage vs dieline",
+      "difficulty": "medium",
+      "notes": "high value for flexible packaging",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D10",
+      "tier": 3,
+      "human_name": "Varnish coverage validation (VarnishFree respect)",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T3-D11",
+      "tier": 3,
+      "human_name": "Spot-name heuristic normalizer (public table)",
+      "difficulty": "easy",
+      "notes": "ship as open standard",
+      "category_hint": "spot_colors"
+    },
+    {
+      "gap_id": "T3-D12",
+      "tier": 3,
+      "human_name": "Ink limit per substrate (auto-TAC profile)",
+      "difficulty": "easy",
+      "notes": "presentation win",
+      "category_hint": "ink_coverage"
+    },
+    {
+      "gap_id": "T3-D13",
+      "tier": 3,
+      "human_name": "Registration risk on fine vector details",
+      "difficulty": "medium",
+      "notes": "extend small-text-on-multi-sep to vectors",
+      "category_hint": "color"
+    },
+    {
+      "gap_id": "T3-D14",
+      "tier": 3,
+      "human_name": "Braille area (ISO 19593-1) integrity",
+      "difficulty": "hard",
+      "notes": "pharma niche",
+      "category_hint": "iso19593"
+    },
+    {
+      "gap_id": "T3-D15",
+      "tier": 3,
+      "human_name": "CutContour spot used as visual print content",
+      "difficulty": "easy",
+      "notes": "**UNIQUE \u2014 catches Canva mistakes**",
+      "category_hint": "dieline"
+    },
+    {
+      "gap_id": "T4-A01",
+      "tier": 4,
+      "human_name": "PDF/UA-1 Matterhorn machine-checkable subset",
+      "difficulty": "hard",
+      "notes": "embed veraPDF",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T4-A02",
+      "tier": 4,
+      "human_name": "PDF/A-1b / 2b / 2u / 3u / 4 verification",
+      "difficulty": "hard",
+      "notes": "embed veraPDF",
+      "category_hint": "pdfa_conformance"
+    },
+    {
+      "gap_id": "T4-A03",
+      "tier": 4,
+      "human_name": "Tag structure root / Marked=true",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T4-A04",
+      "tier": 4,
+      "human_name": "Figure Alt / ActualText presence",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T4-A05",
+      "tier": 4,
+      "human_name": "Language specification (doc + inline)",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T4-A06",
+      "tier": 4,
+      "human_name": "Table structure (TH scope, Headers/IDs)",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T4-A07",
+      "tier": 4,
+      "human_name": "Heading hierarchy H1..H6 no-skip",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T4-A08",
+      "tier": 4,
+      "human_name": "ToUnicode on all fonts",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T4-A09",
+      "tier": 4,
+      "human_name": "Encryption permission bit 10 (screen reader)",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T4-A10",
+      "tier": 4,
+      "human_name": "ViewerPreferences DisplayDocTitle=true",
+      "difficulty": "easy",
+      "notes": "",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T5-N01",
+      "tier": 5,
+      "human_name": "PDF/VT-1/2/3 validation",
+      "difficulty": "hard",
+      "notes": "low volume",
+      "category_hint": "pdfvt"
+    },
+    {
+      "gap_id": "T5-N02",
+      "tier": 5,
+      "human_name": "INCI / cosmetics min type size",
+      "difficulty": "medium",
+      "notes": "regulation-aware",
+      "category_hint": "ai_regulatory_compliance"
+    },
+    {
+      "gap_id": "T5-N03",
+      "tier": 5,
+      "human_name": "FDA Nutrition Facts layout",
+      "difficulty": "hard",
+      "notes": "",
+      "category_hint": "ai_regulatory_compliance"
+    },
+    {
+      "gap_id": "T5-N04",
+      "tier": 5,
+      "human_name": "Tobacco warning % panel area",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "ai_regulatory_compliance"
+    },
+    {
+      "gap_id": "T5-N05",
+      "tier": 5,
+      "human_name": "Wine / spirits warning statements",
+      "difficulty": "medium",
+      "notes": "",
+      "category_hint": "ai_regulatory_compliance"
+    },
+    {
+      "gap_id": "T5-N06",
+      "tier": 5,
+      "human_name": "UDI / EU DPP QR content validation",
+      "difficulty": "hard",
+      "notes": "watch 2026-2030 mandate",
+      "category_hint": "ai_barcode"
+    },
+    {
+      "gap_id": "T5-N07",
+      "tier": 5,
+      "human_name": "WCAG 2.1/2.2 contrast on print artwork",
+      "difficulty": "medium",
+      "notes": "**UNIQUE \u2014 zero engines cover**",
+      "category_hint": "accessibility"
+    },
+    {
+      "gap_id": "T5-N08",
+      "tier": 5,
+      "human_name": "GS1 AI syntax inside GS1-128 / DataMatrix / QR",
+      "difficulty": "medium",
+      "notes": "embed GS1 validator",
+      "category_hint": "ai_barcode"
+    },
+    {
+      "gap_id": "T5-N09",
+      "tier": 5,
+      "human_name": "Digimarc / anti-counterfeit watermark detection",
+      "difficulty": "hard",
+      "notes": "skip",
+      "category_hint": "image"
+    },
+    {
+      "gap_id": "T5-N10",
+      "tier": 5,
+      "human_name": "Grain direction preservation",
+      "difficulty": "hard",
+      "notes": "CAD-requiring, skip",
+      "category_hint": "page_geometry"
+    }
+  ]
+}
