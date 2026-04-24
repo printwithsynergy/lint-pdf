@@ -593,6 +593,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dieline Spot Used As Fill",
         "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
     ),
+    "LPDF_DIE_LAYER_CONTENT": CheckInfo(
+        "Foreign Content On Dieline Layer",
+        "Non-dieline paint operation(s) found inside a dieline-named OCG marked-content block. Artwork on the cutter plate will print on every copy — move it to a non-dieline layer.",
+    ),
+    "LPDF_DIE_CONTENT_OUTSIDE": CheckInfo(
+        "Content Outside Dieline",
+        "Paint bbox extends beyond the dieline polygon envelope by more than the configured tolerance. Content may be clipped or trimmed in production.",
+    ),
+    "LPDF_DIE_VARNISH_COLLISION": CheckInfo(
+        "Varnish Applied Inside VarnishFree Region",
+        "Varnish / coating spot overlaps a VarnishFree (no-coating) region. Remove varnish from the marked region in the source file before exporting.",
+    ),
     # ── AI File Classification ──────────────────────────────────────────────
     "AI_FCLASS_002": CheckInfo(
         "Document Classified",

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 389,
+  "total_checks": 392,
   "categories": [
     {
       "id": "image",
@@ -2222,9 +2222,21 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_DIE_CONTENT_OUTSIDE",
+          "name": "Content Outside Dieline",
+          "description": "Paint bbox extends beyond the dieline polygon envelope by more than the configured tolerance. Content may be clipped or trimmed in production.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_DIE_KNOCKOUT",
           "name": "Dieline Set To Knockout",
           "description": "Dieline stroke is set to knockout (OP=false) \u2014 underlying inks will have gaps along cut lines. Enable 'Overprint Stroke' on the dieline layer in Illustrator / InDesign.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_LAYER_CONTENT",
+          "name": "Foreign Content On Dieline Layer",
+          "description": "Non-dieline paint operation(s) found inside a dieline-named OCG marked-content block. Artwork on the cutter plate will print on every copy \u2014 move it to a non-dieline layer.",
           "default_severity": "advisory"
         },
         {
@@ -2237,6 +2249,12 @@
           "id": "LPDF_DIE_MULTI_COLOR",
           "name": "Dieline Multi-Colour",
           "description": "Dieline layer / spot contains multiple stroke colours \u2014 a clean cut path should be exactly one ink.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_VARNISH_COLLISION",
+          "name": "Varnish Applied Inside VarnishFree Region",
+          "description": "Varnish / coating spot overlaps a VarnishFree (no-coating) region. Remove varnish from the marked region in the source file before exporting.",
           "default_severity": "advisory"
         },
         {

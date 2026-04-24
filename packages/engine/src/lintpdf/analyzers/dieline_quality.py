@@ -1,7 +1,7 @@
-"""Dieline-quality findings (Batch 4 — T3-D02 / T3-D03 / T3-D15).
+"""Dieline-quality findings (Batches 4+5 — Tier-3 dieline wedge).
 
 Runs against a resolved ``DielineResult`` + the raw PDF bytes and
-emits up to three findings per job:
+emits up to six findings per job:
 
 * ``LPDF_DIE_ZORDER`` — dieline drawn below artwork (T3-D02).
 * ``LPDF_DIE_KNOCKOUT`` — dieline stroke set to knockout instead
@@ -10,6 +10,16 @@ emits up to three findings per job:
   will follow the filled region as a massive closed path (T3-D15).
   Canonical Canva-export bug — unique to lintPDF per the
   competitive audit.
+* ``LPDF_DIE_LAYER_CONTENT`` — non-dieline paint ops inside a
+  dieline-named OCG marked-content block (T3-D01). Catches the
+  Illustrator "dropped an image on the Dieline layer" mistake.
+* ``LPDF_DIE_CONTENT_OUTSIDE`` — non-dieline content whose bbox
+  extends beyond the dieline polygon envelope (T3-D05). Uses the
+  detector's per-region bboxes rather than the trim box so
+  non-rectangular products (round labels, shaped packaging) are
+  measured tightly.
+* ``LPDF_DIE_VARNISH_COLLISION`` — varnish spot paints inside a
+  VarnishFree region (T3-D10). Common coating mistake on packaging.
 
 Shares no state with the detector module in ``dieline.py``. The
 detector says *where* the dieline is; this module says *what's
@@ -41,23 +51,36 @@ def check_dieline_quality(
     *,
     spot_name: str | None,
     source: str,
+    regions: list[dict[str, float]] | None = None,
+    content_outside_tolerance_pts: float = 2.83,
 ) -> list[Finding]:
     """Emit dieline-quality findings for a resolved dieline.
 
     Args:
         pdf_bytes: Raw PDF.
-        spot_name: ``DielineResult.spot_name`` (the Separation / OCG
-            name the detector matched). Required — when ``None`` no
-            findings fire.
+        spot_name: ``DielineResult.spot_name`` — Required for the
+            spot-based checks (T3-D02/03/15). When ``None`` those
+            checks silently skip but the OCG-based T3-D01 and
+            varnish T3-D10 can still fire because they rely on
+            separate signals.
         source: ``DielineResult.source`` — ``"name"`` / ``"vision"``
-            / ``"missing"``. Silent when ``"missing"``.
+            / ``"missing"``. Silent (all findings) when ``"missing"``.
+        regions: ``DielineResult.regions`` — per-island bbox list
+            used by T3-D05 (content-outside-polygon) to compute the
+            dieline envelope. Each dict has ``x0``, ``y0``, ``x1``,
+            ``y1`` keys. ``None`` / empty disables T3-D05.
+        content_outside_tolerance_pts: how far a paint bbox may
+            extend past the dieline envelope before T3-D05 fires
+            (default 2.83pt ≈ 1mm).
 
     Returns:
-        Up to three findings. Empty when the preconditions aren't met
+        Up to six findings. Empty when the preconditions aren't met
         or the content-stream walk fails.
     """
-    if source == "missing" or not spot_name:
-        return []
+    # T3-D10 (varnish collision) can fire without any dieline detection,
+    # so we DON'T early-return on source=="missing" — each sub-check
+    # gates on its own preconditions below. We do need pdf_bytes to
+    # walk the content stream.
     if not pdf_bytes:
         return []
 
@@ -71,9 +94,11 @@ def check_dieline_quality(
 
     # T3-D02 — z-order. Fires when dieline was painted AT LEAST once
     # AND non-dieline content was painted AFTER the last dieline
-    # paint op.
+    # paint op. Gated on spot_name because it only makes sense when
+    # we have a dieline spot.
     if (
-        signals.last_dieline_paint_idx >= 0
+        spot_name
+        and signals.last_dieline_paint_idx >= 0
         and signals.last_nondieline_paint_idx > signals.last_dieline_paint_idx
     ):
         findings.append(
@@ -100,7 +125,7 @@ def check_dieline_quality(
 
     # T3-D03 — knockout. Fires when ANY stroke operator painted the
     # dieline spot while OP=false on the current graphics state.
-    if signals.knockout_stroke_count > 0:
+    if spot_name and signals.knockout_stroke_count > 0:
         findings.append(
             Finding(
                 inspection_id="LPDF_DIE_KNOCKOUT",
@@ -126,7 +151,7 @@ def check_dieline_quality(
     # current fill colour at any fill operator. Severity escalates
     # from advisory to error when the total filled area is large
     # enough to indicate real artwork (not a tiny tick mark).
-    if signals.fill_as_dieline_count > 0:
+    if spot_name and signals.fill_as_dieline_count > 0:
         area_pts2 = signals.fill_as_dieline_area_pts2
         is_large = area_pts2 >= _AS_ART_SMALL_AREA_PTS2
         severity = Severity.ERROR if is_large else Severity.ADVISORY
@@ -156,7 +181,160 @@ def check_dieline_quality(
             )
         )
 
+    # T3-D01 — content on dieline layer (OCG-based). Fires when the
+    # walker saw non-dieline paint ops inside a dieline-named OCG
+    # marked-content block.
+    if signals.layer_content_count > 0:
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_LAYER_CONTENT",
+                severity=Severity.WARNING,
+                message=(
+                    f"Dieline layer {signals.dieline_ocg_names} contains "
+                    f"{signals.layer_content_count} non-dieline paint "
+                    f"operation(s) on page 1 — artwork on the cutter plate"
+                ),
+                page_num=1,
+                details={
+                    "ocg_names": signals.dieline_ocg_names,
+                    "foreign_paint_count": signals.layer_content_count,
+                    "first_violation_op_idx": signals.layer_content_first_op_idx,
+                },
+                iso_clause="ISO 19593-1 §5.3",
+                object_type="dieline_layer",
+            )
+        )
+
+    # T3-D05 — content outside dieline polygon (envelope-based).
+    # Uses DielineResult.regions to compute the axis-aligned envelope
+    # and flags paint bboxes that extend past it by >tolerance.
+    if regions and signals.foreign_content_bboxes:
+        envelope = _envelope_of_regions(regions)
+        if envelope is not None:
+            outside: list[tuple[float, float, float, float]] = []
+            max_overhang = 0.0
+            for bbox in signals.foreign_content_bboxes:
+                overhang = _bbox_overhang(bbox, envelope)
+                if overhang > content_outside_tolerance_pts:
+                    outside.append(bbox)
+                    max_overhang = max(max_overhang, overhang)
+            if outside:
+                worst = max(outside, key=lambda b: _bbox_overhang(b, envelope))
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_DIE_CONTENT_OUTSIDE",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"{len(outside)} content region(s) extend beyond "
+                            f"the dieline polygon by >{content_outside_tolerance_pts:.2f}pt "
+                            f"on page 1 (max overhang {max_overhang:.2f}pt)"
+                        ),
+                        page_num=1,
+                        details={
+                            "foreign_content_count": len(outside),
+                            "max_overhang_pts": round(max_overhang, 2),
+                            "dieline_envelope_pts": list(envelope),
+                            "worst_paint_bbox_pts": list(worst),
+                            "tolerance_pts": content_outside_tolerance_pts,
+                        },
+                        iso_clause="ISO 15930-7:2010 6.2.4",
+                        object_type="dieline_polygon",
+                    )
+                )
+
+    # T3-D10 — varnish / VarnishFree collision.
+    if signals.varnish_spots and signals.varnish_free_spots:
+        varnish_union = _bbox_union(signals.varnish_spots_bboxes)
+        free_union = _bbox_union(signals.varnish_free_spots_bboxes)
+        if varnish_union and free_union:
+            intersection = _bbox_intersect(varnish_union, free_union)
+            if intersection:
+                area_pts2 = (intersection[2] - intersection[0]) * (
+                    intersection[3] - intersection[1]
+                )
+                if area_pts2 >= 50.0:
+                    area_cm2 = area_pts2 * (0.352778 / 10) ** 2
+                    findings.append(
+                        Finding(
+                            inspection_id="LPDF_DIE_VARNISH_COLLISION",
+                            severity=Severity.WARNING,
+                            message=(
+                                f"Varnish spot '{signals.varnish_spots[0]}' overlaps "
+                                f"VarnishFree region by ~{area_cm2:.2f} cm²"
+                            ),
+                            page_num=1,
+                            details={
+                                "varnish_spot": signals.varnish_spots[0],
+                                "varnish_free_spot": signals.varnish_free_spots[0],
+                                "overlap_area_pts2": round(area_pts2, 2),
+                                "overlap_area_cm2": round(area_cm2, 4),
+                                "intersection_bbox_pts": list(intersection),
+                            },
+                            iso_clause="ISO 19593-1 §5.3",
+                            object_id=signals.varnish_spots[0],
+                            object_type="spot_color",
+                        )
+                    )
+
     return findings
+
+
+# ────────────────────────────────────────────────────────────────────
+# Bbox geometry helpers
+# ────────────────────────────────────────────────────────────────────
+
+
+def _envelope_of_regions(
+    regions: list[dict[str, float]],
+) -> tuple[float, float, float, float] | None:
+    """Axis-aligned union of ``DielineResult.regions`` bboxes."""
+    bboxes: list[tuple[float, float, float, float]] = []
+    for r in regions:
+        try:
+            bboxes.append((float(r["x0"]), float(r["y0"]), float(r["x1"]), float(r["y1"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return _bbox_union(bboxes)
+
+
+def _bbox_union(
+    bboxes: list[tuple[float, float, float, float]],
+) -> tuple[float, float, float, float] | None:
+    if not bboxes:
+        return None
+    x0 = min(b[0] for b in bboxes)
+    y0 = min(b[1] for b in bboxes)
+    x1 = max(b[2] for b in bboxes)
+    y1 = max(b[3] for b in bboxes)
+    return (x0, y0, x1, y1)
+
+
+def _bbox_intersect(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> tuple[float, float, float, float] | None:
+    x0 = max(a[0], b[0])
+    y0 = max(a[1], b[1])
+    x1 = min(a[2], b[2])
+    y1 = min(a[3], b[3])
+    if x0 >= x1 or y0 >= y1:
+        return None
+    return (x0, y0, x1, y1)
+
+
+def _bbox_overhang(
+    paint_bbox: tuple[float, float, float, float],
+    envelope: tuple[float, float, float, float],
+) -> float:
+    """Return the max distance (points) the paint bbox sticks out of
+    the envelope on any side. 0 when fully contained."""
+    return max(
+        0.0,
+        envelope[0] - paint_bbox[0],
+        envelope[1] - paint_bbox[1],
+        paint_bbox[2] - envelope[2],
+        paint_bbox[3] - envelope[3],
+    )
 
 
 # ────────────────────────────────────────────────────────────────────
@@ -168,13 +346,22 @@ class _QualitySignals:
     """Mutable scratch-pad the walker fills in."""
 
     __slots__ = (
+        "dieline_ocg_names",
         "fill_as_dieline_area_pts2",
         "fill_as_dieline_count",
         "first_fill_as_dieline_idx",
         "first_knockout_op_idx",
+        "foreign_content_bboxes",
+        "foreign_content_max_overhang_pts",
         "knockout_stroke_count",
         "last_dieline_paint_idx",
         "last_nondieline_paint_idx",
+        "layer_content_count",
+        "layer_content_first_op_idx",
+        "varnish_free_spots",
+        "varnish_free_spots_bboxes",
+        "varnish_spots",
+        "varnish_spots_bboxes",
     )
 
     def __init__(self) -> None:
@@ -185,6 +372,18 @@ class _QualitySignals:
         self.fill_as_dieline_count: int = 0
         self.fill_as_dieline_area_pts2: float = 0.0
         self.first_fill_as_dieline_idx: int = -1
+        # T3-D01 — OCG-based layer-content detection.
+        self.dieline_ocg_names: list[str] = []
+        self.layer_content_count: int = 0
+        self.layer_content_first_op_idx: int = -1
+        # T3-D05 — paint bboxes outside the dieline envelope.
+        self.foreign_content_bboxes: list[tuple[float, float, float, float]] = []
+        self.foreign_content_max_overhang_pts: float = 0.0
+        # T3-D10 — varnish / VarnishFree spot bboxes.
+        self.varnish_spots: list[str] = []
+        self.varnish_spots_bboxes: list[tuple[float, float, float, float]] = []
+        self.varnish_free_spots: list[str] = []
+        self.varnish_free_spots_bboxes: list[tuple[float, float, float, float]] = []
 
 
 # Paint operators split into stroke-only, fill-only, both.
@@ -193,7 +392,96 @@ _FILL_OPS = {"f", "F", "f*"}
 _STROKE_AND_FILL_OPS = {"B", "B*", "b", "b*"}
 
 
-def _walk_page_one(pdf_bytes: bytes, spot_name: str) -> _QualitySignals:
+# T3-D01 — tokens that identify a dieline OCG / layer.
+_DIELINE_NAME_TOKENS = frozenset(
+    {
+        "die",
+        "dieline",
+        "die line",
+        "die-line",
+        "cut",
+        "cutcontour",
+        "cut contour",
+        "cut-contour",
+        "cutter",
+        "crease",
+        "perf",
+        "perforation",
+        "score",
+        "fold",
+        "kiss",
+        "through-cut",
+    }
+)
+
+# T3-D10 — closed lexicon of varnish / coating spot names.
+_VARNISH_NAME_TOKENS = frozenset(
+    {
+        "varnish",
+        "uv",
+        "uvvarnish",
+        "uv varnish",
+        "aq",
+        "aqcoat",
+        "aquacoat",
+        "aqua coat",
+        "gloss",
+        "matte",
+        "spotuv",
+        "spot uv",
+        "softtouch",
+        "soft touch",
+        "coating",
+    }
+)
+
+_VARNISH_FREE_NAME_TOKENS = frozenset(
+    {
+        "varnishfree",
+        "varnish free",
+        "varnish-free",
+        "novarnish",
+        "no varnish",
+        "no-varnish",
+        "coatingfree",
+        "coating free",
+        "coating-free",
+        "nocoating",
+        "no coating",
+        "no-coating",
+    }
+)
+
+
+def _normalise_spot_name(name: str) -> str:
+    """Lowercase + collapse separators for spot-name matching."""
+    out = name.strip().lstrip("/").lower()
+    out = out.replace("_", " ").replace("-", " ")
+    while "  " in out:
+        out = out.replace("  ", " ")
+    return out
+
+
+def _is_dieline_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return any(tok in norm for tok in _DIELINE_NAME_TOKENS)
+
+
+def _is_varnish_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return any(tok == norm or tok in norm.split() for tok in _VARNISH_NAME_TOKENS)
+
+
+def _is_varnish_free_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    # Require "free" or "no" to appear — avoids catching plain "varnish"
+    # as a free-marker spot.
+    if "free" not in norm and "no " not in norm and norm[:2] != "no":
+        return False
+    return any(tok in norm for tok in _VARNISH_FREE_NAME_TOKENS)
+
+
+def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
     import io
 
     import pikepdf
@@ -210,13 +498,30 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str) -> _QualitySignals:
         extgstate_dict = (
             resources.get("/ExtGState") if resources and hasattr(resources, "get") else None
         )
+        props_dict = (
+            resources.get("/Properties") if resources and hasattr(resources, "get") else None
+        )
 
         # resource name → spot name for Separation colour spaces.
         cs_to_spot = _build_cs_to_spot(cs_dict)
+        # T3-D10 — record which resource names resolve to varnish /
+        # VarnishFree spots so we can tally their paint bboxes.
+        for spot in cs_to_spot.values():
+            if _is_varnish_free_name(spot) and spot not in signals.varnish_free_spots:
+                signals.varnish_free_spots.append(spot)
+            elif _is_varnish_name(spot) and spot not in signals.varnish_spots:
+                signals.varnish_spots.append(spot)
+
+        # T3-D01 — build resource-name → OCG-name map so BDC /OC
+        # /Resource blocks resolve to the actual optional-content
+        # group label.
+        prop_to_ocg_name = _build_prop_to_ocg_name(props_dict)
 
         # Current graphics-state tracking.
         current_stroke_cs: str | None = None
         current_fill_cs: str | None = None
+        # Stack of open dieline-named OCG marked-content blocks.
+        ocg_stack: list[str] = []
         # Stroking / non-stroking overprint flags (ISO 32000-2 §11.7.4.4).
         # Default is `false` per spec. OP governs painting ops other than
         # image/path fill; op (lowercase) governs fill specifically when
@@ -227,6 +532,9 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str) -> _QualitySignals:
         # for T3-D15 severity escalation.
         path_subpath_areas_pts2: list[float] = []
         current_subpath_points: list[tuple[float, float]] = []
+        # Bbox history for the current compound path — refreshed when
+        # a paint op runs. Batch 5 T3-D05 / T3-D10 consume this list.
+        current_subpath_points_history: list[tuple[float, float, float, float]] = []
 
         def finish_subpath() -> None:
             if not current_subpath_points:
@@ -235,6 +543,7 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str) -> _QualitySignals:
             ys = [p[1] for p in current_subpath_points]
             area = max(0.0, max(xs) - min(xs)) * max(0.0, max(ys) - min(ys))
             path_subpath_areas_pts2.append(area)
+            current_subpath_points_history.append((min(xs), min(ys), max(xs), max(ys)))
             current_subpath_points.clear()
 
         try:
@@ -292,6 +601,35 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str) -> _QualitySignals:
                 with contextlib.suppress(ValueError, TypeError):
                     current_subpath_points.append((float(operands[-2]), float(operands[-1])))
 
+            # Marked-content blocks — BDC /OC /Resource → push the
+            # referenced OCG name onto the stack if it's a dieline
+            # layer; EMC → pop.
+            elif op == "BDC" and len(operands) >= 2:
+                # Operand 0 is the tag (/OC, /Layer, /Artifact…);
+                # operand 1 is the property name or property dict.
+                try:
+                    tag = str(operands[0]).lstrip("/")
+                    if tag == "OC":
+                        prop_name = str(operands[1]).lstrip("/")
+                        ocg_label = prop_to_ocg_name.get(prop_name, "")
+                        if _is_dieline_name(ocg_label):
+                            ocg_stack.append(ocg_label)
+                            if ocg_label not in signals.dieline_ocg_names:
+                                signals.dieline_ocg_names.append(ocg_label)
+                        else:
+                            # Push an empty sentinel so the matching
+                            # EMC still pops cleanly.
+                            ocg_stack.append("")
+                    else:
+                        ocg_stack.append("")
+                except Exception:
+                    ocg_stack.append("")
+            elif op == "BMC":
+                ocg_stack.append("")
+            elif op == "EMC":
+                if ocg_stack:
+                    ocg_stack.pop()
+
             # Paint operators — drive the signal gathering.
             elif op in _STROKE_OPS or op in _FILL_OPS or op in _STROKE_AND_FILL_OPS:
                 finish_subpath()
@@ -303,6 +641,11 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str) -> _QualitySignals:
                 fill_is_dieline = (
                     op in _FILL_OPS or op in _STROKE_AND_FILL_OPS
                 ) and _cs_is_dieline(current_fill_cs, cs_to_spot, spot_name)
+
+                # Pre-compute the paint bbox — union of subpath bboxes
+                # for the current compound path. Used by T3-D05 and
+                # T3-D10.
+                paint_bbox = _bbox_union(current_subpath_points_history)
 
                 # T3-D02 z-order signal.
                 if stroke_is_dieline or fill_is_dieline:
@@ -324,7 +667,33 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str) -> _QualitySignals:
                     if signals.first_fill_as_dieline_idx < 0:
                         signals.first_fill_as_dieline_idx = op_idx
 
+                # T3-D01 — any paint inside a dieline-named OCG that's
+                # NOT using the dieline spot is foreign content on the
+                # cutter plate.
+                in_dieline_ocg = any(n for n in ocg_stack if _is_dieline_name(n))
+                if in_dieline_ocg and not (stroke_is_dieline or fill_is_dieline):
+                    signals.layer_content_count += 1
+                    if signals.layer_content_first_op_idx < 0:
+                        signals.layer_content_first_op_idx = op_idx
+
+                # T3-D05 — record all non-dieline paint bboxes so the
+                # caller can compare them against the dieline envelope.
+                if paint_bbox and not (stroke_is_dieline or fill_is_dieline):
+                    signals.foreign_content_bboxes.append(paint_bbox)
+
+                # T3-D10 — record paint bboxes keyed by their spot type.
+                if paint_bbox:
+                    stroke_spot = _cs_mapped_spot(current_stroke_cs, cs_to_spot)
+                    fill_spot = _cs_mapped_spot(current_fill_cs, cs_to_spot)
+                    touched_spots = {s for s in (stroke_spot, fill_spot) if s}
+                    for s in touched_spots:
+                        if s in signals.varnish_spots:
+                            signals.varnish_spots_bboxes.append(paint_bbox)
+                        if s in signals.varnish_free_spots:
+                            signals.varnish_free_spots_bboxes.append(paint_bbox)
+
                 path_subpath_areas_pts2.clear()
+                current_subpath_points_history.clear()
 
             # `n` ends a path without painting — just discard the path.
             elif op == "n":
@@ -337,13 +706,58 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str) -> _QualitySignals:
 def _cs_is_dieline(
     cs_name: str | None,
     cs_to_spot: dict[str, str],
-    spot_name: str,
+    spot_name: str | None,
 ) -> bool:
-    """Resolve a colour-space name to its Separation spot and compare."""
-    if cs_name is None:
+    """Resolve a colour-space name to its Separation spot and compare.
+
+    Returns False when ``spot_name`` is None (Batch 4 spot-based checks
+    rely on knowing which spot counts as dieline; when the caller hasn't
+    provided one, no paint op qualifies as dieline).
+    """
+    if cs_name is None or spot_name is None:
         return False
     mapped = cs_to_spot.get(cs_name)
     return mapped == spot_name
+
+
+def _cs_mapped_spot(
+    cs_name: str | None,
+    cs_to_spot: dict[str, str],
+) -> str | None:
+    """Return the spot colourant name mapped to ``cs_name``, or None."""
+    if cs_name is None:
+        return None
+    return cs_to_spot.get(cs_name)
+
+
+def _build_prop_to_ocg_name(props_dict: Any) -> dict[str, str]:
+    """Map ``/Properties`` resource names to their OCG `/Name`.
+
+    BDC operators tagged ``/OC /SomeProp`` look up the OCG via the
+    page's /Resources /Properties dict. Without this map the walker
+    can't tell whether a marked-content block is on a dieline layer.
+    """
+    out: dict[str, str] = {}
+    if props_dict is None:
+        return out
+    try:
+        items = props_dict.items() if hasattr(props_dict, "items") else []
+    except Exception:
+        return out
+    for key, value in items:
+        try:
+            res_name = str(key).lstrip("/")
+            if not hasattr(value, "get"):
+                continue
+            ocg_type = value.get("/Type")
+            if ocg_type is not None and str(ocg_type).lstrip("/") != "OCG":
+                continue
+            ocg_name = value.get("/Name")
+            if ocg_name is not None:
+                out[res_name] = str(ocg_name)
+        except Exception:
+            continue
+    return out
 
 
 def _build_cs_to_spot(cs_dict: Any) -> dict[str, str]:

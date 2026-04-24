@@ -867,12 +867,12 @@ def run_preflight(
                 result_dict["summary"]["total_findings"] += 1
                 result_dict["summary"]["warning_count"] += 1
 
-            # Batch 4 — T3-D02 / T3-D03 / T3-D15 dieline-quality findings.
-            # Runs after detection, uses the persisted DielineResult +
-            # raw PDF bytes to emit z-order / knockout / as-art findings.
-            # Independent of the multi-colour check above; both are
-            # post-detection quality signals.
-            if job.dieline and job.dieline.get("spot_name"):
+            # Batches 4+5 — dieline-quality findings (T3-D02/03/15)
+            # plus OCG / envelope / varnish checks (T3-D01/05/10).
+            # Always call the check: Batch 5 T3-D10 (varnish
+            # collision) fires without any dieline detection, so
+            # gating on job.dieline misses valid findings.
+            if pdf_bytes:
                 try:
                     from lintpdf.analyzers.dieline_quality import (
                         check_dieline_quality,
@@ -880,8 +880,9 @@ def run_preflight(
 
                     dq_findings = check_dieline_quality(
                         pdf_bytes,
-                        spot_name=job.dieline.get("spot_name"),
-                        source=job.dieline.get("source") or "missing",
+                        spot_name=(job.dieline or {}).get("spot_name"),
+                        source=(job.dieline or {}).get("source") or "missing",
+                        regions=(job.dieline or {}).get("regions"),
                     )
                 except Exception:
                     logger.exception("Job %s dieline_quality check raised", job_id)
@@ -974,9 +975,10 @@ def run_preflight(
                     )
                 )
 
-            # Batch 4 — persist dieline-quality findings (T3-D02/03/15).
-            # Same pattern as LPDF_DIE_MULTI_COLOR above.
-            if job.dieline and job.dieline.get("spot_name"):
+            # Batches 4+5 — persist dieline-quality findings.
+            # Same pattern as LPDF_DIE_MULTI_COLOR above. Always call:
+            # T3-D10 varnish collision runs without a detected dieline.
+            if pdf_bytes:
                 try:
                     from lintpdf.analyzers.dieline_quality import (
                         check_dieline_quality,
@@ -984,8 +986,9 @@ def run_preflight(
 
                     for df in check_dieline_quality(
                         pdf_bytes,
-                        spot_name=job.dieline.get("spot_name"),
-                        source=job.dieline.get("source") or "missing",
+                        spot_name=(job.dieline or {}).get("spot_name"),
+                        source=(job.dieline or {}).get("source") or "missing",
+                        regions=(job.dieline or {}).get("regions"),
                     ):
                         db.add(
                             JobFinding(
