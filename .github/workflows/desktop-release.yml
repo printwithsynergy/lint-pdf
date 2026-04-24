@@ -130,7 +130,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          # When no Apple Developer cert is loaded into the runner keychain,
+          # fall back to ad-hoc signing (``-``). Without this, Tauri's
+          # bundler invokes ``codesign`` with the default identity, which
+          # doesn't exist on a fresh GH Actions runner, and the macOS
+          # build fails with "The specified item could not be found in
+          # the keychain." Ad-hoc-signed bundles still run on macOS but
+          # show the unidentified-developer prompt on first launch — fine
+          # for an early release, swap to a real Developer ID secret
+          # later for a polished install experience.
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY || '-' }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
