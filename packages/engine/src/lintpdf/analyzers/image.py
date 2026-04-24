@@ -27,6 +27,7 @@ Check IDs:
     LPDF_IMG_015 — Image is significantly rotated (non-90-degree rotation)
     LPDF_IMG_016 — Image is flipped (mirrored)
     LPDF_IMG_017 — Image precise scaling percentage (extreme scaling detected)
+    LPDF_IMG_018 — Missing image / broken XObject reference
 """
 
 from __future__ import annotations
@@ -113,6 +114,9 @@ class ImageAnalyzer(BaseAnalyzer):
 
         # LPDF_IMG_013: Alternate images in page XObject resources
         findings.extend(self._check_alternates_in_resources(document))
+
+        # LPDF_IMG_018: Broken / missing image XObject references
+        findings.extend(self._check_broken_image_refs(document))
 
         return findings
 
@@ -614,6 +618,76 @@ class ImageAnalyzer(BaseAnalyzer):
                         )
                     )
                     return findings  # One finding is enough
+        return findings
+
+    @staticmethod
+    def _check_broken_image_refs(document: SemanticDocument) -> list[Finding]:
+        """Check for dangling / wrong-type XObject references (LPDF_IMG_018).
+
+        Walks every page's /Resources /XObject dictionary and flags entries
+        whose indirect reference didn't resolve to an Image XObject.
+
+        Three failure modes collapse into one finding:
+          - ``dangling_indirect_ref`` — entry resolved to null (pikepdf
+            returns ``None`` when the xref slot is absent or marked free).
+          - ``missing_subtype`` — entry is a dict with no /Subtype key, so
+            the RIP can't know how to render it.
+          - ``wrong_subtype`` — entry is a dict with /Subtype that's
+            neither /Image (legitimate image) nor /Form (legitimate reusable
+            graphic). Includes deprecated /PS (PostScript XObject) and any
+            vendor-invented subtype the RIP won't recognise.
+        """
+        findings: list[Finding] = []
+        for page in document.pages:
+            xobjects = page.resources.get("/XObject")
+            if not isinstance(xobjects, dict):
+                continue
+            for xobj_name, xobj_entry in xobjects.items():
+                failure_mode: str | None = None
+                resolved_subtype: str | None = None
+
+                if xobj_entry is None:
+                    failure_mode = "dangling_indirect_ref"
+                elif isinstance(xobj_entry, str):
+                    # _pikepdf_to_python returns "<shared ref: N N R>" on
+                    # cycle detection or str(obj) at depth-cap — neither
+                    # is a usable XObject for the RIP.
+                    failure_mode = "dangling_indirect_ref"
+                elif isinstance(xobj_entry, dict):
+                    subtype = xobj_entry.get("/Subtype")
+                    if subtype is None:
+                        failure_mode = "missing_subtype"
+                    elif subtype not in ("/Image", "/Form"):
+                        failure_mode = "wrong_subtype"
+                        resolved_subtype = str(subtype)
+                else:
+                    failure_mode = "wrong_subtype"
+                    resolved_subtype = type(xobj_entry).__name__
+
+                if failure_mode is None:
+                    continue
+
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_IMG_018",
+                        severity=Severity.ERROR,
+                        message=(
+                            f"Image XObject '{xobj_name}' on page {page.page_num} "
+                            f"has a broken reference ({failure_mode}"
+                            + (f": {resolved_subtype}" if resolved_subtype else "")
+                            + ")"
+                        ),
+                        page_num=page.page_num,
+                        details={
+                            "resource_name": xobj_name,
+                            "failure_mode": failure_mode,
+                            "resolved_subtype": resolved_subtype,
+                        },
+                        object_id=xobj_name,
+                        object_type="xobject",
+                        iso_clause="ISO 32000-2:2020 8.10 / 7.3.10",
+                    )
+                )
         return findings
 
     @staticmethod

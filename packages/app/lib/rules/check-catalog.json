@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 373,
+  "total_checks": 374,
   "categories": [
     {
       "id": "image",
@@ -107,6 +107,12 @@
           "id": "LPDF_IMG_017",
           "name": "Extreme Scaling",
           "description": "Image is scaled to an extreme percentage of its original size.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_IMG_018",
+          "name": "Broken Image Reference",
+          "description": "An image XObject in page resources resolves to a missing object or a non-image type \u2014 the RIP will render a blank region where this image was placed.",
           "default_severity": "warning"
         }
       ]

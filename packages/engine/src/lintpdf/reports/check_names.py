@@ -83,6 +83,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_IMG_017": CheckInfo(
         "Extreme Scaling", "Image is scaled to an extreme percentage of its original size."
     ),
+    "LPDF_IMG_018": CheckInfo(
+        "Broken Image Reference",
+        "An image XObject in page resources resolves to a missing object or a non-image type — the RIP will render a blank region where this image was placed.",
+    ),
     # ── Fonts ─────────────────────────────────────────────────────────────
     "LPDF_FONT_001": CheckInfo(
         "Missing Font", "A font is not embedded — text may display incorrectly at the printer."
