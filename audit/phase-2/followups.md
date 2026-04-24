@@ -3,27 +3,31 @@
 Tracked here so nothing slips. Each entry becomes its own commit / PR
 when the triggering pattern is ready.
 
-## FUP-1 — Rules-tab "PDF version constraints" widget (T1-CMP02 Q10)
+## FUP-1 — Rules-tab "PDF version constraints" widget ✅ DONE
 
-**Trigger:** deferred per operator approval 2026-04-24 ("defer as long as it gets done").
+**Trigger:** operator re-scoped 2026-04-24: "I want done and not deferred."
 
-**Scope:** add a dedicated threshold-editing section to the Rules-tab
-UI at `/dashboard/rulesets/[id]` + `/dashboard/admin/rulesets`. Today
-`min_pdf_version` / `max_pdf_version` are editable only via the JSON
-tab. The dedicated widget should:
+**Shipped as** `packages/app/components/rules/ThresholdsPanel.tsx`
+mounted at the top of the Rules tab on `/dashboard/rulesets/[id]` +
+`/dashboard/admin/rulesets`.
 
-- Live in a "PDF version constraints" collapsible under the Rules tab.
-- Two text inputs (min, max) with dropdown helper listing the common
-  PDF versions (1.3 / 1.4 / 1.5 / 1.6 / 1.7 / 2.0).
-- Validation: reject non-version strings, reject min > max.
-- Live-sync with the underlying profile.thresholds.{min,max}_pdf_version.
+- Collapsible "Thresholds" section, first block = PDF version
+  constraints (min / max).
+- Two text inputs with `<datalist>` dropdown (1.3 / 1.4 / 1.5 / 1.6 /
+  1.7 / 2.0).
+- Live validation: rejects non-version strings, flags `min > max`.
+- Empty → stripped (no `undefined` key in JSON tab on round-trip).
+- Live-syncs `profile.thresholds.min_pdf_version` /
+  `max_pdf_version` through the existing RulesEditor
+  `onChange` hook; saves via WS-16's PATCH route unchanged.
 
-**Blocker:** the Rules tab currently has no threshold-editing pattern
-at all (only per-check severity cards). When the first threshold
-widget lands for any other threshold (min_dpi, tac_limit, etc.),
-min/max_pdf_version follows in the same pass.
-
-**Tracking:** `T1-CMP02/review-questions.md` Q10.
+**New shared pattern.** The `ThresholdsPanel` container is
+deliberately generic so subsequent threshold groups (TAC limit,
+expected page size from T1-STR04, hairline threshold, etc.) can land
+in the same block without restructuring the page. When Phase-2
+Batch 2+ thresholds want UI surfaces, extend `ThresholdsPanel` with
+additional section components — one pattern to learn, not one widget
+per profile field.
 
 ## FUP-2 — Review-question answers inbox
 

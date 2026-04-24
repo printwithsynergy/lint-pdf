@@ -1,5 +1,6 @@
 # T1-CMP01 status
 
-**State:** verified (pending operator review of veraPDF shim design)
+**State:** verified
 **Date:** 2026-04-24
-**Commits:** see git log
+**Review questions:** all answered at documented defaults
+**Follow-up work from this check:** see `audit/phase-2/followups.md`
