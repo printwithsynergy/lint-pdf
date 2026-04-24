@@ -888,6 +888,8 @@ def run_preflight(
                         min_dieline_feature_mm=profile.thresholds.min_dieline_feature_mm,
                         min_dieline_segment_length_mm=profile.thresholds.min_dieline_segment_length_mm,
                         white_coverage_min=profile.thresholds.white_coverage_min,
+                        barcode_quiet_zone_mm=profile.thresholds.barcode_quiet_zone_mm,
+                        text_to_fold_distance_mm=profile.thresholds.text_to_fold_distance_mm,
                     )
                 except Exception:
                     logger.exception("Job %s dieline_quality check raised", job_id)
@@ -1032,6 +1034,8 @@ def run_preflight(
                         min_dieline_feature_mm=profile.thresholds.min_dieline_feature_mm,
                         min_dieline_segment_length_mm=profile.thresholds.min_dieline_segment_length_mm,
                         white_coverage_min=profile.thresholds.white_coverage_min,
+                        barcode_quiet_zone_mm=profile.thresholds.barcode_quiet_zone_mm,
+                        text_to_fold_distance_mm=profile.thresholds.text_to_fold_distance_mm,
                     ):
                         db.add(
                             JobFinding(

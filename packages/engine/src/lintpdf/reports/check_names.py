@@ -625,6 +625,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "White Underprint Gap",
         "White / OpaqueWhite underprint covers less than the configured fraction of the dieline area (default 95%). On clear or foil substrates, gaps in white underprint let the substrate show through colour artwork.",
     ),
+    "LPDF_BARCODE_QUIET_ZONE": CheckInfo(
+        "Barcode Quiet Zone Conflict",
+        "An image XObject (likely a barcode) sits closer than the configured quiet zone (default 2.5mm) to a dieline / fold / crease line. The cut blade or fold crease may pass through the barcode quiet zone and break scanability.",
+    ),
+    "LPDF_TEXT_NEAR_FOLD": CheckInfo(
+        "Text Near Fold Line",
+        "Text region within the configured clearance (default 3.0mm) of a fold / crease / score line. Text that crosses or hugs a fold gets bent and becomes hard to read.",
+    ),
+    "LPDF_BRAILLE_INTEGRITY": CheckInfo(
+        "Braille Zone Integrity",
+        "Pharma-packaging Braille spot detected. Severity escalates to warning when other inks paint inside the Braille zone (dots fill in and become unreadable).",
+    ),
     # ── AI File Classification ──────────────────────────────────────────────
     "AI_FCLASS_002": CheckInfo(
         "Document Classified",

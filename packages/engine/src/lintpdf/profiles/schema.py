@@ -199,6 +199,18 @@ class ThresholdConfig(BaseModel):
         ),
     )
 
+    # T3-D07 — minimum clearance from text bbox to fold/crease line.
+    # 0 disables the check; default 3.0mm.
+    text_to_fold_distance_mm: float = Field(
+        default=3.0,
+        ge=0,
+        description=(
+            "Minimum clearance (mm) from any text bbox to a fold / "
+            "crease line. Below this triggers LPDF_TEXT_NEAR_FOLD. "
+            "0 disables the check."
+        ),
+    )
+
     # T3-D12 — target substrate. Enables substrate-aware TAC advisory.
     substrate: str | None = Field(
         default=None,

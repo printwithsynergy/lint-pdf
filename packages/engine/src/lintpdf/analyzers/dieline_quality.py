@@ -58,6 +58,8 @@ def check_dieline_quality(
     min_dieline_feature_mm: float = 1.0,
     min_dieline_segment_length_mm: float = 1.0,
     white_coverage_min: float = 0.95,
+    barcode_quiet_zone_mm: float = 2.5,
+    text_to_fold_distance_mm: float = 3.0,
 ) -> list[Finding]:
     """Emit dieline-quality findings for a resolved dieline.
 
@@ -408,6 +410,132 @@ def check_dieline_quality(
                             )
                         )
 
+    # T3-D06 — barcode quiet zone vs dieline / fold / crease.
+    # Image bbox within `barcode_quiet_zone_mm` of any dieline /
+    # crease line bbox triggers the advisory.
+    if (
+        signals.image_bboxes
+        and (signals.dieline_line_bboxes or signals.crease_line_bboxes)
+        and barcode_quiet_zone_mm > 0
+    ):
+        quiet_zone_pts = barcode_quiet_zone_mm / 0.352778
+        line_bboxes = signals.dieline_line_bboxes + signals.crease_line_bboxes
+        too_close: list[tuple[float, float, float, float]] = []
+        min_distance_pts = float("inf")
+        for img_bbox in signals.image_bboxes:
+            for line_bbox in line_bboxes:
+                d = _bbox_distance(img_bbox, line_bbox)
+                if d < quiet_zone_pts:
+                    too_close.append(img_bbox)
+                    min_distance_pts = min(min_distance_pts, d)
+                    break
+        if too_close:
+            worst = too_close[0]
+            for img in too_close[1:]:
+                if any(_bbox_distance(img, lb) < _bbox_distance(worst, lb) for lb in line_bboxes):
+                    worst = img
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_BARCODE_QUIET_ZONE",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"{len(too_close)} image(s) within {barcode_quiet_zone_mm:.1f}mm "
+                        f"of a fold / cut line — verify barcode quiet zones"
+                    ),
+                    page_num=1,
+                    details={
+                        "image_count": len(too_close),
+                        "quiet_zone_mm": barcode_quiet_zone_mm,
+                        "min_distance_mm": round(min_distance_pts * 0.352778, 3),
+                        "worst_image_bbox_pts": list(worst),
+                    },
+                    iso_clause="GS1 General Specifications / Barcode quiet zone",
+                    object_type="image",
+                )
+            )
+
+    # T3-D07 — text near fold / crease line.
+    if signals.text_bboxes and signals.crease_line_bboxes and text_to_fold_distance_mm > 0:
+        threshold_pts = text_to_fold_distance_mm / 0.352778
+        too_close_text: list[tuple[float, float, float, float]] = []
+        min_dist_pts = float("inf")
+        for text_bbox in signals.text_bboxes:
+            for crease_bbox in signals.crease_line_bboxes:
+                d = _bbox_distance(text_bbox, crease_bbox)
+                if d < threshold_pts:
+                    too_close_text.append(text_bbox)
+                    min_dist_pts = min(min_dist_pts, d)
+                    break
+        if too_close_text:
+            worst_text = too_close_text[0]
+            for tb in too_close_text[1:]:
+                if any(
+                    _bbox_distance(tb, cb) < _bbox_distance(worst_text, cb)
+                    for cb in signals.crease_line_bboxes
+                ):
+                    worst_text = tb
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_TEXT_NEAR_FOLD",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"{len(too_close_text)} text region(s) within "
+                        f"{text_to_fold_distance_mm:.1f}mm of a fold / crease line "
+                        f"— text will be bent at the fold"
+                    ),
+                    page_num=1,
+                    details={
+                        "text_count": len(too_close_text),
+                        "threshold_mm": text_to_fold_distance_mm,
+                        "min_distance_mm": round(min_dist_pts * 0.352778, 3),
+                        "worst_text_bbox_pts": list(worst_text),
+                    },
+                    iso_clause="ISO 19593-1 §5.3 / fold-line clearance",
+                    object_type="text",
+                )
+            )
+
+    # T3-D14 — Braille zone integrity. Always emit the presence
+    # advisory when Braille is detected; severity escalates to
+    # warning when non-Braille incursions are present.
+    if signals.braille_spots and signals.braille_paint_bboxes:
+        braille_envelope = _bbox_union(signals.braille_paint_bboxes)
+        dot_count = len(signals.braille_paint_bboxes)
+        area_pts2 = (
+            (braille_envelope[2] - braille_envelope[0])
+            * (braille_envelope[3] - braille_envelope[1])
+            if braille_envelope
+            else 0.0
+        )
+        area_cm2 = area_pts2 * (0.352778 / 10) ** 2
+        has_violation = signals.non_braille_in_braille_zone > 0
+        severity = Severity.WARNING if has_violation else Severity.ADVISORY
+        if has_violation:
+            msg = (
+                f"Braille zone contains {signals.non_braille_in_braille_zone} "
+                f"non-Braille paint operation(s) — dots will fill in"
+            )
+        else:
+            msg = f"Braille detected: {dot_count} dot(s), ~{area_cm2:.2f} cm². Clearance OK"
+        findings.append(
+            Finding(
+                inspection_id="LPDF_BRAILLE_INTEGRITY",
+                severity=severity,
+                message=msg,
+                page_num=1,
+                details={
+                    "braille_spot": signals.braille_spots[0],
+                    "dot_count": dot_count,
+                    "braille_area_cm2": round(area_cm2, 4),
+                    "has_clearance_violation": has_violation,
+                    "violation_count": signals.non_braille_in_braille_zone,
+                },
+                iso_clause="ISO 19593-1 §5.3 / WHO + EU 92/27 Braille",
+                object_id=signals.braille_spots[0],
+                object_type="spot_color",
+            )
+        )
+
     return findings
 
 
@@ -532,6 +660,10 @@ class _QualitySignals:
     """Mutable scratch-pad the walker fills in."""
 
     __slots__ = (
+        "braille_paint_bboxes",
+        "braille_spots",
+        "crease_line_bboxes",
+        "dieline_line_bboxes",
         "dieline_ocg_names",
         "fill_as_dieline_area_pts2",
         "fill_as_dieline_count",
@@ -539,11 +671,14 @@ class _QualitySignals:
         "first_knockout_op_idx",
         "foreign_content_bboxes",
         "foreign_content_max_overhang_pts",
+        "image_bboxes",
         "knockout_stroke_count",
         "last_dieline_paint_idx",
         "last_nondieline_paint_idx",
         "layer_content_count",
         "layer_content_first_op_idx",
+        "non_braille_in_braille_zone",
+        "text_bboxes",
         "varnish_free_spots",
         "varnish_free_spots_bboxes",
         "varnish_spots",
@@ -575,6 +710,17 @@ class _QualitySignals:
         # T3-D09 — white-spot bboxes for white-coverage calc.
         self.white_spots: list[str] = []
         self.white_spots_bboxes: list[tuple[float, float, float, float]] = []
+        # T3-D06 — image bboxes + dieline / crease line stroke bboxes
+        # for barcode-quiet-zone proximity.
+        self.image_bboxes: list[tuple[float, float, float, float]] = []
+        self.dieline_line_bboxes: list[tuple[float, float, float, float]] = []
+        self.crease_line_bboxes: list[tuple[float, float, float, float]] = []
+        # T3-D07 — text bboxes for text-near-fold proximity.
+        self.text_bboxes: list[tuple[float, float, float, float]] = []
+        # T3-D14 — Braille spot bboxes + non-Braille incursions.
+        self.braille_spots: list[str] = []
+        self.braille_paint_bboxes: list[tuple[float, float, float, float]] = []
+        self.non_braille_in_braille_zone: int = 0
 
 
 # Paint operators split into stroke-only, fill-only, both.
@@ -693,6 +839,92 @@ def _is_white_name(name: str) -> bool:
     )
 
 
+# T3-D07 — fold/crease spot tokens (subset of dieline tokens —
+# specifically the fold-line varieties, not full cuts).
+_CREASE_NAME_TOKENS = frozenset(
+    {
+        "crease",
+        "creaseline",
+        "crease line",
+        "fold",
+        "foldline",
+        "fold line",
+        "score",
+        "scoreline",
+        "score line",
+    }
+)
+
+
+def _is_crease_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return norm in _CREASE_NAME_TOKENS or any(
+        tok in norm.split() for tok in ("crease", "fold", "score")
+    )
+
+
+# T3-D14 — Braille spot tokens (closed list, pharma-niche).
+_BRAILLE_NAME_TOKENS = frozenset(
+    {
+        "braille",
+        "braillestep",
+        "braille step",
+        "braille1",
+        "braille 1",
+        "marburg medium",
+        "marburgmedium",
+    }
+)
+
+
+def _is_braille_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return norm in _BRAILLE_NAME_TOKENS or "braille" in norm
+
+
+def _bbox_distance(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> float:
+    """Minimum axis-aligned distance between two rectangles. 0 when
+    they overlap or touch."""
+    dx = max(0.0, max(a[0], b[0]) - min(a[2], b[2]))
+    dy = max(0.0, max(a[1], b[1]) - min(a[3], b[3]))
+    if dx == 0 and dy == 0:
+        # Bboxes overlap or are colinear — return 0.
+        # (When they're separated on neither axis the rectangles
+        # actually intersect; same answer.)
+        return 0.0
+    return (dx**2 + dy**2) ** 0.5
+
+
+def _bbox_centre_inside(
+    bbox: tuple[float, float, float, float],
+    container: tuple[float, float, float, float],
+) -> bool:
+    cx = (bbox[0] + bbox[2]) / 2.0
+    cy = (bbox[1] + bbox[3]) / 2.0
+    return container[0] <= cx <= container[2] and container[1] <= cy <= container[3]
+
+
+def _touches_braille_spot(
+    stroke_cs: str | None,
+    fill_cs: str | None,
+    cs_to_spot: dict[str, str],
+    signals: _QualitySignals,
+) -> bool:
+    """True when either the current stroke or fill cs maps to a
+    Braille spot tracked on ``signals``. Used by the clearance check
+    to skip the Braille paint event itself."""
+    for cs in (stroke_cs, fill_cs):
+        if cs is None:
+            continue
+        spot = cs_to_spot.get(cs)
+        if spot and spot in signals.braille_spots:
+            return True
+    return False
+
+
 def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
     import io
 
@@ -725,6 +957,9 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                 signals.varnish_spots.append(spot)
             if _is_white_name(spot) and spot not in signals.white_spots:
                 signals.white_spots.append(spot)
+            # T3-D14 — Braille spot detection.
+            if _is_braille_name(spot) and spot not in signals.braille_spots:
+                signals.braille_spots.append(spot)
 
         # T3-D01 — build resource-name → OCG-name map so BDC /OC
         # /Resource blocks resolve to the actual optional-content
@@ -749,6 +984,30 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
         # Bbox history for the current compound path — refreshed when
         # a paint op runs. Batch 5 T3-D05 / T3-D10 consume this list.
         current_subpath_points_history: list[tuple[float, float, float, float]] = []
+        # Batch 8 — CTM + text state for image (Do) and text (Tj/TJ)
+        # bbox capture. Stack-based for q/Q save/restore.
+        ctm_stack: list[tuple[float, float, float, float, float, float]] = []
+        ctm: tuple[float, float, float, float, float, float] = (1, 0, 0, 1, 0, 0)
+        # Text-matrix tracking — minimal; we only need a position +
+        # approximate extent for proximity, not precise glyph metrics.
+        text_matrix: tuple[float, float, float, float, float, float] | None = None
+        text_line_matrix: tuple[float, float, float, float, float, float] | None = None
+        current_font_size: float = 12.0
+
+        def compose(
+            m1: tuple[float, float, float, float, float, float],
+            m2: tuple[float, float, float, float, float, float],
+        ) -> tuple[float, float, float, float, float, float]:
+            a1, b1, c1, d1, e1, f1 = m1
+            a2, b2, c2, d2, e2, f2 = m2
+            return (
+                a2 * a1 + b2 * c1,
+                a2 * b1 + b2 * d1,
+                c2 * a1 + d2 * c1,
+                c2 * b1 + d2 * d1,
+                e2 * a1 + f2 * c1 + e1,
+                e2 * b1 + f2 * d1 + f1,
+            )
 
         def finish_subpath() -> None:
             if not current_subpath_points:
@@ -844,6 +1103,99 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                 if ocg_stack:
                     ocg_stack.pop()
 
+            # Graphics-state save / restore — push/pop CTM.
+            elif op == "q":
+                ctm_stack.append(ctm)
+            elif op == "Q":
+                if ctm_stack:
+                    ctm = ctm_stack.pop()
+
+            # Current Transformation Matrix update.
+            elif op == "cm" and len(operands) >= 6:
+                with contextlib.suppress(ValueError, TypeError):
+                    new_cm = (
+                        float(operands[0]),
+                        float(operands[1]),
+                        float(operands[2]),
+                        float(operands[3]),
+                        float(operands[4]),
+                        float(operands[5]),
+                    )
+                    ctm = compose(ctm, new_cm)
+
+            # Image XObject placement (T3-D06).
+            elif op == "Do":
+                # Image bbox = unit square (0,0)-(1,1) under CTM.
+                a, b, c, d, e, f = ctm
+                xs = [e, e + a, e + c, e + a + c]
+                ys = [f, f + b, f + d, f + b + d]
+                bbox = (min(xs), min(ys), max(xs), max(ys))
+                # Filter: only treat substantial bboxes as image candidates;
+                # tiny <5pt² are typically icon glyphs, not barcodes.
+                w = bbox[2] - bbox[0]
+                h = bbox[3] - bbox[1]
+                if w * h >= 5.0:
+                    signals.image_bboxes.append(bbox)
+
+            # Text-state ops (T3-D07).
+            elif op == "BT":
+                text_matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+                text_line_matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+            elif op == "ET":
+                text_matrix = None
+                text_line_matrix = None
+            elif op == "Tf" and len(operands) >= 2:
+                with contextlib.suppress(ValueError, TypeError):
+                    current_font_size = abs(float(operands[1])) or 12.0
+            elif op == "Tm" and len(operands) >= 6:
+                with contextlib.suppress(ValueError, TypeError):
+                    text_matrix = (
+                        float(operands[0]),
+                        float(operands[1]),
+                        float(operands[2]),
+                        float(operands[3]),
+                        float(operands[4]),
+                        float(operands[5]),
+                    )
+                    text_line_matrix = text_matrix
+            elif op in ("Td", "TD") and len(operands) >= 2 and text_line_matrix is not None:
+                with contextlib.suppress(ValueError, TypeError):
+                    tx = float(operands[0])
+                    ty = float(operands[1])
+                    new_line = compose(text_line_matrix, (1, 0, 0, 1, tx, ty))
+                    text_line_matrix = new_line
+                    text_matrix = new_line
+            elif op == "T*" and text_line_matrix is not None:
+                # Move to next line — uses leading from /Tl. We don't track
+                # leading; approximate as -font_size in y.
+                new_line = compose(text_line_matrix, (1, 0, 0, 1, 0, -current_font_size))
+                text_line_matrix = new_line
+                text_matrix = new_line
+            elif op in ("Tj", "TJ", "'", '"') and text_matrix is not None:
+                # Text rendered. Compute approximate bbox by composing
+                # text_matrix × CTM and applying to a rough text extent.
+                tm_in_user = compose(text_matrix, ctm)
+                _, _, _, _, e_t, f_t = tm_in_user
+                # Approximate glyph width: half of font_size per character
+                # (good enough for proximity work; precise metrics not needed).
+                op_str: str = ""
+                with contextlib.suppress(Exception):
+                    if op == "TJ" and operands and isinstance(operands[0], list):
+                        for item in operands[0]:
+                            if isinstance(item, (str, bytes)):
+                                op_str += str(item)
+                    elif operands:
+                        op_str = str(operands[0])
+                # Strip non-alpha control chars from byte-form display name.
+                approx_chars = max(1, len(op_str.replace("\\", "").strip("()<>")))
+                width_est = current_font_size * approx_chars * 0.5
+                height_est = current_font_size
+                bbox = (e_t, f_t, e_t + width_est, f_t + height_est)
+                signals.text_bboxes.append(bbox)
+                # Advance text matrix by the rendered width.
+                with contextlib.suppress(Exception):
+                    text_matrix = compose(text_matrix, (1, 0, 0, 1, width_est, 0))
+
             # Paint operators — drive the signal gathering.
             elif op in _STROKE_OPS or op in _FILL_OPS or op in _STROKE_AND_FILL_OPS:
                 finish_subpath()
@@ -895,7 +1247,23 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                 if paint_bbox and not (stroke_is_dieline or fill_is_dieline):
                     signals.foreign_content_bboxes.append(paint_bbox)
 
-                # T3-D10 — record paint bboxes keyed by their spot type.
+                # T3-D14 — non-Braille paint inside Braille zone. Track
+                # incursions BEFORE the new paint bbox is appended to
+                # signals.braille_paint_bboxes (so we don't compare a
+                # Braille paint to itself).
+                if (
+                    paint_bbox
+                    and signals.braille_paint_bboxes
+                    and not _touches_braille_spot(
+                        current_stroke_cs, current_fill_cs, cs_to_spot, signals
+                    )
+                ):
+                    for braille_bbox in signals.braille_paint_bboxes:
+                        if _bbox_centre_inside(paint_bbox, braille_bbox):
+                            signals.non_braille_in_braille_zone += 1
+                            break
+
+                # T3-D10 / T3-D14 — record paint bboxes keyed by spot type.
                 if paint_bbox:
                     stroke_spot = _cs_mapped_spot(current_stroke_cs, cs_to_spot)
                     fill_spot = _cs_mapped_spot(current_fill_cs, cs_to_spot)
@@ -907,6 +1275,17 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                             signals.varnish_free_spots_bboxes.append(paint_bbox)
                         if s in signals.white_spots:
                             signals.white_spots_bboxes.append(paint_bbox)
+                        if s in signals.braille_spots:
+                            signals.braille_paint_bboxes.append(paint_bbox)
+                    # T3-D06/D07 — track stroke bboxes painted with the
+                    # active dieline / crease spot for proximity checks.
+                    if (
+                        op in _STROKE_OPS or op in _STROKE_AND_FILL_OPS
+                    ) and stroke_spot is not None:
+                        if stroke_spot == spot_name and spot_name is not None:
+                            signals.dieline_line_bboxes.append(paint_bbox)
+                        elif _is_crease_name(stroke_spot):
+                            signals.crease_line_bboxes.append(paint_bbox)
 
                 path_subpath_areas_pts2.clear()
                 current_subpath_points_history.clear()

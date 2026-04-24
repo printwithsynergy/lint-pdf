@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 397,
+  "total_checks": 400,
   "categories": [
     {
       "id": "image",
@@ -678,6 +678,12 @@
           "name": "Small multi-ink text pt inks",
           "description": "Small multi-ink text (Npt, N inks) on page N (risk of misregistration)",
           "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_TEXT_NEAR_FOLD",
+          "name": "Text Near Fold Line",
+          "description": "Text region within the configured clearance (default 3.0mm) of a fold / crease / score line. Text that crosses or hugs a fold gets bent and becomes hard to read.",
+          "default_severity": "advisory"
         }
       ]
     },
@@ -1307,6 +1313,12 @@
           "id": "LPDF_BARCODE_030",
           "name": "Barcode height mm below ISO minimum",
           "description": "Barcode height Nmm below ISO minimum on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_QUIET_ZONE",
+          "name": "Barcode Quiet Zone Conflict",
+          "description": "An image XObject (likely a barcode) sits closer than the configured quiet zone (default 2.5mm) to a dieline / fold / crease line. The cut blade or fold crease may pass through the barcode quiet zone and break scanability.",
           "default_severity": "warning"
         }
       ]
@@ -2225,6 +2237,12 @@
           "id": "LPDF_BD_004",
           "name": "Barcode on page right quiet zone",
           "description": "N barcode on page N: right quiet zone ~N modules, minimum N required",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_BRAILLE_INTEGRITY",
+          "name": "Braille Zone Integrity",
+          "description": "Pharma-packaging Braille spot detected. Severity escalates to warning when other inks paint inside the Braille zone (dots fill in and become unreadable).",
           "default_severity": "advisory"
         },
         {
