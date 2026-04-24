@@ -107,6 +107,22 @@ class ThresholdConfig(BaseModel):
         default=0.7, ge=0, le=1.0, description="Minimum barcode symbol contrast (0.0-1.0)."
     )
 
+    # PDF version range — T1-CMP02 / LPDF_DOC_009
+    min_pdf_version: str | None = Field(
+        default=None,
+        description=(
+            "Lowest acceptable PDF header version (e.g. '1.6' for PDF/X-4). "
+            "Absent means no lower bound. Fires LPDF_DOC_009 below this."
+        ),
+    )
+    max_pdf_version: str | None = Field(
+        default=None,
+        description=(
+            "Highest acceptable PDF header version (e.g. '1.4' for PDF/X-1a-2003). "
+            "Absent means no upper bound. Fires LPDF_DOC_009 above this."
+        ),
+    )
+
     # Color management thresholds
     target_output_condition: str = Field(
         default="",

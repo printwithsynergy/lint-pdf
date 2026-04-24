@@ -993,6 +993,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Pre-separated pages detected pages with single",
         "Pre-separated pages detected (N pages with single Separation color space)",
     ),
+    "LPDF_DOC_009": CheckInfo(
+        "PDF Version Outside Profile Range",
+        "The PDF header version sits outside the range the active preflight profile expects (below min_pdf_version or above max_pdf_version). Re-save with a matching compatibility setting.",
+    ),
     # ── Extended Colour Gamut ───────────────────────────────────────────────
     "LPDF_ECG_001": CheckInfo(
         "ECG readiness spot color(s found",

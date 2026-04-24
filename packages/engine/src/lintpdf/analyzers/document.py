@@ -12,6 +12,7 @@ Check IDs:
     LPDF_DOC_006 — Incremental updates detected
     LPDF_DOC_007 — File size exceeds threshold
     LPDF_DOC_008 — Pre-separated pages detected
+    LPDF_DOC_009 — PDF version outside profile range (T1-CMP02)
 """
 
 from __future__ import annotations
@@ -30,18 +31,45 @@ if TYPE_CHECKING:
 DEFAULT_MAX_FILE_SIZE_BYTES = 500 * 1024 * 1024
 
 
+def _parse_version(version: str) -> tuple[int, int] | None:
+    """Parse a PDF version string like '1.6' or '2.0' into a comparable tuple.
+
+    Returns ``None`` when the string doesn't look like a PDF version header.
+    """
+    if not version:
+        return None
+    try:
+        parts = version.strip().split(".")
+        if len(parts) != 2:
+            return None
+        return int(parts[0]), int(parts[1])
+    except (ValueError, AttributeError):
+        return None
+
+
 class DocumentAnalyzer(BaseAnalyzer):
     """Analyzer for document-level consistency checks.
 
     Args:
         max_file_size_bytes: Maximum file size threshold in bytes (default 500MB).
+        min_pdf_version: Lowest acceptable PDF header version (e.g. '1.6').
+            ``None`` disables the lower-bound check.
+        max_pdf_version: Highest acceptable PDF header version (e.g. '1.4').
+            ``None`` disables the upper-bound check.
+        profile_name: Active preflight profile name for messaging.
     """
 
     def __init__(
         self,
         max_file_size_bytes: int = DEFAULT_MAX_FILE_SIZE_BYTES,
+        min_pdf_version: str | None = None,
+        max_pdf_version: str | None = None,
+        profile_name: str | None = None,
     ) -> None:
         self.max_file_size_bytes = max_file_size_bytes
+        self.min_pdf_version = min_pdf_version
+        self.max_pdf_version = max_pdf_version
+        self.profile_name = profile_name
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -130,6 +158,11 @@ class DocumentAnalyzer(BaseAnalyzer):
         # LPDF_DOC_008: Pre-separated pages detected
         findings.extend(self._check_pre_separated_pages(document))
 
+        # LPDF_DOC_009: PDF version vs profile range (T1-CMP02).
+        # Fire independent of page count — a single-page PDF can still be
+        # version-out-of-range for its workflow.
+        findings.extend(self._check_pdf_version_against_profile(document))
+
         if len(document.pages) < 2:
             return findings
 
@@ -173,6 +206,75 @@ class DocumentAnalyzer(BaseAnalyzer):
             )
 
         return findings
+
+    def _check_pdf_version_against_profile(self, document: SemanticDocument) -> list[Finding]:
+        """LPDF_DOC_009 — PDF version vs profile range (T1-CMP02).
+
+        Fires when the active profile declares ``min_pdf_version`` or
+        ``max_pdf_version`` and the document header version sits outside
+        that range. Both constraints are optional; absence of both means
+        this check silently no-ops (back-compat with profiles that
+        predate the fields).
+
+        Note that this is DISTINCT from LPDF_META_004, which checks
+        internal consistency (header vs XMP). This check compares the
+        header version to the workflow's expected range.
+        """
+        if self.min_pdf_version is None and self.max_pdf_version is None:
+            return []
+
+        version_str = document.version or ""
+        actual = _parse_version(version_str)
+        if actual is None:
+            return []
+
+        profile_label = self.profile_name or "profile"
+
+        if self.min_pdf_version:
+            min_v = _parse_version(self.min_pdf_version)
+            if min_v is not None and actual < min_v:
+                return [
+                    Finding(
+                        inspection_id="LPDF_DOC_009",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"PDF version {version_str} is below the {profile_label} "
+                            f"minimum ({self.min_pdf_version})"
+                        ),
+                        details={
+                            "pdf_version": version_str,
+                            "min_pdf_version": self.min_pdf_version,
+                            "max_pdf_version": self.max_pdf_version,
+                            "profile_name": self.profile_name,
+                            "failure_mode": "below_minimum",
+                        },
+                        iso_clause="ISO 32000-2:2020 7.5.2",
+                    )
+                ]
+
+        if self.max_pdf_version:
+            max_v = _parse_version(self.max_pdf_version)
+            if max_v is not None and actual > max_v:
+                return [
+                    Finding(
+                        inspection_id="LPDF_DOC_009",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"PDF version {version_str} is above the {profile_label} "
+                            f"maximum ({self.max_pdf_version})"
+                        ),
+                        details={
+                            "pdf_version": version_str,
+                            "min_pdf_version": self.min_pdf_version,
+                            "max_pdf_version": self.max_pdf_version,
+                            "profile_name": self.profile_name,
+                            "failure_mode": "above_maximum",
+                        },
+                        iso_clause="ISO 32000-2:2020 7.5.2",
+                    )
+                ]
+
+        return []
 
     @staticmethod
     def _check_pre_separated_pages(document: SemanticDocument) -> list[Finding]:

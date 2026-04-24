@@ -547,7 +547,11 @@ class PreflightOrchestrator:
             ),
             TransparencyAnalyzer(),
             OverprintAnalyzer(),
-            DocumentAnalyzer(),
+            DocumentAnalyzer(
+                min_pdf_version=t.min_pdf_version,
+                max_pdf_version=t.max_pdf_version,
+                profile_name=self._plan.name,
+            ),
             StructureAnalyzer(),
             AnnotationAnalyzer(),
             MetadataAnalyzer(),

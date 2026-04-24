@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 375,
+  "total_checks": 376,
   "categories": [
     {
       "id": "image",
@@ -839,6 +839,12 @@
           "id": "LPDF_DOC_008",
           "name": "Pre-separated pages detected pages with single",
           "description": "Pre-separated pages detected (N pages with single Separation color space)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DOC_009",
+          "name": "PDF Version Outside Profile Range",
+          "description": "The PDF header version sits outside the range the active preflight profile expects (below min_pdf_version or above max_pdf_version). Re-save with a matching compatibility setting.",
           "default_severity": "advisory"
         }
       ]

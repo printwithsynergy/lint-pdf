@@ -5,7 +5,9 @@
   "conformance": null,
   "workflow": "CMYK",
   "checks": {
-    "enabled": ["LPDF_*"],
+    "enabled": [
+      "LPDF_*"
+    ],
     "disabled": [],
     "severity_overrides": {}
   },
@@ -14,6 +16,7 @@
     "max_dpi": 600.0,
     "tac_limit": 300.0,
     "epm_mode": true,
-    "cmy_tac_threshold": 240.0
+    "cmy_tac_threshold": 240.0,
+    "min_pdf_version": "1.5"
   }
 }

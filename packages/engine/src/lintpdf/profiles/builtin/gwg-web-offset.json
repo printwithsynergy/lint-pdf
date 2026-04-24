@@ -5,7 +5,10 @@
   "conformance": "pdfx4",
   "workflow": "CMYK",
   "checks": {
-    "enabled": ["LPDF_*", "PDFX4-*"],
+    "enabled": [
+      "LPDF_*",
+      "PDFX4-*"
+    ],
     "disabled": [],
     "severity_overrides": {}
   },
@@ -20,6 +23,7 @@
     "safety_margin_mm": 3.0,
     "max_file_size_mb": 500.0,
     "target_output_condition": "swop2006_coated",
-    "gamut_check": true
+    "gamut_check": true,
+    "min_pdf_version": "1.4"
   }
 }

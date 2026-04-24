@@ -5,7 +5,9 @@
   "conformance": null,
   "workflow": "CMYK",
   "checks": {
-    "enabled": ["LPDF_*"],
+    "enabled": [
+      "LPDF_*"
+    ],
     "disabled": [],
     "severity_overrides": {}
   },
@@ -16,6 +18,7 @@
     "ecg_mode": true,
     "ecg_tac_limit": 300.0,
     "target_output_condition": "fogra55_ecg",
-    "gamut_check": true
+    "gamut_check": true,
+    "min_pdf_version": "1.6"
   }
 }
