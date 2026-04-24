@@ -118,36 +118,42 @@ export function PageCanvas({
   const canvasWidth = Math.round(page.width_pts * ptsToPixels * scale);
   const canvasHeight = Math.round(page.height_pts * ptsToPixels * scale);
 
-  // WS-17B clip-path inset. When ``cropToTrim`` is on we hide the
-  // portion of the rendered tile that falls outside the TrimBox
-  // (bleed + printer marks). Falls back to BleedBox, then CropBox,
-  // then disables itself when none of those are present so a
-  // MediaBox-only PDF renders unchanged. inset() values are in
-  // px relative to the canvas size (top right bottom left).
-  const trimClipPath = (() => {
-    if (!cropToTrim) return undefined;
+  // WS-17B trim viewport. Pre-WS-17B-fix this used a CSS clip-path,
+  // but the clipped-out region of a transparent canvas reveals
+  // whatever is *behind* the canvas (the viewer chrome), which on
+  // dark mode is fine but on the share-link viewer was drawing the
+  // page's own white paper extending beyond the trim. The fix:
+  // shrink the *outer* DOM box to trim dimensions and translate the
+  // full canvas inward, so the bleed area is physically not part of
+  // the viewport at all. Falls back to BleedBox → CropBox → no-op
+  // when no TrimBox is declared.
+  const trimViewport = (() => {
+    if (!cropToTrim) return null;
     const box = page.trim_box ?? page.bleed_box ?? page.crop_box;
-    if (!box) return undefined;
+    if (!box) return null;
     const mb = page.media_box;
     const mbW = mb.x1 - mb.x0;
     const mbH = mb.y1 - mb.y0;
-    if (mbW <= 0 || mbH <= 0) return undefined;
-    const top = ((mb.y1 - box.y1) / mbH) * canvasHeight;
-    const bottom = ((box.y0 - mb.y0) / mbH) * canvasHeight;
-    const left = ((box.x0 - mb.x0) / mbW) * canvasWidth;
-    const right = ((mb.x1 - box.x1) / mbW) * canvasWidth;
-    // Ignore when the computed inset is sub-pixel — no visible
-    // difference and cheaper to skip the clip-path repaint entirely.
+    if (mbW <= 0 || mbH <= 0) return null;
+    const leftPx = ((box.x0 - mb.x0) / mbW) * canvasWidth;
+    const topPx = ((mb.y1 - box.y1) / mbH) * canvasHeight;
+    const widthPx = ((box.x1 - box.x0) / mbW) * canvasWidth;
+    const heightPx = ((box.y1 - box.y0) / mbH) * canvasHeight;
+    // No-op when the trim equals the media (every value sub-pixel).
     if (
-      Math.max(Math.abs(top), Math.abs(bottom), Math.abs(left), Math.abs(right)) <
-      0.5
+      Math.abs(leftPx) < 0.5 &&
+      Math.abs(topPx) < 0.5 &&
+      Math.abs(widthPx - canvasWidth) < 0.5 &&
+      Math.abs(heightPx - canvasHeight) < 0.5
     ) {
-      return undefined;
+      return null;
     }
-    return `inset(${Math.max(0, top)}px ${Math.max(0, right)}px ${Math.max(
-      0,
-      bottom,
-    )}px ${Math.max(0, left)}px)`;
+    return {
+      leftPx: Math.max(0, leftPx),
+      topPx: Math.max(0, topPx),
+      widthPx: Math.max(1, widthPx),
+      heightPx: Math.max(1, heightPx),
+    };
   })();
 
   // Load tile image — prefer CDN when available, fall back to engine proxy
@@ -353,20 +359,29 @@ export function PageCanvas({
     setTooltip(null);
   };
 
+  // The outer DOM element is the *visible* viewport. When the trim
+  // crop is active the viewport equals the trim dimensions and the
+  // inner shifted div positions the canvas so its trim region maps
+  // exactly onto the visible area. Findings + the tooltip live in
+  // the same canvas-coordinate space as the canvas itself, so they
+  // shift along correctly for free.
+  const outerWidth = trimViewport ? trimViewport.widthPx : canvasWidth;
+  const outerHeight = trimViewport ? trimViewport.heightPx : canvasHeight;
+
   return (
     <div
       ref={wrapperRef}
-      className="relative inline-block"
-      // "pan-x pan-y" lets the browser scroll the outer overflow-auto
-      // container on 1- or 2-finger drag (touch pan). Pinch-zoom is still
-      // intercepted by our non-passive touchmove listener above. When no
-      // zoom callback is wired (static reader mode), fall back to default.
-      style={{ touchAction: onZoomChange ? "pan-x pan-y" : undefined }}
+      className="relative inline-block overflow-hidden"
+      style={{
+        touchAction: onZoomChange ? "pan-x pan-y" : undefined,
+        width: outerWidth,
+        height: outerHeight,
+      }}
     >
       {loading && (
         <div
           className="flex items-center justify-center bg-muted/50"
-          style={{ width: canvasWidth, height: canvasHeight }}
+          style={{ width: outerWidth, height: outerHeight }}
         >
           <div className="flex flex-col items-center gap-2">
             <svg className="h-8 w-8 animate-spin text-slate-400" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
@@ -374,6 +389,15 @@ export function PageCanvas({
           </div>
         </div>
       )}
+      <div
+        className="absolute"
+        style={{
+          left: trimViewport ? -trimViewport.leftPx : 0,
+          top: trimViewport ? -trimViewport.topPx : 0,
+          width: canvasWidth,
+          height: canvasHeight,
+        }}
+      >
       <canvas
         ref={canvasRef}
         onClick={handleClick}
@@ -381,7 +405,6 @@ export function PageCanvas({
         style={{
           width: canvasWidth,
           height: canvasHeight,
-          clipPath: trimClipPath,
         }}
       />
       {/* Page-level indicator for findings without bbox */}
@@ -420,6 +443,7 @@ export function PageCanvas({
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }

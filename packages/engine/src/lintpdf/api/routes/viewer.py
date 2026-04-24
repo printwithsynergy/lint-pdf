@@ -472,27 +472,74 @@ async def get_page_tile(
     except Exception:
         pass  # Cache miss — render on demand
 
-    # 3. Render on demand
+    # 3. Render on demand.
+    #
+    # WS-17A: for spot-heavy pages (anything with any /Separation or
+    # /DeviceN ink) the default Ghostscript ``png16m`` +
+    # ``-dSimulateOverprint=true`` pipeline produces a flat-tint
+    # composite when the file has no /OutputIntent — confirmed on
+    # every packaging file in the 2026-04-23 corpus. We try the
+    # software composite first (decompose via tiffsep, blend in RGB
+    # with a fixed subtractive ink model) and only fall back to the
+    # Ghostscript path when the PDF has no spots or the composite
+    # rejects the file.
     from lintpdf.ai.rendering import OCGError, render_page_to_image
 
-    try:
-        tile_bytes = render_page_to_image(
-            pdf_bytes,
-            page_num,
-            dpi=dpi,
-            ocg_on=ocg_on,
-            ocg_off=ocg_off,
-        )
-    except OCGError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(exc),
-        ) from exc
-    except RuntimeError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=str(exc),
-        ) from exc
+    tile_bytes: bytes | None = None
+
+    # OCG overrides change the page geometry per-tile. The software-
+    # composite path doesn't go through ``_apply_ocg_overrides``, so
+    # fall back to the Ghostscript path when the caller asked for a
+    # layer filter. Composite preview is for the "default state" view.
+    if not ocg_on and not ocg_off:
+        try:
+            from lintpdf.reports.separation_renderer import (
+                list_separations,
+                render_composite_via_separations,
+            )
+
+            spots = [
+                s for s in list_separations(pdf_bytes) if s.get("type") == "spot"
+            ]
+            if spots:
+                tile_bytes = render_composite_via_separations(
+                    pdf_bytes,
+                    page_num,
+                    dpi=dpi,
+                    tenant_id=str(tenant.id),
+                    job_id=str(job.id),
+                    storage=storage,
+                )
+                if tile_bytes is not None:
+                    logger.debug(
+                        "get_page_tile: software composite hit (spots=%d)",
+                        len(spots),
+                    )
+        except Exception:
+            logger.exception(
+                "get_page_tile: software composite failed; falling back to GS"
+            )
+            tile_bytes = None
+
+    if tile_bytes is None:
+        try:
+            tile_bytes = render_page_to_image(
+                pdf_bytes,
+                page_num,
+                dpi=dpi,
+                ocg_on=ocg_on,
+                ocg_off=ocg_off,
+            )
+        except OCGError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+        except RuntimeError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=str(exc),
+            ) from exc
 
     # Populate both caches (fire-and-forget).
     try:
@@ -2059,12 +2106,43 @@ async def public_get_tile(
     dpi: int = Query(default=150, ge=36, le=600),
     db: Session = Depends(get_db),
 ) -> Response:
-    """Public: render a page tile as PNG."""
-    _job, pdf_bytes = _get_job_pdf_by_token(token, db)
+    """Public: render a page tile as PNG.
+
+    WS-17A: prefer the software composite when the PDF has spot
+    inks — same rationale as the authenticated ``get_page_tile``.
+    Falls back to Ghostscript ``png16m`` rendering for pure-CMYK
+    files or when the composite path rejects.
+    """
+    job, pdf_bytes = _get_job_pdf_by_token(token, db)
     _validate_page_num(pdf_bytes, page_num)
+    storage = get_storage()
     from lintpdf.ai.rendering import render_page_to_image
 
-    png = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
+    png: bytes | None = None
+    try:
+        from lintpdf.reports.separation_renderer import (
+            list_separations,
+            render_composite_via_separations,
+        )
+
+        spots = [s for s in list_separations(pdf_bytes) if s.get("type") == "spot"]
+        if spots:
+            png = render_composite_via_separations(
+                pdf_bytes,
+                page_num,
+                dpi=dpi,
+                tenant_id=str(job.tenant_id),
+                job_id=str(job.id),
+                storage=storage,
+            )
+    except Exception:
+        logger.exception(
+            "public_get_tile: software composite failed; falling back to GS"
+        )
+        png = None
+
+    if png is None:
+        png = render_page_to_image(pdf_bytes, page_num, dpi=dpi)
     return Response(
         content=png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"}
     )

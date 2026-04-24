@@ -582,6 +582,42 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
       }) as RouteHandler,
     },
     {
+      // WS-17C — per-layer isolated tile (RGBA, transparent outside
+      // the isolated OCG). LayerCanvas composites the active subset
+      // client-side for instant toggling. Mirrors the ``/channel``
+      // proxy shape: stream the engine PNG straight through without
+      // rewriting the body.
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/pages/:pageNum/layers/:layerIndex",
+      auth: true,
+      permission: "preflight:view",
+      description: "WS-17C: one OCG rendered in isolation as an RGBA PNG",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const dpi = req.query.dpi ?? "150";
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/jobs/${req.params.jobId}/pages/${req.params.pageNum}/layers/${req.params.layerIndex}?dpi=${dpi}`,
+          ),
+          { headers: authHeaders() },
+        );
+        if (!resp.ok) {
+          return {
+            status: resp.status,
+            body: { error: "Failed to render layer tile" },
+          };
+        }
+        const buffer = await resp.arrayBuffer();
+        return {
+          status: 200,
+          body: Buffer.from(buffer),
+          headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=86400",
+          },
+        } as RouteResponse;
+      }) as RouteHandler,
+    },
+    {
       method: "GET" as HttpMethod,
       path: "/viewer/:jobId/interpretation",
       auth: true,
@@ -1069,6 +1105,38 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
         if (!resp.ok) return { status: resp.status, body: { error: "Failed to render channel" } };
         const buffer = await resp.arrayBuffer();
         return { status: 200, body: Buffer.from(buffer), headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" } } as RouteResponse;
+      }) as RouteHandler,
+    },
+    {
+      // WS-17C public-token sibling. Share-link viewers need the
+      // same per-layer tiles; auth comes from the token, not the
+      // tenant header.
+      method: "GET" as HttpMethod,
+      path: "/viewer/public/:token/pages/:pageNum/layers/:layerIndex",
+      auth: false,
+      description: "Public WS-17C: per-layer isolated tile",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const dpi = req.query.dpi ?? "150";
+        const resp = await fetch(
+          engineUrl(
+            `/api/v1/viewer/public/${req.params.token}/pages/${req.params.pageNum}/layers/${req.params.layerIndex}?dpi=${dpi}`,
+          ),
+        );
+        if (!resp.ok) {
+          return {
+            status: resp.status,
+            body: { error: "Failed to render layer tile" },
+          };
+        }
+        const buffer = await resp.arrayBuffer();
+        return {
+          status: 200,
+          body: Buffer.from(buffer),
+          headers: {
+            "Content-Type": "image/png",
+            "Cache-Control": "public, max-age=86400",
+          },
+        } as RouteResponse;
       }) as RouteHandler,
     },
     {
