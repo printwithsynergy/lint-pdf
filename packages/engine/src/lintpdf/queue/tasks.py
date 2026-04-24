@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import io
 import json
 import logging
 import os
@@ -749,6 +750,60 @@ def run_preflight(
                     job_id,
                 )
                 job.dieline = None
+
+            # Trim-size derivation. When the dieline detector returned
+            # actual polylines (geometry fallback or Sonnet path) we
+            # measure them directly. Otherwise (name-match path) we
+            # fall back to the page's TrimBox metadata — the dieline
+            # match confirms the file is designed for cutting and the
+            # designer's TrimBox is the next-best ground truth.
+            # Without this fallback the viewer's Art Info panel
+            # contradicts itself: "Dieline: Spot name match" alongside
+            # "Trim Size: Unavailable — no dieline detected".
+            try:
+                from lintpdf.analyzers.art_size import (
+                    compute_art_size,
+                    result_to_json as art_size_to_json,
+                )
+
+                if job.dieline:
+                    art_size = compute_art_size(dieline_result)
+                    if art_size is None and (job.dieline.get("source") if job.dieline else None) == "name":
+                        # Name-match path returns no polylines; fall
+                        # back to TrimBox via pikepdf.
+                        try:
+                            import pikepdf
+                            with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+                                page = pdf.pages[0]
+                                tb = page.get("/TrimBox") or page.get("/MediaBox")
+                                if tb is not None and len(tb) == 4:
+                                    x0, y0, x1, y1 = (float(tb[i]) for i in range(4))
+                                    fake_polys = [[
+                                        [x0, y0], [x1, y0],
+                                        [x1, y1], [x0, y1],
+                                        [x0, y0],
+                                    ]]
+                                    from lintpdf.analyzers.dieline import DielineResult
+                                    art_size = compute_art_size(
+                                        DielineResult(
+                                            source="name+trimbox",
+                                            polylines=fake_polys,
+                                            confidence=dieline_result.confidence,
+                                        )
+                                    )
+                        except Exception:
+                            logger.exception(
+                                "Job %s trimbox fallback for art_size raised", job_id
+                            )
+                    job.art_size_mm = art_size_to_json(art_size)
+                else:
+                    job.art_size_mm = None
+            except Exception:
+                logger.exception(
+                    "Job %s art_size computation raised — leaving job.art_size_mm=None",
+                    job_id,
+                )
+                job.art_size_mm = None
 
             # Serialize result for storage. Findings are denormalised
             # into a plain dict list so downstream report generators

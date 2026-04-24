@@ -6,7 +6,7 @@ import { useViewerApi } from "./types";
 import { ZoomControls } from "./ZoomControls";
 import { hostFallbackClient } from "@/lib/host-fallback-client";
 
-type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
+type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain" | "artinfo";
 type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";
 
 interface MobileDrawerProps {
