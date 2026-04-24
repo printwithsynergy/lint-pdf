@@ -9,7 +9,8 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "sync:descriptions": "tsx scripts/sync-product-descriptions.ts"
   },
   "dependencies": {
     "@thinkneverland/pixie-dust-fairy-ring": "^1.7.2",

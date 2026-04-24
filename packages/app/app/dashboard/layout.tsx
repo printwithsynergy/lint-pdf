@@ -5,6 +5,10 @@ import {
   filterNavByUser,
 } from "@thinkneverland/pixie-dust-dashboard";
 import { prisma } from "@thinkneverland/pixie-dust-database/server";
+import {
+  getTenantFeatureFlags,
+  resolveEngineTenantId,
+} from "@thinkneverland/grounded-plugin";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -13,6 +17,18 @@ import { SuperAdminToolbar } from "@/components/super-admin-toolbar";
 import { ClientProviders } from "@/components/client-providers";
 import { buildBrandingCss, type BrandingColors } from "@/lib/branding-css";
 import { getHostBranding } from "@/lib/host-branding";
+
+const ACTIVE_TENANT_COOKIE = "pd-active-tenant";
+
+// Nav items that should only render when a tenant feature flag is on.
+// Keyed by href, value picks the flag to read from the engine's effective
+// entitlements payload. Super admins bypass this entirely.
+const TENANT_FEATURE_GATED_HREFS: Record<
+  string,
+  keyof Awaited<ReturnType<typeof getTenantFeatureFlags>>
+> = {
+  "/dashboard/downloads": "desktop_app_enabled",
+};
 
 export default async function DashboardLayout({
   children,
@@ -39,7 +55,30 @@ export default async function DashboardLayout({
   if (!user) redirect("/auth/login");
 
   const registry = await ensureRegistry();
-  const navItems = filterNavByUser(registry.getNavItems(), user);
+  let navItems = filterNavByUser(registry.getNavItems(), user);
+
+  // Entitlement-gate tenant-feature-flag nav items (desktop, etc.) for
+  // non-super-admin sessions. Super admins always see every entry so ops
+  // can download / QA regardless of which tenant they're impersonating.
+  if (!user.isSuperAdmin) {
+    const gatedHrefs = Object.keys(TENANT_FEATURE_GATED_HREFS);
+    const hasGatedItem = navItems.some((item) =>
+      gatedHrefs.includes(item.href),
+    );
+    const activeTenantId = cookieStore.get(ACTIVE_TENANT_COOKIE)?.value;
+    if (hasGatedItem && activeTenantId) {
+      const engineId = await resolveEngineTenantId(activeTenantId);
+      const flags = await getTenantFeatureFlags(engineId);
+      navItems = navItems.filter((item) => {
+        const flagKey = TENANT_FEATURE_GATED_HREFS[item.href];
+        return !flagKey || flags[flagKey];
+      });
+    } else if (hasGatedItem) {
+      // No active tenant selected yet — hide the gated items rather than
+      // showing something the user can't actually use.
+      navItems = navItems.filter((item) => !gatedHrefs.includes(item.href));
+    }
+  }
 
   // When impersonating, load the target tenant's branding instead
   const branding = await getBranding(prisma);
