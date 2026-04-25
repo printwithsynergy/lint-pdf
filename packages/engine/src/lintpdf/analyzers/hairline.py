@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 
 from lintpdf.analyzers.base import BaseAnalyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.primitives import color_space as cs_primitives
 
 if TYPE_CHECKING:
     from lintpdf.semantic.events import ContentStreamEvent, PathPaintingEvent, TextRenderedEvent
@@ -337,11 +338,11 @@ class HairlineAnalyzer(BaseAnalyzer):
     @staticmethod
     def _is_white_color(color_space: str, color_values: tuple[float, ...]) -> bool:
         """Check if color values represent white."""
-        if color_space == "DeviceGray" and len(color_values) == 1:
+        if cs_primitives.is_DeviceGray(color_space) and len(color_values) == 1:
             return color_values[0] > 0.99
-        if color_space == "DeviceRGB" and len(color_values) == 3:
+        if cs_primitives.is_DeviceRGB(color_space) and len(color_values) == 3:
             return all(v > 0.99 for v in color_values)
-        if color_space == "DeviceCMYK" and len(color_values) == 4:
+        if cs_primitives.is_DeviceCMYK(color_space) and len(color_values) == 4:
             return all(v < 0.01 for v in color_values)
         return False
 

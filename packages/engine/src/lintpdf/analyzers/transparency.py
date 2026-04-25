@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING
 
 from lintpdf.analyzers.base import BaseAnalyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.primitives import stroke_fill as sf_primitives
 
 if TYPE_CHECKING:
     from lintpdf.semantic.events import ContentStreamEvent
@@ -118,9 +119,16 @@ class TransparencyAnalyzer(BaseAnalyzer):
                     )
 
                 # LPDF_TRANS_001: Risky blend mode
-                if event.blend_mode and event.blend_mode not in _SAFE_BLEND_MODES:
-                    if event.blend_mode not in seen_blend_modes:
-                        seen_blend_modes.add(event.blend_mode)
+                # Normalize via stroke_fill primitive so name is canonical
+                # (strips leading "/", coerces bytes, defaults to "Normal").
+                bm = (
+                    sf_primitives.blend_mode({"BM": event.blend_mode})
+                    if event.blend_mode
+                    else "Normal"
+                )
+                if bm != "Normal" and bm not in _SAFE_BLEND_MODES:
+                    if bm not in seen_blend_modes:
+                        seen_blend_modes.add(bm)
                         findings.append(
                             Finding(
                                 inspection_id="LPDF_TRANS_001",

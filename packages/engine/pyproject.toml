@@ -210,6 +210,10 @@ ignore = [
 # PDF operators use uppercase names (Q, Do, BT, ET, Tf, etc.) per ISO 32000-2
 "src/lintpdf/semantic/interpreter.py" = ["N802"]
 "tests/semantic/test_interpreter.py" = ["N802"]
+# v2 Tier-0 primitives use PascalCase predicate names verbatim from universe enumeration §4
+# (e.g. is_DeviceCMYK, is_ICCBased) — Phase 2 Q1 operator decision.
+"src/lintpdf/primitives/color_space.py" = ["N802"]
+"tests/primitives/test_color_space.py" = ["N802"]
 # Test methods don't use self — grouped in classes for organization only
 "tests/**" = ["PLR6301"]
 # FastAPI Depends() in function defaults is the standard pattern

@@ -36,6 +36,7 @@ from typing import TYPE_CHECKING
 
 from lintpdf.analyzers.base import BaseAnalyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.primitives import ink as ink_primitives
 
 if TYPE_CHECKING:
     from lintpdf.semantic.events import (
@@ -804,7 +805,7 @@ class ColorAnalyzer(BaseAnalyzer):
             for _cs_name, cs in page.color_spaces.items():
                 if cs.cs_type in ("Separation", "DeviceN") and cs.colorant_names:
                     for colorant in cs.colorant_names:
-                        if colorant in ("All", "None"):
+                        if ink_primitives.is_reserved_name(colorant):
                             continue
                         alt = cs.alternate if hasattr(cs, "alternate") else None
                         if colorant not in colorant_alternates:
