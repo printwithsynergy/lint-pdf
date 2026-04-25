@@ -102,9 +102,7 @@ def _evaluate_via_gs(program: str, inputs: tuple[float, ...]) -> list[float] | N
 
 
 @lru_cache(maxsize=512)
-def _evaluate_via_gs_cached(
-    program: str, inputs: tuple[float, ...]
-) -> list[float] | None:
+def _evaluate_via_gs_cached(program: str, inputs: tuple[float, ...]) -> list[float] | None:
     if not _gs_available():
         return None
 

@@ -125,9 +125,7 @@ def test_is_artificial_bold_false_when_no_stroke_width():
 
 def test_is_artificial_italic_true_when_text_matrix_has_shear():
     # Text matrix with c=0.3 (significant shear)
-    assert (
-        text_p.is_artificial_italic({"text_matrix": [1, 0, 0.3, 1, 0, 0]}) is True
-    )
+    assert text_p.is_artificial_italic({"text_matrix": [1, 0, 0.3, 1, 0, 0]}) is True
 
 
 def test_is_artificial_italic_false_when_no_shear():

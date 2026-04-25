@@ -53,9 +53,7 @@ def test_name_devicen_joins_components():
 # ---- is_process / is_spot / is_reserved_name -----------------------------
 
 
-@pytest.mark.parametrize(
-    "name", ["Cyan", "Magenta", "Yellow", "Black", "Gray", "DeviceCMYK"]
-)
+@pytest.mark.parametrize("name", ["Cyan", "Magenta", "Yellow", "Black", "Gray", "DeviceCMYK"])
 def test_is_process_true_for_process_names(name):
     assert ink.is_process(name) is True
 
@@ -145,9 +143,7 @@ def test_matches_library_custom_regex():
         custom_pattern=r"^INHOUSE-\d{4}-[A-Z]+$",
     )
     assert (
-        ink.matches_library(
-            "PANTONE 185 C", "custom", custom_pattern=r"^INHOUSE-\d{4}-[A-Z]+$"
-        )
+        ink.matches_library("PANTONE 185 C", "custom", custom_pattern=r"^INHOUSE-\d{4}-[A-Z]+$")
         is False
     )
 

@@ -50,7 +50,12 @@ def _box_from(value: Any) -> Box | None:
     """
     if value is None:
         return None
-    if hasattr(value, "x0") and hasattr(value, "y0") and hasattr(value, "x1") and hasattr(value, "y1"):
+    if (
+        hasattr(value, "x0")
+        and hasattr(value, "y0")
+        and hasattr(value, "x1")
+        and hasattr(value, "y1")
+    ):
         try:
             return (float(value.x0), float(value.y0), float(value.x1), float(value.y1))
         except (TypeError, ValueError):
