@@ -917,16 +917,23 @@ def run_preflight(
 
             # Batch 7 — T3-D11 spot-name canonical-taxonomy advisories.
             # Batch 9c — T2-ISO05 ISO 19593-1 ProcessingSteps suggestions.
+            # Batch 10a — T2-ISO02 / T2-ISO03 / T2-SPT03 spot extras.
             # Independent of dieline detection; runs on any PDF.
             if pdf_bytes:
                 try:
                     from lintpdf.analyzers.spot_name_normaliser import (
+                        check_deprecated_pantone_names,
                         check_spot_naming,
+                        check_white_subtype_specificity,
+                        suggest_position_tagging,
                         suggest_processing_steps,
                     )
 
                     sn_findings = check_spot_naming(pdf_bytes)
                     sn_findings.extend(suggest_processing_steps(pdf_bytes))
+                    sn_findings.extend(suggest_position_tagging(pdf_bytes))
+                    sn_findings.extend(check_white_subtype_specificity(pdf_bytes))
+                    sn_findings.extend(check_deprecated_pantone_names(pdf_bytes))
                 except Exception:
                     logger.exception("Job %s spot_name_normaliser raised", job_id)
                     sn_findings = []
@@ -1059,15 +1066,22 @@ def run_preflight(
 
             # Batch 7 — persist spot-name canonical-taxonomy advisories.
             # Batch 9c — also persist T2-ISO05 ProcessingSteps suggestions.
+            # Batch 10a — persist T2-ISO02 / T2-ISO03 / T2-SPT03 too.
             if pdf_bytes:
                 try:
                     from lintpdf.analyzers.spot_name_normaliser import (
+                        check_deprecated_pantone_names,
                         check_spot_naming,
+                        check_white_subtype_specificity,
+                        suggest_position_tagging,
                         suggest_processing_steps,
                     )
 
                     spot_findings = check_spot_naming(pdf_bytes)
                     spot_findings.extend(suggest_processing_steps(pdf_bytes))
+                    spot_findings.extend(suggest_position_tagging(pdf_bytes))
+                    spot_findings.extend(check_white_subtype_specificity(pdf_bytes))
+                    spot_findings.extend(check_deprecated_pantone_names(pdf_bytes))
                     for sf in spot_findings:
                         db.add(
                             JobFinding(

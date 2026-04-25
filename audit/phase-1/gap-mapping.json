@@ -2,9 +2,9 @@
   "version": 4,
   "total": 93,
   "summary": {
-    "present": 73,
-    "absent": 14,
-    "partial": 6
+    "present": 82,
+    "partial": 5,
+    "absent": 6
   },
   "matches": [
     {
@@ -811,10 +811,17 @@
       "difficulty": "medium",
       "notes": "",
       "category_hint": "iso19593",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_PSTEP_POSITIONS"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_PSTEP_POSITIONS",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-ISO03",
@@ -823,10 +830,17 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "iso19593",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_PSTEP_WHITE_SUBTYPE"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_PSTEP_WHITE_SUBTYPE",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-ISO04",
@@ -855,9 +869,16 @@
       "notes": "UNIQUE differentiator",
       "category_hint": "iso19593",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_PSTEP_SUGGEST"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_PSTEP_SUGGEST",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-SPT01",
@@ -904,10 +925,17 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "spot_colors",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_SPOT_DEPRECATED_PANTONE"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_SPOT_DEPRECATED_PANTONE",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-SPT04",
@@ -935,10 +963,17 @@
       "difficulty": "medium",
       "notes": "",
       "category_hint": "transparency",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_TRANS_BLEND_CS_MISMATCH"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_TRANS_BLEND_CS_MISMATCH",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-TRN05",
@@ -947,10 +982,17 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "transparency",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_TRANS_ON_SPOT"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_TRANS_ON_SPOT",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-TRN06",
@@ -1021,10 +1063,17 @@
       "difficulty": "medium",
       "notes": "",
       "category_hint": "color",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_TEXT_REVERSE_THIN"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_TEXT_REVERSE_THIN",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-RB03",
@@ -1052,10 +1101,17 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "metadata",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_XMP_GWG_TRAIL"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_XMP_GWG_TRAIL",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-XMP02",
@@ -1115,9 +1171,16 @@
       "notes": "content stream order scan",
       "category_hint": "dieline",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_DIE_ZORDER"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_DIE_ZORDER",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T3-D03",
@@ -1170,9 +1233,16 @@
       "notes": "**UNCLAIMED \u2014 high differentiator**",
       "category_hint": "dieline",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_BARCODE_QUIET_ZONE"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_BARCODE_QUIET_ZONE",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T3-D07",
@@ -1182,9 +1252,16 @@
       "notes": "**UNCLAIMED \u2014 high differentiator**",
       "category_hint": "dieline",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_TEXT_NEAR_FOLD"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_TEXT_NEAR_FOLD",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T3-D08",
@@ -1194,9 +1271,16 @@
       "notes": "**UNIQUE**",
       "category_hint": "dieline",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_DIE_TOO_SMALL"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_DIE_TOO_SMALL",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T3-D09",
@@ -1206,9 +1290,16 @@
       "notes": "high value for flexible packaging",
       "category_hint": "dieline",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_DIE_WHITE_GAP"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_DIE_WHITE_GAP",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T3-D10",
@@ -1230,9 +1321,16 @@
       "notes": "ship as open standard",
       "category_hint": "spot_colors",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_SPOT_NONCANONICAL"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_SPOT_NONCANONICAL",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T3-D12",
@@ -1273,9 +1371,16 @@
       "notes": "pharma niche",
       "category_hint": "iso19593",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_BRAILLE_INTEGRITY"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_BRAILLE_INTEGRITY",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T3-D15",
@@ -1393,9 +1498,16 @@
       "notes": "",
       "category_hint": "accessibility",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_ACCESS_TABLE_STRUCTURE"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_ACCESS_TABLE_STRUCTURE",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T4-A07",
@@ -1405,13 +1517,18 @@
       "notes": "",
       "category_hint": "accessibility",
       "status": "present",
-      "match_count": 1,
+      "match_count": 2,
       "matched_ids": [
-        "LPDF_ACCESS_006"
+        "LPDF_ACCESS_006",
+        "LPDF_ACCESS_HEADING_SKIP"
       ],
       "match_details": [
         {
           "id": "LPDF_ACCESS_006",
+          "match_type": "explicit"
+        },
+        {
+          "id": "LPDF_ACCESS_HEADING_SKIP",
           "match_type": "explicit"
         }
       ]
@@ -1443,9 +1560,16 @@
       "notes": "",
       "category_hint": "accessibility",
       "status": "present",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_ACCESS_SCREEN_READER"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_ACCESS_SCREEN_READER",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T4-A10",
@@ -1454,10 +1578,17 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "accessibility",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_VIEWER_DISPLAY_TITLE"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_VIEWER_DISPLAY_TITLE",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T5-N01",
@@ -1478,11 +1609,13 @@
       "difficulty": "medium",
       "notes": "regulation-aware",
       "category_hint": "ai_regulatory_compliance",
-      "status": "partial",
-      "match_count": 2,
+      "status": "present",
+      "match_count": 4,
       "matched_ids": [
         "AI_COSM_001",
-        "AI_COSM_002"
+        "AI_COSM_002",
+        "AI_ALC_001",
+        "AI_CANN_001"
       ],
       "match_details": [
         {
@@ -1491,6 +1624,14 @@
         },
         {
           "id": "AI_COSM_002",
+          "match_type": "explicit"
+        },
+        {
+          "id": "AI_ALC_001",
+          "match_type": "explicit"
+        },
+        {
+          "id": "AI_CANN_001",
           "match_type": "explicit"
         }
       ]

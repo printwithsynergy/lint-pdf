@@ -19,6 +19,8 @@ Check IDs:
     LPDF_TEXT_004 — White text detected
     LPDF_TEXT_005 — Text on registration color
     LPDF_TEXT_006 — Small multi-ink text (<8pt, >1 separation)
+    LPDF_TEXT_REVERSE_THIN — Small white (reverse / knockout) text rendered
+        without a stroke; needs ≥0.5pt stroke for legibility (T2-RB02)
 """
 
 from __future__ import annotations
@@ -382,6 +384,7 @@ class HairlineAnalyzer(BaseAnalyzer):
                     "bboxes": [],
                     "font_names": set(),
                     "color_space": event.color_space,
+                    "reverse_thin_count": 0,
                 },
             )
             bucket["count"] = int(bucket["count"]) + 1  # type: ignore[arg-type]
@@ -391,6 +394,18 @@ class HairlineAnalyzer(BaseAnalyzer):
             fonts = bucket["font_names"]
             if isinstance(fonts, set) and event.font_name:
                 fonts.add(event.font_name)
+
+            # T2-RB02 — reverse text rendered with rendering_mode 0
+            # (fill only, no stroke) and effective size < 12pt is at
+            # risk of breaking up on press; flag it.
+            if event.rendering_mode == 0:
+                tm_scale_y = math.sqrt(event.text_matrix.b**2 + event.text_matrix.d**2)
+                ctm_scale_y = math.sqrt(event.ctm.b**2 + event.ctm.d**2)
+                effective_size = event.font_size * tm_scale_y * ctm_scale_y
+                if 0 < effective_size < 12.0:
+                    bucket["reverse_thin_count"] = (
+                        int(bucket.get("reverse_thin_count", 0)) + 1  # type: ignore[arg-type]
+                    )
 
         # LPDF_TEXT_005: Text on registration color (all CMYK at 100%)
         if (
@@ -541,7 +556,9 @@ class HairlineAnalyzer(BaseAnalyzer):
     def _emit_text004_aggregates(
         agg: dict[int, dict[str, object]],
     ) -> list[Finding]:
-        """Emit one LPDF_TEXT_004 finding per page with count + samples."""
+        """Emit one LPDF_TEXT_004 finding per page with count + samples,
+        plus an LPDF_TEXT_REVERSE_THIN advisory when small fill-only
+        white text was seen on the page (T2-RB02)."""
         out: list[Finding] = []
         for page_num in sorted(agg):
             bucket = agg[page_num]
@@ -567,4 +584,26 @@ class HairlineAnalyzer(BaseAnalyzer):
                     object_type="text",
                 )
             )
+
+            reverse_thin_count = int(bucket.get("reverse_thin_count", 0) or 0)  # type: ignore[arg-type]
+            if reverse_thin_count > 0:
+                out.append(
+                    Finding(
+                        inspection_id="LPDF_TEXT_REVERSE_THIN",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"{reverse_thin_count} small reverse / knockout text "
+                            f"instance{'s' if reverse_thin_count != 1 else ''} on page "
+                            f"{page_num} rendered without a stroke; add ≥0.5pt stroke "
+                            f"or use ≥12pt for legibility"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "object_count": reverse_thin_count,
+                            "font_names": font_list,
+                        },
+                        iso_clause="GWG 2022 reverse-text minimum stroke",
+                        object_type="text",
+                    )
+                )
         return out

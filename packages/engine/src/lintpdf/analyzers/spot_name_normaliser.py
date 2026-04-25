@@ -26,9 +26,14 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "CANONICAL_NAMES",
     "ISO_19593_GROUP_BY_CANONICAL",
+    "POSITION_TOKENS",
+    "WHITE_SUBTYPE_TOKENS",
+    "check_deprecated_pantone_names",
     "check_spot_naming",
+    "check_white_subtype_specificity",
     "find_canonical_name",
     "normalise_spot_name",
+    "suggest_position_tagging",
     "suggest_processing_steps",
 ]
 
@@ -45,6 +50,69 @@ ISO_19593_GROUP_BY_CANONICAL: dict[str, str] = {
     "Varnish": "Varnish",
     "VarnishFree": "VarnishFree",
 }
+
+
+#: Tokens that map to ISO 19593-1 "Positions" group — registration,
+#: trim marks, colour bars. Drives T2-ISO02 ``LPDF_PSTEP_POSITIONS``.
+POSITION_TOKENS: frozenset[str] = frozenset(
+    {
+        "registration",
+        "registration mark",
+        "regmark",
+        "reg",
+        "reg mark",
+        "trimmark",
+        "trim mark",
+        "trim marks",
+        "cropmark",
+        "crop mark",
+        "crop marks",
+        "colorbar",
+        "color bar",
+        "colourbar",
+        "colour bar",
+        "colorcontrol",
+        "colour control",
+        "color control",
+        "control strip",
+        "controlstrip",
+        "fogra mediawedge",
+        "media wedge",
+        "mediawedge",
+    }
+)
+
+
+#: Tokens implying the more specific /White subtype the spot belongs
+#: to. Maps a hint token → the subtype label suggested by T2-ISO03
+#: (``LPDF_PSTEP_WHITE_SUBTYPE``).
+WHITE_SUBTYPE_TOKENS: dict[str, str] = {
+    "underprint": "WhiteUnderprint",
+    "under": "WhiteUnderprint",
+    "back": "WhiteUnderprint",
+    "overprint": "WhiteOverprint",
+    "over": "WhiteOverprint",
+    "top": "WhiteOverprint",
+    "print": "WhitePrint",
+    "spot": "WhitePrint",
+    "fill": "WhitePrint",
+    "knockout": "WhiteKnockout",
+    "ko": "WhiteKnockout",
+}
+
+
+#: Deprecated Pantone naming suffix tokens (T2-SPT03). Pantone retired
+#: the CV / CVC / CVU / CVUX suffixes after the move to the current
+#: book; remaining usage in modern artwork is a strong signal that the
+#: spot was migrated from a legacy library and the tint behaviour may
+#: not match the current Pantone target.
+_DEPRECATED_PANTONE_SUFFIXES: tuple[str, ...] = (
+    " cvc",
+    " cv",
+    " cvu",
+    " cvp",
+    " cvux",
+)
 
 
 # Canonical → set of variant tokens (already normalised: lowercase,
@@ -230,6 +298,163 @@ def check_spot_naming(pdf_bytes: bytes) -> list[Finding]:
                 object_type="spot_color",
             )
         )
+    return findings
+
+
+def suggest_position_tagging(pdf_bytes: bytes) -> list[Finding]:
+    """T2-ISO02 — emit one ``LPDF_PSTEP_POSITIONS`` advisory per spot
+    whose name matches a registration / trim-mark / colour-bar token.
+
+    These spots belong in the ISO 19593-1 ``Positions`` ProcessingSteps
+    group, not as printable inks. When they leak through into the
+    rendered output (uncaught Positions content), printers see junk
+    on press.
+    """
+    if not pdf_bytes:
+        return []
+
+    try:
+        spots = _collect_spot_names(pdf_bytes)
+    except Exception:
+        logger.exception("suggest_position_tagging: collection raised")
+        return []
+
+    findings: list[Finding] = []
+    seen: set[str] = set()
+    for actual_name in spots:
+        if actual_name in seen:
+            continue
+        seen.add(actual_name)
+        norm = normalise_spot_name(actual_name)
+        if norm in POSITION_TOKENS or any(tok in norm for tok in POSITION_TOKENS):
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_PSTEP_POSITIONS",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Spot '{actual_name}' looks like a positioning aid; tag it "
+                        f"under ISO 19593-1 ProcessingSteps 'Positions' so prepress "
+                        f"strips it before plating"
+                    ),
+                    page_num=0,
+                    details={
+                        "actual_name": actual_name,
+                        "iso_group": "Positions",
+                    },
+                    iso_clause="ISO 19593-1 §5.4 Positions",
+                    object_id=actual_name,
+                    object_type="spot_color",
+                )
+            )
+    return findings
+
+
+def check_white_subtype_specificity(pdf_bytes: bytes) -> list[Finding]:
+    """T2-ISO03 — when a White spot exists with a hint token in the
+    name (Underprint / Overprint / Print / Knockout), emit
+    ``LPDF_PSTEP_WHITE_SUBTYPE`` suggesting the specific ISO 19593-1
+    White subtype.
+
+    Helps printers identify which physical white pass is needed
+    (under, over, knockout) without manual review.
+    """
+    if not pdf_bytes:
+        return []
+
+    try:
+        spots = _collect_spot_names(pdf_bytes)
+    except Exception:
+        logger.exception("check_white_subtype_specificity: collection raised")
+        return []
+
+    findings: list[Finding] = []
+    seen: set[str] = set()
+    for actual_name in spots:
+        if actual_name in seen:
+            continue
+        seen.add(actual_name)
+        canonical = find_canonical_name(actual_name)
+        if canonical != "White":
+            continue
+        norm = normalise_spot_name(actual_name)
+        for hint, subtype in WHITE_SUBTYPE_TOKENS.items():
+            if hint in norm:
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_PSTEP_WHITE_SUBTYPE",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Spot '{actual_name}' should be tagged with the more "
+                            f"specific ISO 19593-1 White subtype '{subtype}'"
+                        ),
+                        page_num=0,
+                        details={
+                            "actual_name": actual_name,
+                            "suggested_subtype": subtype,
+                        },
+                        iso_clause="ISO 19593-1 §5.3 White subtypes",
+                        object_id=actual_name,
+                        object_type="spot_color",
+                    )
+                )
+                break
+    return findings
+
+
+def check_deprecated_pantone_names(pdf_bytes: bytes) -> list[Finding]:
+    """T2-SPT03 — emit ``LPDF_SPOT_DEPRECATED_PANTONE`` for any spot
+    whose name carries one of the legacy Pantone suffixes (CV, CVC,
+    CVU, CVP, CVUX).
+
+    The current Pantone book uses simple letter codes (C, U) and
+    leftover CV* names usually mean the artwork was migrated from a
+    pre-2008 library and the spot's tint behaviour may no longer
+    match the printed Pantone target.
+    """
+    if not pdf_bytes:
+        return []
+
+    try:
+        spots = _collect_spot_names(pdf_bytes)
+    except Exception:
+        logger.exception("check_deprecated_pantone_names: collection raised")
+        return []
+
+    findings: list[Finding] = []
+    seen: set[str] = set()
+    for actual_name in spots:
+        if actual_name in seen:
+            continue
+        seen.add(actual_name)
+        norm = normalise_spot_name(actual_name)
+        # Strip leading "pms"/"pantone " for simpler suffix matching.
+        cleaned = norm
+        for prefix in ("pantone ", "pms "):
+            if cleaned.startswith(prefix):
+                cleaned = cleaned[len(prefix) :]
+                break
+        for suffix in _DEPRECATED_PANTONE_SUFFIXES:
+            if cleaned.endswith(suffix):
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_SPOT_DEPRECATED_PANTONE",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Spot '{actual_name}' uses deprecated Pantone suffix "
+                            f"'{suffix.strip().upper()}'; the current book uses simple "
+                            f"'C' / 'U' codes"
+                        ),
+                        page_num=0,
+                        details={
+                            "actual_name": actual_name,
+                            "deprecated_suffix": suffix.strip().upper(),
+                        },
+                        iso_clause="Pantone book migration (2008-)",
+                        object_id=actual_name,
+                        object_type="spot_color",
+                    )
+                )
+                break
     return findings
 
 

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 404,
+  "total_checks": 412,
   "categories": [
     {
       "id": "image",
@@ -422,6 +422,12 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_SPOT_DEPRECATED_PANTONE",
+          "name": "Deprecated Pantone Suffix",
+          "description": "Spot name uses a legacy Pantone suffix (CV, CVC, CVU, CVP, CVUX) that was retired with the post-2008 Pantone book; verify the spot still maps to the intended colour.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_SPOT_NONCANONICAL",
           "name": "Non-Canonical Spot Name",
           "description": "Spot colour name doesn't match the lintPDF canonical taxonomy (CutContour, Crease, Perforation, KissCut, ThroughCut, White, Varnish, VarnishFree). Renaming to canonical names improves cross-vendor compatibility (Esko, PackZ, ArtiosCAD).",
@@ -527,6 +533,18 @@
           "id": "LPDF_TRANS_007",
           "name": "Shading pattern detected",
           "description": "Shading pattern detected on page N (N shadingN, potential gradient banding risk)",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_TRANS_BLEND_CS_MISMATCH",
+          "name": "Transparency Blend / OutputIntent CS Mismatch",
+          "description": "Transparency-group blending colour space differs from the OutputIntent destination colour space. Flatteners may render the page colour-shifted relative to the printed proof.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_TRANS_ON_SPOT",
+          "name": "Transparency on Spot Page",
+          "description": "Page declares Separation / DeviceN spot colour spaces and also has transparency events. Some RIPs flatten transparency to process colour and lose the spot.",
           "default_severity": "warning"
         }
       ]
@@ -683,6 +701,12 @@
           "id": "LPDF_TEXT_NEAR_FOLD",
           "name": "Text Near Fold Line",
           "description": "Text region within the configured clearance (default 3.0mm) of a fold / crease / score line. Text that crosses or hugs a fold gets bent and becomes hard to read.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_TEXT_REVERSE_THIN",
+          "name": "Reverse Text Minimum Stroke",
+          "description": "Small white (reverse / knockout) text was rendered without a stroke. Add a \u22650.5pt stroke or use \u226512pt for legibility on press.",
           "default_severity": "advisory"
         }
       ]
@@ -2618,9 +2642,21 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_PSTEP_POSITIONS",
+          "name": "ISO 19593-1 Positions Suggestion",
+          "description": "Spot ink whose name suggests a positioning aid (registration / trim mark / colour bar) should be tagged under the ISO 19593-1 'Positions' ProcessingSteps group so prepress strips it before plating.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_PSTEP_SUGGEST",
           "name": "ISO 19593-1 Processing Step Suggestion",
           "description": "Spot ink with a recognised production-process name (cut, crease, perforation, varnish, white) should be tagged with the matching ISO 19593-1 ProcessingSteps group so finishing equipment treats it as a process rather than a printable ink.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PSTEP_WHITE_SUBTYPE",
+          "name": "ISO 19593-1 White Subtype Suggestion",
+          "description": "White spot whose name carries a hint (Underprint / Overprint / Print / Knockout) should be tagged with the matching ISO 19593-1 White subtype.",
           "default_severity": "advisory"
         },
         {
@@ -2705,6 +2741,18 @@
           "id": "LPDF_UA_CONF",
           "name": "PDF/UA Non-Conformant",
           "description": "veraPDF Matterhorn reported one or more PDF/UA-1 checkpoint failures (accessibility). See details.failures for the list.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_VIEWER_DISPLAY_TITLE",
+          "name": "Viewer DisplayDocTitle",
+          "description": "Catalog /ViewerPreferences /DisplayDocTitle should be true so PDF readers show the document's metadata title rather than its filename. Required by WCAG 2.1 SC 2.4.2 when the title is the meaningful identifier.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_XMP_GWG_TRAIL",
+          "name": "GWG Audit Trail Missing",
+          "description": "No GWG audit-trail namespace was found in XMP metadata. The PDF has not been through a Ghent Workgroup-aware preflight tool.",
           "default_severity": "advisory"
         }
       ]

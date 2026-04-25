@@ -621,6 +621,38 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "ISO 19593-1 Processing Step Suggestion",
         "Spot ink with a recognised production-process name (cut, crease, perforation, varnish, white) should be tagged with the matching ISO 19593-1 ProcessingSteps group so finishing equipment treats it as a process rather than a printable ink.",
     ),
+    "LPDF_PSTEP_POSITIONS": CheckInfo(
+        "ISO 19593-1 Positions Suggestion",
+        "Spot ink whose name suggests a positioning aid (registration / trim mark / colour bar) should be tagged under the ISO 19593-1 'Positions' ProcessingSteps group so prepress strips it before plating.",
+    ),
+    "LPDF_PSTEP_WHITE_SUBTYPE": CheckInfo(
+        "ISO 19593-1 White Subtype Suggestion",
+        "White spot whose name carries a hint (Underprint / Overprint / Print / Knockout) should be tagged with the matching ISO 19593-1 White subtype.",
+    ),
+    "LPDF_SPOT_DEPRECATED_PANTONE": CheckInfo(
+        "Deprecated Pantone Suffix",
+        "Spot name uses a legacy Pantone suffix (CV, CVC, CVU, CVP, CVUX) that was retired with the post-2008 Pantone book; verify the spot still maps to the intended colour.",
+    ),
+    "LPDF_VIEWER_DISPLAY_TITLE": CheckInfo(
+        "Viewer DisplayDocTitle",
+        "Catalog /ViewerPreferences /DisplayDocTitle should be true so PDF readers show the document's metadata title rather than its filename. Required by WCAG 2.1 SC 2.4.2 when the title is the meaningful identifier.",
+    ),
+    "LPDF_XMP_GWG_TRAIL": CheckInfo(
+        "GWG Audit Trail Missing",
+        "No GWG audit-trail namespace was found in XMP metadata. The PDF has not been through a Ghent Workgroup-aware preflight tool.",
+    ),
+    "LPDF_TRANS_BLEND_CS_MISMATCH": CheckInfo(
+        "Transparency Blend / OutputIntent CS Mismatch",
+        "Transparency-group blending colour space differs from the OutputIntent destination colour space. Flatteners may render the page colour-shifted relative to the printed proof.",
+    ),
+    "LPDF_TRANS_ON_SPOT": CheckInfo(
+        "Transparency on Spot Page",
+        "Page declares Separation / DeviceN spot colour spaces and also has transparency events. Some RIPs flatten transparency to process colour and lose the spot.",
+    ),
+    "LPDF_TEXT_REVERSE_THIN": CheckInfo(
+        "Reverse Text Minimum Stroke",
+        "Small white (reverse / knockout) text was rendered without a stroke. Add a ≥0.5pt stroke or use ≥12pt for legibility on press.",
+    ),
     "LPDF_DIE_TOO_SMALL": CheckInfo(
         "Dieline Feature Below Cutter Resolution",
         "Dieline polygon's bbox or perimeter is smaller than the cutting machine can track cleanly (default 1.0mm threshold). Tiny features tear surrounding stock or crumble during die-cutting.",

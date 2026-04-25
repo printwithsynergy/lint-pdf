@@ -56,6 +56,15 @@ POST_V3_DELIVERIES: list[tuple[str, list[str]]] = [
     ("T2-GWG01", ["__profile_pack:gwg-2022-commercial"]),
     ("T2-GWG02", ["__profile_pack:gwg-2022-packaging"]),
     ("T2-ISO05", ["LPDF_PSTEP_SUGGEST"]),
+    # Batch 10a — Tier-2 deferred + T4-A10
+    ("T2-ISO02", ["LPDF_PSTEP_POSITIONS"]),
+    ("T2-ISO03", ["LPDF_PSTEP_WHITE_SUBTYPE"]),
+    ("T2-SPT03", ["LPDF_SPOT_DEPRECATED_PANTONE"]),
+    ("T2-TRN04", ["LPDF_TRANS_BLEND_CS_MISMATCH"]),
+    ("T2-TRN05", ["LPDF_TRANS_ON_SPOT"]),
+    ("T2-RB02", ["LPDF_TEXT_REVERSE_THIN"]),
+    ("T2-XMP01", ["LPDF_XMP_GWG_TRAIL"]),
+    ("T4-A10", ["LPDF_VIEWER_DISPLAY_TITLE"]),
     # Tier 3 — Batches 4-7 closed the dieline wedge (15/15)
     ("T3-D01", ["LPDF_DIE_NONPRINT"]),
     ("T3-D02", ["LPDF_DIE_ZORDER"]),
@@ -77,13 +86,20 @@ def _load_catalog_ids() -> set[str]:
     if not CATALOG.exists():
         return set()
     payload = json.loads(CATALOG.read_text(encoding="utf-8"))
+    ids: set[str] = set()
     if isinstance(payload, list):
-        return {row["id"] for row in payload if "id" in row}
-    if isinstance(payload, dict):
-        if "checks" in payload:
-            return {row["id"] for row in payload["checks"] if "id" in row}
-        return set(payload.keys())
-    return set()
+        ids.update(row["id"] for row in payload if "id" in row)
+    elif isinstance(payload, dict):
+        if "categories" in payload and isinstance(payload["categories"], list):
+            for cat in payload["categories"]:
+                for chk in cat.get("checks", []):
+                    if "id" in chk:
+                        ids.add(chk["id"])
+        elif "checks" in payload and isinstance(payload["checks"], list):
+            ids.update(row["id"] for row in payload["checks"] if "id" in row)
+        else:
+            ids.update(payload.keys())
+    return ids
 
 
 def _phase2_has_status(gap_id: str) -> bool:
