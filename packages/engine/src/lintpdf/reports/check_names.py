@@ -681,6 +681,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Grain Direction Missing",
         "XMP metadata carries no grain-direction key. Downstream press / finishing operations may not get the substrate orientation from this PDF.",
     ),
+    "LPDF_TEXT_SOFT_MASK": CheckInfo(
+        "Text Under Soft Mask",
+        "Text rendered on a page that declares a soft-mask ExtGState. Some RIPs lose legibility on text under a soft mask; verify rendering at production resolution.",
+    ),
+    "AI_ALC_003": CheckInfo(
+        "Wine / Spirits Specific Compliance",
+        "Wine or spirits labelling has issues per TTB 27 CFR 4 / 5 or EU 1308/2013 — missing 'Contains Sulfites', vintage / estate-bottled without an appellation, or spirits without a proof statement.",
+    ),
     "LPDF_DIE_TOO_SMALL": CheckInfo(
         "Dieline Feature Below Cutter Resolution",
         "Dieline polygon's bbox or perimeter is smaller than the cutting machine can track cleanly (default 1.0mm threshold). Tiny features tear surrounding stock or crumble during die-cutting.",
