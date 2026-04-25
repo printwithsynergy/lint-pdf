@@ -2,8 +2,7 @@
   "version": 4,
   "total": 93,
   "summary": {
-    "present": 88,
-    "partial": 5
+    "present": 93
   },
   "matches": [
     {
@@ -1000,14 +999,19 @@
       "difficulty": "medium",
       "notes": "",
       "category_hint": "transparency",
-      "status": "partial",
-      "match_count": 1,
+      "status": "present",
+      "match_count": 2,
       "matched_ids": [
-        "LPDF_TRANS_003"
+        "LPDF_TRANS_003",
+        "LPDF_TEXT_SOFT_MASK"
       ],
       "match_details": [
         {
           "id": "LPDF_TRANS_003",
+          "match_type": "explicit"
+        },
+        {
+          "id": "LPDF_TEXT_SOFT_MASK",
           "match_type": "explicit"
         }
       ]
@@ -1019,14 +1023,19 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "transparency",
-      "status": "partial",
-      "match_count": 1,
+      "status": "present",
+      "match_count": 2,
       "matched_ids": [
-        "LPDF_TRANS_005"
+        "LPDF_TRANS_005",
+        "LPDF_TRANS_006"
       ],
       "match_details": [
         {
           "id": "LPDF_TRANS_005",
+          "match_type": "explicit"
+        },
+        {
+          "id": "LPDF_TRANS_006",
           "match_type": "explicit"
         }
       ]
@@ -1081,14 +1090,19 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "text",
-      "status": "partial",
-      "match_count": 1,
+      "status": "present",
+      "match_count": 2,
       "matched_ids": [
-        "LPDF_TEXT_004"
+        "LPDF_TEXT_004",
+        "LPDF_TEXT_REVERSE_THIN"
       ],
       "match_details": [
         {
           "id": "LPDF_TEXT_004",
+          "match_type": "explicit"
+        },
+        {
+          "id": "LPDF_TEXT_REVERSE_THIN",
           "match_type": "explicit"
         }
       ]
@@ -1212,7 +1226,7 @@
       "difficulty": "medium",
       "notes": "containment test",
       "category_hint": "dieline",
-      "status": "partial",
+      "status": "present",
       "match_count": 1,
       "matched_ids": [
         "LPDF_PKG_004"
@@ -1692,11 +1706,12 @@
       "difficulty": "medium",
       "notes": "",
       "category_hint": "ai_regulatory_compliance",
-      "status": "partial",
-      "match_count": 2,
+      "status": "present",
+      "match_count": 3,
       "matched_ids": [
         "AI_ALC_001",
-        "AI_ALC_002"
+        "AI_ALC_002",
+        "AI_ALC_003"
       ],
       "match_details": [
         {
@@ -1705,6 +1720,10 @@
         },
         {
           "id": "AI_ALC_002",
+          "match_type": "explicit"
+        },
+        {
+          "id": "AI_ALC_003",
           "match_type": "explicit"
         }
       ]

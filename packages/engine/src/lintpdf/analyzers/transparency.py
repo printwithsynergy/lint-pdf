@@ -18,6 +18,8 @@ Check IDs:
         differs from OutputIntent destination CS (T2-TRN04)
     LPDF_TRANS_ON_SPOT — Transparency applied while a Separation /
         DeviceN colour space is on a page (T2-TRN05)
+    LPDF_TEXT_SOFT_MASK — Text rendered on a page that declares a
+        soft-mask ExtGState (T2-TRN06)
 """
 
 from __future__ import annotations
@@ -215,6 +217,9 @@ class TransparencyAnalyzer(BaseAnalyzer):
         # Separation / DeviceN colour space.
         findings.extend(self._check_transparency_on_spot(document, events))
 
+        # T2-TRN06 — text rendered on a page with a soft-mask ExtGState.
+        findings.extend(self._check_text_soft_mask(document, events))
+
         # LPDF_TRANS_007: Shading patterns with potential banding risk
         for page in document.pages:
             shading = page.resources.get("/Shading") or page.resources.get("Shading")
@@ -339,6 +344,62 @@ class TransparencyAnalyzer(BaseAnalyzer):
             if first in ("Separation", "DeviceN"):
                 return True
         return False
+
+    @staticmethod
+    def _has_soft_mask_extgstate(page: SemanticPage) -> bool:  # type: ignore[name-defined]
+        """Heuristic: page's /Resources /ExtGState contains at least
+        one entry with a non-trivial /SMask key."""
+        ext = page.resources.get("/ExtGState") or page.resources.get("ExtGState") or {}
+        if not isinstance(ext, dict):
+            return False
+        for value in ext.values():
+            if not hasattr(value, "get"):
+                continue
+            smask = value.get("/SMask") or value.get("SMask")
+            if smask is None:
+                continue
+            if isinstance(smask, str) and smask.lstrip("/") == "None":
+                continue
+            return True
+        return False
+
+    def _check_text_soft_mask(
+        self,
+        document: SemanticDocument,
+        events: list[ContentStreamEvent],  # type: ignore[name-defined]
+    ) -> list[Finding]:
+        """T2-TRN06 — emit one ``LPDF_TEXT_SOFT_MASK`` advisory per
+        page where a soft-mask ExtGState is declared in resources and
+        at least one text event landed on the page. Some RIPs lose
+        legibility on text rendered through a soft mask; flag the
+        combination so the operator can review."""
+        from lintpdf.semantic.events import TextRenderedEvent
+
+        smask_pages = {p.page_num for p in document.pages if self._has_soft_mask_extgstate(p)}
+        if not smask_pages:
+            return []
+
+        flagged: set[int] = set()
+        for event in events:
+            if event.page_num not in smask_pages or event.page_num in flagged:
+                continue
+            if isinstance(event, TextRenderedEvent):
+                flagged.add(event.page_num)
+
+        return [
+            Finding(
+                inspection_id="LPDF_TEXT_SOFT_MASK",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"Page {page_num} declares a soft-mask ExtGState and renders "
+                    f"text; some RIPs lose legibility on text under a soft mask"
+                ),
+                page_num=page_num,
+                details={"page_num": page_num},
+                iso_clause="ISO 32000-2 §11.6.5.3",
+            )
+            for page_num in sorted(flagged)
+        ]
 
     def _check_transparency_on_spot(
         self,

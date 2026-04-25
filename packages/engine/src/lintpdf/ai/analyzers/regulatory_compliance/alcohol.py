@@ -58,6 +58,32 @@ _ORIGIN_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+_WINE_KEYWORDS = re.compile(
+    r"\b(wine|champagne|prosecco|cava|sparkling\s+wine|chardonnay|merlot|"
+    r"cabernet|riesling|pinot|syrah|sauvignon|grenache|tempranillo|sangiovese|"
+    r"chianti|bordeaux|burgundy|rioja|barolo|brunello|porto|sherry)\b",
+    re.IGNORECASE,
+)
+_SPIRITS_KEYWORDS = re.compile(
+    r"\b(vodka|gin|rum|tequila|mezcal|whisky|whiskey|bourbon|scotch|rye|"
+    r"cognac|armagnac|brandy|liqueur|vermouth|absinthe)\b",
+    re.IGNORECASE,
+)
+_SULFITES_PATTERN = re.compile(
+    r"\b(contains\s+sulfites|may\s+contain\s+sulfites|contains\s+sulphites|"
+    r"sulfite[s]?\s+added)\b",
+    re.IGNORECASE,
+)
+_PROOF_PATTERN = re.compile(r"\b\d{2,3}\s*proof\b", re.IGNORECASE)
+_ESTATE_BOTTLED_PATTERN = re.compile(r"\bestate\s+bottled\b", re.IGNORECASE)
+_VINTAGE_PATTERN = re.compile(r"\bvintage\s+\d{4}\b", re.IGNORECASE)
+_APPELLATION_PATTERN = re.compile(
+    r"\b(Napa\s+Valley|Sonoma|Champagne|Bordeaux|Burgundy|Rioja|"
+    r"Chianti|Tuscany|Mosel|Rheingau|Tokaj|Mendoza|Marlborough|"
+    r"Stellenbosch|Barossa|Yarra)\b",
+    re.IGNORECASE,
+)
+
 
 @register_ai_analyzer
 class AlcoholLabelingAnalyzer(BaseAIAnalyzer):
@@ -143,6 +169,63 @@ class AlcoholLabelingAnalyzer(BaseAIAnalyzer):
                         },
                     )
                 )
+
+        # T5-N05 — wine / spirits-specific TTB 27 CFR 4 + EU 1308/2013
+        # checks that the broader AI_ALC_001 doesn't catch.
+        wine_match = _WINE_KEYWORDS.search(text)
+        spirits_match = _SPIRITS_KEYWORDS.search(text)
+
+        wine_issues: list[str] = []
+        if wine_match and not _SULFITES_PATTERN.search(text):
+            # TTB 27 CFR 4.32(e) requires "CONTAINS SULFITES" on wine
+            # labels with > 10 ppm SO2 (nearly all commercial wines).
+            wine_issues.append("missing_contains_sulfites")
+        if _ESTATE_BOTTLED_PATTERN.search(text) and not _APPELLATION_PATTERN.search(text):
+            # "Estate Bottled" requires an appellation per TTB 27 CFR 4.26.
+            wine_issues.append("estate_bottled_without_appellation")
+        if _VINTAGE_PATTERN.search(text) and not _APPELLATION_PATTERN.search(text):
+            # Vintage claims need an appellation per TTB 27 CFR 4.27.
+            wine_issues.append("vintage_without_appellation")
+
+        spirits_issues: list[str] = []
+        if spirits_match and abv_pct is not None and not _PROOF_PATTERN.search(text):
+            # TTB 27 CFR 5.37 allows ABV alone, but proof is the
+            # historical norm and must be plausible relative to ABV
+            # (proof = 2 × ABV in the US system). Soft advisory when
+            # spirits omit proof entirely.
+            spirits_issues.append("missing_proof_statement")
+
+        if wine_issues:
+            findings.append(
+                self._make_finding(
+                    inspection_id="AI_ALC_003",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Wine label has TTB 27 CFR 4 / EU 1308/2013 issues: "
+                        f"{', '.join(wine_issues)}."
+                    ),
+                    details={
+                        "issues": wine_issues,
+                        "product_type": "wine",
+                        "regulation": "TTB 27 CFR 4 / EU 1308/2013",
+                    },
+                )
+            )
+        if spirits_issues:
+            findings.append(
+                self._make_finding(
+                    inspection_id="AI_ALC_003",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Spirits label has TTB 27 CFR 5 issues: {', '.join(spirits_issues)}."
+                    ),
+                    details={
+                        "issues": spirits_issues,
+                        "product_type": "spirits",
+                        "regulation": "TTB 27 CFR 5.37",
+                    },
+                )
+            )
 
         return findings
 

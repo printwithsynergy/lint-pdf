@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 419,
+  "total_checks": 421,
   "categories": [
     {
       "id": "image",
@@ -707,6 +707,12 @@
           "id": "LPDF_TEXT_REVERSE_THIN",
           "name": "Reverse Text Minimum Stroke",
           "description": "Small white (reverse / knockout) text was rendered without a stroke. Add a \u22650.5pt stroke or use \u226512pt for legibility on press.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_TEXT_SOFT_MASK",
+          "name": "Text Under Soft Mask",
+          "description": "Text rendered on a page that declares a soft-mask ExtGState. Some RIPs lose legibility on text under a soft mask; verify rendering at production resolution.",
           "default_severity": "advisory"
         }
       ]
@@ -1745,6 +1751,12 @@
           "id": "AI_ALC_002",
           "name": "TTB/EU Alcohol Label Format",
           "description": "Alcohol label format deviates from TTB COLA or EU wine/spirits requirements.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "AI_ALC_003",
+          "name": "Wine / Spirits Specific Compliance",
+          "description": "Wine or spirits labelling has issues per TTB 27 CFR 4 / 5 or EU 1308/2013 \u2014 missing 'Contains Sulfites', vintage / estate-bottled without an appellation, or spirits without a proof statement.",
           "default_severity": "advisory"
         }
       ]

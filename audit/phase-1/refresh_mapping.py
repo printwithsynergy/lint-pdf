@@ -86,6 +86,12 @@ POST_V3_DELIVERIES: list[tuple[str, list[str]]] = [
     ("T3-D13", ["LPDF_DIE_REGISTRATION"]),
     ("T3-D14", ["LPDF_BRAILLE_INTEGRITY"]),
     ("T3-D15", ["LPDF_DIE_VISUAL_USE"]),
+    # Batch 11 — promote 5 partials to fully-present
+    ("T2-TRN06", ["LPDF_TEXT_SOFT_MASK"]),
+    ("T2-TRN07", ["LPDF_TRANS_006"]),
+    ("T2-RB03", ["LPDF_TEXT_REVERSE_THIN"]),
+    ("T3-D05", ["LPDF_DIE_BLEED_OVERSHOOT"]),
+    ("T5-N05", ["AI_ALC_003"]),
 ]
 
 
