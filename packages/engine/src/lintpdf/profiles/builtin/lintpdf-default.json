@@ -5,8 +5,17 @@
   "conformance": "pdfx4",
   "workflow": "CMYK",
   "checks": {
-    "enabled": ["LPDF_*", "PDFX4-*", "PDFX1A-*", "PDFA-*", "AI_*"],
-    "disabled": [],
+    "enabled": [
+      "LPDF_*",
+      "PDFX4-*",
+      "PDFX1A-*",
+      "PDFA-*",
+      "AI_*"
+    ],
+    "disabled": [
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
+    ],
     "severity_overrides": {}
   },
   "thresholds": {
@@ -22,7 +31,9 @@
   },
   "ai": {
     "enabled": true,
-    "categories": ["all"],
+    "categories": [
+      "all"
+    ],
     "features": []
   }
 }

@@ -14,6 +14,10 @@ Check IDs:
     LPDF_TRANS_005 — Transparency group with non-CMYK color space
     LPDF_TRANS_006 — Knockout transparency group
     LPDF_TRANS_007 — Shading pattern with banding risk
+    LPDF_TRANS_BLEND_CS_MISMATCH — Transparency-group blending CS
+        differs from OutputIntent destination CS (T2-TRN04)
+    LPDF_TRANS_ON_SPOT — Transparency applied while a Separation /
+        DeviceN colour space is on a page (T2-TRN05)
 """
 
 from __future__ import annotations
@@ -25,7 +29,7 @@ from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
     from lintpdf.semantic.events import ContentStreamEvent
-    from lintpdf.semantic.model import SemanticDocument
+    from lintpdf.semantic.model import SemanticDocument, SemanticPage
 
 _SAFE_BLEND_MODES = frozenset(
     {
@@ -204,6 +208,13 @@ class TransparencyAnalyzer(BaseAnalyzer):
                         )
                     )
 
+        # T2-TRN04 — transparency group /CS vs OutputIntent /S.
+        findings.extend(self._check_blend_cs_mismatch(document))
+
+        # T2-TRN05 — transparency on pages whose resources include a
+        # Separation / DeviceN colour space.
+        findings.extend(self._check_transparency_on_spot(document, events))
+
         # LPDF_TRANS_007: Shading patterns with potential banding risk
         for page in document.pages:
             shading = page.resources.get("/Shading") or page.resources.get("Shading")
@@ -252,3 +263,126 @@ class TransparencyAnalyzer(BaseAnalyzer):
     def is_risky_blend_mode(mode: str) -> bool:
         """Check if a blend mode is considered risky for print."""
         return mode in _RISKY_BLEND_MODES
+
+    @staticmethod
+    def _output_intent_cs(document: SemanticDocument) -> str:
+        """Return a normalised label for the OutputIntent destination
+        colour space, or empty string when no OutputIntent is set."""
+        for oi in document.output_intents or []:
+            s = str(oi.get("/S", "")).lstrip("/")
+            if s == "GTS_PDFX":
+                # PDF/X output intents target the destination ICC's CS.
+                # Pick the device class out of /DestOutputProfileRef
+                # subtype if present; otherwise default to CMYK because
+                # PDF/X-1a / X-3 / X-4 are CMYK-anchored families.
+                profile = oi.get("/DestOutputProfile")
+                if isinstance(profile, dict):
+                    n = profile.get("/N")
+                    if n == 4:
+                        return "DeviceCMYK"
+                    if n == 3:
+                        return "DeviceRGB"
+                    if n == 1:
+                        return "DeviceGray"
+                return "DeviceCMYK"
+            if s == "GTS_PDFA1":
+                return "DeviceCMYK"
+        return ""
+
+    def _check_blend_cs_mismatch(self, document: SemanticDocument) -> list[Finding]:
+        """T2-TRN04 — flag pages whose transparency group declares a
+        blending colour space that disagrees with the OutputIntent's
+        destination colour space."""
+        oi_cs = self._output_intent_cs(document)
+        if not oi_cs:
+            return []
+        findings: list[Finding] = []
+        for page in document.pages:
+            if page.transparency_group is None:
+                continue
+            cs = page.transparency_group.get("/CS")
+            cs_str = str(cs).lstrip("/") if cs else ""
+            if not cs_str:
+                continue
+            if cs_str != oi_cs:
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_TRANS_BLEND_CS_MISMATCH",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"Transparency-group blending CS '{cs_str}' on page "
+                            f"{page.page_num} differs from OutputIntent destination "
+                            f"'{oi_cs}'; flatteners may produce unexpected colour"
+                        ),
+                        page_num=page.page_num,
+                        details={
+                            "blend_cs": cs_str,
+                            "output_intent_cs": oi_cs,
+                        },
+                        iso_clause="ISO 32000-2 §11.4.7 / ISO 15930-7 §6.2.4",
+                    )
+                )
+        return findings
+
+    @staticmethod
+    def _has_spot_color_resource(page: SemanticPage) -> bool:  # type: ignore[name-defined]
+        """Heuristic: page resources include at least one Separation /
+        DeviceN colour space entry."""
+        cs_dict = page.resources.get("/ColorSpace") or page.resources.get("ColorSpace") or {}
+        if not isinstance(cs_dict, dict):
+            return False
+        for value in cs_dict.values():
+            try:
+                first = str(value[0]).lstrip("/") if hasattr(value, "__getitem__") else ""
+            except Exception:
+                first = ""
+            if first in ("Separation", "DeviceN"):
+                return True
+        return False
+
+    def _check_transparency_on_spot(
+        self,
+        document: SemanticDocument,
+        events: list[ContentStreamEvent],  # type: ignore[name-defined]
+    ) -> list[Finding]:
+        """T2-TRN05 — when a page declares a Separation / DeviceN
+        colour space AND has any transparency event (alpha < 1.0 or
+        non-Normal blend mode), emit one advisory per page."""
+        from lintpdf.semantic.events import OpacityChangedEvent
+
+        spot_pages: dict[int, SemanticPage] = {  # type: ignore[name-defined]
+            p.page_num: p for p in document.pages if self._has_spot_color_resource(p)
+        }
+        if not spot_pages:
+            return []
+
+        flagged: set[int] = set()
+        for event in events:
+            if event.page_num not in spot_pages or event.page_num in flagged:
+                continue
+            if not isinstance(event, OpacityChangedEvent):
+                continue
+            has_alpha = (event.stroking_alpha is not None and event.stroking_alpha < 1.0) or (
+                event.non_stroking_alpha is not None and event.non_stroking_alpha < 1.0
+            )
+            has_blend = event.blend_mode and event.blend_mode != "Normal"
+            if has_alpha or has_blend:
+                flagged.add(event.page_num)
+
+        findings: list[Finding] = []
+        for page_num in sorted(flagged):
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_TRANS_ON_SPOT",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Transparency applied on page {page_num} where Separation / "
+                        f"DeviceN spot colour spaces are declared; some RIPs flatten "
+                        f"this to process colour and lose the spot"
+                    ),
+                    page_num=page_num,
+                    details={"page_num": page_num},
+                    iso_clause="ISO 32000-2 §11.7 / GWG 2022 transparency-on-spot guidance",
+                )
+            )
+        return findings

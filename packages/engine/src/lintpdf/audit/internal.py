@@ -293,7 +293,7 @@ class InternalAuditor:
             content.append(_image_block(png, cache=(i == len(needed_pages) - 1)))
         content.append(_findings_block(batch))
 
-        response = self._client.messages.create(
+        response = self._client.messages.create(  # type: ignore[call-overload]
             model=self._model,
             max_tokens=4096,
             system=[

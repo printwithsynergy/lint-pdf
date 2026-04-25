@@ -249,7 +249,7 @@ class ClaudeAuditor:
         from lintpdf.audit.outage import record_outcome
 
         try:
-            response = self._client.messages.create(
+            response = self._client.messages.create(  # type: ignore[call-overload]
                 model=self._model,
                 max_tokens=1536,
                 system=[
@@ -299,10 +299,11 @@ class ClaudeAuditor:
                 continue
             if getattr(block, "name", None) != "record_verdict":
                 continue
-            payload = getattr(block, "input", None) or {}
-            idx = payload.get("finding_index")
-            status = payload.get("status")
-            rationale = _strip_ansi(str(payload.get("rationale", ""))).strip()
+            block_input = getattr(block, "input", None) or {}
+            tool_input: dict[str, Any] = block_input if isinstance(block_input, dict) else {}
+            idx = tool_input.get("finding_index")
+            status = tool_input.get("status")
+            rationale = _strip_ansi(str(tool_input.get("rationale", ""))).strip()
             if not isinstance(idx, int):
                 continue
             if status not in ("confirmed", "disputed", "needs_context"):

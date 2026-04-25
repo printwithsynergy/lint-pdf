@@ -867,6 +867,97 @@ def run_preflight(
                 result_dict["summary"]["total_findings"] += 1
                 result_dict["summary"]["warning_count"] += 1
 
+            # Batches 4+5 — dieline-quality findings (T3-D02/03/15)
+            # plus OCG / envelope / varnish checks (T3-D01/05/10).
+            # Always call the check: Batch 5 T3-D10 (varnish
+            # collision) fires without any dieline detection, so
+            # gating on job.dieline misses valid findings.
+            if pdf_bytes:
+                try:
+                    from lintpdf.analyzers.dieline_quality import (
+                        check_dieline_quality,
+                    )
+
+                    dq_findings = check_dieline_quality(
+                        pdf_bytes,
+                        spot_name=(job.dieline or {}).get("spot_name"),
+                        source=(job.dieline or {}).get("source") or "missing",
+                        regions=(job.dieline or {}).get("regions"),
+                        polylines=(job.dieline or {}).get("polylines"),
+                        max_bleed_mm=profile.thresholds.max_bleed_mm,
+                        min_dieline_feature_mm=profile.thresholds.min_dieline_feature_mm,
+                        min_dieline_segment_length_mm=profile.thresholds.min_dieline_segment_length_mm,
+                        white_coverage_min=profile.thresholds.white_coverage_min,
+                        barcode_quiet_zone_mm=profile.thresholds.barcode_quiet_zone_mm,
+                        text_to_fold_distance_mm=profile.thresholds.text_to_fold_distance_mm,
+                    )
+                except Exception:
+                    logger.exception("Job %s dieline_quality check raised", job_id)
+                    dq_findings = []
+
+                for df in dq_findings:
+                    result_dict["findings"].append(
+                        {
+                            "inspection_id": df.inspection_id,
+                            "severity": df.severity.value,
+                            "message": df.message,
+                            "page_num": df.page_num,
+                            "bbox": list(df.bbox) if df.bbox else None,
+                            "details": df.details,
+                            "source": "engine",
+                            "category": "dieline",
+                            "object_id": df.object_id,
+                            "object_type": df.object_type,
+                        }
+                    )
+                    result_dict["summary"]["total_findings"] += 1
+                    sev_key = f"{df.severity.value}_count"
+                    if sev_key in result_dict["summary"]:
+                        result_dict["summary"][sev_key] += 1
+
+            # Batch 7 — T3-D11 spot-name canonical-taxonomy advisories.
+            # Batch 9c — T2-ISO05 ISO 19593-1 ProcessingSteps suggestions.
+            # Batch 10a — T2-ISO02 / T2-ISO03 / T2-SPT03 spot extras.
+            # Independent of dieline detection; runs on any PDF.
+            if pdf_bytes:
+                try:
+                    from lintpdf.analyzers.spot_name_normaliser import (
+                        check_deprecated_pantone_names,
+                        check_spot_naming,
+                        check_white_subtype_specificity,
+                        suggest_position_tagging,
+                        suggest_processing_steps,
+                    )
+
+                    sn_findings = check_spot_naming(pdf_bytes)
+                    sn_findings.extend(suggest_processing_steps(pdf_bytes))
+                    sn_findings.extend(suggest_position_tagging(pdf_bytes))
+                    sn_findings.extend(check_white_subtype_specificity(pdf_bytes))
+                    sn_findings.extend(check_deprecated_pantone_names(pdf_bytes))
+                except Exception:
+                    logger.exception("Job %s spot_name_normaliser raised", job_id)
+                    sn_findings = []
+
+                for sf in sn_findings:
+                    result_dict["findings"].append(
+                        {
+                            "inspection_id": sf.inspection_id,
+                            "severity": sf.severity.value,
+                            "message": sf.message,
+                            "page_num": sf.page_num,
+                            "bbox": list(sf.bbox) if sf.bbox else None,
+                            "details": sf.details,
+                            "source": "engine",
+                            "category": "spot_color",
+                            "object_id": sf.object_id,
+                            "object_type": sf.object_type,
+                        }
+                    )
+                    result_dict["summary"]["total_findings"] += 1
+                    sev_key = f"{sf.severity.value}_count"
+                    if sev_key in result_dict["summary"]:
+                        result_dict["summary"][sev_key] += 1
+
             # Upload results JSON to storage (best-effort — results are in DB too)
             try:
                 storage.upload_results(
@@ -933,15 +1024,96 @@ def run_preflight(
                         category="dieline",
                     )
                 )
-                if finding.source == "ai" and finding.category:
-                    ai_features_used.add(
-                        (
-                            finding.category,
-                            finding.inspection_id.split(".")[1]
-                            if "." in finding.inspection_id
-                            else finding.category,
-                        )
+
+            # Batches 4+5 — persist dieline-quality findings.
+            # Same pattern as LPDF_DIE_MULTI_COLOR above. Always call:
+            # T3-D10 varnish collision runs without a detected dieline.
+            if pdf_bytes:
+                try:
+                    from lintpdf.analyzers.dieline_quality import (
+                        check_dieline_quality,
                     )
+
+                    for df in check_dieline_quality(
+                        pdf_bytes,
+                        spot_name=(job.dieline or {}).get("spot_name"),
+                        source=(job.dieline or {}).get("source") or "missing",
+                        regions=(job.dieline or {}).get("regions"),
+                        polylines=(job.dieline or {}).get("polylines"),
+                        max_bleed_mm=profile.thresholds.max_bleed_mm,
+                        min_dieline_feature_mm=profile.thresholds.min_dieline_feature_mm,
+                        min_dieline_segment_length_mm=profile.thresholds.min_dieline_segment_length_mm,
+                        white_coverage_min=profile.thresholds.white_coverage_min,
+                        barcode_quiet_zone_mm=profile.thresholds.barcode_quiet_zone_mm,
+                        text_to_fold_distance_mm=profile.thresholds.text_to_fold_distance_mm,
+                    ):
+                        db.add(
+                            JobFinding(
+                                job_id=job.id,
+                                inspection_id=df.inspection_id,
+                                severity=df.severity.value,
+                                message=df.message,
+                                page_num=df.page_num,
+                                details=df.details,
+                                source="engine",
+                                category="dieline",
+                                object_id=df.object_id,
+                                object_type=df.object_type,
+                            )
+                        )
+                except Exception:
+                    logger.exception("Job %s dieline_quality persistence raised", job_id)
+
+            # Batch 7 — persist spot-name canonical-taxonomy advisories.
+            # Batch 9c — also persist T2-ISO05 ProcessingSteps suggestions.
+            # Batch 10a — persist T2-ISO02 / T2-ISO03 / T2-SPT03 too.
+            if pdf_bytes:
+                try:
+                    from lintpdf.analyzers.spot_name_normaliser import (
+                        check_deprecated_pantone_names,
+                        check_spot_naming,
+                        check_white_subtype_specificity,
+                        suggest_position_tagging,
+                        suggest_processing_steps,
+                    )
+
+                    spot_findings = check_spot_naming(pdf_bytes)
+                    spot_findings.extend(suggest_processing_steps(pdf_bytes))
+                    spot_findings.extend(suggest_position_tagging(pdf_bytes))
+                    spot_findings.extend(check_white_subtype_specificity(pdf_bytes))
+                    spot_findings.extend(check_deprecated_pantone_names(pdf_bytes))
+                    for sf in spot_findings:
+                        db.add(
+                            JobFinding(
+                                job_id=job.id,
+                                inspection_id=sf.inspection_id,
+                                severity=sf.severity.value,
+                                message=sf.message,
+                                page_num=sf.page_num,
+                                details=sf.details,
+                                source="engine",
+                                category="spot_color",
+                                object_id=sf.object_id,
+                                object_type=sf.object_type,
+                            )
+                        )
+                except Exception:
+                    logger.exception("Job %s spot_name persistence raised", job_id)
+
+            if (
+                job.dieline
+                and job.dieline.get("multi_color")
+                and finding.source == "ai"
+                and finding.category
+            ):
+                ai_features_used.add(
+                    (
+                        finding.category,
+                        finding.inspection_id.split(".")[1]
+                        if "." in finding.inspection_id
+                        else finding.category,
+                    )
+                )
 
             # Deduct AI credits for features used
             if ai_features_used and ai_config:

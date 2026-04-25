@@ -92,19 +92,47 @@ class StructureAnalyzer(BaseAnalyzer):
                 )
             )
 
-        # LPDF_STRUCT_004: Embedded files
+        # LPDF_STRUCT_004: Embedded files. Two embedding paths both fire:
+        #   (a) /Names /EmbeddedFiles tree at the catalog level
+        #   (b) /FileAttachment annotations on any page (T1-CMP06)
         names = catalog.get("/Names")
-        if isinstance(names, dict):
-            ef = names.get("/EmbeddedFiles")
-            if ef is not None:
-                findings.append(
-                    Finding(
-                        inspection_id="LPDF_STRUCT_004",
-                        severity=Severity.WARNING,
-                        message="Document contains embedded files",
-                        iso_clause="ISO 15930-7:2010 6.2.8",
-                    )
+        emits_struct_004 = False
+        if isinstance(names, dict) and names.get("/EmbeddedFiles") is not None:
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_STRUCT_004",
+                    severity=Severity.WARNING,
+                    message="Document contains embedded files (/Names/EmbeddedFiles)",
+                    details={"source": "catalog_names_tree"},
+                    iso_clause="ISO 15930-7:2010 6.2.8",
                 )
+            )
+            emits_struct_004 = True
+        if not emits_struct_004:
+            for page in document.pages:
+                attachments = [
+                    a
+                    for a in page.annotations
+                    if getattr(a, "subtype", "").lstrip("/") == "FileAttachment"
+                ]
+                if attachments:
+                    findings.append(
+                        Finding(
+                            inspection_id="LPDF_STRUCT_004",
+                            severity=Severity.WARNING,
+                            message=(
+                                f"Page {page.page_num} carries "
+                                f"{len(attachments)} /FileAttachment annotation(s)"
+                            ),
+                            page_num=page.page_num,
+                            details={
+                                "source": "file_attachment_annotation",
+                                "attachment_count": len(attachments),
+                            },
+                            iso_clause="ISO 15930-7:2010 6.2.8",
+                        )
+                    )
+                    break  # one finding per document is enough
 
         # LPDF_STRUCT_005: 3D content (check annotations on pages)
         for page in document.pages:

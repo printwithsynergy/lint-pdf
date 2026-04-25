@@ -3949,7 +3949,7 @@ async def admin_rotate_webhook_secret_for_tenant(
     webhook_id: str,
     db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
-):
+) -> Any:
     from lintpdf.api.routes.webhooks import (
         WebhookSecretResponse,
         rotate_webhook_secret_for_tenant,
@@ -3966,7 +3966,7 @@ async def admin_test_webhook_for_tenant(
     webhook_id: str,
     db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
-):
+) -> Any:
     from lintpdf.api.routes.webhooks import test_webhook_for_tenant
 
     tenant = _get_tenant_or_404(db, tenant_id)
@@ -4032,7 +4032,7 @@ class AdminTenantDefaultProfileResponse(BaseModel):
 _VALID_VISIBILITY_MODES = {"all", "plan", "tenants", "plan_and_tenants"}
 
 
-def _system_profile_row_to_summary(sp) -> AdminSystemProfileSummary:
+def _system_profile_row_to_summary(sp: Any) -> AdminSystemProfileSummary:
     from lintpdf.profiles.schema import PreflightProfile
 
     try:
@@ -4292,7 +4292,7 @@ async def clone_system_profile_to_tenant(
     body: AdminCloneToTenantRequest,
     db: Session = Depends(get_db),
     _key: str = Depends(_verify_admin_key),
-):
+) -> Any:
     """Copy a system preset into ``tenant``'s ``custom_profiles`` table.
 
     One-shot hand-off — after the clone, the tenant owns + edits the

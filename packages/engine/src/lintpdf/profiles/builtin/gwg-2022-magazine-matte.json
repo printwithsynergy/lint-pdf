@@ -1,0 +1,30 @@
+{
+  "name": "GWG 2022 \u2014 Magazine / Matte",
+  "description": "Magazine offset on matte coated stock.",
+  "version": "1.0",
+  "conformance": "pdfx4",
+  "workflow": "CMYK",
+  "checks": {
+    "enabled": [
+      "LPDF_*",
+      "PDFX4-*"
+    ],
+    "disabled": [
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
+    ],
+    "severity_overrides": {}
+  },
+  "thresholds": {
+    "min_dpi": 300.0,
+    "max_dpi": 600.0,
+    "tac_limit": 290.0,
+    "min_bleed_mm": 3.0,
+    "hairline_threshold": 0.25,
+    "small_text_threshold": 6.0,
+    "very_small_text_threshold": 4.0,
+    "safety_margin_mm": 3.0,
+    "max_file_size_mb": 500.0,
+    "min_pdf_version": "1.6"
+  }
+}

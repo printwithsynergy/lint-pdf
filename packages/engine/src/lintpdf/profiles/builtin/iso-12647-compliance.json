@@ -5,8 +5,14 @@
   "conformance": "pdfx4",
   "workflow": "CMYK",
   "checks": {
-    "enabled": ["LPDF_*", "PDFX4-*"],
-    "disabled": [],
+    "enabled": [
+      "LPDF_*",
+      "PDFX4-*"
+    ],
+    "disabled": [
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
+    ],
     "severity_overrides": {}
   },
   "thresholds": {
@@ -14,6 +20,7 @@
     "max_dpi": 600.0,
     "tac_limit": 330.0,
     "target_output_condition": "fogra39_coated",
-    "gamut_check": true
+    "gamut_check": true,
+    "min_pdf_version": "1.4"
   }
 }

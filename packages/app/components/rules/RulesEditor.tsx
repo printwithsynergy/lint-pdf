@@ -23,6 +23,7 @@
  */
 
 import { useMemo, useState } from "react";
+import { ThresholdsPanel } from "./ThresholdsPanel";
 import {
   catalog,
   cloneProfile,
@@ -141,6 +142,11 @@ export function RulesEditor({
 
       {tab === "rules" && (
         <div className="p-4">
+          <ThresholdsPanel
+            profile={profile}
+            onChange={onChange}
+            readOnly={readOnly}
+          />
           <input
             type="search"
             placeholder="Filter checks by id, name, or description..."

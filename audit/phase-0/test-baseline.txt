@@ -1,0 +1,81 @@
+PHASE 0 TEST-SUITE BASELINE — 2026-04-24
+
+Environment
+-----------
+- Python venv: packages/engine/.venv (uv-managed)
+- Postgres: DOWN (not running locally)
+- Redis: DOWN (not running locally)
+- ClamAV: DOWN
+- Total tests collected: 2,166
+
+Two runs attempted with all tests; both hung indefinitely at ~33% completion
+(killed at 22min wall-clock, 0:42 CPU each time). One specific test in the
+service-dependent dirs is opening a real DB/Redis connection without timeout
+and blocks forever when the service is absent.
+
+Working subset run (deps-free)
+------------------------------
+Command:
+    uv run pytest -m "not slow and not corpus" --tb=no -q \
+        --ignore=tests/api \
+        --ignore=tests/queue \
+        --ignore=tests/webhooks \
+        --ignore=tests/integrations \
+        --ignore=tests/billing \
+        --ignore=tests/email \
+        --ignore=tests/tenants \
+        --ignore=tests/test_worker.py \
+        --ignore=tests/test_email_service.py \
+        --ignore=tests/test_pantone_cache.py
+
+Result: 4 failed, 1387 passed, 6 warnings in 25.98s
+        ~64 % of the 2,166 collected tests covered
+
+Failures
+--------
+1. tests/ai/test_ai_routes.py::TestAICreditRoutes::test_topup_credits
+   Likely needs Postgres (test_ai_routes is a route-level integration test).
+   Re-classify: service-dependent, ignore alongside tests/api/.
+
+2-4. tests/overrides/test_resolver.py::TestEnforceReportEntitlements
+     - test_none_passes
+     - test_allowed_formats_pass
+     - test_disallowed_format_raises_entitlement_denied
+
+   Real bug: test helper `_entitlements()` at line 179 instantiates
+   TenantEntitlements with 3 fewer required args than the model now has
+   (allowed_preflight_sources, capability_fillin_enabled,
+   annotations_enabled). Production model schema drifted; helper not updated.
+   Pre-existing tech debt — present on main, not introduced by audit work.
+   Phase-1.A fix: amend the helper to include the new defaults.
+
+Cached failures resolved
+------------------------
+The .pytest_cache/lastfailed file (dated 2026-04-23 21:01 UTC) listed:
+    tests/analyzers/test_large_k_pixel_gate.py::test_dark_fraction_fully_dark_render
+    tests/reports/test_densitometer_spots.py::TestDensitometerSpotsOnCacheHit
+    tests/reports/test_densitometer_spots.py::TestCmykOnlyFileSkipsSpotWork
+
+All three pass in this run (analyzers + reports dirs were both included). The
+cached failures were stale from an in-progress branch state.
+
+Coverage gaps requiring service sidecars
+----------------------------------------
+The 779 unrun tests need the docker-compose.yml sidecar stack
+(packages/engine/docker-compose.yml: postgres + redis + clamav). To capture a
+full baseline, run:
+
+    cd packages/engine && docker-compose up -d postgres redis
+    uv run pytest -m "not slow and not corpus" -q
+
+Or, in CI (when configured), point at managed instances. This audit cannot
+spin up Docker sidecars in the available environment.
+
+Bottom line for Phase 1
+-----------------------
+- Deterministic + AI analyzer test paths are GREEN (the actual check-emission
+  surface this audit cares about).
+- Service-integration tests are uncovered locally; the docker-compose stack
+  is required for a full baseline.
+- One real pre-existing failure (overrides/test_resolver.py helper drift) is
+  a Phase-1.A item to clean up alongside the LPDF_HAIR_* registry cleanup.

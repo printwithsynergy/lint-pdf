@@ -107,6 +107,121 @@ class ThresholdConfig(BaseModel):
         default=0.7, ge=0, le=1.0, description="Minimum barcode symbol contrast (0.0-1.0)."
     )
 
+    # PDF version range — T1-CMP02 / LPDF_DOC_009
+    min_pdf_version: str | None = Field(
+        default=None,
+        description=(
+            "Lowest acceptable PDF header version (e.g. '1.6' for PDF/X-4). "
+            "Absent means no lower bound. Fires LPDF_DOC_009 below this."
+        ),
+    )
+    max_pdf_version: str | None = Field(
+        default=None,
+        description=(
+            "Highest acceptable PDF header version (e.g. '1.4' for PDF/X-1a-2003). "
+            "Absent means no upper bound. Fires LPDF_DOC_009 above this."
+        ),
+    )
+
+    # Expected page size — T1-STR04 / LPDF_BOX_010. Compare the page's
+    # effective trim/media dimensions against the tenant's declared
+    # target product size. Either both dims must be set together, or
+    # the check is disabled. Tolerance defaults to 0.5 mm.
+    expected_page_width_mm: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Expected page width in mm (measured against effective_width_mm, "
+            "which respects rotation and UserUnit). Pair with "
+            "expected_page_height_mm. Absent → LPDF_BOX_010 disabled."
+        ),
+    )
+    expected_page_height_mm: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Expected page height in mm. Pair with expected_page_width_mm. "
+            "Absent → LPDF_BOX_010 disabled."
+        ),
+    )
+    expected_page_size_tolerance_mm: float = Field(
+        default=0.5,
+        ge=0,
+        description=(
+            "Tolerance in mm when comparing actual vs expected page size. "
+            "0.5mm matches PitStop's default."
+        ),
+    )
+
+    # T3-D04 — maximum acceptable bleed past the dieline polygon. When
+    # absent the LPDF_DIE_EXCESSIVE_BLEED check silently no-ops.
+    max_bleed_mm: float | None = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Maximum bleed extent past the dieline polygon in mm. Artwork "
+            "extending further than this triggers LPDF_DIE_EXCESSIVE_BLEED. "
+            "Typical range: 5-15mm. Absent disables the check."
+        ),
+    )
+
+    # T3-D08 — minimum dieline feature size + segment length thresholds
+    # (cutter-resolution gate).
+    min_dieline_feature_mm: float = Field(
+        default=1.0,
+        ge=0,
+        description=(
+            "Minimum dieline polygon width / height in mm. Polygons below "
+            "this fire LPDF_DIE_TOO_SMALL (cutter blade can't track tiny "
+            "features cleanly). Default 1.0mm matches cardstock norms."
+        ),
+    )
+    min_dieline_segment_length_mm: float = Field(
+        default=1.0,
+        ge=0,
+        description=(
+            "Minimum dieline polygon perimeter in mm. Polygons below this "
+            "fire LPDF_DIE_TOO_SMALL. Default 1.0mm matches cardstock "
+            "norms."
+        ),
+    )
+
+    # T3-D09 — minimum white-underprint coverage of the dieline area.
+    # 0 disables the check; default 0.95 = 95% coverage required.
+    white_coverage_min: float = Field(
+        default=0.95,
+        ge=0,
+        le=1.0,
+        description=(
+            "Minimum fraction (0-1) of the dieline area that must be "
+            "covered by White / OpaqueWhite spots. Below this triggers "
+            "LPDF_DIE_WHITE_GAP. 0 disables the check."
+        ),
+    )
+
+    # T3-D07 — minimum clearance from text bbox to fold/crease line.
+    # 0 disables the check; default 3.0mm.
+    text_to_fold_distance_mm: float = Field(
+        default=3.0,
+        ge=0,
+        description=(
+            "Minimum clearance (mm) from any text bbox to a fold / "
+            "crease line. Below this triggers LPDF_TEXT_NEAR_FOLD. "
+            "0 disables the check."
+        ),
+    )
+
+    # T3-D12 — target substrate. Enables substrate-aware TAC advisory.
+    substrate: str | None = Field(
+        default=None,
+        description=(
+            "Target substrate for this profile. One of: uncoated_offset, "
+            "coated_offset, newsprint, digital, flexo, gravure, "
+            "large_format. Absent → LPDF_INK_SUBSTRATE advisory is "
+            "disabled."
+        ),
+    )
+
     # Color management thresholds
     target_output_condition: str = Field(
         default="",

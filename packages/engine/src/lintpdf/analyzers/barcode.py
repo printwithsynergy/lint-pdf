@@ -421,6 +421,38 @@ class BarcodeAnalyzer(BaseAnalyzer):
             if quiet_zone_finding is not None:
                 findings.append(quiet_zone_finding)
 
+            # T5-N06 / T5-N08 — content validators (GS1 AI / UDI / EU DPP).
+            if decoded:
+                payload = str(decode_result.get("data", ""))
+                if payload:
+                    from lintpdf.analyzers.barcode_validation import (
+                        validate_eu_dpp_payload,
+                        validate_gs1_ai_payload,
+                        validate_udi_payload,
+                    )
+
+                    findings.extend(
+                        validate_gs1_ai_payload(
+                            payload,
+                            page_num=candidate.page_num,
+                            bbox=candidate.bbox,
+                        )
+                    )
+                    findings.extend(
+                        validate_udi_payload(
+                            payload,
+                            page_num=candidate.page_num,
+                            bbox=candidate.bbox,
+                        )
+                    )
+                    findings.extend(
+                        validate_eu_dpp_payload(
+                            payload,
+                            page_num=candidate.page_num,
+                            bbox=candidate.bbox,
+                        )
+                    )
+
         return findings
 
     @staticmethod

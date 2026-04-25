@@ -41,7 +41,7 @@ router = APIRouter(prefix="/api/v1/admin/health", tags=["admin-health"])
 # ``routes/admin.py`` and depends on a lot of state — we pull it
 # via module attribute access at request time to avoid a circular
 # import at module load.
-def _verify_admin_key_dep():
+def _verify_admin_key_dep() -> Any:
     from lintpdf.api.routes import admin as _admin
 
     return Depends(_admin._verify_admin_key)

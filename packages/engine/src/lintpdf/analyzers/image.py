@@ -27,6 +27,9 @@ Check IDs:
     LPDF_IMG_015 — Image is significantly rotated (non-90-degree rotation)
     LPDF_IMG_016 — Image is flipped (mirrored)
     LPDF_IMG_017 — Image precise scaling percentage (extreme scaling detected)
+    LPDF_IMG_018 — Dangling image XObject reference (broken)
+    LPDF_IMG_019 — Image XObject missing /Subtype
+    LPDF_IMG_020 — Image XObject has wrong /Subtype
 """
 
 from __future__ import annotations
@@ -113,6 +116,9 @@ class ImageAnalyzer(BaseAnalyzer):
 
         # LPDF_IMG_013: Alternate images in page XObject resources
         findings.extend(self._check_alternates_in_resources(document))
+
+        # LPDF_IMG_018: Broken / missing image XObject references
+        findings.extend(self._check_broken_image_refs(document))
 
         return findings
 
@@ -614,6 +620,82 @@ class ImageAnalyzer(BaseAnalyzer):
                         )
                     )
                     return findings  # One finding is enough
+        return findings
+
+    @staticmethod
+    def _check_broken_image_refs(document: SemanticDocument) -> list[Finding]:
+        """Check for broken XObject references.
+
+        Walks every page's /Resources /XObject dictionary and flags entries
+        whose indirect reference didn't resolve to a legitimate Image or
+        Form XObject. Emits one of three distinct check IDs so tenants can
+        tune severity per failure class:
+
+          - LPDF_IMG_018 — dangling indirect ref (xref slot absent, null
+            object, or pikepdf cycle-detection sentinel).
+          - LPDF_IMG_019 — entry is a dict with no /Subtype key.
+          - LPDF_IMG_020 — entry is a dict with /Subtype that's neither
+            /Image nor /Form (e.g., deprecated /PS, vendor-invented
+            subtype), or an entry that isn't a dict at all.
+        """
+        findings: list[Finding] = []
+        for page in document.pages:
+            xobjects = page.resources.get("/XObject")
+            if not isinstance(xobjects, dict):
+                continue
+            for xobj_name, xobj_entry in xobjects.items():
+                inspection_id: str | None = None
+                failure_mode: str | None = None
+                resolved_subtype: str | None = None
+
+                if xobj_entry is None:
+                    inspection_id = "LPDF_IMG_018"
+                    failure_mode = "dangling_indirect_ref"
+                elif isinstance(xobj_entry, str):
+                    # _pikepdf_to_python returns "<shared ref: N N R>" on
+                    # cycle detection or str(obj) at depth-cap — neither
+                    # is a usable XObject for the RIP.
+                    inspection_id = "LPDF_IMG_018"
+                    failure_mode = "dangling_indirect_ref"
+                elif isinstance(xobj_entry, dict):
+                    subtype = xobj_entry.get("/Subtype")
+                    if subtype is None:
+                        inspection_id = "LPDF_IMG_019"
+                        failure_mode = "missing_subtype"
+                    elif subtype not in ("/Image", "/Form"):
+                        inspection_id = "LPDF_IMG_020"
+                        failure_mode = "wrong_subtype"
+                        resolved_subtype = str(subtype)
+                else:
+                    inspection_id = "LPDF_IMG_020"
+                    failure_mode = "wrong_subtype"
+                    resolved_subtype = type(xobj_entry).__name__
+
+                if inspection_id is None:
+                    continue
+
+                message = (
+                    f"Image XObject '{xobj_name}' on page {page.page_num} "
+                    f"has a broken reference ({failure_mode}"
+                    + (f": {resolved_subtype}" if resolved_subtype else "")
+                    + ")"
+                )
+                findings.append(
+                    Finding(
+                        inspection_id=inspection_id,
+                        severity=Severity.ERROR,
+                        message=message,
+                        page_num=page.page_num,
+                        details={
+                            "resource_name": xobj_name,
+                            "failure_mode": failure_mode,
+                            "resolved_subtype": resolved_subtype,
+                        },
+                        object_id=xobj_name,
+                        object_type="xobject",
+                        iso_clause="ISO 32000-2:2020 8.10 / 7.3.10",
+                    )
+                )
         return findings
 
     @staticmethod

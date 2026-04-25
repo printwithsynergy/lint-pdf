@@ -262,6 +262,28 @@ class PreflightOrchestrator:
             validator = PdfAValidator(level=_level_map[self._plan.conformance])
             raw_findings.extend(validator.validate(document, events, raw_findings))
 
+        # Step 5b: veraPDF-backed PDF/X / PDF/A / PDF/UA conformance
+        # (T1-CMP01, T4-A01, T4-A02). Silent no-op when the sidecar
+        # isn't configured or isn't reachable.
+        from lintpdf.conformance.verapdf_runner import run_verapdf_checks
+
+        ua_enabled = any(
+            p.startswith("LPDF_UA_") or p == "LPDF_UA_*" for p in self._plan.checks.enabled
+        ) and not any(p == "LPDF_UA_*" or p == "LPDF_UA_CONF" for p in self._plan.checks.disabled)
+        raw_findings.extend(
+            run_verapdf_checks(
+                pdf_bytes,
+                conformance=self._plan.conformance,
+                enabled_ua=ua_enabled,
+            )
+        )
+
+        # Step 5c: PDF/VT structural check (T5-N01). Silent on PDFs
+        # that don't declare PDF/VT in XMP.
+        from lintpdf.conformance.pdfvt import check_pdfvt_structure
+
+        raw_findings.extend(check_pdfvt_structure(document))
+
         # Step 6: Run AI analyzers (if AI enabled in profile)
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
         raw_findings.extend(ai_findings)
@@ -539,15 +561,25 @@ class PreflightOrchestrator:
                 tac_limit=t.tac_limit,
                 brand_palette_present=brand_palette_present,
             ),
-            FontAnalyzer(),
-            PageGeometryAnalyzer(min_bleed_pts=bleed_pts, safety_margin_pts=safety_pts),
+            FontAnalyzer(pdf_bytes=self._pdf_bytes),
+            PageGeometryAnalyzer(
+                min_bleed_pts=bleed_pts,
+                safety_margin_pts=safety_pts,
+                expected_page_width_mm=t.expected_page_width_mm,
+                expected_page_height_mm=t.expected_page_height_mm,
+                expected_page_size_tolerance_mm=t.expected_page_size_tolerance_mm,
+            ),
             HairlineAnalyzer(
                 hairline_threshold=t.hairline_threshold,
                 small_text_threshold=t.small_text_threshold,
             ),
             TransparencyAnalyzer(),
             OverprintAnalyzer(),
-            DocumentAnalyzer(),
+            DocumentAnalyzer(
+                min_pdf_version=t.min_pdf_version,
+                max_pdf_version=t.max_pdf_version,
+                profile_name=self._plan.name,
+            ),
             StructureAnalyzer(),
             AnnotationAnalyzer(),
             MetadataAnalyzer(),
@@ -562,7 +594,7 @@ class PreflightOrchestrator:
             # Color management analyzers
             IccProfileAnalyzer(),
             SpotColorAnalyzer(custom_pantone_data=self._custom_pantone_overrides),
-            InkCoverageAnalyzer(tac_limit=t.tac_limit),
+            InkCoverageAnalyzer(tac_limit=t.tac_limit, substrate=t.substrate),
             AdvancedColorAnalyzer(
                 rich_black_c=t.rich_black_c,
                 rich_black_m=t.rich_black_m,

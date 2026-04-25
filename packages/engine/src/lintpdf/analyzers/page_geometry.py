@@ -17,6 +17,7 @@ Check IDs:
     LPDF_BOX_007 — UserUnit scaling detected
     LPDF_BOX_008 — Non-standard page orientation
     LPDF_BOX_009 — Inconsistent page sizes
+    LPDF_BOX_010 — Page size doesn't match expected product dimensions (T1-STR04)
 """
 
 from __future__ import annotations
@@ -142,9 +143,15 @@ class PageGeometryAnalyzer(BaseAnalyzer):
         self,
         min_bleed_pts: float = DEFAULT_MIN_BLEED_PTS,
         safety_margin_pts: float = DEFAULT_MIN_BLEED_PTS,
+        expected_page_width_mm: float | None = None,
+        expected_page_height_mm: float | None = None,
+        expected_page_size_tolerance_mm: float = 0.5,
     ) -> None:
         self.min_bleed_pts = min_bleed_pts
         self.safety_margin_pts = safety_margin_pts
+        self.expected_page_width_mm = expected_page_width_mm
+        self.expected_page_height_mm = expected_page_height_mm
+        self.expected_page_size_tolerance_mm = expected_page_size_tolerance_mm
 
     def analyze(
         self,
@@ -207,6 +214,9 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                         details={"unique_sizes": unique_sizes},
                     )
                 )
+
+        # LPDF_BOX_010: Page size doesn't match expected (T1-STR04)
+        findings.extend(self._check_expected_page_size(document))
 
         # LPDF_BOX_005 / LPDF_BOX_006: Content proximity to trim/bleed edges
         # Build page lookup for trim/bleed boxes
@@ -289,6 +299,72 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                     )
                 )
 
+        return findings
+
+    def _check_expected_page_size(self, document: SemanticDocument) -> list[Finding]:
+        """LPDF_BOX_010 — page dimensions don't match expected (T1-STR04).
+
+        Gated: fires only when BOTH ``expected_page_width_mm`` and
+        ``expected_page_height_mm`` are set on the profile. Silently
+        no-ops otherwise, so profiles that don't declare an expected
+        size never emit this finding.
+
+        Compares the page's trim-box dimensions (or media-box fallback)
+        in mm, accounting for rotation and UserUnit via the existing
+        ``effective_width_mm`` / ``effective_height_mm`` properties.
+        Tolerance defaults to 0.5mm — PitStop-compatible.
+
+        Both orientations are accepted: (expected_width, expected_height)
+        and (expected_height, expected_width). A tenant expecting a
+        210x297 A4 portrait page shouldn't get a finding on a 297x210
+        A4 landscape page of the same product.
+        """
+        if self.expected_page_width_mm is None or self.expected_page_height_mm is None:
+            return []
+
+        tol = self.expected_page_size_tolerance_mm
+        exp_w = self.expected_page_width_mm
+        exp_h = self.expected_page_height_mm
+
+        findings: list[Finding] = []
+        for page in document.pages:
+            # Prefer trim box dimensions for product-size check — the
+            # media box includes bleed + slug and isn't the product.
+            ref = page.trim_box or page.media_box
+            actual_w_pts = ref.x1 - ref.x0
+            actual_h_pts = ref.y1 - ref.y0
+            # Rotation-aware: rotated pages swap width/height.
+            if page.rotate in (90, 270):
+                actual_w_pts, actual_h_pts = actual_h_pts, actual_w_pts
+            actual_w_mm = actual_w_pts * page.user_unit * 0.352778
+            actual_h_mm = actual_h_pts * page.user_unit * 0.352778
+
+            # Accept either orientation (portrait vs landscape of same product).
+            matches_portrait = abs(actual_w_mm - exp_w) <= tol and abs(actual_h_mm - exp_h) <= tol
+            matches_landscape = abs(actual_w_mm - exp_h) <= tol and abs(actual_h_mm - exp_w) <= tol
+            if matches_portrait or matches_landscape:
+                continue
+
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_BOX_010",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Page {page.page_num} is {actual_w_mm:.2f}x{actual_h_mm:.2f}mm, "
+                        f"expected {exp_w:.2f}x{exp_h:.2f}mm "
+                        f"(+/- {tol}mm tolerance)"
+                    ),
+                    page_num=page.page_num,
+                    details={
+                        "actual_width_mm": round(actual_w_mm, 3),
+                        "actual_height_mm": round(actual_h_mm, 3),
+                        "expected_width_mm": exp_w,
+                        "expected_height_mm": exp_h,
+                        "tolerance_mm": tol,
+                    },
+                    iso_clause="ISO 15930-7:2010 6.2.4",
+                )
+            )
         return findings
 
     def _check_page(self, page: SemanticPage) -> list[Finding]:

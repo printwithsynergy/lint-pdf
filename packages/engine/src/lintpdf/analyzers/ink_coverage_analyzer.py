@@ -7,6 +7,7 @@ Check IDs:
     LPDF_INK_001 — TAC heatmap data (per-page CMYK TAC statistics)
     LPDF_INK_002 — Per-separation ink coverage
     LPDF_INK_003 — Ink channel count validation
+    LPDF_INK_SUBSTRATE — Substrate-aware TAC advisory (T3-D12)
 """
 
 from __future__ import annotations
@@ -21,6 +22,31 @@ if TYPE_CHECKING:
     from lintpdf.semantic.model import SemanticDocument
 
 
+# T3-D12 — substrate → recommended TAC limit (%).
+# Sourced from common trade reference values (G7, FOGRA39/51, SNAP).
+_SUBSTRATE_TAC_LIMITS: dict[str, float] = {
+    "uncoated_offset": 280.0,
+    "coated_offset": 300.0,
+    "newsprint": 240.0,
+    "digital": 320.0,
+    "flexo": 260.0,
+    "gravure": 300.0,
+    "large_format": 280.0,
+}
+
+
+def get_substrate_tac_limit(substrate: str | None) -> float | None:
+    """Return the recommended TAC limit for ``substrate`` or ``None``.
+
+    Lookup is case-insensitive; unknown substrates return ``None`` so
+    callers silently skip the substrate advisory rather than emit a
+    nonsense finding.
+    """
+    if not substrate:
+        return None
+    return _SUBSTRATE_TAC_LIMITS.get(substrate.lower().strip())
+
+
 class InkCoverageAnalyzer(BaseAnalyzer):
     """Analyzer for ink coverage statistics and separation tracking.
 
@@ -29,10 +55,15 @@ class InkCoverageAnalyzer(BaseAnalyzer):
 
     Args:
         tac_limit: Maximum expected TAC percentage (default 300).
+        substrate: Target substrate (T3-D12). When set, emits
+            LPDF_INK_SUBSTRATE advisory when observed TAC exceeds the
+            substrate-appropriate limit.
     """
 
-    def __init__(self, tac_limit: float = 300.0) -> None:
+    def __init__(self, tac_limit: float = 300.0, substrate: str | None = None) -> None:
         self.tac_limit = tac_limit
+        # T3-D12 — target substrate for auto-TAC advisory.
+        self.substrate = substrate
 
     def analyze(  # skipcq: PY-R1000
         self,
@@ -218,6 +249,41 @@ class InkCoverageAnalyzer(BaseAnalyzer):
                     object_type="path",
                 )
             )
+
+        # LPDF_INK_SUBSTRATE (T3-D12) — substrate-aware TAC advisory.
+        # Fires once per document when a substrate is declared on the
+        # profile AND observed max TAC exceeds the substrate-specific
+        # limit. Runs alongside LPDF_INK_001; tenants opt in via the
+        # `substrate` profile field.
+        substrate_limit = get_substrate_tac_limit(self.substrate)
+        if substrate_limit is not None and page_tac_data:
+            # Find the worst page by max TAC.
+            worst_page_num = max(
+                page_tac_data,
+                key=lambda pn: max(e["tac"] for e in page_tac_data[pn]),
+            )
+            worst_max_tac = max(e["tac"] for e in page_tac_data[worst_page_num])
+            if worst_max_tac > substrate_limit:
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_INK_SUBSTRATE",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Observed max TAC {worst_max_tac:.0f}% exceeds "
+                            f"{self.substrate} substrate limit "
+                            f"({substrate_limit:.0f}%) on page {worst_page_num}"
+                        ),
+                        page_num=worst_page_num,
+                        details={
+                            "substrate": self.substrate,
+                            "substrate_tac_limit": substrate_limit,
+                            "profile_tac_limit": self.tac_limit,
+                            "observed_max_tac": round(worst_max_tac, 2),
+                            "worst_page_num": worst_page_num,
+                        },
+                        iso_clause="ISO 12647 / G7 substrate TAC",
+                    )
+                )
 
         # LPDF_INK_002: Per-separation ink coverage
         for sep_name in sorted(separation_stats):
