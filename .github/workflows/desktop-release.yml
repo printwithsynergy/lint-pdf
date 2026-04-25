@@ -257,9 +257,17 @@ jobs:
           # Map files to logical platform names.
           platforms='{}'
           while read -r line; do
-            # Each line looks like:  2026-04-16 12:34:56    1234567 desktop-releases/0.4.2/macos/foo.dmg
-            key="${line##* }"
+            # ``aws s3 ls --recursive`` rows look like:
+            #   2026-04-16 12:34:56  1234567 desktop-releases/0.4.2/macos/LintPDF Hot Folders_0.4.2.dmg
+            # The key (4th field onwards) MAY contain spaces — Tauri's
+            # bundle filenames embed the productName, and ours is
+            # "LintPDF Hot Folders". ``${line##* }`` would chop at the
+            # last space in the filename and return only the trailing
+            # token (e.g. "Folders_0.4.2.dmg"), which then fails the
+            # subsequent HeadObject call. Use awk to drop fields 1-3
+            # and keep everything after.
             size="$(awk '{print $3}' <<<"$line")"
+            key="$(awk '{$1=""; $2=""; $3=""; sub(/^ +/, ""); print}' <<<"$line")"
             [[ -z "$key" || "$key" == */manifest.json ]] && continue
             filename="${key##*/}"
             subdir_and_file="${key#${PREFIX}}"
