@@ -22,7 +22,7 @@
  *   customer actually changed before saving.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ThresholdsPanel } from "./ThresholdsPanel";
 import {
   catalog,
@@ -53,6 +53,72 @@ const SEVERITY_COLORS: Record<Severity, string> = {
   off: "text-slate-500 bg-slate-100 border-slate-200",
 };
 
+// Two-level grouping: each entry rolls up several catalog categories
+// into a single header strip so the editor opens with ~7 sections
+// instead of 47. AI checks are computed at render time so any new
+// "ai:*" catalog category lands in the AI bucket automatically.
+interface SuperGroupDef {
+  id: string;
+  label: string;
+  categoryIds: readonly string[];
+}
+
+const SUPER_GROUPS: readonly SuperGroupDef[] = [
+  {
+    id: "color",
+    label: "Colour & inks",
+    categoryIds: [
+      "color",
+      "color_management",
+      "ink_coverage",
+      "spot_colors",
+      "overprint",
+      "transparency",
+    ],
+  },
+  { id: "fonts", label: "Fonts & text", categoryIds: ["fonts", "text"] },
+  {
+    id: "imagery",
+    label: "Imagery & vectors",
+    categoryIds: ["image", "hairlines", "strokes", "paths"],
+  },
+  {
+    id: "layout",
+    label: "Layout & structure",
+    categoryIds: [
+      "page_geometry",
+      "document",
+      "structure",
+      "metadata",
+      "annotations",
+      "accessibility",
+    ],
+  },
+  {
+    id: "print",
+    label: "Print production",
+    categoryIds: ["barcodes", "packaging", "advanced", "standards"],
+  },
+  { id: "ai", label: "AI checks", categoryIds: [] },
+  { id: "other", label: "Other", categoryIds: ["other"] },
+];
+
+const STORAGE_KEY_SUPER = "lintpdf.rulesEditor.collapsedSuperGroups";
+const STORAGE_KEY_CATEGORY = "lintpdf.rulesEditor.collapsedCategories";
+
+function loadStoredSet(key: string): Set<string> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return null;
+    return new Set(parsed.filter((v): v is string => typeof v === "string"));
+  } catch {
+    return null;
+  }
+}
+
 export interface RulesEditorProps {
   profile: Profile;
   baseline?: Profile;
@@ -69,8 +135,76 @@ export function RulesEditor({
   const [tab, setTab] = useState<Tab>("rules");
   const [searchQuery, setSearchQuery] = useState("");
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(
-    new Set(),
+    () => loadStoredSet(STORAGE_KEY_CATEGORY) ?? new Set(),
   );
+  // Resolved super-group list with the AI bucket populated from the
+  // catalog. Memoised so the same Set is reused across renders.
+  const superGroups = useMemo(() => {
+    const knownIds = new Set<string>();
+    const groups: Array<{ id: string; label: string; categories: CheckCategory[] }> = [];
+    const catById = new Map(catalog.categories.map((c) => [c.id, c]));
+    for (const def of SUPER_GROUPS) {
+      const ids =
+        def.id === "ai"
+          ? catalog.categories.filter((c) => c.id.startsWith("ai:")).map((c) => c.id)
+          : def.categoryIds;
+      const categories: CheckCategory[] = [];
+      for (const id of ids) {
+        const cat = catById.get(id);
+        if (cat) {
+          categories.push(cat);
+          knownIds.add(id);
+        }
+      }
+      groups.push({ id: def.id, label: def.label, categories });
+    }
+    // Anything not assigned by SUPER_GROUPS lands in "Other" so a new
+    // catalog category added upstream still shows up in the editor.
+    const other = groups.find((g) => g.id === "other");
+    if (other) {
+      for (const cat of catalog.categories) {
+        if (!knownIds.has(cat.id) && !other.categories.find((c) => c.id === cat.id)) {
+          other.categories.push(cat);
+        }
+      }
+    }
+    return groups;
+  }, []);
+  const [collapsedSuperGroups, setCollapsedSuperGroups] = useState<Set<string>>(
+    () => {
+      const stored = loadStoredSet(STORAGE_KEY_SUPER);
+      if (stored) return stored;
+      // First-ever load: collapse every super-group except the first
+      // so the editor opens compact instead of as a 421-row wall.
+      const initial = new Set<string>();
+      SUPER_GROUPS.slice(1).forEach((g) => initial.add(g.id));
+      return initial;
+    },
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY_CATEGORY,
+        JSON.stringify(Array.from(collapsedCategories)),
+      );
+    } catch {
+      // localStorage unavailable (private mode quota etc.) — ignore.
+    }
+  }, [collapsedCategories]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        STORAGE_KEY_SUPER,
+        JSON.stringify(Array.from(collapsedSuperGroups)),
+      );
+    } catch {
+      // ignore
+    }
+  }, [collapsedSuperGroups]);
 
   const effectiveBaseline = baseline ?? DEFAULT_BASELINE;
 
@@ -92,6 +226,26 @@ export function RulesEditor({
       return next;
     });
   }
+
+  function toggleSuperGroup(id: string) {
+    setCollapsedSuperGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function expandAll() {
+    setCollapsedSuperGroups(new Set());
+    setCollapsedCategories(new Set());
+  }
+
+  function collapseAll() {
+    setCollapsedSuperGroups(new Set(superGroups.map((g) => g.id)));
+  }
+
+  const searchActive = searchQuery.trim().length > 0;
 
   return (
     <div className="mt-4 rounded-lg border">
@@ -120,22 +274,40 @@ export function RulesEditor({
             </button>
           ))}
         </div>
-        {tab === "rules" && !readOnly && (
+        {tab === "rules" && (
           <div className="flex gap-2">
             <button
-              onClick={() => onChange(demoteAllErrors(profile))}
+              onClick={expandAll}
               className="rounded border px-2 py-1 text-xs hover:bg-muted"
-              title="Demote every currently-active error override to advisory."
+              title="Open every super-group and category."
             >
-              Demote all errors
+              Expand all
             </button>
             <button
-              onClick={() => onChange(resetAll(profile))}
-              className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
-              title="Drop every check override so the profile matches the catalog defaults."
+              onClick={collapseAll}
+              className="rounded border px-2 py-1 text-xs hover:bg-muted"
+              title="Collapse every super-group."
             >
-              Reset all
+              Collapse all
             </button>
+            {!readOnly && (
+              <>
+                <button
+                  onClick={() => onChange(demoteAllErrors(profile))}
+                  className="rounded border px-2 py-1 text-xs hover:bg-muted"
+                  title="Demote every currently-active error override to advisory."
+                >
+                  Demote all errors
+                </button>
+                <button
+                  onClick={() => onChange(resetAll(profile))}
+                  className="rounded border border-destructive/30 px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                  title="Drop every check override so the profile matches the catalog defaults."
+                >
+                  Reset all
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -155,27 +327,72 @@ export function RulesEditor({
             className="mb-3 w-full rounded-md border px-3 py-1.5 text-sm"
           />
           <div className="space-y-3">
-            {catalog.categories.map((cat) => (
-              <CategoryBlock
-                key={cat.id}
-                category={cat}
-                profile={profile}
-                readOnly={readOnly}
-                searchQuery={searchQuery}
-                collapsed={collapsedCategories.has(cat.id)}
-                changedCheckIds={diffByCheckId}
-                onToggleCollapse={() => toggleCategory(cat.id)}
-                onCheckSeverity={(checkId, severity) =>
-                  onChange(setCheckSeverity(profile, checkId, severity))
-                }
-                onCheckEnabled={(checkId, enabled) =>
-                  onChange(setCheckEnabled(profile, checkId, enabled))
-                }
-                onCheckReset={(checkId) => onChange(resetCheck(profile, checkId))}
-                onDisableCategory={() => onChange(disableCategory(profile, cat.id))}
-                onResetCategory={() => onChange(resetCategory(profile, cat.id))}
-              />
-            ))}
+            {superGroups.map((group) => {
+              if (group.categories.length === 0) return null;
+              if (searchActive) {
+                const q = searchQuery.trim().toLowerCase();
+                const anyMatch = group.categories.some((c) =>
+                  c.checks.some(
+                    (ck) =>
+                      ck.id.toLowerCase().includes(q) ||
+                      ck.name.toLowerCase().includes(q) ||
+                      ck.description.toLowerCase().includes(q),
+                  ),
+                );
+                if (!anyMatch) return null;
+              }
+              const collapsed =
+                !searchActive && collapsedSuperGroups.has(group.id);
+              const totalChecks = group.categories.reduce(
+                (n, c) => n + c.checks.length,
+                0,
+              );
+              const changedCount = group.categories.reduce(
+                (n, c) =>
+                  n + c.checks.filter((ck) => diffByCheckId.has(ck.id)).length,
+                0,
+              );
+              return (
+                <SuperGroupBlock
+                  key={group.id}
+                  label={group.label}
+                  collapsed={collapsed}
+                  totalChecks={totalChecks}
+                  changedCount={changedCount}
+                  onToggleCollapse={() => toggleSuperGroup(group.id)}
+                >
+                  {group.categories.map((cat) => (
+                    <CategoryBlock
+                      key={cat.id}
+                      category={cat}
+                      profile={profile}
+                      readOnly={readOnly}
+                      searchQuery={searchQuery}
+                      collapsed={
+                        !searchActive && collapsedCategories.has(cat.id)
+                      }
+                      changedCheckIds={diffByCheckId}
+                      onToggleCollapse={() => toggleCategory(cat.id)}
+                      onCheckSeverity={(checkId, severity) =>
+                        onChange(setCheckSeverity(profile, checkId, severity))
+                      }
+                      onCheckEnabled={(checkId, enabled) =>
+                        onChange(setCheckEnabled(profile, checkId, enabled))
+                      }
+                      onCheckReset={(checkId) =>
+                        onChange(resetCheck(profile, checkId))
+                      }
+                      onDisableCategory={() =>
+                        onChange(disableCategory(profile, cat.id))
+                      }
+                      onResetCategory={() =>
+                        onChange(resetCategory(profile, cat.id))
+                      }
+                    />
+                  ))}
+                </SuperGroupBlock>
+              );
+            })}
           </div>
         </div>
       )}
@@ -185,6 +402,45 @@ export function RulesEditor({
       )}
 
       {tab === "diff" && <DiffTab rows={diffRows} />}
+    </div>
+  );
+}
+
+// ── Super-group block ──────────────────────────────────────
+
+function SuperGroupBlock({
+  label,
+  collapsed,
+  totalChecks,
+  changedCount,
+  onToggleCollapse,
+  children,
+}: {
+  label: string;
+  collapsed: boolean;
+  totalChecks: number;
+  changedCount: number;
+  onToggleCollapse: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-md border border-slate-300 bg-slate-50/40">
+      <button
+        onClick={onToggleCollapse}
+        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-slate-100"
+      >
+        <span className="text-xs text-muted-foreground">
+          {collapsed ? "▸" : "▾"}
+        </span>
+        <span className="text-sm font-semibold uppercase tracking-wide text-slate-700">
+          {label}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {totalChecks} check{totalChecks === 1 ? "" : "s"}
+          {changedCount > 0 && ` · ${changedCount} changed`}
+        </span>
+      </button>
+      {!collapsed && <div className="space-y-3 border-t bg-background p-3">{children}</div>}
     </div>
   );
 }
