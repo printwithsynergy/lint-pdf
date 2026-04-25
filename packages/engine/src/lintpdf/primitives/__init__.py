@@ -31,7 +31,9 @@ def register(category: str, name: str, func: Callable[..., Any]) -> Callable[...
 
 # Lazy-import categories to avoid circular imports during module reload.
 from lintpdf.primitives import (  # noqa: E402
+    barcode,
     color_space,
+    document,
     geometry,
     image,
     ink,
@@ -44,7 +46,9 @@ from lintpdf.primitives import (  # noqa: E402
 
 __all__ = [
     "REGISTRY",
+    "barcode",
     "color_space",
+    "document",
     "geometry",
     "image",
     "ink",

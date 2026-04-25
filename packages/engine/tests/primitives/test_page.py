@@ -21,7 +21,7 @@ def test_registry_contains_ten_page_primitives_and_two_doc():
     }
     expected_doc = {"page_count", "has_structure_tree"}
     assert REGISTRY.get("page", {}).keys() == expected_page
-    assert REGISTRY.get("doc", {}).keys() == expected_doc
+    assert expected_doc.issubset(REGISTRY.get("doc", {}).keys())
 
 
 # ---- box accessors + fallback chain ----------------------------------
