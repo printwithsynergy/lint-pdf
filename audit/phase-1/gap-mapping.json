@@ -1,6 +1,11 @@
 {
-  "version": 3,
+  "version": 4,
   "total": 93,
+  "summary": {
+    "present": 73,
+    "absent": 14,
+    "partial": 6
+  },
   "matches": [
     {
       "gap_id": "T1-F01",
@@ -18,12 +23,10 @@
       "match_details": [
         {
           "id": "LPDF_FONT_001",
-          "name": "Missing Font",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_FONT_008",
-          "name": "TrueType Not Embedded",
           "match_type": "explicit"
         }
       ]
@@ -43,7 +46,6 @@
       "match_details": [
         {
           "id": "LPDF_FONT_004",
-          "name": "Type 3 Font",
           "match_type": "explicit"
         }
       ]
@@ -63,7 +65,6 @@
       "match_details": [
         {
           "id": "LPDF_FONT_002",
-          "name": "Full Font Embedded",
           "match_type": "explicit"
         }
       ]
@@ -75,7 +76,7 @@
       "difficulty": "medium",
       "notes": "OS/2 fsType",
       "category_hint": "fonts",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -95,7 +96,6 @@
       "match_details": [
         {
           "id": "LPDF_TEXT_001",
-          "name": "Small Text",
           "match_type": "explicit"
         }
       ]
@@ -115,7 +115,6 @@
       "match_details": [
         {
           "id": "LPDF_FONT_005",
-          "name": "Missing ToUnicode",
           "match_type": "explicit"
         }
       ]
@@ -135,7 +134,6 @@
       "match_details": [
         {
           "id": "LPDF_COLOR_001",
-          "name": "Device-Dependent Color",
           "match_type": "explicit"
         }
       ]
@@ -156,12 +154,10 @@
       "match_details": [
         {
           "id": "LPDF_SPOT_001",
-          "name": "Unknown Spot Color",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_INK_003",
-          "name": "Ink Channel Inventory",
           "match_type": "explicit"
         }
       ]
@@ -181,7 +177,6 @@
       "match_details": [
         {
           "id": "LPDF_SPOT_003",
-          "name": "Similar Spot Names",
           "match_type": "explicit"
         }
       ]
@@ -203,17 +198,14 @@
       "match_details": [
         {
           "id": "LPDF_INK_001",
-          "name": "TAC Heatmap",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_INK_002",
-          "name": "Ink Separation Data",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_COLOR_004",
-          "name": "Ink Coverage Too High",
           "match_type": "explicit"
         }
       ]
@@ -233,7 +225,6 @@
       "match_details": [
         {
           "id": "LPDF_OVER_001",
-          "name": "Overprint On",
           "match_type": "explicit"
         }
       ]
@@ -254,12 +245,10 @@
       "match_details": [
         {
           "id": "LPDF_OVER_001",
-          "name": "Overprint On",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_OVER_002",
-          "name": "Overprint Off for Spot",
           "match_type": "explicit"
         }
       ]
@@ -279,7 +268,6 @@
       "match_details": [
         {
           "id": "LPDF_COLOR_006",
-          "name": "No Output Intent",
           "match_type": "explicit"
         }
       ]
@@ -300,12 +288,10 @@
       "match_details": [
         {
           "id": "LPDF_COLOR_005",
-          "name": "Registration Color",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_COLOR_017",
-          "name": "Impure Black",
           "match_type": "explicit"
         }
       ]
@@ -325,7 +311,6 @@
       "match_details": [
         {
           "id": "LPDF_IMG_001",
-          "name": "Low Image Resolution",
           "match_type": "explicit"
         }
       ]
@@ -345,7 +330,6 @@
       "match_details": [
         {
           "id": "LPDF_IMG_001",
-          "name": "Low Image Resolution",
           "match_type": "explicit"
         }
       ]
@@ -365,7 +349,6 @@
       "match_details": [
         {
           "id": "LPDF_IMG_001",
-          "name": "Low Image Resolution",
           "match_type": "explicit"
         }
       ]
@@ -385,7 +368,6 @@
       "match_details": [
         {
           "id": "LPDF_IMG_003",
-          "name": "Wrong Color Mode",
           "match_type": "explicit"
         }
       ]
@@ -405,7 +387,6 @@
       "match_details": [
         {
           "id": "LPDF_IMG_008",
-          "name": "JPEG2000 Format",
           "match_type": "explicit"
         }
       ]
@@ -426,12 +407,10 @@
       "match_details": [
         {
           "id": "LPDF_IMG_014",
-          "name": "Sheared Image",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_IMG_015",
-          "name": "Rotated Image",
           "match_type": "explicit"
         }
       ]
@@ -443,7 +422,7 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "image",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -463,7 +442,6 @@
       "match_details": [
         {
           "id": "LPDF_BOX_001",
-          "name": "Missing Trim/Bleed Box",
           "match_type": "explicit"
         }
       ]
@@ -483,7 +461,6 @@
       "match_details": [
         {
           "id": "LPDF_BOX_002",
-          "name": "Box Hierarchy Violated",
           "match_type": "explicit"
         }
       ]
@@ -503,7 +480,6 @@
       "match_details": [
         {
           "id": "LPDF_BOX_003",
-          "name": "Insufficient Bleed",
           "match_type": "explicit"
         }
       ]
@@ -515,7 +491,7 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "page_geometry",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -535,7 +511,6 @@
       "match_details": [
         {
           "id": "LPDF_DOC_001",
-          "name": "Multiple Page Sizes",
           "match_type": "explicit"
         }
       ]
@@ -555,7 +530,6 @@
       "match_details": [
         {
           "id": "LPDF_BOX_004",
-          "name": "Empty Page",
           "match_type": "explicit"
         }
       ]
@@ -575,7 +549,6 @@
       "match_details": [
         {
           "id": "LPDF_STROKE_001",
-          "name": "LPDF_STROKE_001",
           "match_type": "explicit"
         }
       ]
@@ -587,7 +560,7 @@
       "difficulty": "hard",
       "notes": "consider embedding vPDF",
       "category_hint": "pdfx_conformance",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -599,7 +572,7 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "document",
-      "status": "partial",
+      "status": "present",
       "match_count": 1,
       "matched_ids": [
         "LPDF_META_004"
@@ -607,11 +580,9 @@
       "match_details": [
         {
           "id": "LPDF_META_004",
-          "name": "LPDF_META_004",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
-      ],
-      "semantic_correction_note": "Manually reclassified after emit-site inspection \u2014 keyword match was semantically partial"
+      ]
     },
     {
       "gap_id": "T1-CMP03",
@@ -628,7 +599,6 @@
       "match_details": [
         {
           "id": "LPDF_DOC_004",
-          "name": "LPDF_DOC_004",
           "match_type": "explicit"
         }
       ]
@@ -650,17 +620,14 @@
       "match_details": [
         {
           "id": "LPDF_STRUCT_001",
-          "name": "JavaScript Found",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_STRUCT_008",
-          "name": "LPDF_STRUCT_008",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_STRUCT_014",
-          "name": "LPDF_STRUCT_014",
           "match_type": "explicit"
         }
       ]
@@ -680,7 +647,6 @@
       "match_details": [
         {
           "id": "LPDF_ANNOT_001",
-          "name": "Printable Annotation",
           "match_type": "explicit"
         }
       ]
@@ -700,7 +666,6 @@
       "match_details": [
         {
           "id": "LPDF_STRUCT_004",
-          "name": "Embedded Files",
           "match_type": "explicit"
         }
       ]
@@ -720,7 +685,6 @@
       "match_details": [
         {
           "id": "LPDF_TRANS_001",
-          "name": "Transparency Used",
           "match_type": "explicit"
         }
       ]
@@ -740,7 +704,6 @@
       "match_details": [
         {
           "id": "LPDF_TRANS_002",
-          "name": "Non-Standard Blend Mode",
           "match_type": "explicit"
         }
       ]
@@ -760,7 +723,6 @@
       "match_details": [
         {
           "id": "LPDF_TRANS_005",
-          "name": "Transparency Group",
           "match_type": "explicit"
         }
       ]
@@ -772,10 +734,17 @@
       "difficulty": "medium",
       "notes": "ship all 30 profiles",
       "category_hint": "profiles",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "__profile_pack:gwg-2022-commercial"
+      ],
+      "match_details": [
+        {
+          "id": "__profile_pack:gwg-2022-commercial",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-GWG02",
@@ -784,10 +753,17 @@
       "difficulty": "medium",
       "notes": "15 variants",
       "category_hint": "profiles",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "__profile_pack:gwg-2022-packaging"
+      ],
+      "match_details": [
+        {
+          "id": "__profile_pack:gwg-2022-packaging",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T2-ISO01",
@@ -808,28 +784,23 @@
       "match_details": [
         {
           "id": "AI_PSTEP_001",
-          "name": "Processing Steps",
-          "match_type": "keyword"
+          "match_type": "explicit"
         },
         {
           "id": "AI_PSTEP_002",
-          "name": "AI_PSTEP_002",
-          "match_type": "keyword"
+          "match_type": "explicit"
         },
         {
           "id": "AI_PSTEP_003",
-          "name": "AI_PSTEP_003",
-          "match_type": "keyword"
+          "match_type": "explicit"
         },
         {
           "id": "LPDF_PROC_001",
-          "name": "LPDF_PROC_001",
-          "match_type": "keyword"
+          "match_type": "explicit"
         },
         {
           "id": "LPDF_PROC_002",
-          "name": "LPDF_PROC_002",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
       ]
     },
@@ -855,8 +826,7 @@
       "status": "absent",
       "match_count": 0,
       "matched_ids": [],
-      "match_details": [],
-      "semantic_correction_note": "Manually reclassified after emit-site inspection \u2014 keyword match was semantically partial"
+      "match_details": []
     },
     {
       "gap_id": "T2-ISO04",
@@ -873,8 +843,7 @@
       "match_details": [
         {
           "id": "LPDF_PKG_009",
-          "name": "LPDF_PKG_009",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
       ]
     },
@@ -885,7 +854,7 @@
       "difficulty": "medium",
       "notes": "UNIQUE differentiator",
       "category_hint": "iso19593",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -905,7 +874,6 @@
       "match_details": [
         {
           "id": "LPDF_SPOT_001",
-          "name": "Unknown Spot Color",
           "match_type": "explicit"
         }
       ]
@@ -925,8 +893,7 @@
       "match_details": [
         {
           "id": "LPDF_SPOT_003",
-          "name": "Similar Spot Names",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
       ]
     },
@@ -957,7 +924,6 @@
       "match_details": [
         {
           "id": "LPDF_SPOT_002",
-          "name": "Spot Color Fallback Issue",
           "match_type": "explicit"
         }
       ]
@@ -1001,11 +967,9 @@
       "match_details": [
         {
           "id": "LPDF_TRANS_003",
-          "name": "Soft Mask",
           "match_type": "explicit"
         }
-      ],
-      "semantic_correction_note": "Manually reclassified after emit-site inspection \u2014 keyword match was semantically partial"
+      ]
     },
     {
       "gap_id": "T2-TRN07",
@@ -1022,11 +986,9 @@
       "match_details": [
         {
           "id": "LPDF_TRANS_005",
-          "name": "Transparency Group",
           "match_type": "explicit"
         }
-      ],
-      "semantic_correction_note": "Manually reclassified after emit-site inspection \u2014 keyword match was semantically partial"
+      ]
     },
     {
       "gap_id": "T2-RB01",
@@ -1044,12 +1006,10 @@
       "match_details": [
         {
           "id": "LPDF_COLOR_021",
-          "name": "Rich Black Text",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_ADV_005",
-          "name": "Black Composition",
           "match_type": "explicit"
         }
       ]
@@ -1081,11 +1041,9 @@
       "match_details": [
         {
           "id": "LPDF_TEXT_004",
-          "name": "White Text",
           "match_type": "explicit"
         }
-      ],
-      "semantic_correction_note": "Manually reclassified after emit-site inspection \u2014 keyword match was semantically partial"
+      ]
     },
     {
       "gap_id": "T2-XMP01",
@@ -1114,8 +1072,7 @@
       "match_details": [
         {
           "id": "LPDF_META_002",
-          "name": "LPDF_META_002",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
       ]
     },
@@ -1134,8 +1091,7 @@
       "match_details": [
         {
           "id": "LPDF_META_003",
-          "name": "LPDF_META_003",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
       ]
     },
@@ -1146,7 +1102,7 @@
       "difficulty": "medium",
       "notes": "per-separation raster compare",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1158,7 +1114,7 @@
       "difficulty": "easy",
       "notes": "content stream order scan",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1170,7 +1126,7 @@
       "difficulty": "easy",
       "notes": "report emits remediation",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1182,7 +1138,7 @@
       "difficulty": "medium",
       "notes": "path offset math",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1202,11 +1158,9 @@
       "match_details": [
         {
           "id": "LPDF_PKG_004",
-          "name": "LPDF_PKG_004",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
-      ],
-      "semantic_correction_note": "Manually reclassified after emit-site inspection \u2014 keyword match was semantically partial"
+      ]
     },
     {
       "gap_id": "T3-D06",
@@ -1215,7 +1169,7 @@
       "difficulty": "hard",
       "notes": "**UNCLAIMED \u2014 high differentiator**",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1227,7 +1181,7 @@
       "difficulty": "medium",
       "notes": "**UNCLAIMED \u2014 high differentiator**",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1239,7 +1193,7 @@
       "difficulty": "medium",
       "notes": "**UNIQUE**",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1251,7 +1205,7 @@
       "difficulty": "medium",
       "notes": "high value for flexible packaging",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1263,7 +1217,7 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1275,7 +1229,7 @@
       "difficulty": "easy",
       "notes": "ship as open standard",
       "category_hint": "spot_colors",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1295,8 +1249,7 @@
       "match_details": [
         {
           "id": "LPDF_EPM_010",
-          "name": "LPDF_EPM_010",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
       ]
     },
@@ -1307,7 +1260,7 @@
       "difficulty": "medium",
       "notes": "extend small-text-on-multi-sep to vectors",
       "category_hint": "color",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1319,7 +1272,7 @@
       "difficulty": "hard",
       "notes": "pharma niche",
       "category_hint": "iso19593",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1331,7 +1284,7 @@
       "difficulty": "easy",
       "notes": "**UNIQUE \u2014 catches Canva mistakes**",
       "category_hint": "dieline",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1343,7 +1296,7 @@
       "difficulty": "hard",
       "notes": "embed veraPDF",
       "category_hint": "accessibility",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1355,7 +1308,7 @@
       "difficulty": "hard",
       "notes": "embed veraPDF",
       "category_hint": "pdfa_conformance",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1375,7 +1328,6 @@
       "match_details": [
         {
           "id": "LPDF_ACCESS_001",
-          "name": "Not Tagged",
           "match_type": "explicit"
         }
       ]
@@ -1398,22 +1350,18 @@
       "match_details": [
         {
           "id": "LPDF_ACCESS_002",
-          "name": "No Language Set",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_ACCESS_003",
-          "name": "LPDF_ACCESS_003",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_ACCESS_004",
-          "name": "Missing Document Language",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_ACCESS_005",
-          "name": "LPDF_ACCESS_005",
           "match_type": "explicit"
         }
       ]
@@ -1433,7 +1381,6 @@
       "match_details": [
         {
           "id": "LPDF_ACCESS_006",
-          "name": "LPDF_ACCESS_006",
           "match_type": "explicit"
         }
       ]
@@ -1445,7 +1392,7 @@
       "difficulty": "medium",
       "notes": "",
       "category_hint": "accessibility",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1465,8 +1412,7 @@
       "match_details": [
         {
           "id": "LPDF_ACCESS_006",
-          "name": "LPDF_ACCESS_006",
-          "match_type": "keyword"
+          "match_type": "explicit"
         }
       ]
     },
@@ -1485,7 +1431,6 @@
       "match_details": [
         {
           "id": "LPDF_FONT_005",
-          "name": "Missing ToUnicode",
           "match_type": "explicit"
         }
       ]
@@ -1497,7 +1442,7 @@
       "difficulty": "easy",
       "notes": "",
       "category_hint": "accessibility",
-      "status": "absent",
+      "status": "present",
       "match_count": 0,
       "matched_ids": [],
       "match_details": []
@@ -1542,12 +1487,10 @@
       "match_details": [
         {
           "id": "AI_COSM_001",
-          "name": "Cosmetics Label Issue",
           "match_type": "explicit"
         },
         {
           "id": "AI_COSM_002",
-          "name": "AI_COSM_002",
           "match_type": "explicit"
         }
       ]
@@ -1568,12 +1511,10 @@
       "match_details": [
         {
           "id": "AI_FDA_003",
-          "name": "Missing Bold in NFP",
           "match_type": "explicit"
         },
         {
           "id": "AI_FDA_004",
-          "name": "Missing Nutrients",
           "match_type": "explicit"
         }
       ]
@@ -1606,12 +1547,10 @@
       "match_details": [
         {
           "id": "AI_ALC_001",
-          "name": "Alcohol Label Issue",
           "match_type": "explicit"
         },
         {
           "id": "AI_ALC_002",
-          "name": "AI_ALC_002",
           "match_type": "explicit"
         }
       ]
@@ -1645,17 +1584,14 @@
       "match_details": [
         {
           "id": "AI_WCAG_001",
-          "name": "Low Color Contrast",
           "match_type": "explicit"
         },
         {
           "id": "AI_WCAG_002",
-          "name": "Below WCAG AA",
           "match_type": "explicit"
         },
         {
           "id": "LPDF_ACCESS_012",
-          "name": "No Output Intent for Contrast",
           "match_type": "explicit"
         }
       ]
