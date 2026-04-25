@@ -1,0 +1,2659 @@
+{
+  "schema_version": "1.4.v2",
+  "engine_ids_total": 373,
+  "claimed_by_v2": 126,
+  "unmapped": 283,
+  "by_prefix": {
+    "AI_AFP": [
+      {
+        "id": "AI_AFP_001",
+        "name": "Auto Profile Suggestion",
+        "category_id": "ai:afp",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py"
+        ]
+      },
+      {
+        "id": "AI_AFP_002",
+        "name": "Recommended Preflight Profile",
+        "category_id": "ai:afp",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py"
+        ]
+      },
+      {
+        "id": "AI_AFP_003",
+        "name": "Preflight profile recommendation has low confidence",
+        "category_id": "ai:afp",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/document_classification/auto_preflight_profile.py"
+        ]
+      }
+    ],
+    "AI_BRAND": [
+      {
+        "id": "AI_BRAND_001",
+        "name": "No Brand Palette",
+        "category_id": "ai:brand",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_compliance/brand_palette.py"
+        ]
+      },
+      {
+        "id": "AI_BRAND_002",
+        "name": "Brand Color Deviation",
+        "category_id": "ai:brand",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_compliance/brand_palette.py"
+        ]
+      },
+      {
+        "id": "AI_BRAND_003",
+        "name": "Brand Spec Deviation",
+        "category_id": "ai:brand",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_compliance/brand_palette.py"
+        ]
+      }
+    ],
+    "AI_CANN": [
+      {
+        "id": "AI_CANN_002",
+        "name": "Cannabis Potency/Dosage Issue",
+        "category_id": "ai:cannabis",
+        "status": "stub_documented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/cannabis.py"
+        ]
+      }
+    ],
+    "AI_DIE": [
+      {
+        "id": "AI_DIE_001",
+        "name": "Dieline Detected",
+        "category_id": "ai:dieline",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/dieline_detection/dieline_by_name.py"
+        ]
+      },
+      {
+        "id": "AI_DIE_002",
+        "name": "No Dieline Detected",
+        "category_id": "ai:dieline",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/dieline_detection/dieline_by_name.py"
+        ]
+      },
+      {
+        "id": "AI_DIE_003",
+        "name": "No Dieline Found",
+        "category_id": "ai:dieline",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/dieline_detection/dieline_by_name.py"
+        ]
+      }
+    ],
+    "AI_DUP": [
+      {
+        "id": "AI_DUP_001",
+        "name": "Duplicate Content",
+        "category_id": "ai:duplication",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/content_quality/duplicate_detection.py"
+        ]
+      }
+    ],
+    "AI_EU1169": [
+      {
+        "id": "AI_EU1169_001",
+        "name": "EU Font Size Violation",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/eu_fir_1169.py"
+        ]
+      },
+      {
+        "id": "AI_EU1169_002",
+        "name": "Allergen Not Emphasized",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/eu_fir_1169.py"
+        ]
+      },
+      {
+        "id": "AI_EU1169_003",
+        "name": "EU Nutrition Format",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/eu_fir_1169.py"
+        ]
+      }
+    ],
+    "AI_FCLASS": [
+      {
+        "id": "AI_FCLASS_001",
+        "name": "Document Classification",
+        "category_id": "ai:fibre",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/document_classification/file_classification.py"
+        ]
+      },
+      {
+        "id": "AI_FCLASS_002",
+        "name": "Document Classified",
+        "category_id": "ai:fibre",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/document_classification/file_classification.py"
+        ]
+      },
+      {
+        "id": "AI_FCLASS_003",
+        "name": "Low Document Classification Confidence",
+        "category_id": "ai:fibre",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/document_classification/file_classification.py"
+        ]
+      }
+    ],
+    "AI_FDA": [
+      {
+        "id": "AI_FDA_001",
+        "name": "Calories Font Too Small",
+        "category_id": "ai:fda",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py"
+        ]
+      },
+      {
+        "id": "AI_FDA_002",
+        "name": "NFP Text Too Small",
+        "category_id": "ai:fda",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py"
+        ]
+      },
+      {
+        "id": "AI_FDA_003",
+        "name": "Missing Bold in NFP",
+        "category_id": "ai:fda",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py"
+        ]
+      },
+      {
+        "id": "AI_FDA_004",
+        "name": "Missing Nutrients",
+        "category_id": "ai:fda",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py"
+        ]
+      },
+      {
+        "id": "AI_FDA_005",
+        "name": "FDA Label Warning",
+        "category_id": "ai:fda",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/fda_nutrition.py"
+        ]
+      }
+    ],
+    "AI_GHS": [
+      {
+        "id": "AI_GHS_001",
+        "name": "Missing GHS Elements",
+        "category_id": "ai:ghs",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py"
+        ]
+      },
+      {
+        "id": "AI_GHS_002",
+        "name": "GHS Mutual Exclusion Violation",
+        "category_id": "ai:ghs",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py"
+        ]
+      },
+      {
+        "id": "AI_GHS_003",
+        "name": "GHS Statement Without Pictogram",
+        "category_id": "ai:ghs",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py"
+        ]
+      },
+      {
+        "id": "AI_GHS_004",
+        "name": "GHS H-Statements Detected",
+        "category_id": "ai:ghs",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py"
+        ]
+      },
+      {
+        "id": "AI_GHS_005",
+        "name": "GHS P-Statements Detected",
+        "category_id": "ai:ghs",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py"
+        ]
+      },
+      {
+        "id": "AI_GHS_006",
+        "name": "Multiple GHS Signal Words",
+        "category_id": "ai:ghs",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py"
+        ]
+      },
+      {
+        "id": "AI_GHS_007",
+        "name": "GHS Signal Word Detected",
+        "category_id": "ai:ghs",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py"
+        ]
+      },
+      {
+        "id": "AI_GHS_008",
+        "name": "GHS Pictogram Below Minimum Size",
+        "category_id": "ai:ghs",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/ghs_clp.py"
+        ]
+      }
+    ],
+    "AI_IQ": [
+      {
+        "id": "AI_IQ_001",
+        "name": "Image Quality Issue",
+        "category_id": "ai:image_quality",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_quality.py"
+        ]
+      },
+      {
+        "id": "AI_IQ_002",
+        "name": "Image Quality Below Minimum",
+        "category_id": "ai:image_quality",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_quality.py"
+        ]
+      },
+      {
+        "id": "AI_IQ_003",
+        "name": "Image Quality Score",
+        "category_id": "ai:image_quality",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_quality.py"
+        ]
+      }
+    ],
+    "AI_LANG": [
+      {
+        "id": "AI_LANG_001",
+        "name": "Language Detected",
+        "category_id": "ai:language",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/content_quality/language_detection.py",
+          "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py"
+        ]
+      },
+      {
+        "id": "AI_LANG_002",
+        "name": "Page Language Mismatch",
+        "category_id": "ai:language",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/content_quality/language_detection.py",
+          "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py"
+        ]
+      },
+      {
+        "id": "AI_LANG_003",
+        "name": "Translation Service Unavailable",
+        "category_id": "ai:language",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py"
+        ]
+      },
+      {
+        "id": "AI_LANG_004",
+        "name": "Document Translated",
+        "category_id": "ai:language",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/nlp_interfaces/multi_language.py"
+        ]
+      }
+    ],
+    "AI_LOGO": [
+      {
+        "id": "AI_LOGO_001",
+        "name": "Logo Not Found",
+        "category_id": "ai:logo",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/logo_verification/logo_detection.py"
+        ]
+      },
+      {
+        "id": "AI_LOGO_002",
+        "name": "Logo Detected",
+        "category_id": "ai:logo",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/logo_verification/logo_detection.py"
+        ]
+      },
+      {
+        "id": "AI_LOGO_003",
+        "name": "Expected Logo Missing",
+        "category_id": "ai:logo",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/logo_verification/logo_detection.py"
+        ]
+      }
+    ],
+    "AI_NSFW": [
+      {
+        "id": "AI_NSFW_001",
+        "name": "Content Safety Flag",
+        "category_id": "ai:nsfw",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py"
+        ]
+      },
+      {
+        "id": "AI_NSFW_002",
+        "name": "Explicit Content Detected",
+        "category_id": "ai:nsfw",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py"
+        ]
+      },
+      {
+        "id": "AI_NSFW_003",
+        "name": "Suggestive Content Detected",
+        "category_id": "ai:nsfw",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/image_analysis/nsfw_detection.py"
+        ]
+      }
+    ],
+    "AI_ORG": [
+      {
+        "id": "AI_ORG_001",
+        "name": "Organic Seal Issue",
+        "category_id": "ai:orgmetric",
+        "status": "stub_documented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/organic.py"
+        ]
+      },
+      {
+        "id": "AI_ORG_002",
+        "name": "USDA Organic Seal Misuse",
+        "category_id": "ai:orgmetric",
+        "status": "stub_documented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/organic.py"
+        ]
+      }
+    ],
+    "AI_PHARMA": [
+      {
+        "id": "AI_PHARMA_001",
+        "name": "Pharma Font Too Small",
+        "category_id": "ai:pharma",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py"
+        ]
+      },
+      {
+        "id": "AI_PHARMA_002",
+        "name": "FDA Body Text Below Minimum",
+        "category_id": "ai:pharma",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py"
+        ]
+      },
+      {
+        "id": "AI_PHARMA_003",
+        "name": "FDA Heading Below Minimum",
+        "category_id": "ai:pharma",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py"
+        ]
+      },
+      {
+        "id": "AI_PHARMA_004",
+        "name": "FDA Text Density Excessive",
+        "category_id": "ai:pharma",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/regulatory_compliance/pharma_font.py"
+        ]
+      }
+    ],
+    "AI_RSYM": [
+      {
+        "id": "AI_RSYM_001",
+        "name": "Missing Regulatory Symbol",
+        "category_id": "ai:recycling_symbols",
+        "status": "catalog_only_no_source",
+        "source_files": []
+      },
+      {
+        "id": "AI_RSYM_002",
+        "name": "Regulatory symbol",
+        "category_id": "ai:recycling_symbols",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py"
+        ]
+      },
+      {
+        "id": "AI_RSYM_003",
+        "name": "Regulatory symbol detected",
+        "category_id": "ai:recycling_symbols",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py"
+        ]
+      },
+      {
+        "id": "AI_RSYM_004",
+        "name": "Expected regulatory symbol was not detected",
+        "category_id": "ai:recycling_symbols",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/symbol_detection/regulatory_symbols.py"
+        ]
+      }
+    ],
+    "AI_SCAN": [
+      {
+        "id": "AI_SCAN_001",
+        "name": "AI Scan Complete",
+        "category_id": "ai:scan_quality",
+        "status": "catalog_only_no_source",
+        "source_files": []
+      }
+    ],
+    "AI_SIM": [
+      {
+        "id": "AI_SIM_001",
+        "name": "Similar Images",
+        "category_id": "ai:similarity",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_similarity.py"
+        ]
+      },
+      {
+        "id": "AI_SIM_002",
+        "name": "Generated visual embedding for page -dimensional",
+        "category_id": "ai:similarity",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/image_analysis/image_similarity.py"
+        ]
+      }
+    ],
+    "AI_SPC": [
+      {
+        "id": "AI_SPC_001",
+        "name": "Only historical submissions available need",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py"
+        ]
+      },
+      {
+        "id": "AI_SPC_002",
+        "name": "All historical submissions have identical finding",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py"
+        ]
+      },
+      {
+        "id": "AI_SPC_003",
+        "name": "Quality trend summary submissions pass rate",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py"
+        ]
+      },
+      {
+        "id": "AI_SPC_004",
+        "name": "Western Electric Rule violation",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/trend_analysis/submission_quality_spc.py"
+        ]
+      }
+    ],
+    "AI_SPELL": [
+      {
+        "id": "AI_SPELL_001",
+        "name": "Misspelled Word",
+        "category_id": "ai:spelling",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/content_quality/spell_check.py"
+        ]
+      },
+      {
+        "id": "AI_SPELL_002",
+        "name": "Suspicious text",
+        "category_id": "ai:spelling",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/content_quality/spell_check.py"
+        ]
+      }
+    ],
+    "AI_SZ": [
+      {
+        "id": "AI_SZ_001",
+        "name": "Safe Zone Violation",
+        "category_id": "ai:safe_zones",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py"
+        ]
+      },
+      {
+        "id": "AI_SZ_002",
+        "name": "On page encroaches the safe",
+        "category_id": "ai:safe_zones",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/spatial_analysis/safe_zone_violations.py"
+        ]
+      }
+    ],
+    "AI_TAO": [
+      {
+        "id": "AI_TAO_001",
+        "name": "Text Not Outlined",
+        "category_id": "ai:tao",
+        "status": "catalog_only_no_source",
+        "source_files": []
+      },
+      {
+        "id": "AI_TAO_002",
+        "name": "Page contains text converted to outlines",
+        "category_id": "ai:tao",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/text_analysis/text_as_outlines.py"
+        ]
+      },
+      {
+        "id": "AI_TAO_003",
+        "name": "Outlined text region",
+        "category_id": "ai:tao",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/text_analysis/text_as_outlines.py"
+        ]
+      }
+    ],
+    "AI_VDIFF": [
+      {
+        "id": "AI_VDIFF_001",
+        "name": "No Reference File",
+        "category_id": "ai:visual_diff",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/file_comparison/version_diff.py"
+        ]
+      },
+      {
+        "id": "AI_VDIFF_002",
+        "name": "Page count changed reference has page(s",
+        "category_id": "ai:visual_diff",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/file_comparison/version_diff.py"
+        ]
+      },
+      {
+        "id": "AI_VDIFF_003",
+        "name": "Page differs from reference SSIM= %",
+        "category_id": "ai:visual_diff",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/file_comparison/version_diff.py"
+        ]
+      }
+    ],
+    "AI_WCAG": [
+      {
+        "id": "AI_WCAG_001",
+        "name": "Low Color Contrast",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_compliance/wcag_contrast.py"
+        ]
+      },
+      {
+        "id": "AI_WCAG_002",
+        "name": "Below WCAG AA",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_compliance/wcag_contrast.py"
+        ]
+      }
+    ],
+    "LPDF_ACCESS": [
+      {
+        "id": "LPDF_ACCESS_001",
+        "name": "Not Tagged",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_002",
+        "name": "No Language Set",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_003",
+        "name": "Document is a tagged PDF StructTreeRoot",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_004",
+        "name": "Missing Document Language",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_005",
+        "name": "Image on page may lack",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_007",
+        "name": "Table structure found but no table header",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_008",
+        "name": "List items found without proper list container",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_009",
+        "name": "No Artifact markings found in structure tree",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_010",
+        "name": "Reading order undefined /StructTreeRoot has no /K",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_011",
+        "name": "No structural emphasis tags /Em /Strong found",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_012",
+        "name": "No Output Intent for Contrast",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      },
+      {
+        "id": "LPDF_ACCESS_013",
+        "name": "Tab order not specified",
+        "category_id": "accessibility",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/accessibility.py"
+        ]
+      }
+    ],
+    "LPDF_ADV": [
+      {
+        "id": "LPDF_ADV_001",
+        "name": "CMYK image on page xpx",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_002",
+        "name": "Ink Savings Estimate",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_003",
+        "name": "Trapping risk small text",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_004",
+        "name": "No Spectral Data",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_006",
+        "name": "CxF defines spot color but no",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_007",
+        "name": "CxF spectral data is embedded",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_008",
+        "name": "CxF spectral range for is -nm",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_009",
+        "name": "CxF spectral data does not specify measurement",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_010",
+        "name": "CxF illuminant does not match output",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_011",
+        "name": "CxF observer angle \u00b0 is non-standard expected",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_012",
+        "name": "CxF spot spectral vs colorimetric Delta-E",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_013",
+        "name": "CxF spectral data references library color",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_014",
+        "name": "CxF spectral data includes substrate paper white",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ADV_015",
+        "name": "CxF version may not be fully",
+        "category_id": "advanced",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/advanced_color_analyzer.py"
+        ]
+      }
+    ],
+    "LPDF_AI": [
+      {
+        "id": "LPDF_AI_BAND_001",
+        "name": "Visible banding detected on page CAMBI",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_analysis/banding_detection.py"
+        ]
+      },
+      {
+        "id": "LPDF_AI_CAST_001",
+        "name": "Significant color cast detected",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_analysis/color_cast_detection.py"
+        ]
+      },
+      {
+        "id": "LPDF_AI_CDCC_001",
+        "name": "Spot color inventory for cross-document tracking",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_analysis/cross_document_consistency.py"
+        ]
+      },
+      {
+        "id": "LPDF_AI_DIEL_002",
+        "name": "Dieline spot color detected color space",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_compliance/dieline_by_color_name.py"
+        ]
+      },
+      {
+        "id": "LPDF_AI_SKIN_001",
+        "name": "Skin tone analysis",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/color_analysis/skin_tone_validation.py"
+        ]
+      }
+    ],
+    "LPDF_ANNOT": [
+      {
+        "id": "LPDF_ANNOT_002",
+        "name": "Multimedia annotation",
+        "category_id": "annotations",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/annotation.py"
+        ]
+      },
+      {
+        "id": "LPDF_ANNOT_003",
+        "name": "Link Annotation",
+        "category_id": "annotations",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/annotation.py"
+        ]
+      },
+      {
+        "id": "LPDF_ANNOT_004",
+        "name": "Stamp annotation",
+        "category_id": "annotations",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/annotation.py"
+        ]
+      },
+      {
+        "id": "LPDF_ANNOT_005",
+        "name": "Non-printing annotation in trim area",
+        "category_id": "annotations",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/annotation.py"
+        ]
+      },
+      {
+        "id": "LPDF_ANNOT_006",
+        "name": "TrapNet annotation on page embedded trapping",
+        "category_id": "annotations",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/annotation.py"
+        ]
+      }
+    ],
+    "LPDF_BARCODE": [
+      {
+        "id": "LPDF_BARCODE_020",
+        "name": "Barcode candidate on page \u2014 verify",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_021",
+        "name": "Barcode placement on page \u2014 center",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_022",
+        "name": "Barcode symbology on page \u2014 verify",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_023",
+        "name": "Barcode data length",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_024",
+        "name": "Barcode color compliance",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_025",
+        "name": "Low Barcode Resolution",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_026",
+        "name": "Barcode in portrait orientation",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_027",
+        "name": "Multiple barcode candidates",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_028",
+        "name": "Barcode extends beyond trim box",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_029",
+        "name": "Barcode center is mm from page center",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      },
+      {
+        "id": "LPDF_BARCODE_030",
+        "name": "Barcode height mm below ISO minimum",
+        "category_id": "barcodes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/barcode.py"
+        ]
+      }
+    ],
+    "LPDF_BCQM": [
+      {
+        "id": "LPDF_BCQM_001",
+        "name": "DataMatrix on page GTIN",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py"
+        ]
+      },
+      {
+        "id": "LPDF_BCQM_002",
+        "name": "QR code on page contains invalid",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py"
+        ]
+      },
+      {
+        "id": "LPDF_BCQM_003",
+        "name": "No human-readable text detected near QR code",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py"
+        ]
+      },
+      {
+        "id": "LPDF_BCQM_004",
+        "name": "QR code on page human-readable text",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content_qr_match.py"
+        ]
+      }
+    ],
+    "LPDF_BCV": [
+      {
+        "id": "LPDF_BCV_001",
+        "name": "DataMatrix on page GTIN",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content.py"
+        ]
+      },
+      {
+        "id": "LPDF_BCV_002",
+        "name": "QR code on page contains invalid",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content.py"
+        ]
+      },
+      {
+        "id": "LPDF_BCV_003",
+        "name": "DataMatrix on page GS1 AI",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_content.py"
+        ]
+      }
+    ],
+    "LPDF_BC": [
+      {
+        "id": "LPDF_BC_001",
+        "name": "Decoded DataMatrix barcode",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_decode.py"
+        ]
+      }
+    ],
+    "LPDF_BD": [
+      {
+        "id": "LPDF_BD_001",
+        "name": "Barcode on page X-dimension",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py"
+        ]
+      },
+      {
+        "id": "LPDF_BD_002",
+        "name": "Barcode on page magnification",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py"
+        ]
+      },
+      {
+        "id": "LPDF_BD_003",
+        "name": "Barcode on page height",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py"
+        ]
+      },
+      {
+        "id": "LPDF_BD_004",
+        "name": "Barcode on page right quiet zone",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/barcode_dimensions.py"
+        ]
+      }
+    ],
+    "LPDF_BOX": [
+      {
+        "id": "LPDF_BOX_004",
+        "name": "Empty Page",
+        "category_id": "page_geometry",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/page_geometry.py"
+        ]
+      },
+      {
+        "id": "LPDF_BOX_005",
+        "name": "Content in Safety Margin",
+        "category_id": "page_geometry",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/page_geometry.py"
+        ]
+      },
+      {
+        "id": "LPDF_BOX_006",
+        "name": "Content Beyond Bleed",
+        "category_id": "page_geometry",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/page_geometry.py"
+        ]
+      },
+      {
+        "id": "LPDF_BOX_007",
+        "name": "UserUnit Scaling",
+        "category_id": "page_geometry",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/page_geometry.py"
+        ]
+      },
+      {
+        "id": "LPDF_BOX_008",
+        "name": "Non-Standard Orientation",
+        "category_id": "page_geometry",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/page_geometry.py"
+        ]
+      },
+      {
+        "id": "LPDF_BOX_009",
+        "name": "Inconsistent Page Sizes",
+        "category_id": "page_geometry",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/page_geometry.py"
+        ]
+      }
+    ],
+    "LPDF_COLOR": [
+      {
+        "id": "LPDF_COLOR_002",
+        "name": "Spot Color Without Fallback",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_003",
+        "name": "Lab Color Used",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_005",
+        "name": "Registration Color",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_006",
+        "name": "No Output Intent",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_007",
+        "name": "Mixed Color Spaces",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_008",
+        "name": "CalRGB Color",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_009",
+        "name": "CalGray Color",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_010",
+        "name": "Indexed Color",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_011",
+        "name": "Pattern Color Space",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_012",
+        "name": "Separation Color",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_013",
+        "name": "DeviceN Color",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      },
+      {
+        "id": "LPDF_COLOR_017",
+        "name": "Impure Black",
+        "category_id": "color",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/color.py"
+        ]
+      }
+    ],
+    "LPDF_DOC": [
+      {
+        "id": "LPDF_DOC_002",
+        "name": "Document has inconsistent page rotations",
+        "category_id": "document",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/document.py"
+        ]
+      },
+      {
+        "id": "LPDF_DOC_003",
+        "name": "Document has no title in Info dictionary",
+        "category_id": "document",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/document.py"
+        ]
+      },
+      {
+        "id": "LPDF_DOC_005",
+        "name": "Linearized PDF detected web-optimized may need",
+        "category_id": "document",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/document.py"
+        ]
+      },
+      {
+        "id": "LPDF_DOC_006",
+        "name": "Incremental updates detected trailer has /Prev",
+        "category_id": "document",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/document.py"
+        ]
+      },
+      {
+        "id": "LPDF_DOC_007",
+        "name": "File size MB exceeds threshold",
+        "category_id": "document",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/document.py"
+        ]
+      },
+      {
+        "id": "LPDF_DOC_008",
+        "name": "Pre-separated pages detected pages with single",
+        "category_id": "document",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/document.py"
+        ]
+      }
+    ],
+    "LPDF_ECG": [
+      {
+        "id": "LPDF_ECG_001",
+        "name": "ECG readiness spot color(s found",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_002",
+        "name": "ECG achievability Spot color could not",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_003",
+        "name": "ECG TAC % exceeds % limit",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_004",
+        "name": "DeviceN 7-colorant space",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_005",
+        "name": "ECG ink build active inks >%",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_006",
+        "name": "Spot color could be replaced",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_007",
+        "name": "ECG color out of build range CMYK+OGV",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_008",
+        "name": "ECG gray balance drift risk object(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_009",
+        "name": "ECG overinking TAC % exceeds ECG threshold",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_010",
+        "name": "Missing ECG characterization data no ECG-specific",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_011",
+        "name": "ECG ink channel limit exceeded channel(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_012",
+        "name": "Gamut boundary mapping required spot color",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_013",
+        "name": "ECG multi-ink small text text object(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_014",
+        "name": "ECG rich black recipe object(s use",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_015",
+        "name": "ECG trap zone warning path element(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_016",
+        "name": "ECG ICC profile version",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_017",
+        "name": "DeviceN colorant order",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ECG_018",
+        "name": "ECG high ink per channel channel(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/ecg_analyzer.py"
+        ]
+      }
+    ],
+    "LPDF_EPM": [
+      {
+        "id": "LPDF_EPM_001",
+        "name": "EPM K-channel dependency object(s use K",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_002",
+        "name": "EPM pure black text text object(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_003",
+        "name": "EPM weak CMY black object(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_004",
+        "name": "EPM CMY TAC % exceeds % threshold",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_005",
+        "name": "EPM spot color K-dependency Spot color",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_006",
+        "name": "EPM image K-dependency CMYK image(s across",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_007",
+        "name": "EPM registration color object(s use registration",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_008",
+        "name": "EPM gray balance risk object(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_009",
+        "name": "EPM toner limit exceeded total toner area",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_011",
+        "name": "EPM spot color fidelity spot color",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_012",
+        "name": "EPM variable data document contains variable data",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_013",
+        "name": "EPM halftone incompatibility custom halftone",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_014",
+        "name": "EPM ICC profile class mismatch output intent",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_015",
+        "name": "EPM white ink underlayer Separation color space",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_016",
+        "name": "EPM overprint simulation ExtGState",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_017",
+        "name": "EPM high object count",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_EPM_018",
+        "name": "EPM thin line weight stroked path(s",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/epm_analyzer.py"
+        ]
+      }
+    ],
+    "LPDF_FONT": [
+      {
+        "id": "LPDF_FONT_003",
+        "name": "System Font Used",
+        "category_id": "fonts",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/font.py"
+        ]
+      },
+      {
+        "id": "LPDF_FONT_006",
+        "name": "Missing CIDSystemInfo",
+        "category_id": "fonts",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/font.py"
+        ]
+      },
+      {
+        "id": "LPDF_FONT_007",
+        "name": "No Font Encoding",
+        "category_id": "fonts",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/font.py"
+        ]
+      },
+      {
+        "id": "LPDF_FONT_009",
+        "name": "OpenType Not Embedded",
+        "category_id": "fonts",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/font.py"
+        ]
+      },
+      {
+        "id": "LPDF_FONT_011",
+        "name": "Multiple Master Font",
+        "category_id": "fonts",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/font.py"
+        ]
+      }
+    ],
+    "LPDF_GAMUT": [
+      {
+        "id": "LPDF_GAMUT_001",
+        "name": "CMYK color",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/gamut_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_GAMUT_002",
+        "name": "Target gamut volume for Lab^3",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/gamut_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_GAMUT_003",
+        "name": "Gamut summary for / colors out",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/gamut_analyzer.py"
+        ]
+      }
+    ],
+    "LPDF_HAIR": [
+      {
+        "id": "LPDF_HAIR_001",
+        "name": "Hairline Stroke",
+        "category_id": "hairlines",
+        "status": "catalog_only_no_source",
+        "source_files": []
+      },
+      {
+        "id": "LPDF_HAIR_002",
+        "name": "Small Text on Thin Stroke",
+        "category_id": "hairlines",
+        "status": "catalog_only_no_source",
+        "source_files": []
+      }
+    ],
+    "LPDF_ICC": [
+      {
+        "id": "LPDF_ICC_001",
+        "name": "No ICC Profile",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ICC_002",
+        "name": "Invalid ICC Profile",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ICC_003",
+        "name": "ICC Version Mismatch",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ICC_004",
+        "name": "Wrong ICC Device Class",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ICC_005",
+        "name": "Output intent # has unrecognized condition",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ICC_006",
+        "name": "Multiple output intents have inconsistent color space",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ICC_007",
+        "name": "ICC profile",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ICC_008",
+        "name": "Document uses ICC profiles with different rendering",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_ICC_009",
+        "name": "ICC profile has non-D50 PCS illuminant",
+        "category_id": "color_management",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/icc_profile_analyzer.py"
+        ]
+      }
+    ],
+    "LPDF_IMG": [
+      {
+        "id": "LPDF_IMG_005",
+        "name": "Inline Image",
+        "category_id": "image",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/image.py"
+        ]
+      },
+      {
+        "id": "LPDF_IMG_006",
+        "name": "Upscaled Image",
+        "category_id": "image",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/image.py"
+        ]
+      },
+      {
+        "id": "LPDF_IMG_007",
+        "name": "LZW Compression",
+        "category_id": "image",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/image.py"
+        ]
+      },
+      {
+        "id": "LPDF_IMG_013",
+        "name": "Alternate in Resources",
+        "category_id": "image",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/image.py"
+        ]
+      }
+    ],
+    "LPDF_OVER": [
+      {
+        "id": "LPDF_OVER_003",
+        "name": "Overprint Mode Mismatch",
+        "category_id": "overprint",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/overprint.py"
+        ]
+      },
+      {
+        "id": "LPDF_OVER_004",
+        "name": "White overprint on page fill",
+        "category_id": "overprint",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/overprint.py"
+        ]
+      },
+      {
+        "id": "LPDF_OVER_005",
+        "name": "Overprint inventory object(s with overprint enabled",
+        "category_id": "overprint",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/overprint.py"
+        ]
+      },
+      {
+        "id": "LPDF_OVER_006",
+        "name": "Overprint active with DeviceRGB",
+        "category_id": "overprint",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/overprint.py"
+        ]
+      },
+      {
+        "id": "LPDF_OVER_007",
+        "name": "Small black text instance min",
+        "category_id": "overprint",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/overprint.py"
+        ]
+      },
+      {
+        "id": "LPDF_OVER_008",
+        "name": "Registration color with overprint active",
+        "category_id": "overprint",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/overprint.py"
+        ]
+      }
+    ],
+    "LPDF_PATH": [
+      {
+        "id": "LPDF_PATH_001",
+        "name": "Excessive path points",
+        "category_id": "paths",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_PATH_002",
+        "name": "White Fill Path",
+        "category_id": "paths",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      }
+    ],
+    "LPDF_PKG": [
+      {
+        "id": "LPDF_PKG_001",
+        "name": "Dieline Detected",
+        "category_id": "packaging",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/packaging.py"
+        ]
+      },
+      {
+        "id": "LPDF_PKG_002",
+        "name": "Missing Dieline",
+        "category_id": "packaging",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/packaging.py"
+        ]
+      },
+      {
+        "id": "LPDF_PKG_003",
+        "name": "Dieline layer is on a non-printing",
+        "category_id": "packaging",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/packaging.py"
+        ]
+      },
+      {
+        "id": "LPDF_PKG_005",
+        "name": "Content within mm packaging safe zone",
+        "category_id": "packaging",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/packaging.py"
+        ]
+      },
+      {
+        "id": "LPDF_PKG_006",
+        "name": "Packaging bleed insufficient on page minimum",
+        "category_id": "packaging",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/packaging.py"
+        ]
+      },
+      {
+        "id": "LPDF_PKG_007",
+        "name": "Multiple distinct panel sizes detected across",
+        "category_id": "packaging",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/packaging.py"
+        ]
+      },
+      {
+        "id": "LPDF_PKG_008",
+        "name": "Multi-page packaging layout detected Verify crossover",
+        "category_id": "packaging",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/packaging.py"
+        ]
+      },
+      {
+        "id": "LPDF_PKG_010",
+        "name": "White ink separation detected Ensure white ink",
+        "category_id": "packaging",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/packaging.py"
+        ]
+      }
+    ],
+    "LPDF_PRESS": [
+      {
+        "id": "LPDF_PRESS_001",
+        "name": "Custom halftone dictionary detected",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/prepress.py"
+        ]
+      },
+      {
+        "id": "LPDF_PRESS_002",
+        "name": "Transfer function detected on page prohibited",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/prepress.py"
+        ]
+      },
+      {
+        "id": "LPDF_PRESS_003",
+        "name": "Custom BG/UCR function detected",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/prepress.py"
+        ]
+      },
+      {
+        "id": "LPDF_PRESS_004",
+        "name": "Custom halftone HalftoneType detected in ExtGState",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/prepress.py"
+        ]
+      },
+      {
+        "id": "LPDF_PRESS_005",
+        "name": "Custom transfer curve detected in ExtGState",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/prepress.py"
+        ]
+      }
+    ],
+    "LPDF_PS": [
+      {
+        "id": "LPDF_PS_001",
+        "name": "Pharma DataMatrix on page is missing",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/pharma_serialization.py"
+        ]
+      },
+      {
+        "id": "LPDF_PS_002",
+        "name": "Pharma DataMatrix on page GTIN",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/pharma_serialization.py"
+        ]
+      },
+      {
+        "id": "LPDF_PS_003",
+        "name": "Pharma DataMatrix on page invalid expiry",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/pharma_serialization.py"
+        ]
+      },
+      {
+        "id": "LPDF_PS_004",
+        "name": "Pharma DataMatrix on page all EU",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/pharma_serialization.py"
+        ]
+      },
+      {
+        "id": "LPDF_PS_005",
+        "name": "No DataMatrix barcode found \u2014 EU FMD",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/pharma_serialization.py"
+        ]
+      },
+      {
+        "id": "LPDF_PS_006",
+        "name": "Found non-DataMatrix 2D barcode(s alongside pharma",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/pharma_serialization.py"
+        ]
+      }
+    ],
+    "LPDF_QHR": [
+      {
+        "id": "LPDF_QHR_001",
+        "name": "No human-readable text detected near QR code",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_human_readable.py"
+        ]
+      },
+      {
+        "id": "LPDF_QHR_002",
+        "name": "QR code on page human-readable text",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_human_readable.py"
+        ]
+      },
+      {
+        "id": "LPDF_QHR_003",
+        "name": "QR code on page human-readable text",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_human_readable.py"
+        ]
+      }
+    ],
+    "LPDF_QR": [
+      {
+        "id": "LPDF_QR_001",
+        "name": "QR code on page has insufficient",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_validation.py"
+        ]
+      },
+      {
+        "id": "LPDF_QR_002",
+        "name": "QR code on page module size",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_validation.py"
+        ]
+      },
+      {
+        "id": "LPDF_QR_003",
+        "name": "QR code on page contains GS1",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_validation.py"
+        ]
+      },
+      {
+        "id": "LPDF_QR_004",
+        "name": "Duplicate QR code found on pages",
+        "category_id": "other",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/ai/analyzers/barcode/qr_validation.py"
+        ]
+      }
+    ],
+    "LPDF_SPOT": [
+      {
+        "id": "LPDF_SPOT_002",
+        "name": "Spot Color Fallback Issue",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_SPOT_004",
+        "name": "DeviceN on page colorant count",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_SPOT_005",
+        "name": "DeviceN on page includes process",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_SPOT_006",
+        "name": "Pantone spot color not found",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_SPOT_007",
+        "name": "Unknown spot color does not match",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_SPOT_008",
+        "name": "Spot color library has alternate",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_SPOT_009",
+        "name": "Duplicate spot color",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_SPOT_010",
+        "name": "Document uses spot color(s exceeding",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      },
+      {
+        "id": "LPDF_SPOT_011",
+        "name": "Spot color used at 0% tint",
+        "category_id": "spot_colors",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/spot_color_analyzer.py"
+        ]
+      }
+    ],
+    "LPDF_STD": [
+      {
+        "id": "LPDF_STD_001",
+        "name": "G7 Compliance",
+        "category_id": "standards",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/standards_compliance.py"
+        ]
+      },
+      {
+        "id": "LPDF_STD_002",
+        "name": "GRACoL Compliance",
+        "category_id": "standards",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/standards_compliance.py"
+        ]
+      },
+      {
+        "id": "LPDF_STD_003",
+        "name": "ISO 12647 Compliance",
+        "category_id": "standards",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/standards_compliance.py"
+        ]
+      }
+    ],
+    "LPDF_STROKE": [
+      {
+        "id": "LPDF_STROKE_001",
+        "name": "Hairline stroke",
+        "category_id": "strokes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_STROKE_002",
+        "name": "Zero-width stroke on page will not",
+        "category_id": "strokes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_STROKE_003",
+        "name": "Butt Cap on Thin Line",
+        "category_id": "strokes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_STROKE_004",
+        "name": "Multi-ink thin stroke pt inks",
+        "category_id": "strokes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_STROKE_005",
+        "name": "Invisible stroke white/zero-opacity on page renders",
+        "category_id": "strokes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_STROKE_006",
+        "name": "Non-default flatness tolerance",
+        "category_id": "strokes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_STROKE_007",
+        "name": "Rich Black Stroke",
+        "category_id": "strokes",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      }
+    ],
+    "LPDF_STRUCT": [
+      {
+        "id": "LPDF_STRUCT_002",
+        "name": "Form Fields Present",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_003",
+        "name": "PDF Layers Detected",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_005",
+        "name": "3D annotation found",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_006",
+        "name": "Document contains XFA forms not supported",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_007",
+        "name": "Document is a tagged PDF structure tree",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_009",
+        "name": "Document contains interactive form field(s text",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_010",
+        "name": "Layer configuration has print-specific visibility",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_011",
+        "name": "PostScript fragment Type 1 XObject detected",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_012",
+        "name": "Document contains bookmarks/outlines entries",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      },
+      {
+        "id": "LPDF_STRUCT_013",
+        "name": "Embedded page thumbnails detected starting",
+        "category_id": "structure",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/structure.py"
+        ]
+      }
+    ],
+    "LPDF_TEXT": [
+      {
+        "id": "LPDF_TEXT_002",
+        "name": "Very small text pt effective",
+        "category_id": "text",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_TEXT_003",
+        "name": "Invisible text rendering mode 3",
+        "category_id": "text",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_TEXT_005",
+        "name": "Text on registration color 100% all CMYK",
+        "category_id": "text",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      },
+      {
+        "id": "LPDF_TEXT_006",
+        "name": "Small multi-ink text pt inks",
+        "category_id": "text",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/hairline.py"
+        ]
+      }
+    ],
+    "LPDF_TRANS": [
+      {
+        "id": "LPDF_TRANS_002",
+        "name": "Non-Standard Blend Mode",
+        "category_id": "transparency",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/transparency.py"
+        ]
+      },
+      {
+        "id": "LPDF_TRANS_004",
+        "name": "Low Opacity",
+        "category_id": "transparency",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/transparency.py"
+        ]
+      },
+      {
+        "id": "LPDF_TRANS_007",
+        "name": "Shading pattern detected",
+        "category_id": "transparency",
+        "status": "implemented",
+        "source_files": [
+          "packages/engine/src/lintpdf/analyzers/transparency.py"
+        ]
+      }
+    ]
+  }
+}
