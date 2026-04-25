@@ -65,6 +65,13 @@ POST_V3_DELIVERIES: list[tuple[str, list[str]]] = [
     ("T2-RB02", ["LPDF_TEXT_REVERSE_THIN"]),
     ("T2-XMP01", ["LPDF_XMP_GWG_TRAIL"]),
     ("T4-A10", ["LPDF_VIEWER_DISPLAY_TITLE"]),
+    # Batch 10b — Tier-5 deferred (niche / regulatory)
+    ("T5-N01", ["LPDF_PDFVT_STRUCTURE"]),
+    ("T5-N04", ["LPDF_TOBACCO_WARNING_AREA"]),
+    ("T5-N06", ["LPDF_BARCODE_UDI", "LPDF_BARCODE_EU_DPP"]),
+    ("T5-N08", ["LPDF_BARCODE_GS1_AI"]),
+    ("T5-N09", ["LPDF_DIGIMARC_HINT"]),
+    ("T5-N10", ["LPDF_GRAIN_MISSING"]),
     # Tier 3 — Batches 4-7 closed the dieline wedge (15/15)
     ("T3-D01", ["LPDF_DIE_NONPRINT"]),
     ("T3-D02", ["LPDF_DIE_ZORDER"]),

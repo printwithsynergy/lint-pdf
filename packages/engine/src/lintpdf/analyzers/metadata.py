@@ -11,6 +11,10 @@ Check IDs:
     LPDF_VIEWER_DISPLAY_TITLE — Catalog /ViewerPreferences /DisplayDocTitle
         absent or false (T4-A10)
     LPDF_XMP_GWG_TRAIL — GWG XMP audit-trail namespace not present (T2-XMP01)
+    LPDF_DIGIMARC_HINT — Digimarc / anti-counterfeit watermark metadata
+        hint detected (T5-N09)
+    LPDF_GRAIN_MISSING — XMP carries no grain-direction metadata
+        (T5-N10)
 """
 
 from __future__ import annotations
@@ -56,6 +60,10 @@ class MetadataAnalyzer(BaseAnalyzer):
 
         # T2-XMP01 — GWG XMP audit-trail namespace.
         findings.extend(self._check_gwg_namespace(xmp, document.metadata_stream))
+
+        # T5-N09 / T5-N10 — Digimarc + grain-direction metadata.
+        findings.extend(self._check_digimarc_hint(xmp, document.metadata_stream))
+        findings.extend(self._check_grain_direction(xmp, document.metadata_stream))
 
         # LPDF_META_002: Title inconsistency
         info_title = str(document.info_dict.get("/Title", "")).strip()
@@ -181,5 +189,81 @@ class MetadataAnalyzer(BaseAnalyzer):
                 ),
                 details={"audit_trail_present": False},
                 iso_clause="GWG XMP audit-trail (Application Settings 2022)",
+            )
+        ]
+
+    @staticmethod
+    def _check_digimarc_hint(xmp: XmpMetadata, raw_xmp: bytes) -> list[Finding]:
+        """T5-N09 — best-effort Digimarc detection.
+
+        Real Digimarc watermark detection requires their licensed SDK.
+        This check is intentionally conservative: it surfaces metadata
+        hints (Digimarc namespace tokens, ``digimarc.com`` URLs in
+        XMP) so operators can confirm whether the artwork carries an
+        anti-counterfeit watermark — but it does not claim to detect
+        the watermark itself.
+        """
+        text = ""
+        if raw_xmp:
+            try:
+                text = raw_xmp.decode("utf-8", errors="replace").lower()
+            except Exception:
+                text = ""
+        hits: list[str] = []
+        if "digimarc" in text:
+            hits.append("digimarc_namespace_or_url")
+        for key, value in xmp.raw_properties.items():
+            joined = f"{key}={value}".lower()
+            if "digimarc" in joined and "digimarc_namespace_or_url" not in hits:
+                hits.append("digimarc_namespace_or_url")
+                break
+        if not hits:
+            return []
+        return [
+            Finding(
+                inspection_id="LPDF_DIGIMARC_HINT",
+                severity=Severity.ADVISORY,
+                message=(
+                    "Digimarc / anti-counterfeit watermark hint detected in XMP "
+                    "metadata; verify the watermark with the licensed Digimarc SDK"
+                ),
+                details={"hints": hits},
+                iso_clause="Digimarc Discover SDK (proprietary)",
+            )
+        ]
+
+    @staticmethod
+    def _check_grain_direction(xmp: XmpMetadata, raw_xmp: bytes) -> list[Finding]:
+        """T5-N10 — flag XMP that lacks any grain-direction metadata.
+
+        Grain direction is critical for folding-carton / corrugated
+        finishing; the value is typically stored under a custom
+        ``gwg:grain``, ``substrate:grain``, or ``packagingxmp:grain``
+        key. When none of those keys appear in the document's XMP,
+        downstream press-side metadata is unreliable.
+        """
+        text = ""
+        if raw_xmp:
+            try:
+                text = raw_xmp.decode("utf-8", errors="replace").lower()
+            except Exception:
+                text = ""
+        if "grain" in text or "machine-direction" in text:
+            return []
+        for key, value in xmp.raw_properties.items():
+            joined = f"{key}={value}".lower()
+            if "grain" in joined or "machine-direction" in joined:
+                return []
+        return [
+            Finding(
+                inspection_id="LPDF_GRAIN_MISSING",
+                severity=Severity.ADVISORY,
+                message=(
+                    "XMP metadata carries no grain-direction key; downstream "
+                    "press / finishing operations may not get the substrate "
+                    "orientation from this PDF"
+                ),
+                details={"grain_metadata_present": False},
+                iso_clause=("GWG packaging supplements / ISO 16763 (XMP folding-carton)"),
             )
         ]

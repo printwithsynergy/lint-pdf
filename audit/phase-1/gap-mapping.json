@@ -2,9 +2,8 @@
   "version": 4,
   "total": 93,
   "summary": {
-    "present": 82,
-    "partial": 5,
-    "absent": 6
+    "present": 88,
+    "partial": 5
   },
   "matches": [
     {
@@ -1597,10 +1596,17 @@
       "difficulty": "hard",
       "notes": "low volume",
       "category_hint": "pdfvt",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_PDFVT_STRUCTURE"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_PDFVT_STRUCTURE",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T5-N02",
@@ -1667,10 +1673,17 @@
       "difficulty": "medium",
       "notes": "",
       "category_hint": "ai_regulatory_compliance",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_TOBACCO_WARNING_AREA"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_TOBACCO_WARNING_AREA",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T5-N05",
@@ -1703,10 +1716,22 @@
       "difficulty": "hard",
       "notes": "watch 2026-2030 mandate",
       "category_hint": "ai_barcode",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 2,
+      "matched_ids": [
+        "LPDF_BARCODE_UDI",
+        "LPDF_BARCODE_EU_DPP"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_BARCODE_UDI",
+          "match_type": "explicit"
+        },
+        {
+          "id": "LPDF_BARCODE_EU_DPP",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T5-N07",
@@ -1744,10 +1769,17 @@
       "difficulty": "medium",
       "notes": "embed GS1 validator",
       "category_hint": "ai_barcode",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_BARCODE_GS1_AI"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_BARCODE_GS1_AI",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T5-N09",
@@ -1756,10 +1788,17 @@
       "difficulty": "hard",
       "notes": "skip",
       "category_hint": "image",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_DIGIMARC_HINT"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_DIGIMARC_HINT",
+          "match_type": "explicit"
+        }
+      ]
     },
     {
       "gap_id": "T5-N10",
@@ -1768,10 +1807,17 @@
       "difficulty": "hard",
       "notes": "CAD-requiring, skip",
       "category_hint": "page_geometry",
-      "status": "absent",
-      "match_count": 0,
-      "matched_ids": [],
-      "match_details": []
+      "status": "present",
+      "match_count": 1,
+      "matched_ids": [
+        "LPDF_GRAIN_MISSING"
+      ],
+      "match_details": [
+        {
+          "id": "LPDF_GRAIN_MISSING",
+          "match_type": "explicit"
+        }
+      ]
     }
   ]
 }

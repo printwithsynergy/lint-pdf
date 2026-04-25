@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 412,
+  "total_checks": 419,
   "categories": [
     {
       "id": "image",
@@ -1358,9 +1358,27 @@
           "default_severity": "warning"
         },
         {
+          "id": "LPDF_BARCODE_EU_DPP",
+          "name": "EU DPP URL Issues",
+          "description": "EU Digital Product Passport URL in a decoded barcode payload is not HTTPS or contains malformed characters.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_GS1_AI",
+          "name": "Invalid GS1 AI Syntax",
+          "description": "Decoded barcode payload contains a GS1 Application Identifier whose value does not satisfy its expected syntax (length / character set).",
+          "default_severity": "warning"
+        },
+        {
           "id": "LPDF_BARCODE_QUIET_ZONE",
           "name": "Barcode Quiet Zone Conflict",
           "description": "An image XObject (likely a barcode) sits closer than the configured quiet zone (default 2.5mm) to a dieline / fold / crease line. The cut blade or fold crease may pass through the barcode quiet zone and break scanability.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_UDI",
+          "name": "UDI Barcode Issues",
+          "description": "UDI (Unique Device Identifier) barcode is missing required AIs (e.g. AI 01 GTIN) or none of the recommended production AIs (17 / 10 / 21) are present.",
           "default_severity": "warning"
         }
       ]
@@ -2354,6 +2372,12 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_DIGIMARC_HINT",
+          "name": "Digimarc Watermark Hint",
+          "description": "XMP metadata contains a Digimarc namespace or URL token. The actual watermark requires the licensed Digimarc SDK to verify.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_ECG_001",
           "name": "ECG readiness spot color(s found",
           "description": "ECG readiness: N spot color(s) found, N CMYKOGV-like DeviceN space(s) detected. N",
@@ -2588,9 +2612,21 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_GRAIN_MISSING",
+          "name": "Grain Direction Missing",
+          "description": "XMP metadata carries no grain-direction key. Downstream press / finishing operations may not get the substrate orientation from this PDF.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_PDFA_CONF",
           "name": "PDF/A Non-Conformant",
           "description": "veraPDF reported one or more PDF/A rule failures (1b / 2b / 2u / 3b / 3u / 4). See details.failures for the clause + test-number list.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PDFVT_STRUCTURE",
+          "name": "PDF/VT Structural Issue",
+          "description": "Document declares PDF/VT (variable-data printing per ISO 16612-2) but lacks the required structural elements such as /Catalog /DPartRoot.",
           "default_severity": "advisory"
         },
         {
@@ -2735,6 +2771,12 @@
           "id": "LPDF_QR_004",
           "name": "Duplicate QR code found on pages",
           "description": "Duplicate QR code found on pages N: 'NN'",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_TOBACCO_WARNING_AREA",
+          "name": "Tobacco Warning Area Below Threshold",
+          "description": "Tobacco / cigarette artwork's health warning covers less than the regulator-required fraction of the page surface (EU TPD2 65%, US FDA 50%, AU/NZ 75%).",
           "default_severity": "advisory"
         },
         {

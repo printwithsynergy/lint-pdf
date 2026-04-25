@@ -278,6 +278,12 @@ class PreflightOrchestrator:
             )
         )
 
+        # Step 5c: PDF/VT structural check (T5-N01). Silent on PDFs
+        # that don't declare PDF/VT in XMP.
+        from lintpdf.conformance.pdfvt import check_pdfvt_structure
+
+        raw_findings.extend(check_pdfvt_structure(document))
+
         # Step 6: Run AI analyzers (if AI enabled in profile)
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
         raw_findings.extend(ai_findings)

@@ -653,6 +653,34 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Reverse Text Minimum Stroke",
         "Small white (reverse / knockout) text was rendered without a stroke. Add a ≥0.5pt stroke or use ≥12pt for legibility on press.",
     ),
+    "LPDF_PDFVT_STRUCTURE": CheckInfo(
+        "PDF/VT Structural Issue",
+        "Document declares PDF/VT (variable-data printing per ISO 16612-2) but lacks the required structural elements such as /Catalog /DPartRoot.",
+    ),
+    "LPDF_TOBACCO_WARNING_AREA": CheckInfo(
+        "Tobacco Warning Area Below Threshold",
+        "Tobacco / cigarette artwork's health warning covers less than the regulator-required fraction of the page surface (EU TPD2 65%, US FDA 50%, AU/NZ 75%).",
+    ),
+    "LPDF_BARCODE_GS1_AI": CheckInfo(
+        "Invalid GS1 AI Syntax",
+        "Decoded barcode payload contains a GS1 Application Identifier whose value does not satisfy its expected syntax (length / character set).",
+    ),
+    "LPDF_BARCODE_UDI": CheckInfo(
+        "UDI Barcode Issues",
+        "UDI (Unique Device Identifier) barcode is missing required AIs (e.g. AI 01 GTIN) or none of the recommended production AIs (17 / 10 / 21) are present.",
+    ),
+    "LPDF_BARCODE_EU_DPP": CheckInfo(
+        "EU DPP URL Issues",
+        "EU Digital Product Passport URL in a decoded barcode payload is not HTTPS or contains malformed characters.",
+    ),
+    "LPDF_DIGIMARC_HINT": CheckInfo(
+        "Digimarc Watermark Hint",
+        "XMP metadata contains a Digimarc namespace or URL token. The actual watermark requires the licensed Digimarc SDK to verify.",
+    ),
+    "LPDF_GRAIN_MISSING": CheckInfo(
+        "Grain Direction Missing",
+        "XMP metadata carries no grain-direction key. Downstream press / finishing operations may not get the substrate orientation from this PDF.",
+    ),
     "LPDF_DIE_TOO_SMALL": CheckInfo(
         "Dieline Feature Below Cutter Resolution",
         "Dieline polygon's bbox or perimeter is smaller than the cutting machine can track cleanly (default 1.0mm threshold). Tiny features tear surrounding stock or crumble during die-cutting.",
