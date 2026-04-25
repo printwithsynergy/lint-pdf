@@ -822,6 +822,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Tab order not specified",
         "Tab order not specified on page N (/Tabs missing)",
     ),
+    "LPDF_ACCESS_TABLE_STRUCTURE": CheckInfo(
+        "Table Header Cell Missing /Scope or /Headers",
+        "Table /TH cell lacks /Scope or /Headers attribute — screen readers can't associate data cells with their headers (WCAG 1.3.1).",
+    ),
+    "LPDF_ACCESS_HEADING_SKIP": CheckInfo(
+        "Heading Hierarchy Skip",
+        "Heading hierarchy skips a level (e.g., H1 → H3 without H2). Breaks screen-reader navigation and outline browsing (WCAG 1.3.1).",
+    ),
+    "LPDF_ACCESS_SCREEN_READER": CheckInfo(
+        "Encryption Denies Screen Reader",
+        "Encryption /P permission bit 10 is cleared — screen readers can't extract text or graphics for accessibility (ISO 32000-2 §7.6.4.2 Table 22).",
+    ),
     # ── Advanced Colour ─────────────────────────────────────────────────────
     "LPDF_ADV_001": CheckInfo(
         "CMYK image on page xpx",

@@ -17,6 +17,9 @@ Check IDs:
     LPDF_ACCESS_011 — Color-only information conveyed
     LPDF_ACCESS_012 — Insufficient text-background contrast
     LPDF_ACCESS_013 — Tab order not specified (/Tabs in page dict)
+    LPDF_ACCESS_TABLE_STRUCTURE — Table cells missing /Scope or /Headers (T4-A06)
+    LPDF_ACCESS_HEADING_SKIP — Heading hierarchy skips a level (T4-A07)
+    LPDF_ACCESS_SCREEN_READER — Encryption denies screen-reader access (T4-A09)
 """
 
 from __future__ import annotations
@@ -258,7 +261,165 @@ class AccessibilityAnalyzer(BaseAnalyzer):
                     )
                 )
 
+        # T4-A06 — table structure (TH cells missing /Scope or /Headers).
+        findings.extend(self._check_table_structure(document))
+
+        # T4-A07 — heading hierarchy skips.
+        findings.extend(self._check_heading_skip(document))
+
+        # T4-A09 — encryption permission bit 10 (screen reader).
+        findings.extend(self._check_screen_reader_permission(document))
+
         return findings
+
+    @staticmethod
+    def _check_table_structure(document: SemanticDocument) -> list[Finding]:
+        """LPDF_ACCESS_TABLE_STRUCTURE — TH cells missing /Scope / /Headers."""
+        struct_root = document.catalog.get("/StructTreeRoot")
+        if not isinstance(struct_root, dict):
+            return []
+
+        table_count = 0
+        missing_scope = 0
+
+        def walk(node: object) -> None:
+            nonlocal table_count, missing_scope
+            if not isinstance(node, dict):
+                return
+            type_val = node.get("/S") or node.get("/Type")
+            type_name = str(type_val).lstrip("/") if type_val else ""
+            if type_name == "Table":
+                table_count += 1
+            if type_name == "TH":
+                # Walk /A attribute object(s) for /Scope or /Headers.
+                attrs = node.get("/A") or []
+                if isinstance(attrs, dict):
+                    attrs = [attrs]
+                if not isinstance(attrs, list):
+                    attrs = []
+                has_scope_or_headers = any(
+                    isinstance(a, dict)
+                    and (a.get("/Scope") is not None or a.get("/Headers") is not None)
+                    for a in attrs
+                )
+                if not has_scope_or_headers:
+                    missing_scope += 1
+            kids = node.get("/K")
+            if isinstance(kids, list):
+                for child in kids:
+                    walk(child)
+            elif isinstance(kids, dict):
+                walk(kids)
+
+        walk(struct_root)
+        if missing_scope == 0:
+            return []
+        return [
+            Finding(
+                inspection_id="LPDF_ACCESS_TABLE_STRUCTURE",
+                severity=Severity.WARNING,
+                message=(
+                    f"Table contains {missing_scope} header cell(s) without "
+                    f"/Scope or /Headers — screen readers can't associate "
+                    f"data with headers"
+                ),
+                details={
+                    "table_count": table_count,
+                    "missing_scope_count": missing_scope,
+                },
+                iso_clause="ISO 32000-2:2020 14.8.5.7 / WCAG 1.3.1",
+            )
+        ]
+
+    @staticmethod
+    def _check_heading_skip(document: SemanticDocument) -> list[Finding]:
+        """LPDF_ACCESS_HEADING_SKIP — heading levels skip in document order."""
+        struct_root = document.catalog.get("/StructTreeRoot")
+        if not isinstance(struct_root, dict):
+            return []
+
+        skip_count = 0
+        worst_from = ""
+        worst_to = ""
+        worst_gap = 0
+        prev_level = 0
+
+        def walk(node: object) -> None:
+            nonlocal skip_count, worst_from, worst_to, worst_gap, prev_level
+            if not isinstance(node, dict):
+                return
+            type_val = node.get("/S") or node.get("/Type")
+            type_name = str(type_val).lstrip("/") if type_val else ""
+            if len(type_name) == 2 and type_name[0] == "H" and type_name[1].isdigit():
+                level = int(type_name[1])
+                if prev_level > 0 and level > prev_level + 1:
+                    skip_count += 1
+                    gap = level - prev_level
+                    if gap > worst_gap:
+                        worst_gap = gap
+                        worst_from = f"H{prev_level}"
+                        worst_to = f"H{level}"
+                prev_level = level
+            kids = node.get("/K")
+            if isinstance(kids, list):
+                for child in kids:
+                    walk(child)
+            elif isinstance(kids, dict):
+                walk(kids)
+
+        walk(struct_root)
+        if skip_count == 0:
+            return []
+        return [
+            Finding(
+                inspection_id="LPDF_ACCESS_HEADING_SKIP",
+                severity=Severity.WARNING,
+                message=(
+                    f"{skip_count} heading hierarchy skip(s) detected "
+                    f"(worst: {worst_from} -> {worst_to})"
+                ),
+                details={
+                    "skip_count": skip_count,
+                    "worst_skip_from": worst_from,
+                    "worst_skip_to": worst_to,
+                },
+                iso_clause="WCAG 1.3.1 / ISO 32000-2:2020 14.8.4.3",
+            )
+        ]
+
+    @staticmethod
+    def _check_screen_reader_permission(
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """LPDF_ACCESS_SCREEN_READER — encryption /P bit 10 cleared."""
+        if not document.is_encrypted:
+            return []
+        encrypt = document.trailer.get("/Encrypt")
+        if not isinstance(encrypt, dict):
+            return []
+        p_value = encrypt.get("/P")
+        if not isinstance(p_value, int):
+            return []
+        # Bit 10 (= 1 << 9 = 0x200) — accessibility extraction allowed.
+        # Negative /P values are still valid because Python ints carry
+        # arbitrary-precision sign bits; mask with 0xFFFFFFFF first to
+        # treat as unsigned 32-bit.
+        unsigned = p_value & 0xFFFFFFFF
+        screen_reader_allowed = bool(unsigned & 0x200)
+        if screen_reader_allowed:
+            return []
+        return [
+            Finding(
+                inspection_id="LPDF_ACCESS_SCREEN_READER",
+                severity=Severity.WARNING,
+                message=("Encryption permissions deny screen-reader access (bit 10 cleared in /P)"),
+                details={
+                    "p_value": p_value,
+                    "screen_reader_allowed": False,
+                },
+                iso_clause="ISO 32000-2:2020 7.6.4.2 Table 22",
+            )
+        ]
 
     @staticmethod
     def _collect_struct_types(node: dict, *, _depth: int = 0) -> set[str]:

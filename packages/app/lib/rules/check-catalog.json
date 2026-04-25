@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 400,
+  "total_checks": 403,
   "categories": [
     {
       "id": "image",
@@ -1139,6 +1139,24 @@
           "id": "LPDF_ACCESS_013",
           "name": "Tab order not specified",
           "description": "Tab order not specified on page N (/Tabs missing)",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_HEADING_SKIP",
+          "name": "Heading Hierarchy Skip",
+          "description": "Heading hierarchy skips a level (e.g., H1 \u2192 H3 without H2). Breaks screen-reader navigation and outline browsing (WCAG 1.3.1).",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_SCREEN_READER",
+          "name": "Encryption Denies Screen Reader",
+          "description": "Encryption /P permission bit 10 is cleared \u2014 screen readers can't extract text or graphics for accessibility (ISO 32000-2 \u00a77.6.4.2 Table 22).",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_ACCESS_TABLE_STRUCTURE",
+          "name": "Table Header Cell Missing /Scope or /Headers",
+          "description": "Table /TH cell lacks /Scope or /Headers attribute \u2014 screen readers can't associate data cells with their headers (WCAG 1.3.1).",
           "default_severity": "advisory"
         }
       ]
