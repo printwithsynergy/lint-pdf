@@ -617,6 +617,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Non-Canonical Spot Name",
         "Spot colour name doesn't match the lintPDF canonical taxonomy (CutContour, Crease, Perforation, KissCut, ThroughCut, White, Varnish, VarnishFree). Renaming to canonical names improves cross-vendor compatibility (Esko, PackZ, ArtiosCAD).",
     ),
+    "LPDF_PSTEP_SUGGEST": CheckInfo(
+        "ISO 19593-1 Processing Step Suggestion",
+        "Spot ink with a recognised production-process name (cut, crease, perforation, varnish, white) should be tagged with the matching ISO 19593-1 ProcessingSteps group so finishing equipment treats it as a process rather than a printable ink.",
+    ),
     "LPDF_DIE_TOO_SMALL": CheckInfo(
         "Dieline Feature Below Cutter Resolution",
         "Dieline polygon's bbox or perimeter is smaller than the cutting machine can track cleanly (default 1.0mm threshold). Tiny features tear surrounding stock or crumble during die-cutting.",

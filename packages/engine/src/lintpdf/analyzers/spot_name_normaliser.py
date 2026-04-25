@@ -25,10 +25,26 @@ logger = logging.getLogger(__name__)
 
 __all__ = [
     "CANONICAL_NAMES",
+    "ISO_19593_GROUP_BY_CANONICAL",
     "check_spot_naming",
     "find_canonical_name",
     "normalise_spot_name",
+    "suggest_processing_steps",
 ]
+
+
+#: Map canonical spot category → ISO 19593-1 ProcessingSteps group.
+#: Drives the T2-ISO05 ``LPDF_PSTEP_SUGGEST`` advisory.
+ISO_19593_GROUP_BY_CANONICAL: dict[str, str] = {
+    "CutContour": "Cutting",
+    "ThroughCut": "Cutting",
+    "KissCut": "KissCutting",
+    "Crease": "Folding",
+    "Perforation": "Perforating",
+    "White": "White",
+    "Varnish": "Varnish",
+    "VarnishFree": "VarnishFree",
+}
 
 
 # Canonical → set of variant tokens (already normalised: lowercase,
@@ -210,6 +226,63 @@ def check_spot_naming(pdf_bytes: bytes) -> list[Finding]:
                     "canonical_name": canonical,
                 },
                 iso_clause="ISO 19593-1 §5.3 / GWG spot naming",
+                object_id=actual_name,
+                object_type="spot_color",
+            )
+        )
+    return findings
+
+
+def suggest_processing_steps(pdf_bytes: bytes) -> list[Finding]:
+    """T2-ISO05 — emit one ``LPDF_PSTEP_SUGGEST`` advisory per spot
+    whose canonical category maps to a known ISO 19593-1 group.
+
+    Suggests the appropriate ``/ProcessingSteps /Group`` entry so
+    finishing equipment recognises cut/crease/perforation/varnish
+    inks as production processes rather than print-able colour.
+
+    Silent when the PDF has no spots in the taxonomy or when none
+    of the discovered spots map to an ISO 19593-1 group.
+    """
+    if not pdf_bytes:
+        return []
+
+    try:
+        spots = _collect_spot_names(pdf_bytes)
+    except Exception:
+        logger.exception("suggest_processing_steps: collection raised")
+        return []
+
+    if not spots:
+        return []
+
+    findings: list[Finding] = []
+    seen: set[str] = set()
+    for actual_name in spots:
+        if actual_name in seen:
+            continue
+        seen.add(actual_name)
+        canonical = find_canonical_name(actual_name)
+        if canonical is None:
+            continue
+        iso_group = ISO_19593_GROUP_BY_CANONICAL.get(canonical)
+        if iso_group is None:
+            continue
+        findings.append(
+            Finding(
+                inspection_id="LPDF_PSTEP_SUGGEST",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"Spot '{actual_name}' should be tagged ISO 19593-1 "
+                    f"ProcessingSteps group '{iso_group}'"
+                ),
+                page_num=0,
+                details={
+                    "actual_name": actual_name,
+                    "canonical_name": canonical,
+                    "iso_group": iso_group,
+                },
+                iso_clause="ISO 19593-1 §5.3",
                 object_id=actual_name,
                 object_type="spot_color",
             )

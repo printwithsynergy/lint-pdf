@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 403,
+  "total_checks": 404,
   "categories": [
     {
       "id": "image",
@@ -2615,6 +2615,12 @@
           "id": "LPDF_PROC_002",
           "name": "White ink layer detected",
           "description": "White ink layer detected: N",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PSTEP_SUGGEST",
+          "name": "ISO 19593-1 Processing Step Suggestion",
+          "description": "Spot ink with a recognised production-process name (cut, crease, perforation, varnish, white) should be tagged with the matching ISO 19593-1 ProcessingSteps group so finishing equipment treats it as a process rather than a printable ink.",
           "default_severity": "advisory"
         },
         {

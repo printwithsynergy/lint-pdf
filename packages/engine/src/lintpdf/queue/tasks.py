@@ -916,14 +916,17 @@ def run_preflight(
                         result_dict["summary"][sev_key] += 1
 
             # Batch 7 — T3-D11 spot-name canonical-taxonomy advisories.
+            # Batch 9c — T2-ISO05 ISO 19593-1 ProcessingSteps suggestions.
             # Independent of dieline detection; runs on any PDF.
             if pdf_bytes:
                 try:
                     from lintpdf.analyzers.spot_name_normaliser import (
                         check_spot_naming,
+                        suggest_processing_steps,
                     )
 
                     sn_findings = check_spot_naming(pdf_bytes)
+                    sn_findings.extend(suggest_processing_steps(pdf_bytes))
                 except Exception:
                     logger.exception("Job %s spot_name_normaliser raised", job_id)
                     sn_findings = []
@@ -1055,13 +1058,17 @@ def run_preflight(
                     logger.exception("Job %s dieline_quality persistence raised", job_id)
 
             # Batch 7 — persist spot-name canonical-taxonomy advisories.
+            # Batch 9c — also persist T2-ISO05 ProcessingSteps suggestions.
             if pdf_bytes:
                 try:
                     from lintpdf.analyzers.spot_name_normaliser import (
                         check_spot_naming,
+                        suggest_processing_steps,
                     )
 
-                    for sf in check_spot_naming(pdf_bytes):
+                    spot_findings = check_spot_naming(pdf_bytes)
+                    spot_findings.extend(suggest_processing_steps(pdf_bytes))
+                    for sf in spot_findings:
                         db.add(
                             JobFinding(
                                 job_id=job.id,
