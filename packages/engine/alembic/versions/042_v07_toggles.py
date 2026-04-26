@@ -45,7 +45,7 @@ TOGGLE_TYPE = sa.Enum(
     "OBJECT",
     name="toggle_type",
     native_enum=True,
-    create_type=True,
+    create_type=False,
 )
 
 TOGGLE_SCOPE = sa.Enum(
@@ -54,7 +54,7 @@ TOGGLE_SCOPE = sa.Enum(
     "CALL",
     name="toggle_scope",
     native_enum=True,
-    create_type=True,
+    create_type=False,
 )
 
 MERGE_STRATEGY = sa.Enum(
@@ -63,7 +63,7 @@ MERGE_STRATEGY = sa.Enum(
     "UNION",
     name="merge_strategy",
     native_enum=True,
-    create_type=True,
+    create_type=False,
 )
 
 
@@ -195,7 +195,9 @@ def upgrade() -> None:
         ),
         sa.Column("surface", sa.String(length=32), nullable=False),
         sa.UniqueConstraint(
-            "toggle_id", "scope", "scope_id",
+            "toggle_id",
+            "scope",
+            "scope_id",
             name="uq_toggle_overrides_scope",
         ),
     )
