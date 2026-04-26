@@ -16,7 +16,6 @@ from lintpdf.api.config import get_settings
 from lintpdf.api.database import get_db
 from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit
 from lintpdf.api.models import (
-    BrandSpec,
     CustomEndpoint,
     Job,
     JobStatus,
@@ -55,27 +54,24 @@ def _resolve_brand_spec_id(
     db: Session, tenant_id: uuid_mod.UUID, spec_id: uuid_mod.UUID | None
 ) -> uuid_mod.UUID | None:
     """Validate that ``spec_id`` (if non-None) points at a
-    non-archived BrandSpec owned by this tenant. Raises 404
+    non-archived brand spec owned by this tenant. Raises 404
     otherwise. Returns the validated UUID unchanged so callers
     can store it on the endpoint row without re-querying.
+
+    Phase 0.7 PR-B3b — brand specs live in the unified-config
+    ``ToggleOverride(toggle_id='brand')`` row now.
     """
     if spec_id is None:
         return None
-    spec = (
-        db.query(BrandSpec)
-        .filter(
-            BrandSpec.id == spec_id,
-            BrandSpec.tenant_id == tenant_id,
-            BrandSpec.is_archived.is_(False),
-        )
-        .first()
-    )
-    if spec is None:
+    from lintpdf.brand_specs import storage as _brand_storage
+
+    value = _brand_storage.get_spec(db, tenant_id, spec_id)
+    if value is None or value.get("is_archived"):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Brand spec '{spec_id}' not found or archived.",
         )
-    return spec.id
+    return spec_id
 
 
 @router.post("", response_model=EndpointResponse, status_code=status.HTTP_201_CREATED)
