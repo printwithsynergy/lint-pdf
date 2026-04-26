@@ -477,15 +477,32 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Cannot verify text-background contrast for accessibility without an output intent.",
     ),
     # ── Text & Hairlines ──────────────────────────────────────────────────
-    "LPDF_TEXT_001": CheckInfo("Small Text", "Text is below the minimum readable size for print."),
+    "LPDF_TEXT_001": CheckInfo(
+        "Small Text",
+        "Text is below the configured minimum readable size for print "
+        "(default 6pt). Below this threshold, ink spread on press makes "
+        "letterforms close up and lose legibility — especially on "
+        "uncoated stocks.",
+        v2_ids=("F-22",),
+    ),
     "LPDF_TEXT_004": CheckInfo(
-        "White Text", "White text detected — verify it's intentional and not hidden content."
+        "White Text Detected",
+        "White text instance(s) found on page. White text only renders if "
+        "the underlying inks knock out — verify the intent is correct and "
+        "isn't accidentally invisible content.",
     ),
     "LPDF_HAIR_001": CheckInfo(
-        "Hairline Stroke", "A very thin line may disappear or print inconsistently."
+        "Hairline Stroke",
+        "Stroke width is below the configured minimum (typically 0.25pt). "
+        "Hairlines may disappear entirely on offset presses or print "
+        "inconsistently across plates. Increase the stroke weight upstream.",
+        v2_ids=("LA-01",),
     ),
     "LPDF_HAIR_002": CheckInfo(
-        "Small Text on Thin Stroke", "Thin stroked text may be hard to read at small sizes."
+        "Small Text Built With Thin Stroke",
+        "Stroked text below the minimum size with a thin stroke. The "
+        "combination is a double legibility risk — small glyphs with "
+        "fragile stroke widths.",
     ),
     "LPDF_PATH_002": CheckInfo(
         "White Fill Path", "A white-filled path may knock out background content unintentionally."
@@ -834,6 +851,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_TEXT_REVERSE_THIN": CheckInfo(
         "Reverse Text Minimum Stroke",
         "Small white (reverse / knockout) text was rendered without a stroke. Add a ≥0.5pt stroke or use ≥12pt for legibility on press.",
+        v2_ids=("F-24",),
     ),
     "LPDF_PDFVT_STRUCTURE": CheckInfo(
         "PDF/VT Structural Issue",
@@ -866,6 +884,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_TEXT_SOFT_MASK": CheckInfo(
         "Text Under Soft Mask",
         "Text rendered on a page that declares a soft-mask ExtGState. Some RIPs lose legibility on text under a soft mask; verify rendering at production resolution.",
+        v2_ids=("TR-13",),
     ),
     "AI_ALC_003": CheckInfo(
         "Wine / Spirits Specific Compliance",
@@ -886,6 +905,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_TEXT_NEAR_FOLD": CheckInfo(
         "Text Near Fold Line",
         "Text region within the configured clearance (default 3.0mm) of a fold / crease / score line. Text that crosses or hugs a fold gets bent and becomes hard to read.",
+        v2_ids=("F-35",),
     ),
     "LPDF_BRAILLE_INTEGRITY": CheckInfo(
         "Braille Zone Integrity",
@@ -1858,26 +1878,48 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Strokes (extended) ──────────────────────────────────────────────────
     "LPDF_STROKE_001": CheckInfo(
-        "Hairline stroke", "Hairline stroke (Npt) on page N (below Npt minimum)"
+        "Hairline Stroke (Below Minimum)",
+        "Stroke width is below the configured minimum. Effectively the same "
+        "check as LPDF_HAIR_001; both fire for thin strokes detected by "
+        "different code paths (event-stream vs analyzer pass).",
+        v2_ids=("LA-01",),
     ),
     "LPDF_STROKE_002": CheckInfo(
-        "Zero-width stroke on page will not",
-        "Zero-width stroke on page N (will not render in print)",
+        "Zero-Width Stroke",
+        "A stroke is declared with zero width. Zero-width strokes render "
+        "device-pixel-thin in some RIPs and not at all in others — "
+        "behaviour is undefined. Set an explicit width upstream.",
+        v2_ids=("LA-03",),
     ),
     "LPDF_STROKE_004": CheckInfo(
-        "Multi-ink thin stroke pt inks",
-        "Multi-ink thin stroke (Npt, N inks) on page N (risk of misregistration on thin lines)",
+        "Multi-Ink Thin Stroke",
+        "A thin stroke is built from more than one CMYK ink. Thin strokes "
+        "are highly sensitive to press registration; multi-ink builds "
+        "fringe visibly when plates drift. Convert to pure K or a single "
+        "spot ink.",
+        v2_ids=("LA-02",),
     ),
     "LPDF_STROKE_005": CheckInfo(
-        "Invisible stroke white/zero-opacity on page renders",
-        "Invisible stroke (white/zero-opacity) on page N (renders as white line art)",
+        "Invisible Stroke",
+        "Stroke is white or has zero opacity, rendering invisibly on press. "
+        "Likely an export error (the source app intended a knockout "
+        "between two filled regions). Verify the design intent.",
+        v2_ids=("LA-04",),
     ),
     "LPDF_STROKE_006": CheckInfo(
-        "Non-default flatness tolerance",
-        "Non-default flatness tolerance (N) on page N (may affect curve rendering quality)",
+        "Non-Default Flatness Tolerance",
+        "Stroke or fill uses a non-default flatness tolerance. Higher "
+        "tolerances coarsen curve approximations — for fine artwork, "
+        "leave at the default (1.0). May affect press-side curve "
+        "rendering quality.",
     ),
     # ── Structure ───────────────────────────────────────────────────────────
-    "LPDF_STRUCT_005": CheckInfo("3D annotation found", "3D annotation found on page N"),
+    "LPDF_STRUCT_005": CheckInfo(
+        "3D Annotation Found",
+        "Page contains a 3D annotation (Acrobat 3D model). 3D annotations "
+        "have no print representation and are stripped at press; flagged "
+        "for awareness in case the file was uploaded by mistake.",
+    ),
     "LPDF_STRUCT_006": CheckInfo(
         "Document contains XFA forms not supported",
         "Document contains XFA forms (not supported in print workflows)",
@@ -1918,8 +1960,12 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Text (extended) ─────────────────────────────────────────────────────
     "LPDF_TEXT_002": CheckInfo(
-        "Very small text pt effective",
-        "Very small text (Npt effective) on page N (below Npt)",
+        "Very Small Text Below Effective Minimum",
+        "Effective text size (after the page CTM scales the type) is "
+        "below the configured minimum. Same defect class as LPDF_TEXT_001 "
+        "but expressed in CTM-effective points rather than nominal "
+        "points — catches tiny text that looks larger in source.",
+        v2_ids=("F-22",),
     ),
     "LPDF_TEXT_003": CheckInfo(
         "Invisible Text (Rendering Mode 3)",
@@ -1938,8 +1984,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "ink trapping fails. Re-tag with the intended ink.",
     ),
     "LPDF_TEXT_006": CheckInfo(
-        "Small multi-ink text pt inks",
-        "Small multi-ink text (Npt, N inks) on page N (risk of misregistration)",
+        "Small Multi-Ink Text",
+        "Small text is built from more than one CMYK ink. At small sizes "
+        "even a half-pixel of plate misregistration shows as a fringe — "
+        "convert to pure K or enlarge the type.",
+        v2_ids=("F-23",),
     ),
     # ── Transparency (extended) ─────────────────────────────────────────────
     "LPDF_TRANS_006": CheckInfo(

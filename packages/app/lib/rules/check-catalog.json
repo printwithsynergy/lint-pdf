@@ -664,13 +664,13 @@
         {
           "id": "LPDF_TEXT_001",
           "name": "Small Text",
-          "description": "Text is below the minimum readable size for print.",
+          "description": "Text is below the configured minimum readable size for print (default 6pt). Below this threshold, ink spread on press makes letterforms close up and lose legibility \u2014 especially on uncoated stocks.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_TEXT_002",
-          "name": "Very small text pt effective",
-          "description": "Very small text (Npt effective) on page N (below Npt)",
+          "name": "Very Small Text Below Effective Minimum",
+          "description": "Effective text size (after the page CTM scales the type) is below the configured minimum. Same defect class as LPDF_TEXT_001 but expressed in CTM-effective points rather than nominal points \u2014 catches tiny text that looks larger in source.",
           "default_severity": "advisory"
         },
         {
@@ -681,8 +681,8 @@
         },
         {
           "id": "LPDF_TEXT_004",
-          "name": "White Text",
-          "description": "White text detected \u2014 verify it's intentional and not hidden content.",
+          "name": "White Text Detected",
+          "description": "White text instance(s) found on page. White text only renders if the underlying inks knock out \u2014 verify the intent is correct and isn't accidentally invisible content.",
           "default_severity": "advisory"
         },
         {
@@ -693,8 +693,8 @@
         },
         {
           "id": "LPDF_TEXT_006",
-          "name": "Small multi-ink text pt inks",
-          "description": "Small multi-ink text (Npt, N inks) on page N (risk of misregistration)",
+          "name": "Small Multi-Ink Text",
+          "description": "Small text is built from more than one CMYK ink. At small sizes even a half-pixel of plate misregistration shows as a fringe \u2014 convert to pure K or enlarge the type.",
           "default_severity": "advisory"
         },
         {
@@ -730,13 +730,13 @@
         {
           "id": "LPDF_HAIR_001",
           "name": "Hairline Stroke",
-          "description": "A very thin line may disappear or print inconsistently.",
+          "description": "Stroke width is below the configured minimum (typically 0.25pt). Hairlines may disappear entirely on offset presses or print inconsistently across plates. Increase the stroke weight upstream.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_HAIR_002",
-          "name": "Small Text on Thin Stroke",
-          "description": "Thin stroked text may be hard to read at small sizes.",
+          "name": "Small Text Built With Thin Stroke",
+          "description": "Stroked text below the minimum size with a thin stroke. The combination is a double legibility risk \u2014 small glyphs with fragile stroke widths.",
           "default_severity": "warning"
         }
       ]
@@ -747,14 +747,14 @@
       "checks": [
         {
           "id": "LPDF_STROKE_001",
-          "name": "Hairline stroke",
-          "description": "Hairline stroke (Npt) on page N (below Npt minimum)",
+          "name": "Hairline Stroke (Below Minimum)",
+          "description": "Stroke width is below the configured minimum. Effectively the same check as LPDF_HAIR_001; both fire for thin strokes detected by different code paths (event-stream vs analyzer pass).",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_STROKE_002",
-          "name": "Zero-width stroke on page will not",
-          "description": "Zero-width stroke on page N (will not render in print)",
+          "name": "Zero-Width Stroke",
+          "description": "A stroke is declared with zero width. Zero-width strokes render device-pixel-thin in some RIPs and not at all in others \u2014 behaviour is undefined. Set an explicit width upstream.",
           "default_severity": "warning"
         },
         {
@@ -765,20 +765,20 @@
         },
         {
           "id": "LPDF_STROKE_004",
-          "name": "Multi-ink thin stroke pt inks",
-          "description": "Multi-ink thin stroke (Npt, N inks) on page N (risk of misregistration on thin lines)",
+          "name": "Multi-Ink Thin Stroke",
+          "description": "A thin stroke is built from more than one CMYK ink. Thin strokes are highly sensitive to press registration; multi-ink builds fringe visibly when plates drift. Convert to pure K or a single spot ink.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_STROKE_005",
-          "name": "Invisible stroke white/zero-opacity on page renders",
-          "description": "Invisible stroke (white/zero-opacity) on page N (renders as white line art)",
+          "name": "Invisible Stroke",
+          "description": "Stroke is white or has zero opacity, rendering invisibly on press. Likely an export error (the source app intended a knockout between two filled regions). Verify the design intent.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_STROKE_006",
-          "name": "Non-default flatness tolerance",
-          "description": "Non-default flatness tolerance (N) on page N (may affect curve rendering quality)",
+          "name": "Non-Default Flatness Tolerance",
+          "description": "Stroke or fill uses a non-default flatness tolerance. Higher tolerances coarsen curve approximations \u2014 for fine artwork, leave at the default (1.0). May affect press-side curve rendering quality.",
           "default_severity": "warning"
         },
         {
@@ -963,8 +963,8 @@
         },
         {
           "id": "LPDF_STRUCT_005",
-          "name": "3D annotation found",
-          "description": "3D annotation found on page N",
+          "name": "3D Annotation Found",
+          "description": "Page contains a 3D annotation (Acrobat 3D model). 3D annotations have no print representation and are stripped at press; flagged for awareness in case the file was uploaded by mistake.",
           "default_severity": "advisory"
         },
         {

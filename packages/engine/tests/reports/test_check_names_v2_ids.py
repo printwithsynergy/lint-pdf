@@ -85,6 +85,61 @@ def test_box_001_maps_to_p03_and_p04():
     assert CHECK_NAMES["LPDF_BOX_001"].v2_ids == ("P-03", "P-04")
 
 
+def test_text_001_maps_to_f22():
+    """F-22: Text below minimum size — plain (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_TEXT_001"].v2_ids == ("F-22",)
+
+
+def test_text_002_maps_to_f22():
+    """F-22 (effective-size sense): Very small text after CTM scaling (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_TEXT_002"].v2_ids == ("F-22",)
+
+
+def test_text_006_maps_to_f23():
+    """F-23: Text below min size — multi-separation/tinted (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_TEXT_006"].v2_ids == ("F-23",)
+
+
+def test_text_reverse_thin_maps_to_f24():
+    """F-24: Text below min size — reverse / knockout (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_TEXT_REVERSE_THIN"].v2_ids == ("F-24",)
+
+
+def test_text_soft_mask_maps_to_tr13():
+    """TR-13: Soft mask on text (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_TEXT_SOFT_MASK"].v2_ids == ("TR-13",)
+
+
+def test_text_near_fold_maps_to_f35():
+    """F-35: Text too close to fold (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_TEXT_NEAR_FOLD"].v2_ids == ("F-35",)
+
+
+def test_hair_001_maps_to_la01():
+    """LA-01: Hairline below min — single sep (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_HAIR_001"].v2_ids == ("LA-01",)
+
+
+def test_stroke_001_maps_to_la01():
+    """LA-01 (alt path): Hairline detected via event-stream pass (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_STROKE_001"].v2_ids == ("LA-01",)
+
+
+def test_stroke_002_maps_to_la03():
+    """LA-03: Zero-width stroke (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_STROKE_002"].v2_ids == ("LA-03",)
+
+
+def test_stroke_004_maps_to_la02():
+    """LA-02: Hairline below min — multi-sep / coloured (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_STROKE_004"].v2_ids == ("LA-02",)
+
+
+def test_stroke_005_maps_to_la04():
+    """LA-04: Invisible stroke — None / zero-opacity colour (Wave D batch 7)."""
+    assert CHECK_NAMES["LPDF_STROKE_005"].v2_ids == ("LA-04",)
+
+
 def test_struct_001_maps_to_m17():
     """M-17: JavaScript present (Wave D batch 6)."""
     assert CHECK_NAMES["LPDF_STRUCT_001"].v2_ids == ("M-17",)
