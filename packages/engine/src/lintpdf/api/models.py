@@ -539,50 +539,6 @@ class SystemProfile(Base):
     )
 
 
-class CustomEndpoint(Base):
-    """Custom API endpoint bound to a specific profile for simplified job submission."""
-
-    __tablename__ = "custom_endpoints"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    slug: Mapped[str] = mapped_column(String(255), nullable=False)
-    profile_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    description: Mapped[str] = mapped_column(String(1024), nullable=False, default="")
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    # ``async`` (default): submit returns 202 + job id, caller polls.
-    # ``sync``: submit blocks until the job is terminal (bounded by
-    # ``LINTPDF_SYNC_MAX_WAIT_S``) and returns the full JobResponse.
-    # Postgres-side CHECK constraint enforces the enum; see Alembic 033.
-    response_mode: Mapped[str] = mapped_column(
-        String(16), nullable=False, server_default="async", default="async"
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-
-    # Unique constraint: one slug per tenant
-    __table_args__ = (Index("ix_custom_endpoints_tenant_slug", "tenant_id", "slug", unique=True),)
-
-    # Relationships
-    tenant: Mapped[Tenant] = relationship()
-
-    # Per-endpoint default brand specification — applies to every job
-    # submitted through this endpoint unless the submit call overrides
-    # it with an explicit ``brand_spec_id``. Phase 0.7 PR-B3d: FK to
-    # ``brand_specs.id`` was dropped (alembic 045); the column now
-    # references a key inside the tenant's
-    # ``ToggleOverride(toggle_id='brand')`` dict. PR-B4 drops the
-    # column entirely when the legacy ``custom_endpoints`` and
-    # ``brand_specs`` tables are dropped.
-    default_brand_spec_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid,
-        nullable=True,
-    )
-
-
 class PlanLimitOverride(Base):
     """Operator-editable defaults applied to every tenant on a plan.
 

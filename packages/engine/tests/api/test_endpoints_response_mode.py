@@ -14,11 +14,13 @@ Covers:
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from lintpdf.api.models import CustomEndpoint, Job, JobStatus, ReportToken, Tenant
+from lintpdf.api.models import Job, JobStatus, ReportToken, Tenant
+from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope, Workflow
 
 if TYPE_CHECKING:
     import pytest
@@ -175,21 +177,36 @@ class TestJobsSyncWait:
 
 class TestEndpointSubmitSyncMode:
     @staticmethod
-    def _seed_endpoint(db_session: Session, *, slug: str, response_mode: str) -> CustomEndpoint:
+    def _seed_endpoint(db_session: Session, *, slug: str, response_mode: str):
+        """Phase 0.7 PR-B5 — seed a Workflow row + endpoint_defaults override."""
         from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
-        ep = CustomEndpoint(
-            id=uuid.uuid4(),
+        wf = Workflow(
+            id=secrets.token_urlsafe(16),
             tenant_id=PLACEHOLDER_TENANT_ID,
             slug=slug,
-            profile_id="lintpdf-default",
+            human_name=slug,
             description="test",
+            is_default=False,
             is_active=True,
             response_mode=response_mode,
+            server_revision=1,
         )
-        db_session.add(ep)
+        db_session.add(wf)
+        db_session.add(
+            ToggleOverride(
+                id=secrets.token_urlsafe(12),
+                toggle_id="endpoint_defaults",
+                scope=ToggleScope.WORKFLOW,
+                scope_id=wf.id,
+                value={"profile_id": "lintpdf-default", "default_brand_spec_id": None},
+                locked=False,
+                set_by="test",
+                surface="test",
+            )
+        )
         db_session.commit()
-        return ep
+        return wf
 
     def test_async_endpoint_default_returns_202(
         self,

@@ -20,10 +20,11 @@ from __future__ import annotations
 import secrets
 import uuid
 from io import BytesIO
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-from lintpdf.api.models import CustomEndpoint, Job, JobStatus
+from lintpdf.api.models import Job, JobStatus
 from lintpdf.brand_specs.resolver import (
     resolve_brand_spec_for_job,
     resolve_brand_spec_for_tenant,
@@ -336,17 +337,11 @@ class TestResolver:
             json={"name": "job-spec", "colors": []},
         ).json()
 
-        # Construct the endpoint + job in-memory only. ``brand_specs``
-        # FK on CustomEndpoint.default_brand_spec_id and Job.brand_spec_id
-        # still exists in the legacy schema (PR-B4 drops it); persisting
-        # would fail because the new substrate writes to ToggleOverride
-        # instead of brand_specs. The resolver doesn't require persistence
-        # — it reads attributes directly off the objects passed in.
-        endpoint = CustomEndpoint(
-            id=uuid.uuid4(),
-            tenant_id=tenant.id,
-            slug="resolver-chain",
-            profile_id="lintpdf-default",
+        # Construct an endpoint-shaped stand-in via SimpleNamespace —
+        # the resolver only reads ``default_brand_spec_id`` so any
+        # object exposing that attribute satisfies the ``_BrandSpecHolder``
+        # protocol. CustomEndpoint ORM model is gone (PR-B5).
+        endpoint = SimpleNamespace(
             default_brand_spec_id=uuid.UUID(endpoint_spec["id"]),
         )
         job = Job(

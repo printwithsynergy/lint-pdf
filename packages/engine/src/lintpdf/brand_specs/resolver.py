@@ -34,10 +34,22 @@ from lintpdf.brand_specs import storage
 
 if TYPE_CHECKING:
     import uuid as uuid_mod
+    from typing import Protocol
 
     from sqlalchemy.orm import Session
 
-    from lintpdf.api.models import CustomEndpoint, Job
+    from lintpdf.api.models import Job
+
+    class _BrandSpecHolder(Protocol):
+        """Structural type for the resolver's optional ``endpoint`` arg.
+
+        Phase 0.7 PR-B5 — endpoints are Workflow rows now, but the
+        chain-resolution logic only reads ``default_brand_spec_id``.
+        Any object exposing that attribute (Workflow, an in-memory
+        SimpleNamespace, etc.) is fine.
+        """
+
+        default_brand_spec_id: uuid_mod.UUID | None
 
 
 @dataclass(frozen=True)
@@ -102,7 +114,7 @@ def resolve_brand_spec_for_job(
     db: Session,
     *,
     job: Job,
-    endpoint: CustomEndpoint | None = None,
+    endpoint: _BrandSpecHolder | None = None,
 ) -> ResolvedBrandSpec | None:
     """Walk the resolution chain for a single job.
 
