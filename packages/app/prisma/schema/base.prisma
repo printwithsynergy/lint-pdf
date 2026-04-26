@@ -284,3 +284,31 @@ model ReportView {
   @@index([tenantId, viewedAt])
   @@index([reportToken])
 }
+
+// ============================================
+// MOBILE DEVICES
+// ============================================
+//
+// Push-notification token registry for the LintPDF mobile companion
+// app. Each row binds a device's FCM/APNs `pushToken` to a (user,
+// tenant) tuple so the future approval-webhook handler can resolve
+// `email -> [pushToken]` for fan-out without coupling the Python
+// engine to mobile-specific SDKs (see plan).
+//
+// Same user can have multiple devices (one per phone / OS install),
+// but each `pushToken` is globally unique — FCM/APNs tokens are
+// already unique per device, and uniqueness here lets the
+// `DELETE /api/mobile/devices/{pushToken}` route key off a single
+// column without a userId+token compound index.
+model MobileDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  tenantId   String
+  platform   String // "ios" | "android"
+  pushToken  String   @unique
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([tenantId])
+}
