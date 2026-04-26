@@ -85,6 +85,63 @@ def test_box_001_maps_to_p03_and_p04():
     assert CHECK_NAMES["LPDF_BOX_001"].v2_ids == ("P-03", "P-04")
 
 
+def test_color_005_maps_to_c51():
+    """C-51: Registration pseudo-colour as fill (Wave B catch-up T1)."""
+    assert CHECK_NAMES["LPDF_COLOR_005"].v2_ids == ("C-51",)
+
+
+def test_color_006_maps_to_c19():
+    """C-19: OutputIntent missing (Wave B catch-up T1)."""
+    assert CHECK_NAMES["LPDF_COLOR_006"].v2_ids == ("C-19",)
+
+
+def test_color_015_maps_to_c01():
+    """C-01: DeviceRGB used (partial — also covers DeviceCMYK / DeviceGray
+    branches with OutputIntent present, but DeviceRGB is the primary
+    PDF/X-4 violation)."""
+    assert CHECK_NAMES["LPDF_COLOR_015"].v2_ids == ("C-01",)
+
+
+def test_color_016_maps_to_c53():
+    """C-53: Impure gray (CMY-built grays — Wave D batch 5)."""
+    assert CHECK_NAMES["LPDF_COLOR_016"].v2_ids == ("C-53",)
+
+
+def test_color_017_maps_to_c52():
+    """C-52: Impure black — CMY > 0 in K-only intent (Wave D batch 5)."""
+    assert CHECK_NAMES["LPDF_COLOR_017"].v2_ids == ("C-52",)
+
+
+def test_color_021_maps_to_c50():
+    """C-50: 4-colour rich black on small text (Wave D batch 5)."""
+    assert CHECK_NAMES["LPDF_COLOR_021"].v2_ids == ("C-50",)
+
+
+def test_ink_substrate_maps_to_c48():
+    """C-48: Substrate-aware TAC limit (Wave D batch 5)."""
+    assert CHECK_NAMES["LPDF_INK_SUBSTRATE"].v2_ids == ("C-48",)
+
+
+def test_over_004_maps_to_c36():
+    """C-36: Overprint of process white (Wave B catch-up T1)."""
+    assert CHECK_NAMES["LPDF_OVER_004"].v2_ids == ("C-36",)
+
+
+def test_over_007_maps_to_f28():
+    """F-28: Black text not overprinting / in knockout mode (Wave B catch-up T2)."""
+    assert CHECK_NAMES["LPDF_OVER_007"].v2_ids == ("F-28",)
+
+
+def test_over_008_maps_to_c38():
+    """C-38: Overprint of registration colour (Wave B catch-up T1)."""
+    assert CHECK_NAMES["LPDF_OVER_008"].v2_ids == ("C-38",)
+
+
+def test_spot_deprecated_pantone_maps_to_c32():
+    """C-32: Deprecated Pantone naming (Wave D batch 5)."""
+    assert CHECK_NAMES["LPDF_SPOT_DEPRECATED_PANTONE"].v2_ids == ("C-32",)
+
+
 def test_box_002_maps_to_p07():
     """P-07: TrimBox not nested in BleedBox (Wave B catch-up T1; partial — also
     fires on CropBox-outside-MediaBox and BleedBox-outside-CropBox branches)."""

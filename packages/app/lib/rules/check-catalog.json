@@ -159,14 +159,14 @@
         },
         {
           "id": "LPDF_COLOR_005",
-          "name": "Registration Color",
-          "description": "All inks at 100% \u2014 only for registration marks, never for artwork.",
+          "name": "Registration Colour Used As Artwork Fill",
+          "description": "Registration colour (100% on every CMYK channel) is reserved for crop marks and trapping guides, never artwork. Fires when registration is used as a fill \u2014 typically a registration-only swatch picked up by mistake during design.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_COLOR_006",
           "name": "No Output Intent",
-          "description": "No color profile is specified \u2014 colors may shift unpredictably during printing.",
+          "description": "Document declares no Output Intent. Without one, every downstream tool guesses at the destination colour space \u2014 proofs and press output drift unpredictably. Add an Output Intent ICC referencing the target press condition.",
           "default_severity": "warning"
         },
         {
@@ -219,20 +219,20 @@
         },
         {
           "id": "LPDF_COLOR_015",
-          "name": "ICC Profile Mismatch",
-          "description": "Embedded ICC profile doesn't match the output intent.",
+          "name": "Device-Dependent Colour With OutputIntent",
+          "description": "A device-dependent colour space (DeviceRGB / DeviceCMYK / DeviceGray) is used while an OutputIntent is present. The DeviceRGB branch is disallowed under PDF/X-4 entirely; DeviceCMYK and DeviceGray are allowed but ICC-based alternatives are recommended for predictable colour. Re-tag with an ICCBased alternative.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_COLOR_016",
-          "name": "RGB in CMYK Workflow",
-          "description": "RGB color found in a CMYK-targeted workflow.",
+          "name": "Impure Gray",
+          "description": "Object uses a CMY-built gray (C \u2248 M \u2248 Y, components within 5% of each other) rather than a single-channel DeviceGray or pure K. Multi-ink grays drift on press and waste ink \u2014 convert to DeviceGray or pure K.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_COLOR_017",
           "name": "Impure Black",
-          "description": "Black areas use unnecessary color inks, risking visible misregistration.",
+          "description": "Black areas use C, M, or Y in addition to K. Multi-ink blacks are sensitive to press registration and produce visible fringes where neighbouring colours overprint. Replace with pure K or a controlled rich-black recipe.",
           "default_severity": "warning"
         },
         {
@@ -459,8 +459,8 @@
         },
         {
           "id": "LPDF_OVER_004",
-          "name": "White overprint on page fill",
-          "description": "White overprint on page N (fill is white with overprint active \u2014 content underneath will show through)",
+          "name": "White Fill Painted With Overprint",
+          "description": "An object filled with white (or process white) has overprint active. White-overprint is a special-cases-only setting: the white fill becomes invisible because overprint preserves the underlying ink instead of knocking it out. Either remove the overprint or switch to knockout.",
           "default_severity": "warning"
         },
         {
@@ -471,20 +471,20 @@
         },
         {
           "id": "LPDF_OVER_006",
-          "name": "Overprint active with DeviceRGB",
-          "description": "Overprint active with DeviceRGB on page N (undefined behavior on press)",
+          "name": "Overprint Active With DeviceRGB",
+          "description": "Overprint is active on a DeviceRGB-coloured object. Overprint is fundamentally a separation-time concept (per-channel knock-out vs preserve), but DeviceRGB has no separation model. Press behaviour is undefined and varies by RIP. Convert to CMYK or remove the overprint flag.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_OVER_007",
-          "name": "Small black text instance min",
-          "description": "N small black text instanceN (min Npt) in knockout mode on page N (overprint not active \u2014 risk of misregistration)",
+          "name": "Small Black Text In Knockout Mode",
+          "description": "Small black text is painted with overprint disabled (knockout). Without overprint the press must register the K plate against any non-K underlying inks within a few thousandths of an inch \u2014 small type breaks visually as soon as registration drifts. Enable overprint on small black text.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_OVER_008",
-          "name": "Registration color with overprint active",
-          "description": "Registration color with overprint active on page N (registration color outside marks is dangerous)",
+          "name": "Registration Colour With Overprint Active",
+          "description": "An object painted in registration colour (all CMYK \u2265 ~90%) has overprint enabled. Registration colour is reserved for marks; overprinting it onto artwork lays a heavy ink load over whatever sits below. Remove the overprint or switch to the intended process / spot ink.",
           "default_severity": "warning"
         }
       ]

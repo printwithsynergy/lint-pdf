@@ -241,11 +241,20 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Total ink exceeds the maximum for this paper type, risking smearing or drying issues.",
     ),
     "LPDF_COLOR_005": CheckInfo(
-        "Registration Color", "All inks at 100% — only for registration marks, never for artwork."
+        "Registration Colour Used As Artwork Fill",
+        "Registration colour (100% on every CMYK channel) is reserved for "
+        "crop marks and trapping guides, never artwork. Fires when "
+        "registration is used as a fill — typically a registration-only "
+        "swatch picked up by mistake during design.",
+        v2_ids=("C-51",),
     ),
     "LPDF_COLOR_006": CheckInfo(
         "No Output Intent",
-        "No color profile is specified — colors may shift unpredictably during printing.",
+        "Document declares no Output Intent. Without one, every downstream "
+        "tool guesses at the destination colour space — proofs and press "
+        "output drift unpredictably. Add an Output Intent ICC referencing "
+        "the target press condition.",
+        v2_ids=("C-19",),
     ),
     "LPDF_COLOR_007": CheckInfo(
         "Mixed Color Spaces",
@@ -269,13 +278,30 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Color Space Inventory", "Summary of color space types used in the document."
     ),
     "LPDF_COLOR_015": CheckInfo(
-        "ICC Profile Mismatch", "Embedded ICC profile doesn't match the output intent."
+        "Device-Dependent Colour With OutputIntent",
+        "A device-dependent colour space (DeviceRGB / DeviceCMYK / "
+        "DeviceGray) is used while an OutputIntent is present. The "
+        "DeviceRGB branch is disallowed under PDF/X-4 entirely; "
+        "DeviceCMYK and DeviceGray are allowed but ICC-based alternatives "
+        "are recommended for predictable colour. Re-tag with an ICCBased "
+        "alternative.",
+        v2_ids=("C-01",),
     ),
     "LPDF_COLOR_016": CheckInfo(
-        "RGB in CMYK Workflow", "RGB color found in a CMYK-targeted workflow."
+        "Impure Gray",
+        "Object uses a CMY-built gray (C ≈ M ≈ Y, components within 5% of "
+        "each other) rather than a single-channel DeviceGray or pure K. "
+        "Multi-ink grays drift on press and waste ink — convert to "
+        "DeviceGray or pure K.",
+        v2_ids=("C-53",),
     ),
     "LPDF_COLOR_017": CheckInfo(
-        "Impure Black", "Black areas use unnecessary color inks, risking visible misregistration."
+        "Impure Black",
+        "Black areas use C, M, or Y in addition to K. Multi-ink blacks "
+        "are sensitive to press registration and produce visible fringes "
+        "where neighbouring colours overprint. Replace with pure K or a "
+        "controlled rich-black recipe.",
+        v2_ids=("C-52",),
     ),
     "LPDF_COLOR_018": CheckInfo(
         "Untagged Color", "Color space used without an associated ICC profile."
@@ -288,6 +314,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Rich Black Text",
         "Text uses more than one CMYK ink — pure K (100/0/0/0) is recommended "
         "at every size to avoid misregistration.",
+        v2_ids=("C-50",),
     ),
     # ── Page Geometry ─────────────────────────────────────────────────────
     "LPDF_BOX_001": CheckInfo(
@@ -745,6 +772,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_INK_SUBSTRATE": CheckInfo(
         "TAC Exceeds Substrate Limit",
         "Observed max Total Area Coverage exceeds the limit typical for the declared substrate (uncoated offset 280%, coated 300%, newsprint 240%, digital 320%, flexo 260%, gravure 300%, large-format 280%).",
+        v2_ids=("C-48",),
     ),
     "LPDF_SPOT_NONCANONICAL": CheckInfo(
         "Non-Canonical Spot Name",
@@ -765,6 +793,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_SPOT_DEPRECATED_PANTONE": CheckInfo(
         "Deprecated Pantone Suffix",
         "Spot name uses a legacy Pantone suffix (CV, CVC, CVU, CVP, CVUX) that was retired with the post-2008 Pantone book; verify the spot still maps to the intended colour.",
+        v2_ids=("C-32",),
     ),
     "LPDF_VIEWER_DISPLAY_TITLE": CheckInfo(
         "Viewer DisplayDocTitle",
@@ -1581,8 +1610,13 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Overprint (extended) ────────────────────────────────────────────────
     "LPDF_OVER_004": CheckInfo(
-        "White overprint on page fill",
-        "White overprint on page N (fill is white with overprint active — content underneath will show through)",
+        "White Fill Painted With Overprint",
+        "An object filled with white (or process white) has overprint "
+        "active. White-overprint is a special-cases-only setting: the white "
+        "fill becomes invisible because overprint preserves the underlying "
+        "ink instead of knocking it out. Either remove the overprint or "
+        "switch to knockout.",
+        v2_ids=("C-36",),
     ),
     "LPDF_OVER_005": CheckInfo(
         "Overprint Inventory",
@@ -1592,16 +1626,30 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "expectations.",
     ),
     "LPDF_OVER_006": CheckInfo(
-        "Overprint active with DeviceRGB",
-        "Overprint active with DeviceRGB on page N (undefined behavior on press)",
+        "Overprint Active With DeviceRGB",
+        "Overprint is active on a DeviceRGB-coloured object. Overprint is "
+        "fundamentally a separation-time concept (per-channel knock-out vs "
+        "preserve), but DeviceRGB has no separation model. Press behaviour "
+        "is undefined and varies by RIP. Convert to CMYK or remove the "
+        "overprint flag.",
     ),
     "LPDF_OVER_007": CheckInfo(
-        "Small black text instance min",
-        "N small black text instanceN (min Npt) in knockout mode on page N (overprint not active — risk of misregistration)",
+        "Small Black Text In Knockout Mode",
+        "Small black text is painted with overprint disabled (knockout). "
+        "Without overprint the press must register the K plate against any "
+        "non-K underlying inks within a few thousandths of an inch — small "
+        "type breaks visually as soon as registration drifts. Enable "
+        "overprint on small black text.",
+        v2_ids=("F-28",),
     ),
     "LPDF_OVER_008": CheckInfo(
-        "Registration color with overprint active",
-        "Registration color with overprint active on page N (registration color outside marks is dangerous)",
+        "Registration Colour With Overprint Active",
+        "An object painted in registration colour (all CMYK ≥ ~90%) has "
+        "overprint enabled. Registration colour is reserved for marks; "
+        "overprinting it onto artwork lays a heavy ink load over whatever "
+        "sits below. Remove the overprint or switch to the intended "
+        "process / spot ink.",
+        v2_ids=("C-38",),
     ),
     # ── Paths ───────────────────────────────────────────────────────────────
     "LPDF_PATH_001": CheckInfo(
