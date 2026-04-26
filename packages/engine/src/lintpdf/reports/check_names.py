@@ -145,7 +145,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "An image XObject dictionary has no /Subtype key, so the RIP can't know how to render it. The PDF is structurally malformed.",
     ),
     "LPDF_IMG_020": CheckInfo(
-        "Image XObject Has Wrong /Subtype",
+        "Image XObject Wrong /Subtype",
         "An image XObject's /Subtype is neither /Image nor /Form (e.g., deprecated /PS, or a vendor-invented subtype the RIP won't recognise).",
     ),
     # ── Fonts ─────────────────────────────────────────────────────────────
@@ -386,7 +386,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Transparency Used", "Page uses transparency which must be flattened for older workflows."
     ),
     "LPDF_TRANS_002": CheckInfo(
-        "Transparency × Overprint Interaction",
+        "Transparency × Overprint Interaction",  # noqa: RUF001 — × is intentional (cross-product of two effects)
         "Both transparency and overprint are active on the same page. The "
         "interaction between alpha-blended objects and overprinted spot "
         "colours is RIP-specific — flattening behaviour can swap colours "
@@ -404,7 +404,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Overprint ─────────────────────────────────────────────────────────
     "LPDF_OVER_001": CheckInfo(
-        "Overprint On",
+        "Overprint Enabled",
         "Overprint is enabled — colors will mix where they overlap instead of knocking out.",
     ),
     "LPDF_OVER_002": CheckInfo(
@@ -711,7 +711,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Preflight profile recommendation emitted with confidence score.",
     ),
     "AI_AFP_003": CheckInfo(
-        "Preflight profile recommendation has low confidence",
+        "Low Recommendation Confidence",
         "Preflight profile recommendation has low confidence (N). Manual selection may be more appropriate.",
     ),
     # ── AI Alcohol ──────────────────────────────────────────────────────────
@@ -764,12 +764,12 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("D-07",),
     ),
     "LPDF_DIE_BLEND_MODE": CheckInfo(
-        "Dieline Has Non-Normal Blend Mode",
+        "Dieline Non-Normal Blend Mode",
         "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork — non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong colour. Set blend mode to Normal on the dieline layer.",
         v2_ids=("D-08",),
     ),
     "LPDF_DIE_OPACITY_LOW": CheckInfo(
-        "Dieline Has Reduced Opacity",
+        "Dieline Reduced Opacity",
         "Dieline spot is painted with alpha < 100% (semi-transparent). Cutter spots are layer-extracted process controls, not artwork — partial transparency does not survive RIP separation, so the cut plate either drops to zero coverage or composites into the substrate. Set opacity to 100% on the dieline layer in Illustrator / InDesign.",
         v2_ids=("D-09",),
     ),
@@ -997,11 +997,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── AI Processing Step (ISO 19593-1) ────────────────────────────────────
     "AI_PSTEP_002": CheckInfo(
-        "Processing step detected source detail",
+        "Processing Step Source Found",
         "Processing step detected: 'N' (source: N, detail: 'N')",
     ),
     "AI_PSTEP_003": CheckInfo(
-        "No processing steps detected in document",
+        "No Processing Steps",
         "No processing steps detected in document.",
     ),
     # ── AI_RSYM ─────────────────────────────────────────────────────────────
@@ -1014,7 +1014,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Regulatory symbol 'N' detected on page N (confidence: N, size: Nmm)",
     ),
     "AI_RSYM_004": CheckInfo(
-        "Expected regulatory symbol was not detected",
+        "Missing Regulatory Symbol",
         "Expected regulatory symbol 'N' was not detected in the document",
     ),
     # ── AI_SIM ──────────────────────────────────────────────────────────────
@@ -1028,7 +1028,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Only N historical submissions available (need N for SPC). Trend analysis will improve with more data.",
     ),
     "AI_SPC_002": CheckInfo(
-        "All historical submissions have identical finding",
+        "Identical Repeat Finding",
         "All historical submissions have identical finding counts — no variation to analyze.",
     ),
     "AI_SPC_003": CheckInfo(
@@ -1046,7 +1046,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── AI_TAO ──────────────────────────────────────────────────────────────
     "AI_TAO_002": CheckInfo(
-        "Page contains text converted to outlines",
+        "Text Converted To Outlines",
         "Page N contains text converted to outlines. OCR detected N characters of visible text but only N characters are extractable as live text.",
     ),
     "AI_TAO_003": CheckInfo("Outlined text region", "Outlined text region on page N: 'N'"),
@@ -1064,11 +1064,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Accessibility (extended) ────────────────────────────────────────────
     "LPDF_ACCESS_003": CheckInfo(
-        "Document is a tagged PDF StructTreeRoot",
+        "Tagged PDF StructTreeRoot",
         "Document is a tagged PDF (StructTreeRoot and MarkInfo present)",
     ),
     "LPDF_ACCESS_005": CheckInfo(
-        "Image on page may lack",
+        "Image Missing Alt Text",
         "Image 'N' on page N may lack alternative text (/Alt)",
     ),
     "LPDF_ACCESS_006": CheckInfo(
@@ -1088,7 +1088,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "No Artifact markings found in structure tree; decorative elements may not be properly excluded",
     ),
     "LPDF_ACCESS_010": CheckInfo(
-        "Reading order undefined /StructTreeRoot has no /K",
+        "Undefined Reading Order",
         "Reading order undefined (/StructTreeRoot has no /K children)",
     ),
     "LPDF_ACCESS_011": CheckInfo(
@@ -1096,7 +1096,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "No structural emphasis tags (/Em, /Strong) found; information may be conveyed by color alone",
     ),
     "LPDF_ACCESS_013": CheckInfo(
-        "Tab order not specified",
+        "Tab Order Not Specified",
         "Tab order not specified on page N (/Tabs missing)",
     ),
     "LPDF_ACCESS_TABLE_STRUCTURE": CheckInfo(
@@ -1125,23 +1125,23 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "CxF defines spot color 'N' but no matching Separation space found in document",
     ),
     "LPDF_ADV_007": CheckInfo(
-        "CxF spectral data is embedded",
+        "CxF Spectral Data Embedded",
         "CxF spectral data is embedded in the document",
     ),
     "LPDF_ADV_008": CheckInfo(
-        "CxF spectral range for is -nm",
+        "CxF Spectral Range Mismatch",
         "CxF spectral range for 'N' is N-Nnm, does not cover required 380-730nm",
     ),
     "LPDF_ADV_009": CheckInfo(
-        "CxF spectral data does not specify measurement",
+        "Missing CxF Measurement Geometry",
         "CxF spectral data does not specify measurement geometry (e.g., 45/0, d/8)",
     ),
     "LPDF_ADV_010": CheckInfo(
-        "CxF illuminant does not match output",
+        "CxF Illuminant Mismatch",
         "CxF illuminant 'N' does not match output intent illuminant 'N'",
     ),
     "LPDF_ADV_011": CheckInfo(
-        "CxF observer angle ° is non-standard expected",
+        "Non-Standard CxF Observer Angle",
         "CxF observer angle N° is non-standard (expected 2° or 10°)",
     ),
     "LPDF_ADV_012": CheckInfo(
@@ -1157,16 +1157,16 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "CxF spectral data includes substrate (paper white) measurement",
     ),
     "LPDF_ADV_015": CheckInfo(
-        "CxF version may not be fully",
+        "Incomplete CxF Version Tag",
         "CxF version 'N' may not be fully compatible (supported: N)",
     ),
     # ── AI Helper ───────────────────────────────────────────────────────────
     "LPDF_AI_BAND_001": CheckInfo(
-        "Visible banding detected on page CAMBI",
+        "Visible Banding Detected",
         "Visible banding detected on page N: CAMBI score N exceeds threshold (N)",
     ),
     "LPDF_AI_CAST_001": CheckInfo(
-        "Significant color cast detected",
+        "Significant Color Cast",
         "Significant color cast detected on page N: N cast (deviation N, CLIP-IQA score N)",
     ),
     "LPDF_AI_CDCC_001": CheckInfo(
@@ -1174,7 +1174,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Spot color inventory for cross-document tracking: N (N spot color(s) found)",
     ),
     "LPDF_AI_DIEL_002": CheckInfo(
-        "Dieline spot color detected color space",
+        "Dieline Spot In Wrong Color Space",
         "Dieline spot color detected: 'N' (color space 'N', type N) on page N",
     ),
     "LPDF_AI_SKIN_001": CheckInfo("Skin tone analysis", "Skin tone analysis for page N: N"),
@@ -1232,7 +1232,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Barcode decodability N below C grade on page N",
     ),
     "LPDF_BARCODE_014": CheckInfo(
-        "Potential 2D barcode detected",
+        "Potential 2D Barcode",
         "Potential 2D barcode detected on page N (N modules in NxNpt region)",
     ),
     "LPDF_BARCODE_015": CheckInfo(
@@ -1240,7 +1240,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "2D barcode grid irregularity on page N (width CV=N, height CV=N)",
     ),
     "LPDF_BARCODE_016": CheckInfo(
-        "2D barcode on page contains", "2D barcode on page N contains N modules"
+        "Suspect 2D Barcode Content", "2D barcode on page N contains N modules"
     ),
     "LPDF_BARCODE_017": CheckInfo(
         "2D barcode aspect ratio",
@@ -1283,7 +1283,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Barcode extends beyond trim box on page N (will be trimmed)",
     ),
     "LPDF_BARCODE_029": CheckInfo(
-        "Barcode center is mm from page center",
+        "Barcode Off-Center",
         "Barcode center is Nmm from page center on page N — may be near a fold",
     ),
     "LPDF_BARCODE_030": CheckInfo(
@@ -1300,11 +1300,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "DataMatrix on page N: GTIN N has invalid check digit (expected N, got N)",
     ),
     "LPDF_BCQM_002": CheckInfo(
-        "QR code on page contains invalid",
+        "Invalid QR Code Content",
         "QR code on page N contains invalid URL: N",
     ),
     "LPDF_BCQM_003": CheckInfo(
-        "No human-readable text detected near QR code",
+        "Missing QR Code Human-Readable Text",
         "No human-readable text detected near QR code on page N",
     ),
     "LPDF_BCQM_004": CheckInfo(
@@ -1317,7 +1317,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "DataMatrix on page N: GTIN N has invalid check digit (expected N, got N)",
     ),
     "LPDF_BCV_002": CheckInfo(
-        "QR code on page contains invalid",
+        "Invalid QR Code Content",
         "QR code on page N contains invalid URL: N — 'N'",
     ),
     "LPDF_BCV_003": CheckInfo(
@@ -1358,7 +1358,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("M-03",),
     ),
     "LPDF_DOC_004": CheckInfo(
-        "Document Is Encrypted",
+        "Encrypted Document",
         "Document is password-protected or otherwise encrypted. RIPs "
         "and prepress automation cannot reliably parse encrypted PDFs; "
         "all PDF/X profiles prohibit encryption. Re-export without a "
@@ -1388,7 +1388,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("M-34",),
     ),
     "LPDF_DOC_008": CheckInfo(
-        "Pre-Separated Pages Detected",
+        "Pre-Separated Pages",
         "One or more pages use a single Separation colour space — i.e. "
         "the document is pre-separated rather than composite. Composite "
         "PDF/X is the standard for press-side workflows; pre-separated "
@@ -1443,7 +1443,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "compound dot-gain.",
     ),
     "LPDF_ECG_006": CheckInfo(
-        "Spot color could be replaced",
+        "Replaceable Spot Color",
         "Spot color 'N' could be replaced by ECG process color 'N' on page(s) N",
     ),
     "LPDF_ECG_007": CheckInfo(
@@ -1606,7 +1606,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("EPM-C8",),
     ),
     "LPDF_EPM_015": CheckInfo(
-        "EPM White-Ink Underlayer Detected",
+        "EPM White-Ink Underlayer",
         "A Separation color space resembling white ink was detected. White "
         "underlayers are used for dark substrate printing and are typically "
         "not part of an EPM workflow — confirm the press supports the "
@@ -1646,22 +1646,22 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── ICC Profiles ────────────────────────────────────────────────────────
     "LPDF_ICC_005": CheckInfo(
-        "Output intent # has unrecognized condition",
+        "Unrecognized Output Intent Condition",
         "Output intent #N has unrecognized condition 'N'",
     ),
     "LPDF_ICC_006": CheckInfo(
-        "Multiple output intents have inconsistent color space",
+        "Inconsistent Output Intent Color Spaces",
         "Multiple output intents have inconsistent color space types: N",
     ),
     "LPDF_ICC_007": CheckInfo(
         "ICC profile", "ICC profile 'N' on page N is missing required tag(s): N"
     ),
     "LPDF_ICC_008": CheckInfo(
-        "Document uses ICC profiles with different rendering",
+        "Mixed ICC Rendering Intents",
         "Document uses ICC profiles with different rendering intents: N",
     ),
     "LPDF_ICC_009": CheckInfo(
-        "ICC profile has non-D50 PCS illuminant",
+        "Non-D50 ICC Illuminant",
         "ICC profile 'N' has non-D50 PCS illuminant: X=N, Y=N, Z=N (expected X=0.9642, Y=1.0, Z=0.8249)",
     ),
     # ── Metadata (extended) ─────────────────────────────────────────────────
@@ -1669,7 +1669,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Title mismatch Info dict vs XMP", "Title mismatch: Info dict 'N' vs XMP 'N'"
     ),
     "LPDF_META_003": CheckInfo(
-        "Trapped key is in XMP metadata", "Trapped key is N in XMP metadata"
+        "Trapped Key In XMP Metadata", "Trapped key is N in XMP metadata"
     ),
     "LPDF_META_004": CheckInfo(
         "PDF version mismatch header vs XMP",
@@ -1725,11 +1725,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Packaging ───────────────────────────────────────────────────────────
     "LPDF_PKG_003": CheckInfo(
-        "Dieline layer is on a non-printing",
+        "Dieline On Non-Printing Layer",
         "Dieline layer 'N' is on a non-printing layer. Verify this is intentional for your packaging workflow.",
     ),
     "LPDF_PKG_004": CheckInfo(
-        "Content on page is positioned significantly",
+        "Content Off-Center",
         "Content on page N is positioned significantly outside the trim box — may be outside the dieline boundary",
     ),
     "LPDF_PKG_005": CheckInfo(
@@ -1741,49 +1741,49 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Packaging bleed insufficient on page N: (minimum Npt / Nmm for packaging)",
     ),
     "LPDF_PKG_007": CheckInfo(
-        "Multiple distinct panel sizes detected across",
+        "Mixed Panel Sizes",
         "Multiple distinct panel sizes detected across N pages (N unique sizes) — common in multi-panel packaging",
     ),
     "LPDF_PKG_008": CheckInfo(
-        "Multi-page packaging layout detected Verify crossover",
+        "Multi-Page Packaging Layout",
         "Multi-page packaging layout detected. Verify crossover alignment between adjacent panels to ensure seamless print across fold/cut lines.",
     ),
     "LPDF_PKG_009": CheckInfo(
-        "Varnish/coating layer detected", "Varnish/coating layer detected: N"
+        "Varnish/Coating Layer", "Varnish/coating layer detected: N"
     ),
     "LPDF_PKG_010": CheckInfo(
-        "White ink separation detected Ensure white ink",
+        "White Ink Separation",
         "White ink separation detected. Ensure white ink layer is correctly configured for your substrate and print process.",
     ),
     # ── Prepress ────────────────────────────────────────────────────────────
     "LPDF_PRESS_001": CheckInfo(
-        "Custom halftone dictionary detected",
+        "Custom Halftone Dictionary",
         "Custom halftone dictionary detected on page N",
     ),
     "LPDF_PRESS_002": CheckInfo(
-        "Transfer function detected on page prohibited",
+        "Prohibited Transfer Function",
         "Transfer function detected on page N (prohibited in PDF/X)",
     ),
     "LPDF_PRESS_003": CheckInfo(
-        "Custom BG/UCR function detected",
+        "Custom BG/UCR Function",
         "Custom BG/UCR function detected on page N",
     ),
     "LPDF_PRESS_004": CheckInfo(
-        "Custom halftone HalftoneType detected in ExtGState",
+        "Custom Halftone In ExtGState",
         "Custom halftone (HalftoneType N) detected in ExtGState 'N' on page N",
     ),
     "LPDF_PRESS_005": CheckInfo(
-        "Custom transfer curve detected in ExtGState",
+        "Custom Transfer Curve In ExtGState",
         "Custom transfer curve (N) detected in ExtGState 'N' on page N",
     ),
     # ── Processing ──────────────────────────────────────────────────────────
     "LPDF_PROC_001": CheckInfo(
-        "Processing step layers detected", "Processing step layers detected: N"
+        "Processing Step Layers", "Processing step layers detected: N"
     ),
-    "LPDF_PROC_002": CheckInfo("White ink layer detected", "White ink layer detected: N"),
+    "LPDF_PROC_002": CheckInfo("White Ink Layer", "White ink layer detected: N"),
     # ── Pharma Serialization ────────────────────────────────────────────────
     "LPDF_PS_001": CheckInfo(
-        "Pharma DataMatrix on page is missing",
+        "Missing Pharma DataMatrix",
         "Pharma DataMatrix on page N is missing required EU FMD fields: N",
     ),
     "LPDF_PS_002": CheckInfo(
@@ -1811,7 +1811,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── QR Human-Readable ───────────────────────────────────────────────────
     "LPDF_QHR_001": CheckInfo(
-        "No human-readable text detected near QR code",
+        "Missing QR Code Human-Readable Text",
         "No human-readable text detected near QR code on page N",
     ),
     "LPDF_QHR_002": CheckInfo(
@@ -1824,7 +1824,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── QR Validation ───────────────────────────────────────────────────────
     "LPDF_QR_001": CheckInfo(
-        "QR code on page has insufficient",
+        "Low QR Code Quality",
         "QR code on page N has insufficient left quiet zone: N modules (minimum N per ISO 18004)",
     ),
     "LPDF_QR_002": CheckInfo(
@@ -1832,7 +1832,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "QR code on page N: module size N mm (N px at N DPI)",
     ),
     "LPDF_QR_003": CheckInfo(
-        "QR code on page contains GS1",
+        "GS1 Content In QR Code",
         "QR code on page N contains GS1 Digital Link with GTIN N",
     ),
     "LPDF_QR_004": CheckInfo(
@@ -1852,11 +1852,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Pantone spot color 'N' not found in reference database — upload custom Pantone data for Delta-E validation",
     ),
     "LPDF_SPOT_007": CheckInfo(
-        "Unknown spot color does not match",
+        "Unknown Spot Color",
         "Unknown spot color 'N' does not match any known color library (PANTONE, HKS, TOYO, DIC, RAL)",
     ),
     "LPDF_SPOT_008": CheckInfo(
-        "Spot color library has alternate",
+        "Spot Library Alternate Mismatch",
         "Spot color 'N' (N library) has alternate space 'N' which is not expected (expected: N)",
     ),
     "LPDF_SPOT_009": CheckInfo(
@@ -1921,15 +1921,15 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "for awareness in case the file was uploaded by mistake.",
     ),
     "LPDF_STRUCT_006": CheckInfo(
-        "Document contains XFA forms not supported",
+        "Unsupported XFA Forms",
         "Document contains XFA forms (not supported in print workflows)",
     ),
     "LPDF_STRUCT_007": CheckInfo(
-        "Document is a tagged PDF structure tree",
+        "Tagged PDF Structure Present",
         "Document is a tagged PDF (structure tree present)",
     ),
     "LPDF_STRUCT_008": CheckInfo(
-        "JavaScript action detected in page actions",
+        "JavaScript Page Actions",
         "JavaScript action detected in page N actions (security and print workflow risk)",
     ),
     "LPDF_STRUCT_009": CheckInfo(
@@ -1939,23 +1939,23 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "for press output and may indicate the wrong file was uploaded.",
     ),
     "LPDF_STRUCT_010": CheckInfo(
-        "Layer configuration has print-specific visibility",
+        "Print-Specific Layer Visibility",
         "Layer configuration has print-specific visibility rules for N layer(s)",
     ),
     "LPDF_STRUCT_011": CheckInfo(
-        "PostScript fragment Type 1 XObject detected",
+        "PostScript Type 1 XObject",
         "PostScript fragment (Type 1 XObject) detected on page N (prohibited in modern PDF/X workflows)",
     ),
     "LPDF_STRUCT_012": CheckInfo(
-        "Document contains bookmarks/outlines entries",
+        "Bookmarks/Outlines Present",
         "Document contains bookmarks/outlines (N entries)",
     ),
     "LPDF_STRUCT_013": CheckInfo(
-        "Embedded page thumbnails detected starting",
+        "Embedded Page Thumbnails",
         "Embedded page thumbnails detected (starting on page N — increases file size unnecessarily)",
     ),
     "LPDF_STRUCT_014": CheckInfo(
-        "Non-JavaScript action detected in document catalog",
+        "Non-JavaScript Catalog Action",
         "Non-JavaScript action 'N' detected in document catalog (may cause unexpected behavior in print workflow)",
     ),
     # ── Text (extended) ─────────────────────────────────────────────────────
@@ -1992,11 +1992,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Transparency (extended) ─────────────────────────────────────────────
     "LPDF_TRANS_006": CheckInfo(
-        "Knockout transparency group on page may",
+        "Knockout Transparency Group",
         "Knockout transparency group on page N (may cause unexpected rendering)",
     ),
     "LPDF_TRANS_007": CheckInfo(
-        "Shading pattern detected",
+        "Shading Pattern",
         "Shading pattern detected on page N (N shadingN, potential gradient banding risk)",
     ),
 }
