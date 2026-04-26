@@ -11,8 +11,8 @@ interface SettingsRouteProps {
 export function SettingsRoute({ tenant, onChangeTenant }: SettingsRouteProps) {
   const navigate = useNavigate();
 
-  function handleChangeTenant() {
-    clearTenant();
+  async function handleChangeTenant() {
+    await clearTenant();
     onChangeTenant();
     navigate("/onboarding", { replace: true });
   }

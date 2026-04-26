@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicnacnic/tauri-v2-schema/main/capability.schema.json",
+  "identifier": "default",
+  "description": "Capability set for the LintPDF mobile main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "deep-link:default",
+    "deep-link:allow-on-open-url",
+    "dialog:default",
+    "dialog:allow-open",
+    "notification:default",
+    "notification:allow-notify",
+    "notification:allow-request-permission",
+    "store:default",
+    "store:allow-get",
+    "store:allow-set",
+    "store:allow-save",
+    "store:allow-delete",
+    "store:allow-clear",
+    "os:default",
+    "os:allow-platform"
+  ]
+}

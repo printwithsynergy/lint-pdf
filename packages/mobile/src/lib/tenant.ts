@@ -1,43 +1,29 @@
 import type { CapturedTenant, TenantLookupResponse } from "./types";
 import { getApiBaseUrl } from "./api";
-
-const STORAGE_KEY = "lintpdf.mobile.tenant";
+import {
+  clearTenant as bridgeClearTenant,
+  loadTenant as bridgeLoadTenant,
+  saveTenant as bridgeSaveTenant,
+} from "./tauri";
 
 /**
- * Load the captured tenant from localStorage, or null if Onboarding
- * hasn't completed yet. On a Tauri shell this will move to
- * `tauri-plugin-store`; for the web preview we use plain localStorage
- * so the dev experience matches a real install.
+ * Storage delegate. The bridge (`./tauri.ts`) decides at runtime
+ * whether to use `tauri-plugin-store` (native shell) or
+ * localStorage (web preview), so the rest of the app just calls
+ * these helpers without thinking about transport.
  */
-export function loadTenant(): CapturedTenant | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as CapturedTenant;
-    if (!parsed.tenantId || !parsed.name) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-export function saveTenant(t: CapturedTenant): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(t));
-}
-
-export function clearTenant(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(STORAGE_KEY);
-}
+export const loadTenant = bridgeLoadTenant;
+export const saveTenant = bridgeSaveTenant;
+export const clearTenant = bridgeClearTenant;
 
 /**
  * Resolve a free-form tenant identifier (id, slug, domain, or display
  * name) by hitting the public lookup endpoint. Throws on network error
  * and on non-200 responses.
  */
-export async function lookupTenant(query: string): Promise<TenantLookupResponse> {
+export async function lookupTenant(
+  query: string,
+): Promise<TenantLookupResponse> {
   const url = new URL("/api/public/tenant-lookup", getApiBaseUrl());
   url.searchParams.set("q", query);
   const res = await fetch(url.toString(), { method: "GET" });
@@ -62,4 +48,23 @@ export class TenantLookupError extends Error {
     super(message);
     this.name = "TenantLookupError";
   }
+}
+
+/**
+ * Capture and persist a tenant lookup result in one step. Used by
+ * the Onboarding route after the user picks a tenant.
+ */
+export async function captureTenant(
+  data: TenantLookupResponse,
+): Promise<CapturedTenant> {
+  const captured: CapturedTenant = {
+    tenantId: data.tenantId,
+    name: data.name,
+    slug: data.slug,
+    domain: data.domain,
+    branding: data.branding,
+    capturedAt: new Date().toISOString(),
+  };
+  await saveTenant(captured);
+  return captured;
 }
