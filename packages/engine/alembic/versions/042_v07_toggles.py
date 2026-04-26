@@ -37,41 +37,40 @@ branch_labels = None
 depends_on = None
 
 
-TOGGLE_TYPE = sa.Enum(
-    "BOOLEAN",
-    "NUMERIC",
-    "ENUM",
-    "STRING",
-    "OBJECT",
-    name="toggle_type",
-    native_enum=True,
-    create_type=False,
-)
-
-TOGGLE_SCOPE = sa.Enum(
-    "TENANT",
-    "WORKFLOW",
-    "CALL",
-    name="toggle_scope",
-    native_enum=True,
-    create_type=False,
-)
-
-MERGE_STRATEGY = sa.Enum(
-    "REPLACE",
-    "MERGE",
-    "UNION",
-    name="merge_strategy",
-    native_enum=True,
-    create_type=False,
-)
+# Postgres has no ``CREATE TYPE IF NOT EXISTS``. The idiomatic equivalent
+# is a DO block that traps ``duplicate_object`` so re-runs (e.g. after a
+# create_all/stamp fallback in lifespan, or a partial migration replay)
+# don't bring the whole upgrade down. Raw SQL avoids SQLAlchemy's
+# enum-creation event handlers entirely — those handlers fire from
+# multiple paths (op.create_table column refs, postgresql.ARRAY wrappers)
+# and any one of them issuing a bare ``CREATE TYPE`` without IF-NOT-EXISTS
+# semantics aborts the migration with DuplicateObject.
+def _create_enum_idempotent(name: str, *values: str) -> None:
+    quoted = ", ".join(f"'{v}'" for v in values)
+    op.execute(
+        sa.text(
+            f"""
+            DO $$
+            BEGIN
+                CREATE TYPE {name} AS ENUM ({quoted});
+            EXCEPTION
+                WHEN duplicate_object THEN
+                    NULL;
+            END
+            $$;
+            """
+        )
+    )
 
 
 def upgrade() -> None:
-    bind = op.get_bind()
-    TOGGLE_TYPE.create(bind, checkfirst=True)
-    TOGGLE_SCOPE.create(bind, checkfirst=True)
-    MERGE_STRATEGY.create(bind, checkfirst=True)
+    _create_enum_idempotent("toggle_type", "BOOLEAN", "NUMERIC", "ENUM", "STRING", "OBJECT")
+    _create_enum_idempotent("toggle_scope", "TENANT", "WORKFLOW", "CALL")
+    _create_enum_idempotent("merge_strategy", "REPLACE", "MERGE", "UNION")
+
+    # All column references below carry ``create_type=False`` so the
+    # column-level enum descriptors won't re-fire CREATE TYPE during
+    # op.create_table (matches the 043 audit-log migration pattern).
 
     op.create_table(
         "workflows",
@@ -124,7 +123,19 @@ def upgrade() -> None:
         sa.Column("id", sa.String(length=255), primary_key=True),
         sa.Column("category", sa.String(length=64), nullable=False),
         sa.Column("human_name", sa.String(length=255), nullable=False),
-        sa.Column("type", TOGGLE_TYPE, nullable=False),
+        sa.Column(
+            "type",
+            postgresql.ENUM(
+                "BOOLEAN",
+                "NUMERIC",
+                "ENUM",
+                "STRING",
+                "OBJECT",
+                name="toggle_type",
+                create_type=False,
+            ),
+            nullable=False,
+        ),
         sa.Column(
             "default_value",
             postgresql.JSONB(astext_type=sa.Text()),
@@ -137,7 +148,15 @@ def upgrade() -> None:
         ),
         sa.Column(
             "override_at",
-            postgresql.ARRAY(TOGGLE_SCOPE),
+            postgresql.ARRAY(
+                postgresql.ENUM(
+                    "TENANT",
+                    "WORKFLOW",
+                    "CALL",
+                    name="toggle_scope",
+                    create_type=False,
+                )
+            ),
             nullable=False,
             server_default=sa.text("ARRAY['TENANT','WORKFLOW','CALL']::toggle_scope[]"),
         ),
@@ -149,7 +168,13 @@ def upgrade() -> None:
         ),
         sa.Column(
             "merge_strategy",
-            MERGE_STRATEGY,
+            postgresql.ENUM(
+                "REPLACE",
+                "MERGE",
+                "UNION",
+                name="merge_strategy",
+                create_type=False,
+            ),
             nullable=False,
             server_default=sa.text("'REPLACE'::merge_strategy"),
         ),
@@ -173,7 +198,17 @@ def upgrade() -> None:
             sa.ForeignKey("toggles.id", ondelete="CASCADE"),
             nullable=False,
         ),
-        sa.Column("scope", TOGGLE_SCOPE, nullable=False),
+        sa.Column(
+            "scope",
+            postgresql.ENUM(
+                "TENANT",
+                "WORKFLOW",
+                "CALL",
+                name="toggle_scope",
+                create_type=False,
+            ),
+            nullable=False,
+        ),
         sa.Column("scope_id", sa.String(length=128), nullable=False),
         sa.Column(
             "value",
@@ -216,7 +251,7 @@ def downgrade() -> None:
     op.drop_index("ix_workflows_default_per_tenant", table_name="workflows")
     op.drop_index("ix_workflows_tenant_id", table_name="workflows")
     op.drop_table("workflows")
-    bind = op.get_bind()
-    MERGE_STRATEGY.drop(bind, checkfirst=True)
-    TOGGLE_SCOPE.drop(bind, checkfirst=True)
-    TOGGLE_TYPE.drop(bind, checkfirst=True)
+    # Use raw SQL with IF EXISTS for symmetric idempotency with upgrade().
+    op.execute(sa.text("DROP TYPE IF EXISTS merge_strategy"))
+    op.execute(sa.text("DROP TYPE IF EXISTS toggle_scope"))
+    op.execute(sa.text("DROP TYPE IF EXISTS toggle_type"))
