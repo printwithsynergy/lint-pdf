@@ -313,6 +313,23 @@ CREATE INDEX IF NOT EXISTS "ReportView_jobId_idx" ON "ReportView"("jobId");
 CREATE INDEX IF NOT EXISTS "ReportView_tenantId_viewedAt_idx" ON "ReportView"("tenantId", "viewedAt");
 CREATE INDEX IF NOT EXISTS "ReportView_reportToken_idx" ON "ReportView"("reportToken");
 
+-- MobileDevice table — push-notification token registry for the LintPDF
+-- mobile companion app. Mirrors the Prisma model in base.prisma so the
+-- table exists even when prisma db push refuses (engine tables conflict).
+CREATE TABLE IF NOT EXISTS "MobileDevice" (
+  "id" TEXT NOT NULL,
+  "userId" TEXT NOT NULL,
+  "tenantId" TEXT NOT NULL,
+  "platform" TEXT NOT NULL,
+  "pushToken" TEXT NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "lastSeenAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "MobileDevice_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "MobileDevice_pushToken_key" UNIQUE ("pushToken")
+);
+CREATE INDEX IF NOT EXISTS "MobileDevice_userId_idx" ON "MobileDevice"("userId");
+CREATE INDEX IF NOT EXISTS "MobileDevice_tenantId_idx" ON "MobileDevice"("tenantId");
+
 -- Engine: white-label custom report domain columns (Alembic 014).
 -- These live in the engine-owned "tenants" and "brand_profiles" tables, but
 -- adding them here as well means the columns exist even when Alembic hasn't
