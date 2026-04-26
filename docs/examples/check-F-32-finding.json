@@ -1,0 +1,18 @@
+{
+  "$comment": "Example LPDF_TEXT_ON_DIELINE_PATH finding (F-32). Emitted when a text bbox intersects a dieline-spot stroke bbox — the cutter will physically slice the glyphs. Distinct from LPDF_TEXT_NEAR_FOLD (which is a clearance-distance check); F-32 is on actual overlap. ISO 19593-1 §5.3.",
+  "inspection_id": "LPDF_TEXT_ON_DIELINE_PATH",
+  "v2_id": "F-32",
+  "severity": "warning",
+  "message": "1 text region(s) overlap the dieline 'Dieline' cut path on page 1 — glyphs will be sliced at the cutter",
+  "page_num": 1,
+  "object_id": "Dieline",
+  "object_type": "text",
+  "iso_clause": "ISO 19593-1 §5.3 / cut-path clearance",
+  "details": {
+    "spot_name": "Dieline",
+    "text_count": 1,
+    "worst_overlap_pts2": 36.0,
+    "worst_text_bbox_pts": [150.0, 200.0, 186.0, 212.0],
+    "worst_dieline_bbox_pts": [100.0, 195.0, 400.0, 205.0]
+  }
+}

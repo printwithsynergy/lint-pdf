@@ -3974,14 +3974,15 @@
       "dieline_adjacent": false,
       "status": "present",
       "matched_inspection_ids": [
-        "LPDF_BOX_002"
+        "LPDF_BOX_001"
       ],
       "evidence": [
         {
           "source": "v1-gap-mapping promotion",
           "v1_gap_ids": [
             "T1-STR02"
-          ]
+          ],
+          "note": "P-04 (BleedBox missing) and P-03 (TrimBox missing) both fire from LPDF_BOX_001; discriminator is `details.missing_box` (`TrimBox` or `BleedBox`). Phase-1 row originally mapped P-04 to LPDF_BOX_002 (Box Hierarchy Violated), which is a different defect class; corrected during Wave A/B closeout."
         }
       ],
       "v1_gap_ids_covering": [

@@ -603,6 +603,56 @@ def check_dieline_quality(
                 )
             )
 
+    # F-32 — text bbox overlaps the dieline cut path itself. Distinct
+    # from LPDF_TEXT_NEAR_FOLD (which fires on text *near* a crease):
+    # F-32 catches text that will be physically cut by the dieline. At
+    # the press, glyphs are sliced and the resulting product looks like
+    # a typo even though the source artwork is fine. Hard production
+    # reject. Uses raw bbox intersection — no tolerance — because the
+    # stroke bbox is already as thin as the painted line.
+    if spot_name and signals.text_bboxes and signals.dieline_line_bboxes:
+        on_path_text: list[tuple[float, float, float, float]] = []
+        worst_overlap_pts2 = 0.0
+        worst_text_bbox: tuple[float, float, float, float] | None = None
+        worst_line_bbox: tuple[float, float, float, float] | None = None
+        for text_bbox in signals.text_bboxes:
+            for line_bbox in signals.dieline_line_bboxes:
+                inter = _bbox_intersect(text_bbox, line_bbox)
+                if inter is None:
+                    continue
+                area = (inter[2] - inter[0]) * (inter[3] - inter[1])
+                if area <= 0:
+                    continue
+                on_path_text.append(text_bbox)
+                if area > worst_overlap_pts2:
+                    worst_overlap_pts2 = area
+                    worst_text_bbox = text_bbox
+                    worst_line_bbox = line_bbox
+                break
+        if on_path_text and worst_text_bbox is not None and worst_line_bbox is not None:
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_TEXT_ON_DIELINE_PATH",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"{len(on_path_text)} text region(s) overlap the "
+                        f"dieline '{spot_name}' cut path on page 1 — "
+                        f"glyphs will be sliced at the cutter"
+                    ),
+                    page_num=1,
+                    details={
+                        "spot_name": spot_name,
+                        "text_count": len(on_path_text),
+                        "worst_overlap_pts2": round(worst_overlap_pts2, 2),
+                        "worst_text_bbox_pts": list(worst_text_bbox),
+                        "worst_dieline_bbox_pts": list(worst_line_bbox),
+                    },
+                    iso_clause="ISO 19593-1 §5.3 / cut-path clearance",
+                    object_id=spot_name,
+                    object_type="text",
+                )
+            )
+
     # T3-D14 — Braille zone integrity. Always emit the presence
     # advisory when Braille is detected; severity escalates to
     # warning when non-Braille incursions are present.

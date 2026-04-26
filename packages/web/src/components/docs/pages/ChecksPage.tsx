@@ -221,6 +221,10 @@ export default function ChecksPage() {
               desc: "Page BleedBox extends past the dieline polygon (P-30) — press-side bleed allowance does not fit inside the cutter region",
             },
             {
+              id: "LPDF_TEXT_ON_DIELINE_PATH",
+              desc: "Text region overlaps the dieline cut path (F-32) — glyphs will be physically sliced at the cutter",
+            },
+            {
               id: "LPDF_DIE_AS_ART",
               desc: "Dieline spot used as a fill (D-15) — cutter will follow the filled region as a closed path",
             },
