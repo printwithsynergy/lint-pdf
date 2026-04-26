@@ -8,8 +8,10 @@ by ``conftest._mock_celery_delay``.
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from io import BytesIO
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from lintpdf.api.models import (
@@ -19,8 +21,8 @@ from lintpdf.api.models import (
     JobImportedReport,
     PreflightSource,
     Tenant,
-    TenantImportMapping,
 )
+from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -321,12 +323,19 @@ CUSTOM_XML = b"""<?xml version="1.0"?>
 
 
 def _seed_mapping(db_session: Session, *, tenant_id=None, is_active: bool = True):
-    mapping = TenantImportMapping(
-        id=uuid.uuid4(),
-        tenant_id=tenant_id or PLACEHOLDER_TENANT_ID,
-        name="Acme PitStop-lite",
-        format="xml",
-        config={
+    """Phase 0.7 PR-B4-final — seed the mapping into the unified-config
+    substrate (``ToggleOverride(toggle_id='import_mapping', scope=TENANT)``).
+    Returns a SimpleNamespace with ``.id`` so legacy callers reading
+    that attr keep working.
+    """
+    tid = tenant_id or PLACEHOLDER_TENANT_ID
+    new_id = uuid.uuid4()
+    entry = {
+        "id": str(new_id),
+        "name": "Acme PitStop-lite",
+        "description": None,
+        "format": "xml",
+        "config": {
             "format": "xml",
             "item_selector": "Issues/Issue",
             "fields": {
@@ -336,11 +345,39 @@ def _seed_mapping(db_session: Session, *, tenant_id=None, is_active: bool = True
             },
             "severity_map": {"high": "error"},
         },
-        is_active=is_active,
+        "sample_payload": None,
+        "sample_mime": None,
+        "is_active": is_active,
+    }
+
+    existing = (
+        db_session.query(ToggleOverride)
+        .filter(
+            ToggleOverride.toggle_id == "import_mapping",
+            ToggleOverride.scope == ToggleScope.TENANT,
+            ToggleOverride.scope_id == str(tid),
+        )
+        .first()
     )
-    db_session.add(mapping)
+    if existing is None:
+        db_session.add(
+            ToggleOverride(
+                id=secrets.token_urlsafe(12),
+                toggle_id="import_mapping",
+                scope=ToggleScope.TENANT,
+                scope_id=str(tid),
+                value={str(new_id): entry},
+                locked=False,
+                set_by="test",
+                surface="test",
+            )
+        )
+    else:
+        value = dict(existing.value or {})
+        value[str(new_id)] = entry
+        existing.value = value
     db_session.commit()
-    return mapping
+    return SimpleNamespace(id=new_id)
 
 
 class TestMappingIdSubmission:

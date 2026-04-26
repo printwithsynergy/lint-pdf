@@ -499,30 +499,6 @@ class WebhookDelivery(Base):
     )
 
 
-class CustomProfile(Base):
-    """Custom preflight profile owned by a tenant."""
-
-    __tablename__ = "custom_profiles"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    profile_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    preflight_profile_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
-    )
-
-    # Unique constraint: one profile_id per tenant
-    __table_args__ = (
-        Index("ix_custom_profiles_tenant_profile", "tenant_id", "profile_id", unique=True),
-    )
-
-
 class SystemProfile(Base):
     """System-wide preflight profile.
 
@@ -605,97 +581,6 @@ class CustomEndpoint(Base):
         Uuid,
         nullable=True,
     )
-
-
-class BrandSpec(Base):
-    """A named colour specification a tenant maintains per end-customer.
-
-    Tenants (LintPDF's customers) typically serve multiple brand
-    owners — think an agency that preflights packaging for both
-    Coca-Cola and Pepsi. Each end-customer gets its own BrandSpec
-    row with the palette, optional rich-black composition, and
-    optional description. BrandSpecs plug into preflight at two
-    levels:
-
-    * Per-endpoint default — a custom API endpoint can pin a
-      default BrandSpec so every submission inherits it without
-      the caller having to specify it each time.
-    * Per-submission override — any POST /jobs call may supply
-      ``brand_spec_id`` to pick one explicitly. The per-job
-      choice wins over the endpoint default.
-
-    Exactly one BrandSpec per tenant may carry ``is_default=True``
-    as the catch-all fallback when no endpoint or submit override
-    applies. The resolver enforces the "last one wins" semantics
-    (see :mod:`lintpdf.brand_specs.resolver`).
-    """
-
-    __tablename__ = "brand_specs"
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid,
-        ForeignKey("tenants.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
-    )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    # Free-form label for the end-customer the spec serves. Optional
-    # so a tenant can keep internal / shared specs that don't belong
-    # to a single customer.
-    customer_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # List of ``{"name": str, "value": str, "pantone": str | None,
-    # "notes": str | None}`` rows. Kept as JSONB so the shape can
-    # evolve (e.g. Lab coordinates, ΔE tolerances) without schema
-    # churn, while still being queryable.
-    colors: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
-    # Optional target rich-black composition — ``{"c": 60, "m": 50,
-    # "y": 50, "k": 100}`` style. When set, print-production
-    # advisories can measure the document's rich black against this
-    # reference instead of the profile's defaults.
-    rich_black_spec: Mapped[dict[str, float] | None] = mapped_column(JSON, nullable=True)
-    # Tenant-level default. At most one row per tenant with
-    # ``is_default=True``; a Postgres partial-unique index enforces
-    # this. When no endpoint or submit override applies, the
-    # resolver falls back to this row.
-    is_default: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, server_default="false"
-    )
-    # Soft-delete flag. Archived specs stop appearing in pickers
-    # but existing jobs / endpoints that reference them keep
-    # resolving against them so historical data stays intact.
-    is_archived: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False, server_default="false"
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
-    __table_args__ = (
-        Index(
-            "ix_brand_specs_tenant_default",
-            "tenant_id",
-            unique=True,
-            postgresql_where=sa_text("is_default AND NOT is_archived"),
-            # SQLite (used by the unit-test harness) ignores
-            # ``postgresql_where`` and would otherwise interpret the
-            # index as a tenant-unique-regardless-of-is_default
-            # constraint, which collides the moment a tenant has two
-            # non-default specs. Mirror the predicate via the
-            # SQLite-specific kwarg so both dialects enforce the
-            # same "at most one default per tenant" rule.
-            sqlite_where=sa_text("is_default AND NOT is_archived"),
-        ),
-    )
-
-    tenant: Mapped[Tenant] = relationship()
 
 
 class PlanLimitOverride(Base):
@@ -1153,28 +1038,6 @@ class BrandProfile(Base):
 # --- Approval Chain Models ---
 
 
-class ApprovalChainTemplate(Base):
-    """Reusable multi-step approval chain preset for a tenant."""
-
-    __tablename__ = "approval_chain_templates"
-    __table_args__ = (Index("ix_approval_templates_tenant", "tenant_id"),)
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
-    )
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    steps: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
-    )
-
-
 class ApprovalChain(Base):
     """An instance of an approval chain attached to a specific job."""
 
@@ -1191,8 +1054,13 @@ class ApprovalChain(Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(
         Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False
     )
+    # Phase 0.7 PR-B4-final — FK to ``approval_chain_templates.id``
+    # dropped (alembic 046); the column now references a key inside
+    # the tenant's ``ToggleOverride(toggle_id='approval_template')``
+    # dict. The column itself stays so historical chains keep their
+    # template reference for audit replay.
     template_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid, ForeignKey("approval_chain_templates.id", ondelete="SET NULL"), nullable=True
+        Uuid, nullable=True
     )
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     current_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -1201,66 +1069,6 @@ class ApprovalChain(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-
-
-class TenantImportMapping(Base):
-    """Tenant-defined mapping that turns a proprietary preflight report into
-    engine findings.
-
-    Teams running in-house or niche preflight tools don't fit the built-in
-    PitStop / callas / Acrobat / LintPDF-native parsers. Rather than ask us
-    to ship a new parser for every vendor, tenants define a **mapping**: a
-    small config that says "in my XML/JSON, each finding lives at this path;
-    the severity comes from this sub-selector; the message lives here; …"
-
-    The mapping's ``config`` column is a JSON document with this shape::
-
-        {
-          "format": "xml" | "json",
-          "item_selector": "//finding" | "results[*].issues[*]",
-          "fields": {
-            "severity":   {"selector": "@level",        "required": false},
-            "message":    {"selector": "description",   "required": true},
-            "page":       {"selector": "@page"},
-            "check_id":   {"selector": "@id"},
-            "bbox":       {"selector": "geom/bbox"},
-            "object_id":  {"selector": "@objRef"},
-            "object_type":{"selector": "@objKind"},
-            "category":   {"selector": "category"},
-            "iso_clause": {"selector": "@iso"}
-          },
-          "severity_map": {"fatal": "error", "info": "advisory", "high": "error"},
-          "default_severity": "warning"
-        }
-
-    ``sample_payload`` is the tenant's uploaded example — persisted so the
-    UI can round-trip a preview and so we can re-validate the mapping if
-    the tenant later reports a regression.
-    """
-
-    __tablename__ = "tenant_import_mappings"
-    __table_args__ = (Index("ix_tenant_import_mappings_tenant", "tenant_id"),)
-
-    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    tenant_id: Mapped[uuid.UUID] = mapped_column(
-        Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-    name: Mapped[str] = mapped_column(String(128), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    format: Mapped[str] = mapped_column(String(8), nullable=False, default="xml")
-    config: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
-    sample_payload: Mapped[str | None] = mapped_column(Text, nullable=True)
-    sample_mime: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
 
 
 class ApprovalStep(Base):

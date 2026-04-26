@@ -180,45 +180,12 @@ async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
                 " will fall back to system defaults until resolved.",
             )
 
-        # Phase 0.7 PR-B3a — fold legacy tenant-config tables (BrandSpec,
-        # CustomProfile, ApprovalChainTemplate, TenantImportMapping,
-        # CustomEndpoint) into ToggleOverride rows under the categories
-        # seeded above. Idempotent: re-running merges any new
-        # per-instance keys without clobbering admin edits made through
-        # the dashboard between runs. Failures are best-effort: the new
-        # consumer code paths read from the new substrate, so a tenant
-        # whose v13 fold hasn't completed yet sees an empty
-        # category-keyed dict and falls back to system defaults — at
-        # which point the operator is expected to re-run
-        # ``python -m lintpdf.scripts.v13_migrate_legacy_layers`` by
-        # hand. Once PR-B4 drops the legacy tables this hook becomes
-        # a no-op and can be removed.
-        try:
-            from lintpdf.api.database import get_db_session
-            from lintpdf.scripts.v13_migrate_legacy_layers import migrate_all
-
-            _v13_db = get_db_session()
-            try:
-                results = migrate_all(_v13_db)
-                if results:
-                    import logging as _logging
-
-                    _logging.getLogger(__name__).info(
-                        "v13 legacy fold ran on %d tenant(s) at startup",
-                        len(results),
-                    )
-            finally:
-                _v13_db.close()
-        except Exception:
-            import logging
-
-            logging.getLogger(__name__).exception(
-                "v13_migrate_legacy_layers failed at startup — re-run"
-                " ``python -m lintpdf.scripts.v13_migrate_legacy_layers``"
-                " manually. New consumer routes will see an empty"
-                " category-keyed dict for affected tenants until the"
-                " fold completes.",
-            )
+        # Phase 0.7 PR-B4-final — the v13 legacy-fold hook is gone. The
+        # four tables it migrated (custom_profiles / brand_specs /
+        # approval_chain_templates / tenant_import_mappings) are dropped
+        # in alembic 046; nothing left to fold. ``custom_endpoints``
+        # stays until endpoints.py is rewritten on top of Workflow rows
+        # in a follow-up.
 
     # Initialize rate limiter with Redis
     redis_url = os.environ.get("LINTPDF_REDIS_URL", settings.redis_url)
