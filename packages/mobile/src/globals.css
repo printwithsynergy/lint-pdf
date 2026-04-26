@@ -1,0 +1,43 @@
+@import "tailwindcss";
+
+/*
+ * Mobile package consumes the shared viewer at @lintpdf/viewer-shared,
+ * which uses Tailwind utility classes. Tailwind v4 auto-detect skips
+ * pnpm symlinks reliably, so we explicitly source-scan the shared
+ * package — same pattern as packages/app/app/globals.css.
+ */
+@source "../../viewer-shared/src/**/*.{ts,tsx}";
+
+/*
+ * Brand color scale — read from CSS custom properties at runtime so the
+ * Onboarding flow can apply the captured tenant's `primaryColor` as the
+ * dominant brand shade. Each shade falls back to the default LintPDF
+ * blue when no theme override is present, so unbranded development
+ * looks identical to the pre-Onboarding build.
+ */
+@theme {
+  --color-brand-50: rgb(240 247 255);
+  --color-brand-100: rgb(224 239 254);
+  --color-brand-200: rgb(186 224 253);
+  --color-brand-300: rgb(124 200 251);
+  --color-brand-400: rgb(54 173 247);
+  --color-brand-500: rgb(var(--brand-500, 12 147 232));
+  --color-brand-600: rgb(var(--brand-600, 0 116 198));
+  --color-brand-700: rgb(var(--brand-700, 1 93 161));
+  --color-brand-800: rgb(6 79 133);
+  --color-brand-900: rgb(11 66 110);
+  --color-brand-950: rgb(7 42 73);
+}
+
+/* iOS Safari momentum scroll + safe-area for the bottom sheet */
+html,
+body,
+#root {
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+body {
+  padding-bottom: env(safe-area-inset-bottom);
+}
