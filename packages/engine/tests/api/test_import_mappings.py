@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from typing import TYPE_CHECKING
 
-from lintpdf.api.models import Tenant, TenantImportMapping
+from lintpdf.api.models import Tenant
+from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -91,13 +93,17 @@ class TestCreate:
         assert body["config"]["item_selector"] == "Issues/Issue"
         assert uuid.UUID(body["id"])
 
-        row = (
-            db_session.query(TenantImportMapping)
-            .filter(TenantImportMapping.id == uuid.UUID(body["id"]))
+        ov = (
+            db_session.query(ToggleOverride)
+            .filter(
+                ToggleOverride.toggle_id == "import_mapping",
+                ToggleOverride.scope == ToggleScope.TENANT,
+                ToggleOverride.scope_id == str(PLACEHOLDER_TENANT_ID),
+            )
             .first()
         )
-        assert row is not None
-        assert row.tenant_id == PLACEHOLDER_TENANT_ID
+        assert ov is not None
+        assert body["id"] in ov.value
 
     @staticmethod
     def test_create_rejects_bad_config(client: TestClient) -> None:
@@ -133,13 +139,29 @@ class TestList:
             api_key_hash="foreign-hash",
         )
         db_session.add(foreign_tenant)
+        foreign_mapping_id = uuid.uuid4()
         db_session.add(
-            TenantImportMapping(
-                id=uuid.uuid4(),
-                tenant_id=foreign_tenant_id,
-                name="Foreign",
-                format="xml",
-                config={"format": "xml", "item_selector": "x", "fields": {"message": "m"}},
+            ToggleOverride(
+                id=secrets.token_urlsafe(12),
+                toggle_id="import_mapping",
+                scope=ToggleScope.TENANT,
+                scope_id=str(foreign_tenant_id),
+                value={
+                    str(foreign_mapping_id): {
+                        "id": str(foreign_mapping_id),
+                        "name": "Foreign",
+                        "format": "xml",
+                        "config": {
+                            "format": "xml",
+                            "item_selector": "x",
+                            "fields": {"message": "m"},
+                        },
+                        "is_active": True,
+                    }
+                },
+                locked=False,
+                set_by="test",
+                surface="test",
             )
         )
         db_session.commit()
@@ -204,13 +226,18 @@ class TestDelete:
         assert resp.status_code == 204
 
         db_session.expire_all()
-        row = (
-            db_session.query(TenantImportMapping)
-            .filter(TenantImportMapping.id == uuid.UUID(created["id"]))
+        ov = (
+            db_session.query(ToggleOverride)
+            .filter(
+                ToggleOverride.toggle_id == "import_mapping",
+                ToggleOverride.scope == ToggleScope.TENANT,
+                ToggleOverride.scope_id == str(PLACEHOLDER_TENANT_ID),
+            )
             .first()
         )
-        assert row is not None
-        assert row.is_active is False
+        assert ov is not None
+        entry = ov.value[created["id"]]
+        assert entry["is_active"] is False
 
 
 # ----------------------------------------------------------------------

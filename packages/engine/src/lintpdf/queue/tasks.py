@@ -2173,18 +2173,37 @@ def _run_external_preflight(
     # mapping id is stashed on ``imported_row.source_metadata`` at submit
     # time so we can round-trip the config without duplicating it here.
     if job.external_format == "custom":
-        from lintpdf.api.models import TenantImportMapping
+        # Phase 0.7 PR-B3a — mappings live in the unified-config
+        # substrate now: ``ToggleOverride(toggle_id='import_mapping',
+        # scope=TENANT)`` value is a dict keyed by str(uuid). The
+        # legacy ``TenantImportMapping`` table is no longer read here.
         from lintpdf.imports.custom import CustomMappingParser
+        from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
 
         mapping_id = (imported_row.source_metadata or {}).get("mapping_id")
         if not mapping_id:
             raise RuntimeError("external_format='custom' requires mapping_id in source_metadata")
-        mapping_row = (
-            db.query(TenantImportMapping).filter(TenantImportMapping.id == mapping_id).first()
+        mapping_id_str = str(mapping_id)
+
+        override_row = (
+            db.query(ToggleOverride)
+            .filter(
+                ToggleOverride.toggle_id == "import_mapping",
+                ToggleOverride.scope == ToggleScope.TENANT,
+                ToggleOverride.scope_id == str(job.tenant_id),
+            )
+            .first()
         )
-        if mapping_row is None:
-            raise RuntimeError(f"TenantImportMapping {mapping_id} not found — cannot parse")
-        parser = CustomMappingParser(mapping_row.config, mapping_id=str(mapping_row.id))
+        mapping_value = (override_row.value or {}).get(mapping_id_str) if override_row else None
+        if mapping_value is None:
+            raise RuntimeError(
+                f"import_mapping {mapping_id_str} not found for tenant {job.tenant_id} — "
+                "cannot parse external report"
+            )
+        parser = CustomMappingParser(
+            dict(mapping_value.get("config") or {}),
+            mapping_id=mapping_id_str,
+        )
         imported = parser.parse(report_bytes)
         resolved_format = "custom"
     else:

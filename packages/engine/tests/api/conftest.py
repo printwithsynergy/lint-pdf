@@ -59,6 +59,16 @@ def db_session() -> Generator[Session, None, None]:
     )
     session.add(tenant)
     session.commit()
+
+    # Phase 0.7 PR-B1+ — seed the 9 unified-config category Toggle rows
+    # so route tests that write ToggleOverride rows don't fail the
+    # ``toggle_overrides.toggle_id`` FK. Mirrors the production startup
+    # lifespan ``seed_category_toggles`` hook.
+    from lintpdf.tenants.toggle_registry import seed_category_toggles
+
+    seed_category_toggles(session)
+    session.commit()
+
     try:
         yield session
     finally:
