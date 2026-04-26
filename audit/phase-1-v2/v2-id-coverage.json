@@ -1,0 +1,6707 @@
+{
+  "schema_version": "1.1b.v2",
+  "generated_at": "2026-04-25",
+  "summary": {
+    "user_facing_total": 364,
+    "user_facing_present": 126,
+    "user_facing_partial": 0,
+    "user_facing_absent": 238,
+    "tier0_total": 82,
+    "tier0_present": 41,
+    "tier0_partial": 0,
+    "tier0_absent": 41,
+    "by_wave": {
+      "D": {
+        "present": 104,
+        "partial": 0,
+        "absent": 201,
+        "total": 305
+      },
+      "C": {
+        "present": 4,
+        "partial": 0,
+        "absent": 6,
+        "total": 10
+      },
+      "A": {
+        "present": 11,
+        "partial": 0,
+        "absent": 8,
+        "total": 19
+      },
+      "B": {
+        "present": 4,
+        "partial": 0,
+        "absent": 1,
+        "total": 5
+      },
+      "E": {
+        "present": 3,
+        "partial": 0,
+        "absent": 22,
+        "total": 25
+      }
+    },
+    "by_prefix": {
+      "B": {
+        "present": 17,
+        "partial": 0,
+        "absent": 2,
+        "total": 19
+      },
+      "BR": {
+        "present": 0,
+        "partial": 0,
+        "absent": 9,
+        "total": 9
+      },
+      "C": {
+        "present": 20,
+        "partial": 0,
+        "absent": 30,
+        "total": 50
+      },
+      "D": {
+        "present": 10,
+        "partial": 0,
+        "absent": 13,
+        "total": 23
+      },
+      "EPM": {
+        "present": 0,
+        "partial": 0,
+        "absent": 22,
+        "total": 22
+      },
+      "F": {
+        "present": 16,
+        "partial": 0,
+        "absent": 18,
+        "total": 34
+      },
+      "I": {
+        "present": 16,
+        "partial": 0,
+        "absent": 9,
+        "total": 25
+      },
+      "ISO": {
+        "present": 7,
+        "partial": 0,
+        "absent": 5,
+        "total": 12
+      },
+      "L": {
+        "present": 5,
+        "partial": 0,
+        "absent": 14,
+        "total": 19
+      },
+      "LA": {
+        "present": 0,
+        "partial": 0,
+        "absent": 10,
+        "total": 10
+      },
+      "M": {
+        "present": 10,
+        "partial": 0,
+        "absent": 14,
+        "total": 24
+      },
+      "P": {
+        "present": 8,
+        "partial": 0,
+        "absent": 26,
+        "total": 34
+      },
+      "R": {
+        "present": 5,
+        "partial": 0,
+        "absent": 5,
+        "total": 10
+      },
+      "S": {
+        "present": 1,
+        "partial": 0,
+        "absent": 17,
+        "total": 18
+      },
+      "T": {
+        "present": 0,
+        "partial": 0,
+        "absent": 12,
+        "total": 12
+      },
+      "TR": {
+        "present": 5,
+        "partial": 0,
+        "absent": 5,
+        "total": 10
+      },
+      "V": {
+        "present": 1,
+        "partial": 0,
+        "absent": 6,
+        "total": 7
+      },
+      "W": {
+        "present": 4,
+        "partial": 0,
+        "absent": 12,
+        "total": 16
+      },
+      "WF": {
+        "present": 1,
+        "partial": 0,
+        "absent": 9,
+        "total": 10
+      }
+    },
+    "by_tier_0": {
+      "present": 41,
+      "partial": 0,
+      "absent": 41,
+      "total": 82
+    },
+    "by_tier_1": {
+      "present": 1,
+      "partial": 0,
+      "absent": 2,
+      "total": 3
+    },
+    "by_tier_2": {
+      "present": 49,
+      "partial": 0,
+      "absent": 258,
+      "total": 307
+    },
+    "by_tier_3": {
+      "present": 0,
+      "partial": 0,
+      "absent": 15,
+      "total": 15
+    },
+    "by_tier_4": {
+      "present": 4,
+      "partial": 0,
+      "absent": 10,
+      "total": 14
+    },
+    "by_tier_5": {
+      "present": 0,
+      "partial": 0,
+      "absent": 25,
+      "total": 25
+    },
+    "by_tier": {
+      "by_tier_1": {
+        "present": 3,
+        "partial": 0,
+        "absent": 0,
+        "total": 3
+      },
+      "by_tier_2": {
+        "present": 105,
+        "partial": 0,
+        "absent": 202,
+        "total": 307
+      },
+      "by_tier_3": {
+        "present": 8,
+        "partial": 0,
+        "absent": 7,
+        "total": 15
+      },
+      "by_tier_4": {
+        "present": 7,
+        "partial": 0,
+        "absent": 7,
+        "total": 14
+      },
+      "by_tier_5": {
+        "present": 3,
+        "partial": 0,
+        "absent": 22,
+        "total": 25
+      }
+    },
+    "v1_promotion_count": 72
+  },
+  "user_facing": [
+    {
+      "v2_id": "B-01",
+      "v2_human_name": "B-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_001"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-02",
+      "v2_human_name": "B-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "B-03",
+      "v2_human_name": "Barcode value matches expected",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "B-04",
+      "v2_human_name": "Barcode quiet zone width",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_004"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-05",
+      "v2_human_name": "Bar Width Reduction applied",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_005"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-06",
+      "v2_human_name": "B-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_006"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-07",
+      "v2_human_name": "B-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_007"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-08",
+      "v2_human_name": "B-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_008"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-09",
+      "v2_human_name": "B-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_009"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-10",
+      "v2_human_name": "B-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_010"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-11",
+      "v2_human_name": "B-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_011"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-12",
+      "v2_human_name": "B-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_012"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-13",
+      "v2_human_name": "B-13",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_013"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-14",
+      "v2_human_name": "B-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_014"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-15",
+      "v2_human_name": "Barcode placed near fold",
+      "tier": 4,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_015",
+        "LPDF_EPM_010"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-16",
+      "v2_human_name": "Barcode placed near die / cut",
+      "tier": 4,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_016",
+        "LPDF_EPM_010"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-17",
+      "v2_human_name": "Barcode on non-printing layer",
+      "tier": 4,
+      "wave": "A",
+      "difficulty": "E",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_017"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-18",
+      "v2_human_name": "B-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_018"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-19",
+      "v2_human_name": "B-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_019"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "BR-01",
+      "v2_human_name": "BR-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "BR-02",
+      "v2_human_name": "BR-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "BR-03",
+      "v2_human_name": "BR-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "BR-04",
+      "v2_human_name": "BR-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "BR-05",
+      "v2_human_name": "Braille decode (translates to expected text)",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "H",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "BR-06",
+      "v2_human_name": "BR-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "BR-07",
+      "v2_human_name": "BR-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "BR-08",
+      "v2_human_name": "BR-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "BR-09",
+      "v2_human_name": "BR-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-01",
+      "v2_human_name": "C-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_001"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-14",
+      "v2_human_name": "C-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_014"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-15",
+      "v2_human_name": "C-15",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_015"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-16",
+      "v2_human_name": "C-16",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_016"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-18",
+      "v2_human_name": "C-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_018"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-19",
+      "v2_human_name": "C-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_019"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-20",
+      "v2_human_name": "C-20",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_020"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-22",
+      "v2_human_name": "C-22",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-23",
+      "v2_human_name": "C-23",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_INK_003",
+        "LPDF_SPOT_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C02"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C02"
+      ]
+    },
+    {
+      "v2_id": "C-24",
+      "v2_human_name": "C-24",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_SPOT_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-SPT01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-SPT01"
+      ]
+    },
+    {
+      "v2_id": "C-25",
+      "v2_human_name": "C-25",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_SPOT_DEPRECATED_PANTONE"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-SPT03"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-SPT03"
+      ]
+    },
+    {
+      "v2_id": "C-26",
+      "v2_human_name": "C-26",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-27",
+      "v2_human_name": "C-27",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-28",
+      "v2_human_name": "Spot tint below min dot",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_OVER_001",
+        "LPDF_OVER_002"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C06"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C06"
+      ]
+    },
+    {
+      "v2_id": "C-29",
+      "v2_human_name": "C-29",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-30",
+      "v2_human_name": "C-30",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-31",
+      "v2_human_name": "C-31",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_SPOT_003"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C03",
+            "T2-SPT02"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C03",
+        "T2-SPT02"
+      ]
+    },
+    {
+      "v2_id": "C-32",
+      "v2_human_name": "C-32",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_PSTEP_SUGGEST"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-ISO05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-ISO05"
+      ]
+    },
+    {
+      "v2_id": "C-33",
+      "v2_human_name": "C-33",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_SPOT_003"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C03"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C03"
+      ]
+    },
+    {
+      "v2_id": "C-35",
+      "v2_human_name": "C-35",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-36",
+      "v2_human_name": "C-36",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_OVER_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C05"
+      ]
+    },
+    {
+      "v2_id": "C-37",
+      "v2_human_name": "C-37",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-38",
+      "v2_human_name": "C-38",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_OVER_001",
+        "LPDF_OVER_002"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C06"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C06"
+      ]
+    },
+    {
+      "v2_id": "C-39",
+      "v2_human_name": "Overprint on dieline / cut spot",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-40",
+      "v2_human_name": "C-40",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-41",
+      "v2_human_name": "C-41",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-42",
+      "v2_human_name": "C-42",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-43",
+      "v2_human_name": "C-43",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_004",
+        "LPDF_INK_001",
+        "LPDF_INK_002"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C04"
+      ]
+    },
+    {
+      "v2_id": "C-44",
+      "v2_human_name": "C-44",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-45",
+      "v2_human_name": "C-45",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_004",
+        "LPDF_INK_001",
+        "LPDF_INK_002"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C04"
+      ]
+    },
+    {
+      "v2_id": "C-46",
+      "v2_human_name": "C-46",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-47",
+      "v2_human_name": "C-47",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_004",
+        "LPDF_INK_001",
+        "LPDF_INK_002"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-C04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-C04"
+      ]
+    },
+    {
+      "v2_id": "C-48",
+      "v2_human_name": "C-48",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-49",
+      "v2_human_name": "C-49",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-50",
+      "v2_human_name": "C-50",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_ADV_005",
+        "LPDF_COLOR_021"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-RB01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-RB01"
+      ]
+    },
+    {
+      "v2_id": "C-51",
+      "v2_human_name": "C-51",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-52",
+      "v2_human_name": "C-52",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-53",
+      "v2_human_name": "C-53",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-54",
+      "v2_human_name": "C-54",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-55",
+      "v2_human_name": "C-55",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-57",
+      "v2_human_name": "C-57",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-58",
+      "v2_human_name": "C-58",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-59",
+      "v2_human_name": "C-59",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-61",
+      "v2_human_name": "C-61",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-62",
+      "v2_human_name": "C-62",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-63",
+      "v2_human_name": "C-63",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-64",
+      "v2_human_name": "C-64",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-65",
+      "v2_human_name": "C-65",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-66",
+      "v2_human_name": "C-66",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-67",
+      "v2_human_name": "Forbidden ink names (Cyan/All) as spot",
+      "tier": 2,
+      "wave": "B",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-01",
+      "v2_human_name": "Dieline detection by spot name",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "E",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_DIE_ZORDER"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D02"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D02"
+      ]
+    },
+    {
+      "v2_id": "D-02",
+      "v2_human_name": "D-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D10"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D10"
+      ]
+    },
+    {
+      "v2_id": "D-03",
+      "v2_human_name": "Dieline detection by tech-ink mapping",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_SPOT_NONCANONICAL"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D11"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D11"
+      ]
+    },
+    {
+      "v2_id": "D-04",
+      "v2_human_name": "D-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-05",
+      "v2_human_name": "Multiple competing dieline definitions",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-06",
+      "v2_human_name": "Dieline z-order is below content",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D01"
+      ]
+    },
+    {
+      "v2_id": "D-07",
+      "v2_human_name": "D-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_QUIET_ZONE"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D06"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D06"
+      ]
+    },
+    {
+      "v2_id": "D-08",
+      "v2_human_name": "D-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-09",
+      "v2_human_name": "D-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-10",
+      "v2_human_name": "D-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-11",
+      "v2_human_name": "D-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-12",
+      "v2_human_name": "D-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D15"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D15"
+      ]
+    },
+    {
+      "v2_id": "D-13",
+      "v2_human_name": "Dieline self-intersects",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D15"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D15"
+      ]
+    },
+    {
+      "v2_id": "D-14",
+      "v2_human_name": "D-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-15",
+      "v2_human_name": "D-15",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_PKG_004"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D05"
+      ]
+    },
+    {
+      "v2_id": "D-16",
+      "v2_human_name": "D-16",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-17",
+      "v2_human_name": "Critical content within X mm of dieline",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D04"
+      ]
+    },
+    {
+      "v2_id": "D-18",
+      "v2_human_name": "Fold-line distance: content too close",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-19",
+      "v2_human_name": "D-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-20",
+      "v2_human_name": "D-20",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-21",
+      "v2_human_name": "D-21",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "D-22",
+      "v2_human_name": "D-22",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D13"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D13"
+      ]
+    },
+    {
+      "v2_id": "D-23",
+      "v2_human_name": "D-23",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-A1",
+      "v2_human_name": "EPM Tier A check 1",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-A2",
+      "v2_human_name": "EPM Tier A check 2",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-A3",
+      "v2_human_name": "EPM Tier A check 3",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-A4",
+      "v2_human_name": "EPM Tier A check 4",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-A5",
+      "v2_human_name": "EPM Tier A check 5",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-A6",
+      "v2_human_name": "EPM Tier A check 6",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-A7",
+      "v2_human_name": "EPM Tier A check 7",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-A8",
+      "v2_human_name": "EPM Tier A check 8",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-B1",
+      "v2_human_name": "EPM Tier B check 1",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-B2",
+      "v2_human_name": "EPM Tier B check 2",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-B3",
+      "v2_human_name": "EPM Tier B check 3",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-B4",
+      "v2_human_name": "EPM Tier B check 4",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-B5",
+      "v2_human_name": "EPM Tier B check 5",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-B6",
+      "v2_human_name": "EPM Tier B check 6",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-C1",
+      "v2_human_name": "EPM Tier C check 1",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-C2",
+      "v2_human_name": "EPM Tier C check 2",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-C3",
+      "v2_human_name": "EPM Tier C check 3",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-C4",
+      "v2_human_name": "EPM Tier C check 4",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-C5",
+      "v2_human_name": "EPM Tier C check 5",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-C6",
+      "v2_human_name": "EPM Tier C check 6",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-C7",
+      "v2_human_name": "EPM Tier C check 7",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "EPM-C8",
+      "v2_human_name": "EPM Tier C check 8",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-01",
+      "v2_human_name": "Font not embedded",
+      "tier": 1,
+      "wave": "B",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_001",
+        "LPDF_FONT_008"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-02",
+      "v2_human_name": "Font subset incomplete",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_002"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-04",
+      "v2_human_name": "Type 1 font present",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_004"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-05",
+      "v2_human_name": "Type 3 font present",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_004",
+        "LPDF_FONT_005"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-10",
+      "v2_human_name": "Multiple Master font",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_010"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-12",
+      "v2_human_name": "F-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_012"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-13",
+      "v2_human_name": "ToUnicode CMap missing",
+      "tier": 2,
+      "wave": "B",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_005",
+        "LPDF_FONT_013"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-14",
+      "v2_human_name": "F-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_005",
+        "LPDF_FONT_014"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-15",
+      "v2_human_name": "F-15",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_015"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-16",
+      "v2_human_name": "F-16",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_016"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-17",
+      "v2_human_name": "F-17",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_017"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-18",
+      "v2_human_name": "F-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-19",
+      "v2_human_name": "F-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-20",
+      "v2_human_name": "F-20",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-21",
+      "v2_human_name": "F-21",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-22",
+      "v2_human_name": "F-22",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TEXT_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-F05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-F05"
+      ]
+    },
+    {
+      "v2_id": "F-23",
+      "v2_human_name": "F-23",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TEXT_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-F05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-F05"
+      ]
+    },
+    {
+      "v2_id": "F-24",
+      "v2_human_name": "F-24",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TEXT_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-F05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-F05"
+      ]
+    },
+    {
+      "v2_id": "F-25",
+      "v2_human_name": "F-25",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-26",
+      "v2_human_name": "F-26",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-27",
+      "v2_human_name": "F-27",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-28",
+      "v2_human_name": "F-28",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-29",
+      "v2_human_name": "F-29",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-30",
+      "v2_human_name": "Text below another object (hidden)",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "H",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-31",
+      "v2_human_name": "F-31",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TEXT_004",
+        "LPDF_TEXT_REVERSE_THIN"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-F15",
+            "T2-RB02",
+            "T2-RB03"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-F15",
+        "T2-RB02",
+        "T2-RB03"
+      ]
+    },
+    {
+      "v2_id": "F-32",
+      "v2_human_name": "F-32",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-33",
+      "v2_human_name": "F-33",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-34",
+      "v2_human_name": "F-34",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-35",
+      "v2_human_name": "Text too close to fold",
+      "tier": 4,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-36",
+      "v2_human_name": "F-36",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-37",
+      "v2_human_name": "F-37",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-38",
+      "v2_human_name": "F-38",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-F04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-F04"
+      ]
+    },
+    {
+      "v2_id": "F-39",
+      "v2_human_name": "F-39",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-40",
+      "v2_human_name": "F-40",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-01",
+      "v2_human_name": "I-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_001"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-02",
+      "v2_human_name": "I-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_001",
+        "LPDF_IMG_002"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-03",
+      "v2_human_name": "I-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_001",
+        "LPDF_IMG_003"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-04",
+      "v2_human_name": "I-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_003",
+        "LPDF_IMG_004"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-08",
+      "v2_human_name": "I-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_008"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-09",
+      "v2_human_name": "I-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_009",
+        "LPDF_IMG_014",
+        "LPDF_IMG_015"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-10",
+      "v2_human_name": "I-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_010"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-11",
+      "v2_human_name": "I-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_011"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-12",
+      "v2_human_name": "I-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_012"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-16",
+      "v2_human_name": "I-16",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_016"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-17",
+      "v2_human_name": "I-17",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_017"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-18",
+      "v2_human_name": "I-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_018"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-19",
+      "v2_human_name": "I-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_019"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-20",
+      "v2_human_name": "I-20",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_020"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-21",
+      "v2_human_name": "I-21",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_008"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-I05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-I05"
+      ]
+    },
+    {
+      "v2_id": "I-22",
+      "v2_human_name": "I-22",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-24",
+      "v2_human_name": "I-24",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-25",
+      "v2_human_name": "I-25",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-I07"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-I07"
+      ]
+    },
+    {
+      "v2_id": "I-27",
+      "v2_human_name": "I-27",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-29",
+      "v2_human_name": "I-29",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-30",
+      "v2_human_name": "I-30",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-34",
+      "v2_human_name": "I-34",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-35",
+      "v2_human_name": "I-35",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-37",
+      "v2_human_name": "I-37",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-38",
+      "v2_human_name": "I-38",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "ISO-01",
+      "v2_human_name": "PDF/X-1a conformance",
+      "tier": 1,
+      "wave": "B",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP01"
+      ]
+    },
+    {
+      "v2_id": "ISO-02",
+      "v2_human_name": "ISO-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP01"
+      ]
+    },
+    {
+      "v2_id": "ISO-03",
+      "v2_human_name": "PDF/X-4 conformance",
+      "tier": 1,
+      "wave": "B",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP01"
+      ]
+    },
+    {
+      "v2_id": "ISO-04",
+      "v2_human_name": "ISO-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP01"
+      ]
+    },
+    {
+      "v2_id": "ISO-05",
+      "v2_human_name": "ISO-5",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP01"
+      ]
+    },
+    {
+      "v2_id": "ISO-06",
+      "v2_human_name": "ISO-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "ISO-07",
+      "v2_human_name": "ISO-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "ISO-08",
+      "v2_human_name": "ISO-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_PDFVT_STRUCTURE"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T5-N01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T5-N01"
+      ]
+    },
+    {
+      "v2_id": "ISO-09",
+      "v2_human_name": "ISO-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "ISO-10",
+      "v2_human_name": "ISO-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "ISO-11",
+      "v2_human_name": "ISO-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "__profile_pack:gwg-2022-commercial",
+        "__profile_pack:gwg-2022-packaging"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-GWG01",
+            "T2-GWG02"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-GWG01",
+        "T2-GWG02"
+      ]
+    },
+    {
+      "v2_id": "ISO-12",
+      "v2_human_name": "ISO-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-02",
+      "v2_human_name": "L-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-03",
+      "v2_human_name": "L-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-05",
+      "v2_human_name": "L-5",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-06",
+      "v2_human_name": "L-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BRAILLE_INTEGRITY"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D14"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D14"
+      ]
+    },
+    {
+      "v2_id": "L-07",
+      "v2_human_name": "L-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "AI_PSTEP_001",
+        "AI_PSTEP_002",
+        "AI_PSTEP_003",
+        "LPDF_PROC_001",
+        "LPDF_PROC_002"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-ISO01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-ISO01"
+      ]
+    },
+    {
+      "v2_id": "L-08",
+      "v2_human_name": "L-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_PKG_009"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-ISO04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-ISO04"
+      ]
+    },
+    {
+      "v2_id": "L-09",
+      "v2_human_name": "L-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-10",
+      "v2_human_name": "L-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-11",
+      "v2_human_name": "L-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-12",
+      "v2_human_name": "L-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-13",
+      "v2_human_name": "L-13",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_PSTEP_POSITIONS"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-ISO02"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-ISO02"
+      ]
+    },
+    {
+      "v2_id": "L-14",
+      "v2_human_name": "L-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_PSTEP_WHITE_SUBTYPE"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-ISO03"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-ISO03"
+      ]
+    },
+    {
+      "v2_id": "L-15",
+      "v2_human_name": "L-15",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-16",
+      "v2_human_name": "L-16",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-17",
+      "v2_human_name": "L-17",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-18",
+      "v2_human_name": "Reserved ink names on PS layer",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "E",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-19",
+      "v2_human_name": "L-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-20",
+      "v2_human_name": "PS object not set to overprint",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "E",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-21",
+      "v2_human_name": "PS layer also contains design content",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-01",
+      "v2_human_name": "LA-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-02",
+      "v2_human_name": "LA-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-03",
+      "v2_human_name": "LA-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-06",
+      "v2_human_name": "LA-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-09",
+      "v2_human_name": "LA-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-10",
+      "v2_human_name": "LA-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-13",
+      "v2_human_name": "LA-13",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-14",
+      "v2_human_name": "LA-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-18",
+      "v2_human_name": "LA-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-19",
+      "v2_human_name": "LA-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-01",
+      "v2_human_name": "M-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_META_001",
+        "LPDF_META_004"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/metadata.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "M-02",
+      "v2_human_name": "M-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_META_002"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/metadata.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "M-03",
+      "v2_human_name": "M-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_META_003",
+        "LPDF_VIEWER_DISPLAY_TITLE"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/metadata.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "M-04",
+      "v2_human_name": "M-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_META_004"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/metadata.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "M-06",
+      "v2_human_name": "M-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-07",
+      "v2_human_name": "M-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-08",
+      "v2_human_name": "M-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_ACCESS_006",
+        "LPDF_ACCESS_HEADING_SKIP",
+        "LPDF_ACCESS_SCREEN_READER",
+        "LPDF_ACCESS_TABLE_STRUCTURE"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T4-A02",
+            "T4-A06",
+            "T4-A07",
+            "T4-A09"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T4-A02",
+        "T4-A06",
+        "T4-A07",
+        "T4-A09"
+      ]
+    },
+    {
+      "v2_id": "M-09",
+      "v2_human_name": "M-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_DIGIMARC_HINT",
+        "LPDF_XMP_GWG_TRAIL"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-XMP01",
+            "T5-N09"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-XMP01",
+        "T5-N09"
+      ]
+    },
+    {
+      "v2_id": "M-11",
+      "v2_human_name": "M-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-12",
+      "v2_human_name": "M-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_DOC_004"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP03"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP03"
+      ]
+    },
+    {
+      "v2_id": "M-13",
+      "v2_human_name": "M-13",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_STRUCT_001",
+        "LPDF_STRUCT_008",
+        "LPDF_STRUCT_014"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP04"
+      ]
+    },
+    {
+      "v2_id": "M-14",
+      "v2_human_name": "M-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_STRUCT_001",
+        "LPDF_STRUCT_008",
+        "LPDF_STRUCT_014"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP04"
+      ]
+    },
+    {
+      "v2_id": "M-17",
+      "v2_human_name": "M-17",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-18",
+      "v2_human_name": "M-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-19",
+      "v2_human_name": "M-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_STRUCT_004"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP06"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP06"
+      ]
+    },
+    {
+      "v2_id": "M-20",
+      "v2_human_name": "M-20",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-23",
+      "v2_human_name": "M-23",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-24",
+      "v2_human_name": "M-24",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-28",
+      "v2_human_name": "M-28",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-29",
+      "v2_human_name": "M-29",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-31",
+      "v2_human_name": "M-31",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-32",
+      "v2_human_name": "M-32",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-33",
+      "v2_human_name": "M-33",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-34",
+      "v2_human_name": "M-34",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-01",
+      "v2_human_name": "P-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-02",
+      "v2_human_name": "P-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-03",
+      "v2_human_name": "P-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BOX_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-STR01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-STR01"
+      ]
+    },
+    {
+      "v2_id": "P-04",
+      "v2_human_name": "P-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BOX_002"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-STR02"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-STR02"
+      ]
+    },
+    {
+      "v2_id": "P-06",
+      "v2_human_name": "P-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-07",
+      "v2_human_name": "P-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-08",
+      "v2_human_name": "P-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-09",
+      "v2_human_name": "P-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BOX_003"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-STR03"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-STR03"
+      ]
+    },
+    {
+      "v2_id": "P-10",
+      "v2_human_name": "P-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-11",
+      "v2_human_name": "P-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-12",
+      "v2_human_name": "P-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-13",
+      "v2_human_name": "P-13",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-STR04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-STR04"
+      ]
+    },
+    {
+      "v2_id": "P-14",
+      "v2_human_name": "P-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-15",
+      "v2_human_name": "P-15",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-16",
+      "v2_human_name": "UserUnit \u2260 1.0",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-17",
+      "v2_human_name": "P-17",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_DOC_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-STR05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-STR05"
+      ]
+    },
+    {
+      "v2_id": "P-18",
+      "v2_human_name": "P-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-19",
+      "v2_human_name": "P-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-20",
+      "v2_human_name": "P-20",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-21",
+      "v2_human_name": "P-21",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-22",
+      "v2_human_name": "Only non-printing layers contain content",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-23",
+      "v2_human_name": "P-23",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-24",
+      "v2_human_name": "P-24",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-26",
+      "v2_human_name": "Object hidden under another (GWG visibility)",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "H",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-27",
+      "v2_human_name": "P-27",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-28",
+      "v2_human_name": "P-28",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-29",
+      "v2_human_name": "P-29",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-30",
+      "v2_human_name": "Bleed beyond dieline",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D03"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D03"
+      ]
+    },
+    {
+      "v2_id": "P-31",
+      "v2_human_name": "Bleed inside dieline (insufficient)",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D03"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D03"
+      ]
+    },
+    {
+      "v2_id": "P-32",
+      "v2_human_name": "Content too close to dieline (X mm)",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D04"
+      ]
+    },
+    {
+      "v2_id": "P-33",
+      "v2_human_name": "P-33",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-34",
+      "v2_human_name": "P-34",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-35",
+      "v2_human_name": "P-35",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-36",
+      "v2_human_name": "P-36",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "R-01",
+      "v2_human_name": "R-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "R-02",
+      "v2_human_name": "R-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "R-03",
+      "v2_human_name": "R-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "AI_ALC_001",
+        "AI_ALC_002",
+        "AI_ALC_003"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T5-N05",
+            "T5-N05-stub",
+            "AI_ALC_001"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "AI_ALC_001",
+        "T5-N05",
+        "T5-N05-stub"
+      ]
+    },
+    {
+      "v2_id": "R-04",
+      "v2_human_name": "R-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "AI_ALC_001",
+        "AI_CANN_001",
+        "AI_COSM_001",
+        "AI_COSM_002"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T5-N02",
+            "T5-N02-cosm-stub",
+            "T5-N02-stub",
+            "AI_COSM_001"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "AI_COSM_001",
+        "T5-N02",
+        "T5-N02-cosm-stub",
+        "T5-N02-stub"
+      ]
+    },
+    {
+      "v2_id": "R-05",
+      "v2_human_name": "Tobacco warning area % calc",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "H",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TOBACCO_WARNING_AREA"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T5-N04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T5-N04"
+      ]
+    },
+    {
+      "v2_id": "R-06",
+      "v2_human_name": "R-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_EU_DPP",
+        "LPDF_BARCODE_UDI"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T5-N06"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T5-N06"
+      ]
+    },
+    {
+      "v2_id": "R-07",
+      "v2_human_name": "EU Digital Product Passport QR validation",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_GS1_AI"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T5-N08"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T5-N08"
+      ]
+    },
+    {
+      "v2_id": "R-08",
+      "v2_human_name": "R-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "R-09",
+      "v2_human_name": "R-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "R-10",
+      "v2_human_name": "R-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-01",
+      "v2_human_name": "S-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-02",
+      "v2_human_name": "S-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-03",
+      "v2_human_name": "S-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-04",
+      "v2_human_name": "S-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-05",
+      "v2_human_name": "S-5",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-06",
+      "v2_human_name": "S-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_GRAIN_MISSING"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T5-N10"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T5-N10"
+      ]
+    },
+    {
+      "v2_id": "S-07",
+      "v2_human_name": "S-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-08",
+      "v2_human_name": "S-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-09",
+      "v2_human_name": "S-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-10",
+      "v2_human_name": "S-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-11",
+      "v2_human_name": "S-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-12",
+      "v2_human_name": "S-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-13",
+      "v2_human_name": "S-13",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-14",
+      "v2_human_name": "S-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-15",
+      "v2_human_name": "S-15",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-16",
+      "v2_human_name": "S-16",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-17",
+      "v2_human_name": "S-17",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "S-18",
+      "v2_human_name": "S-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-01",
+      "v2_human_name": "T-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-02",
+      "v2_human_name": "T-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-03",
+      "v2_human_name": "T-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-04",
+      "v2_human_name": "T-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-05",
+      "v2_human_name": "Trap on wrong plate",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "H",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-06",
+      "v2_human_name": "T-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-07",
+      "v2_human_name": "T-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-08",
+      "v2_human_name": "T-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-09",
+      "v2_human_name": "T-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-10",
+      "v2_human_name": "T-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-11",
+      "v2_human_name": "T-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "T-12",
+      "v2_human_name": "T-12",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-01",
+      "v2_human_name": "TR-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_001"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/transparency.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "TR-10",
+      "v2_human_name": "TR-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-13",
+      "v2_human_name": "TR-13",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TEXT_SOFT_MASK",
+        "LPDF_TRANS_003"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-TRN06"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-TRN06"
+      ]
+    },
+    {
+      "v2_id": "TR-16",
+      "v2_human_name": "TR-16",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-17",
+      "v2_human_name": "TR-17",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_BLEND_CS_MISMATCH"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-TRN04"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-TRN04"
+      ]
+    },
+    {
+      "v2_id": "TR-18",
+      "v2_human_name": "TR-18",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_ON_SPOT"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-TRN05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-TRN05"
+      ]
+    },
+    {
+      "v2_id": "TR-19",
+      "v2_human_name": "TR-19",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_005",
+        "LPDF_TRANS_006"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T2-TRN07"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T2-TRN07"
+      ]
+    },
+    {
+      "v2_id": "TR-20",
+      "v2_human_name": "TR-20",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-21",
+      "v2_human_name": "TR-21",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-22",
+      "v2_human_name": "Transparency on processing-step / cut layer",
+      "tier": 3,
+      "wave": "A",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "V-01",
+      "v2_human_name": "PDF/VT conformance",
+      "tier": 5,
+      "wave": "E",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_PDFVT_STRUCTURE"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T5-N01"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T5-N01"
+      ]
+    },
+    {
+      "v2_id": "V-02",
+      "v2_human_name": "V-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "V-03",
+      "v2_human_name": "V-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "V-04",
+      "v2_human_name": "V-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "V-05",
+      "v2_human_name": "V-5",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "V-06",
+      "v2_human_name": "V-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "V-07",
+      "v2_human_name": "V-7",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-01",
+      "v2_human_name": "W-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-02",
+      "v2_human_name": "White underprint coverage matches color above",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "H",
+      "dieline_adjacent": true,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-03",
+      "v2_human_name": "W-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TEXT_NEAR_FOLD"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D07"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D07"
+      ]
+    },
+    {
+      "v2_id": "W-04",
+      "v2_human_name": "W-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TEXT_NEAR_FOLD"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D07"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D07"
+      ]
+    },
+    {
+      "v2_id": "W-05",
+      "v2_human_name": "W-5",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-06",
+      "v2_human_name": "W-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-07",
+      "v2_human_name": "Missing white where colored ink is laid",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "H",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_DIE_TOO_SMALL"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D08"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D08"
+      ]
+    },
+    {
+      "v2_id": "W-08",
+      "v2_human_name": "W-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-09",
+      "v2_human_name": "W-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-10",
+      "v2_human_name": "W-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-11",
+      "v2_human_name": "W-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-12",
+      "v2_human_name": "Varnish overlaps non-printable areas",
+      "tier": 4,
+      "wave": "C",
+      "difficulty": "M",
+      "dieline_adjacent": true,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_DIE_WHITE_GAP"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T3-D09"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T3-D09"
+      ]
+    },
+    {
+      "v2_id": "W-13",
+      "v2_human_name": "W-13",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-14",
+      "v2_human_name": "W-14",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-15",
+      "v2_human_name": "W-15",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "W-16",
+      "v2_human_name": "W-16",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-01",
+      "v2_human_name": "WF-1",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-02",
+      "v2_human_name": "WF-2",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-03",
+      "v2_human_name": "WF-3",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_ANNOT_001"
+      ],
+      "evidence": [
+        {
+          "source": "v1-gap-mapping promotion",
+          "v1_gap_ids": [
+            "T1-CMP05"
+          ]
+        }
+      ],
+      "v1_gap_ids_covering": [
+        "T1-CMP05"
+      ]
+    },
+    {
+      "v2_id": "WF-04",
+      "v2_human_name": "WF-4",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-05",
+      "v2_human_name": "WF-5",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-06",
+      "v2_human_name": "WF-6",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-08",
+      "v2_human_name": "WF-8",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-09",
+      "v2_human_name": "WF-9",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-10",
+      "v2_human_name": "WF-10",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-11",
+      "v2_human_name": "WF-11",
+      "tier": 2,
+      "wave": "D",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    }
+  ],
+  "tier0_primitives": [
+    {
+      "v2_id": "B-20",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_020"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-21",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_021"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-22",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_022"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-23",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_023"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-24",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_024"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-25",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_025"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-26",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_026"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-27",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_027"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "B-28",
+      "v2_human_name": "Symbology detection primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_BARCODE_028"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/barcode.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-02",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_002"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-03",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_003"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-04",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_004"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-05",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_005"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-06",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_006"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-07",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_007"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-08",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_008"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-09",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_009"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-10",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_010"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-11",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_011"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-12",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_012"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-13",
+      "v2_human_name": "Color-space primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_013"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-17",
+      "v2_human_name": "Image with embedded ICC",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_017"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-21",
+      "v2_human_name": "OutputIntent ICC v2 vs v4",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_COLOR_021"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/color.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "C-34",
+      "v2_human_name": "Object overprint set",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-56",
+      "v2_human_name": "UCR/BG function",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "C-60",
+      "v2_human_name": "Inks list extraction",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "F-03",
+      "v2_human_name": "Font fully embedded vs subset",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_003"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-06",
+      "v2_human_name": "TrueType font present",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_006"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-07",
+      "v2_human_name": "OpenType-CFF font present",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_007"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-08",
+      "v2_human_name": "OpenType-TrueType font present",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_008"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-09",
+      "v2_human_name": "CID font present",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_009"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-11",
+      "v2_human_name": "CFF / Type 1C glyph data",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_FONT_011"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/font.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "F-41",
+      "v2_human_name": "Glyph differs across uses",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "H",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-05",
+      "v2_human_name": "Image PPI before scaling",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_005"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-06",
+      "v2_human_name": "Image PPI after CTM scale",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_006"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-07",
+      "v2_human_name": "Image bit depth",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_007"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-13",
+      "v2_human_name": "CCITT/Flate/JBIG2/disallowed-filter primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_013"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-14",
+      "v2_human_name": "CCITT/Flate/JBIG2/disallowed-filter primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_014"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-15",
+      "v2_human_name": "CCITT/Flate/JBIG2/disallowed-filter primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_015"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/image.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "I-23",
+      "v2_human_name": "Image interpolation flag",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-26",
+      "v2_human_name": "Image embedded vs linked",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-28",
+      "v2_human_name": "Image inside clipping path",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-31",
+      "v2_human_name": "Inline / soft mask / alternate image primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-32",
+      "v2_human_name": "Inline / soft mask / alternate image primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-33",
+      "v2_human_name": "Inline / soft mask / alternate image primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "I-36",
+      "v2_human_name": "Image alpha channel present",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-01",
+      "v2_human_name": "OCG / layers present",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "L-04",
+      "v2_human_name": "Layer initial state",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-04",
+      "v2_human_name": "Invisible stroke (None color)",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-05",
+      "v2_human_name": "Dashed stroke (where solid expected)",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-07",
+      "v2_human_name": "Miter limit excessive",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-08",
+      "v2_human_name": "Line cap / join style",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-11",
+      "v2_human_name": "Self-intersecting path",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "M",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-12",
+      "v2_human_name": "Path has zero area",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-15",
+      "v2_human_name": "Open path / stroke None / fill None primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-16",
+      "v2_human_name": "Open path / stroke None / fill None primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "LA-17",
+      "v2_human_name": "Open path / stroke None / fill None primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-05",
+      "v2_human_name": "CreationDate / ModDate",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-10",
+      "v2_human_name": "Document ID match",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-15",
+      "v2_human_name": "Permission flags restrict modify",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-16",
+      "v2_human_name": "Digital signature present",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-21",
+      "v2_human_name": "Alternate presentations",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-22",
+      "v2_human_name": "External streams",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-25",
+      "v2_human_name": "Article threads",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-26",
+      "v2_human_name": "Bookmarks / destinations",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-27",
+      "v2_human_name": "Marked content / structure tree",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "M-30",
+      "v2_human_name": "Compressed object streams",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-05",
+      "v2_human_name": "ArtBox present",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "P-25",
+      "v2_human_name": "Object overlapping other objects",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-02",
+      "v2_human_name": "Blend mode primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_002"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/transparency.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "TR-03",
+      "v2_human_name": "Blend mode primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_003"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/transparency.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "TR-04",
+      "v2_human_name": "Blend mode primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_004"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/transparency.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "TR-05",
+      "v2_human_name": "Blend mode primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_005"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/transparency.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "TR-06",
+      "v2_human_name": "Blend mode primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_006"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/transparency.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "TR-07",
+      "v2_human_name": "Blend mode primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_TRANS_007"
+      ],
+      "evidence": [
+        {
+          "file": "lintpdf/analyzers/transparency.py",
+          "match_type": "numeric_match"
+        }
+      ]
+    },
+    {
+      "v2_id": "TR-08",
+      "v2_human_name": "Blend mode primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-09",
+      "v2_human_name": "Blend mode primitives",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-11",
+      "v2_human_name": "ExtGState alpha < 1.0",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-12",
+      "v2_human_name": "Soft mask in use",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-14",
+      "v2_human_name": "Knockout group",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "TR-15",
+      "v2_human_name": "Isolated group",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    },
+    {
+      "v2_id": "WF-07",
+      "v2_human_name": "Page labels present / correct",
+      "tier": 0,
+      "wave": "0",
+      "difficulty": "E",
+      "dieline_adjacent": false,
+      "status": "absent",
+      "matched_inspection_ids": [],
+      "evidence": []
+    }
+  ]
+}

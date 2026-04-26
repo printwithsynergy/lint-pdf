@@ -1,0 +1,218 @@
+{
+  "schema_version": "0.2.v2",
+  "generated_at": "2026-04-25",
+  "v1_baseline": {
+    "v1_gaps_total": 93,
+    "v1_gaps_present": 93,
+    "v1_catalog_total": 421
+  },
+  "v2_universe_total": 412,
+  "v2_user_facing_total": 328,
+  "v2_tier0_primitives_total": 84,
+  "user_facing_coverage": [
+    {
+      "v2_prefix": "V",
+      "label": "Variable Data",
+      "v2_universe_count": 7,
+      "estimated_catalog_coverage": 0,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 0.0
+    },
+    {
+      "v2_prefix": "EPM",
+      "label": "EPM Candidacy",
+      "v2_universe_count": 22,
+      "estimated_catalog_coverage": 0,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 0.0
+    },
+    {
+      "v2_prefix": "W",
+      "label": "White Ink / Varnish / Underprint",
+      "v2_universe_count": 16,
+      "estimated_catalog_coverage": 3,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 18.8
+    },
+    {
+      "v2_prefix": "ISO",
+      "label": "ISO Standards (rolled-up)",
+      "v2_universe_count": 12,
+      "estimated_catalog_coverage": 3,
+      "v1_gaps_closed_in_bucket": 13,
+      "estimated_coverage_pct": 25.0
+    },
+    {
+      "v2_prefix": "D",
+      "label": "Dieline & Cut",
+      "v2_universe_count": 23,
+      "estimated_catalog_coverage": 6,
+      "v1_gaps_closed_in_bucket": 15,
+      "estimated_coverage_pct": 26.1
+    },
+    {
+      "v2_prefix": "P",
+      "label": "Page Geometry / Boxes / Bleed",
+      "v2_universe_count": 36,
+      "estimated_catalog_coverage": 12,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 33.3
+    },
+    {
+      "v2_prefix": "BR",
+      "label": "Braille / Tactile",
+      "v2_universe_count": 9,
+      "estimated_catalog_coverage": 3,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 33.3
+    },
+    {
+      "v2_prefix": "S",
+      "label": "Substrate / Press / Production",
+      "v2_universe_count": 18,
+      "estimated_catalog_coverage": 7,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 38.9
+    },
+    {
+      "v2_prefix": "TR",
+      "label": "Transparency",
+      "v2_universe_count": 22,
+      "estimated_catalog_coverage": 9,
+      "v1_gaps_closed_in_bucket": 7,
+      "estimated_coverage_pct": 40.9
+    },
+    {
+      "v2_prefix": "L",
+      "label": "Layers / OCG / Processing Steps",
+      "v2_universe_count": 21,
+      "estimated_catalog_coverage": 10,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 47.6
+    },
+    {
+      "v2_prefix": "LA",
+      "label": "Line Art / Paths / Strokes",
+      "v2_universe_count": 19,
+      "estimated_catalog_coverage": 11,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 57.9
+    },
+    {
+      "v2_prefix": "T",
+      "label": "Trapping & Registration",
+      "v2_universe_count": 12,
+      "estimated_catalog_coverage": 7,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 58.3
+    },
+    {
+      "v2_prefix": "WF",
+      "label": "Workflow / Job-Level",
+      "v2_universe_count": 11,
+      "estimated_catalog_coverage": 8,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 72.7
+    },
+    {
+      "v2_prefix": "C",
+      "label": "Color & Ink",
+      "v2_universe_count": 67,
+      "estimated_catalog_coverage": 55,
+      "v1_gaps_closed_in_bucket": 12,
+      "estimated_coverage_pct": 82.1
+    },
+    {
+      "v2_prefix": "F",
+      "label": "Fonts & Typography",
+      "v2_universe_count": 41,
+      "estimated_catalog_coverage": 35,
+      "v1_gaps_closed_in_bucket": 9,
+      "estimated_coverage_pct": 85.4
+    },
+    {
+      "v2_prefix": "I",
+      "label": "Images",
+      "v2_universe_count": 38,
+      "estimated_catalog_coverage": 33,
+      "v1_gaps_closed_in_bucket": 7,
+      "estimated_coverage_pct": 86.8
+    },
+    {
+      "v2_prefix": "M",
+      "label": "Metadata / File Structure / Encryption / Interactive",
+      "v2_universe_count": 34,
+      "estimated_catalog_coverage": 42,
+      "v1_gaps_closed_in_bucket": 20,
+      "estimated_coverage_pct": 100.0
+    },
+    {
+      "v2_prefix": "B",
+      "label": "Barcodes & GS1",
+      "v2_universe_count": 28,
+      "estimated_catalog_coverage": 32,
+      "v1_gaps_closed_in_bucket": 0,
+      "estimated_coverage_pct": 100.0
+    },
+    {
+      "v2_prefix": "R",
+      "label": "Industry-Specific Regulatory",
+      "v2_universe_count": 10,
+      "estimated_catalog_coverage": 34,
+      "v1_gaps_closed_in_bucket": 10,
+      "estimated_coverage_pct": 100.0
+    }
+  ],
+  "uncategorized_buckets": [
+    "other=109"
+  ],
+  "tier0_primitives": {
+    "playbook_section": "v2 \u00a710.1 / Section 4 of universe enumeration",
+    "primitive_count": 84,
+    "status": "absent (v1 did not produce a primitive registry)",
+    "note": "The 84 atomic primitives are the foundation for Phase 2.0. v1 work emits findings via implicit ad-hoc PDF object inspection; no central primitive registry exists. Phase 2.0 must build it."
+  },
+  "epm_module": {
+    "playbook_section": "v2 \u00a72.EPM / \u00a76 / Section 3.19",
+    "module_count": 22,
+    "status": "partial-foundations",
+    "present_foundations": [
+      "epm_analyzer.py (heuristics)",
+      "rich-black recipe in advanced_color_analyzer.py",
+      "TAC analyzer in ink_coverage_analyzer.py",
+      "color_score.py LPDF_EPM_ category mapping"
+    ],
+    "absent": [
+      "0-100 candidacy score / decision band output",
+      "Hard disqualifier composition (EPM-A1..A8 as a unit)",
+      "EPM-Advanced device-link \u0394E / \u0394C computation",
+      "EPM AI-Explain LLM prompt + per-tenant cost-cap channel",
+      "BYO EPM JSON ingestion path",
+      "press_target routing (Indigo EPM/EPM+/CMYK/IndiChrome / Alwan HPM)"
+    ]
+  },
+  "byo_v9": {
+    "playbook_section": "v2 \u00a79 + Phase 2.EPM.5",
+    "imports_present": [
+      "pitstop.py (Adobe PitStop XML)",
+      "callas.py (Callas pdfToolbox)",
+      "acrobat.py (Adobe Acrobat XML)",
+      "lintpdf_native.py (LintPDF JSON)",
+      "custom.py (mapping-based)"
+    ],
+    "byo_v9_schema_status": "absent",
+    "note": "Existing imports merge vendor findings into report. v2 \u00a79 BYO is 'pre-computed analysis JSON to skip preflight' \u2014 different semantics and different schema (separations / rich_black / content_heuristics / precomputed_deltas / dieline). Greenfield work."
+  },
+  "wave_v": {
+    "playbook_section": "v2 \u00a713 / \u00a714 / \u00a715 / \u00a716 / \u00a717",
+    "viewer_overlay": "partial \u2014 TAC heatmap, separation toggle, dieline overlay, finding boxes exist; per-finding click + drawer absent (V-01..V-04)",
+    "operator_decisions": "absent \u2014 flag/note/ignore at type or instance scope is greenfield (V-03..V-05)",
+    "webhook_outbox_idempotent": "partial \u2014 basic webhooks + Worker-Webhooks exist; idempotency-key + outbox state schema absent (V-06)",
+    "toggle_registry_cascade": "absent \u2014 no tenant\u2192workflow\u2192call resolver, no locked toggles, no audit log (V-07, V-08)",
+    "byo_hydration": "absent (V-09)",
+    "epm_overlay_extensions": "absent (V-10)",
+    "tenant_theming": "absent \u2014 severity colors hardcoded in component files (V-11)",
+    "legacy_migration_script": "absent (V-12)",
+    "desktop_config_sync": "absent \u2014 desktop is HTTP-only mirror today (V-13)"
+  }
+}

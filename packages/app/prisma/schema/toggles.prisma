@@ -1,0 +1,75 @@
+// Wave V V-07 — Toggle registry + per-scope overrides.
+//
+// Toggle rows declare every configurable knob in the system
+// (dot-notation IDs, e.g. "checks.F-22.severity_override").
+// ToggleOverride rows store per-scope override values keyed by
+// (toggle_id, scope, scope_id) where scope is TENANT, WORKFLOW,
+// or CALL.
+//
+// Canonical schema lives in packages/engine/alembic/versions/042.
+// This Prisma file mirrors it so `prisma db push` doesn't try to
+// drop engine-owned tables.
+
+enum ToggleType {
+  BOOLEAN
+  NUMERIC
+  ENUM
+  STRING
+  OBJECT
+
+  @@map("toggle_type")
+}
+
+enum ToggleScope {
+  TENANT
+  WORKFLOW
+  CALL
+
+  @@map("toggle_scope")
+}
+
+enum MergeStrategy {
+  REPLACE
+  MERGE
+  UNION
+
+  @@map("merge_strategy")
+}
+
+model Toggle {
+  id            String           @id
+  category      String
+  humanName     String           @map("human_name")
+  type          ToggleType
+  defaultValue  Json             @map("default_value")
+  allowedRange  Json?            @map("allowed_range")
+  overrideAt    ToggleScope[]    @map("override_at")
+  lockable      Boolean          @default(false)
+  mergeStrategy MergeStrategy    @default(REPLACE) @map("merge_strategy")
+  description   String?
+  addedAt       DateTime         @default(now()) @map("added_at")
+  deprecatedAt  DateTime?        @map("deprecated_at")
+
+  overrides     ToggleOverride[]
+
+  @@index([category], map: "ix_toggles_category")
+  @@map("toggles")
+}
+
+model ToggleOverride {
+  id        String       @id
+  toggleId  String       @map("toggle_id")
+  scope     ToggleScope
+  scopeId   String       @map("scope_id")
+  value     Json
+  locked    Boolean      @default(false)
+  setBy     String       @map("set_by")
+  setAt     DateTime     @default(now()) @map("set_at")
+  surface   String
+
+  toggle    Toggle       @relation(fields: [toggleId], references: [id], onDelete: Cascade)
+
+  @@unique([toggleId, scope, scopeId], map: "uq_toggle_overrides_scope")
+  @@index([scope, scopeId], map: "ix_toggle_overrides_scope_lookup")
+  @@map("toggle_overrides")
+}

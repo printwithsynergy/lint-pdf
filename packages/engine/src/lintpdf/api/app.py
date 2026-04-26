@@ -37,6 +37,7 @@ from lintpdf.api.routes import (
     profiles,
     reports,
     stripe_webhooks,
+    toggles,
     trial,
     usage,
     user_ai_access,
@@ -268,6 +269,7 @@ def create_app() -> FastAPI:
         app.include_router(viewer.router)
     app.include_router(branding.router)
     app.include_router(brand_specs.router)
+    app.include_router(toggles.router)  # V-07 toggle resolver + tenant overrides
     if not control_plane_only:
         app.include_router(approvals.router)
         app.include_router(annotations.router, prefix="/api/v1/viewer")

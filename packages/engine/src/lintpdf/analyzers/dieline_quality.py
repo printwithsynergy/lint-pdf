@@ -34,6 +34,7 @@ import logging
 from typing import Any
 
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.primitives import object_class
 
 __all__ = ["check_dieline_quality"]
 
@@ -1171,7 +1172,7 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                 new_line = compose(text_line_matrix, (1, 0, 0, 1, 0, -current_font_size))
                 text_line_matrix = new_line
                 text_matrix = new_line
-            elif op in ("Tj", "TJ", "'", '"') and text_matrix is not None:
+            elif object_class.is_text(op) and text_matrix is not None:
                 # Text rendered. Compute approximate bbox by composing
                 # text_matrix × CTM and applying to a rough text extent.
                 tm_in_user = compose(text_matrix, ctm)

@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 
 from lintpdf.analyzers.base import BaseAnalyzer
 from lintpdf.analyzers.finding import Finding, Severity
+from lintpdf.primitives import geometry as geom_primitives
 
 if TYPE_CHECKING:
     from lintpdf.semantic.events import ContentStreamEvent
@@ -385,7 +386,7 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                 )
             )
 
-        if page.bleed_box is None:
+        if geom_primitives.bleed_box(page) is None:
             findings.append(
                 Finding(
                     inspection_id="LPDF_BOX_001",
