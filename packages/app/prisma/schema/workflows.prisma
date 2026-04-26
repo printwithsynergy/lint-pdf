@@ -1,0 +1,27 @@
+// Wave V V-07 — Workflow first-class entity.
+//
+// Each tenant can define many named workflows (e.g.
+// "Packaging — Folding Carton") and exactly one is_default
+// per tenant. Workflows scope ToggleOverride rows above
+// per-call overrides. See packages/engine/alembic/versions/042
+// for the canonical schema definition.
+//
+// tenantId is the engine tenant uuid stored as String — not
+// a Prisma @relation to the cuid-keyed app Tenant model. The
+// app dashboard cross-references via Tenant.engineTenantId
+// when surfacing workflows in the UI.
+
+model Workflow {
+  id          String    @id
+  tenantId    String    @db.Uuid @map("tenant_id")
+  slug        String
+  humanName   String    @map("human_name")
+  description String?
+  isDefault   Boolean   @default(false) @map("is_default")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@unique([tenantId, slug], map: "uq_workflows_tenant_slug")
+  @@index([tenantId], map: "ix_workflows_tenant_id")
+  @@map("workflows")
+}

@@ -11,10 +11,17 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class CheckInfo:
-    """Friendly name and description for a preflight check."""
+    """Friendly name and description for a preflight check.
+
+    ``v2_ids`` carries the Phase 1 v2-universe identifiers (e.g.
+    ``("D-08",)``) when a v1-era LPDF code maps onto one or more
+    canonical v2 IDs. The reports + dashboard surface both codes so
+    operators can cross-reference the spec.
+    """
 
     name: str
     description: str
+    v2_ids: tuple[str, ...] = ()
 
 
 def get_check_info(inspection_id: str) -> CheckInfo:
@@ -584,22 +591,27 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_DIE_ZORDER": CheckInfo(
         "Dieline Below Artwork",
         "Dieline is painted before artwork in the content stream — the cutter marker should sit on top of all content. Move the dieline layer to the top of the layer stack before exporting.",
+        v2_ids=("D-06",),
     ),
     "LPDF_DIE_KNOCKOUT": CheckInfo(
         "Dieline Set To Knockout",
         "Dieline stroke is set to knockout (OP=false) — underlying inks will have gaps along cut lines. Enable 'Overprint Stroke' on the dieline layer in Illustrator / InDesign.",
+        v2_ids=("D-07",),
     ),
     "LPDF_DIE_AS_ART": CheckInfo(
         "Dieline Spot Used As Fill",
         "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
+        v2_ids=("D-15",),
     ),
     "LPDF_DIE_LAYER_CONTENT": CheckInfo(
         "Foreign Content On Dieline Layer",
         "Non-dieline paint operation(s) found inside a dieline-named OCG marked-content block. Artwork on the cutter plate will print on every copy — move it to a non-dieline layer.",
+        v2_ids=("D-04",),
     ),
     "LPDF_DIE_CONTENT_OUTSIDE": CheckInfo(
         "Content Outside Dieline",
         "Paint bbox extends beyond the dieline polygon envelope by more than the configured tolerance. Content may be clipped or trimmed in production.",
+        v2_ids=("D-15",),
     ),
     "LPDF_DIE_VARNISH_COLLISION": CheckInfo(
         "Varnish Applied Inside VarnishFree Region",
