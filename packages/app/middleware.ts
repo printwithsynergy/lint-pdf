@@ -30,6 +30,11 @@ export function middleware(request: NextRequest) {
         "/api/waitlist",
         "/api/lintpdf/viewer/public",
         "/api/lintpdf/reports/tokens",
+        // First-run Onboarding for the desktop and mobile apps —
+        // resolves a tenant by name/slug/id/domain and returns the
+        // branding blob to theme the app. Called before any user has
+        // authenticated, so it must not require a session.
+        "/api/public/tenant-lookup",
       ],
       rateLimitExemptPaths: [
         "/api/auth/magic-link/status",
