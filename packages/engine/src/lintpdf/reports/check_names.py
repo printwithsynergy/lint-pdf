@@ -1632,6 +1632,118 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "inconsistently on digital substrates.",
         v2_ids=("EPM-A4",),
     ),
+    # ── Q-C7 — 16 new LPDF_EPM_*_REJECT codes covering EPM-A/B/C ──────────
+    # See lintpdf/epm/codes.py for the canonical inspection_id mapping.
+    "LPDF_EPM_GAMUT_OUT_REJECT": CheckInfo(
+        "EPM Spot Color Out Of CMY Gamut",
+        "A spot color or Lab value falls outside the CMY-only gamut. EPM "
+        "drops the K plate, so out-of-gamut targets shift visibly on press. "
+        "Either substitute a process build that EPM can reproduce, or route "
+        "the job to standard CMYK / IndiChrome.",
+        v2_ids=("EPM-A1",),
+    ),
+    "LPDF_EPM_K_COVERAGE_REJECT": CheckInfo(
+        "EPM K-Channel Coverage Too High",
+        "Total K-channel coverage exceeds the EPM tolerance. Even after "
+        "K → CMY conversion, the resulting density is unrecoverable. Either "
+        "rebalance with K → CMY upstream or route to standard CMYK.",
+        v2_ids=("EPM-A2",),
+    ),
+    "LPDF_EPM_RICH_BLACK_REJECT": CheckInfo(
+        "EPM Rich-Black Recipe Mismatch",
+        "Rich-black usage deviates from the configured recipe (default "
+        "C≥40, M≥20, Y≥20, K≥80 per Q-C2). Without K, the CMY composite "
+        "won't match the designer's intended density. Re-author or accept "
+        "an off-target neutral.",
+        v2_ids=("EPM-A3",),
+    ),
+    "LPDF_EPM_SUBSTRATE_REJECT": CheckInfo(
+        "EPM Substrate Class Incompatible",
+        "Configured substrate class is incompatible with EPM (e.g. heavy "
+        "uncoated stock with TAC headroom that benefits from K). Default "
+        "substrate when unspecified is coated (Q-C3).",
+        v2_ids=("EPM-A6",),
+    ),
+    "LPDF_EPM_TEXT_SIZE_REJECT": CheckInfo(
+        "EPM Text Below CMY Legibility Floor",
+        "Non-pure-black text smaller than the EPM legibility floor. CMY-only "
+        "rendering loses contrast at small sizes. Increase point size or "
+        "convert to a CMY-friendly recipe.",
+        v2_ids=("EPM-A8",),
+    ),
+    "LPDF_EPM_PROCESS_COUNT_REJECT": CheckInfo(
+        "EPM Process Color Count Above Cap",
+        "Document uses more than 4 process channels. Additional plates blow "
+        "the EPM throughput advantage. Consolidate or route to a press that "
+        "supports the channel count natively.",
+        v2_ids=("EPM-B1",),
+    ),
+    "LPDF_EPM_BLEED_REJECT": CheckInfo(
+        "EPM Bleed Below Digital Trim Minimum",
+        "Bleed extent is less than the digital-press finishing minimum. "
+        "Insufficient bleed shows white at trim. Extend artwork past the "
+        "trim box before press.",
+        v2_ids=("EPM-B3",),
+    ),
+    "LPDF_EPM_PAGE_COUNT_REJECT": CheckInfo(
+        "EPM Page Count Below Economic Threshold",
+        "Page count is below the EPM economic break-even. Setup time "
+        "outweighs the throughput gain. Route to standard CMYK for short "
+        "runs.",
+        v2_ids=("EPM-B4",),
+    ),
+    "LPDF_EPM_IMAGE_RES_REJECT": CheckInfo(
+        "EPM Image Resolution Below Digital Minimum",
+        "Image effective resolution is below the digital-press minimum. "
+        "Pixelation and softening show through. Re-source the asset or "
+        "route to a press whose RIP can compensate.",
+        v2_ids=("EPM-B5",),
+    ),
+    "LPDF_EPM_TRIM_REJECT": CheckInfo(
+        "EPM Trim Geometry Inconsistent",
+        "Trim or bleed boxes vary across pages. Finishing on EPM digital "
+        "presses needs consistent trim geometry. Reconcile boxes upstream.",
+        v2_ids=("EPM-B6",),
+    ),
+    "LPDF_EPM_SPOT_COUNT_REJECT": CheckInfo(
+        "EPM Spot Color Count Above Cap",
+        "Document carries more spot colors than the EPM advisory cap. "
+        "Consider IndiChrome (expanded gamut) for jobs with rich spot "
+        "palettes; standard EPM may collapse spots awkwardly.",
+        v2_ids=("EPM-C1",),
+    ),
+    "LPDF_EPM_FEATURE_SIZE_REJECT": CheckInfo(
+        "EPM Feature Below Digital Resolution",
+        "Smallest stroked feature is below digital-press resolution. Lines "
+        "may render inconsistently. Verify on a proof.",
+        v2_ids=("EPM-C2",),
+    ),
+    "LPDF_EPM_MIXED_SPACES_REJECT": CheckInfo(
+        "EPM Mixed Process Color Spaces",
+        "Job mixes process color spaces (e.g. some pages CMYK, some "
+        "DeviceN). Confirm the press setup matches the dominant space "
+        "before scheduling.",
+        v2_ids=("EPM-C3",),
+    ),
+    "LPDF_EPM_TRAPPING_REJECT": CheckInfo(
+        "EPM Trapping Disabled",
+        "Document carries no explicit trap settings. Tight register on "
+        "digital presses still benefits from explicit traps; verify the "
+        "RIP's auto-trap matches the artwork.",
+        v2_ids=("EPM-C5",),
+    ),
+    "LPDF_EPM_TRIM_BLEED_REJECT": CheckInfo(
+        "EPM Trim And Bleed Misaligned",
+        "Trim and bleed boxes are mis-aligned. Visible at finishing. "
+        "Re-author so bleed fully encloses trim.",
+        v2_ids=("EPM-C6",),
+    ),
+    "LPDF_EPM_PAGE_GEOM_REJECT": CheckInfo(
+        "EPM Per-Page Geometry Varies",
+        "Bleed / trim / media box geometry differs per page. Operator "
+        "review recommended before scheduling on EPM.",
+        v2_ids=("EPM-C7",),
+    ),
     # ── LPDF_GAMUT ──────────────────────────────────────────────────────────
     "LPDF_GAMUT_001": CheckInfo(
         "CMYK color",
