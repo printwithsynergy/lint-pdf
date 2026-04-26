@@ -118,9 +118,29 @@ def emit_event(
         logger.exception("Webhook emit: failed to import dispatch_webhook")
         return
 
+    # Wave V V-06 (Q-D3): resolve the tenant default once so every
+    # endpoint share the same fallback. Per-webhook ``endpoint.secret``
+    # wins; tenant default fills in when unset.
+    tenant_default_secret = _load_tenant_default_secret(db, tenant_id)
+
     for endpoint in endpoints:
         # Explicit subscription list: empty means "all events".
         if endpoint.events and event not in endpoint.events:
+            continue
+
+        signing_secret = resolve_signing_secret(
+            endpoint_secret=endpoint.secret,
+            tenant_default_secret=tenant_default_secret,
+        )
+        if signing_secret is None:
+            logger.error(
+                "Webhook emit: tenant %s has neither per-webhook nor"
+                " tenant-default signing secret for endpoint %s; skipping"
+                " dispatch (event=%s)",
+                tenant_id,
+                endpoint.id,
+                event,
+            )
             continue
 
         # Persist the delivery row BEFORE the async dispatch so the
@@ -154,7 +174,7 @@ def emit_event(
         try:
             dispatch_webhook.delay(  # type: ignore[attr-defined]
                 webhook_url=endpoint.url,
-                webhook_secret=endpoint.secret,
+                webhook_secret=signing_secret,
                 event=event,
                 payload=payload,
                 delivery_id=delivery_id_str,
@@ -166,6 +186,42 @@ def emit_event(
             )
             # Don't rollback the delivery row -- it still serves as an
             # audit of "we tried to notify" even if the queue is broken.
+
+
+def resolve_signing_secret(
+    *,
+    endpoint_secret: str | None,
+    tenant_default_secret: str | None,
+) -> str | None:
+    """Wave V V-06 (Q-D3) — resolve the HMAC secret for one delivery.
+
+    Returns the per-webhook override if set, otherwise the tenant
+    default, otherwise ``None`` (caller's signal to skip the dispatch
+    and log an error). Empty strings are treated as unset to avoid
+    silently signing with a zero-length key.
+    """
+    if endpoint_secret:
+        return endpoint_secret
+    if tenant_default_secret:
+        return tenant_default_secret
+    return None
+
+
+def _load_tenant_default_secret(
+    db: Session, tenant_id: uuid_mod.UUID
+) -> str | None:
+    """Read ``Tenant.webhook_signing_secret`` once per emission."""
+    from lintpdf.api.models import Tenant
+
+    try:
+        row = db.get(Tenant, tenant_id)
+    except Exception:
+        logger.exception(
+            "Webhook emit: failed to load tenant %s for default secret",
+            tenant_id,
+        )
+        return None
+    return getattr(row, "webhook_signing_secret", None) if row else None
 
 
 def _ensure_json_safe(value: Any) -> Any:
