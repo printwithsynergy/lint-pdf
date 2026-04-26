@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { ViewerConfig } from "./types";
 import { useViewerApi } from "./types";
 import { ZoomControls } from "./ZoomControls";
-import { hostFallbackClient } from "@/lib/host-fallback-client";
+import { hostFallbackClient } from "./lib/host-fallback-client";
 
 type ViewerMode = "normal" | "separation" | "layers" | "annotation" | "comparison" | "health" | "chain";
 type MeasureMode = "none" | "color_picker" | "densitometer" | "ruler";

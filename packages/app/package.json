@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@lintpdf/stripe": "workspace:*",
+    "@lintpdf/viewer-shared": "workspace:*",
     "@prisma/adapter-pg": "^7.6.0",
     "@tanstack/react-query": "^5.32.0",
     "@thinkneverland/grounded-plugin": "workspace:*",

@@ -10,8 +10,6 @@
  * ``/pricing`` and deep-links to the relevant tier when possible.
  */
 
-import Link from "next/link";
-
 export type UpgradePromptGate =
   | "preflight_source"
   | "capability_fillin"
@@ -94,12 +92,12 @@ export function UpgradePrompt({
             </p>
           )}
           <div className="flex flex-wrap gap-2">
-            <Link
+            <a
               href={`/dashboard/billing?suggest=${targetPlan}`}
               className="rounded-lg bg-brand-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800"
             >
               Upgrade to {targetPlan.charAt(0).toUpperCase() + targetPlan.slice(1)}
-            </Link>
+            </a>
             <a
               href="/pricing"
               target="_blank"

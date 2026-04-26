@@ -28,6 +28,7 @@ const config = {
     "@thinkneverland/pixie-dust-webhooks",
     "@thinkneverland/grounded-plugin",
     "@lintpdf/stripe",
+    "@lintpdf/viewer-shared",
   ],
   serverExternalPackages: [
     "@prisma/client",

@@ -1,6 +1,8 @@
 @import "@thinkneverland/pixie-dust-theme-default/globals.css";
 @plugin "@tailwindcss/typography";
 
+@source "../../viewer-shared/src/**/*.{ts,tsx}";
+
 /*
  * Tailwind v4 Preflight dropped the automatic `cursor: pointer` that v3
  * applied to <button>. Restore it so every button in LintPDF (and the
