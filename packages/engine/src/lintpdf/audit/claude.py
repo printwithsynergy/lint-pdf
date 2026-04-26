@@ -248,6 +248,39 @@ class ClaudeAuditor:
 
         from lintpdf.audit.outage import record_outcome
 
+        # Q-E7: per-tenant LLM cost cap. When enabled and the tenant's
+        # monthly spend has hit the cap, refuse the dispatch before
+        # paying for tokens. ``check_cap_or_raise`` is a no-op when the
+        # cap toggle is off (the default), so existing deployments are
+        # unaffected. We pass a 0 ``projected_cost_cents`` here because
+        # the post-call ``record_usage`` keeps the running total honest
+        # for the next attempt; conservatively gating on already-spent
+        # spend is enough to stop runaway cost on the next call.
+        if tenant_id is not None:
+            try:
+                from lintpdf.ai.cost_cap import (
+                    CostCapExceededError,
+                    check_cap_or_raise,
+                )
+                from lintpdf.api.database import get_db_session
+
+                _cap_session = get_db_session()
+                try:
+                    check_cap_or_raise(_cap_session, tenant_id)
+                finally:
+                    _cap_session.close()
+            except CostCapExceededError:
+                logger.warning(
+                    "claude-audit: cost cap reached for tenant %s; skipping batch",
+                    tenant_id,
+                )
+                raise
+            except Exception:  # pragma: no cover — fail open
+                logger.warning(
+                    "claude-audit: cost-cap check failed; allowing dispatch",
+                    exc_info=True,
+                )
+
         try:
             response = self._client.messages.create(  # type: ignore[call-overload]
                 model=self._model,

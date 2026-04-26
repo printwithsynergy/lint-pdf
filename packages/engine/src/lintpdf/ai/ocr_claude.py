@@ -151,6 +151,33 @@ class ClaudeOCR:
             _image_block(png, cache=True),
         ]
 
+        # Q-E7: cost-cap gate before paying for tokens. No-op when the
+        # tenant has not opted into the cap (the default).
+        if tenant_id is not None:
+            try:
+                from lintpdf.ai.cost_cap import (
+                    CostCapExceededError,
+                    check_cap_or_raise,
+                )
+                from lintpdf.api.database import get_db_session
+
+                _cap_session = get_db_session()
+                try:
+                    check_cap_or_raise(_cap_session, tenant_id)
+                finally:
+                    _cap_session.close()
+            except CostCapExceededError:
+                logger.warning(
+                    "claude-ocr: cost cap reached for tenant %s; skipping page",
+                    tenant_id,
+                )
+                raise
+            except Exception:  # pragma: no cover — fail open
+                logger.warning(
+                    "claude-ocr: cost-cap check failed; allowing dispatch",
+                    exc_info=True,
+                )
+
         try:
             response = self._client.messages.create(
                 model=self._model,
