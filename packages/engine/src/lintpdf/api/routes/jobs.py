@@ -20,7 +20,6 @@ from lintpdf.api.database import get_db
 from lintpdf.api.middleware import check_burst_rate_limit, check_rate_limit
 from lintpdf.api.models import (
     BrandProfile,
-    BrandSpec,
     Job,
     JobFinding,
     JobImportedReport,
@@ -573,16 +572,14 @@ async def submit_job(  # skipcq: PY-R1000
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="brand_spec_id must be a UUID.",
             ) from exc
-        spec_row = (
-            db.query(BrandSpec)
-            .filter(
-                BrandSpec.id == brand_spec_id_resolved,
-                BrandSpec.tenant_id == tenant.id,
-                BrandSpec.is_archived.is_(False),
-            )
-            .first()
+        # Phase 0.7 PR-B3b — brand specs live as keys inside the
+        # tenant's ``ToggleOverride(toggle_id='brand')`` row now.
+        from lintpdf.brand_specs import storage as _brand_storage
+
+        spec_value = _brand_storage.get_spec(
+            db, tenant.id, brand_spec_id_resolved
         )
-        if spec_row is None:
+        if spec_value is None or spec_value.get("is_archived"):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Brand spec '{brand_spec_id}' not found or archived.",
