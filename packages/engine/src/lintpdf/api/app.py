@@ -20,6 +20,7 @@ from lintpdf.api.routes import (
     admin_warming,
     ai_config,
     ai_credits,
+    ai_explain,
     ai_generate,
     ai_health,
     ai_interpret,
@@ -293,6 +294,7 @@ def create_app() -> FastAPI:
     app.include_router(ai_health.router)  # /api/v1/ai/health — unauthenticated outage probe
     if not control_plane_only:
         app.include_router(jobs.router)
+        app.include_router(ai_explain.router)  # Q-C4/C5 AI-Explain endpoint
     app.include_router(profiles.router)
     app.include_router(webhooks.router)
     app.include_router(usage.router)
