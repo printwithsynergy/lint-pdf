@@ -2611,13 +2611,17 @@
       "dieline_adjacent": false,
       "status": "present",
       "matched_inspection_ids": [
-        "LPDF_IMG_003",
-        "LPDF_IMG_004"
+        "LPDF_IMG_002"
       ],
       "evidence": [
         {
           "file": "lintpdf/analyzers/image.py",
           "match_type": "numeric_match"
+        },
+        {
+          "source": "wave-D-batch-3-audit-correction",
+          "note": "Corrected during Wave D batch 3: original Phase 1 audit listed LPDF_IMG_003 (Wrong Color Mode) + LPDF_IMG_004 (No Image Compression). The actual semantic match for \"Color image resolution > max\" is LPDF_IMG_002 (Excessive Resolution).",
+          "corrected_at": "2026-04-26"
         }
       ]
     },
@@ -2686,12 +2690,17 @@
       "dieline_adjacent": false,
       "status": "present",
       "matched_inspection_ids": [
-        "LPDF_IMG_011"
+        "LPDF_IMG_008"
       ],
       "evidence": [
         {
           "file": "lintpdf/analyzers/image.py",
           "match_type": "numeric_match"
+        },
+        {
+          "source": "wave-D-batch-3-audit-correction",
+          "note": "Corrected during Wave D batch 3: original Phase 1 audit listed LPDF_IMG_011 (Alternate Image). The actual JPEG2000 detector is LPDF_IMG_008.",
+          "corrected_at": "2026-04-26"
         }
       ]
     },
@@ -2720,14 +2729,17 @@
       "wave": "D",
       "difficulty": "M",
       "dieline_adjacent": false,
-      "status": "present",
-      "matched_inspection_ids": [
-        "LPDF_IMG_016"
-      ],
+      "status": "absent",
+      "matched_inspection_ids": [],
       "evidence": [
         {
           "file": "lintpdf/analyzers/image.py",
           "match_type": "numeric_match"
+        },
+        {
+          "source": "wave-D-batch-3-audit-correction",
+          "note": "Demoted during Wave D batch 3 audit: I-16 is \"Image rotated 90/180/270\" but lintPDF's LPDF_IMG_015 fires only on NON-90-degree rotations. No analyzer covers I-16 today; the original Phase 1 mapping to LPDF_IMG_016 (Flipped Image) was wrong. Net-new analyzer needed for I-16 if shipped.",
+          "corrected_at": "2026-04-26"
         }
       ]
     },
@@ -2740,12 +2752,17 @@
       "dieline_adjacent": false,
       "status": "present",
       "matched_inspection_ids": [
-        "LPDF_IMG_017"
+        "LPDF_IMG_015"
       ],
       "evidence": [
         {
           "file": "lintpdf/analyzers/image.py",
           "match_type": "numeric_match"
+        },
+        {
+          "source": "wave-D-batch-3-audit-correction",
+          "note": "Corrected during Wave D batch 3: original Phase 1 audit listed LPDF_IMG_017 (Extreme Scaling). The actual non-orthogonal rotation detector is LPDF_IMG_015.",
+          "corrected_at": "2026-04-26"
         }
       ]
     },
@@ -2776,12 +2793,17 @@
       "dieline_adjacent": false,
       "status": "present",
       "matched_inspection_ids": [
-        "LPDF_IMG_019"
+        "LPDF_IMG_016"
       ],
       "evidence": [
         {
           "file": "lintpdf/analyzers/image.py",
           "match_type": "numeric_match"
+        },
+        {
+          "source": "wave-D-batch-3-audit-correction",
+          "note": "Corrected during Wave D batch 3: original Phase 1 audit listed LPDF_IMG_019 (Image XObject Missing /Subtype). The actual mirror/flip detector is LPDF_IMG_016.",
+          "corrected_at": "2026-04-26"
         }
       ]
     },
@@ -2812,7 +2834,7 @@
       "dieline_adjacent": false,
       "status": "present",
       "matched_inspection_ids": [
-        "LPDF_IMG_008"
+        "LPDF_IMG_006"
       ],
       "evidence": [
         {
@@ -2820,6 +2842,11 @@
           "v1_gap_ids": [
             "T1-I05"
           ]
+        },
+        {
+          "source": "wave-D-batch-3-audit-correction",
+          "note": "Corrected during Wave D batch 3: original Phase 1 audit listed LPDF_IMG_008 (JPEG2000). The actual upscaled-image detector is LPDF_IMG_006.",
+          "corrected_at": "2026-04-26"
         }
       ],
       "v1_gap_ids_covering": [
@@ -2833,9 +2860,17 @@
       "wave": "D",
       "difficulty": "M",
       "dieline_adjacent": false,
-      "status": "absent",
-      "matched_inspection_ids": [],
-      "evidence": []
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_017"
+      ],
+      "evidence": [
+        {
+          "source": "wave-D-batch-3-audit-correction",
+          "note": "Promoted during Wave D batch 3: LPDF_IMG_017 fires when scale < 10% OR > 1000%; the <10% branch covers the I-22 case (Image scale < 25%) partially. Strict 10-25% range is not yet covered.",
+          "corrected_at": "2026-04-26"
+        }
+      ]
     },
     {
       "v2_id": "I-24",
@@ -2844,9 +2879,18 @@
       "wave": "D",
       "difficulty": "M",
       "dieline_adjacent": false,
-      "status": "absent",
-      "matched_inspection_ids": [],
-      "evidence": []
+      "status": "present",
+      "matched_inspection_ids": [
+        "LPDF_IMG_010",
+        "LPDF_IMG_012"
+      ],
+      "evidence": [
+        {
+          "source": "wave-D-batch-3-audit-correction",
+          "note": "Promoted during Wave D batch 3: LPDF_IMG_010 fires from content-stream OPI references; LPDF_IMG_012 fires from page-resource image XObjects. Together they cover I-24 (OPI link present).",
+          "corrected_at": "2026-04-26"
+        }
+      ]
     },
     {
       "v2_id": "I-25",

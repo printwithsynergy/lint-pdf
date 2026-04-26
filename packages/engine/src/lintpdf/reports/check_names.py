@@ -40,11 +40,17 @@ def get_check_info(inspection_id: str) -> CheckInfo:
 CHECK_NAMES: dict[str, CheckInfo] = {
     # ── Image Quality ─────────────────────────────────────────────────────
     "LPDF_IMG_001": CheckInfo(
-        "Low Image Resolution", "An image doesn't have enough detail for sharp printing."
+        "Low Image Resolution",
+        "An image doesn't have enough detail for sharp printing — effective "
+        "DPI (after the page CTM scales the image) is below the configured "
+        "minimum. Fires on both colour and grayscale images.",
+        v2_ids=("I-01", "I-02"),
     ),
     "LPDF_IMG_002": CheckInfo(
         "Excessive Resolution",
-        "An image has far more detail than needed, increasing file size unnecessarily.",
+        "An image has far more detail than needed, inflating file size and "
+        "RIP processing time without improving printed output.",
+        v2_ids=("I-04",),
     ),
     "LPDF_IMG_003": CheckInfo(
         "Wrong Color Mode", "An image uses screen colors (RGB) instead of print colors (CMYK)."
@@ -58,37 +64,77 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_IMG_006": CheckInfo(
         "Upscaled Image",
-        "An image has been stretched beyond its actual size, causing visible blur.",
+        "An image has been scaled above 100% on the page, stretching it "
+        "beyond its native pixel grid and causing visible blur on press.",
+        v2_ids=("I-21",),
     ),
     "LPDF_IMG_007": CheckInfo(
         "LZW Compression", "Image uses LZW compression which is prohibited in some print standards."
     ),
     "LPDF_IMG_008": CheckInfo(
-        "JPEG2000 Format", "Uses JPEG2000 format which may not be supported by all RIPs."
+        "JPEG2000 Format",
+        "Image uses JPEG2000 (JPX) compression, which is not supported by "
+        "every RIP and is disallowed by several profiles (PDF/X-1a, "
+        "GWG-Sheet-2022). Re-export with JPEG or Flate compression.",
+        v2_ids=("I-11",),
     ),
     "LPDF_IMG_009": CheckInfo(
         "16-Bit Image", "Image uses 16-bit color depth, unusual for standard print workflows."
     ),
     "LPDF_IMG_010": CheckInfo(
         "OPI Reference",
-        "References an external high-res image that must be available at print time.",
+        "Image carries an OPI (Open Prepress Interface) reference to an "
+        "external high-resolution version. The low-res placeholder will "
+        "print unless the OPI server is reachable at RIP time. PDF/X "
+        "profiles disallow OPI; replace with the actual high-res image.",
+        v2_ids=("I-24",),
     ),
     "LPDF_IMG_011": CheckInfo(
-        "Alternate Image", "Contains alternate images that should be stripped before printing."
+        "Alternate Image",
+        "Image carries an alternate-images list — typically a low-resolution "
+        "screen proxy alongside the print-resolution master. PDF/X profiles "
+        "require alternates to be stripped before press.",
     ),
-    "LPDF_IMG_012": CheckInfo("OPI in Resources", "OPI reference found in page resources."),
+    "LPDF_IMG_012": CheckInfo(
+        "OPI Reference In Image Resource",
+        "OPI reference discovered while walking page-resource image XObjects "
+        "(complementary to LPDF_IMG_010, which fires from content-stream "
+        "events). Same remediation: substitute the high-res master.",
+        v2_ids=("I-24",),
+    ),
     "LPDF_IMG_013": CheckInfo(
-        "Alternate in Resources", "Alternate image reference found in page resources."
+        "Alternate Image In Page Resources",
+        "Alternate-image reference discovered while walking page-resource "
+        "XObjects (complementary to LPDF_IMG_011).",
     ),
     "LPDF_IMG_014": CheckInfo(
-        "Sheared Image", "Image has a non-orthogonal transform applied (skewed)."
+        "Sheared Image",
+        "Image has a non-orthogonal CTM applied — a shear, not a pure "
+        "scale + rotate. Shears compress detail along one axis and can "
+        "produce moire on press.",
+        v2_ids=("I-18",),
     ),
-    "LPDF_IMG_015": CheckInfo("Rotated Image", "Image is rotated at a non-standard angle."),
+    "LPDF_IMG_015": CheckInfo(
+        "Image Rotated Off-Axis",
+        "Image is rotated at an angle that is not a multiple of 90° "
+        "(non-orthogonal rotation). The RIP must resample at render time, "
+        "softening edges. Pre-rotate the source image upstream.",
+        v2_ids=("I-17",),
+    ),
     "LPDF_IMG_016": CheckInfo(
-        "Flipped Image", "Image appears to be mirrored horizontally or vertically."
+        "Flipped Image",
+        "Image is mirrored — the CTM has a negative determinant. Often "
+        "intentional, but worth confirming on press where reflections can "
+        "indicate a wrong export setting.",
+        v2_ids=("I-19",),
     ),
     "LPDF_IMG_017": CheckInfo(
-        "Extreme Scaling", "Image is scaled to an extreme percentage of its original size."
+        "Extreme Scaling",
+        "Image is scaled below 10% or above 1000% of its native pixel "
+        "dimensions. At these extremes, file-size or quality is wasted — "
+        "either downsample upstream (heavy upscaling) or remove the "
+        "tiny-scale image entirely.",
+        v2_ids=("I-22",),
     ),
     "LPDF_IMG_018": CheckInfo(
         "Dangling Image XObject Reference",
@@ -115,11 +161,16 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "A standard system font is used which may render differently on other devices.",
     ),
     "LPDF_FONT_004": CheckInfo(
-        "Type 3 Font", "User-drawn Type 3 font detected — quality may vary across RIPs."
+        "Type 3 Font",
+        "User-drawn Type 3 font detected — quality may vary across RIPs.",
+        v2_ids=("F-05",),
     ),
     "LPDF_FONT_005": CheckInfo(
         "Missing ToUnicode",
-        "CID font is missing a ToUnicode map — text search and copy may not work.",
+        "CID font is missing a ToUnicode map — text search and copy may not "
+        "work. Currently fires on CID fonts only; the broader F-13 case "
+        "(ToUnicode missing on any font subtype) is partially covered here.",
+        v2_ids=("F-13",),
     ),
     "LPDF_FONT_006": CheckInfo(
         "Missing CIDSystemInfo",
@@ -138,13 +189,25 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Incomplete Font", "Font descriptor is present but the actual font data is missing."
     ),
     "LPDF_FONT_011": CheckInfo(
-        "Multiple Master Font", "Multiple Master font detected — limited RIP support."
+        "Multiple Master Font",
+        "Multiple Master font detected — limited RIP support.",
+        v2_ids=("F-10",),
     ),
     "LPDF_FONT_012": CheckInfo(
-        "Faux Bold", "Software-simulated bold detected — may not print as expected."
+        "Faux Bold",
+        "Software-simulated bold detected — the renderer is synthesising "
+        "weight from a non-bold font variant rather than using a real bold "
+        "weight, so glyphs print thinner and less consistently than expected. "
+        "Replace with the actual bold variant or accept the design choice.",
+        v2_ids=("F-18",),
     ),
     "LPDF_FONT_013": CheckInfo(
-        "Faux Italic", "Software-simulated italic detected — may not print as expected."
+        "Faux Italic",
+        "Software-simulated italic detected — the renderer is shearing the "
+        "upright glyph rather than using a true italic variant. Glyph forms "
+        "are not the designer's italic intent. Replace with the actual italic "
+        "variant or accept the design choice.",
+        v2_ids=("F-19",),
     ),
     "LPDF_FONT_014": CheckInfo(
         "Damaged Font", "The font program appears corrupt or has a type mismatch."
@@ -152,6 +215,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_FONT_015": CheckInfo(
         "Restricted Font Embedding Licence",
         "Font's OS/2 fsType bit advertises a licence restriction (restricted / preview-and-print / editable embedding). Verify vendor licensing before distributing this PDF.",
+        v2_ids=("F-38",),
     ),
     "LPDF_FONT_016": CheckInfo(
         "Font Subset Violates No-Subsetting Policy",
@@ -177,11 +241,20 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Total ink exceeds the maximum for this paper type, risking smearing or drying issues.",
     ),
     "LPDF_COLOR_005": CheckInfo(
-        "Registration Color", "All inks at 100% — only for registration marks, never for artwork."
+        "Registration Colour Used As Artwork Fill",
+        "Registration colour (100% on every CMYK channel) is reserved for "
+        "crop marks and trapping guides, never artwork. Fires when "
+        "registration is used as a fill — typically a registration-only "
+        "swatch picked up by mistake during design.",
+        v2_ids=("C-51",),
     ),
     "LPDF_COLOR_006": CheckInfo(
         "No Output Intent",
-        "No color profile is specified — colors may shift unpredictably during printing.",
+        "Document declares no Output Intent. Without one, every downstream "
+        "tool guesses at the destination colour space — proofs and press "
+        "output drift unpredictably. Add an Output Intent ICC referencing "
+        "the target press condition.",
+        v2_ids=("C-19",),
     ),
     "LPDF_COLOR_007": CheckInfo(
         "Mixed Color Spaces",
@@ -205,13 +278,30 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Color Space Inventory", "Summary of color space types used in the document."
     ),
     "LPDF_COLOR_015": CheckInfo(
-        "ICC Profile Mismatch", "Embedded ICC profile doesn't match the output intent."
+        "Device-Dependent Colour With OutputIntent",
+        "A device-dependent colour space (DeviceRGB / DeviceCMYK / "
+        "DeviceGray) is used while an OutputIntent is present. The "
+        "DeviceRGB branch is disallowed under PDF/X-4 entirely; "
+        "DeviceCMYK and DeviceGray are allowed but ICC-based alternatives "
+        "are recommended for predictable colour. Re-tag with an ICCBased "
+        "alternative.",
+        v2_ids=("C-01",),
     ),
     "LPDF_COLOR_016": CheckInfo(
-        "RGB in CMYK Workflow", "RGB color found in a CMYK-targeted workflow."
+        "Impure Gray",
+        "Object uses a CMY-built gray (C ≈ M ≈ Y, components within 5% of "
+        "each other) rather than a single-channel DeviceGray or pure K. "
+        "Multi-ink grays drift on press and waste ink — convert to "
+        "DeviceGray or pure K.",
+        v2_ids=("C-53",),
     ),
     "LPDF_COLOR_017": CheckInfo(
-        "Impure Black", "Black areas use unnecessary color inks, risking visible misregistration."
+        "Impure Black",
+        "Black areas use C, M, or Y in addition to K. Multi-ink blacks "
+        "are sensitive to press registration and produce visible fringes "
+        "where neighbouring colours overprint. Replace with pure K or a "
+        "controlled rich-black recipe.",
+        v2_ids=("C-52",),
     ),
     "LPDF_COLOR_018": CheckInfo(
         "Untagged Color", "Color space used without an associated ICC profile."
@@ -224,6 +314,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Rich Black Text",
         "Text uses more than one CMYK ink — pure K (100/0/0/0) is recommended "
         "at every size to avoid misregistration.",
+        v2_ids=("C-50",),
     ),
     # ── Page Geometry ─────────────────────────────────────────────────────
     "LPDF_BOX_001": CheckInfo(
@@ -234,41 +325,73 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("P-03", "P-04"),
     ),
     "LPDF_BOX_002": CheckInfo(
-        "Box Hierarchy Violated", "Page boxes (Media, Crop, Bleed, Trim) are not properly nested."
+        "Box Hierarchy Violated",
+        "Page boxes (Media, Crop, Bleed, Trim) are not properly nested per "
+        "ISO 32000-2 §14.11.2. Fires on three conditions discriminated by "
+        "`details.violation`: CropBox extends outside MediaBox, BleedBox "
+        "extends outside CropBox, or TrimBox extends outside BleedBox.",
+        v2_ids=("P-07",),
     ),
     "LPDF_BOX_003": CheckInfo(
         "Insufficient Bleed",
-        "Not enough image extends past the trim edge — white edges may show after cutting.",
+        "One or more sides have less bleed allowance than the configured "
+        "minimum. White edges may show after cutting if the image doesn't "
+        "extend far enough past the trim edge.",
+        v2_ids=("P-09",),
     ),
     "LPDF_BOX_004": CheckInfo("Empty Page", "Page has no visible content."),
     "LPDF_BOX_005": CheckInfo(
-        "Content in Safety Margin",
-        "Important content is too close to the trim edge and may be cut off.",
+        "Content In Safety Margin",
+        "Critical content sits within the configured safety margin of the "
+        "trim edge. Movement during finishing can shift this content into "
+        "the cut zone — pull it inward upstream.",
+        v2_ids=("P-33",),
     ),
     "LPDF_BOX_006": CheckInfo(
-        "Content Beyond Bleed", "Content extends outside the bleed box and will be clipped."
+        "Content Beyond Bleed",
+        "Content extends outside the BleedBox. Anything past the bleed will "
+        "be clipped by the RIP and is wasted file size at best, or evidence "
+        "of a misconfigured export at worst.",
+        v2_ids=("P-28",),
     ),
     "LPDF_BOX_007": CheckInfo(
-        "UserUnit Scaling", "Non-standard page scaling detected which may confuse imposition."
+        "UserUnit Scaling Active",
+        "Page uses a UserUnit other than 1.0 — coordinates are scaled "
+        "globally. Common in large-format work but can confuse imposition "
+        "and downstream measurements that assume default units.",
+        v2_ids=("P-16",),
     ),
     "LPDF_BOX_008": CheckInfo(
-        "Non-Standard Orientation", "Page has an unusual rotation or orientation."
+        "Non-Standard Page Rotation",
+        "Page has a /Rotate value other than 0° (typically 90°/180°/270°). "
+        "RIPs honour rotation, but imposition tools and operator workflows "
+        "expect upright pages by default.",
+        v2_ids=("P-14",),
     ),
     "LPDF_BOX_009": CheckInfo(
         "Inconsistent Page Sizes",
-        "Pages have different dimensions which may cause printing issues.",
+        "Document contains pages of different sizes. Mixed-size jobs need "
+        "explicit handling at imposition; verify this is intentional.",
+        v2_ids=("P-13",),
     ),
     "LPDF_BOX_010": CheckInfo(
         "Page Size Mismatch",
-        "Page dimensions don't match the product size declared on the profile (expected_page_width_mm / expected_page_height_mm). Tolerance defaults to 0.5mm; either orientation is accepted.",
+        "Page dimensions don't match the product size declared on the "
+        "profile (`expected_page_width_mm` / `expected_page_height_mm`). "
+        "Tolerance defaults to 0.5mm; either orientation is accepted.",
+        v2_ids=("P-12",),
     ),
     # ── Transparency ──────────────────────────────────────────────────────
     "LPDF_TRANS_001": CheckInfo(
         "Transparency Used", "Page uses transparency which must be flattened for older workflows."
     ),
     "LPDF_TRANS_002": CheckInfo(
-        "Non-Standard Blend Mode",
-        "A blend mode other than Normal is used, which may flatten unpredictably.",
+        "Transparency × Overprint Interaction",
+        "Both transparency and overprint are active on the same page. The "
+        "interaction between alpha-blended objects and overprinted spot "
+        "colours is RIP-specific — flattening behaviour can swap colours "
+        "or drop objects unpredictably. Verify on a proof.",
+        v2_ids=("TR-19",),
     ),
     "LPDF_TRANS_003": CheckInfo(
         "Soft Mask", "Image uses a soft mask, increasing rendering complexity."
@@ -293,15 +416,31 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Document Structure ────────────────────────────────────────────────
     "LPDF_STRUCT_001": CheckInfo(
-        "JavaScript Found", "Document contains JavaScript which is not allowed in print workflows."
+        "JavaScript Found",
+        "Document contains JavaScript actions. Print workflows strip JS; "
+        "PDF/X profiles prohibit it outright. Remove before press.",
+        v2_ids=("M-17",),
     ),
     "LPDF_STRUCT_002": CheckInfo(
-        "Form Fields Present", "Interactive form fields detected — these won't print as expected."
+        "Form Fields Present",
+        "Interactive form fields (text inputs, buttons, dropdowns, "
+        "signatures) detected. Forms are stripped at press time and may "
+        "indicate the wrong file was uploaded.",
     ),
     "LPDF_STRUCT_003": CheckInfo(
-        "PDF Layers Detected", "Optional content layers (OCGs) are present."
+        "PDF Layers Detected",
+        "Optional Content Groups (OCGs / layers) are present. Layers are "
+        "valid in PDF/X-4 and later, but verify the intended layers are "
+        "marked printable and the rest are hidden — RIPs honour OCG "
+        "visibility.",
     ),
-    "LPDF_STRUCT_004": CheckInfo("Embedded Files", "Document contains embedded file attachments."),
+    "LPDF_STRUCT_004": CheckInfo(
+        "Embedded Files",
+        "Document carries embedded file attachments. Strip before press: "
+        "attachments inflate file size, complicate auditing, and are "
+        "disallowed by most PDF/X profiles.",
+        v2_ids=("M-19",),
+    ),
     # ── Document Info ─────────────────────────────────────────────────────
     "LPDF_DOC_001": CheckInfo(
         "Multiple Page Sizes",
@@ -309,7 +448,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Metadata ──────────────────────────────────────────────────────────
     "LPDF_META_001": CheckInfo(
-        "No XMP Metadata", "XMP metadata stream is missing — may be required by some standards."
+        "No XMP Metadata",
+        "Document has no XMP metadata stream. Required by PDF/X-4 and "
+        "GWG-2022 packaging profiles, and used by most MIS systems for "
+        "automation. Add an XMP block at export time.",
+        v2_ids=("M-06",),
     ),
     # ── Annotations ───────────────────────────────────────────────────────
     "LPDF_ANNOT_001": CheckInfo(
@@ -334,15 +477,32 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Cannot verify text-background contrast for accessibility without an output intent.",
     ),
     # ── Text & Hairlines ──────────────────────────────────────────────────
-    "LPDF_TEXT_001": CheckInfo("Small Text", "Text is below the minimum readable size for print."),
+    "LPDF_TEXT_001": CheckInfo(
+        "Small Text",
+        "Text is below the configured minimum readable size for print "
+        "(default 6pt). Below this threshold, ink spread on press makes "
+        "letterforms close up and lose legibility — especially on "
+        "uncoated stocks.",
+        v2_ids=("F-22",),
+    ),
     "LPDF_TEXT_004": CheckInfo(
-        "White Text", "White text detected — verify it's intentional and not hidden content."
+        "White Text Detected",
+        "White text instance(s) found on page. White text only renders if "
+        "the underlying inks knock out — verify the intent is correct and "
+        "isn't accidentally invisible content.",
     ),
     "LPDF_HAIR_001": CheckInfo(
-        "Hairline Stroke", "A very thin line may disappear or print inconsistently."
+        "Hairline Stroke",
+        "Stroke width is below the configured minimum (typically 0.25pt). "
+        "Hairlines may disappear entirely on offset presses or print "
+        "inconsistently across plates. Increase the stroke weight upstream.",
+        v2_ids=("LA-01",),
     ),
     "LPDF_HAIR_002": CheckInfo(
-        "Small Text on Thin Stroke", "Thin stroked text may be hard to read at small sizes."
+        "Small Text Built With Thin Stroke",
+        "Stroked text below the minimum size with a thin stroke. The "
+        "combination is a double legibility risk — small glyphs with "
+        "fragile stroke widths.",
     ),
     "LPDF_PATH_002": CheckInfo(
         "White Fill Path", "A white-filled path may knock out background content unintentionally."
@@ -649,6 +809,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_INK_SUBSTRATE": CheckInfo(
         "TAC Exceeds Substrate Limit",
         "Observed max Total Area Coverage exceeds the limit typical for the declared substrate (uncoated offset 280%, coated 300%, newsprint 240%, digital 320%, flexo 260%, gravure 300%, large-format 280%).",
+        v2_ids=("C-48",),
     ),
     "LPDF_SPOT_NONCANONICAL": CheckInfo(
         "Non-Canonical Spot Name",
@@ -669,6 +830,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_SPOT_DEPRECATED_PANTONE": CheckInfo(
         "Deprecated Pantone Suffix",
         "Spot name uses a legacy Pantone suffix (CV, CVC, CVU, CVP, CVUX) that was retired with the post-2008 Pantone book; verify the spot still maps to the intended colour.",
+        v2_ids=("C-32",),
     ),
     "LPDF_VIEWER_DISPLAY_TITLE": CheckInfo(
         "Viewer DisplayDocTitle",
@@ -689,6 +851,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_TEXT_REVERSE_THIN": CheckInfo(
         "Reverse Text Minimum Stroke",
         "Small white (reverse / knockout) text was rendered without a stroke. Add a ≥0.5pt stroke or use ≥12pt for legibility on press.",
+        v2_ids=("F-24",),
     ),
     "LPDF_PDFVT_STRUCTURE": CheckInfo(
         "PDF/VT Structural Issue",
@@ -721,6 +884,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_TEXT_SOFT_MASK": CheckInfo(
         "Text Under Soft Mask",
         "Text rendered on a page that declares a soft-mask ExtGState. Some RIPs lose legibility on text under a soft mask; verify rendering at production resolution.",
+        v2_ids=("TR-13",),
     ),
     "AI_ALC_003": CheckInfo(
         "Wine / Spirits Specific Compliance",
@@ -741,6 +905,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_TEXT_NEAR_FOLD": CheckInfo(
         "Text Near Fold Line",
         "Text region within the configured clearance (default 3.0mm) of a fold / crease / score line. Text that crosses or hugs a fold gets bent and becomes hard to read.",
+        v2_ids=("F-35",),
     ),
     "LPDF_BRAILLE_INTEGRITY": CheckInfo(
         "Braille Zone Integrity",
@@ -1178,35 +1343,62 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Document (extended) ─────────────────────────────────────────────────
     "LPDF_DOC_002": CheckInfo(
-        "Document has inconsistent page rotations",
-        "Document has inconsistent page rotations: N",
+        "Inconsistent Page Rotations",
+        "Pages declare differing /Rotate values — the document mixes "
+        "upright and rotated pages. Imposition tools and operator "
+        "workflows expect consistent orientation; verify this is "
+        "intentional.",
+        v2_ids=("P-15",),
     ),
     "LPDF_DOC_003": CheckInfo(
-        "Document has no title in Info dictionary",
-        "Document has no title in Info dictionary",
+        "Missing Document Title",
+        "Document Info dictionary has no /Title entry. Some MIS / "
+        "tracking systems display the filename instead, which loses "
+        "context after rename. Set /Title at export time.",
+        v2_ids=("M-03",),
     ),
     "LPDF_DOC_004": CheckInfo(
-        "Document is encrypted not allowed in print",
-        "Document is encrypted (not allowed in print workflows)",
+        "Document Is Encrypted",
+        "Document is password-protected or otherwise encrypted. RIPs "
+        "and prepress automation cannot reliably parse encrypted PDFs; "
+        "all PDF/X profiles prohibit encryption. Re-export without a "
+        "password.",
+        v2_ids=("M-12",),
     ),
     "LPDF_DOC_005": CheckInfo(
-        "Linearized PDF detected web-optimized may need",
-        "Linearized PDF detected (web-optimized, may need re-saving for print)",
+        "Linearized PDF",
+        "PDF is linearized (web-optimised — fast-web-view layout with a "
+        "linearization dictionary at the start). Harmless on press, but "
+        "many production tools re-save without linearization; flagged "
+        "for awareness.",
     ),
     "LPDF_DOC_006": CheckInfo(
-        "Incremental updates detected trailer has /Prev",
-        "Incremental updates detected (trailer has /Prev reference, file may contain stale data)",
+        "Incremental Updates Present",
+        "Trailer dictionary carries a /Prev reference — the file has "
+        "been incrementally updated rather than rewritten cleanly. Old "
+        "object versions remain in the file and may carry stale ink, "
+        "spot, or metadata data the RIP could pick up. Re-save with a "
+        "full rewrite.",
     ),
     "LPDF_DOC_007": CheckInfo(
-        "File size MB exceeds threshold", "File size (N MB) exceeds threshold (N MB)"
+        "File Size Exceeds Threshold",
+        "File size exceeds the configured maximum. Large files slow "
+        "ingest, RIP processing, and operator tools — verify embedded "
+        "images aren't oversized and consider sub-setting fonts.",
+        v2_ids=("M-34",),
     ),
     "LPDF_DOC_008": CheckInfo(
-        "Pre-separated pages detected pages with single",
-        "Pre-separated pages detected (N pages with single Separation color space)",
+        "Pre-Separated Pages Detected",
+        "One or more pages use a single Separation colour space — i.e. "
+        "the document is pre-separated rather than composite. Composite "
+        "PDF/X is the standard for press-side workflows; pre-separated "
+        "files require special handling.",
+        v2_ids=("M-28",),
     ),
     "LPDF_DOC_009": CheckInfo(
         "PDF Version Outside Profile Range",
         "The PDF header version sits outside the range the active preflight profile expects (below min_pdf_version or above max_pdf_version). Re-save with a matching compatibility setting.",
+        v2_ids=("M-01",),
     ),
     # ── veraPDF-backed Conformance ─────────────────────────────────────────
     "LPDF_PDFX_CONF": CheckInfo(
@@ -1485,8 +1677,13 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Overprint (extended) ────────────────────────────────────────────────
     "LPDF_OVER_004": CheckInfo(
-        "White overprint on page fill",
-        "White overprint on page N (fill is white with overprint active — content underneath will show through)",
+        "White Fill Painted With Overprint",
+        "An object filled with white (or process white) has overprint "
+        "active. White-overprint is a special-cases-only setting: the white "
+        "fill becomes invisible because overprint preserves the underlying "
+        "ink instead of knocking it out. Either remove the overprint or "
+        "switch to knockout.",
+        v2_ids=("C-36",),
     ),
     "LPDF_OVER_005": CheckInfo(
         "Overprint Inventory",
@@ -1496,16 +1693,30 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "expectations.",
     ),
     "LPDF_OVER_006": CheckInfo(
-        "Overprint active with DeviceRGB",
-        "Overprint active with DeviceRGB on page N (undefined behavior on press)",
+        "Overprint Active With DeviceRGB",
+        "Overprint is active on a DeviceRGB-coloured object. Overprint is "
+        "fundamentally a separation-time concept (per-channel knock-out vs "
+        "preserve), but DeviceRGB has no separation model. Press behaviour "
+        "is undefined and varies by RIP. Convert to CMYK or remove the "
+        "overprint flag.",
     ),
     "LPDF_OVER_007": CheckInfo(
-        "Small black text instance min",
-        "N small black text instanceN (min Npt) in knockout mode on page N (overprint not active — risk of misregistration)",
+        "Small Black Text In Knockout Mode",
+        "Small black text is painted with overprint disabled (knockout). "
+        "Without overprint the press must register the K plate against any "
+        "non-K underlying inks within a few thousandths of an inch — small "
+        "type breaks visually as soon as registration drifts. Enable "
+        "overprint on small black text.",
+        v2_ids=("F-28",),
     ),
     "LPDF_OVER_008": CheckInfo(
-        "Registration color with overprint active",
-        "Registration color with overprint active on page N (registration color outside marks is dangerous)",
+        "Registration Colour With Overprint Active",
+        "An object painted in registration colour (all CMYK ≥ ~90%) has "
+        "overprint enabled. Registration colour is reserved for marks; "
+        "overprinting it onto artwork lays a heavy ink load over whatever "
+        "sits below. Remove the overprint or switch to the intended "
+        "process / spot ink.",
+        v2_ids=("C-38",),
     ),
     # ── Paths ───────────────────────────────────────────────────────────────
     "LPDF_PATH_001": CheckInfo(
@@ -1667,26 +1878,48 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Strokes (extended) ──────────────────────────────────────────────────
     "LPDF_STROKE_001": CheckInfo(
-        "Hairline stroke", "Hairline stroke (Npt) on page N (below Npt minimum)"
+        "Hairline Stroke (Below Minimum)",
+        "Stroke width is below the configured minimum. Effectively the same "
+        "check as LPDF_HAIR_001; both fire for thin strokes detected by "
+        "different code paths (event-stream vs analyzer pass).",
+        v2_ids=("LA-01",),
     ),
     "LPDF_STROKE_002": CheckInfo(
-        "Zero-width stroke on page will not",
-        "Zero-width stroke on page N (will not render in print)",
+        "Zero-Width Stroke",
+        "A stroke is declared with zero width. Zero-width strokes render "
+        "device-pixel-thin in some RIPs and not at all in others — "
+        "behaviour is undefined. Set an explicit width upstream.",
+        v2_ids=("LA-03",),
     ),
     "LPDF_STROKE_004": CheckInfo(
-        "Multi-ink thin stroke pt inks",
-        "Multi-ink thin stroke (Npt, N inks) on page N (risk of misregistration on thin lines)",
+        "Multi-Ink Thin Stroke",
+        "A thin stroke is built from more than one CMYK ink. Thin strokes "
+        "are highly sensitive to press registration; multi-ink builds "
+        "fringe visibly when plates drift. Convert to pure K or a single "
+        "spot ink.",
+        v2_ids=("LA-02",),
     ),
     "LPDF_STROKE_005": CheckInfo(
-        "Invisible stroke white/zero-opacity on page renders",
-        "Invisible stroke (white/zero-opacity) on page N (renders as white line art)",
+        "Invisible Stroke",
+        "Stroke is white or has zero opacity, rendering invisibly on press. "
+        "Likely an export error (the source app intended a knockout "
+        "between two filled regions). Verify the design intent.",
+        v2_ids=("LA-04",),
     ),
     "LPDF_STROKE_006": CheckInfo(
-        "Non-default flatness tolerance",
-        "Non-default flatness tolerance (N) on page N (may affect curve rendering quality)",
+        "Non-Default Flatness Tolerance",
+        "Stroke or fill uses a non-default flatness tolerance. Higher "
+        "tolerances coarsen curve approximations — for fine artwork, "
+        "leave at the default (1.0). May affect press-side curve "
+        "rendering quality.",
     ),
     # ── Structure ───────────────────────────────────────────────────────────
-    "LPDF_STRUCT_005": CheckInfo("3D annotation found", "3D annotation found on page N"),
+    "LPDF_STRUCT_005": CheckInfo(
+        "3D Annotation Found",
+        "Page contains a 3D annotation (Acrobat 3D model). 3D annotations "
+        "have no print representation and are stripped at press; flagged "
+        "for awareness in case the file was uploaded by mistake.",
+    ),
     "LPDF_STRUCT_006": CheckInfo(
         "Document contains XFA forms not supported",
         "Document contains XFA forms (not supported in print workflows)",
@@ -1727,12 +1960,21 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Text (extended) ─────────────────────────────────────────────────────
     "LPDF_TEXT_002": CheckInfo(
-        "Very small text pt effective",
-        "Very small text (Npt effective) on page N (below Npt)",
+        "Very Small Text Below Effective Minimum",
+        "Effective text size (after the page CTM scales the type) is "
+        "below the configured minimum. Same defect class as LPDF_TEXT_001 "
+        "but expressed in CTM-effective points rather than nominal "
+        "points — catches tiny text that looks larger in source.",
+        v2_ids=("F-22",),
     ),
     "LPDF_TEXT_003": CheckInfo(
-        "Invisible text rendering mode 3",
-        "Invisible text (rendering mode 3) on page N (text is neither filled nor stroked)",
+        "Invisible Text (Rendering Mode 3)",
+        "Text is rendered with mode 3 — neither filled nor stroked. Used to "
+        "make text searchable but invisible (overlay on a scanned image, for "
+        "instance). On press the text won't print but it still occupies the "
+        "object stream and may confuse RIPs that expect every text object to "
+        "render.",
+        v2_ids=("F-29",),
     ),
     "LPDF_TEXT_005": CheckInfo(
         "Text Painted In Registration Colour",
@@ -1742,8 +1984,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "ink trapping fails. Re-tag with the intended ink.",
     ),
     "LPDF_TEXT_006": CheckInfo(
-        "Small multi-ink text pt inks",
-        "Small multi-ink text (Npt, N inks) on page N (risk of misregistration)",
+        "Small Multi-Ink Text",
+        "Small text is built from more than one CMYK ink. At small sizes "
+        "even a half-pixel of plate misregistration shows as a fringe — "
+        "convert to pure K or enlarge the type.",
+        v2_ids=("F-23",),
     ),
     # ── Transparency (extended) ─────────────────────────────────────────────
     "LPDF_TRANS_006": CheckInfo(
