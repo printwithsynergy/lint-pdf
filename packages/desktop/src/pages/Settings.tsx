@@ -7,6 +7,7 @@ import {
   XCircle,
   Loader,
   Zap,
+  Building2,
 } from "lucide-react";
 import type { AppConfig, TestConnectionResult } from "../lib/types";
 import { testConnection } from "../lib/tauri";
@@ -14,9 +15,14 @@ import { testConnection } from "../lib/tauri";
 interface SettingsProps {
   config: AppConfig;
   onSave: (config: AppConfig) => Promise<void>;
+  onChangeTenant: () => Promise<void>;
 }
 
-export function Settings({ config: initial, onSave }: SettingsProps) {
+export function Settings({
+  config: initial,
+  onSave,
+  onChangeTenant,
+}: SettingsProps) {
   const [config, setConfig] = useState<AppConfig>({ ...initial });
   const [showKey, setShowKey] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -67,6 +73,38 @@ export function Settings({ config: initial, onSave }: SettingsProps) {
       <h2 className="text-lg font-semibold text-gray-900 mb-6">Settings</h2>
 
       <div className="space-y-5">
+        {/* Tenant */}
+        <div className="card p-4 space-y-3">
+          <h3 className="flex items-center gap-2 text-sm font-medium text-gray-900">
+            <Building2 className="h-4 w-4 text-brand-600" />
+            Tenant
+          </h3>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {config.tenant_name || "(unset)"}
+              </p>
+              {config.tenant_id && (
+                <p className="font-mono text-xs text-gray-500">
+                  {config.tenant_id}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => void onChangeTenant()}
+              className="btn-secondary text-xs"
+              title="Sign out and re-run Onboarding to switch tenants"
+            >
+              Change tenant
+            </button>
+          </div>
+          <p className="text-xs text-gray-400">
+            Change tenant clears your API key and tenant branding, then
+            re-runs the Onboarding screen.
+          </p>
+        </div>
+
         {/* API Configuration */}
         <div className="card p-4 space-y-4">
           <h3 className="text-sm font-medium text-gray-900">
