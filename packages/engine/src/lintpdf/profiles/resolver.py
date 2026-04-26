@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import and_, or_
 
-from lintpdf.api.models import CustomProfile, SystemProfile, Tenant
+from lintpdf.api.models import SystemProfile, Tenant
 from lintpdf.tenants.models import TenantPlan
 
 if TYPE_CHECKING:
@@ -120,14 +120,28 @@ def get_visible_system_profile(
     return row if _tenant_qualifies(row, tenant) else None
 
 
-def get_custom_profile(db: Session, tenant: Tenant, profile_id: str) -> CustomProfile | None:
-    return (
-        db.query(CustomProfile)
-        .filter(
-            CustomProfile.tenant_id == tenant.id,
-            CustomProfile.profile_id == profile_id,
-        )
-        .first()
+def get_custom_profile(db: Session, tenant: Tenant, profile_id: str):
+    """Return the tenant's custom profile entry for ``profile_id`` or None.
+
+    Phase 0.7 PR-B3e — reads from
+    ``ToggleOverride(toggle_id='profile_rules', scope=TENANT)`` instead
+    of the legacy ``custom_profiles`` table. Returns a
+    :class:`types.SimpleNamespace` carrying the same attributes
+    callers expect (``profile_id``, ``preflight_profile_json``) so
+    the function signature stays drop-in compatible with the previous
+    SQLAlchemy-row return type.
+    """
+    from types import SimpleNamespace
+
+    from lintpdf.profiles import storage as _profile_storage
+
+    value = _profile_storage.get_profile(db, tenant.id, profile_id)
+    if value is None:
+        return None
+    return SimpleNamespace(
+        id=value.get("id"),
+        profile_id=value.get("profile_id", profile_id),
+        preflight_profile_json=value.get("preflight_profile_json") or {},
     )
 
 
