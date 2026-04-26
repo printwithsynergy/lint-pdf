@@ -35,6 +35,12 @@ export function middleware(request: NextRequest) {
         // branding blob to theme the app. Called before any user has
         // authenticated, so it must not require a session.
         "/api/public/tenant-lookup",
+        // Universal links / App Links manifest files. iOS's CDN and
+        // the Android Play Services verifier fetch these without any
+        // session context. Auth would force a redirect they can't
+        // follow, so the deep-link claim would silently fail.
+        "/.well-known/apple-app-site-association",
+        "/.well-known/assetlinks.json",
       ],
       rateLimitExemptPaths: [
         "/api/auth/magic-link/status",
