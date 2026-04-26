@@ -169,10 +169,40 @@ pub struct AppConfig {
     pub version: u32,
     pub api_key: String,
     pub base_url: String,
+
+    /// Base URL for the LintPDF Next.js app — separate from `base_url`
+    /// (which is the engine API). The Onboarding screen calls
+    /// `${app_base_url}/api/public/tenant-lookup` to resolve a tenant
+    /// before the user has authenticated.
+    #[serde(default = "default_app_base_url")]
+    pub app_base_url: String,
+
+    /// LintPDF tenant id captured during first-run Onboarding. Empty
+    /// string when not yet onboarded — the React shell uses the
+    /// presence of both `tenant_id` and `api_key` to decide whether
+    /// the Onboarding gate is satisfied.
+    #[serde(default)]
+    pub tenant_id: String,
+
+    /// Display name of the captured tenant, shown in Settings.
+    #[serde(default)]
+    pub tenant_name: String,
+
+    /// Cached AppSettings branding blob from
+    /// `/api/public/tenant-lookup`. JSON-typed because the Pixie Dust
+    /// branding shape evolves over time and we don't want the desktop
+    /// to break the moment a new optional column appears upstream.
+    #[serde(default)]
+    pub tenant_branding: Option<serde_json::Value>,
+
     pub folders: Vec<FolderConfig>,
     pub notifications_enabled: bool,
     pub start_minimized: bool,
     pub launch_at_login: bool,
+}
+
+fn default_app_base_url() -> String {
+    "https://app.lintpdf.com".to_string()
 }
 
 impl Default for AppConfig {
@@ -181,6 +211,10 @@ impl Default for AppConfig {
             version: 1,
             api_key: String::new(),
             base_url: "https://api.lintpdf.com".to_string(),
+            app_base_url: default_app_base_url(),
+            tenant_id: String::new(),
+            tenant_name: String::new(),
+            tenant_branding: None,
             folders: Vec::new(),
             notifications_enabled: true,
             start_minimized: false,

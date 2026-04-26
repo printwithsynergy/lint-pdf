@@ -78,10 +78,41 @@ export interface AiInterpretation {
   }>;
 }
 
+export interface TenantBranding {
+  brandName?: string | null;
+  brandLogoUrl?: string | null;
+  brandLogoUrlDark?: string | null;
+  brandTagline?: string | null;
+  primaryColor?: string | null;
+  accentColor?: string | null;
+  emailButtonColor?: string | null;
+  loginBgColor?: string | null;
+  loginCardColor?: string | null;
+  loginTextColor?: string | null;
+  faviconUrl?: string | null;
+  loginHeading?: string | null;
+  loginSubheading?: string | null;
+  // Branding shapes evolve upstream — keep room for fields the desktop
+  // app does not yet read so JSON round-trips without loss.
+  [key: string]: unknown;
+}
+
+export interface TenantLookupResponse {
+  tenantId: string;
+  name: string;
+  slug: string;
+  domain: string | null;
+  branding: TenantBranding;
+}
+
 export interface AppConfig {
   version: number;
   api_key: string;
   base_url: string;
+  app_base_url: string;
+  tenant_id: string;
+  tenant_name: string;
+  tenant_branding: TenantBranding | null;
   folders: FolderConfig[];
   notifications_enabled: boolean;
   start_minimized: boolean;
