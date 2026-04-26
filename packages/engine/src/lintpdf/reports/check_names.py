@@ -115,7 +115,9 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "A standard system font is used which may render differently on other devices.",
     ),
     "LPDF_FONT_004": CheckInfo(
-        "Type 3 Font", "User-drawn Type 3 font detected — quality may vary across RIPs."
+        "Type 3 Font",
+        "User-drawn Type 3 font detected — quality may vary across RIPs.",
+        v2_ids=("F-05",),
     ),
     "LPDF_FONT_005": CheckInfo(
         "Missing ToUnicode",
@@ -138,7 +140,9 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Incomplete Font", "Font descriptor is present but the actual font data is missing."
     ),
     "LPDF_FONT_011": CheckInfo(
-        "Multiple Master Font", "Multiple Master font detected — limited RIP support."
+        "Multiple Master Font",
+        "Multiple Master font detected — limited RIP support.",
+        v2_ids=("F-10",),
     ),
     "LPDF_FONT_012": CheckInfo(
         "Faux Bold", "Software-simulated bold detected — may not print as expected."
@@ -1731,8 +1735,13 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Very small text (Npt effective) on page N (below Npt)",
     ),
     "LPDF_TEXT_003": CheckInfo(
-        "Invisible text rendering mode 3",
-        "Invisible text (rendering mode 3) on page N (text is neither filled nor stroked)",
+        "Invisible Text (Rendering Mode 3)",
+        "Text is rendered with mode 3 — neither filled nor stroked. Used to "
+        "make text searchable but invisible (overlay on a scanned image, for "
+        "instance). On press the text won't print but it still occupies the "
+        "object stream and may confuse RIPs that expect every text object to "
+        "render.",
+        v2_ids=("F-29",),
     ),
     "LPDF_TEXT_005": CheckInfo(
         "Text Painted In Registration Colour",

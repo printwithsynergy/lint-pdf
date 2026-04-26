@@ -85,6 +85,21 @@ def test_box_001_maps_to_p03_and_p04():
     assert CHECK_NAMES["LPDF_BOX_001"].v2_ids == ("P-03", "P-04")
 
 
+def test_font_004_maps_to_f05():
+    """F-05: Type 3 font present (Wave D T2 batch 1)."""
+    assert CHECK_NAMES["LPDF_FONT_004"].v2_ids == ("F-05",)
+
+
+def test_font_011_maps_to_f10():
+    """F-10: Multiple Master font present (Wave D T2 batch 1)."""
+    assert CHECK_NAMES["LPDF_FONT_011"].v2_ids == ("F-10",)
+
+
+def test_text_003_maps_to_f29():
+    """F-29: Invisible text rendering mode 3 (Wave D T2 batch 1)."""
+    assert CHECK_NAMES["LPDF_TEXT_003"].v2_ids == ("F-29",)
+
+
 def test_get_check_info_fallback_has_empty_v2_ids():
     info = get_check_info("LPDF_NEVER_HEARD_OF")
     assert info.v2_ids == ()
