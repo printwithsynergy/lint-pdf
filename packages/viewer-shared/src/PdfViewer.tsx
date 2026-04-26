@@ -38,16 +38,33 @@ interface PdfViewerProps {
   jobId: string;
   /** When set, the viewer uses token-based public proxy routes (read-only). */
   publicToken?: string;
+  /**
+   * Optional absolute base URL prefix for every API call (e.g.
+   * `https://app.lintpdf.com`). When set, all viewer fetches resolve
+   * against this origin instead of the document origin — required for
+   * cross-origin shells like the mobile app or a Tauri WebView, where
+   * relative paths would land on the bundle's own origin
+   * (`tauri://`, `localhost:1420`, …) instead of the LintPDF host.
+   * Leave unset for in-app use, which keeps the existing relative-path
+   * behavior so server / client component split + middleware
+   * publicPaths exemptions stay 1:1 with what's already deployed.
+   */
+  apiBaseUrl?: string;
 }
 
-export function PdfViewer({ jobId, publicToken }: PdfViewerProps) {
+export function PdfViewer({
+  jobId,
+  publicToken,
+  apiBaseUrl,
+}: PdfViewerProps) {
   const readOnly = !!publicToken;
+  const baseOrigin = apiBaseUrl?.replace(/\/+$/, "") ?? "";
   const apiBase = publicToken
-    ? `/api/lintpdf/viewer/public/${publicToken}`
-    : `/api/lintpdf/viewer/${jobId}`;
+    ? `${baseOrigin}/api/lintpdf/viewer/public/${publicToken}`
+    : `${baseOrigin}/api/lintpdf/viewer/${jobId}`;
   const jobApiBase = publicToken
-    ? `/api/lintpdf/viewer/public/${publicToken}`
-    : `/api/lintpdf/jobs/${jobId}`;
+    ? `${baseOrigin}/api/lintpdf/viewer/public/${publicToken}`
+    : `${baseOrigin}/api/lintpdf/jobs/${jobId}`;
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [findings, setFindings] = useState<ViewerFinding[]>([]);
   const [config, setConfig] = useState<ViewerConfig>(DEFAULT_VIEWER_CONFIG);
