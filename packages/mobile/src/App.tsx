@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { Layout } from "./components/Layout";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { ApproveRoute } from "./routes/ApproveRoute";
@@ -7,18 +7,41 @@ import { OnboardingRoute } from "./routes/OnboardingRoute";
 import { SettingsRoute } from "./routes/SettingsRoute";
 import { ViewRoute } from "./routes/ViewRoute";
 import { loadTenant } from "./lib/tenant";
+import { onDeepLink } from "./lib/tauri";
 import type { CapturedTenant } from "./lib/types";
 
 export default function App() {
-  const [tenant, setTenant] = useState<CapturedTenant | null>(() => loadTenant());
+  const [tenant, setTenant] = useState<CapturedTenant | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // Re-read once on mount to pick up any localStorage write that
-    // happened in another tab (mostly relevant during dev preview).
-    setTenant(loadTenant());
-    setHydrated(true);
+    let cancelled = false;
+    void (async () => {
+      const t = await loadTenant();
+      if (cancelled) return;
+      setTenant(t);
+      setHydrated(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // Universal-link / App Link taps land here once the app is open.
+  // The native shell forwards them through `tauri-plugin-deep-link`;
+  // web preview is a no-op (the browser already handles them).
+  const navigate = useNavigate();
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    void (async () => {
+      unlisten = await onDeepLink((path) => {
+        navigate(path, { replace: false });
+      });
+    })();
+    return () => {
+      unlisten?.();
+    };
+  }, [navigate]);
 
   const branding = useMemo(() => tenant?.branding ?? null, [tenant]);
 

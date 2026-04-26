@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Activity, ArrowRight, Loader, XCircle } from "lucide-react";
 import {
   TenantNotFoundError,
+  captureTenant,
   lookupTenant,
-  saveTenant,
 } from "../lib/tenant";
 import type { CapturedTenant } from "../lib/types";
 
@@ -42,15 +42,7 @@ export function OnboardingRoute({ onCaptured }: OnboardingRouteProps) {
 
     try {
       const data = await lookupTenant(q);
-      const captured: CapturedTenant = {
-        tenantId: data.tenantId,
-        name: data.name,
-        slug: data.slug,
-        domain: data.domain,
-        branding: data.branding,
-        capturedAt: new Date().toISOString(),
-      };
-      saveTenant(captured);
+      const captured = await captureTenant(data);
       onCaptured(captured);
       navigate("/", { replace: true });
     } catch (err) {
