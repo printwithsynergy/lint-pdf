@@ -40,11 +40,17 @@ def get_check_info(inspection_id: str) -> CheckInfo:
 CHECK_NAMES: dict[str, CheckInfo] = {
     # ── Image Quality ─────────────────────────────────────────────────────
     "LPDF_IMG_001": CheckInfo(
-        "Low Image Resolution", "An image doesn't have enough detail for sharp printing."
+        "Low Image Resolution",
+        "An image doesn't have enough detail for sharp printing — effective "
+        "DPI (after the page CTM scales the image) is below the configured "
+        "minimum. Fires on both colour and grayscale images.",
+        v2_ids=("I-01", "I-02"),
     ),
     "LPDF_IMG_002": CheckInfo(
         "Excessive Resolution",
-        "An image has far more detail than needed, increasing file size unnecessarily.",
+        "An image has far more detail than needed, inflating file size and "
+        "RIP processing time without improving printed output.",
+        v2_ids=("I-04",),
     ),
     "LPDF_IMG_003": CheckInfo(
         "Wrong Color Mode", "An image uses screen colors (RGB) instead of print colors (CMYK)."
@@ -58,37 +64,77 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_IMG_006": CheckInfo(
         "Upscaled Image",
-        "An image has been stretched beyond its actual size, causing visible blur.",
+        "An image has been scaled above 100% on the page, stretching it "
+        "beyond its native pixel grid and causing visible blur on press.",
+        v2_ids=("I-21",),
     ),
     "LPDF_IMG_007": CheckInfo(
         "LZW Compression", "Image uses LZW compression which is prohibited in some print standards."
     ),
     "LPDF_IMG_008": CheckInfo(
-        "JPEG2000 Format", "Uses JPEG2000 format which may not be supported by all RIPs."
+        "JPEG2000 Format",
+        "Image uses JPEG2000 (JPX) compression, which is not supported by "
+        "every RIP and is disallowed by several profiles (PDF/X-1a, "
+        "GWG-Sheet-2022). Re-export with JPEG or Flate compression.",
+        v2_ids=("I-11",),
     ),
     "LPDF_IMG_009": CheckInfo(
         "16-Bit Image", "Image uses 16-bit color depth, unusual for standard print workflows."
     ),
     "LPDF_IMG_010": CheckInfo(
         "OPI Reference",
-        "References an external high-res image that must be available at print time.",
+        "Image carries an OPI (Open Prepress Interface) reference to an "
+        "external high-resolution version. The low-res placeholder will "
+        "print unless the OPI server is reachable at RIP time. PDF/X "
+        "profiles disallow OPI; replace with the actual high-res image.",
+        v2_ids=("I-24",),
     ),
     "LPDF_IMG_011": CheckInfo(
-        "Alternate Image", "Contains alternate images that should be stripped before printing."
+        "Alternate Image",
+        "Image carries an alternate-images list — typically a low-resolution "
+        "screen proxy alongside the print-resolution master. PDF/X profiles "
+        "require alternates to be stripped before press.",
     ),
-    "LPDF_IMG_012": CheckInfo("OPI in Resources", "OPI reference found in page resources."),
+    "LPDF_IMG_012": CheckInfo(
+        "OPI Reference In Image Resource",
+        "OPI reference discovered while walking page-resource image XObjects "
+        "(complementary to LPDF_IMG_010, which fires from content-stream "
+        "events). Same remediation: substitute the high-res master.",
+        v2_ids=("I-24",),
+    ),
     "LPDF_IMG_013": CheckInfo(
-        "Alternate in Resources", "Alternate image reference found in page resources."
+        "Alternate Image In Page Resources",
+        "Alternate-image reference discovered while walking page-resource "
+        "XObjects (complementary to LPDF_IMG_011).",
     ),
     "LPDF_IMG_014": CheckInfo(
-        "Sheared Image", "Image has a non-orthogonal transform applied (skewed)."
+        "Sheared Image",
+        "Image has a non-orthogonal CTM applied — a shear, not a pure "
+        "scale + rotate. Shears compress detail along one axis and can "
+        "produce moire on press.",
+        v2_ids=("I-18",),
     ),
-    "LPDF_IMG_015": CheckInfo("Rotated Image", "Image is rotated at a non-standard angle."),
+    "LPDF_IMG_015": CheckInfo(
+        "Image Rotated Off-Axis",
+        "Image is rotated at an angle that is not a multiple of 90° "
+        "(non-orthogonal rotation). The RIP must resample at render time, "
+        "softening edges. Pre-rotate the source image upstream.",
+        v2_ids=("I-17",),
+    ),
     "LPDF_IMG_016": CheckInfo(
-        "Flipped Image", "Image appears to be mirrored horizontally or vertically."
+        "Flipped Image",
+        "Image is mirrored — the CTM has a negative determinant. Often "
+        "intentional, but worth confirming on press where reflections can "
+        "indicate a wrong export setting.",
+        v2_ids=("I-19",),
     ),
     "LPDF_IMG_017": CheckInfo(
-        "Extreme Scaling", "Image is scaled to an extreme percentage of its original size."
+        "Extreme Scaling",
+        "Image is scaled below 10% or above 1000% of its native pixel "
+        "dimensions. At these extremes, file-size or quality is wasted — "
+        "either downsample upstream (heavy upscaling) or remove the "
+        "tiny-scale image entirely.",
+        v2_ids=("I-22",),
     ),
     "LPDF_IMG_018": CheckInfo(
         "Dangling Image XObject Reference",

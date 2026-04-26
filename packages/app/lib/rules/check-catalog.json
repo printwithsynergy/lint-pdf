@@ -10,13 +10,13 @@
         {
           "id": "LPDF_IMG_001",
           "name": "Low Image Resolution",
-          "description": "An image doesn't have enough detail for sharp printing.",
+          "description": "An image doesn't have enough detail for sharp printing \u2014 effective DPI (after the page CTM scales the image) is below the configured minimum. Fires on both colour and grayscale images.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_IMG_002",
           "name": "Excessive Resolution",
-          "description": "An image has far more detail than needed, increasing file size unnecessarily.",
+          "description": "An image has far more detail than needed, inflating file size and RIP processing time without improving printed output.",
           "default_severity": "warning"
         },
         {
@@ -40,7 +40,7 @@
         {
           "id": "LPDF_IMG_006",
           "name": "Upscaled Image",
-          "description": "An image has been stretched beyond its actual size, causing visible blur.",
+          "description": "An image has been scaled above 100% on the page, stretching it beyond its native pixel grid and causing visible blur on press.",
           "default_severity": "warning"
         },
         {
@@ -52,7 +52,7 @@
         {
           "id": "LPDF_IMG_008",
           "name": "JPEG2000 Format",
-          "description": "Uses JPEG2000 format which may not be supported by all RIPs.",
+          "description": "Image uses JPEG2000 (JPX) compression, which is not supported by every RIP and is disallowed by several profiles (PDF/X-1a, GWG-Sheet-2022). Re-export with JPEG or Flate compression.",
           "default_severity": "warning"
         },
         {
@@ -64,49 +64,49 @@
         {
           "id": "LPDF_IMG_010",
           "name": "OPI Reference",
-          "description": "References an external high-res image that must be available at print time.",
+          "description": "Image carries an OPI (Open Prepress Interface) reference to an external high-resolution version. The low-res placeholder will print unless the OPI server is reachable at RIP time. PDF/X profiles disallow OPI; replace with the actual high-res image.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_IMG_011",
           "name": "Alternate Image",
-          "description": "Contains alternate images that should be stripped before printing.",
+          "description": "Image carries an alternate-images list \u2014 typically a low-resolution screen proxy alongside the print-resolution master. PDF/X profiles require alternates to be stripped before press.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_IMG_012",
-          "name": "OPI in Resources",
-          "description": "OPI reference found in page resources.",
+          "name": "OPI Reference In Image Resource",
+          "description": "OPI reference discovered while walking page-resource image XObjects (complementary to LPDF_IMG_010, which fires from content-stream events). Same remediation: substitute the high-res master.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_IMG_013",
-          "name": "Alternate in Resources",
-          "description": "Alternate image reference found in page resources.",
+          "name": "Alternate Image In Page Resources",
+          "description": "Alternate-image reference discovered while walking page-resource XObjects (complementary to LPDF_IMG_011).",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_IMG_014",
           "name": "Sheared Image",
-          "description": "Image has a non-orthogonal transform applied (skewed).",
+          "description": "Image has a non-orthogonal CTM applied \u2014 a shear, not a pure scale + rotate. Shears compress detail along one axis and can produce moire on press.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_IMG_015",
-          "name": "Rotated Image",
-          "description": "Image is rotated at a non-standard angle.",
+          "name": "Image Rotated Off-Axis",
+          "description": "Image is rotated at an angle that is not a multiple of 90\u00b0 (non-orthogonal rotation). The RIP must resample at render time, softening edges. Pre-rotate the source image upstream.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_IMG_016",
           "name": "Flipped Image",
-          "description": "Image appears to be mirrored horizontally or vertically.",
+          "description": "Image is mirrored \u2014 the CTM has a negative determinant. Often intentional, but worth confirming on press where reflections can indicate a wrong export setting.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_IMG_017",
           "name": "Extreme Scaling",
-          "description": "Image is scaled to an extreme percentage of its original size.",
+          "description": "Image is scaled below 10% or above 1000% of its native pixel dimensions. At these extremes, file-size or quality is wasted \u2014 either downsample upstream (heavy upscaling) or remove the tiny-scale image entirely.",
           "default_severity": "warning"
         },
         {

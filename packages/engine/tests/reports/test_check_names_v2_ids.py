@@ -85,6 +85,59 @@ def test_box_001_maps_to_p03_and_p04():
     assert CHECK_NAMES["LPDF_BOX_001"].v2_ids == ("P-03", "P-04")
 
 
+def test_img_001_maps_to_i01_and_i02():
+    """I-01 (Color image res < min) + I-02 (Grayscale res < min) — both fire from
+    LPDF_IMG_001 (low-DPI detector) regardless of color space (Wave D batch 3)."""
+    assert CHECK_NAMES["LPDF_IMG_001"].v2_ids == ("I-01", "I-02")
+
+
+def test_img_002_maps_to_i04():
+    """I-04: Color image resolution > max (Wave D batch 3 — corrects Phase 1 audit
+    that misnamed this as IMG_003+IMG_004)."""
+    assert CHECK_NAMES["LPDF_IMG_002"].v2_ids == ("I-04",)
+
+
+def test_img_006_maps_to_i21():
+    """I-21: Image scale > 100% — upscaling detector (Wave D batch 3 — corrects
+    Phase 1 audit that mismapped this to IMG_008)."""
+    assert CHECK_NAMES["LPDF_IMG_006"].v2_ids == ("I-21",)
+
+
+def test_img_008_maps_to_i11():
+    """I-11: JPEG2000 detected (Wave D batch 3 — corrects Phase 1 audit)."""
+    assert CHECK_NAMES["LPDF_IMG_008"].v2_ids == ("I-11",)
+
+
+def test_img_010_and_012_both_map_to_i24():
+    """I-24: OPI link present — fires both from content-stream (LPDF_IMG_010) and
+    page-resource walk (LPDF_IMG_012). Promoted from absent in Wave D batch 3."""
+    assert CHECK_NAMES["LPDF_IMG_010"].v2_ids == ("I-24",)
+    assert CHECK_NAMES["LPDF_IMG_012"].v2_ids == ("I-24",)
+
+
+def test_img_014_maps_to_i18():
+    """I-18: Image sheared / skewed (Wave D batch 3)."""
+    assert CHECK_NAMES["LPDF_IMG_014"].v2_ids == ("I-18",)
+
+
+def test_img_015_maps_to_i17():
+    """I-17: Image rotated non-orthogonally (Wave D batch 3 — corrects Phase 1
+    audit that mismapped this to IMG_017)."""
+    assert CHECK_NAMES["LPDF_IMG_015"].v2_ids == ("I-17",)
+
+
+def test_img_016_maps_to_i19():
+    """I-19: Image mirrored / flipped (Wave D batch 3 — corrects Phase 1 audit
+    that mismapped this to IMG_019)."""
+    assert CHECK_NAMES["LPDF_IMG_016"].v2_ids == ("I-19",)
+
+
+def test_img_017_maps_to_i22():
+    """I-22: Image scale < 25% — partial coverage; LPDF_IMG_017 fires at <10% only.
+    Promoted from absent in Wave D batch 3."""
+    assert CHECK_NAMES["LPDF_IMG_017"].v2_ids == ("I-22",)
+
+
 def test_font_005_maps_to_f13():
     """F-13: ToUnicode CMap missing (Wave B catch-up; partial — CID-only today)."""
     assert CHECK_NAMES["LPDF_FONT_005"].v2_ids == ("F-13",)
