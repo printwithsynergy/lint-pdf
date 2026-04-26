@@ -613,6 +613,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "The page's declared /BleedBox extends past the dieline polygon envelope. The press-side bleed allowance does not fit within the cutter region — imposition will waste paper or clip adjacent units on a multi-up sheet. Either tighten the BleedBox in the export profile or expand the dieline so the bleed sits inside it.",
         v2_ids=("P-30",),
     ),
+    "LPDF_TEXT_ON_DIELINE_PATH": CheckInfo(
+        "Text Overlaps Dieline Cut Path",
+        "Text region overlaps the dieline cut path. At the cutter, glyphs will be physically sliced — the printed product reads as a typo even though the source artwork is correct. Distinct from text-near-fold (clearance) — this fires on actual intersection. Reposition the text or move the dieline before re-exporting.",
+        v2_ids=("F-32",),
+    ),
     "LPDF_DIE_AS_ART": CheckInfo(
         "Dieline Spot Used As Fill",
         "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
