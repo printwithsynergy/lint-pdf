@@ -224,6 +224,7 @@ ignore = [
 # EPM-Advanced ICC math (Q-C1): L/a/b CIE Lab*, R/G/B sRGB, kL/dHp/etc. CIEDE2000 standard
 "src/lintpdf/epm/icc.py" = ["N806"]
 "tests/epm/test_icc.py" = ["N806"]
+"tests/epm/test_k_strip.py" = ["N806"]
 # Module-level constant-like names in functions (e.g. _DEVICE_DEPENDENT, _SPOT_PREFIXES)
 "src/lintpdf/analyzers/color.py" = ["N806"]
 "src/lintpdf/analyzers/epm_analyzer.py" = ["N806"]

@@ -226,6 +226,80 @@ def lab_to_rgb(lab: tuple[float, float, float]) -> tuple[int, int, int]:
     return tuple(converted.getpixel((0, 0)))  # type: ignore[return-value]
 
 
+# ── CMY-only / K-strip simulator ────────────────────────────────────
+
+
+def cmyk_to_lab_naive(cmyk: tuple[float, float, float, float]) -> tuple[float, float, float]:
+    """Convert CMYK percentages (0-100) to CIE Lab via a naive dot-gain
+    free conversion through sRGB.
+
+    Uses the standard analytic CMYK → RGB formula::
+
+        R = (1 - C/100) * (1 - K/100) * 255
+        G = (1 - M/100) * (1 - K/100) * 255
+        B = (1 - Y/100) * (1 - K/100) * 255
+
+    then routes through :func:`rgb_to_lab` for the final Lab output.
+    This isn't a press-accurate model — for that, callers load a
+    real CMYK ICC via :func:`load_profile` and use
+    :func:`is_in_gamut_for_profile`. The naive path is enough to
+    answer the EPM-A1/A2 question "approximately how much shifts when
+    we drop K?" without requiring every deployment to bundle a
+    licensed press profile.
+    """
+    c, m, y, k = (max(0.0, min(100.0, v)) for v in cmyk)
+    k_factor = (1.0 - k / 100.0)
+    r = round((1.0 - c / 100.0) * k_factor * 255)
+    g = round((1.0 - m / 100.0) * k_factor * 255)
+    b = round((1.0 - y / 100.0) * k_factor * 255)
+    return rgb_to_lab((r, g, b))
+
+
+def cmy_strip_k_delta_e(
+    cmyk: tuple[float, float, float, float],
+    *,
+    metric: str = "de2000",
+) -> float:
+    """How far does ``(c, m, y, k)`` shift in Lab if you drop K to 0?
+
+    Returns the colour difference (default CIEDE2000) between the
+    full CMYK Lab and the K-stripped Lab. Larger numbers mean
+    "removing K creates a visible shift" — the EPM-A2 analyzer fires
+    when the value exceeds the configured threshold.
+
+    ``metric`` chooses the colour-difference formula:
+
+    * ``"de76"`` — cheap Euclidean
+    * ``"de94"`` — chroma+hue weighted
+    * ``"de2000"`` — perceptual default
+    """
+    full = cmyk_to_lab_naive(cmyk)
+    stripped = cmyk_to_lab_naive((cmyk[0], cmyk[1], cmyk[2], 0.0))
+    if metric == "de76":
+        return lab_distance_de76(full, stripped)
+    if metric == "de94":
+        return lab_distance_de94(full, stripped)
+    if metric == "de2000":
+        return lab_distance_de2000(full, stripped)
+    raise ValueError(f"unknown ΔE metric {metric!r}")
+
+
+def is_k_strip_safe(
+    cmyk: tuple[float, float, float, float],
+    *,
+    tolerance_de: float = IN_GAMUT_DELTA_E,
+    metric: str = "de2000",
+) -> bool:
+    """Return ``True`` iff dropping K from ``cmyk`` stays within
+    ``tolerance_de``.
+
+    Useful for the EPM-A2 ``LPDF_EPM_K_COVERAGE_REJECT`` check: a
+    swatch that survives K-strip is safe to route through EPM; one
+    that doesn't drives the verdict to REJECT.
+    """
+    return cmy_strip_k_delta_e(cmyk, metric=metric) <= tolerance_de
+
+
 # ── gamut containment ────────────────────────────────────────────────
 
 
@@ -375,8 +449,11 @@ __all__ = [
     "IN_GAMUT_DELTA_E",
     "JND_DELTA_E_2000",
     "ProfileLoadError",
+    "cmy_strip_k_delta_e",
+    "cmyk_to_lab_naive",
     "is_in_gamut",
     "is_in_gamut_for_profile",
+    "is_k_strip_safe",
     "lab_distance_de76",
     "lab_distance_de94",
     "lab_distance_de2000",
