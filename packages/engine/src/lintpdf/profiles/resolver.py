@@ -68,7 +68,17 @@ def _tenant_qualifies(sp: SystemProfile, tenant: Tenant) -> bool:
 
 
 def list_visible_system_profiles(db: Session, tenant: Tenant) -> list[SystemProfile]:
-    """Return every :class:`SystemProfile` this tenant can see."""
+    """Return every :class:`SystemProfile` this tenant can see.
+
+    The visible-tenant-list filter is applied in Python so the query
+    stays portable between Postgres (where ``visible_tenant_ids`` is a
+    ``UUID[]`` column and ``ANY()`` works natively) and SQLite (where
+    the column degrades to JSON and ``ANY()`` is unsupported). The
+    SQL pre-filter pulls ``all`` and ``plan`` rows plus any row whose
+    visibility_mode hints at a tenant-list check; the Python pass
+    then narrows the latter to rows that actually include this
+    tenant's id.
+    """
     tenant_plan = str(tenant.plan)
     # Plans that qualify for ``plan`` / ``plan_and_tenants`` visibility
     # when ``min_plan`` is ``tenant.plan`` or lower.
@@ -78,7 +88,7 @@ def list_visible_system_profiles(db: Session, tenant: Tenant) -> list[SystemProf
         else []
     )
 
-    return (
+    candidates = (
         db.query(SystemProfile)
         .filter(
             or_(
@@ -87,20 +97,28 @@ def list_visible_system_profiles(db: Session, tenant: Tenant) -> list[SystemProf
                     SystemProfile.visibility_mode == "plan",
                     SystemProfile.min_plan.in_(plans_at_or_above_tenant),
                 ),
-                and_(
-                    SystemProfile.visibility_mode == "tenants",
-                    SystemProfile.visible_tenant_ids.any(tenant.id),
-                ),
-                and_(
-                    SystemProfile.visibility_mode == "plan_and_tenants",
-                    SystemProfile.min_plan.in_(plans_at_or_above_tenant),
-                    SystemProfile.visible_tenant_ids.any(tenant.id),
-                ),
+                SystemProfile.visibility_mode.in_(("tenants", "plan_and_tenants")),
             )
         )
         .order_by(SystemProfile.profile_id)
         .all()
     )
+
+    visible: list[SystemProfile] = []
+    for sp in candidates:
+        mode = sp.visibility_mode
+        if mode in ("all", "plan"):
+            visible.append(sp)
+        elif mode == "tenants":
+            if sp.visible_tenant_ids and tenant.id in sp.visible_tenant_ids:
+                visible.append(sp)
+        elif mode == "plan_and_tenants" and (
+            sp.min_plan in plans_at_or_above_tenant
+            and sp.visible_tenant_ids
+            and tenant.id in sp.visible_tenant_ids
+        ):
+            visible.append(sp)
+    return visible
 
 
 def get_visible_system_profile(

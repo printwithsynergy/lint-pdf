@@ -23,8 +23,6 @@ from io import BytesIO
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from lintpdf.api.models import CustomEndpoint, Job, JobStatus
 from lintpdf.brand_specs.resolver import (
     resolve_brand_spec_for_job,
@@ -157,16 +155,6 @@ class TestBrandSpecCrud:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(
-    reason=(
-        "Phase 0.7 PR-B3d: route works in standalone smoke (200/422 as"
-        " expected) but the entire test class hangs in this pytest harness"
-        " on every test that hits ``POST /api/v1/endpoints``. The hang"
-        " predates PR-A (verified against c838afa) — it's a pre-existing"
-        " test-fixture interaction unrelated to the unified-config"
-        " collapse. Tracked for follow-up; not a regression."
-    ),
-)
 class TestEndpointBrandSpecBinding:
     @staticmethod
     def _seed_spec(db: Session, tenant_id: uuid.UUID, **kwargs):
@@ -402,14 +390,6 @@ class TestResolver:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(
-    reason=(
-        "Phase 0.7 PR-B3d: same pre-existing pytest-fixture hang as"
-        " TestEndpointBrandSpecBinding — every test that hits"
-        " ``POST /api/v1/jobs`` hangs even though the route works in"
-        " standalone smoke. Pre-PR-A behaviour. Tracked for follow-up."
-    ),
-)
 class TestJobSubmissionBrandSpec:
     @staticmethod
     def _minimal_pdf() -> bytes:
