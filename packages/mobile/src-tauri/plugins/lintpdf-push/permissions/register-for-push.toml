@@ -1,0 +1,6 @@
+"$schema" = "schemas/schema.json"
+
+[[permission]]
+identifier = "allow-register-for-push"
+description = "Allow the app to register with FCM (Android) / APNs (iOS) and obtain a device token."
+commands.allow = ["register_for_push"]

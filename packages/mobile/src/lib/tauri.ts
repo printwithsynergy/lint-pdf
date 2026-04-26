@@ -142,6 +142,49 @@ export async function setApiKey(key: string): Promise<void> {
   }
 }
 
+// ── Push registration ──────────────────────────────────────────────
+
+export type PermissionStatus = "granted" | "denied" | "provisional";
+
+export interface PushTokenResponse {
+  token: string;
+  platform: "ios" | "android";
+}
+
+/**
+ * Prompt the user for permission to display push notifications.
+ * iOS shows the standard system prompt; Android 13+ shows the
+ * runtime POST_NOTIFICATIONS prompt; older Android short-circuits
+ * to "granted". Web preview and desktop builds throw an
+ * `unsupported` error which `registerForPushIfPossible` swallows.
+ */
+export async function requestPushPermission(): Promise<PermissionStatus> {
+  if (!isTauri()) throw new PushUnsupportedError();
+  const r = await tauriInvoke<{ status: PermissionStatus }>(
+    "plugin:lintpdf-push|request_permission",
+  );
+  return r.status;
+}
+
+/**
+ * Register with FCM (Android) / APNs (iOS) and resolve with the
+ * device token. Should be called after `requestPushPermission`
+ * returned `granted` or `provisional`. Throws on desktop / web.
+ */
+export async function registerForPush(): Promise<PushTokenResponse> {
+  if (!isTauri()) throw new PushUnsupportedError();
+  return tauriInvoke<PushTokenResponse>(
+    "plugin:lintpdf-push|register_for_push",
+  );
+}
+
+export class PushUnsupportedError extends Error {
+  constructor() {
+    super("Push notifications are not supported on this platform.");
+    this.name = "PushUnsupportedError";
+  }
+}
+
 // ── Deep-link routing ──────────────────────────────────────────────
 
 export type DeepLinkHandler = (path: string) => void;

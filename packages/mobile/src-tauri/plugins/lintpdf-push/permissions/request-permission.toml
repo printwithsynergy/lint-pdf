@@ -1,0 +1,6 @@
+"$schema" = "schemas/schema.json"
+
+[[permission]]
+identifier = "allow-request-permission"
+description = "Allow the app to prompt the user for permission to display push notifications (iOS only — Android grants this at install on minSdk < 33)."
+commands.allow = ["request_permission"]
