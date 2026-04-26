@@ -125,6 +125,12 @@ class Tenant(Base):
     # without upselling them the whole plan.
     monthly_ai_credits_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
     monthly_files_override: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # Wave V V-06 (Q-D3) — default HMAC-SHA256 signing secret used for
+    # any of this tenant's ``webhook_endpoints`` whose own ``secret`` is
+    # NULL. Per-webhook override wins; this is the fallback before the
+    # dispatcher raises. Leave NULL to require every endpoint to carry
+    # its own secret.
+    webhook_signing_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
     stripe_customer_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     stripe_subscription_item_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     brand_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -396,7 +402,9 @@ class WebhookEndpoint(Base):
         Uuid, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
     )
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
-    secret: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Wave V V-06 (Q-D3) — per-webhook signing secret; NULL means the
+    # dispatcher falls back to ``Tenant.webhook_signing_secret``.
+    secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
     events: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(

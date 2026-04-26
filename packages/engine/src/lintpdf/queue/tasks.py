@@ -1693,7 +1693,13 @@ def _dispatch_tenant_webhooks(
     emit_event(db, tenant_id, event, payload)
 
 
-_DEFAULT_MAX_RETRIES = 3
+# Wave V V-06 (Q-D4): 5 attempts / exponential backoff capped at 5 min
+# is the playbook default. ``_DEFAULT_MAX_RETRIES`` counts retries on
+# top of the first attempt — so attempt N+1 happens after retry N. The
+# call site translates an endpoint's ``max_retries`` override on top of
+# this default. Hard ceiling stays at 10 to keep a runaway config from
+# DoSing the worker pool.
+_DEFAULT_MAX_RETRIES = 5
 _DEFAULT_RETRY_BASE_DELAY_S = 5
 _DEFAULT_RETRY_MAX_DELAY_S = 300
 _RETRY_CEILING = 10  # Hard ceiling irrespective of per-endpoint config
