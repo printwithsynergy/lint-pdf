@@ -61,6 +61,8 @@ def check_dieline_quality(
     white_coverage_min: float = 0.95,
     barcode_quiet_zone_mm: float = 2.5,
     text_to_fold_distance_mm: float = 3.0,
+    bleed_box: tuple[float, float, float, float] | None = None,
+    bleed_box_tolerance_pts: float = 1.0,
 ) -> list[Finding]:
     """Emit dieline-quality findings for a resolved dieline.
 
@@ -80,6 +82,14 @@ def check_dieline_quality(
         content_outside_tolerance_pts: how far a paint bbox may
             extend past the dieline envelope before T3-D05 fires
             (default 2.83pt ≈ 1mm).
+        bleed_box: page's declared ``/BleedBox`` as
+            ``(x0, y0, x1, y1)`` in user-space points. When provided
+            alongside ``regions``, drives the P-30 check that flags
+            BleedBox declarations extending past the dieline polygon.
+            ``None`` disables P-30.
+        bleed_box_tolerance_pts: how far the BleedBox may extend
+            past the dieline envelope before P-30 fires (default
+            1pt ≈ 0.35mm; covers typical die-cut tolerances).
 
     Returns:
         Up to six findings. Empty when the preconditions aren't met
@@ -361,6 +371,41 @@ def check_dieline_quality(
                     object_type="dieline_polygon",
                 )
             )
+
+    # P-30 — page's declared /BleedBox extends past the dieline polygon
+    # envelope. Distinct from LPDF_DIE_EXCESSIVE_BLEED (content overhang):
+    # P-30 catches a misconfigured bleed *allowance* that doesn't fit
+    # within the cutter region. When the BleedBox extends past the
+    # dieline, the press-side bleed reservation overruns the trim and
+    # imposition wastes paper or clips adjacent units on a multi-up
+    # sheet. Tolerance defaults to 1pt to swallow measurement noise.
+    if bleed_box is not None and regions:
+        envelope_p30 = _envelope_of_regions(regions)
+        if envelope_p30 is not None:
+            overhang_pts = _bbox_overhang(bleed_box, envelope_p30)
+            if overhang_pts > bleed_box_tolerance_pts:
+                overhang_mm = overhang_pts * 0.352778
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_PAGE_BLEED_PAST_DIELINE",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"Page /BleedBox extends past the dieline polygon "
+                            f"by {overhang_mm:.2f}mm — press-side bleed "
+                            f"allocation does not fit inside the cutter region"
+                        ),
+                        page_num=1,
+                        details={
+                            "overhang_pts": round(overhang_pts, 2),
+                            "overhang_mm": round(overhang_mm, 3),
+                            "tolerance_pts": bleed_box_tolerance_pts,
+                            "bleed_box_pts": list(bleed_box),
+                            "dieline_envelope_pts": list(envelope_p30),
+                        },
+                        iso_clause="ISO 32000-2:2020 §14.11.2 / ISO 19593-1 §5.3",
+                        object_type="page_bleed_box",
+                    )
+                )
 
     # T3-D10 — varnish / VarnishFree collision.
     if signals.varnish_spots and signals.varnish_free_spots:

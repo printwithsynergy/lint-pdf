@@ -608,6 +608,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dieline spot is painted with alpha < 100% (semi-transparent). Cutter spots are layer-extracted process controls, not artwork — partial transparency does not survive RIP separation, so the cut plate either drops to zero coverage or composites into the substrate. Set opacity to 100% on the dieline layer in Illustrator / InDesign.",
         v2_ids=("D-09",),
     ),
+    "LPDF_PAGE_BLEED_PAST_DIELINE": CheckInfo(
+        "Page BleedBox Extends Past Dieline",
+        "The page's declared /BleedBox extends past the dieline polygon envelope. The press-side bleed allowance does not fit within the cutter region — imposition will waste paper or clip adjacent units on a multi-up sheet. Either tighten the BleedBox in the export profile or expand the dieline so the bleed sits inside it.",
+        v2_ids=("P-30",),
+    ),
     "LPDF_DIE_AS_ART": CheckInfo(
         "Dieline Spot Used As Fill",
         "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",

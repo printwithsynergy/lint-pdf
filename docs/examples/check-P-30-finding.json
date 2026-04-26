@@ -1,0 +1,17 @@
+{
+  "$comment": "Example LPDF_PAGE_BLEED_PAST_DIELINE finding (P-30). Emitted when the page's declared /BleedBox extends past the dieline polygon envelope. Distinct from LPDF_DIE_EXCESSIVE_BLEED (which is about content overhang) — P-30 catches a misconfigured bleed allowance that doesn't fit within the cutter region. ISO 32000-2:2020 §14.11.2 / ISO 19593-1 §5.3.",
+  "inspection_id": "LPDF_PAGE_BLEED_PAST_DIELINE",
+  "v2_id": "P-30",
+  "severity": "warning",
+  "message": "Page /BleedBox extends past the dieline polygon by 1.76mm — press-side bleed allocation does not fit inside the cutter region",
+  "page_num": 1,
+  "object_type": "page_bleed_box",
+  "iso_clause": "ISO 32000-2:2020 §14.11.2 / ISO 19593-1 §5.3",
+  "details": {
+    "overhang_pts": 5.0,
+    "overhang_mm": 1.764,
+    "tolerance_pts": 1.0,
+    "bleed_box_pts": [145.0, 145.0, 255.0, 255.0],
+    "dieline_envelope_pts": [150.0, 150.0, 250.0, 250.0]
+  }
+}
