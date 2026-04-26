@@ -221,3 +221,14 @@ class OverridesEnvelope(BaseModel):
     report: ReportOverrides | None = None
     branding: BrandingOverridesEnvelope | None = None
     share: ShareOverrides | None = None
+    toggles: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Phase 0.7 PR-A — per-call overrides for the V-07 toggle"
+            " cascade. Dict keyed by toggle id (e.g."
+            " ``{'limits.max_file_size_mb': 25}``). Resolved at job"
+            " submit time and captured in the per-job"
+            " ``resolved_config_snapshots`` row alongside the merged"
+            " value's provenance."
+        ),
+    )

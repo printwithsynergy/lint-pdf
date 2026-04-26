@@ -25,7 +25,9 @@ from datetime import datetime  # noqa: TC003
 
 from sqlalchemy import (
     JSON,
+    BigInteger,
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
@@ -93,6 +95,10 @@ class Workflow(Base):
     __table_args__ = (
         UniqueConstraint("tenant_id", "slug", name="uq_workflows_tenant_slug"),
         Index("ix_workflows_tenant_id", "tenant_id"),
+        CheckConstraint(
+            "response_mode IN ('async', 'sync')",
+            name="ck_workflows_response_mode",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
@@ -103,6 +109,10 @@ class Workflow(Base):
     human_name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_default: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    response_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="async")
+    server_revision: Mapped[int] = mapped_column(BigInteger, nullable=False, default=1)
+    created_by_user_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -184,6 +194,57 @@ class ToggleOverride(Base):
     toggle: Mapped[Toggle] = relationship("Toggle", back_populates="overrides")
 
 
+class ResolvedConfigSnapshot(Base):
+    """Per-job durable record of the resolved configuration cascade.
+
+    Written once per job at submit time after the cascade resolves. The
+    ``resolved_payload`` is the merged dict of every toggle that fed
+    that job; ``provenance`` is a parallel dict mapping each toggle id
+    to the scope (``system`` / ``tenant`` / ``workflow`` / ``call``)
+    that supplied the value.
+
+    Audit views replay from these snapshots, not from live override
+    state, so "what config drove this job's findings" stays answerable
+    even after the workflow has been edited.
+    """
+
+    __tablename__ = "resolved_config_snapshots"
+    __table_args__ = (
+        Index(
+            "ix_resolved_config_snapshots_tenant_recent",
+            "tenant_id",
+            "created_at",
+        ),
+        Index(
+            "ix_resolved_config_snapshots_workflow_recent",
+            "workflow_id",
+            "created_at",
+        ),
+    )
+
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        ForeignKey("jobs.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        ForeignKey("tenants.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    workflow_id: Mapped[str | None] = mapped_column(
+        String(64),
+        ForeignKey("workflows.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    resolved_payload: Mapped[object] = mapped_column(_JSONB, nullable=False)
+    provenance: Mapped[object] = mapped_column(_JSONB, nullable=False)
+    system_default_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
 class ToggleAuditLog(Base):
     """Append-only audit log of every ToggleOverride mutation (V-08).
 
@@ -218,6 +279,7 @@ class ToggleAuditLog(Base):
 
 __all__ = [
     "MergeStrategy",
+    "ResolvedConfigSnapshot",
     "Toggle",
     "ToggleAuditLog",
     "ToggleOverride",

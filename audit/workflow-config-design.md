@@ -1,9 +1,67 @@
 # Phase 0.7 — Workflow + WorkflowConfig design
 
-**Branch:** `claude/phase-0.7-workflow-model`
-**Status:** Draft for sign-off
+**Branch:** `claude/phase-0.7-workflow-impl` (continuation of merged design `claude/phase-0.7-workflow-model` → main)
+**Status:** **Retraction + delta plan added 2026-04-26.** Original design (sections 1-11 below) was drafted before discovering Wave V V-07 (alembic 042) + V-08 (alembic 043) had already shipped the core toggle + workflow + audit-log substrate. See **§0 Retraction** for what's already done and the actual delta this PR ships.
 **Decisions referenced:** Q-E1, Q-E2, Q-E3, Q-E4, Q-E5, Q-E6, Q-E7, Q-W1, Q-W2, Q-W3 (see `audit/decisions.md`)
 **Read-only invariant:** every table below stores configuration metadata only. lintPDF still inspects, never mutates input PDFs.
+
+## 0. Retraction + delta plan (2026-04-26)
+
+The original design below proposed building `workflows`, `config_overrides`, `config_audit`, and a resolver from scratch. **That work is already shipped** in:
+
+- **alembic 042 `v07_toggles.py`** — created `workflows`, `toggles` (registry), `toggle_overrides`. Postgres enums: `toggle_type`, `toggle_scope`, `merge_strategy`.
+- **alembic 043 `v08_toggle_audit.py`** — created `toggle_audit_log` (append-only).
+- **`packages/engine/src/lintpdf/tenants/toggle_models.py`** — SQLAlchemy ORM: `Workflow`, `Toggle`, `ToggleOverride`, `ToggleAuditLog`.
+- **`packages/engine/src/lintpdf/tenants/config_resolver.py`** — `ConfigResolver` with cascade `default → TENANT → WORKFLOW → CALL`, lock semantics, three merge strategies (`REPLACE`/`MERGE`/`UNION`), 60s in-process cache, threadsafe.
+- **`packages/engine/src/lintpdf/api/routes/toggles.py`** — registry GET, resolve GET, tenant override PUT/DELETE, audit log GET.
+- **`packages/engine/src/lintpdf/scripts/v12_migrate_legacy.py`** — registers 7 legacy entitlement toggles + migrates per-tenant entitlement_overrides JSON to `ToggleOverride` rows.
+- **`tests/tenants/test_config_resolver.py`** + **`tests/api/test_toggles_api.py`** + **`tests/api/test_toggles_audit_api.py`** — proves cascade, locking, merge, CRUD, audit.
+
+The shipped substrate is functionally equivalent to my design: `(toggle_id, scope, scope_id)` is the same primitive as `(category, field_path, scope, ids)` — just with a different naming convention. Where my design said `category='brand'`, `field_path='<spec_id>'`, the existing model uses `toggle_id='brand.<spec_id>'`. The dotted-prefix `category` is enforced via `Toggle.category`.
+
+### What's still missing (the actual delta this PR must ship)
+
+| # | Gap | Evidence | Effort |
+|---|-----|----------|--------|
+| 1 | **`resolved_config_snapshots` table** for per-job replay (Q-W2) | No `snapshot` references in `models.py` or alembic | 1 alembic migration + 1 ORM model + 1 hook in `tasks.preflight_job` |
+| 2 | **Workflow column completeness**: `server_revision` (Q-E4 desktop reconcile), `is_active` (soft-delete), `response_mode` (carried from CustomEndpoint), `created_by_user_id` | `Workflow` model has only id/tenant_id/slug/human_name/description/is_default/created_at/updated_at | alembic ALTER TABLE + ORM update |
+| 3 | **Workflow CRUD HTTP routes** — none exist; `toggles.py` only handles tenant-scope override CRUD | No `workflows.py` router file | new router |
+| 4 | **Workflow-scope override CRUD** | Exists in resolver; missing in HTTP layer | extend `workflows.py` router |
+| 5 | **Call-scope overrides on job submission body** | Job submit Pydantic schema lacks `overrides` field | extend `JobCreate` schema + plumb into resolver call site |
+| 6 | **8 of 9 design categories not registered**: `profile_rules`, `brand`, `approval_template`, `import_mapping`, `endpoint_defaults`, `epm_thresholds`, `ai_cost_cap`, `response_format`, `viewer_capabilities` | `LEGACY_TOGGLE_MAP` in v12 migration only has `features`/`limits`/`defaults` | extend toggle registry seed migration |
+| 7 | **Legacy layer collapse (Q-E5)** — BrandSpec, CustomProfile/SystemProfile, ApprovalChainTemplate, TenantImportMapping, CustomEndpoint still on direct-query paths; consumers haven't been ported | engine `routes/profiles.py`, `routes/brand_specs.py`, `routes/approvals.py`, `routes/endpoints.py`, `routes/import_mappings.py` all bypass ConfigResolver | new alembic data migration v13 + drop in same transaction (per Q-W3) + rewrite 5 routes + rewrite consumers in `queue/tasks.py` + app dashboard rewires |
+
+### Revised PR scope
+
+This is now **two PRs**, not one mega-PR:
+
+**PR-A (this branch — small, low-risk):** Items 1, 2, 3, 4, 5 — additive only, no legacy churn. Adds snapshot table + workflow CRUD + missing columns + call-scope overrides. Ships with test coverage. Nothing else changes; legacy layers untouched.
+
+**PR-B (follow-up):** Items 6, 7 — register the 8 missing categories, migrate the 5 legacy layers, drop legacy tables in same alembic transaction (Q-W3), rewire all consumers. This is the high-blast-radius change with maintenance window + Railway snapshot pre-deploy.
+
+The split lets PR-A get reviewed + merged independently while we plan the PR-B migration carefully (data migration script needs production schema sample to validate against, and the consumer rewrites are touchy enough to deserve their own review pass).
+
+### Open design questions raised by the actual implementation
+
+These need Quincy sign-off before PR-A starts coding:
+
+1. **DQ-A1 — toggle_id shape for multi-instance categories** (BrandSpec / CustomProfile / etc.). A tenant with 5 brand profiles needs 5 `brand.*` toggle registry rows, OR 1 `brand` toggle whose value is a dict keyed by spec_id. The existing infrastructure prefers the former (registry per knob), but multi-instance resources don't fit cleanly. **Recommendation:** one Toggle per category (e.g., `brand`, type=OBJECT, merge_strategy=MERGE), value is a dict `{spec_id: spec_data}`. CRUD via `MERGE` strategy preserves the per-spec semantics.
+
+2. **DQ-A2 — Workflow column ALTER ordering**. Adding `is_active` with default `true` is safe (one ALTER TABLE). Adding `response_mode` requires a CHECK constraint. Adding `server_revision` requires a backfill. Should this run as one migration (044) or three (044/045/046)? **Recommendation:** one migration (044) wrapping all three ALTERs in a single transaction.
+
+3. **DQ-A3 — call-scope override storage**. Design says call overrides live in the request body (in-memory), not stored. But Q-W2 says snapshot every job, which means the snapshot row captures the call overrides at submit time. Confirm: call overrides are in-request only; the snapshot is the durable record. **Recommendation:** confirm.
+
+4. **DQ-B1 — legacy table drop transactionality**. Q-W3 says drop in same migration as the data migrate. With ~7 legacy tables (CustomProfile, SystemProfile, BrandSpec, ApprovalChainTemplate, ApprovalChain runtime, ApprovalStep runtime, CustomEndpoint, TenantImportMapping) the migration will be substantial. ApprovalChain/ApprovalStep are runtime tables and **must NOT drop** — only the templates fold. Confirm scope.
+
+5. **DQ-B2 — staging dry-run before merge**. Per §5.2 "run on staging first" — does production have a Railway preview / staging environment with a copy of prod data we can rehearse PR-B against? If not, we need to design synthetic test data covering every edge case before merging.
+
+After sign-off on DQ-A1/A2/A3, PR-A coding begins on `claude/phase-0.7-workflow-impl`. PR-B is queued for the next session with DQ-B1/B2 to resolve at that time.
+
+### What the original §1–11 design doc still gets right
+
+Sections 6 (consumer surface inventory), 7 (breaking-change posture), 8 (test plan), 9 (rollout), 10 (open risks) all apply to PR-B unchanged. Sections 3 (schema) + 4 (resolver) are largely **superseded** by the existing implementation; consult the live code (toggle_models.py, config_resolver.py, toggles.py routes) for the source of truth instead.
+
+---
 
 ## 1. Goals
 
