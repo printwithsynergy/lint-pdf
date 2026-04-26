@@ -48,6 +48,7 @@
     "@trpc/react-query": "^11.16.0",
     "@trpc/server": "^11.16.0",
     "fabric": "^6.0.0",
+    "firebase-admin": "^13.0.0",
     "lucide-react": "^0.469.0",
     "gray-matter": "^4.0.3",
     "next": "^15.5.14",

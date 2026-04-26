@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import secrets
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
@@ -518,3 +519,25 @@ def _fire_webhook(
             )
         except Exception:
             logger.exception("Failed to queue webhook for %s", ep.url)
+
+    # Internal subscriber: cross-tenant fan-out target the LintPDF
+    # Next.js side uses to drive mobile push notifications. Fires for
+    # every tenant when both env vars are set, so the receiver gets
+    # the same `approval.step.*` event stream regardless of whether
+    # the tenant has its own WebhookEndpoint rows configured.
+    # Identical HMAC-SHA256 signing as a tenant webhook — receiver
+    # verifies with LINTPDF_INTERNAL_WEBHOOK_SECRET. tenant_id is
+    # appended to the payload so the receiver can scope MobileDevice
+    # lookups without leaking cross-tenant rows.
+    internal_url = os.environ.get("LINTPDF_INTERNAL_WEBHOOK_URL", "").strip()
+    internal_secret = os.environ.get("LINTPDF_INTERNAL_WEBHOOK_SECRET", "").strip()
+    if internal_url and internal_secret:
+        try:
+            dispatch_webhook.delay(
+                webhook_url=internal_url,
+                webhook_secret=internal_secret,
+                event=event,
+                payload={**payload, "tenant_id": str(tenant.id)},
+            )
+        except Exception:
+            logger.exception("Failed to queue internal webhook for %s", internal_url)
