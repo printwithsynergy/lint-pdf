@@ -295,10 +295,10 @@ def _fold_import_mappings(
     )
     incoming: dict[str, Any] = {}
     for row in rows:
-        # Mapping name is the human key but two mappings could share
-        # a name in legacy data — fall back to id when collision.
-        key = row.name if row.name not in incoming else str(row.id)
-        incoming[key] = {
+        # Key by id (string uuid) so the runtime worker can look up by
+        # ``imported_row.source_metadata['mapping_id']`` without iterating.
+        # The mapping ``name`` lives inside the value for display.
+        incoming[str(row.id)] = {
             "id": str(row.id),
             "name": row.name,
             "description": row.description,
@@ -306,6 +306,7 @@ def _fold_import_mappings(
             "config": dict(row.config or {}),
             "sample_payload": row.sample_payload,
             "sample_mime": row.sample_mime,
+            "is_active": True,
         }
     return _upsert_tenant_object_override(
         session,

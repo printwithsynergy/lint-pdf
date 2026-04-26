@@ -47,21 +47,38 @@ def _seed_toggle(
 # ---- registry endpoints --------------------------------------------------
 
 
-def test_list_toggles_empty(client: TestClient):
+def test_list_toggles_with_only_seeded_categories(client: TestClient):
+    """The conftest auto-seeds the 9 PR-B1 category rows; nothing else."""
     resp = client.get("/api/v1/toggles")
     assert resp.status_code == 200
-    assert resp.json() == {"items": [], "total": 0}
+    body = resp.json()
+    assert body["total"] == 9
+    ids = {item["id"] for item in body["items"]}
+    assert ids == {
+        "profile_rules",
+        "brand",
+        "approval_template",
+        "import_mapping",
+        "endpoint_defaults",
+        "epm_thresholds",
+        "ai_cost_cap",
+        "response_format",
+        "viewer_capabilities",
+    }
 
 
 def test_list_toggles_returns_seeded_rows(client: TestClient, db_session: Session):
+    """Test-added rows show up alongside the 9 conftest-seeded categories."""
     _seed_toggle(db_session, toggle_id="checks.F-22", type_=ToggleType.STRING, default="warn")
     _seed_toggle(db_session, toggle_id="profiles.PDF-X-4", type_=ToggleType.BOOLEAN, default=True)
     resp = client.get("/api/v1/toggles")
     assert resp.status_code == 200
     body = resp.json()
-    assert body["total"] == 2
+    assert body["total"] == 11  # 9 categories + 2 test-added
     ids = [item["id"] for item in body["items"]]
     assert ids == sorted(ids)
+    assert "checks.F-22" in ids
+    assert "profiles.PDF-X-4" in ids
 
 
 def test_list_toggles_filters_by_category(client: TestClient, db_session: Session):

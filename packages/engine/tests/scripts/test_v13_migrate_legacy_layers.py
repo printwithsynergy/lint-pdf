@@ -221,9 +221,11 @@ def test_fold_approval_templates(db: Session):
 
 def test_fold_import_mappings_skips_inactive(db: Session):
     tenant = _make_tenant(db)
+    active_id = uuid.uuid4()
+    archived_id = uuid.uuid4()
     db.add(
         TenantImportMapping(
-            id=uuid.uuid4(),
+            id=active_id,
             tenant_id=tenant.id,
             name="callas-custom",
             description=None,
@@ -236,7 +238,7 @@ def test_fold_import_mappings_skips_inactive(db: Session):
     )
     db.add(
         TenantImportMapping(
-            id=uuid.uuid4(),
+            id=archived_id,
             tenant_id=tenant.id,
             name="archived-mapping",
             description=None,
@@ -252,12 +254,13 @@ def test_fold_import_mappings_skips_inactive(db: Session):
     assert result.import_mapping_keys_added == 1
     ov = _get_tenant_override(db, tenant_id=tenant.id, toggle_id="import_mapping")
     assert ov is not None
-    assert "callas-custom" in ov.value
-    assert "archived-mapping" not in ov.value
+    assert str(active_id) in ov.value
+    assert str(archived_id) not in ov.value
+    assert ov.value[str(active_id)]["name"] == "callas-custom"
 
 
-def test_fold_import_mappings_collision_falls_back_to_id(db: Session):
-    """Two mappings with the same name resolve via id-keyed fallback."""
+def test_fold_import_mappings_keys_by_id(db: Session):
+    """Mappings key by str(uuid); duplicate ``name`` is fine because key is id."""
     tenant = _make_tenant(db)
     id1 = uuid.uuid4()
     id2 = uuid.uuid4()
@@ -288,11 +291,12 @@ def test_fold_import_mappings_collision_falls_back_to_id(db: Session):
     assert result.import_mapping_keys_added == 2
     ov = _get_tenant_override(db, tenant_id=tenant.id, toggle_id="import_mapping")
     assert ov is not None
-    # First wins on name; second falls back to id key
-    assert "dup" in ov.value
-    assert str(id2) in ov.value
-    assert ov.value["dup"]["id"] == str(id1)
-    assert ov.value[str(id2)]["id"] == str(id2)
+    assert set(ov.value.keys()) == {str(id1), str(id2)}
+    assert ov.value[str(id1)]["name"] == "dup"
+    assert ov.value[str(id2)]["name"] == "dup"
+    assert ov.value[str(id1)]["config"]["item_selector"] == "//a"
+    assert ov.value[str(id2)]["config"]["item_selector"] == "//b"
+    assert ov.value[str(id1)]["is_active"] is True
 
 
 # ---- CustomEndpoint → Workflow + endpoint_defaults -------------------------
