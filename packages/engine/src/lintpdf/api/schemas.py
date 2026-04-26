@@ -652,9 +652,15 @@ class EndpointCreateRequest(BaseModel):
 
 
 class EndpointResponse(BaseModel):
-    """Custom endpoint details."""
+    """Custom endpoint details.
 
-    id: uuid.UUID
+    Phase 0.7 PR-B5 — endpoints are backed by Workflow rows now, whose
+    ids are cuid-style strings (e.g. ``8eXXdY7Zk_xy``). Pre-PR-B5
+    callers that strict-typed ``id`` as ``uuid.UUID`` need to accept
+    a string instead.
+    """
+
+    id: str
     slug: str
     profile_id: str
     description: str
