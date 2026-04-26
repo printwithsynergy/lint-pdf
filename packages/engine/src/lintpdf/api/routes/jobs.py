@@ -651,6 +651,30 @@ async def submit_job(  # skipcq: PY-R1000
         ocr_force=(ocr == "force"),
     )
     db.add(job)
+    db.flush()  # surface integrity errors before snapshot insert
+
+    # Phase 0.7 PR-A — write the resolved-config snapshot row for this
+    # job. The cascade resolves once at submit; the snapshot freezes
+    # both values + provenance so audit dashboards stay correct after
+    # the workflow is later edited.
+    try:
+        from lintpdf.tenants.snapshot import write_snapshot
+
+        toggle_call_overrides: dict[str, Any] | None = None
+        if overrides_envelope is not None and overrides_envelope.toggles:
+            toggle_call_overrides = dict(overrides_envelope.toggles)
+        write_snapshot(
+            db,
+            job_id=job.id,
+            tenant_id=tenant.id,
+            workflow_id=None,  # Wired when legacy endpoint submit folds into Workflow (PR-B)
+            call_overrides=toggle_call_overrides,
+        )
+    except Exception:
+        # Snapshot write is best-effort in PR-A while the toggle
+        # registry is being populated. A missing snapshot doesn't block
+        # the job — but we log loudly so PR-B can backfill any gaps.
+        logger.exception("failed to write resolved_config_snapshot for job %s", job.id)
 
     # Persist the imported preflight artifact so the worker can re-read
     # it without the caller needing to re-upload, and so we can re-parse

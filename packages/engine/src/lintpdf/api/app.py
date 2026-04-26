@@ -43,6 +43,7 @@ from lintpdf.api.routes import (
     user_ai_access,
     viewer,
     webhooks,
+    workflows,
 )
 
 logger = logging.getLogger(__name__)
@@ -270,6 +271,7 @@ def create_app() -> FastAPI:
     app.include_router(branding.router)
     app.include_router(brand_specs.router)
     app.include_router(toggles.router)  # V-07 toggle resolver + tenant overrides
+    app.include_router(workflows.router)  # Phase 0.7 PR-A workflow CRUD + workflow overrides
     if not control_plane_only:
         app.include_router(approvals.router)
         app.include_router(annotations.router, prefix="/api/v1/viewer")
