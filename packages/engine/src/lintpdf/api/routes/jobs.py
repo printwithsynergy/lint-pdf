@@ -241,6 +241,16 @@ async def submit_job(  # skipcq: PY-R1000
     brand: str | None = _brand_param,
     unbranded: bool | None = _unbranded_param,
     brand_spec_id: str | None = _brand_spec_param,
+    workflow_id: str | None = Form(
+        default=None,
+        description=(
+            "Phase 0.7 PR-B3d — bind this submission to a named Workflow."
+            " The cascade resolver layers WORKFLOW-scope toggle overrides"
+            " on top of TENANT-scope; the resolved-config snapshot row"
+            " captures ``workflow_id`` for replay. Absent = no workflow"
+            " context (system + tenant scopes only)."
+        ),
+    ),
     overrides: str | None = _overrides_param,
     wait: float | None = Query(
         default=None,
@@ -585,6 +595,27 @@ async def submit_job(  # skipcq: PY-R1000
                 detail=f"Brand spec '{brand_spec_id}' not found or archived.",
             )
 
+    # Phase 0.7 PR-B3d — validate workflow_id (if supplied) before the
+    # upload starts so a malformed / foreign / inactive workflow fails
+    # fast with a 404. The resolved ``workflow_id_resolved`` (a cuid
+    # string) is threaded into write_snapshot below so the snapshot
+    # captures the WORKFLOW-scope toggle overrides that fed this job.
+    workflow_id_resolved: str | None = None
+    if workflow_id is not None:
+        from lintpdf.tenants.toggle_models import Workflow as _Workflow
+
+        wf = (
+            db.query(_Workflow)
+            .filter(_Workflow.id == workflow_id, _Workflow.tenant_id == tenant.id)
+            .first()
+        )
+        if wf is None or not wf.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Workflow '{workflow_id}' not found or inactive.",
+            )
+        workflow_id_resolved = wf.id
+
     # Stream upload body into a spooled temp file so worker RSS stays
     # bounded regardless of PDF size — the first stress test (2026-04-21)
     # wedged the engine when 15 concurrent 30-47 MB uploads materialized
@@ -664,7 +695,7 @@ async def submit_job(  # skipcq: PY-R1000
             db,
             job_id=job.id,
             tenant_id=tenant.id,
-            workflow_id=None,  # Wired when legacy endpoint submit folds into Workflow (PR-B)
+            workflow_id=workflow_id_resolved,
             call_overrides=toggle_call_overrides,
         )
     except Exception:

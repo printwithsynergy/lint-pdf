@@ -292,10 +292,13 @@ class Job(Base):
     # via :func:`lintpdf.brand_specs.resolver.resolve_brand_spec_for_job`
     # and the analyzers gate the strict colour advisories on
     # whether a spec was actually resolved. FK set to NULL on
-    # delete so archived specs can't dangle.
+    # delete so archived specs can't dangle. Phase 0.7 PR-B3d: the
+    # FK to ``brand_specs.id`` was dropped (alembic 045) — the column
+    # value now references a key inside the tenant's
+    # ``ToggleOverride(toggle_id='brand')`` dict. PR-B4 drops the
+    # column entirely when the legacy ``brand_specs`` table goes.
     brand_spec_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("brand_specs.id", ondelete="SET NULL"),
         nullable=True,
     )
     # Per-job unbranded override (request-level flag, orthogonal to
@@ -592,11 +595,14 @@ class CustomEndpoint(Base):
 
     # Per-endpoint default brand specification — applies to every job
     # submitted through this endpoint unless the submit call overrides
-    # it with an explicit ``brand_spec_id``. FK set to NULL on delete
-    # so deleting a BrandSpec doesn't cascade-remove endpoints.
+    # it with an explicit ``brand_spec_id``. Phase 0.7 PR-B3d: FK to
+    # ``brand_specs.id`` was dropped (alembic 045); the column now
+    # references a key inside the tenant's
+    # ``ToggleOverride(toggle_id='brand')`` dict. PR-B4 drops the
+    # column entirely when the legacy ``custom_endpoints`` and
+    # ``brand_specs`` tables are dropped.
     default_brand_spec_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid,
-        ForeignKey("brand_specs.id", ondelete="SET NULL"),
         nullable=True,
     )
 
