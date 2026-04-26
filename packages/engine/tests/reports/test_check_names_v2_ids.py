@@ -85,6 +85,52 @@ def test_box_001_maps_to_p03_and_p04():
     assert CHECK_NAMES["LPDF_BOX_001"].v2_ids == ("P-03", "P-04")
 
 
+def test_box_002_maps_to_p07():
+    """P-07: TrimBox not nested in BleedBox (Wave B catch-up T1; partial — also
+    fires on CropBox-outside-MediaBox and BleedBox-outside-CropBox branches)."""
+    assert CHECK_NAMES["LPDF_BOX_002"].v2_ids == ("P-07",)
+
+
+def test_box_003_maps_to_p09():
+    """P-09: Bleed amount < required (Wave B catch-up T1)."""
+    assert CHECK_NAMES["LPDF_BOX_003"].v2_ids == ("P-09",)
+
+
+def test_box_005_maps_to_p33():
+    """P-33: Safety / text-zone violation (Wave D batch 4)."""
+    assert CHECK_NAMES["LPDF_BOX_005"].v2_ids == ("P-33",)
+
+
+def test_box_006_maps_to_p28():
+    """P-28: Content beyond bleed will get cut (Wave D batch 4)."""
+    assert CHECK_NAMES["LPDF_BOX_006"].v2_ids == ("P-28",)
+
+
+def test_box_007_maps_to_p16():
+    """P-16: UserUnit ≠ 1.0 (Wave D batch 4)."""
+    assert CHECK_NAMES["LPDF_BOX_007"].v2_ids == ("P-16",)
+
+
+def test_box_008_maps_to_p14():
+    """P-14: Page rotated 90/180/270 (Wave D batch 4)."""
+    assert CHECK_NAMES["LPDF_BOX_008"].v2_ids == ("P-14",)
+
+
+def test_box_009_maps_to_p13():
+    """P-13: Page size differs across pages (Wave D batch 4)."""
+    assert CHECK_NAMES["LPDF_BOX_009"].v2_ids == ("P-13",)
+
+
+def test_box_010_maps_to_p12():
+    """P-12: Trim size mismatch vs job ticket (Wave D batch 4)."""
+    assert CHECK_NAMES["LPDF_BOX_010"].v2_ids == ("P-12",)
+
+
+def test_trans_002_maps_to_tr19():
+    """TR-19: Transparency × overprint interaction (Wave D batch 4)."""
+    assert CHECK_NAMES["LPDF_TRANS_002"].v2_ids == ("TR-19",)
+
+
 def test_img_001_maps_to_i01_and_i02():
     """I-01 (Color image res < min) + I-02 (Grayscale res < min) — both fire from
     LPDF_IMG_001 (low-DPI detector) regardless of color space (Wave D batch 3)."""

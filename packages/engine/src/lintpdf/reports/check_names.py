@@ -298,41 +298,73 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("P-03", "P-04"),
     ),
     "LPDF_BOX_002": CheckInfo(
-        "Box Hierarchy Violated", "Page boxes (Media, Crop, Bleed, Trim) are not properly nested."
+        "Box Hierarchy Violated",
+        "Page boxes (Media, Crop, Bleed, Trim) are not properly nested per "
+        "ISO 32000-2 §14.11.2. Fires on three conditions discriminated by "
+        "`details.violation`: CropBox extends outside MediaBox, BleedBox "
+        "extends outside CropBox, or TrimBox extends outside BleedBox.",
+        v2_ids=("P-07",),
     ),
     "LPDF_BOX_003": CheckInfo(
         "Insufficient Bleed",
-        "Not enough image extends past the trim edge — white edges may show after cutting.",
+        "One or more sides have less bleed allowance than the configured "
+        "minimum. White edges may show after cutting if the image doesn't "
+        "extend far enough past the trim edge.",
+        v2_ids=("P-09",),
     ),
     "LPDF_BOX_004": CheckInfo("Empty Page", "Page has no visible content."),
     "LPDF_BOX_005": CheckInfo(
-        "Content in Safety Margin",
-        "Important content is too close to the trim edge and may be cut off.",
+        "Content In Safety Margin",
+        "Critical content sits within the configured safety margin of the "
+        "trim edge. Movement during finishing can shift this content into "
+        "the cut zone — pull it inward upstream.",
+        v2_ids=("P-33",),
     ),
     "LPDF_BOX_006": CheckInfo(
-        "Content Beyond Bleed", "Content extends outside the bleed box and will be clipped."
+        "Content Beyond Bleed",
+        "Content extends outside the BleedBox. Anything past the bleed will "
+        "be clipped by the RIP and is wasted file size at best, or evidence "
+        "of a misconfigured export at worst.",
+        v2_ids=("P-28",),
     ),
     "LPDF_BOX_007": CheckInfo(
-        "UserUnit Scaling", "Non-standard page scaling detected which may confuse imposition."
+        "UserUnit Scaling Active",
+        "Page uses a UserUnit other than 1.0 — coordinates are scaled "
+        "globally. Common in large-format work but can confuse imposition "
+        "and downstream measurements that assume default units.",
+        v2_ids=("P-16",),
     ),
     "LPDF_BOX_008": CheckInfo(
-        "Non-Standard Orientation", "Page has an unusual rotation or orientation."
+        "Non-Standard Page Rotation",
+        "Page has a /Rotate value other than 0° (typically 90°/180°/270°). "
+        "RIPs honour rotation, but imposition tools and operator workflows "
+        "expect upright pages by default.",
+        v2_ids=("P-14",),
     ),
     "LPDF_BOX_009": CheckInfo(
         "Inconsistent Page Sizes",
-        "Pages have different dimensions which may cause printing issues.",
+        "Document contains pages of different sizes. Mixed-size jobs need "
+        "explicit handling at imposition; verify this is intentional.",
+        v2_ids=("P-13",),
     ),
     "LPDF_BOX_010": CheckInfo(
         "Page Size Mismatch",
-        "Page dimensions don't match the product size declared on the profile (expected_page_width_mm / expected_page_height_mm). Tolerance defaults to 0.5mm; either orientation is accepted.",
+        "Page dimensions don't match the product size declared on the "
+        "profile (`expected_page_width_mm` / `expected_page_height_mm`). "
+        "Tolerance defaults to 0.5mm; either orientation is accepted.",
+        v2_ids=("P-12",),
     ),
     # ── Transparency ──────────────────────────────────────────────────────
     "LPDF_TRANS_001": CheckInfo(
         "Transparency Used", "Page uses transparency which must be flattened for older workflows."
     ),
     "LPDF_TRANS_002": CheckInfo(
-        "Non-Standard Blend Mode",
-        "A blend mode other than Normal is used, which may flatten unpredictably.",
+        "Transparency × Overprint Interaction",
+        "Both transparency and overprint are active on the same page. The "
+        "interaction between alpha-blended objects and overprinted spot "
+        "colours is RIP-specific — flattening behaviour can swap colours "
+        "or drop objects unpredictably. Verify on a proof.",
+        v2_ids=("TR-19",),
     ),
     "LPDF_TRANS_003": CheckInfo(
         "Soft Mask", "Image uses a soft mask, increasing rendering complexity."

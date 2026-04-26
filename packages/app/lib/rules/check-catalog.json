@@ -501,8 +501,8 @@
         },
         {
           "id": "LPDF_TRANS_002",
-          "name": "Non-Standard Blend Mode",
-          "description": "A blend mode other than Normal is used, which may flatten unpredictably.",
+          "name": "Transparency \u00d7 Overprint Interaction",
+          "description": "Both transparency and overprint are active on the same page. The interaction between alpha-blended objects and overprinted spot colours is RIP-specific \u2014 flattening behaviour can swap colours or drop objects unpredictably. Verify on a proof.",
           "default_severity": "warning"
         },
         {
@@ -820,13 +820,13 @@
         {
           "id": "LPDF_BOX_002",
           "name": "Box Hierarchy Violated",
-          "description": "Page boxes (Media, Crop, Bleed, Trim) are not properly nested.",
+          "description": "Page boxes (Media, Crop, Bleed, Trim) are not properly nested per ISO 32000-2 \u00a714.11.2. Fires on three conditions discriminated by `details.violation`: CropBox extends outside MediaBox, BleedBox extends outside CropBox, or TrimBox extends outside BleedBox.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_BOX_003",
           "name": "Insufficient Bleed",
-          "description": "Not enough image extends past the trim edge \u2014 white edges may show after cutting.",
+          "description": "One or more sides have less bleed allowance than the configured minimum. White edges may show after cutting if the image doesn't extend far enough past the trim edge.",
           "default_severity": "warning"
         },
         {
@@ -837,38 +837,38 @@
         },
         {
           "id": "LPDF_BOX_005",
-          "name": "Content in Safety Margin",
-          "description": "Important content is too close to the trim edge and may be cut off.",
+          "name": "Content In Safety Margin",
+          "description": "Critical content sits within the configured safety margin of the trim edge. Movement during finishing can shift this content into the cut zone \u2014 pull it inward upstream.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_BOX_006",
           "name": "Content Beyond Bleed",
-          "description": "Content extends outside the bleed box and will be clipped.",
+          "description": "Content extends outside the BleedBox. Anything past the bleed will be clipped by the RIP and is wasted file size at best, or evidence of a misconfigured export at worst.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_BOX_007",
-          "name": "UserUnit Scaling",
-          "description": "Non-standard page scaling detected which may confuse imposition.",
+          "name": "UserUnit Scaling Active",
+          "description": "Page uses a UserUnit other than 1.0 \u2014 coordinates are scaled globally. Common in large-format work but can confuse imposition and downstream measurements that assume default units.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_BOX_008",
-          "name": "Non-Standard Orientation",
-          "description": "Page has an unusual rotation or orientation.",
+          "name": "Non-Standard Page Rotation",
+          "description": "Page has a /Rotate value other than 0\u00b0 (typically 90\u00b0/180\u00b0/270\u00b0). RIPs honour rotation, but imposition tools and operator workflows expect upright pages by default.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_BOX_009",
           "name": "Inconsistent Page Sizes",
-          "description": "Pages have different dimensions which may cause printing issues.",
+          "description": "Document contains pages of different sizes. Mixed-size jobs need explicit handling at imposition; verify this is intentional.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_BOX_010",
           "name": "Page Size Mismatch",
-          "description": "Page dimensions don't match the product size declared on the profile (expected_page_width_mm / expected_page_height_mm). Tolerance defaults to 0.5mm; either orientation is accepted.",
+          "description": "Page dimensions don't match the product size declared on the profile (`expected_page_width_mm` / `expected_page_height_mm`). Tolerance defaults to 0.5mm; either orientation is accepted.",
           "default_severity": "warning"
         }
       ]
