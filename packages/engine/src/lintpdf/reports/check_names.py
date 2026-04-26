@@ -416,15 +416,31 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Document Structure ────────────────────────────────────────────────
     "LPDF_STRUCT_001": CheckInfo(
-        "JavaScript Found", "Document contains JavaScript which is not allowed in print workflows."
+        "JavaScript Found",
+        "Document contains JavaScript actions. Print workflows strip JS; "
+        "PDF/X profiles prohibit it outright. Remove before press.",
+        v2_ids=("M-17",),
     ),
     "LPDF_STRUCT_002": CheckInfo(
-        "Form Fields Present", "Interactive form fields detected — these won't print as expected."
+        "Form Fields Present",
+        "Interactive form fields (text inputs, buttons, dropdowns, "
+        "signatures) detected. Forms are stripped at press time and may "
+        "indicate the wrong file was uploaded.",
     ),
     "LPDF_STRUCT_003": CheckInfo(
-        "PDF Layers Detected", "Optional content layers (OCGs) are present."
+        "PDF Layers Detected",
+        "Optional Content Groups (OCGs / layers) are present. Layers are "
+        "valid in PDF/X-4 and later, but verify the intended layers are "
+        "marked printable and the rest are hidden — RIPs honour OCG "
+        "visibility.",
     ),
-    "LPDF_STRUCT_004": CheckInfo("Embedded Files", "Document contains embedded file attachments."),
+    "LPDF_STRUCT_004": CheckInfo(
+        "Embedded Files",
+        "Document carries embedded file attachments. Strip before press: "
+        "attachments inflate file size, complicate auditing, and are "
+        "disallowed by most PDF/X profiles.",
+        v2_ids=("M-19",),
+    ),
     # ── Document Info ─────────────────────────────────────────────────────
     "LPDF_DOC_001": CheckInfo(
         "Multiple Page Sizes",
@@ -432,7 +448,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Metadata ──────────────────────────────────────────────────────────
     "LPDF_META_001": CheckInfo(
-        "No XMP Metadata", "XMP metadata stream is missing — may be required by some standards."
+        "No XMP Metadata",
+        "Document has no XMP metadata stream. Required by PDF/X-4 and "
+        "GWG-2022 packaging profiles, and used by most MIS systems for "
+        "automation. Add an XMP block at export time.",
+        v2_ids=("M-06",),
     ),
     # ── Annotations ───────────────────────────────────────────────────────
     "LPDF_ANNOT_001": CheckInfo(
@@ -1303,35 +1323,62 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Document (extended) ─────────────────────────────────────────────────
     "LPDF_DOC_002": CheckInfo(
-        "Document has inconsistent page rotations",
-        "Document has inconsistent page rotations: N",
+        "Inconsistent Page Rotations",
+        "Pages declare differing /Rotate values — the document mixes "
+        "upright and rotated pages. Imposition tools and operator "
+        "workflows expect consistent orientation; verify this is "
+        "intentional.",
+        v2_ids=("P-15",),
     ),
     "LPDF_DOC_003": CheckInfo(
-        "Document has no title in Info dictionary",
-        "Document has no title in Info dictionary",
+        "Missing Document Title",
+        "Document Info dictionary has no /Title entry. Some MIS / "
+        "tracking systems display the filename instead, which loses "
+        "context after rename. Set /Title at export time.",
+        v2_ids=("M-03",),
     ),
     "LPDF_DOC_004": CheckInfo(
-        "Document is encrypted not allowed in print",
-        "Document is encrypted (not allowed in print workflows)",
+        "Document Is Encrypted",
+        "Document is password-protected or otherwise encrypted. RIPs "
+        "and prepress automation cannot reliably parse encrypted PDFs; "
+        "all PDF/X profiles prohibit encryption. Re-export without a "
+        "password.",
+        v2_ids=("M-12",),
     ),
     "LPDF_DOC_005": CheckInfo(
-        "Linearized PDF detected web-optimized may need",
-        "Linearized PDF detected (web-optimized, may need re-saving for print)",
+        "Linearized PDF",
+        "PDF is linearized (web-optimised — fast-web-view layout with a "
+        "linearization dictionary at the start). Harmless on press, but "
+        "many production tools re-save without linearization; flagged "
+        "for awareness.",
     ),
     "LPDF_DOC_006": CheckInfo(
-        "Incremental updates detected trailer has /Prev",
-        "Incremental updates detected (trailer has /Prev reference, file may contain stale data)",
+        "Incremental Updates Present",
+        "Trailer dictionary carries a /Prev reference — the file has "
+        "been incrementally updated rather than rewritten cleanly. Old "
+        "object versions remain in the file and may carry stale ink, "
+        "spot, or metadata data the RIP could pick up. Re-save with a "
+        "full rewrite.",
     ),
     "LPDF_DOC_007": CheckInfo(
-        "File size MB exceeds threshold", "File size (N MB) exceeds threshold (N MB)"
+        "File Size Exceeds Threshold",
+        "File size exceeds the configured maximum. Large files slow "
+        "ingest, RIP processing, and operator tools — verify embedded "
+        "images aren't oversized and consider sub-setting fonts.",
+        v2_ids=("M-34",),
     ),
     "LPDF_DOC_008": CheckInfo(
-        "Pre-separated pages detected pages with single",
-        "Pre-separated pages detected (N pages with single Separation color space)",
+        "Pre-Separated Pages Detected",
+        "One or more pages use a single Separation colour space — i.e. "
+        "the document is pre-separated rather than composite. Composite "
+        "PDF/X is the standard for press-side workflows; pre-separated "
+        "files require special handling.",
+        v2_ids=("M-28",),
     ),
     "LPDF_DOC_009": CheckInfo(
         "PDF Version Outside Profile Range",
         "The PDF header version sits outside the range the active preflight profile expects (below min_pdf_version or above max_pdf_version). Re-save with a matching compatibility setting.",
+        v2_ids=("M-01",),
     ),
     # ── veraPDF-backed Conformance ─────────────────────────────────────────
     "LPDF_PDFX_CONF": CheckInfo(

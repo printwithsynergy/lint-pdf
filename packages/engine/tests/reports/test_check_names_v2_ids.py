@@ -85,6 +85,51 @@ def test_box_001_maps_to_p03_and_p04():
     assert CHECK_NAMES["LPDF_BOX_001"].v2_ids == ("P-03", "P-04")
 
 
+def test_struct_001_maps_to_m17():
+    """M-17: JavaScript present (Wave D batch 6)."""
+    assert CHECK_NAMES["LPDF_STRUCT_001"].v2_ids == ("M-17",)
+
+
+def test_struct_004_maps_to_m19():
+    """M-19: Embedded files / attachments (Wave D batch 6)."""
+    assert CHECK_NAMES["LPDF_STRUCT_004"].v2_ids == ("M-19",)
+
+
+def test_meta_001_maps_to_m06():
+    """M-06: XMP metadata present — fires inverse (XMP missing) (Wave D batch 6)."""
+    assert CHECK_NAMES["LPDF_META_001"].v2_ids == ("M-06",)
+
+
+def test_doc_002_maps_to_p15():
+    """P-15: Mixed page orientation (Wave D batch 6)."""
+    assert CHECK_NAMES["LPDF_DOC_002"].v2_ids == ("P-15",)
+
+
+def test_doc_003_maps_to_m03():
+    """M-03: Document Title present — fires inverse (Wave D batch 6)."""
+    assert CHECK_NAMES["LPDF_DOC_003"].v2_ids == ("M-03",)
+
+
+def test_doc_004_maps_to_m12():
+    """M-12: Encryption present (Wave B catch-up T1)."""
+    assert CHECK_NAMES["LPDF_DOC_004"].v2_ids == ("M-12",)
+
+
+def test_doc_007_maps_to_m34():
+    """M-34: File size > limit (Wave D batch 6)."""
+    assert CHECK_NAMES["LPDF_DOC_007"].v2_ids == ("M-34",)
+
+
+def test_doc_008_maps_to_m28():
+    """M-28: Pre-separated pages detected (Wave D batch 6)."""
+    assert CHECK_NAMES["LPDF_DOC_008"].v2_ids == ("M-28",)
+
+
+def test_doc_009_maps_to_m01():
+    """M-01: PDF version (Wave B catch-up)."""
+    assert CHECK_NAMES["LPDF_DOC_009"].v2_ids == ("M-01",)
+
+
 def test_color_005_maps_to_c51():
     """C-51: Registration pseudo-colour as fill (Wave B catch-up T1)."""
     assert CHECK_NAMES["LPDF_COLOR_005"].v2_ids == ("C-51",)

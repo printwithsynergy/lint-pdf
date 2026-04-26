@@ -885,44 +885,44 @@
         },
         {
           "id": "LPDF_DOC_002",
-          "name": "Document has inconsistent page rotations",
-          "description": "Document has inconsistent page rotations: N",
+          "name": "Inconsistent Page Rotations",
+          "description": "Pages declare differing /Rotate values \u2014 the document mixes upright and rotated pages. Imposition tools and operator workflows expect consistent orientation; verify this is intentional.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_DOC_003",
-          "name": "Document has no title in Info dictionary",
-          "description": "Document has no title in Info dictionary",
+          "name": "Missing Document Title",
+          "description": "Document Info dictionary has no /Title entry. Some MIS / tracking systems display the filename instead, which loses context after rename. Set /Title at export time.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_DOC_004",
-          "name": "Document is encrypted not allowed in print",
-          "description": "Document is encrypted (not allowed in print workflows)",
+          "name": "Document Is Encrypted",
+          "description": "Document is password-protected or otherwise encrypted. RIPs and prepress automation cannot reliably parse encrypted PDFs; all PDF/X profiles prohibit encryption. Re-export without a password.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_DOC_005",
-          "name": "Linearized PDF detected web-optimized may need",
-          "description": "Linearized PDF detected (web-optimized, may need re-saving for print)",
+          "name": "Linearized PDF",
+          "description": "PDF is linearized (web-optimised \u2014 fast-web-view layout with a linearization dictionary at the start). Harmless on press, but many production tools re-save without linearization; flagged for awareness.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_DOC_006",
-          "name": "Incremental updates detected trailer has /Prev",
-          "description": "Incremental updates detected (trailer has /Prev reference, file may contain stale data)",
+          "name": "Incremental Updates Present",
+          "description": "Trailer dictionary carries a /Prev reference \u2014 the file has been incrementally updated rather than rewritten cleanly. Old object versions remain in the file and may carry stale ink, spot, or metadata data the RIP could pick up. Re-save with a full rewrite.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_DOC_007",
-          "name": "File size MB exceeds threshold",
-          "description": "File size (N MB) exceeds threshold (N MB)",
+          "name": "File Size Exceeds Threshold",
+          "description": "File size exceeds the configured maximum. Large files slow ingest, RIP processing, and operator tools \u2014 verify embedded images aren't oversized and consider sub-setting fonts.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_DOC_008",
-          "name": "Pre-separated pages detected pages with single",
-          "description": "Pre-separated pages detected (N pages with single Separation color space)",
+          "name": "Pre-Separated Pages Detected",
+          "description": "One or more pages use a single Separation colour space \u2014 i.e. the document is pre-separated rather than composite. Composite PDF/X is the standard for press-side workflows; pre-separated files require special handling.",
           "default_severity": "advisory"
         },
         {
@@ -940,25 +940,25 @@
         {
           "id": "LPDF_STRUCT_001",
           "name": "JavaScript Found",
-          "description": "Document contains JavaScript which is not allowed in print workflows.",
+          "description": "Document contains JavaScript actions. Print workflows strip JS; PDF/X profiles prohibit it outright. Remove before press.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_002",
           "name": "Form Fields Present",
-          "description": "Interactive form fields detected \u2014 these won't print as expected.",
+          "description": "Interactive form fields (text inputs, buttons, dropdowns, signatures) detected. Forms are stripped at press time and may indicate the wrong file was uploaded.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_003",
           "name": "PDF Layers Detected",
-          "description": "Optional content layers (OCGs) are present.",
+          "description": "Optional Content Groups (OCGs / layers) are present. Layers are valid in PDF/X-4 and later, but verify the intended layers are marked printable and the rest are hidden \u2014 RIPs honour OCG visibility.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_004",
           "name": "Embedded Files",
-          "description": "Document contains embedded file attachments.",
+          "description": "Document carries embedded file attachments. Strip before press: attachments inflate file size, complicate auditing, and are disallowed by most PDF/X profiles.",
           "default_severity": "advisory"
         },
         {
@@ -1030,7 +1030,7 @@
         {
           "id": "LPDF_META_001",
           "name": "No XMP Metadata",
-          "description": "XMP metadata stream is missing \u2014 may be required by some standards.",
+          "description": "Document has no XMP metadata stream. Required by PDF/X-4 and GWG-2022 packaging profiles, and used by most MIS systems for automation. Add an XMP block at export time.",
           "default_severity": "advisory"
         },
         {
