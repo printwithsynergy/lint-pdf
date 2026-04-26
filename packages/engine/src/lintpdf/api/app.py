@@ -10,6 +10,10 @@ from typing import Any
 
 from fastapi import FastAPI
 
+# V-05: import the decisions package eagerly so its ORM model registers
+# with ``Base.metadata`` before ``create_all`` runs in test fixtures and
+# any code path queries the table.
+from lintpdf import decisions as _decisions  # noqa: F401  (registration import)
 from lintpdf.api.routes import (
     admin,
     admin_health,
