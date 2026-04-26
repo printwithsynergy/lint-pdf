@@ -13,6 +13,7 @@ dockerfilePath = "packages/engine/Dockerfile"
 watchPatterns = [
     "packages/engine/src/**",
     "packages/engine/scripts/**",
+    "packages/engine/alembic/**",
     "packages/engine/Dockerfile",
     "packages/engine/pyproject.toml",
     "packages/engine/railway.toml",
