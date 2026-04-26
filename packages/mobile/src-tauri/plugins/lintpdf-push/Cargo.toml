@@ -1,0 +1,21 @@
+[package]
+name = "lintpdf-push"
+version = "0.1.0"
+edition = "2021"
+description = "Tauri 2 mobile plugin for LintPDF push-notification token registration (FCM/APNs)"
+license = "Apache-2.0 OR MIT"
+
+[lib]
+crate-type = ["lib"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+log = "0.4"
+
+[dependencies.tauri]
+version = "2"
+
+[build-dependencies]
+tauri-plugin = { version = "2", features = ["build"] }

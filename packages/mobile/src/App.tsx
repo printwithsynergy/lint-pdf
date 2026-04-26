@@ -8,6 +8,10 @@ import { SettingsRoute } from "./routes/SettingsRoute";
 import { ViewRoute } from "./routes/ViewRoute";
 import { loadTenant } from "./lib/tenant";
 import { onDeepLink } from "./lib/tauri";
+import {
+  clearPushRegistrationCache,
+  registerDeviceForPush,
+} from "./lib/push";
 import type { CapturedTenant } from "./lib/types";
 
 export default function App() {
@@ -26,6 +30,15 @@ export default function App() {
       cancelled = true;
     };
   }, []);
+
+  // Register for push once the captured tenant is known. Re-runs
+  // when the tenant changes so the fan-out targets the right
+  // (user, tenantId) pair. Native-only — short-circuits in web
+  // preview and on desktop.
+  useEffect(() => {
+    if (!tenant) return;
+    void registerDeviceForPush(tenant.tenantId);
+  }, [tenant]);
 
   // Universal-link / App Link taps land here once the app is open.
   // The native shell forwards them through `tauri-plugin-deep-link`;
@@ -98,7 +111,10 @@ export default function App() {
                 <Layout tenant={tenant}>
                   <SettingsRoute
                     tenant={tenant}
-                    onChangeTenant={() => setTenant(null)}
+                    onChangeTenant={() => {
+                      clearPushRegistrationCache();
+                      setTenant(null);
+                    }}
                   />
                 </Layout>
               }

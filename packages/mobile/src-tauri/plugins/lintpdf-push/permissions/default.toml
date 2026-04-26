@@ -1,0 +1,8 @@
+"$schema" = "schemas/schema.json"
+
+[default]
+description = "Default permissions for the LintPDF push-notification plugin: register for FCM/APNs tokens and request user permission to display banners."
+permissions = [
+  "allow-register-for-push",
+  "allow-request-permission",
+]

@@ -198,6 +198,7 @@ pub fn run() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(lintpdf_push::init())
         .setup(|app| {
             app.manage(AppState::default());
             Ok(())

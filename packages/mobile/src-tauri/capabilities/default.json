@@ -19,6 +19,7 @@
     "store:allow-delete",
     "store:allow-clear",
     "os:default",
-    "os:allow-platform"
+    "os:allow-platform",
+    "lintpdf-push:default"
   ]
 }

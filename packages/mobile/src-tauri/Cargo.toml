@@ -29,6 +29,10 @@ tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-notification = "2"
 tauri-plugin-os = "2"
+# Local push-token registration plugin. Lives in this workspace
+# at plugins/lintpdf-push so the Swift / Kotlin code is part of
+# the LintPDF source tree (no third-party plugin maturity risk).
+lintpdf-push = { path = "plugins/lintpdf-push" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 log = "0.4"
