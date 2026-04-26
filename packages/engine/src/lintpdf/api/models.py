@@ -388,6 +388,18 @@ class JobFinding(Base):
     audit_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
     audit_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Q-C4 / Q-C5 — AI-Explain cache. Populated by
+    # ``lintpdf.ai.explain.explain_finding`` after a successful Claude
+    # Haiku 4.5 call; left NULL until the dashboard / SDK calls the
+    # explain endpoint. Caching avoids paying for the same explanation
+    # on every page reload. Bumping the model id (``ai_explanation_model``)
+    # signals stale data so a future cache-invalidation pass can refresh.
+    ai_explanation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ai_explanation_model: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ai_explanation_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # Relationships
     job: Mapped[Job] = relationship(back_populates="findings")
 
