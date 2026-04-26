@@ -290,6 +290,8 @@ export const docSections: DocSection[] = [
         description: "Download-and-go Postman JSON for both tenant + admin.",
       },
       {
+        // /docs/webhooks is rendered by WebhooksPage.tsx — do not add a
+        // markdown file at content/docs/webhooks.md (it would be unreachable).
         slug: "webhooks",
         label: "Webhooks",
         description: "Register endpoints, verify HMAC, replay dead letters.",
