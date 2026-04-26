@@ -15,6 +15,10 @@ def test_check_info_accepts_v2_ids():
     assert info.v2_ids == ("D-08", "D-09")
 
 
+def test_ai_die_detected_maps_to_d01():
+    assert CHECK_NAMES["AI_DIE_001"].v2_ids == ("D-01",)
+
+
 def test_zorder_maps_to_d06():
     assert "D-06" in CHECK_NAMES["LPDF_DIE_ZORDER"].v2_ids
 

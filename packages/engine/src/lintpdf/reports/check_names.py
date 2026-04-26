@@ -574,6 +574,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "AI_DIE_001": CheckInfo(
         "Dieline Detected",
         "A dieline was detected via spot name, layer name, or AI vision fallback.",
+        v2_ids=("D-01",),
     ),
     "AI_DIE_002": CheckInfo(
         "No Dieline Detected",
