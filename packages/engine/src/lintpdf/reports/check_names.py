@@ -227,7 +227,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Page Geometry ─────────────────────────────────────────────────────
     "LPDF_BOX_001": CheckInfo(
-        "Missing Trim/Bleed Box", "Page boundaries needed for cutting and bleed are not defined."
+        "Missing Trim/Bleed Box",
+        "Page boundaries needed for cutting and bleed are not defined. The "
+        "analyzer emits one finding per missing box; the discriminator lives "
+        "in `details.missing_box` (`TrimBox` or `BleedBox`).",
+        v2_ids=("P-03", "P-04"),
     ),
     "LPDF_BOX_002": CheckInfo(
         "Box Hierarchy Violated", "Page boxes (Media, Crop, Bleed, Trim) are not properly nested."

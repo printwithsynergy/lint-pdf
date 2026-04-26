@@ -35,6 +35,16 @@ def test_content_outside_maps_to_d15():
     assert "D-15" in CHECK_NAMES["LPDF_DIE_CONTENT_OUTSIDE"].v2_ids
 
 
+def test_box_001_maps_to_p03_and_p04():
+    """LPDF_BOX_001 covers both TrimBox missing (P-03) and BleedBox missing (P-04).
+
+    The analyzer (lintpdf/analyzers/page_geometry.py) emits one finding per
+    missing box, discriminated by ``details["missing_box"]``. The CheckInfo
+    code is shared because the underlying defect class is identical.
+    """
+    assert CHECK_NAMES["LPDF_BOX_001"].v2_ids == ("P-03", "P-04")
+
+
 def test_get_check_info_fallback_has_empty_v2_ids():
     info = get_check_info("LPDF_NEVER_HEARD_OF")
     assert info.v2_ids == ()

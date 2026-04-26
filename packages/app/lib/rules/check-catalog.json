@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 421,
+  "total_checks": 425,
   "categories": [
     {
       "id": "image",
@@ -704,6 +704,12 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_TEXT_ON_DIELINE_PATH",
+          "name": "Text Overlaps Dieline Cut Path",
+          "description": "Text region overlaps the dieline cut path. At the cutter, glyphs will be physically sliced \u2014 the printed product reads as a typo even though the source artwork is correct. Distinct from text-near-fold (clearance) \u2014 this fires on actual intersection. Reposition the text or move the dieline before re-exporting.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_TEXT_REVERSE_THIN",
           "name": "Reverse Text Minimum Stroke",
           "description": "Small white (reverse / knockout) text was rendered without a stroke. Add a \u22650.5pt stroke or use \u226512pt for legibility on press.",
@@ -808,7 +814,7 @@
         {
           "id": "LPDF_BOX_001",
           "name": "Missing Trim/Bleed Box",
-          "description": "Page boundaries needed for cutting and bleed are not defined.",
+          "description": "Page boundaries needed for cutting and bleed are not defined. The analyzer emits one finding per missing box; the discriminator lives in `details.missing_box` (`TrimBox` or `BleedBox`).",
           "default_severity": "warning"
         },
         {
@@ -2324,6 +2330,12 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_DIE_BLEND_MODE",
+          "name": "Dieline Has Non-Normal Blend Mode",
+          "description": "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork \u2014 non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong colour. Set blend mode to Normal on the dieline layer.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_DIE_CONTENT_OUTSIDE",
           "name": "Content Outside Dieline",
           "description": "Paint bbox extends beyond the dieline polygon envelope by more than the configured tolerance. Content may be clipped or trimmed in production.",
@@ -2357,6 +2369,12 @@
           "id": "LPDF_DIE_MULTI_COLOR",
           "name": "Dieline Multi-Colour",
           "description": "Dieline layer / spot contains multiple stroke colours \u2014 a clean cut path should be exactly one ink.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_OPACITY_LOW",
+          "name": "Dieline Has Reduced Opacity",
+          "description": "Dieline spot is painted with alpha < 100% (semi-transparent). Cutter spots are layer-extracted process controls, not artwork \u2014 partial transparency does not survive RIP separation, so the cut plate either drops to zero coverage or composites into the substrate. Set opacity to 100% on the dieline layer in Illustrator / InDesign.",
           "default_severity": "advisory"
         },
         {
@@ -2627,6 +2645,12 @@
           "id": "LPDF_GRAIN_MISSING",
           "name": "Grain Direction Missing",
           "description": "XMP metadata carries no grain-direction key. Downstream press / finishing operations may not get the substrate orientation from this PDF.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_PAGE_BLEED_PAST_DIELINE",
+          "name": "Page BleedBox Extends Past Dieline",
+          "description": "The page's declared /BleedBox extends past the dieline polygon envelope. The press-side bleed allowance does not fit within the cutter region \u2014 imposition will waste paper or clip adjacent units on a multi-up sheet. Either tighten the BleedBox in the export profile or expand the dieline so the bleed sits inside it.",
           "default_severity": "advisory"
         },
         {
