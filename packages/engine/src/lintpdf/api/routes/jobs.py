@@ -416,7 +416,6 @@ async def submit_job(  # skipcq: PY-R1000
     external_report_bytes: bytes | None = None
     resolved_mapping_id: uuid_mod.UUID | None = None
     if source_enum is PreflightSource.EXTERNAL and external_report is not None:
-        from lintpdf.api.models import TenantImportMapping
         from lintpdf.imports.base import ParserError
         from lintpdf.imports.custom import CustomMappingParser
         from lintpdf.imports.detect import (
@@ -454,26 +453,40 @@ async def submit_job(  # skipcq: PY-R1000
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail="mapping_id must be a valid UUID.",
                 ) from exc
-            mapping_row = (
-                db.query(TenantImportMapping)
+            # Phase 0.7 PR-B4-final — mappings live in the unified-config
+            # substrate now: ``ToggleOverride(toggle_id='import_mapping',
+            # scope=TENANT)`` value dict keyed by str(uuid).
+            from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
+
+            mapping_override = (
+                db.query(ToggleOverride)
                 .filter(
-                    TenantImportMapping.id == candidate_mapping_uuid,
-                    TenantImportMapping.tenant_id == tenant.id,
+                    ToggleOverride.toggle_id == "import_mapping",
+                    ToggleOverride.scope == ToggleScope.TENANT,
+                    ToggleOverride.scope_id == str(tenant.id),
                 )
                 .first()
             )
-            if mapping_row is None:
+            mapping_value = (
+                (mapping_override.value or {}).get(str(candidate_mapping_uuid))
+                if mapping_override
+                else None
+            )
+            if mapping_value is None:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=("Import mapping not found or not owned by the authenticated tenant."),
                 )
-            if not mapping_row.is_active:
+            if not mapping_value.get("is_active", True):
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                     detail="Import mapping is inactive.",
                 )
             try:
-                CustomMappingParser(mapping_row.config, mapping_id=str(mapping_row.id))
+                CustomMappingParser(
+                    dict(mapping_value.get("config") or {}),
+                    mapping_id=str(candidate_mapping_uuid),
+                )
             except ParserError as exc:
                 raise HTTPException(
                     status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

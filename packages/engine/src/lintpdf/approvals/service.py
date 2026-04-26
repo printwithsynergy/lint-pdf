@@ -11,7 +11,6 @@ from uuid import UUID, uuid4
 
 from lintpdf.api.models import (
     ApprovalChain,
-    ApprovalChainTemplate,
     ApprovalStep,
     BrandProfile,
     Job,
@@ -404,13 +403,16 @@ def _update_job_verdict(db: Session, chain: ApprovalChain, verdict: str) -> None
 
     template_name = "Ad-hoc Approval Chain"
     if chain.template_id:
-        template = (
-            db.query(ApprovalChainTemplate)
-            .filter(ApprovalChainTemplate.id == chain.template_id)
-            .first()
+        # Phase 0.7 PR-B4-final — templates live in the unified-config
+        # substrate keyed by str(template_id). The legacy
+        # ``approval_chain_templates`` table is no longer queried.
+        from lintpdf.approvals import template_storage
+
+        template_value = template_storage.get_template(
+            db, chain.tenant_id, chain.template_id
         )
-        if template:
-            template_name = template.name
+        if template_value is not None:
+            template_name = template_value.get("name") or template_name
 
     all_steps = (
         db.query(ApprovalStep)

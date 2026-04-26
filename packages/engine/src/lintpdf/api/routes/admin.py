@@ -1542,32 +1542,66 @@ async def list_all_profiles(
     list is always included in full because it's bounded by the profile
     registry (<20 entries).
     """
-    from lintpdf.api.models import CustomProfile
+    # Phase 0.7 PR-B4-final — custom profiles live in the unified-config
+    # substrate now. Walk every tenant's ``profile_rules`` ToggleOverride
+    # row, expand the per-profile dict, and apply pagination across the
+    # flattened list (cross-tenant pagination so the admin view stays
+    # ordered by tenant).
+    import uuid as _uuid_mod
+    from types import SimpleNamespace
+
     from lintpdf.profiles.registry import ProfileRegistry
     from lintpdf.profiles.schema import PreflightProfile
+    from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
 
     registry = ProfileRegistry()
     system: list[AdminProfileSummary] = [
         _profile_summary_from_builtin(pid, registry.get(pid)) for pid in registry.list_profiles()
     ]
 
-    custom_rows = (
-        db.query(CustomProfile)
-        .order_by(CustomProfile.tenant_id, CustomProfile.id)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+    override_rows = (
+        db.query(ToggleOverride)
+        .filter(
+            ToggleOverride.toggle_id == "profile_rules",
+            ToggleOverride.scope == ToggleScope.TENANT,
+        )
         .all()
     )
+
+    flattened: list[tuple[Any, SimpleNamespace, dict]] = []
+    for row in override_rows:
+        try:
+            tenant_uuid = _uuid_mod.UUID(row.scope_id)
+        except (ValueError, TypeError):
+            continue
+        for profile_id, value in (row.value or {}).items():
+            flattened.append(
+                (
+                    tenant_uuid,
+                    SimpleNamespace(
+                        profile_id=profile_id,
+                        preflight_profile_json=value.get("preflight_profile_json") or {},
+                    ),
+                    value,
+                )
+            )
+
+    flattened.sort(key=lambda t: (str(t[0]), t[1].profile_id))
+    page_slice = flattened[(page - 1) * page_size : (page - 1) * page_size + page_size]
+
+    tenant_ids = {t[0] for t in page_slice}
     tenants = {
         t.id: t
-        for t in db.query(Tenant).filter(Tenant.id.in_({r.tenant_id for r in custom_rows})).all()
-    }
+        for t in db.query(Tenant).filter(Tenant.id.in_(tenant_ids)).all()
+    } if tenant_ids else {}
 
     by_tenant: dict[Any, list[AdminProfileSummary]] = {}
-    for row in custom_rows:
+    for tenant_uuid, profile_ns, _value in page_slice:
         try:
-            fp = PreflightProfile.model_validate(row.preflight_profile_json)
-            by_tenant.setdefault(row.tenant_id, []).append(_profile_summary_from_custom(row, fp))
+            fp = PreflightProfile.model_validate(profile_ns.preflight_profile_json)
+            by_tenant.setdefault(tenant_uuid, []).append(
+                _profile_summary_from_custom(profile_ns, fp)
+            )
         except Exception:
             continue
 
@@ -1597,7 +1631,7 @@ async def get_tenant_profile(
     _key: str = Depends(_verify_admin_key),
 ) -> AdminProfileDetailResponse:
     """Get a tenant's custom profile detail (admin, any tenant)."""
-    from lintpdf.api.models import CustomProfile
+    from lintpdf.profiles import storage as _profile_storage
     from lintpdf.profiles.registry import ProfileRegistry
     from lintpdf.profiles.schema import PreflightProfile
 
@@ -1624,18 +1658,14 @@ async def get_tenant_profile(
         )
 
     tid = _parse_uuid(tenant_id)
-    row: CustomProfile | None = (
-        db.query(CustomProfile)
-        .filter(CustomProfile.tenant_id == tid, CustomProfile.profile_id == profile_id)
-        .first()
-    )
-    if row is None:
+    value = _profile_storage.get_profile(db, tid, profile_id)
+    if value is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Profile '{profile_id}' not found for tenant {tenant_id}.",
         )
     tenant = db.query(Tenant).filter(Tenant.id == tid).first()
-    fp = PreflightProfile.model_validate(row.preflight_profile_json)
+    fp = PreflightProfile.model_validate(value.get("preflight_profile_json") or {})
     return AdminProfileDetailResponse(
         profile_id=profile_id,
         tenant_id=str(tid),
@@ -1663,7 +1693,7 @@ async def upsert_tenant_profile(
     _key: str = Depends(_verify_admin_key),
 ) -> AdminProfileDetailResponse:
     """Create or update a tenant's custom profile (admin, any tenant)."""
-    from lintpdf.api.models import CustomProfile
+    from lintpdf.profiles import storage as _profile_storage
     from lintpdf.profiles.registry import ProfileRegistry
     from lintpdf.profiles.schema import PreflightProfile
 
@@ -1690,23 +1720,29 @@ async def upsert_tenant_profile(
             detail=f"Tenant '{tenant_id}' not found.",
         )
 
-    existing: CustomProfile | None = (
-        db.query(CustomProfile)
-        .filter(CustomProfile.tenant_id == tid, CustomProfile.profile_id == profile_id)
-        .first()
+    existing = _profile_storage.get_profile(db, tid, profile_id)
+    now = _profile_storage.now_iso()
+    new_value = (
+        {
+            **existing,
+            "preflight_profile_json": fp.model_dump(mode="json"),
+            "updated_at": now,
+        }
+        if existing is not None
+        else {
+            "id": str(uuid_mod.uuid4()),
+            "profile_id": profile_id,
+            "preflight_profile_json": fp.model_dump(mode="json"),
+            "created_at": now,
+            "updated_at": now,
+        }
     )
-    if existing:
-        existing.preflight_profile_json = fp.model_dump(mode="json")
-    else:
-        db.add(
-            CustomProfile(
-                id=uuid_mod.uuid4(),
-                tenant_id=tid,
-                profile_id=profile_id,
-                preflight_profile_json=fp.model_dump(mode="json"),
-            )
-        )
-    db.commit()
+
+    def _mutator(profiles: dict) -> dict:
+        profiles[profile_id] = new_value
+        return profiles
+
+    _profile_storage.mutate_profiles(db, tenant_id=tid, mutator=_mutator)
 
     return AdminProfileDetailResponse(
         profile_id=profile_id,
@@ -1734,21 +1770,20 @@ async def delete_tenant_profile(
     _key: str = Depends(_verify_admin_key),
 ) -> None:
     """Delete a tenant's custom profile (admin, any tenant)."""
-    from lintpdf.api.models import CustomProfile
+    from lintpdf.profiles import storage as _profile_storage
 
     tid = _parse_uuid(tenant_id)
-    row: CustomProfile | None = (
-        db.query(CustomProfile)
-        .filter(CustomProfile.tenant_id == tid, CustomProfile.profile_id == profile_id)
-        .first()
-    )
-    if row is None:
+    if _profile_storage.get_profile(db, tid, profile_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Profile '{profile_id}' not found for tenant {tenant_id}.",
         )
-    db.delete(row)
-    db.commit()
+
+    def _mutator(profiles: dict) -> dict:
+        profiles.pop(profile_id, None)
+        return profiles
+
+    _profile_storage.mutate_profiles(db, tenant_id=tid, mutator=_mutator)
 
 
 # ── Tenant entitlement overrides ──────────────────────────────
@@ -4300,7 +4335,8 @@ async def clone_system_profile_to_tenant(
     the source system preset do not propagate. If ``new_profile_id`` is
     omitted, derives one as ``{source}-custom``.
     """
-    from lintpdf.api.models import CustomProfile, SystemProfile
+    from lintpdf.api.models import SystemProfile
+    from lintpdf.profiles import storage as _profile_storage
 
     tenant = _get_tenant(db, tenant_id)
     sys_row: SystemProfile | None = (
@@ -4315,12 +4351,7 @@ async def clone_system_profile_to_tenant(
     new_id = body.new_profile_id or f"{profile_id}-custom"
 
     # Uniqueness guard inside the tenant's namespace.
-    existing: CustomProfile | None = (
-        db.query(CustomProfile)
-        .filter(CustomProfile.tenant_id == tenant.id, CustomProfile.profile_id == new_id)
-        .first()
-    )
-    if existing is not None:
+    if _profile_storage.get_profile(db, tenant.id, new_id) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=(
@@ -4333,18 +4364,23 @@ async def clone_system_profile_to_tenant(
     if body.new_name:
         payload["name"] = body.new_name
 
-    row = CustomProfile(
-        id=uuid_mod.uuid4(),
-        tenant_id=tenant.id,
-        profile_id=new_id,
-        preflight_profile_json=payload,
-    )
-    db.add(row)
-    db.commit()
-    db.refresh(row)
+    now = _profile_storage.now_iso()
+    new_value = {
+        "id": str(uuid_mod.uuid4()),
+        "profile_id": new_id,
+        "preflight_profile_json": payload,
+        "created_at": now,
+        "updated_at": now,
+    }
+
+    def _mutator(profiles: dict) -> dict:
+        profiles[new_id] = new_value
+        return profiles
+
+    _profile_storage.mutate_profiles(db, tenant_id=tenant.id, mutator=_mutator)
     return {
         "tenant_id": str(tenant.id),
-        "profile_id": row.profile_id,
+        "profile_id": new_id,
         "source_system_profile_id": profile_id,
     }
 
