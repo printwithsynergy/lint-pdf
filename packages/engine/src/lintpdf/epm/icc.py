@@ -238,12 +238,77 @@ def is_in_gamut(
     within ``tolerance_de`` ΔE76. sRGB is the reference target since
     every digital press maps through a near-sRGB-equivalent gamut at
     the proof stage; substrate-specific profiles plug in via
-    :func:`is_in_gamut_for_profile` once the EPM-Advanced analyzers
-    ship.
+    :func:`is_in_gamut_for_profile`.
     """
     rgb = lab_to_rgb(lab)
     round_tripped = rgb_to_lab(rgb)
     return lab_distance_de76(lab, round_tripped) <= tolerance_de
+
+
+# ── substrate-specific profile loading (Q-C1 follow-up) ─────────────
+
+
+class ProfileLoadError(RuntimeError):
+    """Raised when a substrate ICC profile can't be loaded.
+
+    Wraps the underlying ``ImageCms.PyCMSError`` (or ``OSError`` for
+    missing files) so analyzers handle a single exception class.
+    """
+
+
+@lru_cache(maxsize=32)
+def load_profile(path: str) -> ImageCmsProfile:
+    """Load + memoise a substrate-specific ICC profile from disk.
+
+    The cache is keyed by the path string (not ``Path``) so callers
+    can reuse the profile across many findings without re-parsing the
+    .icc payload. Raises :class:`ProfileLoadError` when the file is
+    missing or the bytes aren't a valid ICC profile.
+    """
+    try:
+        return ImageCms.getOpenProfile(path)
+    except (ImageCms.PyCMSError, OSError) as exc:
+        raise ProfileLoadError(
+            f"failed to load ICC profile from {path!r}: {exc}"
+        ) from exc
+
+
+def is_in_gamut_for_profile(
+    lab: tuple[float, float, float],
+    *,
+    profile: ImageCmsProfile,
+    tolerance_de: float = IN_GAMUT_DELTA_E,
+) -> bool:
+    """Round-trip ``lab`` through a substrate-specific output profile.
+
+    The profile must be a 3- or 4-channel output profile (``RGB`` or
+    ``CMYK``). The Lab → device-space → Lab round-trip clamps the
+    colour to the profile's gamut; if the recovered Lab differs from
+    the input by more than ``tolerance_de`` ΔE76, the colour can't
+    reproduce on that substrate.
+
+    Builds + caches the forward / reverse transforms via
+    :func:`_lab_profile_transforms`, so a busy analyzer hitting many
+    findings against the same profile pays the transform setup cost
+    exactly once per profile pointer.
+    """
+    forward, reverse = _lab_profile_transforms(profile)
+    L, a, b = lab
+    pixel_in = (
+        max(0, min(255, round(L * 255 / 100))),
+        max(0, min(255, round(a + 128))),
+        max(0, min(255, round(b + 128))),
+    )
+    src = Image.new("LAB", (1, 1), color=pixel_in)
+    via_device = ImageCms.applyTransform(src, forward)
+    back = ImageCms.applyTransform(via_device, reverse)
+    px = back.getpixel((0, 0))
+    recovered = (
+        px[0] * 100.0 / 255.0,
+        px[1] - 128.0,
+        px[2] - 128.0,
+    )
+    return lab_distance_de76(lab, recovered) <= tolerance_de
 
 
 # ── transforms (cached) ──────────────────────────────────────────────
@@ -269,15 +334,55 @@ def _lab_to_rgb_transform() -> ImageCms.ImageCmsTransform:
     )
 
 
+def _lab_profile_transforms(
+    profile: ImageCmsProfile,
+) -> tuple[ImageCms.ImageCmsTransform, ImageCms.ImageCmsTransform]:
+    """Build (Lab→device, device→Lab) transform pair for ``profile``.
+
+    Memoised by the profile's id() so the same loaded profile reuses
+    its transforms across analyzer calls. Auto-detects the device
+    space from the profile's ColorSpace tag (``RGB`` or ``CMYK``);
+    other spaces raise :class:`ProfileLoadError`.
+    """
+    return _lab_profile_transforms_cached(id(profile), profile)
+
+
+@lru_cache(maxsize=32)
+def _lab_profile_transforms_cached(
+    _profile_key: int,
+    profile: ImageCmsProfile,
+) -> tuple[ImageCms.ImageCmsTransform, ImageCms.ImageCmsTransform]:
+    color_space = profile.profile.xcolor_space.strip()
+    if color_space == "RGB":
+        device_mode = "RGB"
+    elif color_space == "CMYK":
+        device_mode = "CMYK"
+    else:
+        raise ProfileLoadError(
+            f"unsupported profile color space {color_space!r};"
+            " is_in_gamut_for_profile expects RGB or CMYK output profiles"
+        )
+    forward = ImageCms.buildTransformFromOpenProfiles(
+        lab_profile(), profile, "LAB", device_mode
+    )
+    reverse = ImageCms.buildTransformFromOpenProfiles(
+        profile, lab_profile(), device_mode, "LAB"
+    )
+    return forward, reverse
+
+
 __all__ = [
     "IN_GAMUT_DELTA_E",
     "JND_DELTA_E_2000",
+    "ProfileLoadError",
     "is_in_gamut",
+    "is_in_gamut_for_profile",
     "lab_distance_de76",
     "lab_distance_de94",
     "lab_distance_de2000",
     "lab_profile",
     "lab_to_rgb",
+    "load_profile",
     "rgb_to_lab",
     "srgb_profile",
 ]
