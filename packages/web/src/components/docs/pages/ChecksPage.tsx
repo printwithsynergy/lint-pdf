@@ -213,6 +213,10 @@ export default function ChecksPage() {
               desc: "Dieline painted with non-Normal blend mode (D-08) — RIP will drop or composite the cutter plate",
             },
             {
+              id: "LPDF_DIE_OPACITY_LOW",
+              desc: "Dieline painted with reduced opacity (D-09) — partial alpha does not survive RIP separation",
+            },
+            {
               id: "LPDF_DIE_AS_ART",
               desc: "Dieline spot used as a fill (D-15) — cutter will follow the filled region as a closed path",
             },
