@@ -189,6 +189,36 @@ def check_dieline_quality(
             )
         )
 
+    # D-08 — dieline painted with a non-Normal blend mode. Cutter spots
+    # are control plates, not artwork; any blend mode other than Normal
+    # will fail to survive RIP separation. Severity is WARNING because
+    # depending on the RIP the dieline can either drop entirely or be
+    # composited into the substrate plate — both are press-side defects.
+    if spot_name and signals.dieline_blend_mode_violations:
+        modes_seen = sorted({bm for _, bm in signals.dieline_blend_mode_violations})
+        violation_count = len(signals.dieline_blend_mode_violations)
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_BLEND_MODE",
+                severity=Severity.WARNING,
+                message=(
+                    f"Dieline '{spot_name}' painted with non-Normal blend "
+                    f"mode(s) {modes_seen} on page 1 ({violation_count} paint "
+                    f"op(s)) — RIP will drop or composite the cutter plate"
+                ),
+                page_num=1,
+                details={
+                    "spot_name": spot_name,
+                    "violation_count": violation_count,
+                    "blend_modes": modes_seen,
+                    "first_violation_op_idx": signals.dieline_blend_mode_first_op_idx,
+                },
+                iso_clause="ISO 32000-2:2020 §11.6.2 / ISO 19593-1 §5.3",
+                object_id=spot_name,
+                object_type="spot_color",
+            )
+        )
+
     # T3-D01 — content on dieline layer (OCG-based). Fires when the
     # walker saw non-dieline paint ops inside a dieline-named OCG
     # marked-content block.
@@ -664,6 +694,8 @@ class _QualitySignals:
         "braille_paint_bboxes",
         "braille_spots",
         "crease_line_bboxes",
+        "dieline_blend_mode_first_op_idx",
+        "dieline_blend_mode_violations",
         "dieline_line_bboxes",
         "dieline_ocg_names",
         "fill_as_dieline_area_pts2",
@@ -722,6 +754,12 @@ class _QualitySignals:
         self.braille_spots: list[str] = []
         self.braille_paint_bboxes: list[tuple[float, float, float, float]] = []
         self.non_braille_in_braille_zone: int = 0
+        # D-08 — dieline paint ops painted with a non-Normal blend mode.
+        # Stored as (op_idx, blend_mode_name) pairs. The cutter spot is
+        # a layer-extracted process control, not artwork — any blend
+        # mode other than Normal will not survive RIP separation.
+        self.dieline_blend_mode_violations: list[tuple[int, str]] = []
+        self.dieline_blend_mode_first_op_idx: int = -1
 
 
 # Paint operators split into stroke-only, fill-only, both.
@@ -977,6 +1015,11 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
         # image/path fill; op (lowercase) governs fill specifically when
         # explicitly set. We track the stroking flag for T3-D03.
         op_stroke: bool = False
+        # D-08 — current blend mode (ISO 32000-2 §11.6.2). Default is
+        # Normal per spec. Only non-Normal modes set on the dieline spot
+        # paint trigger LPDF_DIE_BLEND_MODE.
+        current_blend_mode: str = "Normal"
+        blend_mode_stack: list[str] = []
 
         # Compound-path subpath accumulator — we need total bbox area
         # for T3-D15 severity escalation.
@@ -1049,6 +1092,20 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                         op_value = gs_entry.get("/OP")
                         if op_value is not None:
                             op_stroke = bool(op_value)
+                        bm_value = gs_entry.get("/BM")
+                        if bm_value is not None:
+                            # /BM may be a Name (single mode) or an Array
+                            # of names (first applicable per §11.6.4.4).
+                            # pikepdf.Name reports __iter__ but raises on
+                            # actual iteration, so isinstance against
+                            # pikepdf.Array is the safe discriminator.
+                            if isinstance(bm_value, pikepdf.Array):
+                                with contextlib.suppress(Exception):
+                                    first = next(iter(bm_value), None)
+                                    if first is not None:
+                                        current_blend_mode = str(first).lstrip("/")
+                            else:
+                                current_blend_mode = str(bm_value).lstrip("/")
                 except Exception:
                     pass
 
@@ -1104,12 +1161,15 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                 if ocg_stack:
                     ocg_stack.pop()
 
-            # Graphics-state save / restore — push/pop CTM.
+            # Graphics-state save / restore — push/pop CTM + blend mode.
             elif op == "q":
                 ctm_stack.append(ctm)
+                blend_mode_stack.append(current_blend_mode)
             elif op == "Q":
                 if ctm_stack:
                     ctm = ctm_stack.pop()
+                if blend_mode_stack:
+                    current_blend_mode = blend_mode_stack.pop()
 
             # Current Transformation Matrix update.
             elif op == "cm" and len(operands) >= 6:
@@ -1233,6 +1293,18 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                     signals.fill_as_dieline_area_pts2 += area
                     if signals.first_fill_as_dieline_idx < 0:
                         signals.first_fill_as_dieline_idx = op_idx
+
+                # D-08 — dieline paint with non-Normal blend mode.
+                # ISO 32000-2 §11.6.2: blend modes other than Normal
+                # composite the painted layer with the backdrop, but
+                # the cutter spot is a layer-extracted process control.
+                # Any blend mode other than Normal will be silently
+                # collapsed by the RIP, leaving the dieline either
+                # missing or painted in the wrong colour on the plate.
+                if (stroke_is_dieline or fill_is_dieline) and current_blend_mode != "Normal":
+                    signals.dieline_blend_mode_violations.append((op_idx, current_blend_mode))
+                    if signals.dieline_blend_mode_first_op_idx < 0:
+                        signals.dieline_blend_mode_first_op_idx = op_idx
 
                 # T3-D01 — any paint inside a dieline-named OCG that's
                 # NOT using the dieline spot is foreign content on the

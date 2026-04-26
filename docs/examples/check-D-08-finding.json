@@ -1,0 +1,17 @@
+{
+  "$comment": "Example LPDF_DIE_BLEND_MODE finding (D-08). Emitted when a dieline / cutter spot is painted with a blend mode other than Normal — non-Normal blend modes do not survive RIP separation, so the cutter plate ends up missing or the wrong colour. ISO 32000-2:2020 §11.6.2 / ISO 19593-1 §5.3.",
+  "inspection_id": "LPDF_DIE_BLEND_MODE",
+  "v2_id": "D-08",
+  "severity": "warning",
+  "message": "Dieline 'Dieline' painted with non-Normal blend mode(s) ['Multiply'] on page 1 (1 paint op(s)) — RIP will drop or composite the cutter plate",
+  "page_num": 1,
+  "object_id": "Dieline",
+  "object_type": "spot_color",
+  "iso_clause": "ISO 32000-2:2020 §11.6.2 / ISO 19593-1 §5.3",
+  "details": {
+    "spot_name": "Dieline",
+    "violation_count": 1,
+    "blend_modes": ["Multiply"],
+    "first_violation_op_idx": 4
+  }
+}

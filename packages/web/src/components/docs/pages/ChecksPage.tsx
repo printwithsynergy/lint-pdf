@@ -197,6 +197,35 @@ export default function ChecksPage() {
             },
           ],
         },
+        {
+          category: "Dieline / Cutter",
+          inspections: [
+            {
+              id: "LPDF_DIE_ZORDER",
+              desc: "Dieline drawn below artwork (D-06) — cutter spot must paint on top of every other layer",
+            },
+            {
+              id: "LPDF_DIE_KNOCKOUT",
+              desc: "Dieline stroke set to knockout instead of overprint (D-07) — leaves white gaps along cut lines",
+            },
+            {
+              id: "LPDF_DIE_BLEND_MODE",
+              desc: "Dieline painted with non-Normal blend mode (D-08) — RIP will drop or composite the cutter plate",
+            },
+            {
+              id: "LPDF_DIE_AS_ART",
+              desc: "Dieline spot used as a fill (D-15) — cutter will follow the filled region as a closed path",
+            },
+            {
+              id: "LPDF_DIE_LAYER_CONTENT",
+              desc: "Foreign content on a dieline-named OCG layer (D-04) — artwork on the cutter plate",
+            },
+            {
+              id: "LPDF_DIE_CONTENT_OUTSIDE",
+              desc: "Content extends beyond the dieline polygon (D-15) — risks clipping in production",
+            },
+          ],
+        },
       ].map(({ category, inspections }) => (
         <div key={category} className="mb-8">
           <h3 className="font-semibold text-slate-900 mb-3">{category}</h3>

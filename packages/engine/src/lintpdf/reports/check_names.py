@@ -598,6 +598,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dieline stroke is set to knockout (OP=false) — underlying inks will have gaps along cut lines. Enable 'Overprint Stroke' on the dieline layer in Illustrator / InDesign.",
         v2_ids=("D-07",),
     ),
+    "LPDF_DIE_BLEND_MODE": CheckInfo(
+        "Dieline Has Non-Normal Blend Mode",
+        "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork — non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong colour. Set blend mode to Normal on the dieline layer.",
+        v2_ids=("D-08",),
+    ),
     "LPDF_DIE_AS_ART": CheckInfo(
         "Dieline Spot Used As Fill",
         "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
