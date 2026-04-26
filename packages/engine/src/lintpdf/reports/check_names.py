@@ -227,7 +227,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Page Geometry ─────────────────────────────────────────────────────
     "LPDF_BOX_001": CheckInfo(
-        "Missing Trim/Bleed Box", "Page boundaries needed for cutting and bleed are not defined."
+        "Missing Trim/Bleed Box",
+        "Page boundaries needed for cutting and bleed are not defined. The "
+        "analyzer emits one finding per missing box; the discriminator lives "
+        "in `details.missing_box` (`TrimBox` or `BleedBox`).",
+        v2_ids=("P-03", "P-04"),
     ),
     "LPDF_BOX_002": CheckInfo(
         "Box Hierarchy Violated", "Page boxes (Media, Crop, Bleed, Trim) are not properly nested."
@@ -574,6 +578,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "AI_DIE_001": CheckInfo(
         "Dieline Detected",
         "A dieline was detected via spot name, layer name, or AI vision fallback.",
+        v2_ids=("D-01",),
     ),
     "AI_DIE_002": CheckInfo(
         "No Dieline Detected",
@@ -882,12 +887,15 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "AI_TAO_003": CheckInfo("Outlined text region", "Outlined text region on page N: 'N'"),
     # ── AI Version Diff ─────────────────────────────────────────────────────
     "AI_VDIFF_002": CheckInfo(
-        "Page count changed reference has page(s",
-        "Page count changed: reference has N page(s), current has N page(s)",
+        "Page Count Changed vs Reference",
+        "The reference document and the current document have different "
+        "page counts. Verify the version compared against is correct.",
     ),
     "AI_VDIFF_003": CheckInfo(
-        "Page differs from reference SSIM= %",
-        "Page N differs from reference (SSIM=N, N% pixels changed)",
+        "Page Differs From Reference",
+        "A page differs from the reference version (SSIM below threshold or "
+        "non-trivial pixel-change percentage). Visually inspect to confirm "
+        "the change is intentional.",
     ),
     # ── Accessibility (extended) ────────────────────────────────────────────
     "LPDF_ACCESS_003": CheckInfo(
@@ -1041,8 +1049,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Barcode quiet zone Nmm below ISO minimum Nmm on page N",
     ),
     "LPDF_BARCODE_010": CheckInfo(
-        "Barcode bar width deviation %",
-        "Barcode bar width deviation N% on page N",
+        "Barcode Bar-Width Deviation",
+        "Measured bar widths deviate from the nominal X-dimension by more "
+        "than the ISO 15416 tolerance. Excessive deviation lowers the print "
+        "grade and risks scanner read failures.",
     ),
     "LPDF_BARCODE_011": CheckInfo(
         "Possible barcode defect",
@@ -1213,24 +1223,32 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Extended Colour Gamut ───────────────────────────────────────────────
     "LPDF_ECG_001": CheckInfo(
-        "ECG readiness spot color(s found",
-        "ECG readiness: N spot color(s) found, N CMYKOGV-like DeviceN space(s) detected. N",
+        "ECG Readiness Assessment",
+        "Reports whether the document is structured for Expanded Colour "
+        "Gamut (CMYKOGV) reproduction: spot-colour count, presence of "
+        "CMYKOGV-like DeviceN spaces, and overall ECG-appropriateness.",
     ),
     "LPDF_ECG_002": CheckInfo(
         "ECG achievability Spot color could not",
         "ECG achievability: Spot color 'N' could not be mapped to a Lab value for gamut testing (found on page(s) N). Provide an ICC profile or…",
     ),
     "LPDF_ECG_003": CheckInfo(
-        "ECG TAC % exceeds % limit",
-        "ECG TAC N% exceeds N% limit on page N (N-channel DeviceN)",
+        "ECG TAC Exceeds Limit",
+        "Total Area Coverage on a multi-channel (DeviceN) ECG separation "
+        "exceeds the configured limit. ECG presses tolerate higher TAC than "
+        "CMYK but still have a substrate-specific ceiling — exceeding it "
+        "causes drying, finishing, and trapping problems.",
     ),
     "LPDF_ECG_004": CheckInfo(
         "DeviceN 7-colorant space",
         "DeviceN 7-colorant space 'N' on page N has inconsistent naming: N. NN",
     ),
     "LPDF_ECG_005": CheckInfo(
-        "ECG ink build active inks >%",
-        "ECG ink build: N active inks (>N%) on page N exceeds 3-ink maximum for color stability",
+        "ECG Ink-Build Exceeds 3-Ink Maximum",
+        "More than three inks are active simultaneously above the "
+        "significance threshold. ECG prefers a maximum 3-ink build for "
+        "colour stability — additional inks create gray-balance drift and "
+        "compound dot-gain.",
     ),
     "LPDF_ECG_006": CheckInfo(
         "Spot color could be replaced",
@@ -1241,12 +1259,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "ECG color out of build range: CMYK+OGV TAC N% exceeds maximum allowable 400% on page N",
     ),
     "LPDF_ECG_008": CheckInfo(
-        "ECG gray balance drift risk object(s",
-        "ECG gray balance drift risk: N object(s) with near-equal C/M/Y components above N% across N page(s) may exhibit gray balance instability in…",
+        "ECG Gray-Balance Drift Risk",
+        "Objects use a near-equal C / M / Y mix above the high-ink "
+        "threshold. In ECG workflows these neutrals depend on cross-press "
+        "consistency that single-pass orange / green / violet inks rarely "
+        "deliver — colour shift is likely. Convert critical neutrals to a "
+        "K-anchored recipe.",
     ),
     "LPDF_ECG_009": CheckInfo(
-        "ECG overinking TAC % exceeds ECG threshold",
-        "ECG overinking: TAC N% exceeds ECG threshold N% on page N",
+        "ECG Overinking",
+        "Total Area Coverage exceeds the ECG-specific threshold. Excess "
+        "ink on an ECG press produces drying problems, ink trapping issues, "
+        "and back-of-sheet contamination on multi-pass jobs.",
     ),
     "LPDF_ECG_010": CheckInfo(
         "Missing ECG characterization data no ECG-specific",
@@ -1261,12 +1285,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Gamut boundary mapping required: spot color 'N' on page(s) N may be out of ECG gamut and would need gamut mapping for accurate reproduction",
     ),
     "LPDF_ECG_013": CheckInfo(
-        "ECG multi-ink small text text object(s",
-        "ECG multi-ink small text: N text object(s) below Npt use multi-ink instead of K-only across N page(s)",
+        "ECG Small Text Built From Multiple Inks",
+        "Small text below the legibility threshold is built from multiple "
+        "inks instead of K-only. Multi-ink small text is fragile to "
+        "registration error on ECG presses — convert to K-only or enlarge "
+        "the type.",
     ),
     "LPDF_ECG_014": CheckInfo(
-        "ECG rich black recipe object(s use",
-        "ECG rich black recipe: N object(s) use non-standard rich black recipe across N page(s). ECG recommends C=N% M=N% Y=N% K=N%",
+        "ECG Non-Standard Rich-Black Recipe",
+        "Objects use a rich-black recipe outside the configured ECG "
+        "default (typically C=60, M=40, Y=40, K=100). Non-standard recipes "
+        "may shift colour or produce inconsistent neutrals across press "
+        "runs.",
     ),
     "LPDF_ECG_015": CheckInfo(
         "ECG trap zone warning path element(s",
@@ -1286,76 +1316,129 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     # ── Equivalent Process Match ────────────────────────────────────────────
     "LPDF_EPM_001": CheckInfo(
-        "EPM K-channel dependency object(s use K",
-        "EPM K-channel dependency: N object(s) use K across N page(s)",
+        "EPM K-Channel Usage",
+        "Objects use the K (black) channel. In HP Indigo EPM (Enhanced "
+        "Productivity Mode) only C, M, Y print, so K-bearing objects either "
+        "drop to white or fall back to a CMY composite — neither is what the "
+        "designer asked for. Move pure-black to a CMY composite, or route the "
+        "job to standard CMYK instead of EPM.",
     ),
     "LPDF_EPM_002": CheckInfo(
-        "EPM pure black text text object(s",
-        "EPM pure black text: N text object(s) use pure K-only or DeviceGray black and will not print in EPM mode (CMY-only) across N page(s)",
+        "EPM Pure-Black Text",
+        "Text uses pure K-only or DeviceGray and will not print in EPM mode "
+        "(C, M, Y only). Convert pure black text to a CMY composite black "
+        "before press, or route the job to CMYK rather than EPM.",
+        v2_ids=("EPM-A4",),
     ),
     "LPDF_EPM_003": CheckInfo(
-        "EPM weak CMY black object(s",
-        "EPM weak CMY black: N object(s) with K=0 and C+M+Y < 200% may produce weak blacks in CMY-only mode across N page(s) (good density requires…",
+        "EPM Weak CMY Composite Black",
+        "Objects with K=0 and C+M+Y under 200% will produce a weak, washed-out "
+        "black on press in CMY-only mode. Good density requires roughly "
+        "C≥80%, M≥70%, Y≥70%.",
     ),
     "LPDF_EPM_004": CheckInfo(
-        "EPM CMY TAC % exceeds % threshold",
-        "EPM CMY TAC N% exceeds N% threshold on page N (K excluded)",
+        "EPM CMY TAC Exceeds Threshold",
+        "Maximum CMY-only Total Area Coverage (K excluded) exceeds the "
+        "configured EPM threshold. Excess CMY ink overprints, smears, and "
+        "slows press throughput. Either reduce coverage upstream or route the "
+        "job to standard CMYK.",
+        v2_ids=("EPM-A5",),
     ),
     "LPDF_EPM_005": CheckInfo(
-        "EPM spot color K-dependency Spot color",
-        "EPM spot color K-dependency: Spot color 'N' has a CMYK fallback (alternate: N) which may include K channel",
+        "EPM Spot Color K-Dependent Fallback",
+        "A spot color's CMYK alternate values include the K channel. When the "
+        "spot is unavailable on press and the RIP falls back to alternate "
+        "values, EPM mode strips K and shifts the rendered colour. Re-author "
+        "the spot's alternate values to a CMY-only mix.",
     ),
     "LPDF_EPM_006": CheckInfo(
-        "EPM image K-dependency CMYK image(s across",
-        "EPM image K-dependency: N CMYK image(s) across N page(s) have K channel dependency that affects EPM output",
+        "EPM Image K-Channel Dependency",
+        "CMYK image(s) carry significant K-channel data. In EPM mode the K "
+        "plate is dropped, so images either lose density or are silently "
+        "re-separated by the RIP. Re-export images as CMY composite or route "
+        "to CMYK.",
     ),
     "LPDF_EPM_007": CheckInfo(
-        "EPM registration color object(s use registration",
-        "EPM registration color: N object(s) use registration color (all CMYK components >=N%) across N page(s); in EPM mode only CMY channels will…",
+        "EPM Registration Color In Artwork",
+        "Objects are painted in registration colour (all CMYK ≥ ~90%) — a "
+        "marks-and-bleeds-only ink. In EPM mode the K component is dropped "
+        "and the object reads as 100% C+M+Y. Replace registration with the "
+        "intended process or spot ink.",
+        v2_ids=("EPM-B2",),
     ),
     "LPDF_EPM_008": CheckInfo(
-        "EPM gray balance risk object(s",
-        "EPM gray balance risk: N object(s) with neutral CMY mix (CNMNY within N%, all >N%) across N page(s) are high risk for color shift without K…",
+        "EPM Gray Balance Risk",
+        "Objects use a neutral CMY mix (C ≈ M ≈ Y, all above the gray-balance "
+        "threshold) with K=0. Without K to anchor the neutral, EPM-mode "
+        "presses are at high risk of a colour shift. Convert critical neutrals "
+        "to a recipe that includes K, or route to CMYK.",
+        v2_ids=("EPM-A7", "EPM-C4"),
     ),
     "LPDF_EPM_009": CheckInfo(
-        "EPM toner limit exceeded total toner area",
-        "EPM toner limit exceeded: total toner area coverage N% exceeds EPM device limit N% on page N",
+        "EPM Toner Limit Exceeded",
+        "Total toner area coverage (C + M + Y + K) exceeds the configured EPM "
+        "device limit (default 280%). Excess toner causes drying, finishing, "
+        "and registration problems on digital presses.",
+        v2_ids=("EPM-A5",),
     ),
     "LPDF_EPM_010": CheckInfo(
-        "EPM substrate ink limit object(s",
-        "EPM substrate ink limit: N object(s) with individual ink channel >95% across N page(s) may exceed substrate-specific limits for digital…",
+        "EPM Per-Channel Ink Limit",
+        "One or more individual ink channels exceeds 95% coverage. Even when "
+        "total TAC is acceptable, single-channel saturation can exceed "
+        "substrate-specific limits on digital presses (especially synthetic "
+        "and uncoated stocks).",
     ),
     "LPDF_EPM_011": CheckInfo(
-        "EPM spot color fidelity spot color",
-        "EPM spot color fidelity: spot color 'N' may not reproduce accurately on digital devices",
+        "EPM Spot Color Fidelity Risk",
+        "Spot colour may not reproduce accurately on digital devices. Verify "
+        "the proof on the target press, or convert to a process build with "
+        "documented gamut coverage.",
     ),
     "LPDF_EPM_012": CheckInfo(
-        "EPM variable data document contains variable data",
-        "EPM variable data: document contains variable data indicators (N)",
+        "EPM Variable-Data Indicators",
+        "Document carries variable-data indicators (PDF/VT MarkInfo or "
+        "associated files). EPM throughput gains may not apply to VDP runs; "
+        "check press configuration before scheduling.",
     ),
     "LPDF_EPM_013": CheckInfo(
-        "EPM halftone incompatibility custom halftone",
-        "EPM halftone incompatibility: custom halftone in ExtGState 'N' on page N; digital presses use their own screening",
+        "EPM Custom Halftone In ExtGState",
+        "ExtGState carries a custom halftone dictionary. Digital presses use "
+        "their own internal screening; custom halftones are typically ignored "
+        "and may flag a workflow incompatibility.",
     ),
     "LPDF_EPM_014": CheckInfo(
-        "EPM ICC profile class mismatch output intent",
-        "EPM ICC profile class mismatch: output intent has profile class 'N' (expected 'prtr' or 'mntr'); digital presses need device-specific…",
+        "EPM Output Intent Profile-Class Mismatch",
+        "Output Intent ICC profile class is not 'prtr' (printer) or 'mntr' "
+        "(monitor) — digital presses need a device-specific output profile to "
+        "render correctly. Re-tag the document with the press's calibrated ICC.",
+        v2_ids=("EPM-C8",),
     ),
     "LPDF_EPM_015": CheckInfo(
-        "EPM white ink underlayer Separation color space",
-        "EPM white ink underlayer: Separation color space with colorant 'N' detected on page N; white ink separations are used for dark substrate…",
+        "EPM White-Ink Underlayer Detected",
+        "A Separation color space resembling white ink was detected. White "
+        "underlayers are used for dark substrate printing and are typically "
+        "not part of an EPM workflow — confirm the press supports the "
+        "white-ink station before proceeding.",
     ),
     "LPDF_EPM_016": CheckInfo(
-        "EPM overprint simulation ExtGState",
-        "EPM overprint simulation: ExtGState 'N' on page N has overprint enabled (OP=true, OPM=N); digital presses simulate overprint",
+        "EPM Overprint Simulation Mode",
+        "ExtGState has overprint enabled (OP=true) with a non-default OPM. "
+        "Digital presses simulate rather than physically overprint, so the "
+        "rendered result depends on RIP behaviour — verify on a proof.",
     ),
     "LPDF_EPM_017": CheckInfo(
-        "EPM high object count",
-        "EPM high object count: page N has N objects (threshold N) which may slow digital press RIP processing",
+        "EPM High Object Count",
+        "A page has more drawn objects than the advisory threshold (default "
+        "5,000). High object counts can slow digital-press RIP processing — "
+        "consider flattening, simplifying, or rasterising heavy regions "
+        "upstream.",
     ),
     "LPDF_EPM_018": CheckInfo(
-        "EPM thin line weight stroked path(s",
-        "EPM thin line weight: N stroked path(s) have line width below Npt across N page(s)",
+        "EPM Thin Stroke Below Digital Press Threshold",
+        "Stroked path(s) have line width below the configured digital-press "
+        "minimum (default 0.35pt). Thin strokes may break or print "
+        "inconsistently on digital substrates.",
+        v2_ids=("EPM-A4",),
     ),
     # ── LPDF_GAMUT ──────────────────────────────────────────────────────────
     "LPDF_GAMUT_001": CheckInfo(
@@ -1406,8 +1489,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "White overprint on page N (fill is white with overprint active — content underneath will show through)",
     ),
     "LPDF_OVER_005": CheckInfo(
-        "Overprint inventory object(s with overprint enabled",
-        "Overprint inventory: N object(s) with overprint enabled across N color space type(s)",
+        "Overprint Inventory",
+        "Informational summary of every object that has overprint enabled, "
+        "broken down by colour space. Useful for comparing overprint "
+        "behaviour against the production proof and the operator's "
+        "expectations.",
     ),
     "LPDF_OVER_006": CheckInfo(
         "Overprint active with DeviceRGB",
@@ -1506,8 +1592,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "No DataMatrix barcode found — EU FMD requires a GS1 DataMatrix (ECC200) on pharmaceutical packaging",
     ),
     "LPDF_PS_006": CheckInfo(
-        "Found non-DataMatrix 2D barcode(s alongside pharma",
-        "Found N non-DataMatrix 2D barcode(s) alongside pharma DataMatrix — may cause scanning confusion",
+        "Conflicting 2D Barcodes Alongside Pharma DataMatrix",
+        "Non-DataMatrix 2D barcode(s) (QR, Aztec, etc.) appear on the same "
+        "page as a pharma GS1 DataMatrix. Scanners may pick the wrong "
+        "symbol and cause traceability failures — remove or relocate the "
+        "secondary barcodes.",
     ),
     # ── QR Human-Readable ───────────────────────────────────────────────────
     "LPDF_QHR_001": CheckInfo(
@@ -1564,12 +1653,17 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Duplicate spot color 'N' on page N defined N time(s) with different parameters: N",
     ),
     "LPDF_SPOT_010": CheckInfo(
-        "Document uses spot color(s exceeding",
-        "Document uses N spot color(s), exceeding the maximum of N: N",
+        "Spot Color Count Exceeds Maximum",
+        "The document declares more spot colours than the configured "
+        "maximum allowed by the active profile. Excess spots inflate plate "
+        "counts and press time — consolidate or convert to process where "
+        "possible.",
     ),
     "LPDF_SPOT_011": CheckInfo(
-        "Spot color used at 0% tint",
-        "Spot color 'N' used at 0% tint on page N (invisible)",
+        "Spot Color Used At 0% Tint",
+        "A spot colour is referenced at 0% tint and contributes nothing to "
+        "the rendered output, but it still allocates a separation plate. "
+        "Either remove the reference or apply a non-zero tint.",
     ),
     # ── Strokes (extended) ──────────────────────────────────────────────────
     "LPDF_STROKE_001": CheckInfo(
@@ -1606,8 +1700,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "JavaScript action detected in page N actions (security and print workflow risk)",
     ),
     "LPDF_STRUCT_009": CheckInfo(
-        "Document contains interactive form field(s text",
-        "Document contains N interactive form field(s) (text inputs, buttons, dropdowns, or signatures)",
+        "Interactive Form Fields Present",
+        "The document contains interactive form fields (text inputs, "
+        "buttons, dropdowns, signatures). Form fields are usually stripped "
+        "for press output and may indicate the wrong file was uploaded.",
     ),
     "LPDF_STRUCT_010": CheckInfo(
         "Layer configuration has print-specific visibility",
@@ -1639,8 +1735,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Invisible text (rendering mode 3) on page N (text is neither filled nor stroked)",
     ),
     "LPDF_TEXT_005": CheckInfo(
-        "Text on registration color 100% all CMYK",
-        "Text on registration color (100% all CMYK) on page N",
+        "Text Painted In Registration Colour",
+        "Text is painted in registration colour (100% on every CMYK "
+        "channel). Registration is reserved for crop marks and trapping "
+        "guides — text in registration overprints heavily and bleeds when "
+        "ink trapping fails. Re-tag with the intended ink.",
     ),
     "LPDF_TEXT_006": CheckInfo(
         "Small multi-ink text pt inks",
