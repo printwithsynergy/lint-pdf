@@ -189,6 +189,38 @@ def check_dieline_quality(
             )
         )
 
+    # D-09 — dieline painted with alpha < 100%. Same RIP failure
+    # surface as D-08: the cutter spot is a layer-extracted process
+    # control and partial transparency does not survive separation.
+    # Severity WARNING. ``min_alpha_pct`` captured in details to
+    # distinguish a 99%-was-an-export-bug from a 20%-was-an-on-purpose
+    # mistake on the dashboard.
+    if spot_name and signals.dieline_opacity_violations:
+        violation_count = len(signals.dieline_opacity_violations)
+        min_alpha = signals.dieline_opacity_min_alpha
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_OPACITY_LOW",
+                severity=Severity.WARNING,
+                message=(
+                    f"Dieline '{spot_name}' painted with alpha < 100% on page 1 "
+                    f"({violation_count} paint op(s), min {min_alpha * 100:.0f}%) "
+                    f"— RIP will drop or composite the cutter plate"
+                ),
+                page_num=1,
+                details={
+                    "spot_name": spot_name,
+                    "violation_count": violation_count,
+                    "min_alpha": round(min_alpha, 4),
+                    "min_alpha_pct": round(min_alpha * 100, 2),
+                    "first_violation_op_idx": signals.dieline_opacity_first_op_idx,
+                },
+                iso_clause="ISO 32000-2:2020 §11.6.4.4 / ISO 19593-1 §5.3",
+                object_id=spot_name,
+                object_type="spot_color",
+            )
+        )
+
     # D-08 — dieline painted with a non-Normal blend mode. Cutter spots
     # are control plates, not artwork; any blend mode other than Normal
     # will fail to survive RIP separation. Severity is WARNING because
@@ -698,6 +730,9 @@ class _QualitySignals:
         "dieline_blend_mode_violations",
         "dieline_line_bboxes",
         "dieline_ocg_names",
+        "dieline_opacity_first_op_idx",
+        "dieline_opacity_min_alpha",
+        "dieline_opacity_violations",
         "fill_as_dieline_area_pts2",
         "fill_as_dieline_count",
         "first_fill_as_dieline_idx",
@@ -760,6 +795,13 @@ class _QualitySignals:
         # mode other than Normal will not survive RIP separation.
         self.dieline_blend_mode_violations: list[tuple[int, str]] = []
         self.dieline_blend_mode_first_op_idx: int = -1
+        # D-09 — dieline paint ops painted with alpha < 1.0. Same RIP
+        # failure surface as D-08 — semi-transparent cutter spots get
+        # silently dropped or composited in separation. Stored as
+        # (op_idx, alpha) pairs; ``min_alpha`` carries the worst seen.
+        self.dieline_opacity_violations: list[tuple[int, float]] = []
+        self.dieline_opacity_first_op_idx: int = -1
+        self.dieline_opacity_min_alpha: float = 1.0
 
 
 # Paint operators split into stroke-only, fill-only, both.
@@ -1020,6 +1062,13 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
         # paint trigger LPDF_DIE_BLEND_MODE.
         current_blend_mode: str = "Normal"
         blend_mode_stack: list[str] = []
+        # D-09 — current stroking / non-stroking alpha constants
+        # (ISO 32000-2 §11.6.4.4). Defaults are 1.0 per spec. Saved /
+        # restored alongside the rest of the graphics state.
+        current_stroke_alpha: float = 1.0
+        current_fill_alpha: float = 1.0
+        stroke_alpha_stack: list[float] = []
+        fill_alpha_stack: list[float] = []
 
         # Compound-path subpath accumulator — we need total bbox area
         # for T3-D15 severity escalation.
@@ -1106,6 +1155,14 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                                         current_blend_mode = str(first).lstrip("/")
                             else:
                                 current_blend_mode = str(bm_value).lstrip("/")
+                        ca_value = gs_entry.get("/CA")
+                        if ca_value is not None:
+                            with contextlib.suppress(ValueError, TypeError):
+                                current_stroke_alpha = float(ca_value)
+                        ca_lower = gs_entry.get("/ca")
+                        if ca_lower is not None:
+                            with contextlib.suppress(ValueError, TypeError):
+                                current_fill_alpha = float(ca_lower)
                 except Exception:
                     pass
 
@@ -1161,15 +1218,22 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                 if ocg_stack:
                     ocg_stack.pop()
 
-            # Graphics-state save / restore — push/pop CTM + blend mode.
+            # Graphics-state save / restore — push/pop CTM, blend mode,
+            # and stroking / non-stroking alpha constants.
             elif op == "q":
                 ctm_stack.append(ctm)
                 blend_mode_stack.append(current_blend_mode)
+                stroke_alpha_stack.append(current_stroke_alpha)
+                fill_alpha_stack.append(current_fill_alpha)
             elif op == "Q":
                 if ctm_stack:
                     ctm = ctm_stack.pop()
                 if blend_mode_stack:
                     current_blend_mode = blend_mode_stack.pop()
+                if stroke_alpha_stack:
+                    current_stroke_alpha = stroke_alpha_stack.pop()
+                if fill_alpha_stack:
+                    current_fill_alpha = fill_alpha_stack.pop()
 
             # Current Transformation Matrix update.
             elif op == "cm" and len(operands) >= 6:
@@ -1305,6 +1369,29 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                     signals.dieline_blend_mode_violations.append((op_idx, current_blend_mode))
                     if signals.dieline_blend_mode_first_op_idx < 0:
                         signals.dieline_blend_mode_first_op_idx = op_idx
+
+                # D-09 — dieline paint with alpha < 1.0 (semi-transparent
+                # cutter spot). ISO 32000-2 §11.6.4.4: /CA + /ca govern
+                # stroking and non-stroking alpha constants. Same RIP
+                # failure surface as D-08 — the spot plate either drops
+                # to zero coverage or composites into the substrate
+                # instead of becoming a hard cutter outline.
+                # Only the alpha relevant to the actual paint type
+                # counts: stroke ops measure /CA, fill ops measure /ca,
+                # combined ops (B/B*/b/b*) take the worst of both.
+                if stroke_is_dieline or fill_is_dieline:
+                    alphas: list[float] = []
+                    if stroke_is_dieline:
+                        alphas.append(current_stroke_alpha)
+                    if fill_is_dieline:
+                        alphas.append(current_fill_alpha)
+                    effective_alpha = min(alphas) if alphas else 1.0
+                    if effective_alpha < 1.0:
+                        signals.dieline_opacity_violations.append((op_idx, effective_alpha))
+                        if signals.dieline_opacity_first_op_idx < 0:
+                            signals.dieline_opacity_first_op_idx = op_idx
+                        if effective_alpha < signals.dieline_opacity_min_alpha:
+                            signals.dieline_opacity_min_alpha = effective_alpha
 
                 # T3-D01 — any paint inside a dieline-named OCG that's
                 # NOT using the dieline spot is foreign content on the

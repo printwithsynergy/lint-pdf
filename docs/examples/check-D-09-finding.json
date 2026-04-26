@@ -1,0 +1,18 @@
+{
+  "$comment": "Example LPDF_DIE_OPACITY_LOW finding (D-09). Emitted when a dieline / cutter spot is painted with alpha < 100%. Same RIP failure surface as D-08 — partial transparency does not survive separation, so the cut plate either drops to zero coverage or composites into the substrate. ISO 32000-2:2020 §11.6.4.4 / ISO 19593-1 §5.3.",
+  "inspection_id": "LPDF_DIE_OPACITY_LOW",
+  "v2_id": "D-09",
+  "severity": "warning",
+  "message": "Dieline 'Dieline' painted with alpha < 100% on page 1 (1 paint op(s), min 50%) — RIP will drop or composite the cutter plate",
+  "page_num": 1,
+  "object_id": "Dieline",
+  "object_type": "spot_color",
+  "iso_clause": "ISO 32000-2:2020 §11.6.4.4 / ISO 19593-1 §5.3",
+  "details": {
+    "spot_name": "Dieline",
+    "violation_count": 1,
+    "min_alpha": 0.5,
+    "min_alpha_pct": 50.0,
+    "first_violation_op_idx": 4
+  }
+}

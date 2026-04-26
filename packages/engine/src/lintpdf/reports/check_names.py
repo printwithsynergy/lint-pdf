@@ -603,6 +603,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork — non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong colour. Set blend mode to Normal on the dieline layer.",
         v2_ids=("D-08",),
     ),
+    "LPDF_DIE_OPACITY_LOW": CheckInfo(
+        "Dieline Has Reduced Opacity",
+        "Dieline spot is painted with alpha < 100% (semi-transparent). Cutter spots are layer-extracted process controls, not artwork — partial transparency does not survive RIP separation, so the cut plate either drops to zero coverage or composites into the substrate. Set opacity to 100% on the dieline layer in Illustrator / InDesign.",
+        v2_ids=("D-09",),
+    ),
     "LPDF_DIE_AS_ART": CheckInfo(
         "Dieline Spot Used As Fill",
         "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
