@@ -85,6 +85,26 @@ def test_box_001_maps_to_p03_and_p04():
     assert CHECK_NAMES["LPDF_BOX_001"].v2_ids == ("P-03", "P-04")
 
 
+def test_font_005_maps_to_f13():
+    """F-13: ToUnicode CMap missing (Wave B catch-up; partial — CID-only today)."""
+    assert CHECK_NAMES["LPDF_FONT_005"].v2_ids == ("F-13",)
+
+
+def test_font_012_maps_to_f18():
+    """F-18: Artificial bold / faux bold (Wave B catch-up T1)."""
+    assert CHECK_NAMES["LPDF_FONT_012"].v2_ids == ("F-18",)
+
+
+def test_font_013_maps_to_f19():
+    """F-19: Artificial italic / faux oblique (Wave B catch-up T1)."""
+    assert CHECK_NAMES["LPDF_FONT_013"].v2_ids == ("F-19",)
+
+
+def test_font_015_maps_to_f38():
+    """F-38: Font license / DRM prevents embedding (Wave D T2 batch 2)."""
+    assert CHECK_NAMES["LPDF_FONT_015"].v2_ids == ("F-38",)
+
+
 def test_font_004_maps_to_f05():
     """F-05: Type 3 font present (Wave D T2 batch 1)."""
     assert CHECK_NAMES["LPDF_FONT_004"].v2_ids == ("F-05",)

@@ -121,7 +121,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_FONT_005": CheckInfo(
         "Missing ToUnicode",
-        "CID font is missing a ToUnicode map — text search and copy may not work.",
+        "CID font is missing a ToUnicode map — text search and copy may not "
+        "work. Currently fires on CID fonts only; the broader F-13 case "
+        "(ToUnicode missing on any font subtype) is partially covered here.",
+        v2_ids=("F-13",),
     ),
     "LPDF_FONT_006": CheckInfo(
         "Missing CIDSystemInfo",
@@ -145,10 +148,20 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("F-10",),
     ),
     "LPDF_FONT_012": CheckInfo(
-        "Faux Bold", "Software-simulated bold detected — may not print as expected."
+        "Faux Bold",
+        "Software-simulated bold detected — the renderer is synthesising "
+        "weight from a non-bold font variant rather than using a real bold "
+        "weight, so glyphs print thinner and less consistently than expected. "
+        "Replace with the actual bold variant or accept the design choice.",
+        v2_ids=("F-18",),
     ),
     "LPDF_FONT_013": CheckInfo(
-        "Faux Italic", "Software-simulated italic detected — may not print as expected."
+        "Faux Italic",
+        "Software-simulated italic detected — the renderer is shearing the "
+        "upright glyph rather than using a true italic variant. Glyph forms "
+        "are not the designer's italic intent. Replace with the actual italic "
+        "variant or accept the design choice.",
+        v2_ids=("F-19",),
     ),
     "LPDF_FONT_014": CheckInfo(
         "Damaged Font", "The font program appears corrupt or has a type mismatch."
@@ -156,6 +169,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_FONT_015": CheckInfo(
         "Restricted Font Embedding Licence",
         "Font's OS/2 fsType bit advertises a licence restriction (restricted / preview-and-print / editable embedding). Verify vendor licensing before distributing this PDF.",
+        v2_ids=("F-38",),
     ),
     "LPDF_FONT_016": CheckInfo(
         "Font Subset Violates No-Subsetting Policy",

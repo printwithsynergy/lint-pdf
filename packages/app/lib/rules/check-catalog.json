@@ -580,7 +580,7 @@
         {
           "id": "LPDF_FONT_005",
           "name": "Missing ToUnicode",
-          "description": "CID font is missing a ToUnicode map \u2014 text search and copy may not work.",
+          "description": "CID font is missing a ToUnicode map \u2014 text search and copy may not work. Currently fires on CID fonts only; the broader F-13 case (ToUnicode missing on any font subtype) is partially covered here.",
           "default_severity": "warning"
         },
         {
@@ -622,13 +622,13 @@
         {
           "id": "LPDF_FONT_012",
           "name": "Faux Bold",
-          "description": "Software-simulated bold detected \u2014 may not print as expected.",
+          "description": "Software-simulated bold detected \u2014 the renderer is synthesising weight from a non-bold font variant rather than using a real bold weight, so glyphs print thinner and less consistently than expected. Replace with the actual bold variant or accept the design choice.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_FONT_013",
           "name": "Faux Italic",
-          "description": "Software-simulated italic detected \u2014 may not print as expected.",
+          "description": "Software-simulated italic detected \u2014 the renderer is shearing the upright glyph rather than using a true italic variant. Glyph forms are not the designer's italic intent. Replace with the actual italic variant or accept the design choice.",
           "default_severity": "warning"
         },
         {
