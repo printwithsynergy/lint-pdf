@@ -41,6 +41,11 @@ export function middleware(request: NextRequest) {
         // follow, so the deep-link claim would silently fail.
         "/.well-known/apple-app-site-association",
         "/.well-known/assetlinks.json",
+        // Machine-to-machine receiver fired by the LintPDF engine
+        // when approval steps progress. Authenticated by HMAC-SHA256
+        // against `LINTPDF_INTERNAL_WEBHOOK_SECRET`, not by a session
+        // cookie — the engine has no cookie to send.
+        "/api/internal/approval-webhook",
       ],
       rateLimitExemptPaths: [
         "/api/auth/magic-link/status",
@@ -50,6 +55,11 @@ export function middleware(request: NextRequest) {
         "/api/auth",
         "/api/trpc",
         "/api/waitlist",
+        // Engine fan-out: a busy chain can fire dozens of step
+        // events in quick succession during a multi-stakeholder
+        // review. Rate-limiting here would drop legitimate push
+        // notifications.
+        "/api/internal/approval-webhook",
       ],
     },
     {
