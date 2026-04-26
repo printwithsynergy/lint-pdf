@@ -153,6 +153,33 @@ async def _lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
                 "until this is resolved.",
             )
 
+        # Phase 0.7 PR-B1 — register the 9 category-level toggle rows
+        # that anchor the unified configuration cascade. Idempotent;
+        # safe to call on every startup. Failures here don't block the
+        # rest of the lifespan because the existing toggles registry
+        # (from V-07/V-12 entitlement migration) keeps working without
+        # the new categories — only consumers who specifically read the
+        # new category rows degrade until the seed succeeds.
+        try:
+            from lintpdf.api.database import get_db_session
+            from lintpdf.tenants.toggle_registry import seed_category_toggles
+
+            _registry_db = get_db_session()
+            try:
+                created = seed_category_toggles(_registry_db)
+                if created:
+                    _registry_db.commit()
+            finally:
+                _registry_db.close()
+        except Exception:
+            import logging
+
+            logging.getLogger(__name__).exception(
+                "seed_category_toggles failed at startup — unified-config"
+                " category rows missing; new ConfigResolver categories"
+                " will fall back to system defaults until resolved.",
+            )
+
     # Initialize rate limiter with Redis
     redis_url = os.environ.get("LINTPDF_REDIS_URL", settings.redis_url)
     if redis_url:
