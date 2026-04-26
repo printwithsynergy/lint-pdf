@@ -102,7 +102,23 @@ def _plan_tier_overrides(plan: TenantPlan) -> dict[str, Any]:
     from the existing engine pool. Short TTL ``lru_cache`` keeps the
     resolver path O(1) — ops edits via the admin UI invalidate the
     cache via :func:`invalidate_plan_tier_cache` below.
+
+    Phase 0.7 PR-B4 — bail out fast when ``DATABASE_URL`` is unset so
+    the test harness doesn't block on a settings-default
+    ``postgresql://localhost:5432/lintpdf`` connect timeout. Production
+    callers always have ``DATABASE_URL`` set; this guard is a no-op
+    for them.
     """
+    import os
+
+    # Fail-fast guard for harnesses that explicitly disable the DB
+    # (conftest._disable_lifespan_services sets these to ""); without
+    # this the deferred ``init_db(settings.database_url)`` falls back
+    # to the postgres-localhost default and stalls every route that
+    # entitlement-checks until the kernel closes the dead socket.
+    if not os.environ.get("DATABASE_URL") and not os.environ.get("LINTPDF_DATABASE_URL"):
+        return {}
+
     # Deferred import so this module doesn't pull the whole API stack
     # when only the dataclass is needed (tests, Celery boot).
     from lintpdf.api.database import get_db_session

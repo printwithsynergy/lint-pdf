@@ -69,6 +69,20 @@ def db_session() -> Generator[Session, None, None]:
     seed_category_toggles(session)
     session.commit()
 
+    # Phase 0.7 PR-B4 — seed a minimal ``lintpdf-default`` system
+    # profile so route tests that submit jobs / create endpoints with
+    # ``profile_id='lintpdf-default'`` (the canonical production
+    # default) pass the ``profile_exists_for_tenant`` check. The
+    # ``seed_system_profiles_from_bundled`` startup hook only runs
+    # when ``DATABASE_URL`` is set, which conftest disables; this
+    # mirrors production by inserting the row directly. Other test
+    # files that exercise additional system profiles seed them
+    # themselves.
+    from lintpdf.profiles.seed import seed_system_profiles_from_bundled
+
+    seed_system_profiles_from_bundled(session)
+    session.commit()
+
     try:
         yield session
     finally:
