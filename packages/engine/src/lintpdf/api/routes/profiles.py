@@ -1,9 +1,23 @@
-"""Profile management endpoints."""
+"""Profile management endpoints.
+
+Phase 0.7 PR-B3e — custom profiles live as keys inside the tenant's
+``ToggleOverride(toggle_id='profile_rules', scope=TENANT)`` row, keyed
+by string profile_id. The legacy ``custom_profiles`` table is no
+longer read or written here; PR-B4 drops it.
+
+System profiles (``system_profiles`` table) stay — they're an
+admin-managed global registry, not tenant configuration, and have no
+equivalent ``ToggleScope`` value (the cascade has TENANT/WORKFLOW/CALL
+only). Tenant-level shadowing of a system profile_id with a custom
+preset of the same id continues to work via the standard
+custom-over-system precedence.
+
+URLs and response shapes are preserved.
+"""
 
 from __future__ import annotations
 
 import logging
-import uuid as uuid_mod
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +26,7 @@ from sqlalchemy.orm import Session  # noqa: TC002, E402
 
 from lintpdf.api.auth import get_current_tenant  # noqa: E402
 from lintpdf.api.database import get_db  # noqa: E402
-from lintpdf.api.models import CustomProfile, Tenant  # noqa: E402
+from lintpdf.api.models import Tenant  # noqa: E402, TC001
 from lintpdf.api.schemas import (  # noqa: E402
     ProfileCreateRequest,
     ProfileCreateResponse,
@@ -20,6 +34,7 @@ from lintpdf.api.schemas import (  # noqa: E402
     ProfileListResponse,
     ProfileSummaryResponse,
 )
+from lintpdf.profiles import storage as _profile_storage  # noqa: E402
 from lintpdf.profiles.registry import ProfileRegistry  # noqa: E402
 from lintpdf.profiles.resolver import (  # noqa: E402
     get_custom_profile,
@@ -39,11 +54,6 @@ def get_registry() -> ProfileRegistry:
     return _registry
 
 
-def _load_custom_profiles_from_db(db: Session, tenant_id: uuid_mod.UUID) -> list[CustomProfile]:
-    """Load custom profiles for a tenant from the database."""
-    return db.query(CustomProfile).filter(CustomProfile.tenant_id == tenant_id).all()
-
-
 @router.get("", response_model=ProfileListResponse)
 async def list_profiles(
     db: Session = Depends(get_db),
@@ -53,14 +63,12 @@ async def list_profiles(
 
     Source of truth is the ``system_profiles`` table (seeded from the
     bundled JSON at first boot) filtered by per-row visibility +
-    the tenant's ``custom_profiles`` rows. On a collision between a
-    tenant's custom ``profile_id`` and a system one, the custom wins
-    inside that tenant's own view — the reverse of the pre-DB
-    registry's behavior. This matches the expected "tenant can
-    override a system preset by cloning + editing" UX.
+    the tenant's ``profile_rules`` ToggleOverride dict. On a collision
+    between a tenant's custom ``profile_id`` and a system one, the
+    custom wins inside that tenant's own view.
     """
-    custom_rows = _load_custom_profiles_from_db(db, tenant.id)
-    custom_ids = {row.profile_id for row in custom_rows}
+    custom_profiles = _profile_storage.load_profiles(db, tenant.id)
+    custom_ids = set(custom_profiles.keys())
 
     profiles: list[ProfileSummaryResponse] = []
 
@@ -85,12 +93,12 @@ async def list_profiles(
             )
         )
 
-    for row in custom_rows:
+    for profile_id, value in custom_profiles.items():
         try:
-            fp = PreflightProfile.model_validate(row.preflight_profile_json)
+            fp = PreflightProfile.model_validate(value.get("preflight_profile_json") or {})
             profiles.append(
                 ProfileSummaryResponse(
-                    profile_id=row.profile_id,
+                    profile_id=profile_id,
                     name=fp.name,
                     description=fp.description,
                     conformance=fp.conformance,
@@ -99,7 +107,7 @@ async def list_profiles(
                 )
             )
         except Exception:
-            logger.warning("Skipping malformed custom profile: %s", row.profile_id, exc_info=True)
+            logger.warning("Skipping malformed custom profile: %s", profile_id, exc_info=True)
 
     return ProfileListResponse(profiles=profiles)
 
@@ -156,7 +164,12 @@ async def create_profile(
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
 ) -> ProfileCreateResponse:
-    """Create a custom preflight profile."""
+    """Create or update a custom preflight profile.
+
+    Phase 0.7 PR-B3e — writes to the unified-config substrate.
+    """
+    import uuid as uuid_mod
+
     registry = get_registry()
 
     # Validate the preflight profile JSON
@@ -186,39 +199,41 @@ async def create_profile(
             detail=f"Profile '{request.profile_id}' is a built-in profile and cannot be overwritten.",
         )
 
-    # Check for existing custom profile for this tenant
-    existing: CustomProfile | None = (
-        db.query(CustomProfile)
-        .filter(
-            CustomProfile.tenant_id == tenant.id, CustomProfile.profile_id == request.profile_id
-        )
-        .first()
-    )
+    existing = _profile_storage.get_profile(db, tenant.id, request.profile_id)
 
     # Enforce max custom profiles limit (only for new profiles, not updates)
     if existing is None:
-        current_count = db.query(CustomProfile).filter(CustomProfile.tenant_id == tenant.id).count()
+        current_count = _profile_storage.count_profiles(db, tenant.id)
         if current_count >= entitlements.max_custom_profiles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Custom profile limit reached ({entitlements.max_custom_profiles}). Upgrade your plan for more.",
+                detail=(
+                    f"Custom profile limit reached ({entitlements.max_custom_profiles})."
+                    " Upgrade your plan for more."
+                ),
             )
 
-    if existing:
-        # Update existing custom profile
-        existing.preflight_profile_json = fp.model_dump(mode="json")
-        db.commit()
+    now = _profile_storage.now_iso()
+    if existing is None:
+        new_value = {
+            "id": str(uuid_mod.uuid4()),
+            "profile_id": request.profile_id,
+            "preflight_profile_json": fp.model_dump(mode="json"),
+            "created_at": now,
+            "updated_at": now,
+        }
     else:
-        # Create new custom profile row
-        row = CustomProfile(
-            id=uuid_mod.uuid4(),
-            tenant_id=tenant.id,
-            profile_id=request.profile_id,
-            preflight_profile_json=fp.model_dump(mode="json"),
-        )
-        db.add(row)
-        db.commit()
+        new_value = {
+            **existing,
+            "preflight_profile_json": fp.model_dump(mode="json"),
+            "updated_at": now,
+        }
 
+    def _mutator(profiles: dict) -> dict:
+        profiles[request.profile_id] = new_value
+        return profiles
+
+    _profile_storage.mutate_profiles(db, tenant_id=tenant.id, mutator=_mutator)
     return ProfileCreateResponse(profile_id=request.profile_id)
 
 
@@ -237,16 +252,14 @@ async def delete_profile(
             detail="Cannot delete built-in profiles.",
         )
 
-    row: CustomProfile | None = (
-        db.query(CustomProfile)
-        .filter(CustomProfile.tenant_id == tenant.id, CustomProfile.profile_id == profile_id)
-        .first()
-    )
-    if row is None:
+    if _profile_storage.get_profile(db, tenant.id, profile_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Profile '{profile_id}' not found.",
         )
 
-    db.delete(row)
-    db.commit()
+    def _mutator(profiles: dict) -> dict:
+        profiles.pop(profile_id, None)
+        return profiles
+
+    _profile_storage.mutate_profiles(db, tenant_id=tenant.id, mutator=_mutator)

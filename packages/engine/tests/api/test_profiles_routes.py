@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import secrets
 import uuid
+from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
-from lintpdf.api.models import CustomProfile
+from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -22,17 +24,49 @@ def _seed_custom_profile(
     db: Session,
     profile_id: str = "custom-seeded",
     name: str = "Seeded Profile",
-) -> CustomProfile:
-    row = CustomProfile(
-        id=uuid.uuid4(),
-        tenant_id=PLACEHOLDER_TENANT_ID,
-        profile_id=profile_id,
-        preflight_profile_json={"name": name, "workflow": "CMYK"},
+    *,
+    json_override: dict | None = None,
+):
+    """Phase 0.7 PR-B3e — seed a custom profile into the unified-config
+    substrate (``ToggleOverride(toggle_id='profile_rules')``). Returns
+    a SimpleNamespace with ``.profile_id`` and ``.preflight_profile_json``
+    so legacy callers reading those attrs keep working.
+    """
+    payload = json_override if json_override is not None else {"name": name, "workflow": "CMYK"}
+    entry = {
+        "id": str(uuid.uuid4()),
+        "profile_id": profile_id,
+        "preflight_profile_json": payload,
+    }
+
+    existing = (
+        db.query(ToggleOverride)
+        .filter(
+            ToggleOverride.toggle_id == "profile_rules",
+            ToggleOverride.scope == ToggleScope.TENANT,
+            ToggleOverride.scope_id == str(PLACEHOLDER_TENANT_ID),
+        )
+        .first()
     )
-    db.add(row)
+    if existing is None:
+        db.add(
+            ToggleOverride(
+                id=secrets.token_urlsafe(12),
+                toggle_id="profile_rules",
+                scope=ToggleScope.TENANT,
+                scope_id=str(PLACEHOLDER_TENANT_ID),
+                value={profile_id: entry},
+                locked=False,
+                set_by="test",
+                surface="test",
+            )
+        )
+    else:
+        value = dict(existing.value or {})
+        value[profile_id] = entry
+        existing.value = value
     db.commit()
-    db.refresh(row)
-    return row
+    return SimpleNamespace(profile_id=profile_id, preflight_profile_json=payload)
 
 
 # -----------------------------------------------------------------------
@@ -77,14 +111,11 @@ class TestListProfilesRoute:
         self, client: TestClient, db_session: Session
     ) -> None:
         """A custom profile with invalid preflight_profile_json should be silently skipped."""
-        row = CustomProfile(
-            id=uuid.uuid4(),
-            tenant_id=PLACEHOLDER_TENANT_ID,
-            profile_id="custom-broken",
-            preflight_profile_json={"invalid_field_only": True},
+        _seed_custom_profile(
+            db_session,
+            "custom-broken",
+            json_override={"invalid_field_only": True},
         )
-        db_session.add(row)
-        db_session.commit()
         data = client.get("/api/v1/profiles").json()
         ids = [p["profile_id"] for p in data["profiles"]]
         # Should still succeed, but broken profile is skipped
