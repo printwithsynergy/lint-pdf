@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 from uuid import UUID, uuid4
 
@@ -14,7 +13,6 @@ from lintpdf.api.auth import get_current_tenant
 from lintpdf.api.database import get_db
 from lintpdf.api.models import (
     ApprovalChain,
-    ApprovalChainTemplate,
     ApprovalStep,
     Job,
     JobStatus,
@@ -51,16 +49,34 @@ def _check_approval_entitlement(tenant: Tenant) -> None:
         )
 
 
-def _template_to_response(t: ApprovalChainTemplate) -> TemplateResponse:
+def _template_value_to_response(
+    value: dict, tenant_id: UUID
+) -> TemplateResponse:
+    """Phase 0.7 PR-B3c — render a value-dict-backed template entry."""
+    from datetime import datetime as _dt
+    from datetime import timezone as _tz
+
+    fallback_ts = _dt(2024, 1, 1, tzinfo=_tz.utc)
+
+    def _parse_ts(v: object) -> _dt:
+        if isinstance(v, _dt):
+            return v
+        if isinstance(v, str):
+            try:
+                return _dt.fromisoformat(v)
+            except ValueError:
+                pass
+        return fallback_ts
+
     return TemplateResponse(
-        id=str(t.id),
-        tenant_id=str(t.tenant_id),
-        name=t.name,
-        description=t.description,
-        is_default=t.is_default,
-        steps=t.steps,
-        created_at=t.created_at,
-        updated_at=t.updated_at,
+        id=value.get("id", ""),
+        tenant_id=str(tenant_id),
+        name=value.get("name", ""),
+        description=value.get("description"),
+        is_default=bool(value.get("is_default", False)),
+        steps=value.get("steps") or [],
+        created_at=_parse_ts(value.get("created_at")),
+        updated_at=_parse_ts(value.get("updated_at")),
     )
 
 
@@ -104,13 +120,12 @@ async def list_templates(
     db: Session = Depends(get_db),
 ) -> list[TemplateResponse]:
     _check_approval_entitlement(tenant)
-    templates = (
-        db.query(ApprovalChainTemplate)
-        .filter(ApprovalChainTemplate.tenant_id == tenant.id)
-        .order_by(ApprovalChainTemplate.created_at.desc())
-        .all()
-    )
-    return [_template_to_response(t) for t in templates]
+    from lintpdf.approvals import template_storage
+
+    templates = list(template_storage.load_templates(db, tenant.id).values())
+    # Most-recently-created first (matches the legacy ORDER BY).
+    templates.sort(key=lambda v: v.get("created_at") or "", reverse=True)
+    return [_template_value_to_response(v, tenant.id) for v in templates]
 
 
 @router.post("/approval-templates", response_model=TemplateResponse, status_code=201)
@@ -120,43 +135,39 @@ async def create_template(
     db: Session = Depends(get_db),
 ) -> TemplateResponse:
     _check_approval_entitlement(tenant)
-
-    # Check template count limit from entitlements
+    from lintpdf.approvals import template_storage
     from lintpdf.tenants.entitlements import resolve_entitlements
 
     ent = resolve_entitlements(tenant)
     max_templates = getattr(ent, "max_approval_templates", None)
     if max_templates is not None:
-        existing = (
-            db.query(ApprovalChainTemplate)
-            .filter(ApprovalChainTemplate.tenant_id == tenant.id)
-            .count()
-        )
-        if existing >= max_templates:
+        existing_count = len(template_storage.load_templates(db, tenant.id))
+        if existing_count >= max_templates:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Your plan allows a maximum of {max_templates} approval templates.",
             )
 
-    # If setting as default, unset previous default
-    if body.is_default:
-        db.query(ApprovalChainTemplate).filter(
-            ApprovalChainTemplate.tenant_id == tenant.id,
-            ApprovalChainTemplate.is_default.is_(True),
-        ).update({"is_default": False}, synchronize_session=False)
+    new_id = uuid4()
+    now = template_storage.now_iso()
+    new_value = {
+        "id": str(new_id),
+        "name": body.name,
+        "description": body.description,
+        "is_default": bool(body.is_default),
+        "steps": [s.model_dump() for s in body.steps],
+        "created_at": now,
+        "updated_at": now,
+    }
 
-    template = ApprovalChainTemplate(
-        id=uuid4(),
-        tenant_id=tenant.id,
-        name=body.name,
-        description=body.description,
-        is_default=body.is_default,
-        steps=[s.model_dump() for s in body.steps],
-    )
-    db.add(template)
-    db.commit()
-    db.refresh(template)
-    return _template_to_response(template)
+    def _mutator(templates: dict) -> dict:
+        if body.is_default:
+            template_storage.clear_default(templates, except_id=str(new_id))
+        templates[str(new_id)] = new_value
+        return templates
+
+    template_storage.mutate_templates(db, tenant_id=tenant.id, mutator=_mutator)
+    return _template_value_to_response(new_value, tenant.id)
 
 
 @router.patch("/approval-templates/{template_id}", response_model=TemplateResponse)
@@ -167,42 +178,38 @@ async def update_template(
     db: Session = Depends(get_db),
 ) -> TemplateResponse:
     _check_approval_entitlement(tenant)
+    from lintpdf.approvals import template_storage
 
     try:
         tid = UUID(template_id)
     except ValueError:
         raise HTTPException(status_code=404, detail="Template not found.") from None
 
-    template = (
-        db.query(ApprovalChainTemplate)
-        .filter(
-            ApprovalChainTemplate.id == tid,
-            ApprovalChainTemplate.tenant_id == tenant.id,
-        )
-        .first()
-    )
-    if not template:
+    if template_storage.get_template(db, tenant.id, tid) is None:
         raise HTTPException(status_code=404, detail="Template not found.")
 
-    if body.name is not None:
-        template.name = body.name
-    if body.description is not None:
-        template.description = body.description
-    if body.is_default is not None:
-        if body.is_default:
-            db.query(ApprovalChainTemplate).filter(
-                ApprovalChainTemplate.tenant_id == tenant.id,
-                ApprovalChainTemplate.id != tid,
-                ApprovalChainTemplate.is_default.is_(True),
-            ).update({"is_default": False}, synchronize_session=False)
-        template.is_default = body.is_default
-    if body.steps is not None:
-        template.steps = [s.model_dump() for s in body.steps]
+    key = str(tid)
 
-    template.updated_at = datetime.now(timezone.utc)
-    db.commit()
-    db.refresh(template)
-    return _template_to_response(template)
+    def _mutator(templates: dict) -> dict:
+        value = dict(templates.get(key) or {})
+        if body.name is not None:
+            value["name"] = body.name
+        if body.description is not None:
+            value["description"] = body.description
+        if body.is_default is not None:
+            if body.is_default:
+                template_storage.clear_default(templates, except_id=key)
+            value["is_default"] = bool(body.is_default)
+        if body.steps is not None:
+            value["steps"] = [s.model_dump() for s in body.steps]
+        value["updated_at"] = template_storage.now_iso()
+        templates[key] = value
+        return templates
+
+    new_templates = template_storage.mutate_templates(
+        db, tenant_id=tenant.id, mutator=_mutator
+    )
+    return _template_value_to_response(new_templates[key], tenant.id)
 
 
 @router.delete("/approval-templates/{template_id}", status_code=204)
@@ -212,22 +219,21 @@ async def delete_template(
     db: Session = Depends(get_db),
 ) -> None:
     _check_approval_entitlement(tenant)
+    from lintpdf.approvals import template_storage
+
     try:
         tid = UUID(template_id)
     except ValueError:
         raise HTTPException(status_code=404, detail="Template not found.") from None
-    template = (
-        db.query(ApprovalChainTemplate)
-        .filter(
-            ApprovalChainTemplate.id == tid,
-            ApprovalChainTemplate.tenant_id == tenant.id,
-        )
-        .first()
-    )
-    if not template:
+    if template_storage.get_template(db, tenant.id, tid) is None:
         raise HTTPException(status_code=404, detail="Template not found.")
-    db.delete(template)
-    db.commit()
+    key = str(tid)
+
+    def _mutator(templates: dict) -> dict:
+        templates.pop(key, None)
+        return templates
+
+    template_storage.mutate_templates(db, tenant_id=tenant.id, mutator=_mutator)
 
 
 # ── Chain attach/get/cancel (tenant-authenticated) ──
@@ -263,24 +269,20 @@ async def attach_chain(
             detail="An approval chain is already attached to this job.",
         )
 
-    # Resolve steps from template or ad-hoc
+    # Resolve steps from template or ad-hoc. Phase 0.7 PR-B3c: templates
+    # live in the unified-config substrate now.
     if body.template_id:
+        from lintpdf.approvals import template_storage
+
         try:
             tid = UUID(body.template_id)
         except ValueError:
             raise HTTPException(status_code=404, detail="Template not found.") from None
-        template = (
-            db.query(ApprovalChainTemplate)
-            .filter(
-                ApprovalChainTemplate.id == tid,
-                ApprovalChainTemplate.tenant_id == tenant.id,
-            )
-            .first()
-        )
-        if not template:
+        template_value = template_storage.get_template(db, tenant.id, tid)
+        if template_value is None:
             raise HTTPException(status_code=404, detail="Template not found.")
-        steps = template.steps
-        template_uuid = template.id
+        steps = list(template_value.get("steps") or [])
+        template_uuid = tid
     elif body.steps:
         # Validate ad-hoc steps
         validated = [
