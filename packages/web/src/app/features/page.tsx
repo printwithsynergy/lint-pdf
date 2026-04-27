@@ -6,7 +6,7 @@ import { AI_CATEGORIES, AI_PRESETS } from "@/lib/brand";
 export const metadata: Metadata = {
   title: "Features — LintPDF",
   description:
-    "500+ rule-based checks plus 32 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, packaging geometry, barcode grading, regulatory compliance, and more.",
+    "506 rule-based checks (259 LPDF + 247 PDF/X-4) plus 99 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, packaging geometry, barcode grading, regulatory compliance, and more.",
 };
 
 const coreFeatures = [
@@ -422,7 +422,7 @@ export default function FeaturesPage() {
             Everything Your PDFs Need, Checked Automatically
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-            500+ rule-based checks powered by a deterministic engine, plus{" "}
+            506 rule-based checks (259 LPDF + 247 PDF/X-4) powered by a deterministic engine, plus{" "}
             {totalAiInspections} AI-powered inspections for content quality,
             regulatory compliance, and brand verification.
           </p>
@@ -447,7 +447,7 @@ export default function FeaturesPage() {
                 Engine
               </div>
               <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Run our 500+ checks
+                Run our 600+ checks
               </h3>
               <p className="text-sm text-slate-500 leading-relaxed mb-4">
                 Full analyzer pipeline — fonts, color, images, transparency,
@@ -613,7 +613,7 @@ export default function FeaturesPage() {
               Core Engine
             </h2>
             <p className="text-slate-500 max-w-3xl">
-              500+ rule-based checks that run on every file. Deterministic,
+              506 rule-based checks (259 LPDF + 247 PDF/X-4 conformance) that run on every file. Deterministic,
               fast, and thorough. Resolution, fonts, colors, transparency,
               bleeds, barcodes, packaging geometry, artwork comparison,
               compliance, and more. Included on all plans with no per-check

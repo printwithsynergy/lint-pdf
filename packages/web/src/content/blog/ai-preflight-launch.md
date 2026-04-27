@@ -11,7 +11,7 @@ Today we are launching AI-powered preflight checks for LintPDF. This adds 32 new
 
 ## What AI Adds (and What It Does Not Replace)
 
-The core LintPDF engine runs 250+ deterministic, rule-based checks. Fonts, color spaces, images, transparency, page geometry, barcodes, PDF/X compliance — these checks are fast, precise, and reproducible. They are not going anywhere.
+The core LintPDF engine runs 506 deterministic, rule-based checks (259 LPDF + 247 PDF/X-4 conformance). Fonts, color spaces, images, transparency, page geometry, barcodes, PDF/X compliance — these checks are fast, precise, and reproducible. They are not going anywhere.
 
 AI checks handle the things rules cannot: "Does this nutrition panel follow FDA ordering requirements?" "Is this logo the correct version?" "Are the GHS pictograms large enough?" These are visual, contextual, and semantic questions that require a different kind of analysis.
 

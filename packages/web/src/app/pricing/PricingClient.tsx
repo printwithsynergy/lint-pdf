@@ -37,7 +37,7 @@ export default function PricingClient() {
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
             Start free with 50 files per month. Scale as your preflight volume
-            grows. Every plan includes 500+ checks — the only difference is
+            grows. Every plan includes 600+ checks — the only difference is
             volume and features.
           </p>
         </div>
@@ -348,7 +348,7 @@ export default function PricingClient() {
               </span>
             </div>
             <p className="text-slate-500 max-w-2xl mx-auto">
-              Core preflight checks (500+) stay unlimited on every paid plan.
+              Core preflight checks (600+) stay unlimited on every paid plan.
               AI inspections and file submissions are metered separately — each
               plan grants a monthly allotment that resets every billing cycle,
               and you can buy top-up packs at any time that roll over for 12
@@ -676,7 +676,7 @@ export default function PricingClient() {
             <ul className="space-y-1.5">
               <li>
                 <span className="font-medium text-slate-600">Engine mode</span>{" "}
-                submissions (the full 500+ check pipeline) count as{" "}
+                submissions (the full 600+ check pipeline) count as{" "}
                 <span className="font-medium text-slate-700">one file</span>{" "}
                 against your monthly limit.
               </li>

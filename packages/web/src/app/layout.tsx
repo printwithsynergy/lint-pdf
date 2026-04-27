@@ -11,13 +11,13 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://lintpdf.com"),
   title: "LintPDF — PDF Preflight API | Preflights you won't hate.",
   description:
-    "Detection-only PDF preflight engine. API-first. 500+ checks for fonts, color, images, transparency, PDF/X-1a, PDF/X-3, PDF/X-4, and PDF/A compliance. Visual annotated reports. Self-service pricing.",
+    "Detection-only PDF preflight engine. API-first. 600+ checks for fonts, color, images, transparency, PDF/X-1a, PDF/X-3, PDF/X-4, and PDF/A compliance. Visual annotated reports. Self-service pricing.",
   keywords:
     "PDF preflight API, PDF/X-4 validation, print-ready PDF check, prepress quality control, PDF preflight SaaS, preflight-as-a-service, web-to-print preflight, PDF linter",
   openGraph: {
     title: "LintPDF — PDF Preflight API | Preflights you won't hate.",
     description:
-      "Detection-only PDF preflight engine. 500+ checks. PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A, GWG 2022 compliance. Visual annotated reports. Zero file modifications.",
+      "Detection-only PDF preflight engine. 600+ checks. PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A, GWG 2022 compliance. Visual annotated reports. Zero file modifications.",
     type: "website",
     url: "https://lintpdf.com",
     siteName: "LintPDF",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "LintPDF — PDF Preflight API with 500+ checks",
+        alt: "LintPDF — PDF Preflight API with 600+ checks",
       },
     ],
   },
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "LintPDF — PDF Preflight API",
     description:
-      "Detection-only PDF preflight engine. 500+ checks. PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance. Visual annotated reports.",
+      "Detection-only PDF preflight engine. 600+ checks. PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance. Visual annotated reports.",
     images: ["/twitter-image"],
   },
 };

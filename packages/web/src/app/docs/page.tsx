@@ -56,7 +56,7 @@ export default function DocsPage() {
             LintPDF docs
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-600">
-            Detection-only PDF preflight with 500+ checks, AI-powered brand +
+            Detection-only PDF preflight with 600+ checks, AI-powered brand +
             regulatory inspections, and a full viewer — all behind a single
             REST API. Start here for the two-minute walkthrough, or jump
             straight to a topic.

@@ -17,7 +17,7 @@ LintPDF sits in the middle. Comprehensive print preflight delivered through a RE
 
 ## What LintPDF does
 
-You send a PDF (or EPS, TIFF, JPEG, PNG, AI file) to the Submit endpoint with a Ruleset — a preflight profile defining which checks to run. LintPDF processes your file through 500+ checks: fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, packaging geometry, barcode grading (ISO 15416/15415), PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance, and more.
+You send a PDF (or EPS, TIFF, JPEG, PNG, AI file) to the Submit endpoint with a Ruleset — a preflight profile defining which checks to run. LintPDF processes your file through 600+ checks: fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, packaging geometry, barcode grading (ISO 15416/15415), PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance, and more.
 
 You get back a Report — a detailed report in JSON, XML, or a white-labeled PDF with your logo and colors. Every finding includes a severity level (Error, Warning, or Info), page location, and Check ID.
 

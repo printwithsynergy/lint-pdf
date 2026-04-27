@@ -734,31 +734,25 @@ export default function AIPage() {
             inspections are metered separately using credits. Pay-per-use at
             $0.12/credit or save with volume packages.
           </p>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3">
             {[
               {
                 name: "Starter",
-                credits: "100",
-                price: "$10",
-                per: "$0.10/credit",
+                credits: "500",
+                price: "$25",
+                per: "$0.050/credit",
               },
               {
                 name: "Growth",
-                credits: "500",
-                price: "$40",
-                per: "$0.08/credit",
-              },
-              {
-                name: "Scale",
                 credits: "2,000",
-                price: "$120",
-                per: "$0.06/credit",
+                price: "$90",
+                per: "$0.045/credit",
               },
               {
-                name: "Enterprise",
+                name: "Volume",
                 credits: "10,000",
-                price: "$500",
-                per: "$0.05/credit",
+                price: "$400",
+                per: "$0.040/credit",
               },
             ].map((pkg) => (
               <div

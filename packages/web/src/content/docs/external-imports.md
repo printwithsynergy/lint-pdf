@@ -21,7 +21,7 @@ Most external-import workloads land naturally on the **Viewer tier** ($15 / mont
 
 - `preflight_source=external` submissions are allowed and behave exactly as documented below.
 - `preflight_source=minimal` is also allowed, for jobs where you want the viewer with nothing else.
-- `preflight_source=engine` returns `403 plan_upgrade_required` — upgrade to Starter if you want to run our 500+ check pipeline.
+- `preflight_source=engine` returns `403 plan_upgrade_required` — upgrade to Starter if you want to run our 600+ check pipeline.
 - Report downloads (PDF / JSON / XML) are disabled. The output is the interactive viewer share link only.
 - Annotations are off.
 

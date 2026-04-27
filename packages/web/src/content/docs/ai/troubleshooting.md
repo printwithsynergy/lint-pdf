@@ -23,7 +23,7 @@ AI features are in invite-only alpha. Email [sales@lintpdf.com](mailto:sales@lin
 
 #### Do AI features replace the core engine?
 
-No. The core engine runs 250+ deterministic, rule-based checks and is not affected by AI features. AI inspections run alongside core engine checks and produce additional findings in the same report — the `source` field distinguishes them (`"engine"` vs. `"ai"`).
+No. The core engine runs 506 deterministic, rule-based checks (259 LPDF + 247 PDF/X-4 conformance) and is not affected by AI features. AI inspections run alongside core engine checks and produce additional findings in the same report — the `source` field distinguishes them (`"engine"` vs. `"ai"`).
 
 #### Which plans support AI features?
 

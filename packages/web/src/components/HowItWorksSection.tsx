@@ -9,7 +9,7 @@ const steps = [
   {
     number: "02",
     title: "Processing",
-    subtitle: "500+ Checks in seconds",
+    subtitle: "600+ Checks in seconds",
     description:
       "LintPDF runs your file through the full Check suite — color spaces, fonts, images, transparency, page geometry, packaging geometry, barcode grading, compliance, and more. Processing happens asynchronously on the Queue.",
   },

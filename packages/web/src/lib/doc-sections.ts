@@ -75,7 +75,7 @@ export const docSections: DocSection[] = [
       {
         slug: "checks",
         label: "Checks reference",
-        description: "500+ individual checks, grouped by category.",
+        description: "600+ individual checks, grouped by category.",
       },
       {
         slug: "job-state",
@@ -118,7 +118,6 @@ export const docSections: DocSection[] = [
         description: "How AI usage is metered and priced.",
       },
       { slug: "ai-monitoring", label: "Usage monitoring" },
-      { slug: "ai-brand-config", label: "Brand config" },
       { slug: "ai-findings", label: "Reading findings" },
       { slug: "ai-regulatory", label: "Regulatory compliance" },
       { slug: "ai-preflight-profiles", label: "Preflight profiles" },
@@ -211,6 +210,12 @@ export const docSections: DocSection[] = [
         slug: "branding-and-anonymous",
         label: "Branded, LintPDF, and anonymous",
         description: "Three report-branding modes and when to use each.",
+      },
+      {
+        slug: "brand-profiles",
+        label: "Brand Profiles",
+        description:
+          "Named tenant branding configs — multiple per tenant, one default. Logo, colours, footer text, support email, optional custom domain.",
       },
       {
         slug: "brand-specs",
