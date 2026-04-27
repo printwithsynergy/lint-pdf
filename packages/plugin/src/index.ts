@@ -23,6 +23,10 @@ import { brandingRoutes } from "./routes/branding";
 import { importMappingsRoutes } from "./routes/import-mappings";
 import { approvalRoutes } from "./routes/approvals";
 import { annotationRoutes } from "./routes/annotations";
+import { explainRoutes } from "./routes/explain";
+import { epmRoutes } from "./routes/epm";
+import { decisionRoutes } from "./routes/decisions";
+import { workflowRoutes } from "./routes/workflows";
 
 // ── Public exports ──────────────────────────────────────────
 
@@ -323,6 +327,11 @@ export const lintpdfPlugin: PixieDustPlugin = {
       ...importMappingsRoutes(),
       ...annotationRoutes(ctx.services.db as Parameters<typeof annotationRoutes>[0]),
       ...approvalRoutes(),
+      // v2 playbook contract surface
+      ...explainRoutes(),
+      ...epmRoutes(),
+      ...decisionRoutes(),
+      ...workflowRoutes(),
     ]);
 
     // ── Hooks ──
