@@ -140,6 +140,16 @@ class WcagContrastAnalyzer(BaseAIAnalyzer):
 
             # Determine if this is "large text" per WCAG
             font_size_pt = abs(event.font_size)
+
+            # Skip degenerate sub-2pt sizes. The 2026-04-27 Opus audit
+            # flagged AI_WCAG_001 false positives where the engine
+            # measured ``1.0pt`` text — invariably a stray glyph from
+            # outlined paths or an artefact of a transform that
+            # collapsed text height. WCAG legibility math doesn't
+            # apply to text that small in any real legibility sense.
+            if font_size_pt < 2.0:
+                continue
+
             is_bold = _is_bold_font(event.font_name)
             is_large = font_size_pt >= _LARGE_TEXT_SIZE or (
                 is_bold and font_size_pt >= _LARGE_TEXT_BOLD_SIZE

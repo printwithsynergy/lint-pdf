@@ -117,13 +117,33 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
 
         if market in ("eu", "europe", "ema"):
             return self._check_eu_pharma(document, events)
-        elif market in ("us", "usa", "fda"):
+        elif market in (
+            "us",
+            "usa",
+            "fda",
+            "us_fda",
+            "ca",
+            "can",
+            "canada",
+            "ca_cfia",
+            "cfia",
+            "uk",
+            "uk_mhra",
+            "mhra",
+            "intl",
+            "international",
+            "global",
+            "row",
+        ):
             return self._check_fda_otc(document, events)
         else:
-            # Run both checks
-            findings = self._check_eu_pharma(document, events)
-            findings.extend(self._check_fda_otc(document, events))
-            return findings
+            # Unknown market and auto-detect didn't flag EU-specific
+            # markers (Patient Information Leaflet / SmPC). The 2026-
+            # 04-27 Opus audit showed running the EU pharma check on
+            # uncategorised tenants produced 63 false positives on
+            # US/CA supplement and food packaging. Default to FDA OTC
+            # only — the dominant case for unconfigured tenants.
+            return self._check_fda_otc(document, events)
 
     @staticmethod
     def _detect_market(document: SemanticDocument) -> str:
@@ -140,8 +160,18 @@ class PharmaFontAnalyzer(BaseAIAnalyzer):
             else:
                 text = str(raw)
 
+            # FDA OTC drug
             if re.search(r"\bDrug\s+Facts\b", text):
                 return "fda"
+            # FDA / Health Canada food + supplement labelling: presence
+            # of any of these panels is a clear non-EU marker.
+            if re.search(r"\bSupplement\s+Facts\b", text, re.IGNORECASE):
+                return "fda"
+            if re.search(r"\bNutrition\s+Facts\b", text, re.IGNORECASE):
+                return "fda"
+            if re.search(r"Valeur\s+nutritive|Faits\s+nutritionnels", text, re.IGNORECASE):
+                return "fda"  # Canadian bilingual food panel — Health Canada, not EU.
+            # EU markers
             if re.search(r"\bPatient\s+Information\s+Leaflet\b", text, re.IGNORECASE):
                 return "eu"
             if re.search(r"\bSmPC\b|Summary\s+of\s+Product\s+Characteristics", text, re.IGNORECASE):
