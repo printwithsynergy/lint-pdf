@@ -399,9 +399,10 @@ def audit_one(name: str, pdf: Path, poll: Path, out_dir: Path) -> FixtureAudit:
             }
         ]
 
-    # Bump output budget for fixtures with > 200 findings — Opus needs
-    # room to enumerate every audit row + missed item.
-    max_tokens = MAX_TOKENS_LARGE if len(findings) > 200 else MAX_TOKENS
+    # Bump output budget for fixtures with > 100 findings — at ~100
+    # output tokens per audit row (verdict + rationale), 100 findings
+    # already need ~10 K output budget.
+    max_tokens = MAX_TOKENS_LARGE if len(findings) > 100 else MAX_TOKENS
 
     raw, parsed = call_opus(pdf_blocks, findings_json, max_tokens=max_tokens)
 
