@@ -27,6 +27,7 @@ import { explainRoutes } from "./routes/explain";
 import { epmRoutes } from "./routes/epm";
 import { decisionRoutes } from "./routes/decisions";
 import { workflowRoutes } from "./routes/workflows";
+import { iccProfileRoutes } from "./routes/icc-profiles";
 
 // ── Public exports ──────────────────────────────────────────
 
@@ -332,6 +333,7 @@ export const lintpdfPlugin: PixieDustPlugin = {
       ...epmRoutes(),
       ...decisionRoutes(),
       ...workflowRoutes(),
+      ...iccProfileRoutes(),
     ]);
 
     // ── Hooks ──
