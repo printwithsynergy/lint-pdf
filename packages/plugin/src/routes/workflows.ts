@@ -102,5 +102,78 @@ export function workflowRoutes(): RouteDefinition[] {
         return { status: 204 };
       },
     },
+    // ---- toggle registry (read-only, drives the per-workflow editor) ----
+    {
+      method: "GET",
+      path: "/toggles",
+      auth: true,
+      permission: "preflight:view",
+      description: "List the toggle registry (used by the per-workflow defaults editor)",
+      handler: async (req: RouteRequest): Promise<RouteResponse> => {
+        const category =
+          (req.query as Record<string, string | undefined> | undefined)
+            ?.category ?? "";
+        const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+        const resp = await tenantFetch(`/api/v1/toggles${qs}`);
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      },
+    },
+    // ---- per-workflow override CRUD --------------------------------------
+    {
+      method: "GET",
+      path: "/workflows/:workflowId/toggles",
+      auth: true,
+      permission: "preflight:view",
+      description: "List workflow-scoped toggle overrides",
+      handler: async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await tenantFetch(
+          `/api/v1/workflows/${req.params.workflowId}/toggles`,
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      },
+    },
+    {
+      method: "PUT",
+      path: "/workflows/:workflowId/toggles/:toggleId",
+      auth: true,
+      permission: "preflight:submit",
+      description: "Set a per-workflow toggle default",
+      handler: async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await tenantFetch(
+          `/api/v1/workflows/${req.params.workflowId}/toggles/${req.params.toggleId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(req.body ?? {}),
+          },
+        );
+        if (!resp.ok) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 200, body: await resp.json() };
+      },
+    },
+    {
+      method: "DELETE",
+      path: "/workflows/:workflowId/toggles/:toggleId",
+      auth: true,
+      permission: "preflight:submit",
+      description: "Clear a per-workflow toggle default",
+      handler: async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await tenantFetch(
+          `/api/v1/workflows/${req.params.workflowId}/toggles/${req.params.toggleId}`,
+          { method: "DELETE" },
+        );
+        if (!resp.ok && resp.status !== 204) {
+          return { status: resp.status, body: { error: await resp.text() } };
+        }
+        return { status: 204 };
+      },
+    },
   ];
 }
