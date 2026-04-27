@@ -29,9 +29,17 @@ from typing import TYPE_CHECKING, Any
 from lintpdf.analyzers.base import BaseAnalyzer
 from lintpdf.analyzers.finding import Finding, Severity
 from lintpdf.epm import codes
-from lintpdf.epm.icc import IN_GAMUT_DELTA_E, cmy_strip_k_delta_e
+from lintpdf.epm.icc import (
+    IN_GAMUT_DELTA_E,
+    cmy_strip_k_delta_e,
+    cmyk_to_lab_naive,
+    is_in_gamut_for_profile,
+    load_profile,
+)
 
 if TYPE_CHECKING:
+    from PIL.ImageCms import ImageCmsProfile
+
     from lintpdf.semantic.events import ContentStreamEvent
     from lintpdf.semantic.model import SemanticDocument
 
@@ -56,6 +64,13 @@ class EpmTierAAnalyzer(BaseAnalyzer):
     The analyzer is constructed once per orchestrator run with the
     tenant-resolved thresholds. ``analyze()`` walks events + the
     semantic document, accumulates findings, and returns them.
+
+    ``substrate_profile_path`` (optional) points at a tenant-uploaded
+    ICC output profile (.icc / .icm). When set, the A1 gamut detector
+    round-trips each sampled colour through that profile via
+    :func:`is_in_gamut_for_profile`. When unset, the detector falls
+    back to a sRGB round-trip via :func:`is_in_gamut` — the right
+    default for tenants that haven't uploaded a substrate profile yet.
     """
 
     def __init__(
@@ -63,13 +78,26 @@ class EpmTierAAnalyzer(BaseAnalyzer):
         *,
         epm_thresholds: dict[str, Any] | None = None,
         substrate_class: str | None = None,
+        substrate_profile_path: str | None = None,
         min_text_pt: float = _DEFAULT_MIN_TEXT_PT,
         k_coverage_threshold_pct: float = _DEFAULT_K_COVERAGE_PCT,
     ) -> None:
         self._thresholds = epm_thresholds or {}
         self._substrate_class = (substrate_class or "").strip().lower()
+        self._substrate_profile_path = substrate_profile_path
         self._min_text_pt = min_text_pt
         self._k_coverage_threshold_pct = k_coverage_threshold_pct
+
+    def _resolve_profile(self) -> ImageCmsProfile | None:
+        """Load the substrate profile if configured. Best-effort —
+        a missing / unreadable file falls back to the sRGB default
+        rather than blocking the whole analyzer."""
+        if not self._substrate_profile_path:
+            return None
+        try:
+            return load_profile(self._substrate_profile_path)
+        except Exception:
+            return None
 
     def analyze(
         self,
@@ -77,28 +105,29 @@ class EpmTierAAnalyzer(BaseAnalyzer):
         events: list[ContentStreamEvent],
     ) -> list[Finding]:
         findings: list[Finding] = []
-        findings.extend(detect_a1_gamut(document, events, self._thresholds))
+        findings.extend(
+            detect_a1_gamut(
+                document,
+                events,
+                self._thresholds,
+                profile=self._resolve_profile(),
+            )
+        )
         findings.extend(
             detect_a2_k_coverage(
                 events,
                 threshold_pct=self._k_coverage_threshold_pct,
-                tolerance_de=float(
-                    self._thresholds.get("delta_e_max", IN_GAMUT_DELTA_E)
-                ),
+                tolerance_de=float(self._thresholds.get("delta_e_max", IN_GAMUT_DELTA_E)),
             )
         )
         findings.extend(
             detect_a3_rich_black_deviation(
                 events,
-                recipe=self._thresholds.get(
-                    "rich_black", {"c": 40, "m": 20, "y": 20, "k": 80}
-                ),
+                recipe=self._thresholds.get("rich_black", {"c": 40, "m": 20, "y": 20, "k": 80}),
                 tolerance_pct=_RICH_BLACK_DELTA_PCT,
             )
         )
-        findings.extend(
-            detect_a6_substrate_incompatible(self._substrate_class)
-        )
+        findings.extend(detect_a6_substrate_incompatible(self._substrate_class))
         findings.extend(
             detect_a8_text_too_small_for_cmy(
                 events,
@@ -115,19 +144,31 @@ def detect_a1_gamut(
     document: SemanticDocument,
     events: list[ContentStreamEvent],
     thresholds: dict[str, Any],
+    *,
+    profile: ImageCmsProfile | None = None,
 ) -> list[Finding]:
     """Fire EPM-A1 when any sampled colour exceeds the gamut tolerance.
 
-    Heuristic v1 — walks ``ColorChangedEvent`` rows for explicit
-    DeviceCMYK / DeviceN setters with extreme chroma combinations. A
-    stricter ICC-profile-aware path lives in
-    :func:`lintpdf.epm.icc.is_in_gamut_for_profile` and is invoked when
-    the tenant has uploaded a substrate profile (PR 7 wires that path).
+    Two paths:
+
+    * **Substrate-aware** (``profile`` set) — each DeviceCMYK fill is
+      converted to Lab via :func:`cmyk_to_lab_naive` and round-tripped
+      through the tenant-uploaded ICC output profile via
+      :func:`is_in_gamut_for_profile`. This is the strict path
+      matching the actual press gamut.
+    * **Default heuristic** (``profile=None``) — the analyzer falls
+      back to a saturated-CMYK detector that fires when the fill has
+      C/M/Y all ≥0.95 and K ≥0.5. This is intentionally conservative;
+      it under-fires rather than false-positives so tenants without
+      an uploaded substrate profile don't get noisy verdicts.
+
+    Findings are deduplicated per (page, recipe).
     """
     from lintpdf.semantic.events import ColorChangedEvent
 
     delta_e_max = float(thresholds.get("delta_e_max", IN_GAMUT_DELTA_E))
     findings: list[Finding] = []
+    seen: set[tuple[int, str]] = set()
 
     for ev in events:
         if not isinstance(ev, ColorChangedEvent):
@@ -138,32 +179,63 @@ def detect_a1_gamut(
         if len(ev.color_values) < 4:
             continue
         c, m, y, k = ev.color_values[:4]
-        # Saturated single-process colours don't have a CMY analogue.
-        # 100% C/M/Y in isolation hugs the gamut boundary; a CMY mix at
-        # full saturation that also carries K above ΔE budget is the
-        # cleanest "needs K" signal we can emit without an ICC profile.
-        if all(v >= 0.95 for v in (c, m, y)) and k >= 0.5:
-            findings.append(
-                Finding(
-                    inspection_id=codes.EPM_GAMUT_OUT_OF_REACH,
-                    severity=Severity.ERROR,
-                    message=(
-                        "Saturated CMYK fill outside CMY-only gamut "
-                        f"(ΔE budget {delta_e_max:.1f})."
-                    ),
-                    page_num=ev.page_num,
-                    category="color",
-                    details={
-                        "color_space": ev.color_space,
-                        "values": list(ev.color_values),
-                        "delta_e_budget": delta_e_max,
-                    },
+
+        out_of_gamut = False
+        lab: tuple[float, float, float] | None = None
+
+        if profile is not None:
+            # Substrate-aware path: convert CMYK → Lab, then check the
+            # press profile. is_in_gamut_for_profile does the actual
+            # round-trip.
+            try:
+                lab = cmyk_to_lab_naive((c * 100.0, m * 100.0, y * 100.0, k * 100.0))
+                out_of_gamut = not is_in_gamut_for_profile(
+                    lab, profile=profile, tolerance_de=delta_e_max
                 )
+            except Exception:
+                # Bad profile / edge-case Lab: fall back to heuristic
+                # so a profile error doesn't cripple the analyzer.
+                out_of_gamut = all(v >= 0.95 for v in (c, m, y)) and k >= 0.5
+        else:
+            # Default heuristic: conservative saturated-CMYK detector.
+            # 100% C/M/Y in isolation hugs the gamut boundary; a CMY
+            # mix at full saturation that also carries K above ΔE
+            # budget is the cleanest "needs K" signal we can emit
+            # without an ICC profile.
+            out_of_gamut = all(v >= 0.95 for v in (c, m, y)) and k >= 0.5
+
+        if not out_of_gamut:
+            continue
+
+        key = (ev.page_num, f"{c:.2f}-{m:.2f}-{y:.2f}-{k:.2f}")
+        if key in seen:
+            continue
+        seen.add(key)
+
+        findings.append(
+            Finding(
+                inspection_id=codes.EPM_GAMUT_OUT_OF_REACH,
+                severity=Severity.ERROR,
+                message=(
+                    "Sampled colour outside "
+                    + (
+                        "substrate ICC gamut"
+                        if profile is not None
+                        else "CMY-only gamut (default heuristic)"
+                    )
+                    + f" (ΔE budget {delta_e_max:.1f})."
+                ),
+                page_num=ev.page_num,
+                category="color",
+                details={
+                    "color_space": ev.color_space,
+                    "values": list(ev.color_values),
+                    **({"lab": list(lab)} if lab is not None else {}),
+                    "profile_source": "substrate" if profile is not None else "default_heuristic",
+                    "delta_e_budget": delta_e_max,
+                },
             )
-            # One finding per saturated event is enough — repeated hits
-            # on the same page just inflate the count without changing
-            # the verdict.
-            return findings
+        )
     return findings
 
 
@@ -319,10 +391,7 @@ def detect_a6_substrate_incompatible(substrate_class: str) -> list[Finding]:
                 Finding(
                     inspection_id=codes.EPM_SUBSTRATE_INCOMPATIBLE,
                     severity=Severity.ERROR,
-                    message=(
-                        f"Substrate class {substrate_class!r} is "
-                        "incompatible with EPM."
-                    ),
+                    message=(f"Substrate class {substrate_class!r} is incompatible with EPM."),
                     page_num=0,
                     category="color",
                     details={"substrate_class": substrate_class},
