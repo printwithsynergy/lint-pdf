@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Button } from "@thinkneverland/pixie-dust-ui";
 import { SkeletonDashboard } from "@/components/skeleton";
 
@@ -175,6 +176,9 @@ export default function EndpointsPage() {
         <div>
           <h1 className="font-display text-2xl font-bold">
             Custom API Endpoints
+            <span className="ml-2 rounded bg-warning/15 px-2 py-0.5 align-middle text-xs font-semibold text-warning">
+              Deprecated
+            </span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Create vanity URL slugs bound to specific profiles for simplified
@@ -184,6 +188,21 @@ export default function EndpointsPage() {
         <Button onClick={() => setShowCreate(!showCreate)}>
           {showCreate ? "Cancel" : "New Endpoint"}
         </Button>
+      </div>
+
+      <div className="mt-4 rounded-lg border-l-4 border-l-warning bg-warning/5 p-3 text-sm">
+        <strong>Endpoints are deprecated.</strong> The Phase 0.7
+        unified-config substrate replaces this surface with{" "}
+        <Link
+          href="/dashboard/workflows"
+          className="font-medium text-primary underline"
+        >
+          Workflows
+        </Link>
+        , which pin a profile + brand spec + per-call overrides under a
+        single name. New integrations should target Workflows; existing
+        Endpoints continue to work but will be hard-removed in a future
+        release once telemetry shows zero traffic.
       </div>
 
       {error && (
