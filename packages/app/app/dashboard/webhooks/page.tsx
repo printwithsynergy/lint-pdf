@@ -133,6 +133,17 @@ export default function WebhooksPage() {
   }
 
   async function handleRotateSecret(id: string) {
+    // Confirmation gate — rotation invalidates the existing secret
+    // immediately and the new secret only displays once. A misclick
+    // here would leave the operator scrambling to retrieve the new
+    // secret from logs.
+    const ok = window.confirm(
+      "Rotate this webhook's signing secret?\n\n" +
+        "The new secret will be shown ONCE — copy it before navigating away. " +
+        "Your existing consumers will need to be updated with the new secret.",
+    );
+    if (!ok) return;
+
     setRotatingId(id);
     setRotateResult(null);
     try {
@@ -370,8 +381,33 @@ export default function WebhooksPage() {
                       )}
                       {rotateResult && rotateResult.id === wh.id && (
                         <div className="mt-2 rounded border border-warning/40 bg-warning/10 px-2 py-1.5 text-xs">
-                          <strong>New signing secret (shown once):</strong>{" "}
-                          <code className="break-all">{rotateResult.secret}</code>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <strong>New signing secret (shown once):</strong>{" "}
+                              <code className="break-all">
+                                {rotateResult.secret}
+                              </code>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                try {
+                                  await navigator.clipboard.writeText(
+                                    rotateResult.secret,
+                                  );
+                                  toast("Secret copied to clipboard", "success");
+                                } catch {
+                                  toast(
+                                    "Couldn't copy — select the text manually",
+                                    "error",
+                                  );
+                                }
+                              }}
+                              className="shrink-0 rounded border border-warning/40 px-2 py-0.5 text-xs hover:bg-warning/20"
+                            >
+                              Copy
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

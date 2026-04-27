@@ -81,6 +81,20 @@ function EpmVerdictCard({ verdict }: { verdict: EpmVerdict }) {
     marginal: "border-l-warning bg-warning/5",
     reject: "border-l-destructive bg-destructive/5",
   };
+  const tierBadgeColors: Record<string, string> = {
+    pass: "bg-success/15 text-success",
+    pass_with_advisory: "bg-info/15 text-info",
+    marginal: "bg-warning/15 text-warning",
+    reject: "bg-destructive/15 text-destructive",
+  };
+  // Severity icon glyph by tier — kept inline so we don't pull in a
+  // new icon dep just for the verdict card.
+  const tierIcon: Record<string, string> = {
+    pass: "✓",
+    pass_with_advisory: "ℹ",
+    marginal: "⚠",
+    reject: "✕",
+  };
   const tierLabel = (verdict.tier || "")
     .replace(/_/g, " ")
     .toUpperCase();
@@ -90,7 +104,12 @@ function EpmVerdictCard({ verdict }: { verdict: EpmVerdict }) {
       className={`mt-4 rounded-lg border-l-4 border bg-card p-4 ${tierColors[verdict.tier] ?? ""}`}
     >
       <div className="flex flex-wrap items-center gap-3">
-        <span className="rounded-full bg-foreground/10 px-3 py-0.5 text-xs font-bold tracking-wide">
+        <span
+          // eslint-disable-next-line security/detect-object-injection
+          className={`flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-bold tracking-wide ${tierBadgeColors[verdict.tier] ?? "bg-muted text-foreground"}`}
+        >
+          {/* eslint-disable-next-line security/detect-object-injection */}
+          <span aria-hidden>{tierIcon[verdict.tier] ?? "•"}</span>
           EPM: {tierLabel}
         </span>
         {verdict.recommends_indichrome && (
