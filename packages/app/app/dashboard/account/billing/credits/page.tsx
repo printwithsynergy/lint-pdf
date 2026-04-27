@@ -59,6 +59,13 @@ export default function CreditsBillingPage() {
   );
 }
 
+interface CostCapState {
+  enabled: boolean;
+  monthly_cap_cents: number;
+  alert_threshold_pct: number;
+  used_cents?: number | null;
+}
+
 function CreditsBillingPageInner() {
   const { toast } = useToast();
   const [balance, setBalance] = useState<CreditBalance | null>(null);
@@ -67,13 +74,24 @@ function CreditsBillingPageInner() {
   const [loading, setLoading] = useState(true);
   const [buyingSize, setBuyingSize] = useState<string | null>(null);
 
+  // Q-C5 cost-cap toggle.
+  const [cap, setCap] = useState<CostCapState | null>(null);
+  const [capDraft, setCapDraft] = useState<CostCapState | null>(null);
+  const [capSaving, setCapSaving] = useState(false);
+
   const fetchBalance = useCallback(async () => {
     try {
-      const [balResp, pkgResp, usageResp] = await Promise.all([
+      const [balResp, pkgResp, usageResp, capResp] = await Promise.all([
         fetch("/api/lintpdf/credits"),
         fetch("/api/lintpdf/credits/packages").catch(() => null),
         fetch("/api/lintpdf/credits/usage?days=30").catch(() => null),
+        fetch("/api/lintpdf/ai/cost-cap").catch(() => null),
       ]);
+      if (capResp && capResp.ok) {
+        const c: CostCapState = await capResp.json();
+        setCap(c);
+        setCapDraft(c);
+      }
       if (balResp.ok) setBalance(await balResp.json());
       if (pkgResp && pkgResp.ok) {
         const data = await pkgResp.json();
@@ -181,6 +199,101 @@ function CreditsBillingPageInner() {
           />
         </div>
       </section>
+
+      {capDraft && (
+        <section className="rounded-lg border border-border bg-card p-5 shadow-sm">
+          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            LLM cost cap
+          </h2>
+          <p className="mb-3 text-sm text-muted-foreground">
+            Cap the dollar value of LLM API calls (AI-Explain, audit) per
+            calendar month. When the cap is exhausted, AI endpoints return
+            HTTP 402 — preflight + reports keep working, only the LLM
+            features pause until the next reset or a higher cap.
+          </p>
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={capDraft.enabled}
+                onChange={(e) =>
+                  setCapDraft({ ...capDraft, enabled: e.target.checked })
+                }
+              />
+              Enabled
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              Cap $
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={(capDraft.monthly_cap_cents / 100).toFixed(2)}
+                onChange={(e) =>
+                  setCapDraft({
+                    ...capDraft,
+                    monthly_cap_cents: Math.round(
+                      Number(e.target.value || 0) * 100,
+                    ),
+                  })
+                }
+                className="w-24 rounded border border-border bg-background px-2 py-1"
+              />
+              / month
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              Alert at
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={capDraft.alert_threshold_pct}
+                onChange={(e) =>
+                  setCapDraft({
+                    ...capDraft,
+                    alert_threshold_pct: Number(e.target.value || 0),
+                  })
+                }
+                className="w-16 rounded border border-border bg-background px-2 py-1"
+              />
+              %
+            </label>
+            <Button
+              loading={capSaving}
+              onClick={async () => {
+                if (!capDraft) return;
+                setCapSaving(true);
+                try {
+                  const resp = await fetch("/api/lintpdf/ai/cost-cap", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(capDraft),
+                  });
+                  if (!resp.ok) throw new Error(await resp.text());
+                  const updated: CostCapState = await resp.json();
+                  setCap(updated);
+                  setCapDraft(updated);
+                  toast("Cost cap saved", "success");
+                } catch (e) {
+                  toast(
+                    `Couldn't save cap: ${e instanceof Error ? e.message : String(e)}`,
+                    "error",
+                  );
+                } finally {
+                  setCapSaving(false);
+                }
+              }}
+            >
+              Save
+            </Button>
+            {cap && cap.used_cents != null && (
+              <span className="text-xs text-muted-foreground">
+                Used this cycle: ${(cap.used_cents / 100).toFixed(2)}
+              </span>
+            )}
+          </div>
+        </section>
+      )}
 
       <section>
         <h2 className="text-lg font-semibold text-foreground">

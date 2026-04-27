@@ -46,6 +46,13 @@ export default function WebhooksPage() {
     error: string;
   } | null>(null);
 
+  // Rotate-secret state
+  const [rotatingId, setRotatingId] = useState<string | null>(null);
+  const [rotateResult, setRotateResult] = useState<{
+    id: string;
+    secret: string;
+  } | null>(null);
+
   // Confirm dialog state
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmTarget, setConfirmTarget] = useState<string | null>(null);
@@ -122,6 +129,31 @@ export default function WebhooksPage() {
       await fetchWebhooks();
     } catch {
       toast("Failed to toggle webhook", "error");
+    }
+  }
+
+  async function handleRotateSecret(id: string) {
+    setRotatingId(id);
+    setRotateResult(null);
+    try {
+      const resp = await fetch(
+        `/api/lintpdf/webhook-endpoints/${id}/rotate-secret`,
+        { method: "POST" },
+      );
+      if (!resp.ok) {
+        const data = await resp.json();
+        throw new Error(data.error ?? "Failed to rotate secret");
+      }
+      const data = await resp.json();
+      setRotateResult({ id, secret: data.secret ?? data.signing_secret ?? "" });
+      toast("Webhook secret rotated — copy the new secret now.", "success");
+    } catch (e) {
+      toast(
+        e instanceof Error ? e.message : "Failed to rotate secret",
+        "error",
+      );
+    } finally {
+      setRotatingId(null);
     }
   }
 
@@ -336,6 +368,12 @@ export default function WebhooksPage() {
                             : `Test failed: ${testResult.error}`}
                         </div>
                       )}
+                      {rotateResult && rotateResult.id === wh.id && (
+                        <div className="mt-2 rounded border border-warning/40 bg-warning/10 px-2 py-1.5 text-xs">
+                          <strong>New signing secret (shown once):</strong>{" "}
+                          <code className="break-all">{rotateResult.secret}</code>
+                        </div>
+                      )}
                     </div>
                     <div className="ml-4 flex shrink-0 items-center gap-1">
                       <Link
@@ -350,6 +388,13 @@ export default function WebhooksPage() {
                         loading={testingId === wh.id}
                       >
                         Test
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => handleRotateSecret(wh.id)}
+                        loading={rotatingId === wh.id}
+                      >
+                        Rotate secret
                       </Button>
                       <Button
                         variant="secondary"
