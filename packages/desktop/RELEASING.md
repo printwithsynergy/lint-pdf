@@ -49,19 +49,41 @@ signed by a new key). Treat it like any other production secret.
 
 ## Optional: macOS notarisation
 
-Without these secrets, macOS builds still upload, but Gatekeeper will
-warn users on first launch. To produce a notarised bundle, add:
+Without these secrets, macOS builds still upload but ship ad-hoc
+signed — Gatekeeper will show the unidentified-developer prompt on
+first launch (right-click → Open to bypass). The CI workflow is fully
+wired to notarize as soon as the six secrets below are populated; no
+further workflow edits required.
+
+Add these as repository secrets under **Settings → Secrets → Actions**:
 
 - `APPLE_CERTIFICATE` — base64-encoded `.p12` Developer ID Application
-  certificate
-- `APPLE_CERTIFICATE_PASSWORD`
+  certificate. Generate via Keychain Access → export the cert as
+  `.p12` → `base64 -i cert.p12 | pbcopy`.
+- `APPLE_CERTIFICATE_PASSWORD` — the password set during `.p12` export
 - `APPLE_SIGNING_IDENTITY` — e.g. `Developer ID Application: LintPDF
-  (TEAMID)`
+  (TEAMID)`. Find via `security find-identity -v -p codesigning`.
 - `APPLE_ID` — the Apple ID used for notarisation
-- `APPLE_TEAM_ID`
+- `APPLE_TEAM_ID` — 10-character team ID from
+  [developer.apple.com/account](https://developer.apple.com/account)
 - `APPLE_PASSWORD` — an
   [app-specific password](https://support.apple.com/en-us/HT204397) (not
-  your Apple ID password)
+  your Apple ID password). Generate at
+  [account.apple.com](https://account.apple.com/) → Sign-In and
+  Security → App-Specific Passwords.
+
+Once all six are set, tag the next `desktop-v*` release and verify on
+the downloaded `.dmg`:
+
+```sh
+spctl -a -vv /Volumes/LintPDF\ Hot\ Folders/LintPDF\ Hot\ Folders.app
+# Expect: "accepted" + "source=Notarized Developer ID"
+```
+
+If notarization fails mid-build, tauri-action surfaces the
+`notarytool` log inline. Re-run the workflow after fixing creds —
+the cert/password env vars are validated at the import step before
+the build kicks off.
 
 ---
 
