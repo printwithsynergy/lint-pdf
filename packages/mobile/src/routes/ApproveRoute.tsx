@@ -187,6 +187,8 @@ export function ApproveRoute({ tenant }: ApproveRouteProps) {
             ? "Preflight passed"
             : `Preflight has ${errorCount} error${errorCount === 1 ? "" : "s"}`}
         </div>
+
+        {info.epm_verdict && <EpmTierBadge verdict={info.epm_verdict} />}
       </div>
 
       {info.completed_steps.length > 0 && (
@@ -299,6 +301,44 @@ function Stat({
       <p className="mt-0.5 text-[10px] uppercase tracking-wide opacity-70">
         {label}
       </p>
+    </div>
+  );
+}
+
+function EpmTierBadge({
+  verdict,
+}: {
+  verdict: NonNullable<ApprovalChainInfo["epm_verdict"]>;
+}) {
+  const tier = verdict.tier;
+  const tierStyle =
+    tier === "pass"
+      ? "bg-green-50 text-green-700 border-green-200"
+      : tier === "pass_with_advisory"
+        ? "bg-blue-50 text-blue-700 border-blue-200"
+        : tier === "marginal"
+          ? "bg-amber-50 text-amber-700 border-amber-200"
+          : "bg-red-50 text-red-700 border-red-200";
+  const tierGlyph =
+    tier === "pass" ? "✓" : tier === "pass_with_advisory" ? "ℹ" : tier === "marginal" ? "⚠" : "✕";
+  return (
+    <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${tierStyle}`}>
+      <div className="flex items-center gap-2">
+        <span aria-hidden>{tierGlyph}</span>
+        <span className="font-semibold">
+          EPM: {tier.replace(/_/g, " ").toUpperCase()}
+        </span>
+        {verdict.recommends_indichrome && (
+          <span className="ml-auto text-[10px] uppercase tracking-wide">
+            IndiChrome hint
+          </span>
+        )}
+      </div>
+      {verdict.rejection_drivers.length > 0 && (
+        <p className="mt-1 text-[11px] opacity-80">
+          Drivers: {verdict.rejection_drivers.join(", ")}
+        </p>
+      )}
     </div>
   );
 }

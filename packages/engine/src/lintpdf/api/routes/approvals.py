@@ -49,9 +49,7 @@ def _check_approval_entitlement(tenant: Tenant) -> None:
         )
 
 
-def _template_value_to_response(
-    value: dict, tenant_id: UUID
-) -> TemplateResponse:
+def _template_value_to_response(value: dict, tenant_id: UUID) -> TemplateResponse:
     """Phase 0.7 PR-B3c — render a value-dict-backed template entry."""
     from datetime import datetime as _dt
     from datetime import timezone as _tz
@@ -206,9 +204,7 @@ async def update_template(
         templates[key] = value
         return templates
 
-    new_templates = template_storage.mutate_templates(
-        db, tenant_id=tenant.id, mutator=_mutator
-    )
+    new_templates = template_storage.mutate_templates(db, tenant_id=tenant.id, mutator=_mutator)
     return _template_value_to_response(new_templates[key], tenant.id)
 
 
@@ -356,6 +352,12 @@ class PublicChainResponse(BaseModel):
     completed_steps: list[dict]
     file_name: str
     health_summary: dict
+    # v2 playbook — EPM candidacy verdict surfaced to anonymous
+    # approvers so the mobile / share-link approval UX can render the
+    # tier badge without operator-login. Pure projection over fired
+    # LPDF_EPM_* findings; safe to expose since it carries no
+    # tenant-internal data.
+    epm_verdict: dict | None = None
 
 
 @router.get("/approvals/info/{access_token}", response_model=PublicChainResponse)
@@ -408,6 +410,34 @@ async def public_chain_info(
         "page_count": summary.get("page_count", 0),
     }
 
+    # EPM verdict — pure function of fired LPDF_EPM_* codes off the job's
+    # findings. None when no job (e.g., chain orphaned) or scoring fails.
+    epm_verdict_dict: dict | None = None
+    if job is not None:
+        try:
+            from lintpdf.api.models import JobFinding
+            from lintpdf.epm.scoring import score_epm_candidacy
+
+            fired = [
+                row.inspection_id
+                for row in db.query(JobFinding.inspection_id)
+                .filter(
+                    JobFinding.job_id == job.id,
+                    JobFinding.inspection_id.like("LPDF_EPM%"),
+                )
+                .all()
+            ]
+            verdict = score_epm_candidacy(fired)
+            epm_verdict_dict = {
+                "tier": verdict.tier.value if hasattr(verdict.tier, "value") else str(verdict.tier),
+                "rejection_drivers": list(verdict.rejection_drivers),
+                "advisories": list(verdict.advisories),
+                "recommends_indichrome": verdict.recommends_indichrome,
+                "epm_findings_count": len(fired),
+            }
+        except Exception:
+            epm_verdict_dict = None
+
     return PublicChainResponse(
         id=str(chain.id),
         job_id=str(chain.job_id),
@@ -418,6 +448,7 @@ async def public_chain_info(
         completed_steps=completed,
         file_name=job.file_name if job else "",
         health_summary=health_summary,
+        epm_verdict=epm_verdict_dict,
     )
 
 
