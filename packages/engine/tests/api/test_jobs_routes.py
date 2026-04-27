@@ -277,6 +277,92 @@ class TestGetJob:
         assert data["error_message"] == "Parser crashed"
 
     @staticmethod
+    def test_complete_job_surfaces_epm_verdict_and_decisions_count(
+        client: TestClient, db_session: Session
+    ) -> None:
+        """Single-job endpoint inlines the EPM verdict + active decisions count."""
+        from lintpdf.epm import codes as epm_codes
+
+        result = {
+            "summary": {
+                "total_findings": 1,
+                "error_count": 1,
+                "warning_count": 0,
+                "advisory_count": 0,
+                "passed": False,
+                "page_count": 1,
+                "file_size_bytes": 100,
+            }
+        }
+        job = _seed_job(db_session, status=JobStatus.COMPLETE, result_json=result)
+        f = JobFinding(
+            job_id=job.id,
+            inspection_id=epm_codes.EPM_BLEED_BELOW_MIN,
+            severity="warning",
+            message="bleed below min",
+        )
+        db_session.add(f)
+        db_session.commit()
+
+        resp = client.get(f"/api/v1/jobs/{job.id}")
+        body = resp.json()
+        assert body["epm_verdict"] is not None
+        assert body["epm_verdict"]["tier"] == "marginal"
+        assert epm_codes.EPM_BLEED_BELOW_MIN in body["epm_verdict"]["rejection_drivers"]
+        assert body["decisions_count"] == 0
+
+    @staticmethod
+    def test_complete_job_surfaces_finding_ai_explanation_and_decision(
+        client: TestClient, db_session: Session
+    ) -> None:
+        """Per-finding AI explanation + effective_decision projection."""
+        from datetime import datetime, timezone
+
+        from lintpdf.decisions.service import record_decision
+
+        result = {
+            "summary": {
+                "total_findings": 1,
+                "error_count": 0,
+                "warning_count": 1,
+                "advisory_count": 0,
+                "passed": True,
+                "page_count": 1,
+                "file_size_bytes": 100,
+            }
+        }
+        job = _seed_job(db_session, status=JobStatus.COMPLETE, result_json=result)
+        f = JobFinding(
+            id=uuid.uuid4(),
+            job_id=job.id,
+            inspection_id="LPDF_IMG_001",
+            severity="warning",
+            message="m",
+            ai_explanation="Image is low DPI...",
+            ai_explanation_model="claude-haiku-4-5",
+            ai_explanation_at=datetime.now(timezone.utc),
+        )
+        db_session.add(f)
+        db_session.commit()
+        record_decision(
+            db_session,
+            tenant_id=PLACEHOLDER_TENANT_ID,
+            job_id=job.id,
+            finding_id=f.id,
+            decision_type="waive",
+            decided_by_user_id="u1",
+            source="dashboard",
+        )
+        db_session.commit()
+
+        resp = client.get(f"/api/v1/jobs/{job.id}")
+        finding = resp.json()["findings"][0]
+        assert finding["ai_explanation"] == "Image is low DPI..."
+        assert finding["ai_explanation_model"] == "claude-haiku-4-5"
+        assert finding["effective_decision"]["decision_type"] == "waive"
+        assert resp.json()["decisions_count"] == 1
+
+    @staticmethod
     def test_nonexistent_job_404(client: TestClient) -> None:
         fake_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"
         resp = client.get(f"/api/v1/jobs/{fake_id}")

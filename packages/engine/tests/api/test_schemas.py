@@ -109,6 +109,33 @@ class TestFindingResponse:
         assert f.details["dpi"] == 72
         assert f.page_num == 3
 
+    @staticmethod
+    def test_ai_explanation_fields_default_null() -> None:
+        f = FindingResponse(inspection_id="X", severity="error", message="m")
+        assert f.ai_explanation is None
+        assert f.ai_explanation_model is None
+        assert f.ai_explanation_at is None
+        assert f.effective_decision is None
+
+    @staticmethod
+    def test_ai_explanation_populated() -> None:
+        now = datetime.now(timezone.utc)
+        f = FindingResponse(
+            inspection_id="X",
+            severity="error",
+            message="m",
+            ai_explanation="This finding indicates ...",
+            ai_explanation_model="claude-haiku-4-5",
+            ai_explanation_at=now,
+            effective_decision={
+                "decision_type": "waive",
+                "decided_at": now.isoformat(),
+                "decided_by_user_id": "u1",
+            },
+        )
+        assert f.ai_explanation_model == "claude-haiku-4-5"
+        assert f.effective_decision["decision_type"] == "waive"
+
 
 class TestJobSummaryResponse:
     @staticmethod
@@ -180,6 +207,41 @@ class TestJobResponse:
             error_message="Parser error",
         )
         assert r.error_message == "Parser error"
+
+    @staticmethod
+    def test_epm_verdict_and_decisions_count_default_null() -> None:
+        r = JobResponse(
+            job_id=uuid.uuid4(),
+            status="pending",
+            profile_id="lintpdf-default",
+            file_name="x.pdf",
+            file_size=1,
+            created_at=datetime.now(timezone.utc),
+        )
+        assert r.epm_verdict is None
+        assert r.decisions_count is None
+
+    @staticmethod
+    def test_epm_verdict_populated() -> None:
+        r = JobResponse(
+            job_id=uuid.uuid4(),
+            status="complete",
+            profile_id="lintpdf-default",
+            file_name="x.pdf",
+            file_size=1,
+            created_at=datetime.now(timezone.utc),
+            epm_verdict={
+                "tier": "marginal",
+                "rejection_drivers": [],
+                "advisories": [],
+                "recommends_indichrome": False,
+                "legacy_codes_fired": [],
+                "epm_findings_count": 0,
+            },
+            decisions_count=3,
+        )
+        assert r.epm_verdict["tier"] == "marginal"
+        assert r.decisions_count == 3
 
 
 class TestJobListResponse:
