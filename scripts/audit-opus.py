@@ -41,8 +41,20 @@ FIXTURE_DIR = REPO_ROOT / "packages/engine/tests/fixtures"
 
 OPUS_MODEL = os.environ.get("OPUS_MODEL", "claude-opus-4-7")
 MAX_TOKENS = 8000
+MAX_TOKENS_LARGE = 16000  # Bump for fixtures with > 200 findings.
 RETRY_MAX = 3
 RETRY_BASE_DELAY_S = 4
+
+# When the native PDF would blow Anthropic limits (1 M context, 32 MB
+# body), rasterize each page to a JPEG and send as image content
+# blocks instead. The audit task is grounded against the *rendered*
+# pages anyway — native PDF vision is unnecessary for this purpose.
+FLATTEN_IF_BYTES = 1_000_000   # > 1 MB → flatten
+FLATTEN_IF_PAGES = 10           # > 10 pages → flatten
+FLATTEN_DPI = 144               # 144 dpi ≈ 2× screen, good enough for visual audit
+FLATTEN_MAX_PIXELS = 1500       # Long-edge clamp; keep image content blocks ≤ ~1 MB.
+FLATTEN_JPEG_QUALITY = 80
+FILTER_FIXTURES = os.environ.get("AUDIT_FIXTURES", "").strip()  # space-sep slot names
 
 
 @dataclass
@@ -86,6 +98,56 @@ def load_smoke_run(run_dir: Path) -> list[tuple[str, Path, Path]]:
             continue
         out.append((slot.name, pdf, poll))
     return out
+
+
+def flatten_pdf_to_image_blocks(pdf_path: Path) -> list[dict[str, Any]]:
+    """Rasterize each page to a JPEG; return Anthropic image content blocks.
+
+    Used when the native PDF would exceed Anthropic API limits (1 M
+    input tokens or 32 MB body). PyMuPDF (fitz) is preferred — pure
+    Python wheel, no external poppler dep. JPEG quality + long-edge
+    clamp keep total bytes under a few MB even for dense fixtures.
+    """
+    import fitz  # PyMuPDF
+    from io import BytesIO
+    try:
+        from PIL import Image
+    except Exception as e:
+        raise RuntimeError(
+            "Pillow (PIL) is required for flattening; "
+            "pip install Pillow"
+        ) from e
+
+    blocks: list[dict[str, Any]] = []
+    doc = fitz.open(pdf_path)
+    try:
+        for page in doc:
+            mat = fitz.Matrix(FLATTEN_DPI / 72.0, FLATTEN_DPI / 72.0)
+            pix = page.get_pixmap(matrix=mat, alpha=False)
+            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+            # Long-edge clamp to bound bytes per page.
+            if max(img.size) > FLATTEN_MAX_PIXELS:
+                ratio = FLATTEN_MAX_PIXELS / max(img.size)
+                img = img.resize(
+                    (int(img.size[0] * ratio), int(img.size[1] * ratio)),
+                    Image.LANCZOS,
+                )
+            buf = BytesIO()
+            img.save(buf, format="JPEG", quality=FLATTEN_JPEG_QUALITY, optimize=True)
+            jpg_b64 = base64.standard_b64encode(buf.getvalue()).decode("ascii")
+            blocks.append(
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "image/jpeg",
+                        "data": jpg_b64,
+                    },
+                }
+            )
+    finally:
+        doc.close()
+    return blocks
 
 
 def trim_findings(poll_path: Path) -> list[dict[str, Any]]:
@@ -163,8 +225,15 @@ ENGINE FINDINGS (0-indexed; reference by `finding_index`):
 # ---------------------------------------------------------------------------
 
 
-def call_opus(pdf_b64: str, findings_json: str) -> tuple[str, dict[str, Any]]:
-    """Send PDF + findings JSON to Opus; return (raw_text, parsed_dict_or_empty).
+def call_opus(
+    pdf_blocks: list[dict[str, Any]],
+    findings_json: str,
+    max_tokens: int = MAX_TOKENS,
+) -> tuple[str, dict[str, Any]]:
+    """Send PDF blocks + findings JSON to Opus; return (raw_text, parsed_dict_or_empty).
+
+    `pdf_blocks` is either a single document content block (native PDF
+    path) or a list of image content blocks (flattened path).
 
     Uses the anthropic Python SDK. Retries on transient errors (network /
     5xx) with exponential backoff. Surfaces non-retryable errors to the
@@ -178,20 +247,13 @@ def call_opus(pdf_b64: str, findings_json: str) -> tuple[str, dict[str, Any]]:
         try:
             resp = client.messages.create(
                 model=OPUS_MODEL,
-                max_tokens=MAX_TOKENS,
+                max_tokens=max_tokens,
                 system=AUDIT_SYSTEM,
                 messages=[
                     {
                         "role": "user",
                         "content": [
-                            {
-                                "type": "document",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": "application/pdf",
-                                    "data": pdf_b64,
-                                },
-                            },
+                            *pdf_blocks,
                             {
                                 "type": "text",
                                 "text": AUDIT_USER.format(findings_json=findings_json),
@@ -232,13 +294,81 @@ def call_opus(pdf_b64: str, findings_json: str) -> tuple[str, dict[str, Any]]:
 # ---------------------------------------------------------------------------
 
 
+def load_existing_audit(name: str, poll: Path, out_dir: Path) -> FixtureAudit | None:
+    """Return a FixtureAudit if `<out_dir>/<name>.json` already exists.
+
+    Lets a re-run skip already-audited fixtures (idempotent + cheap to
+    re-aggregate). Returns None when there's no prior audit.
+    """
+    json_path = out_dir / f"{name}.json"
+    if not json_path.exists():
+        return None
+    try:
+        body = json.loads(json_path.read_text())
+    except json.JSONDecodeError:
+        return None
+    audit_rows = body.get("engine_audit") or []
+    missed_rows = body.get("engine_missed") or []
+    findings = trim_findings(poll)
+    return FixtureAudit(
+        name=name,
+        engine_count=len(findings),
+        agree=sum(1 for r in audit_rows if r.get("verdict") == "agree"),
+        disagree=sum(1 for r in audit_rows if r.get("verdict") == "disagree"),
+        uncertain=sum(1 for r in audit_rows if r.get("verdict") == "uncertain"),
+        missed=len(missed_rows),
+        parse_failed=False,
+        raw_path=out_dir / f"{name}.raw.txt",
+    )
+
+
 def audit_one(name: str, pdf: Path, poll: Path, out_dir: Path) -> FixtureAudit:
     """Audit a single fixture, write JSON, return summary."""
+    # Skip if already audited (idempotent re-runs).
+    existing = load_existing_audit(name, poll, out_dir)
+    if existing is not None:
+        print("  (skipping — audit json already exists)")
+        return existing
+
     findings = trim_findings(poll)
     findings_json = json.dumps(findings, indent=2)
-    pdf_b64 = base64.standard_b64encode(pdf.read_bytes()).decode("ascii")
 
-    raw, parsed = call_opus(pdf_b64, findings_json)
+    # Decide native-PDF vs flattened-images based on file size + page count.
+    pdf_bytes = pdf.read_bytes()
+    page_count = 0
+    try:
+        import fitz
+        with fitz.open(pdf) as _d:
+            page_count = _d.page_count
+    except Exception:
+        pass
+    too_big = len(pdf_bytes) > FLATTEN_IF_BYTES or page_count > FLATTEN_IF_PAGES
+
+    if too_big:
+        print(
+            f"  flattening ({len(pdf_bytes)//1024} KB, {page_count} pages → JPEG @ {FLATTEN_DPI} dpi)"
+        )
+        pdf_blocks = flatten_pdf_to_image_blocks(pdf)
+        approx_kb = sum(len(b["source"]["data"]) for b in pdf_blocks) // 1024 * 3 // 4
+        print(f"  flattened to {len(pdf_blocks)} image blocks (~{approx_kb} KB total)")
+    else:
+        pdf_b64 = base64.standard_b64encode(pdf_bytes).decode("ascii")
+        pdf_blocks = [
+            {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": pdf_b64,
+                },
+            }
+        ]
+
+    # Bump output budget for fixtures with > 200 findings — Opus needs
+    # room to enumerate every audit row + missed item.
+    max_tokens = MAX_TOKENS_LARGE if len(findings) > 200 else MAX_TOKENS
+
+    raw, parsed = call_opus(pdf_blocks, findings_json, max_tokens=max_tokens)
 
     # Write whatever we got.
     json_path = out_dir / f"{name}.json"
@@ -374,12 +504,25 @@ def main() -> int:
     fixtures = load_smoke_run(run_dir)
     if not fixtures:
         fail(f"No <NN>_<fixture>/poll.json slots found under {run_dir}.")
+
+    # Optional filter: AUDIT_FIXTURES="04_Amalgam_Catalyst_9_5x3_5 05_Cherry-Twist_OUTLINED"
+    if FILTER_FIXTURES:
+        wanted = set(FILTER_FIXTURES.split())
+        fixtures = [f for f in fixtures if f[0] in wanted]
+        if not fixtures:
+            fail(f"AUDIT_FIXTURES filter matched 0 slots: {wanted}")
+
     print(f"  fixtures  : {len(fixtures)}")
     print(f"  model     : {OPUS_MODEL}")
 
-    # Output dir.
-    ts = int(time.time())
-    out_dir = Path(f"/tmp/audit-opus-{ts}")
+    # Output dir — env override lets a re-run of failed fixtures land
+    # in the same dir as the original partial run, so the aggregate
+    # summary covers all 12 fixtures.
+    if os.environ.get("AUDIT_OUT_DIR"):
+        out_dir = Path(os.environ["AUDIT_OUT_DIR"])
+    else:
+        ts = int(time.time())
+        out_dir = Path(f"/tmp/audit-opus-{ts}")
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"  out dir   : {out_dir}")
     print()
