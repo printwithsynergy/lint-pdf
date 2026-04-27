@@ -632,10 +632,25 @@ class PreflightOrchestrator:
             try:
                 from lintpdf.analyzers.epm_v2_a import EpmTierAAnalyzer
 
+                # Build the thresholds dict the analyzer expects from
+                # the per-tenant ThresholdConfig fields. The toggle
+                # default schema matches the same keys (rich_black,
+                # delta_e_max) so callers writing to either surface
+                # converge on the same shape.
+                epm_thresholds: dict[str, Any] = {
+                    "rich_black": {
+                        "c": getattr(t, "rich_black_c", 60.0),
+                        "m": getattr(t, "rich_black_m", 40.0),
+                        "y": getattr(t, "rich_black_y", 40.0),
+                        "k": getattr(t, "rich_black_k", 100.0),
+                    },
+                    "delta_e_max": getattr(t, "spot_color_delta_e_warning", 4.0),
+                }
                 analyzers.append(
                     EpmTierAAnalyzer(
-                        epm_thresholds=getattr(t, "epm_thresholds", None),
+                        epm_thresholds=epm_thresholds,
                         substrate_class=getattr(t, "epm_substrate_class", None),
+                        substrate_profile_path=getattr(t, "epm_substrate_profile_path", None),
                     )
                 )
             except ImportError:
