@@ -89,12 +89,21 @@ print("" if data is None else (data if isinstance(data, str) else json.dumps(dat
 }
 
 # POST/GET wrappers that capture body to a tmpfile and return HTTP code.
+# Retries up to 3× on transient failures (000 / 502 / 503 / 504) — the
+# engine occasionally returns "DNS cache overflow" 503s from a single
+# pod; the next request hits a different pod and succeeds.
 http_call() {
   # Args: METHOD URL BODY_FILE [extra curl flags...]
   local method="$1" url="$2" body_file="$3"; shift 3
-  local code
-  code=$(curl -sS -m 60 -o "$body_file" -w '%{http_code}' \
-    -X "$method" "$url" "$@" || echo "000")
+  local code attempt
+  for attempt in 1 2 3; do
+    code=$(curl -sS -m 60 -o "$body_file" -w '%{http_code}' \
+      -X "$method" "$url" "$@" || echo "000")
+    case "$code" in
+      000|502|503|504) sleep "$(( attempt * 2 ))" ;;
+      *) break ;;
+    esac
+  done
   echo "$code"
 }
 
@@ -143,11 +152,10 @@ echo
 echo "→ minting temp tenant ..."
 TENANT_NAME="smoke-batch-${TS}"
 mint_body=$(printf '{"name":"%s","plan":"enterprise","contact_email":null}' "$TENANT_NAME")
-mint_code=$(curl -sS -m 30 -o "$RUN_DIR/tenant.json" -w '%{http_code}' \
-  -X POST "${API_URL}/api/v1/admin/tenants" \
+mint_code=$(http_call POST "${API_URL}/api/v1/admin/tenants" "$RUN_DIR/tenant.json" \
   -H "X-Admin-Key: ${LINTPDF_ADMIN_API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "$mint_body" || echo "000")
+  -d "$mint_body")
 if [[ "$mint_code" != "200" && "$mint_code" != "201" ]]; then
   echo "✘ tenant mint failed: HTTP $mint_code"
   cat "$RUN_DIR/tenant.json"
@@ -166,9 +174,10 @@ echo "  api_key tag = ${TENANT_KEY:0:12}…${TENANT_KEY: -6}"
 # Enable AI on the tenant so submissions exercise every analyzer
 # category and the explain endpoint is callable.
 echo "→ enabling AI on tenant ..."
-ai_code=$(curl -sS -m 30 -o "$RUN_DIR/ai_enable.json" -w '%{http_code}' \
-  -X PUT "${API_URL}/api/v1/admin/tenants/${TENANT_ID}/ai?ai_enabled=true&billing_mode=pay_per_use&enabled_categories=all" \
-  -H "X-Admin-Key: ${LINTPDF_ADMIN_API_KEY}" || echo "000")
+ai_code=$(http_call PUT \
+  "${API_URL}/api/v1/admin/tenants/${TENANT_ID}/ai?ai_enabled=true&billing_mode=pay_per_use&enabled_categories=all" \
+  "$RUN_DIR/ai_enable.json" \
+  -H "X-Admin-Key: ${LINTPDF_ADMIN_API_KEY}")
 if [[ "$ai_code" != "200" && "$ai_code" != "201" ]]; then
   echo "  ⚠ AI enable returned $ai_code (continuing without AI)"
   cat "$RUN_DIR/ai_enable.json" || true
@@ -177,9 +186,10 @@ fi
 
 # Preload credits so cost-cap doesn't intercept mid-run.
 echo "→ granting AI credits ..."
-cred_code=$(curl -sS -m 30 -o "$RUN_DIR/ai_credits.json" -w '%{http_code}' \
-  -X POST "${API_URL}/api/v1/admin/tenants/${TENANT_ID}/ai/credits?credit_amount=10000&price_paid=0" \
-  -H "X-Admin-Key: ${LINTPDF_ADMIN_API_KEY}" || echo "000")
+cred_code=$(http_call POST \
+  "${API_URL}/api/v1/admin/tenants/${TENANT_ID}/ai/credits?credit_amount=10000&price_paid=0" \
+  "$RUN_DIR/ai_credits.json" \
+  -H "X-Admin-Key: ${LINTPDF_ADMIN_API_KEY}")
 if [[ "$cred_code" != "200" && "$cred_code" != "201" ]]; then
   echo "  ⚠ credits grant returned $cred_code (continuing; explain may 402)"
   cat "$RUN_DIR/ai_credits.json" || true
@@ -202,12 +212,11 @@ for pdf in "${FIXTURES[@]}"; do
   printf '\n[%d/%d] %s\n' "$idx" "$TOTAL" "$base"
 
   # ── submit ─────────────────────────────────────────────────────
-  submit_code=$(curl -sS -m 60 -o "$slot/submit.json" -w '%{http_code}' \
-    -X POST "${API_URL}/api/v1/jobs" \
+  submit_code=$(http_call POST "${API_URL}/api/v1/jobs" "$slot/submit.json" \
     -H "Authorization: Bearer ${TENANT_KEY}" \
     -F "file=@${pdf}" \
     -F "profile_id=${PROFILE_ID}" \
-    -F "ai_enabled=true" || echo "000")
+    -F "ai_enabled=true")
   if [[ "$submit_code" != "200" && "$submit_code" != "201" && "$submit_code" != "202" ]]; then
     echo "  ✘ submit HTTP $submit_code"
     head -c 500 "$slot/submit.json"; echo
@@ -238,11 +247,10 @@ print(len(d.get("findings") or []))
   echo "  status=complete findings=${finding_count}"
 
   # ── mint reports ───────────────────────────────────────────────
-  rpt_code=$(curl -sS -m 60 -o "$slot/reports.json" -w '%{http_code}' \
-    -X POST "${API_URL}/api/v1/jobs/${job_id}/reports" \
+  rpt_code=$(http_call POST "${API_URL}/api/v1/jobs/${job_id}/reports" "$slot/reports.json" \
     -H "Authorization: Bearer ${TENANT_KEY}" \
     -H "Content-Type: application/json" \
-    -d '{"formats":["html","pdf","json","annotated_pdf"],"expiry_days":7}' || echo "000")
+    -d '{"formats":["html","pdf","json","annotated_pdf"],"expiry_days":7}')
   if [[ "$rpt_code" != "200" && "$rpt_code" != "201" ]]; then
     echo "  ✘ mint HTTP $rpt_code"
     head -c 500 "$slot/reports.json"; echo
@@ -289,9 +297,8 @@ for r in d.get("reports", []):
   # ── EPM verdict ────────────────────────────────────────────────
   epm_tier="(skipped)"
   epm_drivers=""
-  epm_code=$(curl -sS -m 30 -o "$slot/epm.json" -w '%{http_code}' \
-    "${API_URL}/api/v1/jobs/${job_id}/epm" \
-    -H "Authorization: Bearer ${TENANT_KEY}" || echo "000")
+  epm_code=$(http_call GET "${API_URL}/api/v1/jobs/${job_id}/epm" "$slot/epm.json" \
+    -H "Authorization: Bearer ${TENANT_KEY}")
   if [[ "$epm_code" == "200" ]]; then
     epm_tier=$(jq_get "tier" < "$slot/epm.json")
     epm_drivers=$(python3 -c '
@@ -318,11 +325,12 @@ for f in (d.get("findings") or []):
 ' "$slot/poll.json")
     while IFS= read -r fid; do
       [[ -z "$fid" ]] && continue
-      ec=$(curl -sS -m 60 -o "$slot/explain_${fid}.json" -w '%{http_code}' \
-        -X POST "${API_URL}/api/v1/jobs/${job_id}/findings/${fid}/explain" \
+      ec=$(http_call POST \
+        "${API_URL}/api/v1/jobs/${job_id}/findings/${fid}/explain" \
+        "$slot/explain_${fid}.json" \
         -H "Authorization: Bearer ${TENANT_KEY}" \
         -H "Content-Type: application/json" \
-        -d '{}' || echo "000")
+        -d '{}')
       if [[ "$ec" == "200" ]]; then
         explained=$((explained + 1))
       elif [[ "$ec" == "402" ]]; then
