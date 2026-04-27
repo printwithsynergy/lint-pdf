@@ -640,6 +640,13 @@ class PreflightOrchestrator:
                 )
             except ImportError:
                 pass
+            # v2 Tier-B analyzers — soft-rejection EPM checks (>=2 fire reject).
+            try:
+                from lintpdf.analyzers.epm_v2_b import EpmTierBAnalyzer
+
+                analyzers.append(EpmTierBAnalyzer())
+            except ImportError:
+                pass
 
         # Standards compliance analyzer (always enabled)
         try:
