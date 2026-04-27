@@ -17,7 +17,6 @@ Covers:
 
 from __future__ import annotations
 
-import secrets
 import uuid
 from io import BytesIO
 from types import SimpleNamespace
@@ -29,7 +28,6 @@ from lintpdf.brand_specs.resolver import (
     resolve_brand_spec_for_job,
     resolve_brand_spec_for_tenant,
 )
-from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -131,9 +129,7 @@ class TestBrandSpecCrud:
         client.delete(f"/api/v1/brand-specs/{created['id']}")
         # Verify via the include_archived list view (the entry is still
         # present, just marked archived + non-default).
-        listed = client.get(
-            "/api/v1/brand-specs?include_archived=true"
-        ).json()["brand_specs"]
+        listed = client.get("/api/v1/brand-specs?include_archived=true").json()["brand_specs"]
         archived = next(s for s in listed if s["id"] == created["id"])
         assert archived["is_archived"] is True
         assert archived["is_default"] is False
@@ -149,133 +145,6 @@ class TestBrandSpecCrud:
     def test_get_404_for_unknown(self, client: TestClient) -> None:
         response = client.get(f"/api/v1/brand-specs/{uuid.uuid4()}")
         assert response.status_code == 404
-
-
-# ---------------------------------------------------------------------------
-# Endpoint binding
-# ---------------------------------------------------------------------------
-
-
-class TestEndpointBrandSpecBinding:
-    @staticmethod
-    def _seed_spec(db: Session, tenant_id: uuid.UUID, **kwargs):
-        """Insert a brand spec into the unified-config substrate
-        (``ToggleOverride(toggle_id='brand', scope=TENANT)``) so the
-        test doesn't pay a second TestClient round-trip per fixture.
-
-        Phase 0.7 PR-B3d dropped the legacy
-        ``custom_endpoints.default_brand_spec_id`` and
-        ``jobs.brand_spec_id`` FKs to ``brand_specs.id`` (alembic 045)
-        so persisting referencing rows no longer requires a sibling
-        BrandSpec ORM entry.
-
-        Returns a lightweight ``types.SimpleNamespace`` with ``.id``
-        and ``.name`` attributes so callers that read those keep
-        working.
-        """
-        from types import SimpleNamespace
-
-        new_id = uuid.uuid4()
-        name = kwargs.pop("name", "Spec A")
-        colors = kwargs.pop("colors", [])
-        is_default = kwargs.pop("is_default", False)
-        entry = {
-            "id": str(new_id),
-            "name": name,
-            "customer_name": None,
-            "description": None,
-            "colors": colors,
-            "rich_black_spec": None,
-            "is_default": is_default,
-            "is_archived": False,
-        }
-
-        existing = (
-            db.query(ToggleOverride)
-            .filter(
-                ToggleOverride.toggle_id == "brand",
-                ToggleOverride.scope == ToggleScope.TENANT,
-                ToggleOverride.scope_id == str(tenant_id),
-            )
-            .first()
-        )
-        if existing is None:
-            db.add(
-                ToggleOverride(
-                    id=secrets.token_urlsafe(12),
-                    toggle_id="brand",
-                    scope=ToggleScope.TENANT,
-                    scope_id=str(tenant_id),
-                    value={str(new_id): entry},
-                    locked=False,
-                    set_by="test",
-                    surface="test",
-                )
-            )
-        else:
-            value = dict(existing.value or {})
-            value[str(new_id)] = entry
-            existing.value = value
-        db.commit()
-        return SimpleNamespace(id=new_id, name=name)
-
-    def test_create_endpoint_with_default_brand_spec(
-        self, client: TestClient, db_session: Session
-    ) -> None:
-        from lintpdf.api.models import Tenant
-
-        tenant = db_session.query(Tenant).first()
-        assert tenant is not None
-        spec = self._seed_spec(db_session, tenant.id, name="Spec A")
-        response = client.post(
-            "/api/v1/endpoints",
-            json={
-                "slug": "bound-endpoint",
-                "profile_id": "lintpdf-default",
-                "default_brand_spec_id": str(spec.id),
-            },
-        )
-        assert response.status_code == 201, response.text
-        assert response.json()["default_brand_spec_id"] == str(spec.id)
-
-    def test_create_endpoint_rejects_foreign_brand_spec(self, client: TestClient) -> None:
-        response = client.post(
-            "/api/v1/endpoints",
-            json={
-                "slug": "bad-spec",
-                "profile_id": "lintpdf-default",
-                "default_brand_spec_id": str(uuid.uuid4()),
-            },
-        )
-        assert response.status_code == 404
-
-    def test_patch_endpoint_clears_default_spec(
-        self, client: TestClient, db_session: Session
-    ) -> None:
-        from lintpdf.api.models import Tenant
-
-        tenant = db_session.query(Tenant).first()
-        assert tenant is not None
-        spec = self._seed_spec(db_session, tenant.id, name="Spec B")
-        created = client.post(
-            "/api/v1/endpoints",
-            json={
-                "slug": "clear-me",
-                "profile_id": "lintpdf-default",
-                "default_brand_spec_id": str(spec.id),
-            },
-        ).json()
-        response = client.patch(
-            f"/api/v1/endpoints/{created['id']}",
-            json={"default_brand_spec_id": "null"},
-        )
-        assert response.status_code == 200
-        assert response.json()["default_brand_spec_id"] is None
-
-
-# ---------------------------------------------------------------------------
-# Resolver
-# ---------------------------------------------------------------------------
 
 
 class TestResolver:

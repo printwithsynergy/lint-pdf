@@ -8,6 +8,25 @@ const config = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: true,
+  // Legacy /dashboard/endpoints surface was hard-removed in PR 26.
+  // Old bookmarks land on the Workflows page so customers don't see
+  // a 404; 308 keeps the method semantics for any rare POST/PATCH
+  // that survives in scripts (Workflows ignores them, but at least
+  // the redirect doesn't break payload visibility).
+  async redirects() {
+    return [
+      {
+        source: "/dashboard/endpoints",
+        destination: "/dashboard/workflows",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/endpoints/:path*",
+        destination: "/dashboard/workflows",
+        permanent: true,
+      },
+    ];
+  },
   transpilePackages: [
     "@thinkneverland/pixie-dust-api-keys",
     "@thinkneverland/pixie-dust-auth",
