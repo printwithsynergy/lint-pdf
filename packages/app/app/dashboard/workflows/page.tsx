@@ -38,6 +38,23 @@ interface BrandSpecSummary {
   name: string;
 }
 
+interface ToggleRegistryRow {
+  id: string;
+  category: string;
+  human_name: string;
+  type: "bool" | "int" | "float" | "string" | "enum" | "json";
+  default_value: unknown;
+  override_at: string[];
+  description: string | null;
+  deprecated: boolean;
+}
+
+interface WorkflowOverrideRow {
+  workflow_id: string;
+  toggle_id: string;
+  value: unknown;
+}
+
 export default function WorkflowsPage() {
   const { toast } = useToast();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -49,6 +66,13 @@ export default function WorkflowsPage() {
   const [newName, setNewName] = useState("");
   const [newProfileId, setNewProfileId] = useState("");
   const [newBrandSpecId, setNewBrandSpecId] = useState("");
+
+  // Per-workflow override editor state. Only one editor open at a time;
+  // ``editorWorkflowId`` is the workflow whose defaults are being edited.
+  const [editorWorkflowId, setEditorWorkflowId] = useState<string | null>(null);
+  const [registry, setRegistry] = useState<ToggleRegistryRow[]>([]);
+  const [overrides, setOverrides] = useState<WorkflowOverrideRow[]>([]);
+  const [editorLoading, setEditorLoading] = useState(false);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -110,6 +134,96 @@ export default function WorkflowsPage() {
       toast(e instanceof Error ? e.message : "Failed to create", "error");
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function openEditor(workflowId: string) {
+    setEditorWorkflowId(workflowId);
+    setEditorLoading(true);
+    try {
+      const [regResp, ovResp] = await Promise.all([
+        fetch("/api/lintpdf/toggles"),
+        fetch(`/api/lintpdf/workflows/${workflowId}/toggles`),
+      ]);
+      if (regResp.ok) {
+        const data = await regResp.json();
+        const items: ToggleRegistryRow[] = (data.items ?? []).filter(
+          (t: ToggleRegistryRow) =>
+            (t.override_at ?? []).includes("WORKFLOW") && !t.deprecated,
+        );
+        setRegistry(items);
+      }
+      if (ovResp.ok) {
+        const data = await ovResp.json();
+        setOverrides(data.items ?? []);
+      }
+    } catch (e) {
+      toast(
+        e instanceof Error ? e.message : "Failed to load defaults",
+        "error",
+      );
+    } finally {
+      setEditorLoading(false);
+    }
+  }
+
+  function closeEditor() {
+    setEditorWorkflowId(null);
+    setRegistry([]);
+    setOverrides([]);
+  }
+
+  async function setOverride(toggleId: string, raw: string, type: string) {
+    if (!editorWorkflowId) return;
+    let parsed: unknown = raw;
+    try {
+      if (type === "bool") parsed = raw === "true" || raw === "1";
+      else if (type === "int") parsed = parseInt(raw, 10);
+      else if (type === "float") parsed = parseFloat(raw);
+      else if (type === "json") parsed = JSON.parse(raw);
+    } catch {
+      toast(`Invalid ${type} value for ${toggleId}`, "error");
+      return;
+    }
+    try {
+      const resp = await fetch(
+        `/api/lintpdf/workflows/${editorWorkflowId}/toggles/${encodeURIComponent(toggleId)}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ value: parsed }),
+        },
+      );
+      if (!resp.ok) {
+        const detail = await resp.text();
+        throw new Error(detail || `Save failed (${resp.status})`);
+      }
+      const body = await resp.json();
+      setOverrides((prev) => {
+        const others = prev.filter((o) => o.toggle_id !== toggleId);
+        return [...others, body];
+      });
+      toast(`${toggleId} saved`, "success");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to save", "error");
+    }
+  }
+
+  async function clearOverride(toggleId: string) {
+    if (!editorWorkflowId) return;
+    try {
+      const resp = await fetch(
+        `/api/lintpdf/workflows/${editorWorkflowId}/toggles/${encodeURIComponent(toggleId)}`,
+        { method: "DELETE" },
+      );
+      if (!resp.ok && resp.status !== 204) {
+        const detail = await resp.text();
+        throw new Error(detail || `Clear failed (${resp.status})`);
+      }
+      setOverrides((prev) => prev.filter((o) => o.toggle_id !== toggleId));
+      toast(`${toggleId} cleared`, "success");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Failed to clear", "error");
     }
   }
 
@@ -229,7 +343,13 @@ export default function WorkflowsPage() {
                   <td className="px-4 py-2 text-xs text-muted-foreground">
                     {wf.created_at ?? "—"}
                   </td>
-                  <td className="px-4 py-2 text-right">
+                  <td className="px-4 py-2 text-right space-x-2">
+                    <Button
+                      variant="ghost"
+                      onClick={() => openEditor(wf.id)}
+                    >
+                      Manage defaults
+                    </Button>
                     <Button
                       variant="destructive"
                       onClick={() => handleDelete(wf.id)}
@@ -241,6 +361,93 @@ export default function WorkflowsPage() {
               ))}
             </tbody>
           </table>
+        </section>
+      )}
+
+      {editorWorkflowId && (
+        <section className="rounded-lg border border-border bg-card p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                Toggle defaults
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Workflow {editorWorkflowId}. Setting a value here pins the
+                default for every job submitted against this workflow; jobs
+                can still override per-call.
+              </p>
+            </div>
+            <Button variant="ghost" onClick={closeEditor}>
+              Close
+            </Button>
+          </div>
+          {editorLoading ? (
+            <p className="text-sm text-muted-foreground">Loading registry…</p>
+          ) : registry.length === 0 ? (
+            <EmptyState
+              title="No overridable toggles"
+              description="No registry rows allow WORKFLOW-scope overrides."
+            />
+          ) : (
+            <table className="w-full text-sm">
+              <thead className="border-b border-border bg-muted/40 text-left">
+                <tr>
+                  <th className="px-3 py-2 font-medium">Toggle</th>
+                  <th className="px-3 py-2 font-medium">Type</th>
+                  <th className="px-3 py-2 font-medium">Default</th>
+                  <th className="px-3 py-2 font-medium">Workflow value</th>
+                  <th className="px-3 py-2"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {registry.map((t) => {
+                  const ov = overrides.find((o) => o.toggle_id === t.id);
+                  const display =
+                    ov !== undefined ? JSON.stringify(ov.value) : "";
+                  return (
+                    <tr key={t.id} className="border-t border-border">
+                      <td className="px-3 py-2 align-top">
+                        <div className="font-mono text-xs">{t.id}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {t.human_name}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <code className="text-xs">{t.type}</code>
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <code className="text-xs text-muted-foreground">
+                          {JSON.stringify(t.default_value)}
+                        </code>
+                      </td>
+                      <td className="px-3 py-2 align-top">
+                        <Input
+                          defaultValue={display}
+                          placeholder="(unset)"
+                          onBlur={(e) => {
+                            const v = e.currentTarget.value.trim();
+                            if (v === "" && ov === undefined) return;
+                            if (v === display) return;
+                            void setOverride(t.id, v, t.type);
+                          }}
+                        />
+                      </td>
+                      <td className="px-3 py-2 align-top text-right">
+                        {ov !== undefined && (
+                          <Button
+                            variant="ghost"
+                            onClick={() => clearOverride(t.id)}
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </section>
       )}
     </div>
