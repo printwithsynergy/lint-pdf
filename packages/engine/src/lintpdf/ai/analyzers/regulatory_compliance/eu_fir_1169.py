@@ -14,6 +14,7 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any
 
+from lintpdf.ai.analyzers.regulatory_compliance._gates import is_eu_food_applicable
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
@@ -179,6 +180,14 @@ class EuFir1169Analyzer(BaseAIAnalyzer):
         from lintpdf.semantic.events import TextRenderedEvent
 
         findings: list[Finding] = []
+
+        # Jurisdiction gate. FIR 1169 is a pure-EU food-info regulation;
+        # it does not apply to US/CA/UK products. The 2026-04-27 Opus
+        # audit flagged 28 false positives on Canadian + US supplement
+        # labels where this rule fired despite ``regulatory_market``
+        # being non-EU (or unset and the product clearly non-food-EU).
+        if not is_eu_food_applicable(ai_config):
+            return []
 
         # Determine if small package (surface area < 80cm²)
         surface_area_cm2: float | None = None
