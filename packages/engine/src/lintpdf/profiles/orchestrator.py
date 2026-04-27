@@ -647,6 +647,13 @@ class PreflightOrchestrator:
                 analyzers.append(EpmTierBAnalyzer())
             except ImportError:
                 pass
+            # v2 Tier-C analyzers — advisory EPM checks (no scoring impact).
+            try:
+                from lintpdf.analyzers.epm_v2_c import EpmTierCAnalyzer
+
+                analyzers.append(EpmTierCAnalyzer())
+            except ImportError:
+                pass
 
         # Standards compliance analyzer (always enabled)
         try:
