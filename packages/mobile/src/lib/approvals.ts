@@ -18,6 +18,14 @@ export interface ApprovalHealthSummary {
   page_count: number;
 }
 
+export interface ApprovalEpmVerdict {
+  tier: string;
+  rejection_drivers: string[];
+  advisories: string[];
+  recommends_indichrome: boolean;
+  epm_findings_count: number;
+}
+
 export interface ApprovalChainInfo {
   id: string;
   job_id: string;
@@ -28,6 +36,7 @@ export interface ApprovalChainInfo {
   completed_steps: ApprovalCompletedStep[];
   file_name: string;
   health_summary: ApprovalHealthSummary;
+  epm_verdict?: ApprovalEpmVerdict | null;
 }
 
 export type ApprovalDecision = "approved" | "rejected";
