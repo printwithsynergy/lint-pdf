@@ -901,6 +901,7 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
         )
 
         from lintpdf.api.schemas import AuditVerdict
+        from lintpdf.decisions.service import latest_active_for_finding
 
         def _audit_for(f: JobFinding) -> AuditVerdict | None:
             # Surface the AI accuracy-audit verdict when the auditor
@@ -915,6 +916,18 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
                 model=f.audit_model,
                 at=f.audit_at,
             )
+
+        def _effective_decision_for(f: JobFinding) -> dict[str, Any] | None:
+            d = latest_active_for_finding(
+                db, tenant_id=job.tenant_id, finding_id=f.id
+            )
+            if d is None:
+                return None
+            return {
+                "decision_type": d.decision_type,
+                "decided_at": d.decided_at.isoformat() if d.decided_at else None,
+                "decided_by_user_id": d.decided_by_user_id,
+            }
 
         findings: list[JobFinding] = job.findings
         response.findings = [
@@ -932,9 +945,40 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
                 object_id=f.object_id,
                 object_type=f.object_type,
                 audit=_audit_for(f),
+                ai_explanation=f.ai_explanation,
+                ai_explanation_model=f.ai_explanation_model,
+                ai_explanation_at=f.ai_explanation_at,
+                effective_decision=_effective_decision_for(f),
             )
             for f in findings
         ]
+
+        # Inline EPM verdict + decisions count for the single-job endpoint.
+        # List endpoints reuse this hydrator — they call this same function
+        # but the verdict + count fields are cheap (one query each) and
+        # safe to include because the list endpoint never returns findings.
+        from lintpdf.decisions.service import list_for_job
+        from lintpdf.epm.scoring import score_epm_candidacy
+
+        epm_codes = [
+            f.inspection_id
+            for f in findings
+            if f.inspection_id.startswith("LPDF_EPM")
+        ]
+        verdict = score_epm_candidacy(epm_codes)
+        response.epm_verdict = {
+            "tier": verdict.tier.value
+            if hasattr(verdict.tier, "value")
+            else str(verdict.tier),
+            "rejection_drivers": list(verdict.rejection_drivers),
+            "advisories": list(verdict.advisories),
+            "recommends_indichrome": verdict.recommends_indichrome,
+            "legacy_codes_fired": list(verdict.legacy_codes_fired),
+            "epm_findings_count": len(epm_codes),
+        }
+        response.decisions_count = len(
+            list_for_job(db, tenant_id=job.tenant_id, job_id=job.id, limit=500)
+        )
 
         # Include auto-generated report URLs if available. Resolve the
         # base URL through the whitelabel-aware resolver so tenants with a
