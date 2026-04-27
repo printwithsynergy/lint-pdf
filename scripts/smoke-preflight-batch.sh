@@ -177,16 +177,9 @@ echo "  api_key tag = ${TENANT_KEY:0:12}…${TENANT_KEY: -6}"
 
 # Enable AI on the tenant so submissions exercise every analyzer
 # category and the explain endpoint is callable.
-#
-# industry_type + regulatory_market are pinned to dietary_supplement / us_fda
-# to match the corpus (US/CA supplement + food + cosmetic packaging). The
-# 2026-04-27 Opus audit showed leaving these unset produced 75 false-
-# positive findings (EU pharma + EU FIR 1169 firing on non-EU products).
-# Setting them explicitly is good practice and represents the typical
-# customer onboarding path.
 echo "→ enabling AI on tenant ..."
 ai_code=$(http_call PUT \
-  "${API_URL}/api/v1/admin/tenants/${TENANT_ID}/ai?ai_enabled=true&billing_mode=pay_per_use&enabled_categories=all&industry_type=dietary_supplement&regulatory_market=us_fda" \
+  "${API_URL}/api/v1/admin/tenants/${TENANT_ID}/ai?ai_enabled=true&billing_mode=pay_per_use&enabled_categories=all" \
   "$RUN_DIR/ai_enable.json" \
   -H "X-Admin-Key: ${LINTPDF_ADMIN_API_KEY}")
 if [[ "$ai_code" != "200" && "$ai_code" != "201" ]]; then
@@ -204,6 +197,23 @@ cred_code=$(http_call POST \
 if [[ "$cred_code" != "200" && "$cred_code" != "201" ]]; then
   echo "  ⚠ credits grant returned $cred_code (continuing; explain may 402)"
   cat "$RUN_DIR/ai_credits.json" || true
+fi
+
+# Pin industry_type + regulatory_market via the tenant-side config
+# route (admin route doesn't expose those fields; they go through
+# PUT /api/v1/ai/config with tenant bearer auth). Setting them
+# matters for jurisdiction-gated analyzers like AI_PHARMA_001 +
+# AI_EU1169_001 — without these the EU rules over-fire on US/CA
+# fixtures (see the 2026-04-27 Opus audit, PR #278).
+echo "→ pinning industry_type + regulatory_market ..."
+cfg_body='{"industry_type":"dietary_supplement","regulatory_market":"us_fda"}'
+cfg_code=$(http_call PUT "${API_URL}/api/v1/ai/config" "$RUN_DIR/ai_config.json" \
+  -H "Authorization: Bearer ${TENANT_KEY}" \
+  -H "Content-Type: application/json" \
+  -d "$cfg_body")
+if [[ "$cfg_code" != "200" ]]; then
+  echo "  ⚠ ai/config PUT returned $cfg_code"
+  head -c 200 "$RUN_DIR/ai_config.json"; echo
 fi
 
 
