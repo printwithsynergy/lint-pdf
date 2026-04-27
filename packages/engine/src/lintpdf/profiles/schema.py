@@ -286,6 +286,26 @@ class ThresholdConfig(BaseModel):
     epm_min_line_weight: float = Field(
         default=0.35, ge=0, description="Minimum line weight for digital press output (pt)."
     )
+    epm_substrate_class: str | None = Field(
+        default=None,
+        description=(
+            "Substrate class declared on the job (e.g. 'coated_glossy', "
+            "'uncoated_heavy'). Drives the EPM-A6 incompatibility check. "
+            "Resolved from the per-tenant `epm_thresholds` ToggleOverride "
+            "when present; default None leaves the check quiet."
+        ),
+    )
+    epm_substrate_profile_path: str | None = Field(
+        default=None,
+        description=(
+            "Filesystem path to the tenant-uploaded substrate ICC profile. "
+            "When set, the EPM-A1 gamut detector routes through "
+            "is_in_gamut_for_profile (substrate-aware path) instead of "
+            "the default saturated-CMYK heuristic. Path lives on the "
+            "engine host's local volume; uploads land via the dashboard "
+            "or the public ICC-upload endpoint."
+        ),
+    )
     color_score_weights: dict[str, float] = Field(
         default_factory=lambda: {
             "color_spaces": 25.0,

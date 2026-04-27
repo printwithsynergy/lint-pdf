@@ -149,3 +149,24 @@ class TestOrchestratorOnDocument:
         # Just verify it runs without error
         result = orch.run_on_document(_minimal_doc(), [])
         assert isinstance(result, PreflightResult)
+
+    @staticmethod
+    def test_epm_substrate_path_forwarded_to_tier_a_analyzer() -> None:
+        """Orchestrator reads epm_substrate_profile_path from
+        ThresholdConfig and constructs EpmTierAAnalyzer with it."""
+        fp = PreflightProfile(
+            name="Test",
+            thresholds=ThresholdConfig(
+                epm_mode=True,
+                epm_substrate_class="uncoated_heavy",
+                epm_substrate_profile_path="/var/lib/lintpdf/profiles/coated.icc",
+            ),
+        )
+        orch = PreflightOrchestrator(fp)
+        analyzers = orch._create_analyzers()
+        from lintpdf.analyzers.epm_v2_a import EpmTierAAnalyzer
+
+        tier_a = next((a for a in analyzers if isinstance(a, EpmTierAAnalyzer)), None)
+        assert tier_a is not None, "EpmTierAAnalyzer was not registered"
+        assert tier_a._substrate_class == "uncoated_heavy"
+        assert tier_a._substrate_profile_path == "/var/lib/lintpdf/profiles/coated.icc"
