@@ -970,6 +970,19 @@ def _build_viewer_config(
     # (which shouldn't run against still-cold tiles). Resolved lazily
     # from Redis so no extra schema cost.
     caps["tiles_warmed"] = _is_warming_complete(str(job.id))
+    # ``ai_explain`` — surface flag for the AI-Explain endpoint
+    # (POST /api/v1/jobs/{id}/findings/{fid}/explain). Data is populated
+    # on-call via that route (NOT fill-in style — the
+    # POST /jobs/{id}/capabilities/{capability} fill-in path doesn't apply).
+    # Always advertised as true; per-call gating is enforced by the
+    # cost-cap layer (HTTP 402) inside the explain route itself.
+    caps["ai_explain"] = True
+    # ``epm_verdict`` — always available since EPM scoring is a pure
+    # function of the fired LPDF_EPM_* findings; populated at ingest by
+    # the orchestrator and surfaced inline on JobResponse.epm_verdict.
+    # Not on-demand fillable — re-running the analyzers requires a fresh
+    # job submission.
+    caps["epm_verdict"] = True
 
     from lintpdf.tenants.entitlements import resolve_entitlements
 

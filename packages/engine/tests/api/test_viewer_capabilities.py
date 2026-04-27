@@ -81,6 +81,10 @@ class TestViewerConfigProjection:
         assert data["capabilities"]["findings"] is False
         assert data["capabilities"]["separations"] is False
         assert data["capabilities"]["thumbnails"] is True
+        # AI-Explain + EPM verdict surface flags must always advertise true.
+        # Per-call gating happens inside the explain endpoint via cost-cap.
+        assert data["capabilities"]["ai_explain"] is True
+        assert data["capabilities"]["epm_verdict"] is True
 
     @staticmethod
     def test_brand_anonymous_query_strips_chrome(client: TestClient, db_session: Session) -> None:
