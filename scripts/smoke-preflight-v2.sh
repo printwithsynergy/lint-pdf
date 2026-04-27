@@ -21,7 +21,10 @@
 # Env (optional):
 #   LINTPDF_API_URL    Engine base URL. Default https://api.lintpdf.com
 #   LINTPDF_PROFILE_ID Profile to run against. Default lintpdf-default
-#   SMOKE_EXPLAIN      "0" to skip the AI-Explain step. Default "1".
+#   SMOKE_EXPLAIN      "1" to enable the AI-Explain step (real Claude
+#                      calls; ~$0.10 per run). Default "0" — explain
+#                      step skipped so a CI smoke against the live
+#                      engine doesn't accrue API spend.
 #
 # Exit codes:
 #   0   job complete, every artefact printed.
@@ -37,7 +40,7 @@ set -euo pipefail
 
 API_URL="${LINTPDF_API_URL:-https://api.lintpdf.com}"
 PROFILE_ID="${LINTPDF_PROFILE_ID:-lintpdf-default}"
-EXPLAIN="${SMOKE_EXPLAIN:-1}"
+EXPLAIN="${SMOKE_EXPLAIN:-0}"
 PDF_PATH="${1:-packages/engine/tests/fixtures/test-sample.pdf}"
 
 # ----- guards ------------------------------------------------------------

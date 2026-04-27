@@ -3,7 +3,10 @@ set -euo pipefail
 export PATH="/opt/homebrew/bin:$PATH"
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-STAGED=$(git diff --cached --name-only 2>/dev/null || true)
+# --diff-filter=ACMR — exclude Deleted files. Otherwise ruff check
+# fails on the staged-but-gone path with E902 "No such file or
+# directory" and the whole hook bails on a clean cleanup commit.
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null || true)
 [ -z "$STAGED" ] && exit 0
 
 # ── Collect staged files per package (used for scoped linting below) ──────

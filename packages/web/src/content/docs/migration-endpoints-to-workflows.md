@@ -9,18 +9,16 @@ order: 35
 
 The legacy **CustomEndpoint** surface (`/api/v1/endpoints` + `/dashboard/endpoints`) is being replaced by **Workflows** (`/api/v1/workflows` + `/dashboard/workflows`). Workflows are the unified-config substrate that ships with Phase 0.7 — they pin a profile + brand spec **plus** per-call ToggleOverride defaults under a single named handle, where Endpoints could only pin profile + brand spec.
 
-## Timeline
+## Status — Hard-removed (PR 26)
 
-1. **Now** — Workflows ship alongside legacy Endpoints. Both surfaces are functional. The dashboard's Endpoints page carries a deprecation banner.
-2. **Observation window (≥30 days)** — Telemetry tracks any traffic to `/dashboard/endpoints` and `/api/v1/endpoints`. If traffic stays zero for the window, the legacy surface is eligible for hard-removal.
-3. **Hard-removal PR** — Once telemetry confirms zero traffic:
-   - Alembic migration `052_drop_legacy_endpoints.py` drops the `custom_endpoints` table and the `Job.brand_spec_id` / `CustomEndpoint.default_brand_spec_id` columns.
-   - ORM `CustomEndpoint` class is deleted from `lintpdf.api.models`.
-   - Dashboard `/dashboard/endpoints` page is deleted; the framework router stamps a 308 redirect to `/dashboard/workflows` so old bookmarks still land somewhere useful.
-   - Postman folders named "endpoints" are removed from both collections.
-   - SDK `Endpoint` class + methods are deleted (if any survived earlier passes).
+The legacy surface has been **hard-removed** as of v2.x. Specifically:
 
-   **Until telemetry shows zero traffic, the destructive parts are deferred** — per the project Working Agreements, we never hard-delete a surface that's still in use.
+- **`/api/v1/endpoints*`** returns `HTTP 410 Gone` with a structured payload pointing at `/api/v1/workflows`. The `Link: </api/v1/workflows>; rel="successor-version"` header gives smart clients a machine-readable next-hop.
+- **`/dashboard/endpoints`** has been deleted; old bookmarks 308-redirect to `/dashboard/workflows`.
+- **Postman collections** no longer ship an `endpoints` folder.
+- **`custom_endpoints` table** was already dropped in alembic migration `047_drop_custom_endpoints.py` (Phase 0.7 PR-B5).
+
+If you have integrations still hitting `/api/v1/endpoints/{slug}/submit`, **they will fail with 410 today**. Migrate now.
 
 ## How to migrate
 

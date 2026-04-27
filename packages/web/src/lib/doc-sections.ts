@@ -238,7 +238,8 @@ export const docSections: DocSection[] = [
     items: [
       { slug: "viewer-comparison", label: "File comparison" },
       { slug: "viewer-verdict", label: "Approval verdicts" },
-      { slug: "vanity-endpoints", label: "Vanity submission endpoints" },
+      // Vanity submission endpoints were hard-removed in PR 26 —
+      // see docs/migration-endpoints-to-workflows + integrations/workflows.
     ],
   },
   {
@@ -370,11 +371,10 @@ export const docSections: DocSection[] = [
         label: "Brand profile",
         description: "Logo, colours, custom domain.",
       },
-      {
-        slug: "panels/endpoints",
-        label: "Custom endpoints",
-        description: "Vanity submission URLs scoped to a profile + brand.",
-      },
+      // /dashboard/endpoints was hard-removed in PR 26; the panel
+      // entry is gone too. The Workflows entry under integrations is
+      // the supported replacement.
+
       {
         slug: "panels/approvals",
         label: "Approvals",

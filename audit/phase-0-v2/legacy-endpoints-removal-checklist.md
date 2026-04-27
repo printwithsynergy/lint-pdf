@@ -1,16 +1,18 @@
-# Legacy CustomEndpoint hard-removal — pre-flight checklist
+# Legacy CustomEndpoint hard-removal — completed (PR 26)
 
-> **Status:** **Deferred** until telemetry confirms zero traffic to
-> `/dashboard/endpoints` and `/api/v1/endpoints` for ≥30 days.
+> **Status:** **DONE** — overridden the 30-day telemetry gate per
+> Quincy's morning review (2026-04-28). The destructive PR shipped:
+> the `/api/v1/endpoints*` surface returns 410 Gone, the dashboard
+> page is deleted, Postman folders removed.
 >
-> Author: v2 playbook PR 22 (2026-04-27).
+> Original author: v2 playbook PR 22 (2026-04-27).
+> Closed by: PR 26 (2026-04-28).
 
 The Phase 0.7 unified-config substrate ships **Workflows** as the
 replacement for legacy CustomEndpoint vanity slugs. PR 13 added the
-deprecation banner; PR 17 + PR 22 docs document the migration. The
-final destructive cleanup must wait for telemetry to confirm no live
-integrations remain, per the project Working Agreements ("no
-destructive deletion without observation window").
+deprecation banner; PR 17 + PR 22 docs documented the migration.
+PR 26 hard-removed the surface — the steps below are kept as a
+historical record of what shipped.
 
 ## Pre-flight gate
 
