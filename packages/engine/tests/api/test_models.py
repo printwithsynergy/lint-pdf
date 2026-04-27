@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from lintpdf.api.models import (
     Base,
-    CustomProfile,
     Job,
     JobFinding,
     JobStatus,
+    SystemProfile,
     Tenant,
     TenantPlan,
     WebhookEndpoint,
@@ -47,11 +47,19 @@ class TestModelDefinitions:
         assert WebhookEndpoint.__tablename__ == "webhook_endpoints"
 
     @staticmethod
-    def test_custom_profile_table_name() -> None:
-        assert CustomProfile.__tablename__ == "custom_profiles"
+    def test_system_profile_table_name() -> None:
+        # Phase 0.7 rename: legacy `custom_profiles` is gone, replaced
+        # by SystemProfile + the unified-config substrate.
+        assert SystemProfile.__tablename__ == "system_profiles"
 
     @staticmethod
     def test_base_metadata_has_all_tables() -> None:
         table_names = set(Base.metadata.tables.keys())
-        expected = {"tenants", "jobs", "job_findings", "webhook_endpoints", "custom_profiles"}
+        expected = {
+            "tenants",
+            "jobs",
+            "job_findings",
+            "webhook_endpoints",
+            "system_profiles",
+        }
         assert expected.issubset(table_names)
