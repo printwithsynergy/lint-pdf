@@ -661,46 +661,63 @@ def run_preflight(
                     exc_info=True,
                 )
 
-            orchestrator = PreflightOrchestrator(
-                profile,
-                profile_id=profile_id,
-                ai_config=ai_config,
-                pdf_bytes=pdf_bytes,
-                custom_pantone_overrides=custom_pantone,
-                brand_spec=resolved_brand_spec,
-            )
-            try:
-                result = orchestrator.run(pdf_bytes)
-            except SoftTimeLimitExceeded:
-                import datetime
+            # Resolve the tenant's active substrate ICC profile (if any)
+            # to a tempfile path that the EPM-A1 analyzer can route
+            # ``is_in_gamut_for_profile`` through. The bridge yields
+            # ``None`` when no slot is configured / storage is sad —
+            # the analyzer falls back to the saturated-CMYK heuristic.
+            from lintpdf.epm.icc_resolver import resolve_active_icc_profile
 
-                partial_ms = int((time.monotonic() - start) * 1000)
-                logger.warning(
-                    "Job %s hit soft_time_limit (%dms elapsed); marking FAILED before SIGKILL",
-                    job_id,
-                    partial_ms,
+            with resolve_active_icc_profile(job.tenant_id, storage) as icc_path:
+                if icc_path is not None:
+                    threshold_data = profile.thresholds.model_dump()
+                    threshold_data["epm_substrate_profile_path"] = icc_path
+                    from lintpdf.profiles.schema import ThresholdConfig
+
+                    profile = profile.model_copy(
+                        update={"thresholds": ThresholdConfig(**threshold_data)}
+                    )
+
+                orchestrator = PreflightOrchestrator(
+                    profile,
+                    profile_id=profile_id,
+                    ai_config=ai_config,
+                    pdf_bytes=pdf_bytes,
+                    custom_pantone_overrides=custom_pantone,
+                    brand_spec=resolved_brand_spec,
                 )
-                job.status = JobStatus.FAILED
-                job.result_json = {
-                    "summary": {
-                        "total_findings": 0,
-                        "error_count": 0,
-                        "warning_count": 0,
-                        "advisory_count": 0,
-                        "passed": False,
-                        "page_count": None,
-                        "file_size_bytes": job.file_size,
-                    },
-                    "metadata": {
-                        "timeout": "soft_time_limit",
-                        "elapsed_ms": partial_ms,
-                    },
-                    "findings": [],
-                }
-                job.duration_ms = partial_ms
-                job.completed_at = datetime.datetime.now(datetime.UTC)
-                db.commit()
-                raise
+                try:
+                    result = orchestrator.run(pdf_bytes)
+                except SoftTimeLimitExceeded:
+                    import datetime
+
+                    partial_ms = int((time.monotonic() - start) * 1000)
+                    logger.warning(
+                        "Job %s hit soft_time_limit (%dms elapsed); marking FAILED before SIGKILL",
+                        job_id,
+                        partial_ms,
+                    )
+                    job.status = JobStatus.FAILED
+                    job.result_json = {
+                        "summary": {
+                            "total_findings": 0,
+                            "error_count": 0,
+                            "warning_count": 0,
+                            "advisory_count": 0,
+                            "passed": False,
+                            "page_count": None,
+                            "file_size_bytes": job.file_size,
+                        },
+                        "metadata": {
+                            "timeout": "soft_time_limit",
+                            "elapsed_ms": partial_ms,
+                        },
+                        "findings": [],
+                    }
+                    job.duration_ms = partial_ms
+                    job.completed_at = datetime.datetime.now(datetime.UTC)
+                    db.commit()
+                    raise
 
             duration_ms = int((time.monotonic() - start) * 1000)
 
