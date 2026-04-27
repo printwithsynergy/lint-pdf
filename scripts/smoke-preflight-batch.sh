@@ -311,39 +311,55 @@ print(",".join(d.get("rejection_drivers") or []))
   fi
 
   # ── AI-Explain (every finding) ────────────────────────────────
+  # Parallel fan-out: 8 concurrent Claude Haiku 4.5 calls. Each
+  # finding has a unique row UUID so concurrent calls write to
+  # distinct rows (no cache race). Status codes are written to
+  # ``${slot}/explain_${fid}.code`` next to the body so the parent
+  # shell can tally outcomes after ``xargs`` reaps the children.
   explained=0
   explain_skipped=0
   cap_hit=0
   if [[ "$EXPLAIN" == "1" && "$finding_count" -gt 0 ]]; then
-    fids=$(python3 -c '
+    python3 -c '
 import json, sys
 d = json.load(open(sys.argv[1]))
 for f in (d.get("findings") or []):
     fid = f.get("id")
     if fid:
         print(fid)
-' "$slot/poll.json")
-    while IFS= read -r fid; do
-      [[ -z "$fid" ]] && continue
-      ec=$(http_call POST \
-        "${API_URL}/api/v1/jobs/${job_id}/findings/${fid}/explain" \
-        "$slot/explain_${fid}.json" \
-        -H "Authorization: Bearer ${TENANT_KEY}" \
-        -H "Content-Type: application/json" \
-        -d '{}')
-      if [[ "$ec" == "200" ]]; then
-        explained=$((explained + 1))
-      elif [[ "$ec" == "402" ]]; then
-        cap_hit=1; explain_skipped=$((explain_skipped + 1))
-      elif [[ "$ec" == "503" ]]; then
-        echo "  ✘ explain 503 — Claude unconfigured; aborting batch"
-        SUMMARY_BLOCKS+=("$(printf '[%d/%d] %s\n    EXPLAIN 503 (Claude unconfigured)' "$idx" "$TOTAL" "$base")")
-        FAILED=$((FAILED + 1))
-        break
-      else
-        explain_skipped=$((explain_skipped + 1))
-      fi
-    done <<< "$fids"
+' "$slot/poll.json" | xargs -P 8 -I @@ bash -c '
+      fid="$1"
+      slot="$2"
+      url="$3"
+      key="$4"
+      out_body="${slot}/explain_${fid}.json"
+      out_code="${slot}/explain_${fid}.code"
+      for attempt in 1 2 3; do
+        ec=$(curl -sS -m 60 -o "$out_body" -w "%{http_code}" \
+          -X POST "${url}/api/v1/jobs/'"$job_id"'/findings/${fid}/explain" \
+          -H "Authorization: Bearer ${key}" \
+          -H "Content-Type: application/json" \
+          -d "{}" 2>/dev/null || echo "000")
+        case "$ec" in
+          000|502|503|504) sleep "$(( attempt * 2 ))" ;;
+          *) break ;;
+        esac
+      done
+      printf "%s" "$ec" > "$out_code"
+    ' _ @@ "$slot" "$API_URL" "$TENANT_KEY"
+    # Tally results.
+    for cf in "$slot"/explain_*.code; do
+      [[ -f "$cf" ]] || continue
+      ec=$(<"$cf")
+      case "$ec" in
+        200) explained=$((explained + 1)) ;;
+        402) cap_hit=1; explain_skipped=$((explain_skipped + 1)) ;;
+        503)
+          echo "  ✘ explain 503 — Claude unconfigured (saw at least one)"
+          ;;
+        *) explain_skipped=$((explain_skipped + 1)) ;;
+      esac
+    done
   fi
 
   # ── per-fixture summary block ─────────────────────────────────
