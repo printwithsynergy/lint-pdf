@@ -17,7 +17,7 @@ Pre-built collections of AI inspections for common use cases. Use a preset ID in
 | GHS Chemical     | `ghs-chemical`     | 12          | barcode, content_quality, regulatory_ghs                   |
 | Packaging QC     | `packaging-qc`     | 14          | barcode, content_quality, color_compliance, visual_quality |
 | Brand Compliance | `brand-compliance` | 7           | brand, color_compliance, content_quality                   |
-| Full AI Scan     | `full-ai`          | 33          | All categories                                             |
+| Full AI Scan     | `full-ai`          | 32          | All categories                                             |
 
 ## Listing Presets via API
 

@@ -9,6 +9,15 @@ order: 30
 
 Every rendered artifact in LintPDF — the interactive viewer, downloaded PDF reports, hosted HTML reports, and share-link landing pages — resolves its branding through a single three-way decision: **branded** (your tenant BrandProfile), **LintPDF-default**, or **anonymous**.
 
+> **A tenant can maintain multiple BrandProfiles** — typically one per
+> client account or end-customer brand the tenant white-labels for.
+> Exactly one BrandProfile is marked the **tenant default** at any
+> time; jobs and share-links can override that on a per-submission
+> basis. See [Brand Profiles](/docs/brand-profiles) for the full
+> CRUD model. Brand Profiles control rendering chrome (logo, colours,
+> footer); for per-customer **colour swatches and rich-black
+> targets** see the separate [Brand Specs](/docs/brand-specs) primitive.
+
 ## The three modes
 
 ### Branded

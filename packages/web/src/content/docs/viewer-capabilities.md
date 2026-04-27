@@ -37,7 +37,7 @@ Viewer-tier tenants see all three as `false` / `[]`. Starter and above see them 
 
 | Capability | Fillable | Backing analyzer | Viewer tool |
 |---|---|---|---|
-| `findings` | ✓ | Full engine pipeline (all 500+ checks) | Findings panel |
+| `findings` | ✓ | Full engine pipeline (all 600+ checks) | Findings panel |
 | `separations` | ✓ | Spot-color analyzer | Separations viewer + ink channel rasters |
 | `tac` | ✓ | Ink-coverage analyzer | TAC heatmap overlay |
 | `tac_runs` | ✗ (derived on demand) | Same CMYK raster as `tac` plus `pdftotext -bbox` | Per-text-run tooltip on the TAC overlay (hover to read each run's mean TAC%) |

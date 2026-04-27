@@ -15,7 +15,7 @@ LintPDF is a detection-only PDF preflight engine. You send a file, you get a rep
 
 ## Path A — run LintPDF's engine
 
-This is the default. LintPDF runs its full analyzer suite — 500+ checks, plus all viewer capabilities (pages, separations, fonts, images, TAC, findings).
+This is the default. LintPDF runs its full analyzer suite — 600+ checks, plus all viewer capabilities (pages, separations, fonts, images, TAC, findings).
 
 ```bash
 curl -X POST https://api.lintpdf.com/api/v1/jobs \

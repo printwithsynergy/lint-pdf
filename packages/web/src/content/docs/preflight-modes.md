@@ -11,7 +11,7 @@ Every PDF you submit to LintPDF runs in one of three modes. Pick the right mode 
 
 | Mode | `preflight_source` | What runs | Findings source | Typical latency |
 |---|---|---|---|---|
-| Engine (default) | `engine` | Full 500+ analyzer pipeline | LintPDF engine | 3–45 s depending on file |
+| Engine (default) | `engine` | Full 600+ analyzer pipeline | LintPDF engine | 3–45 s depending on file |
 | External | `external` | No analyzers — imports findings from your existing preflight tool | Your tool (PitStop, callas, Acrobat, or custom) | <3 s |
 | Minimal | `minimal` | Viewer-only extraction (pages, geometry, metadata) | No findings | <2 s |
 
@@ -19,7 +19,7 @@ All three modes produce a job you can open in the interactive viewer. Engine mod
 
 ## Engine mode — the default
 
-Engine mode runs the full LintPDF preflight pipeline: font embedding, color spaces, image resolution, transparency, page geometry, PDF/X and PDF/A conformance, barcode grading, overprint — every one of the 500+ checks referenced in the [Checks Reference](/docs/checks). Pick engine mode when LintPDF is your preflight engine of record.
+Engine mode runs the full LintPDF preflight pipeline: font embedding, color spaces, image resolution, transparency, page geometry, PDF/X and PDF/A conformance, barcode grading, overprint — every one of the 600+ checks referenced in the [Checks Reference](/docs/checks). Pick engine mode when LintPDF is your preflight engine of record.
 
 ```bash
 curl -X POST https://api.lintpdf.com/api/v1/jobs \

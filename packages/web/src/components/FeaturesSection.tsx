@@ -42,9 +42,9 @@ const features = [
     ),
   },
   {
-    title: "500+ Checks",
+    title: "600+ Checks",
     description:
-      "Fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, packaging geometry, barcode grading, PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance — every detail that matters for print production.",
+      "259 rule-based checks plus 247 PDF/X-4 conformance checks plus 99 AI inspections — fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, packaging geometry, barcode grading, PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A. Every detail that matters for print production.",
     icon: (
       <svg
         className="h-6 w-6"
@@ -84,7 +84,7 @@ const features = [
   {
     title: "White Label + Anonymous Output",
     description:
-      "Your logo, your colors, your brand on every PDF report — or strip all branding with one flag. Anonymous mode sanitizes PDF metadata, uses a neutral filename, and renders zero LintPDF marks. Perfect for brokers handing reports to distributors.",
+      "Maintain one or more BrandProfiles per tenant — pick a default, override per job or share-link, or strip everything with anonymous mode. Anonymous mode sanitizes PDF metadata, uses a neutral filename, and renders zero LintPDF marks. Perfect for brokers handing reports to distributors.",
     icon: (
       <svg
         className="h-6 w-6"

@@ -7,7 +7,7 @@ order: 4
 
 # AI Credits
 
-AI inspections in LintPDF are metered using a credit system. Core preflight checks (500+ checks) stay unlimited on all paid plans. AI credits are a metered resource with two sources:
+AI inspections in LintPDF are metered using a credit system. Core preflight checks (600+ checks) stay unlimited on all paid plans. AI credits are a metered resource with two sources:
 
 1. **Plan-included monthly allotment** — granted automatically when your Stripe subscription renews. Resets each billing cycle. See the table below.
 2. **Top-up credit packs** — one-off Stripe Checkout purchases that roll over for 12 months.
@@ -19,13 +19,15 @@ Separately, LintPDF also meters file submissions (each preflighted PDF counts as
 | Plan       | AI credits / month | Files / month |
 | ---------- | ------------------ | ------------- |
 | Free       | 0                  | 50            |
-| Viewer     | 0                  | 50            |
-| Starter    | 100                | 500           |
-| Growth     | 500                | 2,500         |
-| Scale      | 2,000              | 10,000        |
-| Enterprise | 10,000             | 100,000       |
+| Viewer     | 0                  | 150           |
+| Starter    | 0                  | 500           |
+| Growth     | 500                | 5,000         |
+| Scale      | 2,500              | 25,000        |
+| Enterprise | 25,000             | Unlimited     |
 
-Monthly allotments expire at the end of each billing cycle. Unused credits do not roll over. Top-up purchases are separate and DO roll over (12-month expiry).
+Free, Viewer, and Starter plans ship **without any included AI credits** — Starter tenants who want AI inspections must either buy a credit pack (see below) or enable pay-per-use ($0.12/credit). Files-per-month allotments and AI-credit allotments are billed separately and have separate top-up packs.
+
+Monthly allotments expire at the end of each billing cycle. Unused monthly credits do not roll over. Top-up purchases are separate and DO roll over (12-month expiry).
 
 ## How Credits Are Consumed
 

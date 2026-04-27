@@ -7,6 +7,13 @@ order: 14
 
 # Brand Specs
 
+> **What happened to "AI Brand config" / Color Palette settings?**
+> The single-tenant `Settings > AI Brand > Color Palette` page is
+> gone. It was replaced by the multi-customer Brand Specs primitive
+> documented here. Existing palettes were auto-migrated to a
+> `Default palette (migrated)` BrandSpec on Alembic 041; the old
+> column is read as a fallback only.
+
 A **Brand Spec** is a named colour specification a tenant maintains per end-customer — typically one per brand owner the tenant preflights for (e.g. "Coca-Cola", "PepsiCo", "Nestlé"). Each spec carries:
 
 - **Swatches** — one row per approved colour, with a display name, canonical value (hex, named CSS colour, or explicit `rgb()` / `cmyk()`), optional Pantone reference, and optional notes.
