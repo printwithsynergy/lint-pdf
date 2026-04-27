@@ -1003,6 +1003,42 @@ pub async fn record_decision(
         .map_err(|e| format!("Parse error: {}", e))
 }
 
+#[tauri::command]
+pub async fn revoke_decision(
+    state: State<'_, AppState>,
+    job_id: String,
+    decision_id: String,
+    reason: Option<String>,
+) -> Result<DecisionResponse, String> {
+    require_online(&state, "revoking decision")?;
+    let config = state.config_mgr.get();
+    if config.api_key.is_empty() {
+        return Err("API key not configured".to_string());
+    }
+    let url = format!(
+        "{}/api/v1/jobs/{}/decisions/{}/revoke",
+        config.base_url.trim_end_matches('/'),
+        job_id,
+        decision_id,
+    );
+    let body = serde_json::json!({ "reason": reason });
+    let resp = reqwest::Client::new()
+        .post(&url)
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("HTTP error: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("API error {}: {}", resp.status(), resp.text().await.unwrap_or_default()));
+    }
+    resp.json::<DecisionResponse>()
+        .await
+        .map_err(|e| format!("Parse error: {}", e))
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct CostCapResponse {
     #[serde(default)]

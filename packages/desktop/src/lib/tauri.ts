@@ -350,6 +350,18 @@ export async function recordDecision(
   return invoke("record_decision", { jobId, input });
 }
 
+export async function revokeDecision(
+  jobId: string,
+  decisionId: string,
+  reason?: string,
+): Promise<DecisionResponse> {
+  return invoke("revoke_decision", {
+    jobId,
+    decisionId,
+    reason: reason ?? null,
+  });
+}
+
 export interface CostCapResponse {
   enabled: boolean;
   monthly_cap_cents: number;

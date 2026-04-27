@@ -28,6 +28,7 @@ import {
   openViewerWindow,
   recordDecision,
   retryJob,
+  revokeDecision,
   type DecisionResponse,
   type EpmVerdictResponse,
 } from "../lib/tauri";
@@ -84,7 +85,7 @@ export function ResultDetail({
     if (!job.job_id) return;
     setDecisionsError(null);
     try {
-      const rows = await listDecisions(job.job_id);
+      const rows = await listDecisions(job.job_id, true);
       setDecisions(rows);
     } catch (e) {
       setDecisionsError(e instanceof Error ? e.message : String(e));
@@ -114,6 +115,21 @@ export function ResultDetail({
         decided_by_user_id: "desktop-operator",
         source: "desktop",
       });
+      await refreshDecisions();
+    } catch (e) {
+      setDecisionsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDecisionsBusy(false);
+    }
+  }
+
+  async function handleRevoke(decisionId: string) {
+    if (!job.job_id) return;
+    const reason = window.prompt("Reason for revoking? (optional)") ?? undefined;
+    setDecisionsBusy(true);
+    setDecisionsError(null);
+    try {
+      await revokeDecision(job.job_id, decisionId, reason);
       await refreshDecisions();
     } catch (e) {
       setDecisionsError(e instanceof Error ? e.message : String(e));
@@ -388,32 +404,51 @@ export function ResultDetail({
           )}
           {decisions.length > 0 && (
             <ul className="mt-2 space-y-1">
-              {decisions.map((d) => (
-                <li
-                  key={d.id}
-                  className="flex items-center gap-2 text-xs text-gray-700"
-                >
-                  <span
-                    className={`rounded px-1.5 py-0.5 font-semibold ${
-                      d.decision_type === "approve"
-                        ? "bg-green-100 text-green-700"
-                        : d.decision_type === "reject"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-blue-100 text-blue-700"
-                    }`}
+              {decisions.map((d) => {
+                const revoked = d.revoked_at !== null;
+                return (
+                  <li
+                    key={d.id}
+                    className="flex items-center gap-2 text-xs text-gray-700"
                   >
-                    {d.decision_type}
-                  </span>
-                  <span className="text-gray-500">
-                    {d.decided_by_user_id} · {d.source}
-                  </span>
-                  {d.decided_at && (
-                    <span className="ml-auto text-gray-400">
-                      {new Date(d.decided_at).toLocaleString()}
+                    <span
+                      className={`rounded px-1.5 py-0.5 font-semibold ${
+                        revoked
+                          ? "bg-gray-100 text-gray-500 line-through"
+                          : d.decision_type === "approve"
+                            ? "bg-green-100 text-green-700"
+                            : d.decision_type === "reject"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-blue-100 text-blue-700"
+                      }`}
+                    >
+                      {d.decision_type}
                     </span>
-                  )}
-                </li>
-              ))}
+                    <span className="text-gray-500">
+                      {d.decided_by_user_id} · {d.source}
+                    </span>
+                    {revoked && (
+                      <span className="rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-gray-600">
+                        revoked
+                      </span>
+                    )}
+                    {d.decided_at && (
+                      <span className="ml-auto text-gray-400">
+                        {new Date(d.decided_at).toLocaleString()}
+                      </span>
+                    )}
+                    {!revoked && d.is_active && (
+                      <button
+                        onClick={() => handleRevoke(d.id)}
+                        disabled={decisionsBusy || !online}
+                        className="ml-2 rounded border border-gray-200 px-1.5 py-0.5 text-[11px] text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Revoke
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>
