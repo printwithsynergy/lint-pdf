@@ -286,7 +286,14 @@ function CreditsBillingPageInner() {
             >
               Save
             </Button>
-            {cap && cap.used_cents != null && (
+            {cap && cap.used_cents != null && cap.enabled && cap.monthly_cap_cents > 0 && (
+              <CostCapMeter
+                usedCents={cap.used_cents}
+                capCents={cap.monthly_cap_cents}
+                alertPct={cap.alert_threshold_pct}
+              />
+            )}
+            {cap && cap.used_cents != null && (!cap.enabled || cap.monthly_cap_cents === 0) && (
               <span className="text-xs text-muted-foreground">
                 Used this cycle: ${(cap.used_cents / 100).toFixed(2)}
               </span>
@@ -424,6 +431,53 @@ function Stat({ label, value }: { label: string; value: string }) {
         {label}
       </p>
       <p className="mt-1 text-2xl font-bold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function CostCapMeter({
+  usedCents,
+  capCents,
+  alertPct,
+}: {
+  usedCents: number;
+  capCents: number;
+  alertPct: number;
+}) {
+  const pct = Math.min(100, Math.max(0, (usedCents / capCents) * 100));
+  const overAlert = pct >= alertPct;
+  const exhausted = usedCents >= capCents;
+  const barColor = exhausted
+    ? "bg-destructive"
+    : overAlert
+      ? "bg-warning"
+      : "bg-primary";
+  return (
+    <div className="flex w-full flex-col gap-1">
+      <div className="flex justify-between text-xs">
+        <span className="text-muted-foreground">
+          ${(usedCents / 100).toFixed(2)} of ${(capCents / 100).toFixed(2)} used
+        </span>
+        <span
+          className={`font-semibold ${
+            exhausted
+              ? "text-destructive"
+              : overAlert
+                ? "text-warning"
+                : "text-muted-foreground"
+          }`}
+        >
+          {pct.toFixed(0)}%
+          {exhausted ? " — cap reached" : overAlert ? ` — over ${alertPct}% alert` : ""}
+        </span>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div
+          // eslint-disable-next-line react/forbid-dom-props
+          style={{ width: `${pct}%` }}
+          className={`h-full ${barColor} transition-all`}
+        />
+      </div>
     </div>
   );
 }
