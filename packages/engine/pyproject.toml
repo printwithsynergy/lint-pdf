@@ -87,6 +87,7 @@ markers = [
     "corpus: tests that require downloaded test corpus (deselect with '-m not corpus')",
     "slow: tests that take more than 10 seconds",
     "integration: tests that require external services (Redis, PostgreSQL, veraPDF)",
+    "live_ai: tests that hit the real Claude API (cost ~$0.01/run; opt-in via -m live_ai)",
 ]
 asyncio_mode = "auto"
 

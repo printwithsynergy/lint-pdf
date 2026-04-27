@@ -66,11 +66,23 @@ Configure the cap on **Account → Billing → AI Credits**. Three knobs:
 
 The smoke test stubs Claude so it runs offline + free in CI. Before tagging a release, run the optional **live-AI** verification path:
 
-```
+```bash
+# via the make target
+cd packages/engine && make smoke-live-ai
+
+# or directly
 uv run --package engine pytest -m live_ai
 ```
 
-This requires `ANTHROPIC_API_KEY` and costs ~$0.01 per run. It exercises the real Claude path against a 2-finding fixture and confirms the cache write + cost-cap usage row land correctly. See PR 20 in the v2 playbook for the test definition.
+This requires `ANTHROPIC_API_KEY` and costs ~$0.01 per run. It exercises the real Claude path against a 2-finding fixture and confirms:
+
+- The fresh API call returns a non-empty explanation.
+- The explanation is cached on `JobFinding.ai_explanation` / `_model` / `_at`.
+- The second call short-circuits to the cache (no new spend).
+
+If the live-AI test fails after a passing smoke run, an upstream change broke the Claude path — investigate before shipping the release tag.
+
+The `live_ai` marker is registered in `packages/engine/pyproject.toml` so the test is **only** collected when you pass `-m live_ai`. Default `pytest` runs skip it entirely.
 
 ## Why Haiku 4.5
 
