@@ -146,6 +146,35 @@ function EpmVerdictCard({ verdict }: { verdict: EpmVerdict }) {
   );
 }
 
+interface ExplanationEntry {
+  text: string;
+  model: string | null;
+}
+
+async function explainOne(
+  jobId: string,
+  findingId: string,
+): Promise<{ ok: true; entry: ExplanationEntry } | { ok: false; status: number; message: string }> {
+  const resp = await fetch(
+    `/api/lintpdf/jobs/${jobId}/findings/${findingId}/explain`,
+    { method: "POST" },
+  );
+  if (resp.status === 402) {
+    return { ok: false, status: 402, message: "Cost cap exceeded" };
+  }
+  if (!resp.ok) {
+    return { ok: false, status: resp.status, message: await resp.text() };
+  }
+  const data = await resp.json();
+  return {
+    ok: true,
+    entry: {
+      text: data.explanation ?? data.text ?? "",
+      model: data.model ?? null,
+    },
+  };
+}
+
 function ExplainButton({
   jobId,
   finding,
@@ -153,7 +182,7 @@ function ExplainButton({
 }: {
   jobId: string;
   finding: Finding;
-  onExplained: (text: string, model: string | null) => void;
+  onExplained: (entry: ExplanationEntry) => void;
 }) {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -165,23 +194,17 @@ function ExplainButton({
     }
     setLoading(true);
     setErr(null);
-    try {
-      const resp = await fetch(
-        `/api/lintpdf/jobs/${jobId}/findings/${finding.id}/explain`,
-        { method: "POST" },
+    const result = await explainOne(jobId, finding.id);
+    setLoading(false);
+    if (!result.ok) {
+      setErr(
+        result.status === 402
+          ? "Cost cap exceeded — raise the cap in Account → Billing."
+          : result.message || "Failed to explain",
       );
-      if (resp.status === 402) {
-        setErr("Cost cap exceeded — raise the cap in Account → Billing.");
-        return;
-      }
-      if (!resp.ok) throw new Error(await resp.text());
-      const data = await resp.json();
-      onExplained(data.explanation ?? data.text ?? "", data.model ?? null);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Failed to explain");
-    } finally {
-      setLoading(false);
+      return;
     }
+    onExplained(result.entry);
   }, [jobId, finding, onExplained]);
 
   return (
@@ -202,16 +225,14 @@ function ExplainButton({
 function FindingRow({
   jobId,
   finding,
+  explanation,
+  onExplained,
 }: {
   jobId: string;
   finding: Finding;
+  explanation: ExplanationEntry | null;
+  onExplained: (entry: ExplanationEntry) => void;
 }) {
-  const [explanation, setExplanation] = useState<string | null>(
-    finding.ai_explanation ?? null,
-  );
-  const [model, setModel] = useState<string | null>(
-    finding.ai_explanation_model ?? null,
-  );
   return (
     <div className="rounded-lg border p-3">
       <div className="flex items-start justify-between">
@@ -249,20 +270,19 @@ function FindingRow({
         <div className="mt-2 rounded border-l-2 border-primary bg-primary/5 px-3 py-2 text-sm">
           <div className="text-xs font-semibold uppercase tracking-wide text-primary">
             AI Explain
-            {model && (
-              <span className="ml-1 text-muted-foreground">({model})</span>
+            {explanation.model && (
+              <span className="ml-1 text-muted-foreground">
+                ({explanation.model})
+              </span>
             )}
           </div>
-          <p className="mt-1">{explanation}</p>
+          <p className="mt-1">{explanation.text}</p>
         </div>
       ) : (
         <ExplainButton
           jobId={jobId}
           finding={finding}
-          onExplained={(text, m) => {
-            setExplanation(text);
-            setModel(m);
-          }}
+          onExplained={onExplained}
         />
       )}
     </div>
@@ -276,12 +296,35 @@ export default function ReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Map finding-id → explanation. Hydrated from each finding's
+  // server-side ai_explanation on report load; mutated by both the
+  // per-row Explain button and the page-level Explain-all batch.
+  const [explanations, setExplanations] = useState<
+    Record<string, ExplanationEntry>
+  >({});
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  const [batchError, setBatchError] = useState<string | null>(null);
+
   const fetchReport = useCallback(async () => {
     try {
       const resp = await fetch(`/api/lintpdf/reports/${jobId}`);
       if (!resp.ok) throw new Error("Failed to load report");
       const data = await resp.json();
       setReport(data);
+      const seed: Record<string, ExplanationEntry> = {};
+      (data.findings ?? []).forEach((f: Finding) => {
+        if (f.id && f.ai_explanation) {
+          seed[f.id] = {
+            text: f.ai_explanation,
+            model: f.ai_explanation_model ?? null,
+          };
+        }
+      });
+      setExplanations(seed);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load report");
     } finally {
@@ -292,6 +335,41 @@ export default function ReportPage() {
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
+
+  const setExplanation = useCallback(
+    (findingId: string, entry: ExplanationEntry) => {
+      setExplanations((prev) => ({ ...prev, [findingId]: entry }));
+    },
+    [],
+  );
+
+  const handleExplainAll = useCallback(async () => {
+    if (!report?.findings) return;
+    const targets = report.findings.filter(
+      (f) => f.id && !explanations[f.id],
+    );
+    if (targets.length === 0) return;
+    setBatchBusy(true);
+    setBatchError(null);
+    setBatchProgress({ done: 0, total: targets.length });
+    let done = 0;
+    for (const f of targets) {
+      if (!f.id) continue;
+      const result = await explainOne(jobId, f.id);
+      if (!result.ok) {
+        setBatchError(
+          result.status === 402
+            ? `Cost cap reached after ${done}/${targets.length} findings — raise the cap to continue.`
+            : `Stopped after ${done}/${targets.length}: ${result.message || result.status}`,
+        );
+        break;
+      }
+      setExplanations((prev) => ({ ...prev, [f.id as string]: result.entry }));
+      done += 1;
+      setBatchProgress({ done, total: targets.length });
+    }
+    setBatchBusy(false);
+  }, [jobId, report, explanations]);
 
   if (loading) {
     return <SkeletonDashboard type="detail" />;
@@ -430,7 +508,28 @@ export default function ReportPage() {
         >
           View Job Details
         </Link>
+        {report.findings && report.findings.length > 0 && (
+          <button
+            type="button"
+            onClick={handleExplainAll}
+            disabled={
+              batchBusy ||
+              report.findings.every(
+                (f) => !f.id || explanations[f.id] !== undefined,
+              )
+            }
+            className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+            title="Run AI Explain on every unexplained finding. Stops at the cost cap."
+          >
+            {batchBusy && batchProgress
+              ? `Explaining ${batchProgress.done}/${batchProgress.total}…`
+              : "✦ Explain all"}
+          </button>
+        )}
       </div>
+      {batchError && (
+        <p className="mt-2 text-sm text-destructive">{batchError}</p>
+      )}
 
       {report.findings && report.findings.length > 0 && (
         <div className="mt-6 space-y-6">
@@ -441,7 +540,13 @@ export default function ReportPage() {
               </h2>
               <div className="mt-2 space-y-2">
                 {errors.map((f, i) => (
-                  <FindingRow key={i} jobId={jobId} finding={f} />
+                  <FindingRow
+                    key={i}
+                    jobId={jobId}
+                    finding={f}
+                    explanation={f.id ? (explanations[f.id] ?? null) : null}
+                    onExplained={(e) => f.id && setExplanation(f.id, e)}
+                  />
                 ))}
               </div>
             </div>
@@ -453,7 +558,13 @@ export default function ReportPage() {
               </h2>
               <div className="mt-2 space-y-2">
                 {warnings.map((f, i) => (
-                  <FindingRow key={i} jobId={jobId} finding={f} />
+                  <FindingRow
+                    key={i}
+                    jobId={jobId}
+                    finding={f}
+                    explanation={f.id ? (explanations[f.id] ?? null) : null}
+                    onExplained={(e) => f.id && setExplanation(f.id, e)}
+                  />
                 ))}
               </div>
             </div>
@@ -465,7 +576,13 @@ export default function ReportPage() {
               </h2>
               <div className="mt-2 space-y-2">
                 {advisories.map((f, i) => (
-                  <FindingRow key={i} jobId={jobId} finding={f} />
+                  <FindingRow
+                    key={i}
+                    jobId={jobId}
+                    finding={f}
+                    explanation={f.id ? (explanations[f.id] ?? null) : null}
+                    onExplained={(e) => f.id && setExplanation(f.id, e)}
+                  />
                 ))}
               </div>
             </div>
