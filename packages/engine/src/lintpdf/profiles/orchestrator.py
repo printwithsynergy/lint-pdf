@@ -625,6 +625,21 @@ class PreflightOrchestrator:
                 analyzers.append(EpmAnalyzer(cmy_tac_threshold=t.cmy_tac_threshold))
             except ImportError:
                 pass
+            # v2 Tier-A analyzers — hard-rejection EPM checks. Registered
+            # alongside the legacy ``EpmAnalyzer`` so both fire and the
+            # scorer sees the union of LPDF_EPM_001..018 (legacy) + the
+            # new LPDF_EPM_*_REJECT codes.
+            try:
+                from lintpdf.analyzers.epm_v2_a import EpmTierAAnalyzer
+
+                analyzers.append(
+                    EpmTierAAnalyzer(
+                        epm_thresholds=getattr(t, "epm_thresholds", None),
+                        substrate_class=getattr(t, "epm_substrate_class", None),
+                    )
+                )
+            except ImportError:
+                pass
 
         # Standards compliance analyzer (always enabled)
         try:
