@@ -32,6 +32,7 @@ from lintpdf.api.routes import (
     brand_specs,
     branding,
     color_config,
+    decisions,
     downloads,
     edge,
     endpoints,
@@ -297,6 +298,7 @@ def create_app() -> FastAPI:
         app.include_router(jobs.router)
         app.include_router(ai_explain.router)  # Q-C4/C5 AI-Explain endpoint
         app.include_router(epm_summary.router)  # EPM candidacy summary
+        app.include_router(decisions.router)  # V-05 decisions audit
     app.include_router(profiles.router)
     app.include_router(webhooks.router)
     app.include_router(usage.router)
