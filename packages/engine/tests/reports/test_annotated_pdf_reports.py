@@ -125,6 +125,64 @@ def test_annotated_pdf_survives_parens_in_inspection_id(sample_pdf_bytes: bytes)
     assert out.startswith(b"%PDF-")
 
 
+def _legend_page_text(pdf_bytes: bytes) -> str:
+    """Decompress the appended legend page's content stream and return
+    a UTF-8 string for substring assertions. pikepdf compresses content
+    streams by default, so raw substring checks against the PDF bytes
+    miss legend text — decompress first."""
+    import io
+
+    import pikepdf
+
+    pdf = pikepdf.open(io.BytesIO(pdf_bytes))
+    legend_page = pdf.pages[-1]  # legend appended last
+    raw = legend_page.Contents.read_bytes()
+    return raw.decode("latin-1", errors="replace")
+
+
+def test_annotated_pdf_legend_includes_ai_explanation(
+    sample_pdf_bytes: bytes,
+) -> None:
+    """Findings carrying an `ai_explanation` get a second compact
+    line under the message in the legend page."""
+    findings = [
+        {
+            "inspection_id": "LPDF_FONT_001",
+            "severity": "error",
+            "page_num": 1,
+            "bbox": [50, 50, 150, 150],
+            "message": "Helvetica-Bold is not embedded.",
+            "ai_explanation": "Embed the font in the source application.",
+        },
+    ]
+    out = generate_annotated_pdf(sample_pdf_bytes, findings, branding_name="LintPDF")
+    assert out.startswith(b"%PDF-")
+    legend_text = _legend_page_text(out)
+    assert "LPDF_FONT_001" in legend_text
+    assert "AI: Embed the font" in legend_text
+
+
+def test_annotated_pdf_no_explain_when_field_missing(
+    sample_pdf_bytes: bytes,
+) -> None:
+    """Findings without ai_explanation render the regular check_id +
+    message line and skip the AI block."""
+    findings = [
+        {
+            "inspection_id": "LPDF_IMG_001",
+            "severity": "warning",
+            "page_num": 1,
+            "bbox": [50, 50, 150, 150],
+            "message": "Image below 150 DPI.",
+        },
+    ]
+    out = generate_annotated_pdf(sample_pdf_bytes, findings, branding_name="LintPDF")
+    assert out.startswith(b"%PDF-")
+    legend_text = _legend_page_text(out)
+    assert "LPDF_IMG_001" in legend_text
+    assert "AI:" not in legend_text
+
+
 # ---------------------------------------------------------------------------
 # annotated_pdf_markup regression coverage
 # ---------------------------------------------------------------------------

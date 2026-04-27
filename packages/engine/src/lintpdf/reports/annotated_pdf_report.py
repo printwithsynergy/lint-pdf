@@ -385,6 +385,19 @@ def _add_legend_page(
             lines.append(f"BT /F1 8 Tf 0 0 0 rg {margin + 20} {y} Td ({check_id}: {message}) Tj ET")
             y -= LEGEND_LINE_HEIGHT
 
+            # AI-Explain (if cached on the finding row). The Q-C4/C5
+            # explanation is rendered as a second line below the
+            # message, prefixed with "AI" so reviewers can scan past
+            # the original message verbatim. Truncated to fit the
+            # legend's compact width budget.
+            ai_text = (f.get("ai_explanation") or "").strip()
+            if ai_text:
+                ai_truncated = _pdf_string(ai_text[:80])
+                lines.append(
+                    f"BT /F1 7 Tf 0.3 0.3 0.3 rg {margin + 20} {y} Td (AI: {ai_truncated}) Tj ET"
+                )
+                y -= LEGEND_LINE_HEIGHT - 2
+
             # Page break if we run out of space
             if y < margin + 20 and entry_count < LEGEND_MAX_ENTRIES:
                 break  # Just stop on this page — not worth adding another page for legend
