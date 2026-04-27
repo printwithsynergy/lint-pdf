@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -22,10 +22,13 @@ import {
   getAiInterpretation,
   getConnectivityStatus,
   getEpmVerdict,
+  listDecisions,
   mintShareLink,
   onConnectivityChange,
   openViewerWindow,
+  recordDecision,
   retryJob,
+  type DecisionResponse,
   type EpmVerdictResponse,
 } from "../lib/tauri";
 
@@ -72,6 +75,22 @@ export function ResultDetail({
 
   // v2 playbook — inline EPM verdict for completed jobs.
   const [epm, setEpm] = useState<EpmVerdictResponse | null>(null);
+  // V-05 decisions audit panel.
+  const [decisions, setDecisions] = useState<DecisionResponse[] | null>(null);
+  const [decisionsBusy, setDecisionsBusy] = useState(false);
+  const [decisionsError, setDecisionsError] = useState<string | null>(null);
+
+  const refreshDecisions = useCallback(async () => {
+    if (!job.job_id) return;
+    setDecisionsError(null);
+    try {
+      const rows = await listDecisions(job.job_id);
+      setDecisions(rows);
+    } catch (e) {
+      setDecisionsError(e instanceof Error ? e.message : String(e));
+    }
+  }, [job.job_id]);
+
   useEffect(() => {
     if (!job.job_id || (job.status !== "passed" && job.status !== "failed")) {
       return;
@@ -82,7 +101,26 @@ export function ResultDetail({
         // Non-fatal — older jobs may not have EPM scoring; leave
         // the card hidden. Real errors surface via the online indicator.
       });
-  }, [job.job_id, job.status]);
+    void refreshDecisions();
+  }, [job.job_id, job.status, refreshDecisions]);
+
+  async function handleRecord(decisionType: string) {
+    if (!job.job_id) return;
+    setDecisionsBusy(true);
+    setDecisionsError(null);
+    try {
+      await recordDecision(job.job_id, {
+        decision_type: decisionType,
+        decided_by_user_id: "desktop-operator",
+        source: "desktop",
+      });
+      await refreshDecisions();
+    } catch (e) {
+      setDecisionsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDecisionsBusy(false);
+    }
+  }
 
   const [online, setOnline] = useState(true);
   useEffect(() => {
@@ -310,6 +348,73 @@ export function ResultDetail({
                 </code>
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* V-05 decisions audit panel */}
+      {decisions !== null && job.job_id && (
+        <div className="mt-4 rounded-md border border-gray-200 bg-white p-3">
+          <div className="flex items-center justify-between">
+            <span className="label">
+              Decisions ({decisions.length})
+            </span>
+            <div className="flex gap-1">
+              <button
+                onClick={() => handleRecord("approve")}
+                disabled={decisionsBusy || !online}
+                className="rounded border border-green-200 bg-green-50 px-2 py-0.5 text-xs text-green-700 hover:bg-green-100 disabled:opacity-50"
+              >
+                Approve
+              </button>
+              <button
+                onClick={() => handleRecord("waive")}
+                disabled={decisionsBusy || !online}
+                className="rounded border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+              >
+                Waive
+              </button>
+              <button
+                onClick={() => handleRecord("reject")}
+                disabled={decisionsBusy || !online}
+                className="rounded border border-red-200 bg-red-50 px-2 py-0.5 text-xs text-red-700 hover:bg-red-100 disabled:opacity-50"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+          {decisionsError && (
+            <p className="mt-1 text-xs text-red-600">{decisionsError}</p>
+          )}
+          {decisions.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {decisions.map((d) => (
+                <li
+                  key={d.id}
+                  className="flex items-center gap-2 text-xs text-gray-700"
+                >
+                  <span
+                    className={`rounded px-1.5 py-0.5 font-semibold ${
+                      d.decision_type === "approve"
+                        ? "bg-green-100 text-green-700"
+                        : d.decision_type === "reject"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-blue-100 text-blue-700"
+                    }`}
+                  >
+                    {d.decision_type}
+                  </span>
+                  <span className="text-gray-500">
+                    {d.decided_by_user_id} · {d.source}
+                  </span>
+                  {d.decided_at && (
+                    <span className="ml-auto text-gray-400">
+                      {new Date(d.decided_at).toLocaleString()}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       )}
