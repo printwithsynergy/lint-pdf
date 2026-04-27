@@ -18,6 +18,27 @@ def generate_json_report(result: PreflightResult) -> bytes:
     Returns:
         UTF-8 encoded JSON bytes.
     """
+    # EPM verdict — pure function of fired LPDF_EPM_* findings.
+    try:
+        from lintpdf.epm.scoring import score_epm_candidacy
+
+        epm_codes = [
+            f.inspection_id
+            for f in result.findings
+            if str(getattr(f, "inspection_id", "")).startswith("LPDF_EPM")
+        ]
+        v = score_epm_candidacy(epm_codes)
+        epm_block: dict[str, Any] | None = {
+            "tier": v.tier.value if hasattr(v.tier, "value") else str(v.tier),
+            "rejection_drivers": list(v.rejection_drivers),
+            "advisories": list(v.advisories),
+            "recommends_indichrome": v.recommends_indichrome,
+            "legacy_codes_fired": list(v.legacy_codes_fired),
+            "epm_findings_count": len(epm_codes),
+        }
+    except Exception:
+        epm_block = None
+
     report: dict[str, Any] = {
         "job_id": result.job_id,
         "profile_id": result.profile_id,
@@ -52,6 +73,7 @@ def generate_json_report(result: PreflightResult) -> bytes:
         ],
         "metadata": result.metadata,
         "duration_ms": result.duration_ms,
+        "epm": epm_block,
     }
 
     return json.dumps(report, indent=2, default=str).encode("utf-8")
@@ -95,6 +117,12 @@ def generate_json_from_dict(result_json: dict[str, Any]) -> bytes:
                 "source": f.get("source") or "engine",
                 "bbox": f.get("bbox"),
                 "details": f.get("details"),
+                # AI-Explain cache (Q-C4/C5). Populated by ReportService
+                # ._hydrate_substrate_fields when the explain endpoint
+                # has cached text for this finding; absent otherwise.
+                "ai_explanation": f.get("ai_explanation"),
+                "ai_explanation_model": f.get("ai_explanation_model"),
+                "ai_explanation_at": f.get("ai_explanation_at"),
             }
         )
 
@@ -122,6 +150,11 @@ def generate_json_from_dict(result_json: dict[str, Any]) -> bytes:
         "findings": findings,
         "metadata": metadata,
         "duration_ms": result_json.get("duration_ms"),
+        # EPM candidacy verdict — populated by ReportService
+        # ._hydrate_substrate_fields. ``null`` when the hydrator wasn't
+        # called or scoring failed (analytics: treat null as "unknown",
+        # not "pass").
+        "epm": result_json.get("epm"),
     }
 
     return json.dumps(report, indent=2, default=str).encode("utf-8")

@@ -579,6 +579,15 @@ class ReportService:
         if detail_level != ReportDetailLevel.EXECUTIVE:
             pdf_bytes = self._fetch_original_pdf(result_json)
 
+        # Pre-compute substrate features once and stamp them onto
+        # ``result_json`` so every renderer (HTML / PDF / JSON / annotated)
+        # sees the same enriched payload. AI-Explain text lives on the
+        # JobFinding row (populated post-job-complete via the explain
+        # endpoint), so we hydrate it from the DB here. The EPM verdict
+        # is a pure function of the fired LPDF_EPM_* findings — cheap to
+        # compute once and pass through.
+        self._hydrate_substrate_fields(job_id, tenant_id, result_json)
+
         _suffix_by_format = {
             "pdf": ".pdf",
             "annotated_pdf": ".pdf",
@@ -900,6 +909,98 @@ class ReportService:
 
         return count
 
+    def _hydrate_substrate_fields(
+        self,
+        job_id: str,
+        tenant_id: str,
+        result_json: dict[str, Any],
+    ) -> None:
+        """Stamp AI-Explain text + EPM verdict onto ``result_json``.
+
+        Mutates ``result_json`` in place — every renderer reads the same
+        dict, so doing it once here keeps the renderers free of DB chatter.
+        Best-effort: any DB or import failure logs and skips, so reports
+        still render without the substrate fields.
+        """
+        try:
+            import uuid as _uuid_mod
+
+            from lintpdf.api.models import JobFinding
+            from lintpdf.epm.scoring import score_epm_candidacy
+
+            findings = result_json.get("findings") or []
+
+            # Hydrate per-finding ai_explanation + ai_explanation_model +
+            # ai_explanation_at by joining on (inspection_id, page_num).
+            # We can't join on JobFinding.id because result_json findings
+            # are dicts that don't carry the row UUID. Same key shape used
+            # everywhere else (see deduplicate_findings).
+            try:
+                job_uid = _uuid_mod.UUID(str(job_id))
+            except ValueError:
+                job_uid = None
+
+            if job_uid is not None:
+                rows = (
+                    self._db.query(JobFinding)
+                    .filter(JobFinding.job_id == job_uid)
+                    .all()
+                )
+                # Index by (inspection_id, page_num or 0). Multiple rows
+                # for the same key keep the first hit — the explain cache
+                # stamps the same text per finding so dupes are harmless.
+                ai_index: dict[tuple[str, int], dict[str, Any]] = {}
+                for r in rows:
+                    if not r.ai_explanation:
+                        continue
+                    key = (r.inspection_id, r.page_num or 0)
+                    ai_index.setdefault(
+                        key,
+                        {
+                            "ai_explanation": r.ai_explanation,
+                            "ai_explanation_model": r.ai_explanation_model,
+                            "ai_explanation_at": (
+                                r.ai_explanation_at.isoformat()
+                                if r.ai_explanation_at
+                                else None
+                            ),
+                        },
+                    )
+                for f in findings:
+                    if not isinstance(f, dict):
+                        continue
+                    key = (f.get("inspection_id", ""), f.get("page_num") or 0)
+                    if key in ai_index:
+                        for k, v in ai_index[key].items():
+                            f.setdefault(k, v)
+
+            # EPM verdict — pure function of the fired LPDF_EPM_* codes.
+            # Always available; cheap. Stamp under "epm" so JSON / HTML
+            # renderers can find it under the same key.
+            epm_codes = [
+                f.get("inspection_id", "")
+                for f in findings
+                if isinstance(f, dict)
+                and f.get("inspection_id", "").startswith("LPDF_EPM")
+            ]
+            verdict = score_epm_candidacy(epm_codes)
+            result_json["epm"] = {
+                "tier": verdict.tier.value
+                if hasattr(verdict.tier, "value")
+                else str(verdict.tier),
+                "rejection_drivers": list(verdict.rejection_drivers),
+                "advisories": list(verdict.advisories),
+                "recommends_indichrome": verdict.recommends_indichrome,
+                "legacy_codes_fired": list(verdict.legacy_codes_fired),
+                "epm_findings_count": len(epm_codes),
+            }
+        except Exception:
+            logger.exception(
+                "Failed to hydrate substrate fields onto result_json "
+                "for job %s — report will render without EPM/AI sections",
+                job_id,
+            )
+
     def _fetch_original_pdf(self, result_json: dict[str, Any]) -> bytes | None:
         """Attempt to retrieve original PDF bytes from storage.
 
@@ -1180,6 +1281,9 @@ class ReportService:
             "page_thumbnails": page_thumbnails,
             "health": health,
             "summary_color_info": summary_color_info,
+            # EPM verdict + AI-Explain — populated by
+            # ``_hydrate_substrate_fields`` so every render path sees them.
+            "epm": result_json.get("epm"),
         }
 
         html = template.render(**context)  # nosemgrep: direct-use-of-jinja2

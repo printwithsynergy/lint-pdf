@@ -65,6 +65,16 @@ class TestJsonReport:
         assert isinstance(report_bytes, bytes)
         report_bytes.decode("utf-8")  # Should not raise
 
+    @staticmethod
+    def test_includes_epm_block(sample_result: PreflightResult) -> None:
+        """Every JSON report carries an `epm` block (may be a clean PASS)."""
+        data = json.loads(generate_json_report(sample_result))
+        assert "epm" in data
+        assert data["epm"] is not None
+        assert "tier" in data["epm"]
+        assert "rejection_drivers" in data["epm"]
+        assert "advisories" in data["epm"]
+
 
 class TestJsonFromDict:
     """Tests for the dict-based renderer used by the report mint service."""
@@ -117,6 +127,29 @@ class TestJsonFromDict:
     def test_dict_input_roundtrips(self) -> None:
         data = json.loads(generate_json_from_dict(self._sample_dict()))
         assert data["schema_version"] == "1"
+
+    def test_dict_input_passes_through_epm_block(self) -> None:
+        sample = self._sample_dict()
+        sample["epm"] = {
+            "tier": "marginal",
+            "rejection_drivers": ["LPDF_EPM_BLEED_REJECT"],
+            "advisories": [],
+            "recommends_indichrome": False,
+            "legacy_codes_fired": [],
+            "epm_findings_count": 1,
+        }
+        data = json.loads(generate_json_from_dict(sample))
+        assert data["epm"]["tier"] == "marginal"
+        assert data["epm"]["rejection_drivers"] == ["LPDF_EPM_BLEED_REJECT"]
+
+    def test_dict_input_surfaces_finding_ai_explanation(self) -> None:
+        sample = self._sample_dict()
+        sample["findings"][0]["ai_explanation"] = "Embed your fonts."
+        sample["findings"][0]["ai_explanation_model"] = "claude-haiku-4-5"
+        data = json.loads(generate_json_from_dict(sample))
+        first = data["findings"][0]
+        assert first["ai_explanation"] == "Embed your fonts."
+        assert first["ai_explanation_model"] == "claude-haiku-4-5"
         assert data["job_id"] == "abc-123"
         assert data["profile_id"] == "lintpdf-default"
         assert data["preflight_source"] == "engine"

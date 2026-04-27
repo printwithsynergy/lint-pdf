@@ -162,6 +162,33 @@ def _build_template_context(  # skipcq: PY-R1000
 
         color_score_breakdown = result.metadata.get("color_score_breakdown", {})
 
+    # EPM verdict — pure function of fired LPDF_EPM_* findings, cheap.
+    # Computed inline so the standalone ``generate_html_report`` path
+    # (used by tests + the orchestrator's preview render) shows the
+    # candidacy header without requiring a DB session.
+    try:
+        from lintpdf.epm.scoring import score_epm_candidacy
+
+        epm_codes = [
+            f.inspection_id
+            for f in result.findings
+            if str(getattr(f, "inspection_id", "")).startswith("LPDF_EPM")
+        ]
+        verdict = score_epm_candidacy(epm_codes)
+        epm_block = {
+            "tier": verdict.tier.value
+            if hasattr(verdict.tier, "value")
+            else str(verdict.tier),
+            "rejection_drivers": list(verdict.rejection_drivers),
+            "advisories": list(verdict.advisories),
+            "recommends_indichrome": verdict.recommends_indichrome,
+            "legacy_codes_fired": list(verdict.legacy_codes_fired),
+            "epm_findings_count": len(epm_codes),
+        }
+    except Exception:
+        logger.exception("Failed to compute EPM verdict for HTML report")
+        epm_block = None
+
     context: dict[str, Any] = {
         "result": result,
         "summary": result.summary,
@@ -186,6 +213,8 @@ def _build_template_context(  # skipcq: PY-R1000
         "ink_tac_by_page": ink_tac_by_page,
         "ink_inventory": ink_inventory,
         "color_score_breakdown": color_score_breakdown,
+        # Substrate header
+        "epm": epm_block,
     }
     return context
 
