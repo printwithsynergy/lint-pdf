@@ -150,15 +150,50 @@ def flatten_pdf_to_image_blocks(pdf_path: Path) -> list[dict[str, Any]]:
     return blocks
 
 
+DETAILS_CHAR_CAP = 500  # Per-finding details JSON cap.
+
+
+def _truncate_details(details: Any) -> Any:
+    """Cap a `details` payload so a single finding can't blow the prompt.
+
+    Some engine findings (e.g. LPDF_INK_001 ink-coverage samples) carry
+    multi-megabyte arrays of per-pixel data. Useful for tile-level
+    rendering, useless for an Opus audit. Drop array fields and
+    serialize-then-truncate the rest.
+    """
+    if details is None:
+        return None
+    if isinstance(details, dict):
+        cleaned: dict[str, Any] = {}
+        for k, v in details.items():
+            if isinstance(v, list) and len(v) > 8:
+                cleaned[k] = f"<list len={len(v)}>"
+            elif isinstance(v, str) and len(v) > 200:
+                cleaned[k] = v[:200] + "…"
+            elif isinstance(v, dict):
+                cleaned[k] = "<dict>" if len(json.dumps(v)) > 200 else v
+            else:
+                cleaned[k] = v
+        if len(json.dumps(cleaned)) > DETAILS_CHAR_CAP:
+            return {"_summary": "details truncated (over cap)", "keys": list(cleaned.keys())[:8]}
+        return cleaned
+    s = json.dumps(details)
+    if len(s) > DETAILS_CHAR_CAP:
+        return s[: DETAILS_CHAR_CAP] + "…"
+    return details
+
+
 def trim_findings(poll_path: Path) -> list[dict[str, Any]]:
-    """Return a slim per-finding projection — drop UUIDs + AI fields."""
+    """Return a slim per-finding projection — drop UUIDs + AI fields, cap details."""
     body = json.loads(poll_path.read_text())
     findings = body.get("findings") or []
     keep_keys = ("inspection_id", "severity", "message", "page_num", "details", "category")
-    return [
-        {k: f.get(k) for k in keep_keys}
-        for f in findings
-    ]
+    out: list[dict[str, Any]] = []
+    for f in findings:
+        row = {k: f.get(k) for k in keep_keys}
+        row["details"] = _truncate_details(row.get("details"))
+        out.append(row)
+    return out
 
 
 # ---------------------------------------------------------------------------
