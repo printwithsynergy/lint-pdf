@@ -21,10 +21,12 @@ import type {
 import {
   getAiInterpretation,
   getConnectivityStatus,
+  getEpmVerdict,
   mintShareLink,
   onConnectivityChange,
   openViewerWindow,
   retryJob,
+  type EpmVerdictResponse,
 } from "../lib/tauri";
 
 interface ResultDetailProps {
@@ -67,6 +69,20 @@ export function ResultDetail({
 
   const [retryBusy, setRetryBusy] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
+
+  // v2 playbook — inline EPM verdict for completed jobs.
+  const [epm, setEpm] = useState<EpmVerdictResponse | null>(null);
+  useEffect(() => {
+    if (!job.job_id || (job.status !== "passed" && job.status !== "failed")) {
+      return;
+    }
+    getEpmVerdict(job.job_id)
+      .then((v) => setEpm(v))
+      .catch(() => {
+        // Non-fatal — older jobs may not have EPM scoring; leave
+        // the card hidden. Real errors surface via the online indicator.
+      });
+  }, [job.job_id, job.status]);
 
   const [online, setOnline] = useState(true);
   useEffect(() => {
@@ -248,6 +264,55 @@ export function ResultDetail({
           </div>
         )}
       </div>
+
+      {epm && (
+        <div className="mt-4 rounded-md border border-gray-200 bg-gray-50 p-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs font-bold tracking-wide text-white ${
+                epm.tier === "pass"
+                  ? "bg-green-600"
+                  : epm.tier === "pass_with_advisory"
+                    ? "bg-blue-600"
+                    : epm.tier === "marginal"
+                      ? "bg-amber-600"
+                      : "bg-red-600"
+              }`}
+            >
+              EPM: {epm.tier.replace(/_/g, " ").toUpperCase()}
+            </span>
+            {epm.recommends_indichrome && (
+              <span className="text-xs font-semibold text-purple-700">
+                Consider IndiChrome substrate
+              </span>
+            )}
+            <span className="ml-auto text-xs text-gray-500">
+              {epm.epm_findings_count} EPM finding
+              {epm.epm_findings_count === 1 ? "" : "s"}
+            </span>
+          </div>
+          {epm.rejection_drivers.length > 0 && (
+            <div className="mt-2 text-xs text-gray-700">
+              <strong>Drivers:</strong>{" "}
+              {epm.rejection_drivers.map((c) => (
+                <code key={c} className="ml-1 rounded bg-white px-1">
+                  {c}
+                </code>
+              ))}
+            </div>
+          )}
+          {epm.advisories.length > 0 && (
+            <div className="mt-1 text-xs text-gray-700">
+              <strong>Advisories:</strong>{" "}
+              {epm.advisories.map((c) => (
+                <code key={c} className="ml-1 rounded bg-white px-1">
+                  {c}
+                </code>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {job.summary && (
         <div className="mt-4 border-t border-gray-100 pt-3">
