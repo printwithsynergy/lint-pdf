@@ -151,6 +151,7 @@ pub fn run() {
             commands::get_epm_verdict,
             commands::list_decisions,
             commands::record_decision,
+            commands::revoke_decision,
             commands::get_cost_cap,
             commands::set_cost_cap,
             viewer::viewer_pages,
