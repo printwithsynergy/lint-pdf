@@ -46,6 +46,26 @@ class TestHtmlReport:
         assert "lintpdf-default" in html
 
     @staticmethod
+    def test_renders_epm_card_for_clean_result(empty_result: PreflightResult) -> None:
+        """Even a clean job gets the EPM verdict header (PASS tier)."""
+        html = generate_html_report(empty_result).decode("utf-8")
+        assert "EPM:" in html
+        assert "epm-card" in html
+
+    @staticmethod
+    def test_renders_ai_explain_css_in_template(
+        sample_result: PreflightResult,
+    ) -> None:
+        """Template ships AI-Explain CSS so populated findings render
+        the block when the service-render path stamps `ai_explanation`."""
+        html = generate_html_report(sample_result).decode("utf-8")
+        # CSS classes are present in every render so populated findings
+        # have somewhere to land. Service-render path covers populated
+        # text via the smoke test (PR 8).
+        assert ".finding-ai-explain" in html
+        assert ".ai-explain-label" in html
+
+    @staticmethod
     def test_empty_result_shows_no_findings(empty_result: PreflightResult) -> None:
         html = generate_html_report(empty_result).decode("utf-8")
         assert "No findings detected" in html
