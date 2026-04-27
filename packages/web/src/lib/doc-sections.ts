@@ -274,6 +274,12 @@ export const docSections: DocSection[] = [
         description:
           "Pin a profile + brand spec + per-call override defaults under a single name (Phase 0.7 substrate).",
       },
+      {
+        slug: "migration-endpoints-to-workflows",
+        label: "Migration: Endpoints → Workflows",
+        description:
+          "How to migrate from legacy CustomEndpoint vanity slugs to the Phase 0.7 Workflow substrate before hard-removal.",
+      },
       { slug: "integrations-enfocus-switch", label: "Enfocus Switch" },
       {
         slug: "integrations-esko-ae",
