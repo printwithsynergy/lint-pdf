@@ -73,6 +73,16 @@ class AuditVerdict(BaseModel):
 class FindingResponse(BaseModel):
     """A single preflight finding."""
 
+    id: str = Field(
+        ...,
+        description=(
+            "Per-row UUID for this finding occurrence. Stable for the "
+            "lifetime of the job and used as the path parameter on "
+            "`POST /jobs/{job_id}/findings/{finding_id}/explain` and on "
+            "the decisions endpoints. Distinct from `inspection_id`, "
+            "which is the rule code that fired."
+        ),
+    )
     inspection_id: str = Field(
         ...,
         description=(
