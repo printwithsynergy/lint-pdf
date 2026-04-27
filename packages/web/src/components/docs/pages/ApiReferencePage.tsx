@@ -5,6 +5,10 @@ import ApiBrandingSection from "./api/ApiBrandingSection";
 import ApiViewerSection from "./api/ApiViewerSection";
 import ApiReportsSection from "./api/ApiReportsSection";
 import ApiWebhooksSection from "./api/ApiWebhooksSection";
+import ApiExplainSection from "./api/ApiExplainSection";
+import ApiEpmSection from "./api/ApiEpmSection";
+import ApiDecisionsSection from "./api/ApiDecisionsSection";
+import ApiWorkflowsSection from "./api/ApiWorkflowsSection";
 import ApiEnumsSection from "./api/ApiEnumsSection";
 
 export default function ApiReferencePage() {
@@ -37,6 +41,10 @@ export default function ApiReferencePage() {
           <li><a href="#viewer" className="text-brand-700 hover:underline">Viewer</a></li>
           <li><a href="#reports" className="text-brand-700 hover:underline">Reports &amp; share links</a></li>
           <li><a href="#webhooks" className="text-brand-700 hover:underline">Webhooks &amp; check names</a></li>
+          <li><a href="#explain" className="text-brand-700 hover:underline">AI-Explain</a></li>
+          <li><a href="#epm" className="text-brand-700 hover:underline">EPM verdict</a></li>
+          <li><a href="#decisions" className="text-brand-700 hover:underline">Decisions audit</a></li>
+          <li><a href="#workflows" className="text-brand-700 hover:underline">Workflows</a></li>
           <li><a href="#enums" className="text-brand-700 hover:underline">Enum appendix</a></li>
         </ul>
       </nav>
@@ -48,6 +56,10 @@ export default function ApiReferencePage() {
       <ApiViewerSection />
       <ApiReportsSection />
       <ApiWebhooksSection />
+      <ApiExplainSection />
+      <ApiEpmSection />
+      <ApiDecisionsSection />
+      <ApiWorkflowsSection />
       <ApiEnumsSection />
     </>
   );

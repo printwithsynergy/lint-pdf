@@ -110,6 +110,43 @@ export default function ApiEnumsSection() {
         {" "}<code className="bg-slate-100 px-1 rounded">ProfileSummaryResponse</code> to distinguish
         LintPDF-shipped profiles from tenant-owned customs.
       </p>
+
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">EpmTier</h4>
+      <FieldTable
+        rows={[
+          { name: "pass", type: "string", description: "No EPM-related findings — job runs cleanly on the EPM path." },
+          { name: "pass_with_advisory", type: "string", description: "Tier-C advisory findings only; verdict is still PASS but operators should review." },
+          { name: "marginal", type: "string", description: "One Tier-B soft-rejection finding fired; treat as borderline." },
+          { name: "reject", type: "string", description: "Any Tier-A finding, or two+ Tier-B findings — job is not an EPM candidate." },
+        ]}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">decision_type</h4>
+      <FieldTable
+        rows={[
+          { name: "approve", type: "string", description: "Operator approves the job / finding." },
+          { name: "reject", type: "string", description: "Operator rejects the job / finding." },
+          { name: "waive", type: "string", description: "Operator waives a finding (acknowledges + accepts the risk)." },
+          { name: "suppress", type: "string", description: "Hide the finding from future renders without changing severity." },
+          { name: "annotate", type: "string", description: "Attach a note/comment without changing approval status." },
+          { name: "escalate", type: "string", description: "Bump the finding to a higher reviewer in the approval chain." },
+        ]}
+      />
+
+      <h4 className="font-semibold text-slate-900 mt-6 mb-2">decision_source</h4>
+      <FieldTable
+        rows={[
+          { name: "dashboard", type: "string", description: "Recorded from the LintPDF web dashboard." },
+          { name: "api", type: "string", description: "Recorded directly via the REST API (curl/SDK/server-to-server)." },
+          { name: "plugin", type: "string", description: "Recorded via a Fairy Ring plugin route." },
+          { name: "sdk", type: "string", description: "Recorded via the Python SDK." },
+          { name: "share_link", type: "string", description: "Recorded by an anonymous reviewer through a share-link URL." },
+          { name: "approval_chain", type: "string", description: "Auto-recorded by the multi-step approval chain workflow." },
+          { name: "desktop", type: "string", description: "Recorded from the desktop app." },
+          { name: "system", type: "string", description: "Recorded automatically by an internal engine process (no operator)." },
+          { name: "migration", type: "string", description: "Synthetic decision created during a data migration." },
+        ]}
+      />
     </section>
   );
 }
