@@ -48,6 +48,8 @@ Viewer-tier tenants see all three as `false` / `[]`. Starter and above see them 
 | `thumbnails` | ✓ (always populated on `complete`) | Page rasterizer | Page thumbnails strip |
 | `metadata` | ✓ (always populated on `complete`) | PDF metadata extractor | Document info panel |
 | `art_info` | ✗ (filled at ingest, not re-derivable) | Dieline detector (name-match + Sonnet fallback) + art-size inspector (dieline centerline) + legend-vs-art classifier + Claude OCR for outlined text | Art Info panel — trim size, dieline overlay toggle, OCR text-layer toggle, swatch list with legend/art badges. Gated on the tenant's `ai_features` grants (`dieline`, `art_size`, `legend`, `ocr`); locked features surface as `LPDF_FEATURE_LOCKED` findings instead of fields. |
+| `ai_explain` | ✗ (on-call, not via fill-in) | `lintpdf.ai.explain` (Claude Haiku 4.5) | Per-finding "Explain" button. Cached on the finding row; populated by `POST /api/v1/jobs/{job_id}/findings/{finding_id}/explain`. Cost-cap gating returns 402 when the tenant exceeds their monthly cap. The `POST .../capabilities/ai_explain` fill-in path is **not** supported — use the explain endpoint per-finding. |
+| `epm_verdict` | ✗ (computed at ingest, re-run only via re-submit) | `lintpdf.epm.scoring.score_epm_candidacy` over the job's fired `LPDF_EPM_*` findings | EPM candidacy header (tier badge, rejection drivers, advisories, IndiChrome upsell hint). Mirrored inline on `JobResponse.epm_verdict` and via `GET /api/v1/jobs/{job_id}/epm`. |
 
 Unknown capability names are ignored; the map is forward-compatible.
 

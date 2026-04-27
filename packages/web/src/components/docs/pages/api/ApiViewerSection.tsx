@@ -220,7 +220,8 @@ Content-Type: image/png`}
   "preflight_source": "engine",
   "capabilities": {
     "separations": true, "tac": true, "tac_runs": true, "tiles_warmed": true,
-    "fonts": true, "images": true, "layers": false
+    "fonts": true, "images": true, "layers": false,
+    "ai_explain": true, "epm_verdict": true
   },
   "capability_fillin_enabled": true,
   "annotations_enabled": true,
@@ -258,7 +259,7 @@ Content-Type: image/png`}
           { name: "tenant_name", type: "string | null", description: "Tenant display name (null when anonymous)." },
           { name: "support_email", type: "string | null", description: "Tenant support email (null when anonymous)." },
           { name: "preflight_source", type: '"engine" | "external" | "minimal"', description: "How findings were produced. Drives the viewer's Load-button affordances." },
-          { name: "capabilities", type: "Record<string, boolean>", description: "Per-capability availability map. Fillable keys: separations, tac, fonts, images. Non-fillable: layers (extracted at ingest), tac_runs (derived on demand, tracks the tac flag), and tiles_warmed (flipped by the background warm_tiles task; see /tile-warming endpoint)." },
+          { name: "capabilities", type: "Record<string, boolean>", description: "Per-capability availability map. Fillable keys: separations, tac, fonts, images. Non-fillable: layers (extracted at ingest), tac_runs (derived on demand, tracks the tac flag), tiles_warmed (flipped by the background warm_tiles task; see /tile-warming endpoint), ai_explain (on-call via POST /api/v1/jobs/{id}/findings/{fid}/explain — cost-cap gates with HTTP 402), epm_verdict (computed at ingest from fired LPDF_EPM_* findings; mirrored on JobResponse.epm_verdict and via GET /api/v1/jobs/{id}/epm)." },
           { name: "capability_fillin_enabled", type: "boolean", description: "Plan gate. When false the fill-in endpoint returns 403 plan_upgrade_required — render an UpgradePrompt instead of Load buttons. Viewer tier: false. Starter+: true." },
           { name: "annotations_enabled", type: "boolean", description: "Plan gate. When false the annotation toolbar must be hidden; annotation write endpoints return 403; share-link minting forces allow_annotations=false. Viewer tier: false. Starter+: true." },
           { name: "allowed_report_formats", type: "string[]", description: "Plan gate. Formats the tenant may request on POST /api/v1/jobs/{id}/reports. Empty list means report downloads are disabled (Viewer tier) — the share link is the only output. Starter+ includes json/html/pdf/xml; Scale+ adds annotated_pdf." },
