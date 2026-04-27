@@ -177,9 +177,16 @@ echo "  api_key tag = ${TENANT_KEY:0:12}…${TENANT_KEY: -6}"
 
 # Enable AI on the tenant so submissions exercise every analyzer
 # category and the explain endpoint is callable.
+#
+# industry_type + regulatory_market are pinned to dietary_supplement / us_fda
+# to match the corpus (US/CA supplement + food + cosmetic packaging). The
+# 2026-04-27 Opus audit showed leaving these unset produced 75 false-
+# positive findings (EU pharma + EU FIR 1169 firing on non-EU products).
+# Setting them explicitly is good practice and represents the typical
+# customer onboarding path.
 echo "→ enabling AI on tenant ..."
 ai_code=$(http_call PUT \
-  "${API_URL}/api/v1/admin/tenants/${TENANT_ID}/ai?ai_enabled=true&billing_mode=pay_per_use&enabled_categories=all" \
+  "${API_URL}/api/v1/admin/tenants/${TENANT_ID}/ai?ai_enabled=true&billing_mode=pay_per_use&enabled_categories=all&industry_type=dietary_supplement&regulatory_market=us_fda" \
   "$RUN_DIR/ai_enable.json" \
   -H "X-Admin-Key: ${LINTPDF_ADMIN_API_KEY}")
 if [[ "$ai_code" != "200" && "$ai_code" != "201" ]]; then
