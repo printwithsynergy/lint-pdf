@@ -93,13 +93,19 @@ class TestJobCreateResponse:
 class TestFindingResponse:
     @staticmethod
     def test_minimal() -> None:
-        f = FindingResponse(inspection_id="INK001", severity="error", message="Bad ink")
+        f = FindingResponse(
+            id="00000000-0000-0000-0000-000000000001",
+            inspection_id="INK001",
+            severity="error",
+            message="Bad ink",
+        )
         assert f.page_num is None
         assert f.details is None
 
     @staticmethod
     def test_with_details() -> None:
         f = FindingResponse(
+            id="00000000-0000-0000-0000-000000000002",
             inspection_id="RES001",
             severity="advisory",
             message="Low DPI",
@@ -111,7 +117,12 @@ class TestFindingResponse:
 
     @staticmethod
     def test_ai_explanation_fields_default_null() -> None:
-        f = FindingResponse(inspection_id="X", severity="error", message="m")
+        f = FindingResponse(
+            id="00000000-0000-0000-0000-000000000003",
+            inspection_id="X",
+            severity="error",
+            message="m",
+        )
         assert f.ai_explanation is None
         assert f.ai_explanation_model is None
         assert f.ai_explanation_at is None
@@ -121,6 +132,7 @@ class TestFindingResponse:
     def test_ai_explanation_populated() -> None:
         now = datetime.now(timezone.utc)
         f = FindingResponse(
+            id="00000000-0000-0000-0000-000000000004",
             inspection_id="X",
             severity="error",
             message="m",

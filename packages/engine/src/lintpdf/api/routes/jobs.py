@@ -599,9 +599,7 @@ async def submit_job(  # skipcq: PY-R1000
         # tenant's ``ToggleOverride(toggle_id='brand')`` row now.
         from lintpdf.brand_specs import storage as _brand_storage
 
-        spec_value = _brand_storage.get_spec(
-            db, tenant.id, brand_spec_id_resolved
-        )
+        spec_value = _brand_storage.get_spec(db, tenant.id, brand_spec_id_resolved)
         if spec_value is None or spec_value.get("is_archived"):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -918,9 +916,7 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
             )
 
         def _effective_decision_for(f: JobFinding) -> dict[str, Any] | None:
-            d = latest_active_for_finding(
-                db, tenant_id=job.tenant_id, finding_id=f.id
-            )
+            d = latest_active_for_finding(db, tenant_id=job.tenant_id, finding_id=f.id)
             if d is None:
                 return None
             return {
@@ -932,6 +928,7 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
         findings: list[JobFinding] = job.findings
         response.findings = [
             FindingResponse(
+                id=str(f.id),
                 inspection_id=f.inspection_id,
                 severity=f.severity,
                 message=f.message,
@@ -960,16 +957,10 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
         from lintpdf.decisions.service import list_for_job
         from lintpdf.epm.scoring import score_epm_candidacy
 
-        epm_codes = [
-            f.inspection_id
-            for f in findings
-            if f.inspection_id.startswith("LPDF_EPM")
-        ]
+        epm_codes = [f.inspection_id for f in findings if f.inspection_id.startswith("LPDF_EPM")]
         verdict = score_epm_candidacy(epm_codes)
         response.epm_verdict = {
-            "tier": verdict.tier.value
-            if hasattr(verdict.tier, "value")
-            else str(verdict.tier),
+            "tier": verdict.tier.value if hasattr(verdict.tier, "value") else str(verdict.tier),
             "rejection_drivers": list(verdict.rejection_drivers),
             "advisories": list(verdict.advisories),
             "recommends_indichrome": verdict.recommends_indichrome,
