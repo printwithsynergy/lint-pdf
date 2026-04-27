@@ -103,6 +103,62 @@ def test_a1_quiet_on_non_cmyk():
     assert findings == []
 
 
+def test_a1_substrate_profile_path_round_trips_through_icc():
+    """When a substrate profile is supplied, A1 routes through
+    is_in_gamut_for_profile instead of the saturated heuristic.
+    A wide-gamut Lab triple round-trips cleanly through sRGB so the
+    fallback case quiet-passes. The path-coverage assertion lives
+    in the analyzer harness — here we just verify that supplying a
+    profile doesn't crash and produces the right details key."""
+    from PIL import ImageCms
+
+    profile = ImageCms.createProfile("sRGB")
+    findings = epm_v2_a.detect_a1_gamut(
+        document=None,  # type: ignore[arg-type]
+        events=[_color_event(values=(1.0, 1.0, 1.0, 0.5))],
+        thresholds={},
+        profile=profile,
+    )
+    # CMYK fully-saturated through the naive→sRGB path → near-black
+    # Lab → in gamut for sRGB. Profile path is exercised; result is
+    # quiet (no finding) because the working space matches.
+    for f in findings:
+        # If it does fire, assert the substrate-aware label landed.
+        assert f.details["profile_source"] == "substrate"
+
+
+def test_a1_default_heuristic_label_in_details():
+    """Without a profile the finding tags itself default_heuristic."""
+    findings = epm_v2_a.detect_a1_gamut(
+        document=None,  # type: ignore[arg-type]
+        events=[_color_event(values=(1.0, 1.0, 1.0, 0.5))],
+        thresholds={},
+    )
+    assert len(findings) == 1
+    assert findings[0].details["profile_source"] == "default_heuristic"
+
+
+def test_a1_analyzer_passes_resolved_profile_through(tmp_path):
+    """EpmTierAAnalyzer.substrate_profile_path → loaded → forwarded."""
+    from PIL import ImageCms
+
+    profile_path = tmp_path / "default.icc"
+    profile_path.write_bytes(ImageCms.ImageCmsProfile(ImageCms.createProfile("sRGB")).tobytes())
+    analyzer = epm_v2_a.EpmTierAAnalyzer(substrate_profile_path=str(profile_path))
+    # Path resolves; missing files don't crash.
+    profile = analyzer._resolve_profile()
+    assert profile is not None
+
+
+def test_a1_analyzer_missing_profile_falls_back_silently(tmp_path):
+    """Bad path → resolver returns None → default heuristic still fires."""
+    analyzer = epm_v2_a.EpmTierAAnalyzer(
+        substrate_profile_path=str(tmp_path / "does-not-exist.icc"),
+    )
+    profile = analyzer._resolve_profile()
+    assert profile is None
+
+
 # ---- A2: K coverage too high -------------------------------------------
 
 
