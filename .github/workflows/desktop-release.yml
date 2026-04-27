@@ -140,16 +140,21 @@ jobs:
           # for an early release, swap to a real Developer ID secret
           # later for a polished install experience.
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY || '-' }}
-          # APPLE_ID / APPLE_TEAM_ID / APPLE_PASSWORD intentionally NOT
-          # forwarded here. Tauri attempts notarization whenever any of
-          # those env vars are non-empty (even passing them as empty
-          # string ``""`` makes tauri-action enter "we have notary
-          # creds" mode and fail with "Team ID must be at least 3
-          # characters"). Until the Apple Developer notary creds are
-          # actually configured as repo secrets, leave these unset so
-          # tauri-action skips notarization entirely. macOS bundles
-          # ship ad-hoc signed without notarization; first-launch will
-          # require right-click → Open until creds are wired in.
+          # Notarization env vars. tauri-action enters "we have notary
+          # creds" mode whenever any of these are non-empty (even an
+          # empty string ``""`` triggers it and fails with "Team ID
+          # must be at least 3 characters"). GitHub Actions evaluates
+          # an unset secret to the empty string when interpolated, so
+          # we guard each one with ``secrets.X != ''`` via the ternary
+          # ``${{ secrets.X || '' }}`` pattern — same shape as
+          # APPLE_SIGNING_IDENTITY above. When the six APPLE_* secrets
+          # aren't populated, all three forwarded vars stay empty and
+          # tauri-action skips notarization (ad-hoc signed bundle,
+          # first-launch Gatekeeper warning). When they are populated,
+          # tauri-action notarizes via the App Store Connect API.
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         with:
           projectPath: packages/desktop
           tagName: ${{ github.ref_name }}
