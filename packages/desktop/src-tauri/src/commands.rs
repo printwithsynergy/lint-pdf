@@ -774,3 +774,314 @@ pub fn retry_job(state: State<'_, AppState>, local_id: String) -> Result<(), Str
     state.drainer_wake.notify_waiters();
     Ok(())
 }
+
+// ─── v2 playbook commands ────────────────────────────────────────────────
+//
+// AI-Explain (Q-C4/C5), EPM verdict, decisions audit, and cost-cap. Each
+// command shells out to the engine's tenant-scoped REST surface using the
+// configured API key + base URL. HTTP 402 (cost-cap exceeded) is mapped to
+// a specific Err string the frontend can branch on.
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct ExplanationResponse {
+    pub finding_id: String,
+    #[serde(default, alias = "explanation")]
+    pub text: String,
+    #[serde(default)]
+    pub model: Option<String>,
+    #[serde(default)]
+    pub cached: bool,
+    #[serde(default)]
+    pub cost_cents: Option<f64>,
+}
+
+#[tauri::command]
+pub async fn explain_finding(
+    state: State<'_, AppState>,
+    job_id: String,
+    finding_id: String,
+) -> Result<ExplanationResponse, String> {
+    require_online(&state, "explaining finding")?;
+    let config = state.config_mgr.get();
+    if config.api_key.is_empty() {
+        return Err("API key not configured".to_string());
+    }
+    let url = format!(
+        "{}/api/v1/jobs/{}/findings/{}/explain",
+        config.base_url.trim_end_matches('/'),
+        job_id,
+        finding_id,
+    );
+    let resp = reqwest::Client::new()
+        .post(&url)
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .header("Content-Type", "application/json")
+        .json(&serde_json::json!({}))
+        .timeout(Duration::from_secs(60))
+        .send()
+        .await
+        .map_err(|e| format!("HTTP error: {}", e))?;
+    if resp.status().as_u16() == 402 {
+        return Err("Cost cap exceeded".to_string());
+    }
+    if !resp.status().is_success() {
+        return Err(format!("API error {}: {}", resp.status(), resp.text().await.unwrap_or_default()));
+    }
+    resp.json::<ExplanationResponse>()
+        .await
+        .map_err(|e| format!("Parse error: {}", e))
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct EpmVerdictResponse {
+    pub job_id: String,
+    pub tier: String,
+    #[serde(default)]
+    pub rejection_drivers: Vec<String>,
+    #[serde(default)]
+    pub advisories: Vec<String>,
+    #[serde(default)]
+    pub recommends_indichrome: bool,
+    #[serde(default)]
+    pub legacy_codes_fired: Vec<String>,
+    #[serde(default)]
+    pub epm_findings_count: i32,
+}
+
+#[tauri::command]
+pub async fn get_epm_verdict(
+    state: State<'_, AppState>,
+    job_id: String,
+) -> Result<EpmVerdictResponse, String> {
+    require_online(&state, "fetching EPM verdict")?;
+    let config = state.config_mgr.get();
+    if config.api_key.is_empty() {
+        return Err("API key not configured".to_string());
+    }
+    let url = format!(
+        "{}/api/v1/jobs/{}/epm",
+        config.base_url.trim_end_matches('/'),
+        job_id,
+    );
+    let resp = reqwest::Client::new()
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("HTTP error: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("API error {}: {}", resp.status(), resp.text().await.unwrap_or_default()));
+    }
+    resp.json::<EpmVerdictResponse>()
+        .await
+        .map_err(|e| format!("Parse error: {}", e))
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone)]
+pub struct DecisionResponse {
+    pub id: String,
+    pub job_id: String,
+    #[serde(default)]
+    pub finding_id: Option<String>,
+    pub decision_type: String,
+    #[serde(default)]
+    pub decision_value: Option<String>,
+    #[serde(default)]
+    pub notes: Option<String>,
+    pub decided_by_user_id: String,
+    #[serde(default)]
+    pub decided_at: Option<String>,
+    pub source: String,
+    #[serde(default)]
+    pub is_active: bool,
+    #[serde(default)]
+    pub revoked_at: Option<String>,
+    #[serde(default)]
+    pub revoked_reason: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+struct DecisionListRaw {
+    decisions: Vec<DecisionResponse>,
+}
+
+#[tauri::command]
+pub async fn list_decisions(
+    state: State<'_, AppState>,
+    job_id: String,
+    include_revoked: Option<bool>,
+) -> Result<Vec<DecisionResponse>, String> {
+    require_online(&state, "listing decisions")?;
+    let config = state.config_mgr.get();
+    if config.api_key.is_empty() {
+        return Err("API key not configured".to_string());
+    }
+    let url = format!(
+        "{}/api/v1/jobs/{}/decisions?include_revoked={}&limit=200",
+        config.base_url.trim_end_matches('/'),
+        job_id,
+        include_revoked.unwrap_or(false),
+    );
+    let resp = reqwest::Client::new()
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("HTTP error: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("API error {}: {}", resp.status(), resp.text().await.unwrap_or_default()));
+    }
+    let parsed: DecisionListRaw = resp
+        .json()
+        .await
+        .map_err(|e| format!("Parse error: {}", e))?;
+    Ok(parsed.decisions)
+}
+
+#[derive(serde::Deserialize)]
+pub struct RecordDecisionInput {
+    pub decision_type: String,
+    pub decided_by_user_id: String,
+    #[serde(default = "default_source")]
+    pub source: String,
+    #[serde(default)]
+    pub finding_id: Option<String>,
+    #[serde(default)]
+    pub notes: Option<String>,
+}
+
+fn default_source() -> String {
+    "desktop".to_string()
+}
+
+#[tauri::command]
+pub async fn record_decision(
+    state: State<'_, AppState>,
+    job_id: String,
+    input: RecordDecisionInput,
+) -> Result<DecisionResponse, String> {
+    require_online(&state, "recording decision")?;
+    let config = state.config_mgr.get();
+    if config.api_key.is_empty() {
+        return Err("API key not configured".to_string());
+    }
+    let path = match &input.finding_id {
+        Some(fid) => format!(
+            "{}/api/v1/jobs/{}/findings/{}/decisions",
+            config.base_url.trim_end_matches('/'),
+            job_id,
+            fid,
+        ),
+        None => format!(
+            "{}/api/v1/jobs/{}/decisions",
+            config.base_url.trim_end_matches('/'),
+            job_id,
+        ),
+    };
+    let body = serde_json::json!({
+        "decision_type": input.decision_type,
+        "decided_by_user_id": input.decided_by_user_id,
+        "source": input.source,
+        "notes": input.notes,
+    });
+    let resp = reqwest::Client::new()
+        .post(&path)
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("HTTP error: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("API error {}: {}", resp.status(), resp.text().await.unwrap_or_default()));
+    }
+    resp.json::<DecisionResponse>()
+        .await
+        .map_err(|e| format!("Parse error: {}", e))
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct CostCapResponse {
+    #[serde(default)]
+    pub enabled: bool,
+    #[serde(default)]
+    pub monthly_cap_cents: i64,
+    #[serde(default)]
+    pub alert_threshold_pct: i32,
+    #[serde(default)]
+    pub used_cents: Option<i64>,
+}
+
+#[tauri::command]
+pub async fn get_cost_cap(state: State<'_, AppState>) -> Result<CostCapResponse, String> {
+    require_online(&state, "fetching cost cap")?;
+    let config = state.config_mgr.get();
+    if config.api_key.is_empty() {
+        return Err("API key not configured".to_string());
+    }
+    let url = format!(
+        "{}/api/v1/ai/cost-cap",
+        config.base_url.trim_end_matches('/'),
+    );
+    let resp = reqwest::Client::new()
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("HTTP error: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("API error {}: {}", resp.status(), resp.text().await.unwrap_or_default()));
+    }
+    resp.json::<CostCapResponse>()
+        .await
+        .map_err(|e| format!("Parse error: {}", e))
+}
+
+#[derive(serde::Deserialize)]
+pub struct CostCapInput {
+    pub enabled: bool,
+    #[serde(default)]
+    pub monthly_cap_cents: Option<i64>,
+    #[serde(default)]
+    pub alert_threshold_pct: Option<i32>,
+}
+
+#[tauri::command]
+pub async fn set_cost_cap(
+    state: State<'_, AppState>,
+    input: CostCapInput,
+) -> Result<CostCapResponse, String> {
+    require_online(&state, "setting cost cap")?;
+    let config = state.config_mgr.get();
+    if config.api_key.is_empty() {
+        return Err("API key not configured".to_string());
+    }
+    let url = format!(
+        "{}/api/v1/ai/cost-cap",
+        config.base_url.trim_end_matches('/'),
+    );
+    let body = serde_json::json!({
+        "enabled": input.enabled,
+        "monthly_cap_cents": input.monthly_cap_cents,
+        "alert_threshold_pct": input.alert_threshold_pct,
+    });
+    let resp = reqwest::Client::new()
+        .post(&url)
+        .header("Authorization", format!("Bearer {}", config.api_key))
+        .header("Content-Type", "application/json")
+        .json(&body)
+        .timeout(Duration::from_secs(30))
+        .send()
+        .await
+        .map_err(|e| format!("HTTP error: {}", e))?;
+    if !resp.status().is_success() {
+        return Err(format!("API error {}: {}", resp.status(), resp.text().await.unwrap_or_default()));
+    }
+    resp.json::<CostCapResponse>()
+        .await
+        .map_err(|e| format!("Parse error: {}", e))
+}

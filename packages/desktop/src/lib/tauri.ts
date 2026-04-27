@@ -282,6 +282,93 @@ export async function pickDirectory(): Promise<string | null> {
   return selected as string | null;
 }
 
+// ── v2 playbook contract surface ─────────────────────────────────────
+
+export interface ExplanationResponse {
+  finding_id: string;
+  text: string;
+  model: string | null;
+  cached: boolean;
+  cost_cents: number | null;
+}
+
+export async function explainFinding(
+  jobId: string,
+  findingId: string,
+): Promise<ExplanationResponse> {
+  return invoke("explain_finding", { jobId, findingId });
+}
+
+export interface EpmVerdictResponse {
+  job_id: string;
+  tier: string;
+  rejection_drivers: string[];
+  advisories: string[];
+  recommends_indichrome: boolean;
+  legacy_codes_fired: string[];
+  epm_findings_count: number;
+}
+
+export async function getEpmVerdict(jobId: string): Promise<EpmVerdictResponse> {
+  return invoke("get_epm_verdict", { jobId });
+}
+
+export interface DecisionResponse {
+  id: string;
+  job_id: string;
+  finding_id: string | null;
+  decision_type: string;
+  decision_value: string | null;
+  notes: string | null;
+  decided_by_user_id: string;
+  decided_at: string | null;
+  source: string;
+  is_active: boolean;
+  revoked_at: string | null;
+  revoked_reason: string | null;
+}
+
+export async function listDecisions(
+  jobId: string,
+  includeRevoked = false,
+): Promise<DecisionResponse[]> {
+  return invoke("list_decisions", { jobId, includeRevoked });
+}
+
+export interface RecordDecisionInput {
+  decision_type: string;
+  decided_by_user_id: string;
+  source?: string;
+  finding_id?: string | null;
+  notes?: string | null;
+}
+
+export async function recordDecision(
+  jobId: string,
+  input: RecordDecisionInput,
+): Promise<DecisionResponse> {
+  return invoke("record_decision", { jobId, input });
+}
+
+export interface CostCapResponse {
+  enabled: boolean;
+  monthly_cap_cents: number;
+  alert_threshold_pct: number;
+  used_cents: number | null;
+}
+
+export async function getCostCap(): Promise<CostCapResponse> {
+  return invoke("get_cost_cap");
+}
+
+export async function setCostCap(input: {
+  enabled: boolean;
+  monthly_cap_cents?: number | null;
+  alert_threshold_pct?: number | null;
+}): Promise<CostCapResponse> {
+  return invoke("set_cost_cap", { input });
+}
+
 // Event listeners
 export function onJobUpdate(
   callback: (job: JobResult) => void,
