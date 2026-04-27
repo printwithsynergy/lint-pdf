@@ -87,6 +87,12 @@ export const docSections: DocSection[] = [
         label: "Report formats",
         description: "JSON, HTML, PDF — what each one is for.",
       },
+      {
+        slug: "epm-verdict",
+        label: "EPM candidacy verdict",
+        description:
+          "Tier verdict for HP's CMY-only Extended Print Mode — drivers, advisories, IndiChrome hint.",
+      },
     ],
   },
   {
@@ -124,6 +130,18 @@ export const docSections: DocSection[] = [
         label: "Accuracy audit",
         description:
           "Opt-in AI verification of engine findings — confirmed / disputed / needs_context verdicts on every row.",
+      },
+      {
+        slug: "ai-explain",
+        label: "AI-Explain",
+        description:
+          "Per-finding human-readable explanations via Claude Haiku 4.5, cached + cost-capped.",
+      },
+      {
+        slug: "cost-cap",
+        label: "LLM cost cap",
+        description:
+          "Per-tenant monthly ceiling on LLM API spend with HTTP 402 gating and lockable tenant policy.",
       },
       {
         slug: "entitlements",
@@ -250,6 +268,12 @@ export const docSections: DocSection[] = [
       "Drop LintPDF into Enfocus Switch, Esko Automation Engine, Zapier, or a hot folder — no code required.",
     items: [
       { slug: "integrations-overview", label: "Overview" },
+      {
+        slug: "workflows",
+        label: "Workflows",
+        description:
+          "Pin a profile + brand spec + per-call override defaults under a single name (Phase 0.7 substrate).",
+      },
       { slug: "integrations-enfocus-switch", label: "Enfocus Switch" },
       {
         slug: "integrations-esko-ae",
@@ -300,6 +324,12 @@ export const docSections: DocSection[] = [
         slug: "sdks",
         label: "SDKs",
         description: "Official client libraries for Python, Node, Ruby, Go.",
+      },
+      {
+        slug: "decisions-audit",
+        label: "Decisions audit",
+        description:
+          "Append-only audit of operator approve / waive / reject decisions on jobs and findings.",
       },
     ],
   },
