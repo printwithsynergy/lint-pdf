@@ -61,7 +61,22 @@
     },
     "playwright": {
       "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest", "--no-sandbox"]
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--no-sandbox",
+        "--ignore-https-errors"
+      ]
+    },
+    "chrome-devtools": {
+      "command": "chrome-devtools-mcp",
+      "args": [
+        "--headless",
+        "--isolated",
+        "--acceptInsecureCerts",
+        "--viewport",
+        "1440x900"
+      ]
     },
     "openapi-fastapi": {
       "command": "uvx",

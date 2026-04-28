@@ -89,6 +89,36 @@ export function middleware(request: NextRequest) {
   for (const [key, value] of Object.entries(result.headers)) {
     response.headers.set(key, value);
   }
+
+  // The Swagger UI pages load swagger-ui-bundle.js + swagger-ui.css
+  // from cdn.jsdelivr.net. Pixie Dust's default CSP only allows
+  // 'self' for script-src + style-src, so the bundle is blocked and
+  // the page renders blank chrome. Override CSP for just those routes
+  // so Swagger hydrates cleanly. Everything else keeps the strict
+  // default.
+  const path = request.nextUrl.pathname;
+  if (
+    path === "/dashboard/api-reference" ||
+    path === "/dashboard/admin/api-reference" ||
+    path === "/dashboard/admin/swagger"
+  ) {
+    response.headers.set(
+      "Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+        "img-src 'self' data: https:",
+        "font-src 'self' https://fonts.gstatic.com",
+        "connect-src 'self' https://api.lintpdf.com",
+        "frame-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+      ].join("; "),
+    );
+  }
+
   return response;
 }
 
