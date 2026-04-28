@@ -15,7 +15,7 @@ export function Footer() {
               <span className="text-2xl font-bold text-brand-900">LintPDF</span>
             </div>
             <p className="text-sm text-slate-500 max-w-sm mb-4">
-              Detection-only PDF preflight engine. 600+ checks, PDF/X-1a,
+              Detection-only PDF preflight engine. 500+ checks, PDF/X-1a,
               PDF/X-3, PDF/X-4, and PDF/A conformance verification, zero file
               modifications. API-first, self-service pricing.
             </p>

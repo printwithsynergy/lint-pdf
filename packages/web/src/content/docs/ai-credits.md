@@ -7,7 +7,7 @@ order: 4
 
 # AI Credits
 
-AI inspections in LintPDF are metered using a credit system. Core preflight checks (600+ checks) stay unlimited on all paid plans. AI credits are a metered resource with two sources:
+AI inspections in LintPDF are metered using a credit system. Core preflight checks (500+ checks) stay unlimited on all paid plans. AI credits are a metered resource with two sources:
 
 1. **Plan-included monthly allotment** — granted automatically when your Stripe subscription renews. Resets each billing cycle. See the table below.
 2. **Top-up credit packs** — one-off Stripe Checkout purchases that roll over for 12 months.

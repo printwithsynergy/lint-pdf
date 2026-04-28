@@ -19,7 +19,7 @@ Or consider transparency flattening. A tool detects transparency that is incompa
 
 ## Detection gives you the information without the risk
 
-LintPDF takes a different approach. We run 600+ Checks across your file and tell you exactly what we find. Fonts that are not embedded, spot colors in the wrong workflow, images below minimum resolution, missing bleed, non-compliant ICC profiles, barcode quiet zones that are too narrow.
+LintPDF takes a different approach. We run 500+ Checks across your file and tell you exactly what we find. Fonts that are not embedded, spot colors in the wrong workflow, images below minimum resolution, missing bleed, non-compliant ICC profiles, barcode quiet zones that are too narrow.
 
 Every finding includes a severity level. Error findings are blockers — issues that will almost certainly cause production problems. Warnings are potential issues that may need attention depending on the workflow. Info findings are informational — things worth knowing but unlikely to cause problems.
 

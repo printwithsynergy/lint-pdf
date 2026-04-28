@@ -75,7 +75,7 @@ export const docSections: DocSection[] = [
       {
         slug: "checks",
         label: "Checks reference",
-        description: "600+ individual checks, grouped by category.",
+        description: "500+ individual checks, grouped by category.",
       },
       {
         slug: "job-state",

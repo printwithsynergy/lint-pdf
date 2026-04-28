@@ -10,7 +10,7 @@ export default function ApiEnumsSection() {
       <h4 className="font-semibold text-slate-900 mt-4 mb-2">preflight_source</h4>
       <FieldTable
         rows={[
-          { name: "engine", type: "string", description: "Run LintPDF's 600+ checks and produce geometry + capability data." },
+          { name: "engine", type: "string", description: "Run LintPDF's 500+ checks and produce geometry + capability data." },
           { name: "external", type: "string", description: "Import findings from a third-party preflight (PitStop/callas/Acrobat/native or a custom mapping)." },
           { name: "minimal", type: "string", description: "No preflight — viewer and share surfaces only. Capabilities can be filled on demand." },
         ]}

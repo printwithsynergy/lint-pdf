@@ -42,9 +42,9 @@ const features = [
     ),
   },
   {
-    title: "600+ Checks",
+    title: "500+ Checks",
     description:
-      "259 rule-based checks plus 247 PDF/X-4 conformance checks plus 99 AI inspections — fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, packaging geometry, barcode grading, PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A. Every detail that matters for print production.",
+      "Fonts, color spaces, images, transparency, overprint, page geometry, ink coverage, packaging geometry, barcode grading, PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance — every detail that matters for print production.",
     icon: (
       <svg
         className="h-6 w-6"

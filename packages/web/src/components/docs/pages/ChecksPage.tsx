@@ -7,14 +7,13 @@ export default function ChecksPage() {
         Checks Reference
       </h2>
       <p className="text-slate-600 mb-4">
-        LintPDF runs 600+ individual Checks across these categories — 259
-        rule-based engine checks, 247 PDF/X-4 conformance checks, and 99 AI
-        inspections. Each finding in a Report references a Check ID, severity
-        level, and affected page.
+        LintPDF runs 500+ individual Checks across these categories. Each
+        finding in a Report references a Check ID, severity level, and affected
+        page.
       </p>
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 mb-6 text-sm text-slate-600">
         <p className="mb-2">
-          <strong className="text-slate-900">Engine mode only.</strong> The 600+
+          <strong className="text-slate-900">Engine mode only.</strong> The 500+
           checks below only run when{" "}
           <code className="bg-white px-1 rounded">preflight_source=engine</code>.
           Jobs submitted with{" "}
@@ -272,7 +271,7 @@ export default function ChecksPage() {
       ))}
 
       <p className="text-sm text-slate-500 mt-4">
-        This is a representative sample. The full suite includes 600+ checks.
+        This is a representative sample. The full suite includes 500+ checks.
         Use the{" "}
         <code className="bg-slate-100 px-1 rounded">GET /api/v1/rulesets</code>{" "}
         endpoint to see which Checks are included in each Ruleset.
