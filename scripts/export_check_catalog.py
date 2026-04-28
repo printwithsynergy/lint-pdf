@@ -77,6 +77,7 @@ _PREFIX_CATEGORIES: list[tuple[str, str, str]] = [
     ("LPDF_PKG_", "packaging", "Packaging"),
     ("LPDF_ADV_", "advanced", "Advanced print production"),
     ("LPDF_STD_", "standards", "Standards compliance"),
+    ("PDFX4-", "pdfx4", "PDF/X-4 conformance"),
     ("PDFX_", "conformance", "PDF/X conformance"),
     ("PDFA_", "conformance_pdfa", "PDF/A conformance"),
     ("AI_BRAND_", "ai:brand", "AI — brand"),
@@ -113,6 +114,7 @@ _PREFIX_CATEGORIES: list[tuple[str, str, str]] = [
 # to ``error`` so a brand-new custom profile out of the box still
 # raises the common "this won't print" issues.
 _ERROR_PREFIXES: tuple[str, ...] = (
+    "PDFX4-",
     "PDFX_",
     "PDFA_",
     "LPDF_STD_",

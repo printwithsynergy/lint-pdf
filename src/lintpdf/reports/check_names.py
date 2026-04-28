@@ -2153,4 +2153,415 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Shading Pattern",
         "Shading pattern detected on page N (N shadingN, potential gradient banding risk)",
     ),
+    # ── PDF/X-4 Conformance (ISO 15930-7:2010) ─────────────────────────────
+    # File structure
+    "PDFX4-001": CheckInfo(
+        "PDF Version Below 1.6",
+        "PDF/X-4 requires PDF version 1.6 or 1.7. The file declares an older "
+        "version in its header.",
+    ),
+    "PDFX4-002": CheckInfo(
+        "PDF Header Version Missing",
+        "The PDF header does not declare a version. PDF/X-4 requires a "
+        "well-formed %PDF-1.x header.",
+    ),
+    "PDFX4-003": CheckInfo(
+        "Binary Marker Missing",
+        "The four-byte binary comment that follows the header is missing. "
+        "Tools may transmit the file as ASCII and corrupt it.",
+    ),
+    "PDFX4-004": CheckInfo(
+        "Linearized PDF",
+        "PDF is linearized for fast web view; verify the linearization table "
+        "before sending to press.",
+    ),
+    "PDFX4-080": CheckInfo(
+        "Stream Decompression Failure",
+        "One or more content/object streams failed to decompress. Workflows "
+        "downstream of PDF/X-4 cannot consume corrupt streams.",
+    ),
+    "PDFX4-081": CheckInfo(
+        "Broken Object References",
+        "Indirect object references resolve to null/missing objects. The PDF "
+        "is structurally invalid for PDF/X-4.",
+    ),
+    "PDFX4-082": CheckInfo(
+        "Cross-Reference Table Errors",
+        "The xref / xref-stream is inconsistent. RIPs may load partial "
+        "content or refuse the file outright.",
+    ),
+    "PDFX4-083": CheckInfo(
+        "Trailer /ID Missing",
+        "Trailer /ID array is missing. PDF/X-4 requires it for unique file "
+        "identification across revisions.",
+    ),
+    "PDFX4-084": CheckInfo(
+        "Incremental Updates",
+        "Trailer carries /Prev so the file has incremental updates. PDF/X-4 "
+        "expects a clean, fully-rewritten file.",
+    ),
+    # Metadata / XMP
+    "PDFX4-005": CheckInfo(
+        "XMP Metadata Missing",
+        "PDF/X-4 requires an XMP metadata stream on the document catalog. "
+        "Without it the file cannot declare its conformance.",
+    ),
+    "PDFX4-006": CheckInfo(
+        "GTS_PDFXVersion Wrong Or Missing",
+        "The XMP property pdfxid:GTS_PDFXVersion is absent or does not equal "
+        "'PDF/X-4'. Required for conformance.",
+    ),
+    "PDFX4-007": CheckInfo(
+        "GTS_PDFXConformance Missing",
+        "Optional pdfxid:GTS_PDFXConformance attribute not declared. "
+        "Recommended for downstream parser hints.",
+    ),
+    "PDFX4-008": CheckInfo(
+        "XMP Version Mismatch",
+        "XMP pdf:PDFVersion does not match the version on the PDF header.",
+    ),
+    "PDFX4-009": CheckInfo(
+        "xmp:CreateDate Missing",
+        "Required XMP timestamp xmp:CreateDate is missing.",
+    ),
+    "PDFX4-010": CheckInfo(
+        "xmp:ModifyDate Missing",
+        "Required XMP timestamp xmp:ModifyDate is missing.",
+    ),
+    "PDFX4-011": CheckInfo(
+        "dc:title Missing",
+        "Required Dublin Core dc:title element missing from XMP metadata.",
+    ),
+    "PDFX4-012": CheckInfo(
+        "Invalid pdf:Trapped Value",
+        "pdf:Trapped must be True, False, or Unknown. Any other value (or a "
+        "missing one when Trapped is asserted) is non-conformant.",
+    ),
+    "PDFX4-013": CheckInfo(
+        "Title Mismatch (Info vs XMP)",
+        "Document Info /Title disagrees with XMP dc:title. Editors may "
+        "surface conflicting strings.",
+    ),
+    "PDFX4-014": CheckInfo(
+        "CreationDate Mismatch",
+        "Document Info /CreationDate disagrees with XMP xmp:CreateDate.",
+    ),
+    "PDFX4-015": CheckInfo(
+        "ModDate Mismatch",
+        "Document Info /ModDate disagrees with XMP xmp:ModifyDate.",
+    ),
+    # Output intent
+    "PDFX4-016": CheckInfo(
+        "OutputIntent Missing",
+        "PDF/X-4 requires at least one OutputIntent dictionary describing the "
+        "intended printing condition.",
+    ),
+    "PDFX4-017": CheckInfo(
+        "GTS_PDFX OutputIntent Missing",
+        "No OutputIntent with /S = /GTS_PDFX present. Required for PDF/X-4.",
+    ),
+    "PDFX4-018": CheckInfo(
+        "OutputConditionIdentifier Missing",
+        "OutputIntent /OutputConditionIdentifier is missing.",
+    ),
+    "PDFX4-019": CheckInfo(
+        "ICC Profile Not Embedded And Not Registered",
+        "OutputIntent has no /DestOutputProfile and the named condition is "
+        "not on the ICC registered list.",
+    ),
+    "PDFX4-020": CheckInfo(
+        "ICC Profile Version Below 2.0",
+        "Embedded ICC profile version is below 2.0; modern RIPs may reject it.",
+    ),
+    "PDFX4-021": CheckInfo(
+        "ICC Profile Class Not Output/Display",
+        "Embedded ICC profile class must be output (prtr) or display (mntr) "
+        "for use as an OutputIntent.",
+    ),
+    "PDFX4-022": CheckInfo(
+        "ICC Color Space Unrecognized",
+        "Embedded ICC profile declares a color space other than CMYK, RGB, Gray, or Lab.",
+    ),
+    "PDFX4-023": CheckInfo(
+        "Multiple GTS_PDFX OutputIntents",
+        "More than one /GTS_PDFX OutputIntent is present. PDF/X-4 expects exactly one.",
+    ),
+    "PDFX4-024": CheckInfo(
+        "RegistryName Missing For Registered Condition",
+        "Registered conditions should carry /RegistryName so consumers can "
+        "look up the ICC reference.",
+    ),
+    "PDFX4-025": CheckInfo(
+        "OutputIntent /Info Missing",
+        "Recommended /Info string on the OutputIntent describing the press condition is absent.",
+    ),
+    # Color
+    "PDFX4-026": CheckInfo(
+        "CalGray Color Space Used",
+        "CalGray is prohibited in PDF/X-4. Replace with an ICCBased gray profile.",
+    ),
+    "PDFX4-027": CheckInfo(
+        "CalRGB Color Space Used",
+        "CalRGB is prohibited in PDF/X-4. Replace with an ICCBased RGB profile.",
+    ),
+    "PDFX4-028": CheckInfo(
+        "DeviceRGB Without RGB OutputIntent",
+        "DeviceRGB is used but the OutputIntent is not RGB and no DefaultRGB "
+        "color space is declared. Color is undefined.",
+    ),
+    "PDFX4-029": CheckInfo(
+        "DeviceCMYK Without CMYK OutputIntent",
+        "DeviceCMYK is used but the OutputIntent is not CMYK and no DefaultCMYK is declared.",
+    ),
+    "PDFX4-030": CheckInfo(
+        "DeviceGray Without Gray OutputIntent",
+        "DeviceGray is used but the OutputIntent is not Gray and no DefaultGray is declared.",
+    ),
+    "PDFX4-031": CheckInfo(
+        "ICCBased Component Count Invalid",
+        "An ICCBased color space has a component count other than 1, 3, or 4.",
+    ),
+    "PDFX4-032": CheckInfo(
+        "Separation Alternate Inconsistent",
+        "A Separation colorant is declared with conflicting alternate color "
+        "spaces across the document.",
+    ),
+    "PDFX4-033": CheckInfo(
+        "DeviceN Color Space Detected",
+        "DeviceN color space present; verify colorant tints across the document remain consistent.",
+    ),
+    "PDFX4-034": CheckInfo(
+        "Lab Color Space Used",
+        "Lab color space detected; PDF/X-4 transparency groups must not be Lab — verify usage.",
+    ),
+    "PDFX4-035": CheckInfo(
+        "Invalid Rendering Intent",
+        "An rendering intent value is set to a name not in the ISO 32000 "
+        "list (AbsoluteColorimetric, RelativeColorimetric, Saturation, "
+        "Perceptual).",
+    ),
+    # Fonts
+    "PDFX4-036": CheckInfo(
+        "Font Not Embedded",
+        "PDF/X-4 requires every font to be fully embedded. A non-embedded "
+        "font will substitute on press.",
+    ),
+    "PDFX4-037": CheckInfo(
+        "TrueType Font Program Missing",
+        "TrueType font carries a /FontDescriptor but no /FontFile2 program. "
+        "RIPs cannot render the glyphs.",
+    ),
+    "PDFX4-038": CheckInfo(
+        "Type3 Font Missing /CharProcs",
+        "Type3 font is declared without a /CharProcs dictionary; no glyph definitions are present.",
+    ),
+    "PDFX4-039": CheckInfo(
+        "CIDFontType2 Missing /CIDToGIDMap",
+        "CIDFontType2 lacks a /CIDToGIDMap, so CID values cannot be mapped to glyph indices.",
+    ),
+    "PDFX4-040": CheckInfo(
+        "External Font File Reference",
+        "Font has an external file reference. PDF/X-4 forbids external resources.",
+    ),
+    "PDFX4-041": CheckInfo(
+        "Font Descriptor Missing",
+        "Font is declared without a /FontDescriptor. Required for "
+        "embedding-validation and metrics.",
+    ),
+    "PDFX4-042": CheckInfo(
+        "Empty Font Program",
+        "A /FontFile entry exists but the embedded font program is zero-length.",
+    ),
+    # Transparency
+    "PDFX4-043": CheckInfo(
+        "Transparency Used",
+        "Document uses transparency (live blend modes / soft masks). Allowed "
+        "in PDF/X-4 but verify flatten compatibility downstream.",
+    ),
+    "PDFX4-044": CheckInfo(
+        "Transparency Group CS Conflicts With OutputIntent",
+        "A transparency group's color space disagrees with the OutputIntent "
+        "color space, causing color shifts under flattening.",
+    ),
+    "PDFX4-046": CheckInfo(
+        "Non-Standard Blend Mode",
+        "A blend mode outside the 16 ISO 32000 standard names is used. RIPs "
+        "may flatten it as Normal, changing appearance.",
+    ),
+    "PDFX4-047": CheckInfo(
+        "Soft Mask With Color Space",
+        "Soft mask with an explicit /CS entry; verify rendering against OutputIntent.",
+    ),
+    "PDFX4-048": CheckInfo(
+        "Isolated Knockout Transparency Group",
+        "Isolated + Knockout transparency group present; verify rendering intent before press.",
+    ),
+    # Page geometry
+    "PDFX4-049": CheckInfo(
+        "MediaBox Missing",
+        "Page is missing a /MediaBox. PDF/X-4 requires every page to declare the media size.",
+    ),
+    "PDFX4-050": CheckInfo(
+        "TrimBox Or ArtBox Required",
+        "PDF/X-4 requires either /TrimBox or /ArtBox on every page so the "
+        "press knows the live area.",
+    ),
+    "PDFX4-051": CheckInfo(
+        "TrimBox And ArtBox Both Present",
+        "Both /TrimBox and /ArtBox are present and disagree. PDF/X-4 expects only one of the two.",
+    ),
+    "PDFX4-052": CheckInfo(
+        "BleedBox Outside Container",
+        "BleedBox extends outside the CropBox or MediaBox.",
+    ),
+    "PDFX4-053": CheckInfo(
+        "TrimBox Outside BleedBox",
+        "TrimBox extends outside the BleedBox.",
+    ),
+    "PDFX4-054": CheckInfo(
+        "Page Box Has Zero/Negative Dimensions",
+        "A page box (Media/Crop/Bleed/Trim/Art) has zero or negative width or height.",
+    ),
+    "PDFX4-055": CheckInfo(
+        "CropBox Outside MediaBox",
+        "CropBox extends outside the MediaBox.",
+    ),
+    "PDFX4-056": CheckInfo(
+        "ArtBox Outside Container",
+        "ArtBox extends outside the BleedBox / CropBox / MediaBox.",
+    ),
+    # Annotations
+    "PDFX4-057": CheckInfo(
+        "Sound Annotation",
+        "Sound annotations are prohibited in PDF/X-4.",
+    ),
+    "PDFX4-058": CheckInfo(
+        "Movie Annotation",
+        "Movie annotations are prohibited in PDF/X-4.",
+    ),
+    "PDFX4-059": CheckInfo(
+        "3D Annotation",
+        "3D annotations are prohibited in PDF/X-4.",
+    ),
+    "PDFX4-060": CheckInfo(
+        "RichMedia/Screen Annotation",
+        "RichMedia and Screen annotations are prohibited in PDF/X-4.",
+    ),
+    "PDFX4-061": CheckInfo(
+        "PrinterMark Not Set To Print",
+        "PrinterMark annotation has /Print flag clear; press output may "
+        "miss registration / cut marks.",
+    ),
+    "PDFX4-062": CheckInfo(
+        "TrapNet Annotation",
+        "TrapNet annotation present; verify trap network is up to date.",
+    ),
+    # Security
+    "PDFX4-063": CheckInfo(
+        "Document Encrypted",
+        "Document is encrypted. PDF/X-4 prohibits encryption.",
+    ),
+    "PDFX4-064": CheckInfo(
+        "Trailer /Encrypt Present",
+        "Trailer contains an /Encrypt dictionary even if the file is not fully encrypted.",
+    ),
+    "PDFX4-065": CheckInfo(
+        "Permission Restrictions Set",
+        "Document has DRM permission restrictions. PDF/X-4 prohibits.",
+    ),
+    # Optional content (OCGs)
+    "PDFX4-066": CheckInfo(
+        "OCProperties /D Missing",
+        "OCProperties dictionary is present but its default configuration /D is missing.",
+    ),
+    "PDFX4-067": CheckInfo(
+        "OCG Default BaseState Not ON",
+        "Optional-content default /BaseState is not 'ON'. The press may render unintended layers.",
+    ),
+    "PDFX4-068": CheckInfo(
+        "OCG Layers Default Off",
+        "One or more OCG layers default to OFF. Verify intentional.",
+    ),
+    "PDFX4-069": CheckInfo(
+        "OCProperties Empty",
+        "OCProperties dictionary is present but /OCGs array is empty or missing.",
+    ),
+    "PDFX4-070": CheckInfo(
+        "OCG Auto-State Triggers",
+        "OCG /AS array has automatic-state triggers. Not recommended in PDF/X-4.",
+    ),
+    # Restricted features
+    "PDFX4-071": CheckInfo(
+        "JavaScript Detected",
+        "JavaScript actions or scripts are prohibited in PDF/X-4.",
+    ),
+    "PDFX4-072": CheckInfo(
+        "Launch Action",
+        "/Launch actions are prohibited in PDF/X-4.",
+    ),
+    "PDFX4-073": CheckInfo(
+        "Embedded Files",
+        "EmbeddedFiles names tree is present. PDF/X-4 prohibits embedded files.",
+    ),
+    "PDFX4-074": CheckInfo(
+        "XFA Forms",
+        "XFA forms detected. PDF/X-4 prohibits XFA — convert to AcroForm or flatten.",
+    ),
+    "PDFX4-075": CheckInfo(
+        "Transfer Function",
+        "Custom transfer function detected. PDF/X-4 prohibits transfer curves.",
+    ),
+    "PDFX4-076": CheckInfo(
+        "Custom Halftone",
+        "Custom halftone dictionary detected. Verify RIP supports the screen.",
+    ),
+    "PDFX4-077": CheckInfo(
+        "PostScript XObject",
+        "Form XObject contains a /Subtype /PS PostScript fragment. PDF/X-4 prohibits PS XObjects.",
+    ),
+    "PDFX4-078": CheckInfo(
+        "External Stream Reference",
+        "XObject stream references an external file. PDF/X-4 forbids external resources.",
+    ),
+    # Images
+    "PDFX4-079": CheckInfo(
+        "LZW Image Compression",
+        "Image uses LZW compression. Deprecated in PDF/X-4 — re-encode as Flate or JPEG.",
+    ),
+    "PDFX4-085": CheckInfo(
+        "RGB Image Without RGB OutputIntent",
+        "RGB image embedded with a non-RGB OutputIntent and no RGB DefaultColorSpace.",
+    ),
+    "PDFX4-086": CheckInfo(
+        "Inline Image Too Large",
+        "Inline image exceeds the 4KB recommended maximum. Move large "
+        "rasters to external image XObjects.",
+    ),
+    "PDFX4-087": CheckInfo(
+        "JPEG2000 (JPX) Image",
+        "Image uses JPEG2000 compression. Verify the destination RIP "
+        "accepts JPX in PDF/X-4 conformance mode.",
+    ),
+    # Resources / null references
+    "PDFX4-088": CheckInfo(
+        "XObject References Null",
+        "An XObject in /Resources /XObject points at a null indirect object.",
+    ),
+    "PDFX4-089": CheckInfo(
+        "Font References Null",
+        "A font in /Resources /Font points at a null indirect object.",
+    ),
+    "PDFX4-090": CheckInfo(
+        "ColorSpace References Null",
+        "A ColorSpace in /Resources /ColorSpace points at a null indirect object.",
+    ),
+    "PDFX4-091": CheckInfo(
+        "ExtGState References Null",
+        "An ExtGState in /Resources /ExtGState points at a null indirect object.",
+    ),
+    "PDFX4-092": CheckInfo(
+        "Page Has Content But No Resources",
+        "A page has content but no /Resources entry. Implicit inheritance "
+        "from the page tree may break under linearization.",
+    ),
 }
