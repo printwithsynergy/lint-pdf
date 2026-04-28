@@ -37,13 +37,82 @@ _LAYER_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"\bfold\b", re.IGNORECASE),
 ]
 
-# Spot color names that typically indicate dieline elements
+# Spot color names that typically indicate dieline elements.
+# Extended 2026-04-28 to include the canonical ISO 19593-1
+# ProcessingStep names so an artwork that uses /Cutting / /Crease
+# / /Perforating spots gets detected as having dielines without
+# the operator needing to alias them to /Dieline.
 _SPOT_COLOR_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"\bcutcontour\b", re.IGNORECASE),
     re.compile(r"\bdieline\b", re.IGNORECASE),
     re.compile(r"\bdie\b", re.IGNORECASE),
     re.compile(r"\bcrease\b", re.IGNORECASE),
+    re.compile(r"\bcut\b", re.IGNORECASE),
+    re.compile(r"\bcutting\b", re.IGNORECASE),
+    re.compile(r"\bperforating\b", re.IGNORECASE),
+    re.compile(r"\bkiss\s*cut\b", re.IGNORECASE),
+    re.compile(r"\bfold\s*line\b", re.IGNORECASE),
+    re.compile(r"\bperf\s*line\b", re.IGNORECASE),
 ]
+
+# Text indicators that the artwork carries a tear / perf / fold line
+# even when no named dieline spot or layer is declared. Common on
+# stick-pack and pouch labels where the dieline lives on a generic
+# Cyan or Magenta stroke rather than a /Cutting separation. The
+# 2026-04-28 Opus audit flagged 2 false-negative AI_DIE_002 findings
+# on AN-Energy stick-packs that had bilingual EN/FR tear-line
+# indicators but no dieline-named spot.
+#
+# Match must appear standalone (word-boundary) and must be in
+# upper-or-mixed case to look like a callout, not body copy. The
+# patterns intentionally cover both English and French because the
+# dominant miss case was Canadian bilingual packaging.
+_TEAR_LINE_INDICATORS: list[re.Pattern[str]] = [
+    re.compile(r"\bTEAR\s+ACROSS\b", re.IGNORECASE),
+    re.compile(r"\bTEAR\s+HERE\b", re.IGNORECASE),
+    re.compile(r"\bTEAR\s+OPEN\b", re.IGNORECASE),
+    re.compile(r"\bDÉCHIR(?:ER|EZ)\s+(?:ICI|LE\s+SACHET)\b", re.IGNORECASE),
+    re.compile(r"\bDECHIR(?:ER|EZ)\s+(?:ICI|LE\s+SACHET)\b", re.IGNORECASE),
+    re.compile(r"\bCUT\s+HERE\b", re.IGNORECASE),
+    re.compile(r"\bCUT\s+ALONG\b", re.IGNORECASE),
+    re.compile(r"\bCOUPER\s+ICI\b", re.IGNORECASE),
+    re.compile(r"\bFOLD\s+HERE\b", re.IGNORECASE),
+    re.compile(r"\bPLIER\s+ICI\b", re.IGNORECASE),
+    re.compile(r"\bPERF(?:ORATION)?\s+LINE\b", re.IGNORECASE),
+    re.compile(r"\bOUVRIR\s+ICI\b", re.IGNORECASE),  # FR "open here"
+    re.compile(r"\bOPEN\s+HERE\b", re.IGNORECASE),
+]
+
+
+def _extract_text_dieline_indicators(document: SemanticDocument) -> list[str]:
+    """Walk page content streams and return any matched tear / perf
+    / fold callout phrases. These indicate that the artwork carries
+    a dieline-equivalent (tear-line, perf, fold) even when no named
+    dieline spot is declared.
+
+    Returns a list of matched phrases (with original casing where
+    available, lowercased otherwise) — caller treats each match as
+    one dieline-detection signal.
+    """
+    matches: list[str] = []
+    for page in document.pages:
+        raw = page.content_stream
+        if not raw:
+            continue
+        if isinstance(raw, bytes):
+            try:
+                text = raw.decode("latin-1")
+            except Exception:
+                continue
+        else:
+            text = str(raw)
+        for pat in _TEAR_LINE_INDICATORS:
+            m = pat.search(text)
+            if m:
+                phrase = m.group(0)
+                if phrase not in matches:
+                    matches.append(phrase)
+    return matches
 
 
 def _extract_ocg_names(document: SemanticDocument) -> list[str]:
@@ -191,6 +260,20 @@ class DielineByNameAnalyzer(BaseAIAnalyzer):
                     )
                     break
 
+        # Check page text for tear / perf / fold callouts. Catches
+        # stick-packs and pouches that carry the dieline on a generic
+        # Cyan/Magenta stroke rather than a named separation but
+        # include bilingual EN/FR "TEAR ACROSS / DÉCHIRER ICI" markers.
+        text_indicators = _extract_text_dieline_indicators(document)
+        for phrase in text_indicators:
+            detected_dielines.append(
+                {
+                    "source": "text_indicator",
+                    "name": phrase,
+                    "pattern": "tear_line_callout",
+                }
+            )
+
         if detected_dielines:
             # Deduplicate by name
             seen_names: set[str] = set()
@@ -203,12 +286,15 @@ class DielineByNameAnalyzer(BaseAIAnalyzer):
 
             layer_names = [d["name"] for d in unique if d["source"] == "layer"]
             spot_names_found = [d["name"] for d in unique if d["source"] == "spot_color"]
+            text_indicators_found = [d["name"] for d in unique if d["source"] == "text_indicator"]
 
             parts: list[str] = []
             if layer_names:
                 parts.append(f"layers: {', '.join(layer_names)}")
             if spot_names_found:
                 parts.append(f"spot colors: {', '.join(spot_names_found)}")
+            if text_indicators_found:
+                parts.append(f"tear/perf indicators: {', '.join(text_indicators_found)}")
 
             findings.append(
                 self._make_finding(
@@ -218,6 +304,7 @@ class DielineByNameAnalyzer(BaseAIAnalyzer):
                     details={
                         "dieline_layers": layer_names,
                         "dieline_spot_colors": spot_names_found,
+                        "dieline_text_indicators": text_indicators_found,
                         "matches": unique,
                     },
                 )
