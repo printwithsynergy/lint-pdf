@@ -120,8 +120,11 @@ export const lintpdfUsagePlugin: PixieDustPlugin = {
             return { status: 400, body: { error: "Missing tenant context" } };
           }
           const engineId = await resolveEngineTenantId(tenantId);
+          // The engine's /api/v1/admin/tenants/{id}/ai/credits is POST-only
+          // (grants credits). The GET endpoint that returns balance +
+          // billing_mode + ai_enabled is /tenants/{id}/ai (singular).
           const resp = await adminFetch(
-            `/api/v1/admin/tenants/${encodeURIComponent(engineId)}/ai/credits`,
+            `/api/v1/admin/tenants/${encodeURIComponent(engineId)}/ai`,
           );
           if (!resp.ok) {
             // 404 / 403 are expected when AI is disabled — treat as empty.
