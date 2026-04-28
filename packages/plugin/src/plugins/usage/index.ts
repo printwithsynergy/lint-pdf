@@ -108,6 +108,90 @@ export const lintpdfUsagePlugin: PixieDustPlugin = {
           return { status: 200, body: await resp.json() };
         }) as RouteHandler,
       },
+      {
+        method: "GET" as HttpMethod,
+        path: "/ai-credits",
+        auth: true,
+        permission: "usage:view",
+        description: "Current AI credit balance + monthly allotment",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const tenantId = req.auth?.tenantId;
+          if (!tenantId) {
+            return { status: 400, body: { error: "Missing tenant context" } };
+          }
+          const engineId = await resolveEngineTenantId(tenantId);
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${encodeURIComponent(engineId)}/ai/credits`,
+          );
+          if (!resp.ok) {
+            // 404 / 403 are expected when AI is disabled — treat as empty.
+            if (resp.status === 404 || resp.status === 403) {
+              return {
+                status: 200,
+                body: {
+                  enabled: false,
+                  balance: 0,
+                  monthly_allotment: 0,
+                  consumed_this_month: 0,
+                },
+              };
+            }
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = (await resp.json()) as Record<string, unknown>;
+          return {
+            status: 200,
+            body: { enabled: true, ...data },
+          };
+        }) as RouteHandler,
+      },
+      {
+        method: "GET" as HttpMethod,
+        path: "/ai-usage",
+        auth: true,
+        permission: "usage:view",
+        description: "Recent AI inspection usage history",
+        handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+          const tenantId = req.auth?.tenantId;
+          if (!tenantId) {
+            return { status: 400, body: { error: "Missing tenant context" } };
+          }
+          const engineId = await resolveEngineTenantId(tenantId);
+          const rawLimit = req.query?.limit;
+          const limit =
+            typeof rawLimit === "string"
+              ? rawLimit
+              : Array.isArray(rawLimit) && typeof rawLimit[0] === "string"
+                ? rawLimit[0]
+                : "20";
+          const resp = await adminFetch(
+            `/api/v1/admin/tenants/${encodeURIComponent(engineId)}/ai/usage?limit=${encodeURIComponent(limit)}`,
+          );
+          if (!resp.ok) {
+            if (resp.status === 404 || resp.status === 403) {
+              return {
+                status: 200,
+                body: { enabled: false, items: [] },
+              };
+            }
+            const detail = await resp.text();
+            return { status: resp.status, body: { error: detail } };
+          }
+          const data = (await resp.json()) as
+            | unknown[]
+            | { items?: unknown[] };
+          const items = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.items)
+              ? data.items
+              : [];
+          return {
+            status: 200,
+            body: { enabled: true, items },
+          };
+        }) as RouteHandler,
+      },
     ];
 
     ctx.addRoutes("/api/lintpdf", routes);

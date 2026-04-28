@@ -275,20 +275,26 @@ export const lintpdfPlugin: PixieDustPlugin = {
       title: "File Packs",
       layout: "dashboard",
     });
+    // AI Credits + File Packs are billing sub-items. Pixie Dust nav
+    // doesn't currently support hierarchical parent/children, so we
+    // pin them at orders 16 + 17 (right after Billing at order 15) so
+    // they render visually adjacent under the Billing entry. The
+    // "Billing · …" label prefix reinforces the relationship until
+    // upstream nav nesting lands.
     ctx.addNavItem({
-      label: "AI Credits",
+      label: "Billing · AI Credits",
       href: "/dashboard/account/billing/credits",
       icon: "sparkles",
       section: "tenant",
-      order: 60,
+      order: 16,
       requiredPermission: "account:manage",
     });
     ctx.addNavItem({
-      label: "File Packs",
+      label: "Billing · File Packs",
       href: "/dashboard/account/billing/files",
       icon: "file-text",
       section: "tenant",
-      order: 61,
+      order: 17,
       requiredPermission: "account:manage",
     });
 

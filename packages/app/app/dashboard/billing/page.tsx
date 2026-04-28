@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 import {
@@ -79,13 +80,19 @@ export default function BillingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [subResp, invResp] = await Promise.all([
+      const [meResp, subResp, invResp] = await Promise.all([
+        fetch("/api/auth/me"),
         fetch("/api/lintpdf/billing/subscription"),
         fetch("/api/lintpdf/billing/invoices"),
       ]);
+      if (meResp.ok) {
+        const me = await meResp.json();
+        setIsSuperAdmin(Boolean(me?.user?.isSuperAdmin));
+      }
       if (subResp.ok) {
         setSubscription(await subResp.json());
       }
@@ -153,14 +160,29 @@ export default function BillingPage() {
         </Alert>
       )}
 
+      {isSuperAdmin && (
+        <Alert className="mt-4">
+          <AlertDescription>
+            <strong>Internal staff account.</strong> Super admins access every
+            feature without subscription limits — the plan + invoice details
+            below reflect your own (typically empty) tenant row, not customer
+            billing. Manage paying tenants from{" "}
+            <Link className="underline" href="/dashboard/admin/tenants">
+              All Tenants
+            </Link>
+            .
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Current plan */}
       <Card className="mt-6">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Current Plan</CardTitle>
             <div className="flex gap-2">
-              <Button onClick={handleUpgrade}>Upgrade</Button>
-              {subscription?.status === "active" && (
+              {!isSuperAdmin && <Button onClick={handleUpgrade}>Upgrade</Button>}
+              {!isSuperAdmin && subscription?.status === "active" && (
                 <Button variant="secondary" onClick={handleManage}>
                   Manage Subscription
                 </Button>

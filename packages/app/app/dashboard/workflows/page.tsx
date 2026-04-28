@@ -74,34 +74,52 @@ export default function WorkflowsPage() {
   const [overrides, setOverrides] = useState<WorkflowOverrideRow[]>([]);
   const [editorLoading, setEditorLoading] = useState(false);
 
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   const fetchAll = useCallback(async () => {
+    setFetchError(null);
     try {
       const [wfResp, profResp, specResp] = await Promise.all([
-        fetch("/api/lintpdf/workflows"),
+        fetch("/api/lintpdf/workflows").catch((e) => {
+          console.error("[workflows] fetch threw", e);
+          return null;
+        }),
         fetch("/api/lintpdf/profiles").catch(() => null),
         fetch("/api/lintpdf/brand-specs").catch(() => null),
       ]);
-      if (wfResp.ok) {
-        const data = await wfResp.json();
-        setWorkflows(data.workflows ?? data ?? []);
+      if (wfResp && wfResp.ok) {
+        const data = await wfResp.json().catch(() => ({}));
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.workflows)
+            ? data.workflows
+            : [];
+        setWorkflows(list);
+      } else if (wfResp) {
+        const detail = await wfResp.text().catch(() => "");
+        setFetchError(
+          `Workflows API returned ${wfResp.status}${detail ? `: ${detail.slice(0, 200)}` : ""}`,
+        );
+      } else {
+        setFetchError("Workflows API unreachable");
       }
       if (profResp && profResp.ok) {
-        const data = await profResp.json();
-        setProfiles(data.profiles ?? []);
+        const data = await profResp.json().catch(() => ({}));
+        setProfiles(Array.isArray(data?.profiles) ? data.profiles : []);
       }
       if (specResp && specResp.ok) {
-        const data = await specResp.json();
-        setBrandSpecs(data.brand_specs ?? []);
+        const data = await specResp.json().catch(() => ({}));
+        setBrandSpecs(
+          Array.isArray(data?.brand_specs) ? data.brand_specs : [],
+        );
       }
     } catch (e) {
-      toast(
-        `Failed to load workflows: ${e instanceof Error ? e.message : String(e)}`,
-        "error",
-      );
+      console.error("[workflows] fetchAll threw", e);
+      setFetchError(e instanceof Error ? e.message : "Failed to load workflows");
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     void fetchAll();
@@ -256,6 +274,12 @@ export default function WorkflowsPage() {
           from the Phase 0.7 unified-config substrate rollout.
         </p>
       </header>
+
+      {fetchError && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          {fetchError}
+        </div>
+      )}
 
       <section className="rounded-lg border border-border bg-card p-4">
         <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
