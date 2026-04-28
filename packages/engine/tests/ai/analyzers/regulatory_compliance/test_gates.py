@@ -6,6 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from lintpdf.ai.analyzers.regulatory_compliance._gates import (
+    is_cosmetic_applicable,
     is_eu_food_applicable,
     is_ghs_applicable,
     is_pharma_applicable,
@@ -113,3 +114,38 @@ def test_eu_food_unset_everything_runs_default() -> None:
     """Both unset → over-report (existing default-fire posture)."""
     assert is_eu_food_applicable(None) is True
     assert is_eu_food_applicable(_Cfg()) is True
+
+
+# ---------------------------------------------------------------------------
+# is_cosmetic_applicable — added 2026-04-28 after second Opus audit
+# ---------------------------------------------------------------------------
+
+
+def test_cosmetic_skipped_for_dietary_supplement() -> None:
+    """The dominant 2026-04-27 cosmetic-rule false-positive class:
+    AI_COSM_001/002 firing on Nutrops dietary-supplement labels."""
+    cfg = _Cfg(industry_type="dietary_supplement")
+    assert is_cosmetic_applicable(cfg) is False
+
+
+def test_cosmetic_skipped_for_food_beverage() -> None:
+    for industry in ("food", "beverage", "supplement", "nutraceutical", "pet_food"):
+        assert is_cosmetic_applicable(_Cfg(industry_type=industry)) is False, industry
+
+
+def test_cosmetic_runs_for_cosmetic_industry() -> None:
+    for industry in ("cosmetic", "personal_care"):
+        assert is_cosmetic_applicable(_Cfg(industry_type=industry)) is True, industry
+
+
+def test_cosmetic_unknown_runs_default() -> None:
+    """Unknown / unset → over-report (structural patterns are the
+    safety net)."""
+    assert is_cosmetic_applicable(None) is True
+    assert is_cosmetic_applicable(_Cfg(industry_type=None)) is True
+
+
+def test_cosmetic_pharmaceutical_runs() -> None:
+    """Categorised as pharmaceutical (not in food bucket) → still
+    runs; the analyzer's structural patterns sort it out."""
+    assert is_cosmetic_applicable(_Cfg(industry_type="pharmaceutical")) is True

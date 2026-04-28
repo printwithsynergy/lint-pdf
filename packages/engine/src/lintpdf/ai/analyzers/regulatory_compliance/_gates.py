@@ -159,3 +159,32 @@ def is_eu_food_applicable(ai_config: TenantAIConfig | None) -> bool:
     # Food/beverage/supplement industry without an explicit market →
     # run (FIR 1169 is the right rule for these categories).
     return industry in {"food", "beverage", "dietary_supplement", "supplement", "nutraceutical"}
+
+
+def is_cosmetic_applicable(ai_config: TenantAIConfig | None) -> bool:
+    """True when ``AI_COSM_001`` / ``AI_COSM_002`` (cosmetic / personal-
+    care label rules) should fire on this tenant.
+
+    The 2026-04-27 Opus audit flagged 4 false positives where cosmetic
+    rules fired on US dietary-supplement Nutrops labels — the analyzer's
+    structural detection (``Ingredients:`` header + INCI patterns)
+    overlaps with food/supplement labels.
+
+    * ``industry_type`` in {cosmetic, personal_care} → True.
+    * ``industry_type`` in the food/supplement exclusion set → False
+      (skip; cosmetic rules do not apply to food/supplement products).
+    * Unknown / unset → True (over-report; existing default-fire
+      posture preserved for uncategorised tenants).
+    """
+    if ai_config is None:
+        return True
+    industry = _normalise(getattr(ai_config, "industry_type", None))
+    if industry is None:
+        return True
+    if industry in {"cosmetic", "personal_care"}:
+        return True
+    # Food / supplement / beverage / pet-food / nutraceutical -> not a
+    # cosmetic; suppress. Anything else (pharmaceutical / chemical /
+    # unknown other) -> leave the rule running, the analyzer's
+    # structural patterns are the safety net.
+    return industry not in _NON_HAZMAT_CATEGORIES
