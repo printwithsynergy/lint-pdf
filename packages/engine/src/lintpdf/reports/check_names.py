@@ -872,6 +872,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Process Color as Named Spot",
         "A process channel name (Cyan / Magenta / Yellow / Black / RGB) is declared as a named Separation or DeviceN colorant. This produces a duplicate plate at output (the channel is already imaged via process CMYK). Convert artwork to DeviceCMYK on the existing channel, or rename the spot if it's an intentional special.",
     ),
+    "LPDF_INK_PRESS_STATIONS": CheckInfo(
+        "Ink Channel Count Above Press Station Limit",
+        "Total printable ink channels (process + spot, excluding non-printing technical layers like Cutting / Perforating / Varnish) exceeds the typical wide-web flexo press station limit (6). Confirm the destination press has enough decks, or consolidate spots into process builds where colorimetric tolerance allows.",
+    ),
+    "LPDF_INK_DUPLICATE_DEVICEN_SEP": CheckInfo(
+        "Colorant Declared in Both DeviceN and Separation",
+        "The same colorant name (e.g. 'PANTONE 237 C') appears in both a DeviceN/NChannel color space tuple AND a standalone Separation color space. The RIP may treat these as separate plates even though the operator's intent is one ink. Consolidate to a single Separation declaration (or a single DeviceN tuple) before plating to avoid duplicate-plate rejections.",
+    ),
     "LPDF_XMP_GWG_TRAIL": CheckInfo(
         "GWG Audit Trail Missing",
         "No GWG audit-trail namespace was found in XMP metadata. The PDF has not been through a Ghent Workgroup-aware preflight tool.",

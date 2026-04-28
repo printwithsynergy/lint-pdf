@@ -536,6 +536,7 @@ class PreflightOrchestrator:
         from lintpdf.analyzers.dieline_iso19593 import DielineIso19593Analyzer
         from lintpdf.analyzers.dimension_callout import DimensionCalloutAnalyzer
         from lintpdf.analyzers.duplicate_process_spot import DuplicateProcessSpotAnalyzer
+        from lintpdf.analyzers.ink_extras import InkExtrasAnalyzer
         from lintpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
         from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
         from lintpdf.analyzers.spot_name_similarity import SpotNameSimilarityAnalyzer
@@ -596,6 +597,7 @@ class PreflightOrchestrator:
             DielineIso19593Analyzer(),
             DimensionCalloutAnalyzer(),
             SpotNameSimilarityAnalyzer(),
+            InkExtrasAnalyzer(),
             PrepressAnalyzer(),
             BarcodeAnalyzer(
                 barcode_min_dpi=t.barcode_min_dpi,
