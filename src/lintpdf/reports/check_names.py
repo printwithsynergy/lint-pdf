@@ -860,6 +860,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Spot Color Name Typo",
         "Two spot color names differ by ≤ 2 character edits (e.g. '/Dark Biege' vs '/Dark Beige'). The RIP treats spot names as case-sensitive, character-exact strings — misspelled separations will not merge with the correctly-named instance and create an extra unintended plate. Excludes Pantone identifiers and process channel names.",
     ),
+    "LPDF_SPOT_NAME_WHITESPACE": CheckInfo(
+        "Spot Color Name Whitespace / Punctuation",
+        "Spot color name has stray leading/trailing whitespace or trailing punctuation (e.g. 'PANTONE 3582 C.  '). The RIP treats spot names as character-exact strings, so this produces a separately named plate from the clean form and breaks DFE spot-name matching/aliasing. Strip the whitespace + trailing punctuation before plate output.",
+    ),
     "LPDF_SPOT_NAME_CASE": CheckInfo(
         "Spot Color Name Case Inconsistent",
         "Two spot color names match when lowercased but differ in case style (e.g. 'BUFF' vs 'Buff'). The RIP treats them as separate plates. Pick one canonical casing and re-route all artwork to it before plating.",
