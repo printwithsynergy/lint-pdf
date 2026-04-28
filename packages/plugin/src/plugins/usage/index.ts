@@ -194,6 +194,27 @@ export const lintpdfUsagePlugin: PixieDustPlugin = {
       },
     ];
 
+    // /api/lintpdf/ai/cost-cap — the credits dashboard fetches this to
+    // surface a per-tenant LLM spend cap toggle. The engine doesn't
+    // expose a REST endpoint for the toggle yet (it's read directly
+    // from the unified-config table inside ai_explain), so return
+    // `{ enabled: false }` so the page hides the UI cleanly without
+    // logging a 404.
+    routes.push({
+      method: "GET" as HttpMethod,
+      path: "/ai/cost-cap",
+      auth: true,
+      permission: "usage:view",
+      description:
+        "Cost-cap state for the credits page. Stub until the engine exposes a toggle endpoint.",
+      handler: (async (): Promise<RouteResponse> => {
+        return {
+          status: 200,
+          body: { enabled: false, monthly_cap_cents: null, used_this_month_cents: 0 },
+        };
+      }) as RouteHandler,
+    });
+
     ctx.addRoutes("/api/lintpdf", routes);
 
     // Hooks
