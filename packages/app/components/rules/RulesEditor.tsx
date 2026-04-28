@@ -66,7 +66,7 @@ interface SuperGroupDef {
 const SUPER_GROUPS: readonly SuperGroupDef[] = [
   {
     id: "color",
-    label: "Colour & inks",
+    label: "Color & inks",
     categoryIds: [
       "color",
       "color_management",
@@ -174,11 +174,9 @@ export function RulesEditor({
     () => {
       const stored = loadStoredSet(STORAGE_KEY_SUPER);
       if (stored) return stored;
-      // First-ever load: collapse every super-group except the first
-      // so the editor opens compact instead of as a 421-row wall.
-      const initial = new Set<string>();
-      SUPER_GROUPS.slice(1).forEach((g) => initial.add(g.id));
-      return initial;
+      // First-ever load: collapse every super-group so the editor opens
+      // compact. Users opt into showing categories explicitly.
+      return new Set<string>(SUPER_GROUPS.map((g) => g.id));
     },
   );
 

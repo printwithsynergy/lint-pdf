@@ -197,14 +197,14 @@ What each panel does:
 
 - **Findings** — lists every inspection-raised error, warning, and
   advisory. Click a row to jump to that page with the relevant bbox
-  halo'd on the canvas. Severity colours: red (error), amber
+  halo'd on the canvas. Severity colors: red (error), amber
   (warning), sky (advisory).
 - **Channels** — isolate a single process (Cyan/Magenta/Yellow/
   Black) or spot separation as a grayscale overlay, composited
   multiply so hotspots are obvious.
 - **TAC** — enable a TAC heatmap overlay with a slider-driven ink
   limit (100–500%). The panel lists every TAC run on the current
-  page, colour-coded by whether it exceeds the limit.
+  page, color-coded by whether it exceeds the limit.
 - **Layers** — interactive OCG isolation. Checking / unchecking a
   layer sends an `ocg_on` / `ocg_off` mask to the engine's tile,
   channel, and TAC endpoints so the page re-renders with that layer

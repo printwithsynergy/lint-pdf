@@ -109,8 +109,8 @@ export default function ApiBrandingSection() {
           { name: "profile_type", type: '"custom" | "lintpdf" | "none"', default: '"custom"', description: "custom uses this profile's brand fields; lintpdf falls back to LintPDF defaults; none produces a neutral/blind output." },
           { name: "brand_name", type: "string | null", description: "Display name on reports and the viewer chrome (max 255)." },
           { name: "logo_url", type: "string | null", description: "Absolute HTTPS URL to the logo (max 2048)." },
-          { name: "primary_color", type: "string | null", description: "Hex colour, #RRGGBB (max 7)." },
-          { name: "accent_color", type: "string | null", description: "Hex colour, #RRGGBB (max 7)." },
+          { name: "primary_color", type: "string | null", description: "Hex color, #RRGGBB (max 7)." },
+          { name: "accent_color", type: "string | null", description: "Hex color, #RRGGBB (max 7)." },
           { name: "footer_text", type: "string | null", description: "Footer copy baked into reports (max 500)." },
           { name: "hide_footer", type: "boolean", default: "false", description: "Suppress the footer entirely." },
         ]}
@@ -270,12 +270,12 @@ export default function ApiBrandingSection() {
       />
 
       <h4 id="brand-specs" className="font-semibold text-slate-900 mt-6 mb-2">
-        BrandSpecs — per-customer colour specifications
+        BrandSpecs — per-customer color specifications
       </h4>
       <p className="text-slate-600 mb-4">
-        A BrandSpec is a named colour specification a tenant maintains per end-customer — swatches, optional rich-black, and flags. The resolver walks
+        A BrandSpec is a named color specification a tenant maintains per end-customer — swatches, optional rich-black, and flags. The resolver walks
         <code className="bg-slate-100 px-1 rounded"> job.brand_spec_id → endpoint.default_brand_spec_id → tenant-default spec</code> and applies the first hit.
-        When nothing resolves, strict colour advisories stay suppressed.
+        When nothing resolves, strict color advisories stay suppressed.
       </p>
 
       <Endpoint
@@ -330,7 +330,7 @@ export default function ApiBrandingSection() {
         { name: "name", type: "string", description: "Display label for the spec, e.g. the end-customer's brand." },
         { name: "customer_name", type: "string | null", description: "Free-form customer label; use for reporting / filtering." },
         { name: "description", type: "string | null", description: "Internal notes about the spec." },
-        { name: "colors[]", type: "array", description: "One object per swatch. Required shape: {name, value}. Optional: pantone, notes. value is hex, named CSS colour, or explicit rgb()/cmyk()." },
+        { name: "colors[]", type: "array", description: "One object per swatch. Required shape: {name, value}. Optional: pantone, notes. value is hex, named CSS color, or explicit rgb()/cmyk()." },
         { name: "rich_black_spec", type: "object | null", description: "Optional {c, m, y, k} target rich-black composition. When set, print advisories measure against this instead of the profile default." },
         { name: "is_default", type: "boolean", description: "At most one non-archived spec per tenant may carry is_default=true. Setting it on a new spec demotes the previous default atomically." },
         { name: "is_archived", type: "boolean", description: "Soft-delete flag. Archived specs don't resolve as tenant-default but still resolve for historical jobs that captured them." },

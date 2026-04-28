@@ -6,7 +6,7 @@ candidacy in :func:`lintpdf.epm.scoring.score_epm_candidacy`.
 
 Codes:
 
-* **EPM-A1** ``LPDF_EPM_GAMUT_OUT_REJECT`` — page colours fall outside
+* **EPM-A1** ``LPDF_EPM_GAMUT_OUT_REJECT`` — page colors fall outside
   the CMY (or substrate) gamut.
 * **EPM-A2** ``LPDF_EPM_K_COVERAGE_REJECT`` — K-channel usage too dense
   to drop without a perceptual shift past the configured ΔE tolerance.
@@ -67,7 +67,7 @@ class EpmTierAAnalyzer(BaseAnalyzer):
 
     ``substrate_profile_path`` (optional) points at a tenant-uploaded
     ICC output profile (.icc / .icm). When set, the A1 gamut detector
-    round-trips each sampled colour through that profile via
+    round-trips each sampled color through that profile via
     :func:`is_in_gamut_for_profile`. When unset, the detector falls
     back to a sRGB round-trip via :func:`is_in_gamut` — the right
     default for tenants that haven't uploaded a substrate profile yet.
@@ -147,7 +147,7 @@ def detect_a1_gamut(
     *,
     profile: ImageCmsProfile | None = None,
 ) -> list[Finding]:
-    """Fire EPM-A1 when any sampled colour exceeds the gamut tolerance.
+    """Fire EPM-A1 when any sampled color exceeds the gamut tolerance.
 
     Two paths:
 
@@ -217,7 +217,7 @@ def detect_a1_gamut(
                 inspection_id=codes.EPM_GAMUT_OUT_OF_REACH,
                 severity=Severity.ERROR,
                 message=(
-                    "Sampled colour outside "
+                    "Sampled color outside "
                     + (
                         "substrate ICC gamut"
                         if profile is not None
@@ -249,7 +249,7 @@ def detect_a2_k_coverage(
     tolerance_de: float,
 ) -> list[Finding]:
     """Fire EPM-A2 when a fill recipe carries K above ``threshold_pct``
-    and the K-strip simulator says the colour shifts past tolerance."""
+    and the K-strip simulator says the color shifts past tolerance."""
     from lintpdf.semantic.events import PathPaintingEvent
 
     findings: list[Finding] = []

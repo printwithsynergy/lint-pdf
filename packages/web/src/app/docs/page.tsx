@@ -30,7 +30,7 @@ const taskCards: { label: string; href: string; description: string }[] = [
     label: "Brand my reports",
     href: "/docs/branding-and-anonymous",
     description:
-      "White-label every report with your logo, colours, and custom domain.",
+      "White-label every report with your logo, colors, and custom domain.",
   },
   {
     label: "Automate with webhooks",

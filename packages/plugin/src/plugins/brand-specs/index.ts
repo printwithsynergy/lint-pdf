@@ -1,5 +1,5 @@
 /**
- * BrandSpec plugin — per-customer colour specifications.
+ * BrandSpec plugin — per-customer color specifications.
  *
  * Proxies ``/api/lintpdf/brand-specs/*`` requests through to the
  * engine's ``/api/v1/brand-specs/*`` routes and registers the

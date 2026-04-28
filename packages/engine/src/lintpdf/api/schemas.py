@@ -775,7 +775,7 @@ class BrandSpecColorEntry(BaseModel):
     name: str = Field(description="Display label for the swatch, e.g. 'Primary Navy'.")
     value: str = Field(
         description=(
-            "Canonical colour value. Hex (``#1a365d``), named CSS colour, "
+            "Canonical color value. Hex (``#1a365d``), named CSS color, "
             "or explicit ``rgb()`` / ``cmyk()`` string — the engine parses "
             "the first form it recognises."
         ),

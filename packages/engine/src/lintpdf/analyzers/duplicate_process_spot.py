@@ -2,7 +2,7 @@
 Separations (the "Make Spot from CMYK" Illustrator export bug).
 
 When a designer toggles "Make Spot from CMYK" in Illustrator's Swatch
-Library or duplicates a process colour into a Separation, the resulting
+Library or duplicates a process color into a Separation, the resulting
 PDF carries an extra plate-per-channel that the press has to image
 twice. The 2026-04-27 Opus audit flagged this on multiple Nutrops
 fixtures: ``/Cyan`` declared as both a DeviceCMYK process AND a named

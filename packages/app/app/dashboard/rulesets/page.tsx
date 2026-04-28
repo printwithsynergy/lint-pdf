@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
-import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@/components/PortaledConfirmDialog";
 import { Button, Input, Select, FormField } from "@thinkneverland/pixie-dust-ui";
 import { RulesEditor } from "@/components/rules/RulesEditor";
 import type { Profile as RulesProfile } from "@/lib/rules/profile-utils";
@@ -131,45 +131,58 @@ export default function RulesetsPage() {
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
     setError("");
-    // Try the admin endpoint first — if it 200s, we're super-admin and get
-    // the cross-tenant grouped view. On 401/403, fall back to the tenant
-    // endpoint so regular members still see their own + defaults.
-    try {
-      const adminResp = await fetch("/api/lintpdf/admin/profiles");
-      if (adminResp.ok) {
-        const data: AdminProfileList = await adminResp.json();
-        setMode("admin");
-        setAdminData(data);
-        setLoading(false);
-        return;
-      }
-      if (adminResp.status !== 401 && adminResp.status !== 403) {
-        const detail = await readErrorDetail(
-          adminResp,
-          `Failed to load admin profiles (${adminResp.status})`,
-        );
-        // Admin endpoint reachable but errored — surface and fall through to
-        // tenant scope so the user still has something.
-        console.warn(
-          `[rulesets] admin endpoint ${adminResp.status}: ${detail}`,
-        );
-      }
-    } catch (e) {
-      console.warn("[rulesets] admin endpoint fetch threw", e);
-    }
+    // Fire admin + tenant in parallel — admin is the super-admin grouped
+    // view, tenant is the user's own profiles. On 401/403 from admin we
+    // know we're a regular tenant member; on 200 we use the admin payload
+    // and still load tenant for the embedded "self" tenant section the
+    // admin uses when creating their own rulesets.
+    const [adminResult, tenantResult] = await Promise.all([
+      fetch("/api/lintpdf/admin/profiles").catch((e) => {
+        console.warn("[rulesets] admin endpoint fetch threw", e);
+        return null;
+      }),
+      fetch("/api/lintpdf/profiles").catch((e) => {
+        console.warn("[rulesets] tenant endpoint fetch threw", e);
+        return null;
+      }),
+    ]);
 
     try {
-      const resp = await fetch("/api/lintpdf/profiles");
-      if (!resp.ok) {
-        const detail = await readErrorDetail(
-          resp,
-          `Failed to load profiles (${resp.status})`,
-        );
-        throw new Error(`Failed to load profiles (${resp.status}): ${detail}`);
+      if (adminResult && adminResult.ok) {
+        const data: AdminProfileList = await adminResult.json();
+        setMode("admin");
+        setAdminData(data);
+      } else {
+        if (
+          adminResult &&
+          adminResult.status !== 401 &&
+          adminResult.status !== 403
+        ) {
+          const detail = await readErrorDetail(
+            adminResult,
+            `Failed to load admin profiles (${adminResult.status})`,
+          );
+          console.warn(
+            `[rulesets] admin endpoint ${adminResult.status}: ${detail}`,
+          );
+        }
+        setMode("tenant");
       }
-      const data = await resp.json();
-      setMode("tenant");
-      setTenantProfiles(data.profiles ?? []);
+
+      if (tenantResult && tenantResult.ok) {
+        const data = await tenantResult.json();
+        setTenantProfiles(data.profiles ?? []);
+      } else if (tenantResult) {
+        const detail = await readErrorDetail(
+          tenantResult,
+          `Failed to load profiles (${tenantResult.status})`,
+        );
+        throw new Error(
+          `Failed to load profiles (${tenantResult.status}): ${detail}`,
+        );
+      } else {
+        throw new Error("Failed to load profiles");
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load profiles");
     } finally {
@@ -335,16 +348,14 @@ export default function RulesetsPage() {
               : "Preflight profiles that define which checks run and with what thresholds."}
           </p>
         </div>
-        {mode === "tenant" && (
-          <Button
-            onClick={() => {
-              if (showCreate) setShowCreate(false);
-              else openCreate("self");
-            }}
-          >
-            {showCreate ? "Cancel" : "New Ruleset"}
-          </Button>
-        )}
+        <Button
+          onClick={() => {
+            if (showCreate) setShowCreate(false);
+            else openCreate("self");
+          }}
+        >
+          {showCreate ? "Cancel" : "New Ruleset"}
+        </Button>
       </div>
 
       {error && (

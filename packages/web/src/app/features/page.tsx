@@ -541,11 +541,11 @@ export default function FeaturesPage() {
               },
               {
                 title: "File comparison",
-                body: "Diff two revisions side-by-side with SSIM heatmaps. Catch moved elements, colour shifts, font substitutions before they ship.",
+                body: "Diff two revisions side-by-side with SSIM heatmaps. Catch moved elements, color shifts, font substitutions before they ship.",
               },
               {
                 title: "Branded & anonymous share links",
-                body: "Every job mints a tokenized URL with your logo and colours — or strip all branding including PDF metadata with one flag.",
+                body: "Every job mints a tokenized URL with your logo and colors — or strip all branding including PDF metadata with one flag.",
               },
               {
                 title: "Cloudflare R2 edge caching",

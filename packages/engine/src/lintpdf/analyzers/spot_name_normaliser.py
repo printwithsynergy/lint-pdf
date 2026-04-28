@@ -6,7 +6,7 @@ their naming drifts from the cross-vendor standards (Esko, PackZ,
 ArtiosCAD all recognise the canonical names).
 
 Emits ``LPDF_SPOT_NONCANONICAL`` (advisory) per non-canonical spot
-name discovered in any Separation / DeviceN colour space on any
+name discovered in any Separation / DeviceN color space on any
 page.
 
 The full taxonomy lives at audit/phase-2/T3-D11/spot-taxonomy.md
@@ -53,7 +53,7 @@ ISO_19593_GROUP_BY_CANONICAL: dict[str, str] = {
 
 
 #: Tokens that map to ISO 19593-1 "Positions" group — registration,
-#: trim marks, colour bars. Drives T2-ISO02 ``LPDF_PSTEP_POSITIONS``.
+#: trim marks, color bars. Drives T2-ISO02 ``LPDF_PSTEP_POSITIONS``.
 POSITION_TOKENS: frozenset[str] = frozenset(
     {
         "registration",
@@ -69,10 +69,7 @@ POSITION_TOKENS: frozenset[str] = frozenset(
         "crop marks",
         "colorbar",
         "color bar",
-        "colourbar",
-        "colour bar",
         "colorcontrol",
-        "colour control",
         "color control",
         "control strip",
         "controlstrip",
@@ -303,7 +300,7 @@ def check_spot_naming(pdf_bytes: bytes) -> list[Finding]:
 
 def suggest_position_tagging(pdf_bytes: bytes) -> list[Finding]:
     """T2-ISO02 — emit one ``LPDF_PSTEP_POSITIONS`` advisory per spot
-    whose name matches a registration / trim-mark / colour-bar token.
+    whose name matches a registration / trim-mark / color-bar token.
 
     These spots belong in the ISO 19593-1 ``Positions`` ProcessingSteps
     group, not as printable inks. When they leak through into the
@@ -464,7 +461,7 @@ def suggest_processing_steps(pdf_bytes: bytes) -> list[Finding]:
 
     Suggests the appropriate ``/ProcessingSteps /Group`` entry so
     finishing equipment recognises cut/crease/perforation/varnish
-    inks as production processes rather than print-able colour.
+    inks as production processes rather than print-able color.
 
     Silent when the PDF has no spots in the taxonomy or when none
     of the discovered spots map to an ISO 19593-1 group.
@@ -516,8 +513,8 @@ def suggest_processing_steps(pdf_bytes: bytes) -> list[Finding]:
 
 
 def _collect_spot_names(pdf_bytes: bytes) -> list[str]:
-    """Walk pikepdf's Separation / DeviceN colour-spaces and return
-    every spot colourant name discovered."""
+    """Walk pikepdf's Separation / DeviceN color-spaces and return
+    every spot colorant name discovered."""
     import io
 
     import pikepdf
@@ -536,7 +533,7 @@ def _collect_spot_names(pdf_bytes: bytes) -> list[str]:
             return
         seen.add(obj_id)
 
-        # Separation / DeviceN colour-space arrays:
+        # Separation / DeviceN color-space arrays:
         #   [/Separation /Name /Alternate <tintXform>]
         #   [/DeviceN [/N1 /N2 ...] /Alternate <tintXform>]
         if isinstance(obj, (list, pikepdf.Array)):

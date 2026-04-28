@@ -1,6 +1,6 @@
 ---
 title: "Brand Profiles"
-description: "Named tenant branding configs — multiple per tenant, one default. Logo, colours, footer text, support email, optional custom domain."
+description: "Named tenant branding configs — multiple per tenant, one default. Logo, colors, footer text, support email, optional custom domain."
 section: "branding"
 order: 22
 ---
@@ -19,10 +19,10 @@ This page covers the BrandProfile resource. For:
 
 - The three-way **rendering decision** (branded / LintPDF / anonymous)
   and how it cascades, see [Branded, LintPDF, and Anonymous](/docs/branding-and-anonymous).
-- Per-customer **colour swatches and rich-black targets** used by
+- Per-customer **color swatches and rich-black targets** used by
   preflight checks, see [Brand Specs](/docs/brand-specs). BrandSpec
   and BrandProfile are different primitives — BrandProfile controls
-  rendering chrome, BrandSpec controls colour-compliance checks.
+  rendering chrome, BrandSpec controls color-compliance checks.
 - Attaching a **custom domain** to a BrandProfile (e.g.
   `reports.yourcustomer.com`), see [Custom Domains](/docs/custom-domains).
 
@@ -33,7 +33,7 @@ This page covers the BrandProfile resource. For:
 | `name` | Display name shown in the dashboard picker. |
 | `brand_name` | Renders in the report header and viewer chrome (defaults to `name`). |
 | `logo_url` | URL to the logo image. PNG/SVG; transparent backgrounds preferred. |
-| `primary_color`, `accent_color` | Hex colours used in the viewer chrome and report. |
+| `primary_color`, `accent_color` | Hex colors used in the viewer chrome and report. |
 | `footer_text`, `support_email` | Footer block on PDF reports + hosted HTML. |
 | `custom_domain` | Optional. Attach a verified `reports.*` hostname; share links and reports render on it. |
 | `app_custom_domain` | Optional. Attach a verified `app.*` hostname; the dashboard renders there for tenant users. |
@@ -58,12 +58,12 @@ applied to BrandProfile selection:
 ## Dashboard
 
 `/dashboard/brand-specs` is **not** the right page — that lists Brand
-Specs (colour swatches). BrandProfiles live in
+Specs (color swatches). BrandProfiles live in
 `/dashboard/admin/branding` (tenant-admin scope).
 
 From there, tenant admins can:
 
-- **Create** — new profile with name, logo, colours, footer copy,
+- **Create** — new profile with name, logo, colors, footer copy,
   and optional custom domain.
 - **Edit** — patch any subset of fields.
 - **Set default** — promote one profile to the tenant-wide default;
@@ -119,6 +119,6 @@ curl -X POST https://api.lintpdf.com/api/v1/jobs \
 ## See also
 
 - [Branded, LintPDF-Default, and Anonymous Outputs](/docs/branding-and-anonymous)
-- [Brand Specs](/docs/brand-specs) — separate primitive for colour-compliance checks
+- [Brand Specs](/docs/brand-specs) — separate primitive for color-compliance checks
 - [Custom Domains](/docs/custom-domains)
 - [Share Links](/docs/share-links)

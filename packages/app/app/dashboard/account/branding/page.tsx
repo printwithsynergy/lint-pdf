@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { EmptyState } from "@thinkneverland/pixie-dust-ui";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
-import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@/components/PortaledConfirmDialog";
 import { Badge } from "@thinkneverland/pixie-dust-ui";
 import { Button, Input, Select, FormField, ColorInput } from "@thinkneverland/pixie-dust-ui";
 

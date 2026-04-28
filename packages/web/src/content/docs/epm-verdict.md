@@ -69,7 +69,7 @@ GET /api/v1/jobs/abc
 
 ## IndiChrome substrate hint
 
-`recommends_indichrome: true` fires when at least one Tier-A finding is `LPDF_EPM_005`-shaped (saturated spot/Lab outside CMY gamut). HP's IndiChrome substrate widens the gamut enough to bring the colour back into reach, so the dashboard surfaces an upsell card pointing the operator at the substrate change.
+`recommends_indichrome: true` fires when at least one Tier-A finding is `LPDF_EPM_005`-shaped (saturated spot/Lab outside CMY gamut). HP's IndiChrome substrate widens the gamut enough to bring the color back into reach, so the dashboard surfaces an upsell card pointing the operator at the substrate change.
 
 ## Threshold tuning
 

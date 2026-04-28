@@ -17,7 +17,7 @@ Check IDs:
     LPDF_TRANS_BLEND_CS_MISMATCH — Transparency-group blending CS
         differs from OutputIntent destination CS (T2-TRN04)
     LPDF_TRANS_ON_SPOT — Transparency applied while a Separation /
-        DeviceN colour space is on a page (T2-TRN05)
+        DeviceN color space is on a page (T2-TRN05)
     LPDF_TEXT_SOFT_MASK — Text rendered on a page that declares a
         soft-mask ExtGState (T2-TRN06)
 """
@@ -222,7 +222,7 @@ class TransparencyAnalyzer(BaseAnalyzer):
         findings.extend(self._check_blend_cs_mismatch(document))
 
         # T2-TRN05 — transparency on pages whose resources include a
-        # Separation / DeviceN colour space.
+        # Separation / DeviceN color space.
         findings.extend(self._check_transparency_on_spot(document, events))
 
         # T2-TRN06 — text rendered on a page with a soft-mask ExtGState.
@@ -280,7 +280,7 @@ class TransparencyAnalyzer(BaseAnalyzer):
     @staticmethod
     def _output_intent_cs(document: SemanticDocument) -> str:
         """Return a normalised label for the OutputIntent destination
-        colour space, or empty string when no OutputIntent is set."""
+        color space, or empty string when no OutputIntent is set."""
         for oi in document.output_intents or []:
             s = str(oi.get("/S", "")).lstrip("/")
             if s == "GTS_PDFX":
@@ -304,8 +304,8 @@ class TransparencyAnalyzer(BaseAnalyzer):
 
     def _check_blend_cs_mismatch(self, document: SemanticDocument) -> list[Finding]:
         """T2-TRN04 — flag pages whose transparency group declares a
-        blending colour space that disagrees with the OutputIntent's
-        destination colour space."""
+        blending color space that disagrees with the OutputIntent's
+        destination color space."""
         oi_cs = self._output_intent_cs(document)
         if not oi_cs:
             return []
@@ -325,7 +325,7 @@ class TransparencyAnalyzer(BaseAnalyzer):
                         message=(
                             f"Transparency-group blending CS '{cs_str}' on page "
                             f"{page.page_num} differs from OutputIntent destination "
-                            f"'{oi_cs}'; flatteners may produce unexpected colour"
+                            f"'{oi_cs}'; flatteners may produce unexpected color"
                         ),
                         page_num=page.page_num,
                         details={
@@ -340,7 +340,7 @@ class TransparencyAnalyzer(BaseAnalyzer):
     @staticmethod
     def _has_spot_color_resource(page: SemanticPage) -> bool:  # type: ignore[name-defined]
         """Heuristic: page resources include at least one Separation /
-        DeviceN colour space entry."""
+        DeviceN color space entry."""
         cs_dict = page.resources.get("/ColorSpace") or page.resources.get("ColorSpace") or {}
         if not isinstance(cs_dict, dict):
             return False
@@ -415,7 +415,7 @@ class TransparencyAnalyzer(BaseAnalyzer):
         events: list[ContentStreamEvent],  # type: ignore[name-defined]
     ) -> list[Finding]:
         """T2-TRN05 — when a page declares a Separation / DeviceN
-        colour space AND has any transparency event (alpha < 1.0 or
+        color space AND has any transparency event (alpha < 1.0 or
         non-Normal blend mode), emit one advisory per page."""
         from lintpdf.semantic.events import OpacityChangedEvent
 
@@ -446,8 +446,8 @@ class TransparencyAnalyzer(BaseAnalyzer):
                     severity=Severity.ADVISORY,
                     message=(
                         f"Transparency applied on page {page_num} where Separation / "
-                        f"DeviceN spot colour spaces are declared; some RIPs flatten "
-                        f"this to process colour and lose the spot"
+                        f"DeviceN spot color spaces are declared; some RIPs flatten "
+                        f"this to process color and lose the spot"
                     ),
                     page_num=page_num,
                     details={"page_num": page_num},

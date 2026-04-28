@@ -25,13 +25,13 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import {
   Badge,
   Button,
-  ConfirmDialog,
   EmptyState,
   FormField,
   Input,
   Select,
   useToast,
 } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@/components/PortaledConfirmDialog";
 import { SkeletonDashboard } from "@/components/skeleton";
 
 interface TenantSummary {

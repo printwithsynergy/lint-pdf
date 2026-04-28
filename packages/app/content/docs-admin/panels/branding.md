@@ -12,7 +12,7 @@ Inspect every tenant's brand profiles and see which one is flagged as their defa
 ## What you see
 
 - Tenant picker.
-- Table of brand profiles for the selected tenant: profile name, type (custom / lintpdf / none), primary colour swatch, logo URL, default flag.
+- Table of brand profiles for the selected tenant: profile name, type (custom / lintpdf / none), primary color swatch, logo URL, default flag.
 - Per-row **Inspect** → drawer with the full resolved report URL under that profile.
 
 ## Actions

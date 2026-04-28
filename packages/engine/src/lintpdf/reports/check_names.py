@@ -43,7 +43,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Low Image Resolution",
         "An image doesn't have enough detail for sharp printing — effective "
         "DPI (after the page CTM scales the image) is below the configured "
-        "minimum. Fires on both colour and grayscale images.",
+        "minimum. Fires on both color and grayscale images.",
         v2_ids=("I-01", "I-02"),
     ),
     "LPDF_IMG_002": CheckInfo(
@@ -241,8 +241,8 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Total ink exceeds the maximum for this paper type, risking smearing or drying issues.",
     ),
     "LPDF_COLOR_005": CheckInfo(
-        "Registration Colour Used As Artwork Fill",
-        "Registration colour (100% on every CMYK channel) is reserved for "
+        "Registration Color Used As Artwork Fill",
+        "Registration color (100% on every CMYK channel) is reserved for "
         "crop marks and trapping guides, never artwork. Fires when "
         "registration is used as a fill — typically a registration-only "
         "swatch picked up by mistake during design.",
@@ -251,7 +251,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_COLOR_006": CheckInfo(
         "No Output Intent",
         "Document declares no Output Intent. Without one, every downstream "
-        "tool guesses at the destination colour space — proofs and press "
+        "tool guesses at the destination color space — proofs and press "
         "output drift unpredictably. Add an Output Intent ICC referencing "
         "the target press condition.",
         v2_ids=("C-19",),
@@ -278,12 +278,12 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Color Space Inventory", "Summary of color space types used in the document."
     ),
     "LPDF_COLOR_015": CheckInfo(
-        "Device-Dependent Colour With OutputIntent",
-        "A device-dependent colour space (DeviceRGB / DeviceCMYK / "
+        "Device-Dependent Color With OutputIntent",
+        "A device-dependent color space (DeviceRGB / DeviceCMYK / "
         "DeviceGray) is used while an OutputIntent is present. The "
         "DeviceRGB branch is disallowed under PDF/X-4 entirely; "
         "DeviceCMYK and DeviceGray are allowed but ICC-based alternatives "
-        "are recommended for predictable colour. Re-tag with an ICCBased "
+        "are recommended for predictable color. Re-tag with an ICCBased "
         "alternative.",
         v2_ids=("C-01",),
     ),
@@ -299,7 +299,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Impure Black",
         "Black areas use C, M, or Y in addition to K. Multi-ink blacks "
         "are sensitive to press registration and produce visible fringes "
-        "where neighbouring colours overprint. Replace with pure K or a "
+        "where neighbouring colors overprint. Replace with pure K or a "
         "controlled rich-black recipe.",
         v2_ids=("C-52",),
     ),
@@ -389,7 +389,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Transparency × Overprint Interaction",  # noqa: RUF001 — × is intentional (cross-product of two effects)
         "Both transparency and overprint are active on the same page. The "
         "interaction between alpha-blended objects and overprinted spot "
-        "colours is RIP-specific — flattening behaviour can swap colours "
+        "colors is RIP-specific — flattening behaviour can swap colors "
         "or drop objects unpredictably. Verify on a proof.",
         v2_ids=("TR-19",),
     ),
@@ -750,8 +750,8 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Expected dieline not present in a packaging file. Neither name-match nor vision fallback detected a cut contour.",
     ),
     "LPDF_DIE_MULTI_COLOR": CheckInfo(
-        "Dieline Multi-Colour",
-        "Dieline layer / spot contains multiple stroke colours — a clean cut path should be exactly one ink.",
+        "Dieline Multi-Color",
+        "Dieline layer / spot contains multiple stroke colors — a clean cut path should be exactly one ink.",
     ),
     "LPDF_DIE_ZORDER": CheckInfo(
         "Dieline Below Artwork",
@@ -765,7 +765,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_DIE_BLEND_MODE": CheckInfo(
         "Dieline Has Non-Normal Blend Mode",
-        "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork — non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong colour. Set blend mode to Normal on the dieline layer.",
+        "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork — non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong color. Set blend mode to Normal on the dieline layer.",
         v2_ids=("D-08",),
     ),
     "LPDF_DIE_OPACITY_LOW": CheckInfo(
@@ -785,7 +785,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_DIE_AS_ART": CheckInfo(
         "Dieline Spot Used As Fill",
-        "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
+        "Dieline spot color is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
         v2_ids=("D-15",),
     ),
     "LPDF_DIE_LAYER_CONTENT": CheckInfo(
@@ -813,7 +813,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_SPOT_NONCANONICAL": CheckInfo(
         "Non-Canonical Spot Name",
-        "Spot colour name doesn't match the lintPDF canonical taxonomy (CutContour, Crease, Perforation, KissCut, ThroughCut, White, Varnish, VarnishFree). Renaming to canonical names improves cross-vendor compatibility (Esko, PackZ, ArtiosCAD).",
+        "Spot color name doesn't match the lintPDF canonical taxonomy (CutContour, Crease, Perforation, KissCut, ThroughCut, White, Varnish, VarnishFree). Renaming to canonical names improves cross-vendor compatibility (Esko, PackZ, ArtiosCAD).",
     ),
     "LPDF_PSTEP_SUGGEST": CheckInfo(
         "ISO 19593-1 Processing Step Suggestion",
@@ -821,7 +821,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_PSTEP_POSITIONS": CheckInfo(
         "ISO 19593-1 Positions Suggestion",
-        "Spot ink whose name suggests a positioning aid (registration / trim mark / colour bar) should be tagged under the ISO 19593-1 'Positions' ProcessingSteps group so prepress strips it before plating.",
+        "Spot ink whose name suggests a positioning aid (registration / trim mark / color bar) should be tagged under the ISO 19593-1 'Positions' ProcessingSteps group so prepress strips it before plating.",
     ),
     "LPDF_PSTEP_WHITE_SUBTYPE": CheckInfo(
         "ISO 19593-1 White Subtype Suggestion",
@@ -829,7 +829,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_SPOT_DEPRECATED_PANTONE": CheckInfo(
         "Deprecated Pantone Suffix",
-        "Spot name uses a legacy Pantone suffix (CV, CVC, CVU, CVP, CVUX) that was retired with the post-2008 Pantone book; verify the spot still maps to the intended colour.",
+        "Spot name uses a legacy Pantone suffix (CV, CVC, CVU, CVP, CVUX) that was retired with the post-2008 Pantone book; verify the spot still maps to the intended color.",
         v2_ids=("C-32",),
     ),
     "LPDF_VIEWER_DISPLAY_TITLE": CheckInfo(
@@ -878,11 +878,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_TRANS_BLEND_CS_MISMATCH": CheckInfo(
         "Transparency Blend / OutputIntent CS Mismatch",
-        "Transparency-group blending colour space differs from the OutputIntent destination colour space. Flatteners may render the page colour-shifted relative to the printed proof.",
+        "Transparency-group blending color space differs from the OutputIntent destination color space. Flatteners may render the page color-shifted relative to the printed proof.",
     ),
     "LPDF_TRANS_ON_SPOT": CheckInfo(
         "Transparency on Spot Page",
-        "Page declares Separation / DeviceN spot colour spaces and also has transparency events. Some RIPs flatten transparency to process colour and lose the spot.",
+        "Page declares Separation / DeviceN spot color spaces and also has transparency events. Some RIPs flatten transparency to process color and lose the spot.",
     ),
     "LPDF_TEXT_REVERSE_THIN": CheckInfo(
         "Reverse Text Minimum Stroke",
@@ -932,7 +932,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_DIE_WHITE_GAP": CheckInfo(
         "White Underprint Gap",
-        "White / OpaqueWhite underprint covers less than the configured fraction of the dieline area (default 95%). On clear or foil substrates, gaps in white underprint let the substrate show through colour artwork.",
+        "White / OpaqueWhite underprint covers less than the configured fraction of the dieline area (default 95%). On clear or foil substrates, gaps in white underprint let the substrate show through color artwork.",
     ),
     "LPDF_BARCODE_QUIET_ZONE": CheckInfo(
         "Barcode Quiet Zone Conflict",
@@ -1147,7 +1147,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Encryption Denies Screen Reader",
         "Encryption /P permission bit 10 is cleared — screen readers can't extract text or graphics for accessibility (ISO 32000-2 §7.6.4.2 Table 22).",
     ),
-    # ── Advanced Colour ─────────────────────────────────────────────────────
+    # ── Advanced Color ─────────────────────────────────────────────────────
     "LPDF_ADV_001": CheckInfo(
         "CMYK image on page xpx",
         "CMYK image 'N' on page N (NxNpx) could be analyzed for GCR/UCR black generation strategy",
@@ -1425,7 +1425,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_DOC_008": CheckInfo(
         "Pre-Separated Pages",
-        "One or more pages use a single Separation colour space — i.e. "
+        "One or more pages use a single Separation color space — i.e. "
         "the document is pre-separated rather than composite. Composite "
         "PDF/X is the standard for press-side workflows; pre-separated "
         "files require special handling.",
@@ -1449,11 +1449,11 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "PDF/UA Non-Conformant",
         "veraPDF Matterhorn reported one or more PDF/UA-1 checkpoint failures (accessibility). See details.failures for the list.",
     ),
-    # ── Extended Colour Gamut ───────────────────────────────────────────────
+    # ── Extended Color Gamut ───────────────────────────────────────────────
     "LPDF_ECG_001": CheckInfo(
         "ECG Readiness Assessment",
-        "Reports whether the document is structured for Expanded Colour "
-        "Gamut (CMYKOGV) reproduction: spot-colour count, presence of "
+        "Reports whether the document is structured for Expanded Color "
+        "Gamut (CMYKOGV) reproduction: spot-color count, presence of "
         "CMYKOGV-like DeviceN spaces, and overall ECG-appropriateness.",
     ),
     "LPDF_ECG_002": CheckInfo(
@@ -1475,7 +1475,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "ECG Ink-Build Exceeds 3-Ink Maximum",
         "More than three inks are active simultaneously above the "
         "significance threshold. ECG prefers a maximum 3-ink build for "
-        "colour stability — additional inks create gray-balance drift and "
+        "color stability — additional inks create gray-balance drift and "
         "compound dot-gain.",
     ),
     "LPDF_ECG_006": CheckInfo(
@@ -1491,7 +1491,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Objects use a near-equal C / M / Y mix above the high-ink "
         "threshold. In ECG workflows these neutrals depend on cross-press "
         "consistency that single-pass orange / green / violet inks rarely "
-        "deliver — colour shift is likely. Convert critical neutrals to a "
+        "deliver — color shift is likely. Convert critical neutrals to a "
         "K-anchored recipe.",
     ),
     "LPDF_ECG_009": CheckInfo(
@@ -1523,7 +1523,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "ECG Non-Standard Rich-Black Recipe",
         "Objects use a rich-black recipe outside the configured ECG "
         "default (typically C=60, M=40, Y=40, K=100). Non-standard recipes "
-        "may shift colour or produce inconsistent neutrals across press "
+        "may shift color or produce inconsistent neutrals across press "
         "runs.",
     ),
     "LPDF_ECG_015": CheckInfo(
@@ -1576,7 +1576,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "EPM Spot Color K-Dependent Fallback",
         "A spot color's CMYK alternate values include the K channel. When the "
         "spot is unavailable on press and the RIP falls back to alternate "
-        "values, EPM mode strips K and shifts the rendered colour. Re-author "
+        "values, EPM mode strips K and shifts the rendered color. Re-author "
         "the spot's alternate values to a CMY-only mix.",
     ),
     "LPDF_EPM_006": CheckInfo(
@@ -1588,7 +1588,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_EPM_007": CheckInfo(
         "EPM Registration Color In Artwork",
-        "Objects are painted in registration colour (all CMYK ≥ ~90%) — a "
+        "Objects are painted in registration color (all CMYK ≥ ~90%) — a "
         "marks-and-bleeds-only ink. In EPM mode the K component is dropped "
         "and the object reads as 100% C+M+Y. Replace registration with the "
         "intended process or spot ink.",
@@ -1598,7 +1598,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "EPM Gray Balance Risk",
         "Objects use a neutral CMY mix (C ≈ M ≈ Y, all above the gray-balance "
         "threshold) with K=0. Without K to anchor the neutral, EPM-mode "
-        "presses are at high risk of a colour shift. Convert critical neutrals "
+        "presses are at high risk of a color shift. Convert critical neutrals "
         "to a recipe that includes K, or route to CMYK.",
         v2_ids=("EPM-A7", "EPM-C4"),
     ),
@@ -1618,7 +1618,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_EPM_011": CheckInfo(
         "EPM Spot Color Fidelity Risk",
-        "Spot colour may not reproduce accurately on digital devices. Verify "
+        "Spot color may not reproduce accurately on digital devices. Verify "
         "the proof on the target press, or convert to a process build with "
         "documented gamut coverage.",
     ),
@@ -1834,13 +1834,13 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_OVER_005": CheckInfo(
         "Overprint Inventory",
         "Informational summary of every object that has overprint enabled, "
-        "broken down by colour space. Useful for comparing overprint "
+        "broken down by color space. Useful for comparing overprint "
         "behaviour against the production proof and the operator's "
         "expectations.",
     ),
     "LPDF_OVER_006": CheckInfo(
         "Overprint Active With DeviceRGB",
-        "Overprint is active on a DeviceRGB-coloured object. Overprint is "
+        "Overprint is active on a DeviceRGB-colored object. Overprint is "
         "fundamentally a separation-time concept (per-channel knock-out vs "
         "preserve), but DeviceRGB has no separation model. Press behaviour "
         "is undefined and varies by RIP. Convert to CMYK or remove the "
@@ -1856,9 +1856,9 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("F-28",),
     ),
     "LPDF_OVER_008": CheckInfo(
-        "Registration Colour With Overprint Active",
-        "An object painted in registration colour (all CMYK ≥ ~90%) has "
-        "overprint enabled. Registration colour is reserved for marks; "
+        "Registration Color With Overprint Active",
+        "An object painted in registration color (all CMYK ≥ ~90%) has "
+        "overprint enabled. Registration color is reserved for marks; "
         "overprinting it onto artwork lays a heavy ink load over whatever "
         "sits below. Remove the overprint or switch to the intended "
         "process / spot ink.",
@@ -1980,7 +1980,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_QR_004": CheckInfo(
         "Duplicate QR code found on pages", "Duplicate QR code found on pages N: 'NN'"
     ),
-    # ── Spot Colours (extended) ─────────────────────────────────────────────
+    # ── Spot Colors (extended) ─────────────────────────────────────────────
     "LPDF_SPOT_004": CheckInfo(
         "DeviceN on page colorant count",
         "DeviceN 'N' on page N: colorant count (N) does not match components (N)",
@@ -2007,14 +2007,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_SPOT_010": CheckInfo(
         "Spot Color Count Exceeds Maximum",
-        "The document declares more spot colours than the configured "
+        "The document declares more spot colors than the configured "
         "maximum allowed by the active profile. Excess spots inflate plate "
         "counts and press time — consolidate or convert to process where "
         "possible.",
     ),
     "LPDF_SPOT_011": CheckInfo(
         "Spot Color Used At 0% Tint",
-        "A spot colour is referenced at 0% tint and contributes nothing to "
+        "A spot color is referenced at 0% tint and contributes nothing to "
         "the rendered output, but it still allocates a separation plate. "
         "Either remove the reference or apply a non-zero tint.",
     ),
@@ -2119,8 +2119,8 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("F-29",),
     ),
     "LPDF_TEXT_005": CheckInfo(
-        "Text Painted In Registration Colour",
-        "Text is painted in registration colour (100% on every CMYK "
+        "Text Painted In Registration Color",
+        "Text is painted in registration color (100% on every CMYK "
         "channel). Registration is reserved for crop marks and trapping "
         "guides — text in registration overprints heavily and bleeds when "
         "ink trapping fails. Re-tag with the intended ink.",

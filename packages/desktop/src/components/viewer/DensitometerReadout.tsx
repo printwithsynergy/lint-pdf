@@ -7,7 +7,7 @@ interface DensitometerReadoutProps {
   error: string | null;
 }
 
-/** Approximate display colour for the headline process channels so
+/** Approximate display color for the headline process channels so
  * the percentage bar reads at a glance. Spot channels fall back to
  * neutral grey. */
 const SWATCH: Record<string, string> = {

@@ -11,16 +11,16 @@ Controls the branding of the LintPDF dashboard itself (login page, email templat
 
 ## What you see
 
-- Primary colour + accent colour pickers.
-- Login page: background colour, heading, subheading.
-- Email templates: button colour, dark-mode logo URL.
+- Primary color + accent color pickers.
+- Login page: background color, heading, subheading.
+- Email templates: button color, dark-mode logo URL.
 - Favicon + app name overrides.
 
 ## Actions
 
 | Action | API | Notes |
 |---|---|---|
-| Save | `PATCH /api/lintpdf/admin/app-settings` | Writes to the singleton `AppSettings` row. All colour values are hex strings. |
+| Save | `PATCH /api/lintpdf/admin/app-settings` | Writes to the singleton `AppSettings` row. All color values are hex strings. |
 
 ## Gotchas
 

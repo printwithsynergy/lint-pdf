@@ -13,7 +13,7 @@ AI-powered preflight inspections run on top of the detection engine — barcode 
 
 1. **Request access.** AI is invite-only alpha on all paid plans. Email [sales@lintpdf.com](mailto:sales@lintpdf.com) with your account ID and a one-line use case.
 2. **Purchase credits.** Pay-per-use ($0.12/credit) or volume packages starting at 100 credits for $10. Set up under **Settings → AI Billing** in the dashboard.
-3. **Configure categories.** Enable the categories you want under **Settings → AI Inspections**. Choose from barcode, content quality, colour compliance, regulatory (FDA / EU / GHS / Pharma), brand, and visual quality.
+3. **Configure categories.** Enable the categories you want under **Settings → AI Inspections**. Choose from barcode, content quality, color compliance, regulatory (FDA / EU / GHS / Pharma), brand, and visual quality.
 4. **Submit with AI.** Add `ai_preset` or `ai_categories` to your submit request.
 
 ## Quick example
@@ -67,7 +67,7 @@ AI settings resolve at three levels, from broadest to most specific:
 
 Brand-related inspections read three kinds of assets from **Settings → AI Brand**:
 
-- **Colour palette** — approved brand colours as hex values with Delta E tolerance.
+- **Color palette** — approved brand colors as hex values with Delta E tolerance.
 - **Reference logos** — upload variations (horizontal, stacked, icon-only, reversed).
 - **Custom dictionary** — brand names, product names, and technical terms that the spell checker should treat as valid.
 

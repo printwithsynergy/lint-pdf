@@ -1,7 +1,7 @@
 """Q-C1 — EPM-Advanced ICC engine via Little CMS (Pillow's wrapper).
 
 Foundation layer for the gamut / ΔE / ΔC checks the EPM-Advanced
-analyzers will fire (out-of-gamut spot colours, neutral-axis drift,
+analyzers will fire (out-of-gamut spot colors, neutral-axis drift,
 substrate-aware TAC, etc.). All Little CMS bindings come through
 ``PIL.ImageCms`` which is already in the engine's dependency set —
 no new third-party package required.
@@ -15,10 +15,10 @@ implementations across modules.
 Three primary primitives:
 
 * :func:`lab_distance_de76`, :func:`lab_distance_de94`,
-  :func:`lab_distance_de2000` — closed-form colour-difference
+  :func:`lab_distance_de2000` — closed-form color-difference
   calculations against the Lab inputs. Pure Python math; no LCMS
   needed for the math itself.
-* :func:`cmyk_to_lab`, :func:`rgb_to_lab` — colour-space conversions
+* :func:`cmyk_to_lab`, :func:`rgb_to_lab` — color-space conversions
   via ``PIL.ImageCms`` so the per-pixel arithmetic matches what the
   press-side RIP would produce. Each conversion uses the
   ``ICCProfileCache`` so a busy preflight doesn't pay the
@@ -26,7 +26,7 @@ Three primary primitives:
 * :func:`is_in_gamut` — round-trips a Lab triple through the target
   profile and back, comparing the recovered Lab to the input. A
   ΔE76 above the configured tolerance means the target gamut can't
-  reproduce the colour.
+  reproduce the color.
 
 Default tolerances per Q-C1 design:
 
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 # ── tolerances (Q-C1) ──────────────────────────────────────────────────
 
 IN_GAMUT_DELTA_E = 2.0
-"""ΔE76 below which two colours read as identical to the eye."""
+"""ΔE76 below which two colors read as identical to the eye."""
 
 JND_DELTA_E_2000 = 1.0
 """Just-noticeable-difference threshold under the CIEDE2000 metric."""
@@ -82,7 +82,7 @@ def lab_profile() -> ImageCmsProfile:
     return ImageCms.createProfile("LAB")
 
 
-# ── colour-difference math ────────────────────────────────────────────
+# ── color-difference math ────────────────────────────────────────────
 
 
 def lab_distance_de76(
@@ -91,7 +91,7 @@ def lab_distance_de76(
 ) -> float:
     """CIE76 ΔE — straight Euclidean distance in Lab space.
 
-    Cheap; correct for "are these the same colour?" sanity checks but
+    Cheap; correct for "are these the same color?" sanity checks but
     exaggerates differences in dark / saturated regions. Use ΔE2000
     for human-perception fidelity.
     """
@@ -130,7 +130,7 @@ def lab_distance_de2000(
     a: tuple[float, float, float],
     b: tuple[float, float, float],
 ) -> float:
-    """CIEDE2000 — the perceptually-correct colour-difference metric.
+    """CIEDE2000 — the perceptually-correct color-difference metric.
 
     Implementation follows Sharma, Wu & Dalal (2005) "The CIEDE2000
     color-difference formula: implementation notes, supplementary
@@ -189,14 +189,11 @@ def lab_distance_de2000(
     rt = -math.sin(math.radians(2 * delta_theta)) * rc
 
     return math.sqrt(
-        (dlp / sl) ** 2
-        + (dcp / sc) ** 2
-        + (dHp / sh) ** 2
-        + rt * (dcp / sc) * (dHp / sh)
+        (dlp / sl) ** 2 + (dcp / sc) ** 2 + (dHp / sh) ** 2 + rt * (dcp / sc) * (dHp / sh)
     )
 
 
-# ── colour-space conversions ──────────────────────────────────────────
+# ── color-space conversions ──────────────────────────────────────────
 
 
 def rgb_to_lab(rgb: tuple[int, int, int]) -> tuple[float, float, float]:
@@ -248,7 +245,7 @@ def cmyk_to_lab_naive(cmyk: tuple[float, float, float, float]) -> tuple[float, f
     licensed press profile.
     """
     c, m, y, k = (max(0.0, min(100.0, v)) for v in cmyk)
-    k_factor = (1.0 - k / 100.0)
+    k_factor = 1.0 - k / 100.0
     r = round((1.0 - c / 100.0) * k_factor * 255)
     g = round((1.0 - m / 100.0) * k_factor * 255)
     b = round((1.0 - y / 100.0) * k_factor * 255)
@@ -262,12 +259,12 @@ def cmy_strip_k_delta_e(
 ) -> float:
     """How far does ``(c, m, y, k)`` shift in Lab if you drop K to 0?
 
-    Returns the colour difference (default CIEDE2000) between the
+    Returns the color difference (default CIEDE2000) between the
     full CMYK Lab and the K-stripped Lab. Larger numbers mean
     "removing K creates a visible shift" — the EPM-A2 analyzer fires
     when the value exceeds the configured threshold.
 
-    ``metric`` chooses the colour-difference formula:
+    ``metric`` chooses the color-difference formula:
 
     * ``"de76"`` — cheap Euclidean
     * ``"de94"`` — chroma+hue weighted
@@ -342,9 +339,7 @@ def load_profile(path: str) -> ImageCmsProfile:
     try:
         return ImageCms.getOpenProfile(path)
     except (ImageCms.PyCMSError, OSError) as exc:
-        raise ProfileLoadError(
-            f"failed to load ICC profile from {path!r}: {exc}"
-        ) from exc
+        raise ProfileLoadError(f"failed to load ICC profile from {path!r}: {exc}") from exc
 
 
 def is_in_gamut_for_profile(
@@ -357,8 +352,8 @@ def is_in_gamut_for_profile(
 
     The profile must be a 3- or 4-channel output profile (``RGB`` or
     ``CMYK``). The Lab → device-space → Lab round-trip clamps the
-    colour to the profile's gamut; if the recovered Lab differs from
-    the input by more than ``tolerance_de`` ΔE76, the colour can't
+    color to the profile's gamut; if the recovered Lab differs from
+    the input by more than ``tolerance_de`` ΔE76, the color can't
     reproduce on that substrate.
 
     Builds + caches the forward / reverse transforms via
@@ -436,12 +431,8 @@ def _lab_profile_transforms_cached(
             f"unsupported profile color space {color_space!r};"
             " is_in_gamut_for_profile expects RGB or CMYK output profiles"
         )
-    forward = ImageCms.buildTransformFromOpenProfiles(
-        lab_profile(), profile, "LAB", device_mode
-    )
-    reverse = ImageCms.buildTransformFromOpenProfiles(
-        profile, lab_profile(), device_mode, "LAB"
-    )
+    forward = ImageCms.buildTransformFromOpenProfiles(lab_profile(), profile, "LAB", device_mode)
+    reverse = ImageCms.buildTransformFromOpenProfiles(profile, lab_profile(), device_mode, "LAB")
     return forward, reverse
 
 

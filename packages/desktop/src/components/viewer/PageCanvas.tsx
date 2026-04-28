@@ -169,7 +169,7 @@ export function PageCanvas({
       {imageLoaded &&
         findings.map((f, idx) => {
           if (!f.bbox || f.bbox.length !== 4) return null;
-          const colour =
+          const color =
             f.severity === "error"
               ? "ring-red-500/80"
               : f.severity === "warning"
@@ -179,7 +179,7 @@ export function PageCanvas({
           return (
             <div
               key={`f-${idx}-${f.inspection_id}`}
-              className={`absolute rounded ring-2 ${colour} ${
+              className={`absolute rounded ring-2 ${color} ${
                 selected ? "ring-offset-2 ring-offset-white" : ""
               } pointer-events-none`}
               style={bboxToStyle(f.bbox)}

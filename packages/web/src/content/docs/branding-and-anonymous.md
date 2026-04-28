@@ -14,8 +14,8 @@ Every rendered artifact in LintPDF — the interactive viewer, downloaded PDF re
 > Exactly one BrandProfile is marked the **tenant default** at any
 > time; jobs and share-links can override that on a per-submission
 > basis. See [Brand Profiles](/docs/brand-profiles) for the full
-> CRUD model. Brand Profiles control rendering chrome (logo, colours,
-> footer); for per-customer **colour swatches and rich-black
+> CRUD model. Brand Profiles control rendering chrome (logo, colors,
+> footer); for per-customer **color swatches and rich-black
 > targets** see the separate [Brand Specs](/docs/brand-specs) primitive.
 
 ## The three modes

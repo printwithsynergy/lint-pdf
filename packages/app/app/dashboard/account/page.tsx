@@ -36,7 +36,7 @@ interface AccountInfo {
 }
 
 export default function AccountPage() {
-  const [account, setAccount] = useState<AccountInfo | null>(null);
+  const [, setAccount] = useState<AccountInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -129,50 +129,10 @@ export default function AccountPage() {
     <>
       <h1 className="font-display text-2xl font-bold">Account Settings</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        Organization profile and plan overview. Manage billing and invoices on
-        the <Link href="/dashboard/billing" className="underline">Billing</Link> page.
+        Organization profile. Plan, limits, and invoices live on the{" "}
+        <Link href="/dashboard/billing" className="underline">Billing</Link>{" "}
+        page.
       </p>
-
-      {/* Plan overview */}
-      {account && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Plan</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2 text-sm sm:grid-cols-3">
-              <div>
-                <span className="text-muted-foreground">Current Plan:</span>{" "}
-                <span className="font-medium uppercase">{account.plan}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Status:</span>{" "}
-                <span className="font-medium">{account.status}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Daily Limit:</span>{" "}
-                <span className="font-medium">
-                  {account.rate_limit_daily?.toLocaleString() ?? "N/A"} jobs
-                </span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Max File Size:</span>{" "}
-                <span className="font-medium">
-                  {account.max_file_size_mb ?? "N/A"} MB
-                </span>
-              </div>
-              {account.overage_enabled && (
-                <div>
-                  <span className="text-muted-foreground">Overage Cap:</span>{" "}
-                  <span className="font-medium">
-                    ${((account.overage_cap_cents ?? 0) / 100).toFixed(2)}/day
-                  </span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Organization settings */}
       <Card className="mt-6">

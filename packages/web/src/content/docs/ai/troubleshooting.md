@@ -73,7 +73,7 @@ Yes — Settings → AI Inspections. Lower thresholds produce more findings but 
 
 ### Configuration
 
-#### How do I set up brand colours?
+#### How do I set up brand colors?
 
 Settings → AI Brand → Color Palette. Add hex values + set the Delta E tolerance (default 5). See [Brand config](./brand-config).
 
