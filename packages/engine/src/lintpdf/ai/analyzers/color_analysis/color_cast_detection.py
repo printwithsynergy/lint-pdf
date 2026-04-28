@@ -89,7 +89,23 @@ class ColorCastDetectionAnalyzer(BaseAIAnalyzer):
             clip_iqa_score = float(result.get("clip_iqa_score", 1.0))
             cast_direction = _describe_cast_direction(dominant_channel)
 
-            if deviation >= _SIGNIFICANT_CAST_THRESHOLD:
+            # PR C Slot 3A: when the page is text-heavy (>40 % of area
+            # covered by detected text), channel-mean deviations are
+            # often artefacts of text-stroke edge antialiasing rather
+            # than real color casts. Demote severity by one level.
+            text_density = 0.0
+            page_obj = (
+                document.pages[page_idx]
+                if document.pages and page_idx < len(document.pages)
+                else None
+            )
+            if page_obj is not None:
+                from lintpdf.ai.text_mask import text_density_ratio
+
+                text_density = text_density_ratio(page_obj)
+            text_heavy = text_density > 0.40
+
+            if deviation >= _SIGNIFICANT_CAST_THRESHOLD and not text_heavy:
                 findings.append(
                     self._make_finding(
                         inspection_id="LPDF_AI_CAST_001",
@@ -107,11 +123,39 @@ class ColorCastDetectionAnalyzer(BaseAIAnalyzer):
                             "clip_iqa_score": round(clip_iqa_score, 3),
                             "threshold": _SIGNIFICANT_CAST_THRESHOLD,
                             "channel_means": result.get("channel_means", {}),
+                            "text_density": round(text_density, 3),
                         },
                         object_type="image",
                     )
                 )
-            elif deviation >= _MILD_CAST_THRESHOLD:
+            elif deviation >= _SIGNIFICANT_CAST_THRESHOLD and text_heavy:
+                # Demote significant→advisory; the deviation is likely an
+                # artefact of text-stroke edge sampling.
+                findings.append(
+                    self._make_finding(
+                        inspection_id="LPDF_AI_CAST_001",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            f"Possible color cast on page {page_num}: "
+                            f"{cast_direction} cast (deviation {deviation}); "
+                            "page is text-heavy so deviation may be a "
+                            "text-edge artefact — verify visually"
+                        ),
+                        page_num=page_num,
+                        details={
+                            "max_deviation": deviation,
+                            "dominant_channel": dominant_channel,
+                            "cast_direction": cast_direction,
+                            "clip_iqa_score": round(clip_iqa_score, 3),
+                            "threshold": _SIGNIFICANT_CAST_THRESHOLD,
+                            "channel_means": result.get("channel_means", {}),
+                            "text_density": round(text_density, 3),
+                            "demoted_for_text_edges": True,
+                        },
+                        object_type="image",
+                    )
+                )
+            elif deviation >= _MILD_CAST_THRESHOLD and not text_heavy:
                 findings.append(
                     self._make_finding(
                         inspection_id="LPDF_AI_CAST_001",
