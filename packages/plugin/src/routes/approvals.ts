@@ -177,5 +177,29 @@ export function approvalRoutes(): RouteDefinition[] {
         return { status: resp.status, body: data };
       }) as RouteHandler,
     },
+    // Authenticated viewer alias: the @lintpdf/viewer-shared
+    // PdfViewer + ApprovalChainPanel + VerdictBar all build their
+    // apiBase as `/api/lintpdf/viewer/{jobId}` and call
+    // `${apiBase}/approval-chain`, but the canonical chain endpoint
+    // was registered under `/api/lintpdf/jobs/{jobId}/approval-chain`.
+    // The mismatch made every authenticated viewer load 404 on the
+    // chain status fetch. Add an alias under the viewer prefix that
+    // proxies to the same engine endpoint.
+    {
+      method: "GET" as HttpMethod,
+      path: "/viewer/:jobId/approval-chain",
+      auth: true,
+      permission: "preflight:view",
+      description:
+        "Authenticated alias: viewer-prefixed approval-chain status (same engine endpoint as /jobs/:jobId/approval-chain)",
+      handler: (async (req: RouteRequest): Promise<RouteResponse> => {
+        const resp = await fetch(
+          engineUrl(`/api/v1/jobs/${req.params.jobId}/approval-chain`),
+          { headers: authHeaders() },
+        );
+        const data = await resp.json().catch(() => null);
+        return { status: resp.status, body: data };
+      }) as RouteHandler,
+    },
   ];
 }
