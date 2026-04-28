@@ -844,6 +844,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Small Rotated Text Legibility Risk",
         "Text below 6 pt is rotated more than 45° off horizontal — combination of small size and off-axis orientation is a press-side legibility risk, especially on flexible-film substrates where head-registration drift is highest perpendicular to web direction. Complements jurisdiction-specific rules (AI_PHARMA_001 / AI_EU1169_001).",
     ),
+    "LPDF_TEXT_OUTLINED_SMALL": CheckInfo(
+        "Outlined Text Below Legibility Threshold",
+        "OCR-detected outlined-text regions measure below 6 pt apparent glyph height. Catches ingredient panels and legal copy that have been converted to vector paths (where the engine's TextRenderedEvent-based legibility check can't see them). Fired by the OCR text-region pass (PR #295). Verify against panel-specific regulatory minimums (FDA / CFIA: 1.0-1.6 mm x-height).",
+    ),
     "LPDF_DIE_PROCESSING_STEPS": CheckInfo(
         "Dieline ISO 19593-1 Decomposition Missing",
         "Single dieline spot carries cut, fold, perf, and other finishing operations as one layer. ISO 19593-1:2018 Annex A.4 specifies a separate spot per ProcessingStep (Cutting / Crease / Perforating / KissCut / FoldLine). Without decomposition the converter has to eyeball the artwork to route each operation to the right finishing tool.",

@@ -236,6 +236,41 @@ class PageGeometryAnalyzer(BaseAnalyzer):
                 self._check_content_proximity(event.page_num, bbox, trim_box, bleed_box)
             )
 
+        # PR C Slot 3C: same proximity check against OUTLINED text. The
+        # event loop above only sees TextRenderedEvents — for fixtures
+        # whose ingredient panel is converted to vector paths the only
+        # signal we have is page.detected_text_regions populated by the
+        # shared OCR pass (PR #295). Reuse the same _check_content_
+        # proximity helper; mark details.from_ocr so reviewers can tell
+        # the two paths apart in the report.
+        for page in document.pages:
+            regions = getattr(page, "detected_text_regions", None)
+            if not regions:
+                continue
+            trim_box, bleed_box = page_boxes.get(page.page_num, (None, None))
+            for region in regions:
+                bbox_obj = getattr(region, "bbox", None)
+                if bbox_obj is None:
+                    continue
+                try:
+                    bbox = (
+                        float(bbox_obj.x0),
+                        float(bbox_obj.y0),
+                        float(bbox_obj.x1),
+                        float(bbox_obj.y1),
+                    )
+                except (AttributeError, TypeError, ValueError):
+                    continue
+                for f in self._check_content_proximity(page.page_num, bbox, trim_box, bleed_box):
+                    # Finding is frozen — rebuild via dataclasses.replace
+                    # to add the OCR provenance flag.
+                    import dataclasses
+
+                    extra = dict(f.details or {})
+                    extra["from_ocr"] = True
+                    extra["region_text"] = (getattr(region, "text", None) or "")[:60]
+                    findings.append(dataclasses.replace(f, details=extra))
+
         return findings
 
     def _check_content_proximity(  # skipcq: PY-R1000

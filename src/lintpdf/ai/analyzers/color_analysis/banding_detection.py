@@ -73,7 +73,28 @@ class BandingDetectionAnalyzer(BaseAIAnalyzer):
             cambi_score = float(result.get("cambi_score", 0.0))
             cambi_score = round(cambi_score, 3)
 
-            if cambi_score >= _BANDING_THRESHOLD:
+            # PR C Slot 3A: filter regions overlapping detected text,
+            # which often gets misread as banding by CAMBI on small
+            # label copy edges. If the bulk of flagged regions sit
+            # inside text boxes, demote/suppress the finding.
+            page_obj = (
+                document.pages[page_idx]
+                if document.pages and page_idx < len(document.pages)
+                else None
+            )
+            raw_regions = result.get("regions", [])
+            kept_regions, dropped = (raw_regions, 0)
+            if page_obj is not None:
+                from lintpdf.ai.text_mask import filter_regions_by_text_mask
+
+                kept_regions, dropped = filter_regions_by_text_mask(raw_regions, page_obj, dpi=150)
+            text_dominated = (
+                isinstance(raw_regions, list)
+                and len(raw_regions) > 0
+                and dropped >= max(1, int(0.7 * len(raw_regions)))
+            )
+
+            if cambi_score >= _BANDING_THRESHOLD and not text_dominated:
                 findings.append(
                     self._make_finding(
                         inspection_id="LPDF_AI_BAND_001",
@@ -87,7 +108,8 @@ class BandingDetectionAnalyzer(BaseAIAnalyzer):
                         details={
                             "cambi_score": cambi_score,
                             "threshold": _BANDING_THRESHOLD,
-                            "regions": result.get("regions", []),
+                            "regions": kept_regions,
+                            "regions_dropped_text_mask": dropped,
                         },
                         object_type="image",
                     )
