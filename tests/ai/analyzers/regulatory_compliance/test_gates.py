@@ -10,6 +10,7 @@ from lintpdf.ai.analyzers.regulatory_compliance._gates import (
     is_eu_food_applicable,
     is_ghs_applicable,
     is_pharma_applicable,
+    is_supplement_document,
 )
 
 
@@ -149,3 +150,65 @@ def test_cosmetic_pharmaceutical_runs() -> None:
     """Categorised as pharmaceutical (not in food bucket) → still
     runs; the analyzer's structural patterns sort it out."""
     assert is_cosmetic_applicable(_Cfg(industry_type="pharmaceutical")) is True
+
+
+# ── is_supplement_document fallback (post-merge audit follow-up) ────────────
+
+
+@dataclass
+class _Region:
+    text: str | None = None
+
+
+@dataclass
+class _Page:
+    content_stream: bytes | str = b""
+    detected_text_regions: list | None = None
+
+
+@dataclass
+class _Doc:
+    pages: list
+
+
+def test_supplement_doc_via_content_stream_supplement_facts() -> None:
+    p = _Page(content_stream=b"BT (Supplement Facts) Tj ET")
+    assert is_supplement_document(_Doc(pages=[p])) is True
+
+
+def test_supplement_doc_via_content_stream_dietary_supplement() -> None:
+    p = _Page(content_stream=b"BT (Dietary Supplement) Tj ET")
+    assert is_supplement_document(_Doc(pages=[p])) is True
+
+
+def test_supplement_doc_via_detected_text_regions_outlined_fixture() -> None:
+    """Outlined-text fixture: literal 'Supplement Facts' header was
+    converted to vector paths. It doesn't appear in content_stream.
+    The OCR text-region pass populates detected_text_regions; the
+    supplement gate now reads from there as a second evidence path."""
+    p = _Page(
+        content_stream=b"path operators only, no readable text",
+        detected_text_regions=[
+            _Region(text="Some other label copy"),
+            _Region(text="Supplement Facts"),  # ← matched here
+        ],
+    )
+    assert is_supplement_document(_Doc(pages=[p])) is True
+
+
+def test_supplement_doc_no_match_returns_false() -> None:
+    p = _Page(content_stream=b"no markers", detected_text_regions=None)
+    assert is_supplement_document(_Doc(pages=[p])) is False
+
+
+def test_supplement_doc_empty_regions_no_false_positive() -> None:
+    """detected_text_regions = [] (pass ran, found no text) doesn't
+    crash and returns False."""
+    p = _Page(content_stream=b"no markers", detected_text_regions=[])
+    assert is_supplement_document(_Doc(pages=[p])) is False
+
+
+def test_supplement_doc_region_missing_text_attr_handled() -> None:
+    """Defensive: region with text=None doesn't crash."""
+    p = _Page(content_stream=b"", detected_text_regions=[_Region(text=None)])
+    assert is_supplement_document(_Doc(pages=[p])) is False
