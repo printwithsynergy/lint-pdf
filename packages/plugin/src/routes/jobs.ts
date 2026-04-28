@@ -75,7 +75,24 @@ export function jobRoutes(): RouteDefinition[] {
             );
             return { status: resp.status, body: { error: detail } };
           }
-          const data = await resp.json();
+          // The /api/v1/admin/jobs response uses `id` while the
+          // tenant-scoped /api/v1/jobs response uses `job_id`. The
+          // dashboard's preflight page only consumes `job_id`, so when
+          // super admins viewed the list every "View" link rendered as
+          // /dashboard/preflight/undefined and the click hit
+          // /api/lintpdf/jobs/undefined → 422. Normalise the admin
+          // response to match the tenant shape so the dashboard is a
+          // single shape consumer.
+          const data = (await resp.json()) as {
+            jobs?: Array<Record<string, unknown>>;
+            total?: number;
+          };
+          if (Array.isArray(data.jobs)) {
+            data.jobs = data.jobs.map((j) => ({
+              ...j,
+              job_id: (j.job_id as string) ?? (j.id as string) ?? null,
+            }));
+          }
           return { status: 200, body: data };
         }
 
