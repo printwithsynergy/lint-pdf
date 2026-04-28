@@ -853,15 +853,23 @@ class BarcodeAnalyzer(BaseAnalyzer):
             # this fired on landscape barcodes that happened to sit in
             # a slightly-taller-than-wide bounding box. Without
             # inspecting actual bar geometry we can't tell ladder from
-            # picket-fence reliably, so tighten the heuristic to
-            # ``height > 1.5 × width`` — a clearly tall bbox, not just
-            # marginally taller. Cuts the false-positive rate without
-            # losing the genuine ladder-orientation case (true ladder
-            # barcodes are 4× taller than wide on average).
+            # picket-fence reliably from bbox aspect alone. The
+            # 2026-04-28 Opus audit caught more false positives at the
+            # 1.5x threshold (Nutrops_LS, Nutrops_SF, Cherry-Twist —
+            # all rendered as picket-fence landscape with bars that
+            # happen to extend beyond 1.5x the bar count).
+            #
+            # True ladder-orientation barcodes have height >= 3.5x
+            # width (most scanner-spec ladder symbols are 4-6x).
+            # Tighten to that threshold so the rule only fires on the
+            # most-clearly-portrait cases. Real ladder symbols still
+            # trip it; landscape symbols whose bbox happens to be
+            # marginally taller (because of the human-readable text
+            # below the bars) are now silent.
             if (
                 candidate.has_bounds
                 and candidate.width_pts > 0
-                and candidate.height_pts > 1.5 * candidate.width_pts
+                and candidate.height_pts > 3.5 * candidate.width_pts
             ):
                 findings.append(
                     Finding(

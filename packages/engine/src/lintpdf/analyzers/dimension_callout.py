@@ -4,26 +4,19 @@ in artwork (should live on a separate spec/dimension layer).
 The 2026-04-28 Opus audit flagged this on multiple stick-pack fixtures:
 *"Dimension callouts (2.4409\", 5.7500\", 10 mm) and 'LOT NUMBER /
 DATE CODE' placeholder appear to be live on the artwork page rather
-than on a separate technical/info layer; they will print unless
-removed or moved to a non-printing layer."*
+than on a separate technical/info layer."*
 
-Detection signal: pages that contain multiple standalone-dimension
-text tokens (e.g. ``2.4409"``, ``5.7500"``, ``10mm``) — bare
-numeric+unit strings that are NOT embedded in body copy. Real label
-copy says "Net Wt. 250g" or "240ml serving" with surrounding
-context; technical drawing dimensions appear isolated.
+V2 (2026-04-28b) — restricted matching to text strings ``(...)`` /
+``<hex>`` inside the content stream so PDF operators like ``cm``
+(concat-matrix) no longer match as a unit suffix. The original v1
+matched anywhere in the raw bytes and produced thousands of false
+positives on stick-pack fixtures whose content streams use
+``\\d+ \\d+ \\d+ \\d+ \\d+ \\d+ cm`` matrix transforms hundreds of
+times per page.
 
 Check ID:
     LPDF_DIM_CALLOUT_001 — Dimension callouts left in artwork.
         Severity: WARNING. Per-page dedupe.
-
-Calibration:
-* Threshold: at least 2 standalone-dimension tokens on the same page.
-  A single ``250g`` from ingredients is not a callout signal; two
-  bare measurements (``2.4409"`` + ``5.7500"``) almost always are.
-* Token shape: optional sign, digits, optional decimal, optional
-  whitespace, unit suffix. The whole match must be word-bounded;
-  surrounding non-numeric/non-unit characters disqualify.
 """
 
 from __future__ import annotations
@@ -39,49 +32,36 @@ if TYPE_CHECKING:
     from lintpdf.semantic.model import SemanticDocument
 
 
-# Dimension callout pattern. Captures the digits + unit. The
-# surrounding context check (``_is_standalone_dimension``) ensures
-# we only count dimensions that aren't part of body copy like
-# ``"Net Wt. 250g"`` or ``"4 oz / 113g"``.
-_DIMENSION_PATTERN = re.compile(
-    r"(?P<num>\d{1,4}(?:\.\d+)?)\s*"
-    r"(?P<unit>mm|cm|in|inch(?:es)?|\"|pt|px)"
-    # Boundary: not followed by another letter, so "250mm" matches
-    # but "10minimum" doesn't. Letter-class lookahead works for both
-    # letter units (mm, cm, in, pt, px) and the literal-quote inch
-    # mark (\b doesn't fire between two non-word chars).
-    r"(?![A-Za-z])",
+# PDF text strings inside a content stream are wrapped in parens
+# (literal strings) or angle brackets (hex strings). We only inspect
+# parenthesized literals because hex strings in this corpus are
+# unlikely to encode a dimension callout.
+_PDF_LITERAL_STRING = re.compile(rb"\(([^()\\]{1,40})\)")
+
+# Standalone-dimension pattern. Whole-string match: just a number +
+# unit, optionally with whitespace / trailing punctuation. The whole
+# parenthesised string content must match.
+_STANDALONE_DIMENSION = re.compile(
+    r"^\s*\d{1,4}(?:\.\d+)?\s*"
+    r"(?:mm|cm|in|inch(?:es)?|\"|pt|px)"
+    r"\s*[\.\,]?\s*$",
     re.IGNORECASE,
 )
 
-# Words / patterns that, if present within ~30 chars of a dimension,
-# strongly suggest the dimension is real-world product copy rather
-# than a technical callout. Suppresses "Net Wt. 5.5 oz", "Serving
-# size: 240ml", "20 ft above sea level", etc.
-_PRODUCT_COPY_NEIGHBOURS = re.compile(
-    r"\b(?:net\s+wt|net\s+weight|serving\s+size|contains|capacity|"
-    r"volume|qty|quantity|fl\s*oz|oz|ml|gram|gramme|liter|litre|"
-    r"each|per\s+serving|per\s+unit)\b",
-    re.IGNORECASE,
-)
-
-# Minimum number of standalone-dimension tokens per page for the
-# rule to fire. A single isolated dimension is not enough signal.
+# Per-page minimum count to fire. Two or more standalone dimensions
+# on the same page is a strong signal of a technical callout block.
 _MIN_DIMENSIONS_PER_PAGE = 2
 
-
-def _is_standalone_dimension(text: str, start: int, end: int) -> bool:
-    """True when the dimension match at [start, end) doesn't sit
-    inside a product-copy context (Net Wt., Serving Size, etc.).
-
-    Examines a 30-char window on either side of the match. Suppresses
-    the dimension if any of the ``_PRODUCT_COPY_NEIGHBOURS`` patterns
-    appear within that window.
-    """
-    window_start = max(0, start - 30)
-    window_end = min(len(text), end + 30)
-    window = text[window_start:window_end]
-    return not _PRODUCT_COPY_NEIGHBOURS.search(window)
+# Require at least one technical-unit callout (in / pt / px / inch
+# mark) to anchor the finding. Bare ``5cm`` / ``250mm`` text events
+# are common in body copy ("5 cm pieces") and not a reliable
+# spec-layer signal. NB: ``\b`` between digit and letter doesn't
+# fire (both are word chars), so use a non-letter lookahead/behind
+# instead — works for ``8.5pt``, ``5"``, ``10in``.
+_TECHNICAL_UNITS_RE = re.compile(
+    r"(?:^|[^A-Za-z])(?:in|inch(?:es)?|pt|px|\")(?![A-Za-z])",
+    re.IGNORECASE,
+)
 
 
 class DimensionCalloutAnalyzer(BaseAnalyzer):
@@ -99,19 +79,26 @@ class DimensionCalloutAnalyzer(BaseAnalyzer):
             raw = page.content_stream
             if not raw:
                 continue
-            try:
-                text = raw.decode("latin-1") if isinstance(raw, bytes) else str(raw)
-            except Exception:
+            if isinstance(raw, str):
+                raw = raw.encode("latin-1", errors="replace")
+
+            page_dims: list[str] = []
+            for m in _PDF_LITERAL_STRING.finditer(raw):
+                try:
+                    s = m.group(1).decode("latin-1")
+                except Exception:
+                    continue
+                if not _STANDALONE_DIMENSION.match(s):
+                    continue
+                snippet = s.strip()
+                if snippet not in page_dims:
+                    page_dims.append(snippet)
+
+            if len(page_dims) < _MIN_DIMENSIONS_PER_PAGE:
                 continue
 
-            standalone: list[str] = []
-            for m in _DIMENSION_PATTERN.finditer(text):
-                if _is_standalone_dimension(text, m.start(), m.end()):
-                    snippet = m.group(0).strip()
-                    if snippet not in standalone:
-                        standalone.append(snippet)
-
-            if len(standalone) < _MIN_DIMENSIONS_PER_PAGE:
+            joined = " ".join(page_dims)
+            if not _TECHNICAL_UNITS_RE.search(joined):
                 continue
 
             findings.append(
@@ -120,9 +107,9 @@ class DimensionCalloutAnalyzer(BaseAnalyzer):
                     severity=Severity.WARNING,
                     message=(
                         f"Dimension callouts found on page {page.page_num} "
-                        f"({len(standalone)} standalone measurements: "
-                        f"{', '.join(standalone[:5])}"
-                        f"{', ...' if len(standalone) > 5 else ''}). "
+                        f"({len(page_dims)} standalone measurements: "
+                        f"{', '.join(page_dims[:5])}"
+                        f"{', ...' if len(page_dims) > 5 else ''}). "
                         "These technical dimensions should live on a "
                         "separate spec / dimension layer (set to "
                         "non-printing) rather than the live artwork — "
@@ -130,8 +117,8 @@ class DimensionCalloutAnalyzer(BaseAnalyzer):
                     ),
                     page_num=page.page_num,
                     details={
-                        "standalone_dimensions": standalone,
-                        "count": len(standalone),
+                        "standalone_dimensions": page_dims,
+                        "count": len(page_dims),
                     },
                     category="geometry",
                     object_type="text",

@@ -188,3 +188,52 @@ def is_cosmetic_applicable(ai_config: TenantAIConfig | None) -> bool:
     # unknown other) -> leave the rule running, the analyzer's
     # structural patterns are the safety net.
     return industry not in _NON_HAZMAT_CATEGORIES
+
+
+# Document-level supplement / dietary-product signals. These are the
+# fallback when ``ai_config`` is unavailable or detached at runtime
+# (which happens in the worker after the DB session closes — the
+# 2026-04-28 Opus audit showed the cosmetic + FDA gates not engaging
+# despite ``industry_type=dietary_supplement`` being set on the
+# tenant). The signals come straight from the page content stream
+# so they survive any ORM detachment.
+import re as _re  # noqa: E402
+
+_SUPPLEMENT_DOCUMENT_PATTERNS: tuple[_re.Pattern[str], ...] = (
+    _re.compile(r"\bSupplement\s+Facts\b", _re.IGNORECASE),
+    _re.compile(r"\bDietary\s+Supplement\b", _re.IGNORECASE),
+    _re.compile(r"\bSupplemental\s+Facts\b", _re.IGNORECASE),
+)
+
+
+def is_supplement_document(document) -> bool:  # type: ignore[no-untyped-def]
+    """True when any page's content stream contains a supplement-
+    panel marker (``Supplement Facts`` header or ``Dietary
+    Supplement`` claim).
+
+    Used by ``CosmeticsLabelingAnalyzer``, ``FdaNutritionAnalyzer``,
+    and ``EuFir1169Analyzer`` as a content-derived fallback when the
+    tenant's ``ai_config.industry_type`` isn't accessible (detached
+    SQLAlchemy session in the worker, etc.).
+
+    * ``Supplement Facts`` panel → governed by 21 CFR 101.36 (DSHEA),
+      not 101.9 (Nutrition Facts). Also not a cosmetic, also not a
+      conventional food (FIR 1169 doesn't apply).
+    * ``Dietary Supplement`` claim text → same conclusion.
+    """
+    pages = getattr(document, "pages", None) or []
+    for page in pages:
+        raw = getattr(page, "content_stream", None)
+        if not raw:
+            continue
+        if isinstance(raw, bytes):
+            try:
+                text = raw.decode("latin-1")
+            except Exception:
+                continue
+        else:
+            text = str(raw)
+        for pat in _SUPPLEMENT_DOCUMENT_PATTERNS:
+            if pat.search(text):
+                return True
+    return False
