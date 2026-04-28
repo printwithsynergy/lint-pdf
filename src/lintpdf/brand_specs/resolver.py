@@ -5,7 +5,7 @@ Phase 0.7 PR-B3b — reads brand specs from the unified-config substrate
 legacy ``brand_specs`` table.
 
 Given a job (and optionally the custom endpoint it was submitted
-through), pick the one brand spec whose colour constraints apply.
+through), pick the one brand spec whose color constraints apply.
 The resolution chain:
 
 1. ``job.brand_spec_id`` — per-submission override. Wins.
@@ -14,7 +14,7 @@ The resolution chain:
 3. Tenant-default spec — the non-archived entry with
    ``is_default=True``. Used when neither of the above applies.
 4. ``None`` — the tenant has no applicable spec; the strict
-   colour advisories stay suppressed. (See WS-7.)
+   color advisories stay suppressed. (See WS-7.)
 
 Archived specs are excluded from the tenant-default fallback so
 tenants can retire a spec without having to remove every endpoint
@@ -126,7 +126,7 @@ def resolve_brand_spec_for_job(
 
     Returns ``None`` when nothing in the chain resolves. The
     orchestrator turns a ``None`` into the "brand palette not
-    present" gate that suppresses strict colour advisories.
+    present" gate that suppresses strict color advisories.
     """
     specs = storage.load_specs(db, job.tenant_id)
 

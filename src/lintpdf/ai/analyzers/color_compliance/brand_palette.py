@@ -22,11 +22,11 @@ logger = logging.getLogger(__name__)
 
 # Optional dependency for CIEDE2000
 try:
-    import colour as colour_science
+    import color as color_science
 
     _HAS_COLOUR = True
 except ImportError:
-    colour_science = None
+    color_science = None
     _HAS_COLOUR = False
 
 try:
@@ -39,10 +39,10 @@ except ImportError:
 
 
 def _srgb_to_lab(r: float, g: float, b: float) -> tuple[float, float, float]:
-    """Convert sRGB [0..1] to CIELAB using colour-science library."""
+    """Convert sRGB [0..1] to CIELAB using color-science library."""
     rgb = np.array([r, g, b])
-    xyz = colour_science.sRGB_to_XYZ(rgb)
-    lab = colour_science.XYZ_to_Lab(xyz)
+    xyz = color_science.sRGB_to_XYZ(rgb)
+    lab = color_science.XYZ_to_Lab(xyz)
     return (float(lab[0]), float(lab[1]), float(lab[2]))
 
 
@@ -50,7 +50,7 @@ def _delta_e_2000(lab1: tuple[float, float, float], lab2: tuple[float, float, fl
     """Compute CIEDE2000 Delta-E between two CIELAB colors."""
     a1 = np.array(lab1)
     a2 = np.array(lab2)
-    return float(colour_science.delta_E(a1, a2, method="CIE 2000"))
+    return float(color_science.delta_E(a1, a2, method="CIE 2000"))
 
 
 def _cmyk_to_srgb(c: float, m: float, y: float, k: float) -> tuple[float, float, float]:
@@ -176,7 +176,7 @@ class BrandPaletteAnalyzer(BaseAIAnalyzer):
         ai_config: TenantAIConfig | None = None,
     ) -> list[Finding]:
         if not _HAS_COLOUR or not _HAS_NUMPY:
-            logger.debug("colour-science or numpy not installed — skipping brand palette check")
+            logger.debug("color-science or numpy not installed — skipping brand palette check")
             return []
 
         # Get brand palette from config

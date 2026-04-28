@@ -483,7 +483,7 @@ def _extract_spot_from_cs(
                 _extract_spot_from_cs(cs_array[1], seen_names, channels, families)
         elif cs_type == "/Pattern":
             # [/Pattern <base>] — recurse if a base is specified
-            # (uncoloured tiling pattern carries through the base cs).
+            # (uncolored tiling pattern carries through the base cs).
             if len(cs_array) >= 2:
                 _extract_spot_from_cs(cs_array[1], seen_names, channels, families)
         elif cs_type == "/Separation":
@@ -1116,10 +1116,10 @@ def sample_densitometer(
 # a single CMYK intermediate and the composite comes out a single
 # tint (flat blue for Test3).
 #
-# Per ISO 32000-2:2020 §8.6.6.4 ("Separation colour spaces"), "For
+# Per ISO 32000-2:2020 §8.6.6.4 ("Separation color spaces"), "For
 # an additive device such as a computer display, a Separation
-# colour space never applies a process colourant directly; it
-# always reverts to the alternate colour space". The alternate +
+# color space never applies a process colorant directly; it
+# always reverts to the alternate color space". The alternate +
 # tint-transform approach ONLY works when the alternates are
 # well-defined + the output intent supplies a reference CMYK
 # profile. Neither is reliable for real-world packaging PDFs.
@@ -1150,7 +1150,7 @@ def _spot_absorption_rgb(name: str) -> tuple[int, int, int]:
     """Best-effort absorption triple for a spot ink named ``name``.
 
     Mirrors the rules in ``SeparationPanel.spotSwatchColor``:
-    semantic colour words ("black", "cyan", "foil", "beige", ...)
+    semantic color words ("black", "cyan", "foil", "beige", ...)
     map to curated absorption tuples; everything else falls back
     to a stable hash-driven HSL → RGB. The goal is a reasonable
     preview, not printing fidelity — a press-accurate composite
@@ -1234,7 +1234,7 @@ def _spot_absorption_rgb(name: str) -> tuple[int, int, int]:
     ink_r = round((r + m) * 255)
     ink_g = round((g + m) * 255)
     ink_b = round((b + m) * 255)
-    # Absorption = 255 - ink colour.
+    # Absorption = 255 - ink color.
     return (255 - ink_r, 255 - ink_g, 255 - ink_b)
 
 

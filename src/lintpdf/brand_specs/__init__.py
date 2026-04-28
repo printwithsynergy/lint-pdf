@@ -1,7 +1,7 @@
 """BrandSpec resolver + helpers.
 
 BrandSpec resolution is the logic that, given a job in flight,
-picks the single BrandSpec row whose colour constraints apply.
+picks the single BrandSpec row whose color constraints apply.
 See :mod:`lintpdf.brand_specs.resolver` for the rules.
 """
 

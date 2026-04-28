@@ -61,7 +61,7 @@ def _canonical_colorant(raw: str | None) -> str:
     vs "PANTONE"), stray leading slashes from the PDF /Name syntax
     ("/Pantone 485 C"), non-breaking spaces, registered-trademark
     glyphs, and assorted leading/trailing whitespace. All of those
-    should be treated as the *same* spot colour for library-prefix
+    should be treated as the *same* spot color for library-prefix
     matching and dedup, while the original string stays intact for
     display.
 
@@ -141,7 +141,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
 
         # Canonical key -> bucket. Canonicalising ("PANTONE 485 C") means
         # "Pantone 485 C" and "PANTONE 485 C" collapse into a single
-        # inventory row instead of reporting two separate spot colours
+        # inventory row instead of reporting two separate spot colors
         # that are really the same paint.
         colorant_display: dict[str, str] = {}
         colorant_pages: dict[str, list[int]] = {}
@@ -912,7 +912,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
         findings: list[Finding] = []
         # canonical key -> first-seen display name. Using a dict keyed
         # on the canonical form means "Pantone 485 C" + "PANTONE 485 C"
-        # count as one spot colour, not two, for the cap check.
+        # count as one spot color, not two, for the cap check.
         all_spots: dict[str, str] = {}
 
         for page in document.pages:

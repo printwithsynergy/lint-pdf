@@ -40,7 +40,7 @@ def _check_poppler() -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Severity colours (matching annotated_pdf_report.py)
+# Severity colors (matching annotated_pdf_report.py)
 # ---------------------------------------------------------------------------
 
 SEVERITY_FILL: dict[str, tuple[int, int, int, int]] = {

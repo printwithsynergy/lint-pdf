@@ -166,7 +166,7 @@ def check_dieline_quality(
         )
 
     # T3-D15 — used as art. Fires when the dieline spot was the
-    # current fill colour at any fill operator. Severity escalates
+    # current fill color at any fill operator. Severity escalates
     # from advisory to error when the total filled area is large
     # enough to indicate real artwork (not a tiny tick mark).
     if spot_name and signals.fill_as_dieline_count > 0:
@@ -501,7 +501,7 @@ def check_dieline_quality(
                                 message=(
                                     f"White underprint covers {coverage_pct:.1f}% "
                                     f"of dieline area — gaps will let substrate "
-                                    f"show through colour artwork"
+                                    f"show through color artwork"
                                 ),
                                 page_num=1,
                                 details={
@@ -1122,7 +1122,7 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
             resources.get("/Properties") if resources and hasattr(resources, "get") else None
         )
 
-        # resource name → spot name for Separation colour spaces.
+        # resource name → spot name for Separation color spaces.
         cs_to_spot = _build_cs_to_spot(cs_dict)
         # T3-D10 — record which resource names resolve to varnish /
         # VarnishFree spots so we can tally their paint bboxes.
@@ -1219,7 +1219,7 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
             except Exception:
                 continue
 
-            # Colour-space setters.
+            # Color-space setters.
             if op == "CS" and operands:
                 current_stroke_cs = str(operands[0]).lstrip("/")
             elif op == "cs" and operands:
@@ -1459,7 +1459,7 @@ def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
                 # the cutter spot is a layer-extracted process control.
                 # Any blend mode other than Normal will be silently
                 # collapsed by the RIP, leaving the dieline either
-                # missing or painted in the wrong colour on the plate.
+                # missing or painted in the wrong color on the plate.
                 if (stroke_is_dieline or fill_is_dieline) and current_blend_mode != "Normal":
                     signals.dieline_blend_mode_violations.append((op_idx, current_blend_mode))
                     if signals.dieline_blend_mode_first_op_idx < 0:
@@ -1558,7 +1558,7 @@ def _cs_is_dieline(
     cs_to_spot: dict[str, str],
     spot_name: str | None,
 ) -> bool:
-    """Resolve a colour-space name to its Separation spot and compare.
+    """Resolve a color-space name to its Separation spot and compare.
 
     Returns False when ``spot_name`` is None (Batch 4 spot-based checks
     rely on knowing which spot counts as dieline; when the caller hasn't
@@ -1574,7 +1574,7 @@ def _cs_mapped_spot(
     cs_name: str | None,
     cs_to_spot: dict[str, str],
 ) -> str | None:
-    """Return the spot colourant name mapped to ``cs_name``, or None."""
+    """Return the spot colorant name mapped to ``cs_name``, or None."""
     if cs_name is None:
         return None
     return cs_to_spot.get(cs_name)
@@ -1611,11 +1611,11 @@ def _build_prop_to_ocg_name(props_dict: Any) -> dict[str, str]:
 
 
 def _build_cs_to_spot(cs_dict: Any) -> dict[str, str]:
-    """Map each Separation resource name to its colourant spot name.
+    """Map each Separation resource name to its colorant spot name.
 
     Walks the page's ``/Resources /ColorSpace`` dict, looks for arrays
     that start with ``/Separation``, and records the second element as
-    the colourant name.
+    the colorant name.
     """
     out: dict[str, str] = {}
     if cs_dict is None:
@@ -1629,7 +1629,7 @@ def _build_cs_to_spot(cs_dict: Any) -> dict[str, str]:
             name = str(key).lstrip("/")
             if not hasattr(value, "__getitem__"):
                 continue
-            # Colour-space array: [/Separation  /SpotName  /Alternate  <tintTransform>]
+            # Color-space array: [/Separation  /SpotName  /Alternate  <tintTransform>]
             first = value[0] if len(value) > 0 else None
             if str(first).lstrip("/") != "Separation":
                 continue

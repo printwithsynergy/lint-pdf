@@ -145,7 +145,7 @@ _brand_spec_param = Form(
         "authenticated tenant; the resolver uses it in preference to any "
         "custom endpoint's default BrandSpec and the tenant-default "
         "BrandSpec. Absent → fall back to the endpoint / tenant default. "
-        "Strict colour advisories stay suppressed when no spec resolves "
+        "Strict color advisories stay suppressed when no spec resolves "
         "anywhere in the chain."
     ),
 )

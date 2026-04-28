@@ -3,7 +3,7 @@
 Two strategies, tried in order:
 
 1. **Name-match heuristic (always runs first).** Scans the PDF for
-   Separation / Spot colour names, layer (OCG) names, and page-label
+   Separation / Spot color names, layer (OCG) names, and page-label
    text for the usual suspects — ``CutContour``, ``Dieline``,
    ``Cut``, ``Crease``, ``Perf``, ``Kiss``, ``Score``, etc. When a
    match is found we mark the dieline as ``source="name"`` and
@@ -90,9 +90,9 @@ class DielineResult:
       region so multi-artwork files (circle + rectangle in the
       same PDF) show each size separately.
     * ``multi_color`` — True when the dieline layer paints its
-      strokes in more than one distinct colour. Triggers
+      strokes in more than one distinct color. Triggers
       ``LPDF_DIE_MULTI_COLOR`` downstream because a dieline
-      should be a single ink; mixed colours on the cut layer
+      should be a single ink; mixed colors on the cut layer
       are usually misplaced artwork.
     """
 
@@ -109,10 +109,10 @@ def _collect_spot_names(pdf: Any) -> list[str]:
 
     Walks the **entire** indirect-object graph, not just direct page
     ``/Resources/ColorSpace`` entries. Press-ready packaging PDFs
-    routinely declare spot colours inside Form XObjects, patterns,
+    routinely declare spot colors inside Form XObjects, patterns,
     or nested resource dictionaries, and the old direct-page walk
     missed all of them — so a PDF containing a ``Dieline`` spot
-    colour would still report ``source='missing'``.
+    color would still report ``source='missing'``.
     """
     try:
         import pikepdf
@@ -181,7 +181,7 @@ def _collect_spot_names(pdf: Any) -> list[str]:
     def _walk_resources(res: Any, depth: int) -> None:
         """Walk a /Resources dict: its /ColorSpace, then recurse into
         /XObject /Form and /Pattern entries (which each have their
-        own /Resources where a spot colour can live)."""
+        own /Resources where a spot color can live)."""
         if res is None or not _is_dictlike(res):
             return
         try:
@@ -214,7 +214,7 @@ def _collect_spot_names(pdf: Any) -> list[str]:
     try:
         # Every page's /Resources, recursively through Form XObjects
         # and Patterns. This is the path that matters in real PDFs —
-        # a spot colour defined once inside a shared Form XObject is
+        # a spot color defined once inside a shared Form XObject is
         # reachable from the page via /Resources/XObject/<name>.
         for page in pdf.pages:
             try:
@@ -223,7 +223,7 @@ def _collect_spot_names(pdf: Any) -> list[str]:
                 continue
 
         # Belt + braces: iterate every indirect object in the xref so
-        # we also catch spot colours that live in orphaned or
+        # we also catch spot colors that live in orphaned or
         # unusual object graphs (patterns referenced from resource
         # dictionaries we haven't traversed yet, etc.).
         try:
@@ -441,7 +441,7 @@ def _detect_by_geometry(pdf: Any) -> tuple[int, float] | None:
     return None
 
 
-# ── Dieline geometry + multi-colour extractor ────────────────────
+# ── Dieline geometry + multi-color extractor ────────────────────
 
 
 def _merge_overlapping(
@@ -508,21 +508,21 @@ def _extract_dieline_paths(
     page_num: int = 0,
 ) -> tuple[list[tuple[float, float, float, float]], int]:
     """Walk page-``page_num`` content stream and return the dieline
-    sub-path bboxes plus the count of distinct stroke colours seen
+    sub-path bboxes plus the count of distinct stroke colors seen
     inside a dieline OCG.
 
     A path counts as dieline when EITHER:
 
-    * its current stroking colour-space resolves to a Separation
-      whose colourant name matches ``spot_name``, OR
+    * its current stroking color-space resolves to a Separation
+      whose colorant name matches ``spot_name``, OR
     * it is painted inside a Marked-Content block whose OCG name
       matches one of the dieline tokens (``dieline``, ``cut``,
       ``crease``, ``perf``, …).
 
-    The second outcome — distinct-colour count inside a dieline OCG
+    The second outcome — distinct-color count inside a dieline OCG
     — lets the caller decide whether to emit
     ``LPDF_DIE_MULTI_COLOR``. A clean dieline layer has exactly one
-    stroke colour; multi-colour layers signal misplaced artwork.
+    stroke color; multi-color layers signal misplaced artwork.
 
     Co-ordinates come from raw operator operands (no CTM
     composition) — axis-aligned layouts work; rotated or
@@ -777,7 +777,7 @@ def detect_dieline(
             logger.info("dieline: name-match hit on '%s'", name)
             # Walk the page-1 content stream to pick up the actual
             # stroked subpaths painted with this spot / on this OCG,
-            # cluster them into region bboxes, and flag multi-colour
+            # cluster them into region bboxes, and flag multi-color
             # dielines. Anything the walker / clusterer raises falls
             # back to the old "name-match only, empty polylines"
             # behaviour so a single corrupt content stream can't

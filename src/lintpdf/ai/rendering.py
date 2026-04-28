@@ -176,7 +176,7 @@ def _render_page_via_ghostscript(
             fh.write(pdf_bytes)
 
         # WS-17A — ``-sColorConversionStrategy=RGB`` forces every
-        # device colour space (DeviceCMYK, DeviceN, Separation
+        # device color space (DeviceCMYK, DeviceN, Separation
         # alternates) to convert to DeviceRGB at composition time.
         # Without it, Ghostscript can render a spot-heavy page (the
         # 2026-04-23 Test3 DailyFiber 10-up + Amalgam_Catalyst
@@ -341,7 +341,7 @@ def render_isolated_layer_tile(
     # spot inks to a flat single tint when the file has no
     # OutputIntent (every file in the curated corpus per
     # LPDF_COLOR_006), which leaves the layer tile blank or wrongly
-    # tinted. The software composite resolves spot colours via tiffsep
+    # tinted. The software composite resolves spot colors via tiffsep
     # and produces a transparent-RGBA tile where no ink lands.
     try:
         from lintpdf.reports.separation_renderer import (

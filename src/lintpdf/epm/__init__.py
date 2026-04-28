@@ -3,7 +3,7 @@
 Enhanced Productivity Mode is the HP Indigo "CMY-only" workflow: the
 press skips the K plate to gain ~30% throughput. Routing a job into
 EPM is only worthwhile when the artwork can survive the loss of the
-K channel without colour shifts, density loss, or spot fidelity
+K channel without color shifts, density loss, or spot fidelity
 problems. This package owns:
 
 * ``codes`` — the 16 ``LPDF_EPM_*_REJECT`` inspection IDs newly added
