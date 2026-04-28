@@ -313,21 +313,44 @@ class DielineByNameAnalyzer(BaseAIAnalyzer):
             # No dieline found
             is_packaging = _is_packaging_file(document, ai_config)
             if is_packaging:
+                # The 2026-04-28 post-merge audit found AI_DIE_002 firing
+                # at WARNING on Pink-Slush + HSI_ADM stick-packs whose
+                # dieline is drawn as a stroke on a process color (e.g.
+                # /Cyan or /Magenta) rather than a named separation.
+                # Opus correctly saw the dieline visually. The engine's
+                # name-based detection cannot find these without OCR or
+                # a vector-perimeter heuristic. When the file has any
+                # spot colors at all, demote to ADVISORY and explain the
+                # limitation in the message — it's an honest "we may have
+                # missed it" rather than an incorrect "missing".
+                has_any_spots = bool(spot_names)
+                severity = Severity.ADVISORY if has_any_spots else Severity.WARNING
+                if has_any_spots:
+                    message = (
+                        "No NAMED die line layer or spot color detected. "
+                        "The artwork has spot colors but none match common "
+                        "dieline patterns (CutContour, Dieline, Crease, "
+                        "Cutting, Perforating). The dieline may be drawn on "
+                        "a process color stroke — verify visually."
+                    )
+                else:
+                    message = (
+                        "No die line detected in packaging file. "
+                        "Expected a die line layer or spot color "
+                        "(e.g., CutContour, Dieline, Crease)."
+                    )
                 findings.append(
                     self._make_finding(
                         inspection_id="AI_DIE_002",
-                        severity=Severity.WARNING,
-                        message=(
-                            "No die line detected in packaging file. "
-                            "Expected a die line layer or spot color "
-                            "(e.g., CutContour, Dieline, Crease)."
-                        ),
+                        severity=severity,
+                        message=message,
                         details={
                             "checked_layers": ocg_names,
                             "checked_spot_colors": list(set(spot_names)),
                             "industry_type": getattr(ai_config, "industry_type", None)
                             if ai_config
                             else None,
+                            "has_unnamed_spots": has_any_spots,
                         },
                     )
                 )

@@ -143,6 +143,33 @@ class TestDielineByNameAnalyzer:
         assert "No die line detected" in findings[0].message
 
     @staticmethod
+    def test_packaging_file_with_spots_but_no_named_die_demotes_to_advisory() -> None:
+        """The 2026-04-28 post-merge audit found AI_DIE_002 firing at
+        WARNING on Pink-Slush + HSI_ADM stick-packs whose dieline is
+        drawn as a stroke on /Cyan or /Magenta (a process color, not a
+        named separation). Opus saw the dieline visually. We can't
+        detect un-named dielines without OCR or a vector heuristic, so
+        when the file has any spot colors the severity drops to
+        ADVISORY with an honest message about the limitation."""
+        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+            DielineByNameAnalyzer,
+        )
+
+        doc, ai_config = _doc_with_layers(
+            spot_color_names=["PANTONE 237 C", "PANTONE 236 C"],
+            industry_type="packaging",
+        )
+        analyzer = DielineByNameAnalyzer()
+        findings = analyzer.analyze(doc, [], b"fake_pdf", ai_config=ai_config)
+
+        assert len(findings) == 1
+        f = findings[0]
+        assert f.inspection_id == "AI_DIE_002"
+        assert f.severity == Severity.ADVISORY
+        assert "NAMED" in f.message
+        assert f.details.get("has_unnamed_spots") is True
+
+    @staticmethod
     def test_no_dieline_non_packaging_returns_advisory() -> None:
         """Non-packaging file without dieline should just get an advisory."""
         from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
