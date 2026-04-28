@@ -1,0 +1,26 @@
+# Railway deploy config for the LintPDF veraPDF sidecar.
+#
+# veraPDF is the industry-standard PDF/A validator. It runs as an optional
+# sidecar — the engine's built-in conformance validators handle PDF/X-4,
+# PDF/X-1a, and basic PDF/A checks natively. veraPDF adds exhaustive
+# spec-compliant PDF/A validation for customers who need it.
+#
+# Setup:
+#   1. Railway dashboard -> Add Service -> Docker Image: verapdf/rest:latest
+#      OR: Source -> Repo: thinkneverland/lint-pdf, Branch: main,
+#      Root Directory: packages/engine/verapdf
+#   2. Set env var on the Engine service:
+#        LINTPDF_VERAPDF_URL=http://verapdf.railway.internal:8080
+#   3. The healthcheck path below lets Railway properly sleep/wake the service.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+numReplicas = 1
+healthcheckPath = "/api/info"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+sleepApplication = true

@@ -1,0 +1,34 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "packages/engine/Dockerfile"
+# Only rebuild when engine code, build inputs, or deploy config
+# actually change. Without this filter, every commit to main
+# (including pure-frontend ones to packages/app or packages/web)
+# triggers a ~28 min Python build on this service — observed on
+# 2026-04-23 when PR #178 (app/web TypeScript fixes) took down
+# every engine-family Railway service that lacked watchPatterns.
+watchPatterns = [
+    "packages/engine/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
+
+[deploy]
+numReplicas = 1
+# -B embeds Celery Beat in the worker process so the ``reap-stale-jobs``
+# schedule actually fires — there is no separate Beat service in Railway,
+# and numReplicas=1 means a single embedded beat is safe (no double-fire).
+# Consumes `ai_heavy` too as a FALLBACK so AI jobs don't stall in
+# Redis when the dedicated `worker-ai` Railway service (see
+# railway.worker-ai.toml) hasn't been created yet. Once the dedicated
+# service is running, both workers consume from `ai_heavy` — Celery
+# distributes across workers automatically, and the dedicated service
+# is free to have a larger per-worker concurrency for AI load.
+startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --beat --schedule=/tmp/celerybeat-schedule --loglevel=info --queues=default,priority,ai_heavy --pool=threads --concurrency=${CELERY_DEFAULT_CONCURRENCY:-8}'"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+# Allow in-flight Celery tasks to finish (Celery worker drains on SIGTERM).
+# Must be ≥ the task time_limit in queue/app.py (600s) so a redeploy can't
+# kill a running preflight mid-flight — that's how jobs get stuck in
+# "processing" forever.
+gracefulShutdownTimeoutSec = 660

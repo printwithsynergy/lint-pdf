@@ -1,0 +1,29 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "packages/engine/Dockerfile"
+watchPatterns = [
+    "packages/engine/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
+
+[deploy]
+# Dedicated Celery worker for viewer tile pre-warming
+# (warm_viewer_tiles task today routes to `default`). Large PDFs
+# consume substantial CPU to rasterize each page → tile; keeping
+# that out of the default pool prevents tile warming from
+# competing with new job ingest.
+#
+# This service is a staged config; actually create it via the
+# Railway API once tile-warming volume demands the split:
+#   serviceCreate(name="Worker-Tiles", source={repo: "thinkneverland/lint-pdf"})
+#   serviceInstanceUpdate(serviceId, env, input: {
+#     railwayConfigFile: "packages/engine/railway.worker-tiles.toml" })
+# Then: change queue="default" → queue="tiles" in
+# packages/engine/src/lintpdf/queue/tasks.py at the warm_viewer_tiles
+# dispatch site and redeploy.
+numReplicas = 1
+startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --loglevel=info --queues=tiles --concurrency=${CELERY_TILES_CONCURRENCY:-2}'"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+gracefulShutdownTimeoutSec = 660

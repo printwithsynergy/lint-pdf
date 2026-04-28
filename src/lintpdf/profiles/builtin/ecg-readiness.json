@@ -1,0 +1,27 @@
+{
+  "name": "Extended Gamut Readiness",
+  "description": "Extended gamut (CMYKOGV) readiness assessment with FOGRA55 checks.",
+  "version": "1.0",
+  "conformance": null,
+  "workflow": "CMYK",
+  "checks": {
+    "enabled": [
+      "LPDF_*"
+    ],
+    "disabled": [
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
+    ],
+    "severity_overrides": {}
+  },
+  "thresholds": {
+    "min_dpi": 250.0,
+    "max_dpi": 600.0,
+    "tac_limit": 300.0,
+    "ecg_mode": true,
+    "ecg_tac_limit": 300.0,
+    "target_output_condition": "fogra55_ecg",
+    "gamut_check": true,
+    "min_pdf_version": "1.6"
+  }
+}

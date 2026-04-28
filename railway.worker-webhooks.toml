@@ -1,0 +1,17 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "packages/engine/Dockerfile"
+# Only rebuild on engine changes. See railway.worker.toml.
+watchPatterns = [
+    "packages/engine/**",
+    "pnpm-workspace.yaml",
+    "package.json",
+]
+
+[deploy]
+numReplicas = 1
+startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --loglevel=info --queues=webhooks --concurrency=${CELERY_WEBHOOK_CONCURRENCY:-4}'"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+# Webhook delivery is short (10s httpx timeout) — 60s grace is enough.
+gracefulShutdownTimeoutSec = 60

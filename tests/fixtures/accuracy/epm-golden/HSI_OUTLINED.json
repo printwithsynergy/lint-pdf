@@ -1,0 +1,27 @@
+{
+  "fired_codes": [
+    "LPDF_EPM_BLEED_REJECT",
+    "LPDF_EPM_FEATURE_SIZE_REJECT",
+    "LPDF_EPM_K_COVERAGE_REJECT",
+    "LPDF_EPM_MIXED_SPACES_REJECT",
+    "LPDF_EPM_PAGE_COUNT_REJECT",
+    "LPDF_EPM_PROCESS_COUNT_REJECT",
+    "LPDF_EPM_TRAPPING_REJECT"
+  ],
+  "verdict": {
+    "advisories": [
+      "LPDF_EPM_FEATURE_SIZE_REJECT",
+      "LPDF_EPM_MIXED_SPACES_REJECT",
+      "LPDF_EPM_TRAPPING_REJECT"
+    ],
+    "epm_findings_count": 7,
+    "recommends_indichrome": false,
+    "rejection_drivers": [
+      "LPDF_EPM_K_COVERAGE_REJECT",
+      "LPDF_EPM_BLEED_REJECT",
+      "LPDF_EPM_PAGE_COUNT_REJECT",
+      "LPDF_EPM_PROCESS_COUNT_REJECT"
+    ],
+    "tier": "reject"
+  }
+}

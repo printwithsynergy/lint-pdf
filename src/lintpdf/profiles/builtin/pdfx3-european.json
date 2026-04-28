@@ -1,0 +1,33 @@
+{
+  "name": "PDF/X-3 European Publishing",
+  "description": "PDF/X-3:2003 conformance for European publishing workflows. ICC-based color management allowed, no transparency.",
+  "version": "1.0",
+  "conformance": "pdfx3",
+  "workflow": "CMYK",
+  "checks": {
+    "enabled": [
+      "LPDF_*",
+      "PDFX3-*"
+    ],
+    "disabled": [
+      "PDFX4-*",
+      "PDFX1A-*",
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
+    ],
+    "severity_overrides": {}
+  },
+  "thresholds": {
+    "min_dpi": 150.0,
+    "max_dpi": 600.0,
+    "tac_limit": 330.0,
+    "min_bleed_mm": 3.0,
+    "hairline_threshold": 0.25,
+    "small_text_threshold": 5.0,
+    "very_small_text_threshold": 4.0,
+    "safety_margin_mm": 3.0,
+    "max_file_size_mb": 500.0,
+    "min_pdf_version": "1.4",
+    "max_pdf_version": "1.4"
+  }
+}

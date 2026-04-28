@@ -1,0 +1,574 @@
+{
+  "base_url": "https://api.lintpdf.com",
+  "tenant": {
+    "id": "fc6ad865-f66c-4819-a428-6a4f0bcddf27",
+    "key_prefix": "lpdf_UI_wUXyD",
+    "plan": "scale",
+    "note": "throwaway tenant, safe to delete after sweep"
+  },
+  "test_pdf": "/home/user/lint-pdf/packages/web/public/lintpdf_preflight_test_final.pdf",
+  "profile_id": "lintpdf-default",
+  "ai_preset": "full-ai-scan",
+  "jobs": [
+    {
+      "submission_path": "jobs",
+      "job_id": "68b492b3-ac34-4483-84f6-7fe80bd42ae0",
+      "status": "complete",
+      "report_count": 6,
+      "formats": [
+        "annotated_pdf",
+        "annotated_pdf_markup",
+        "html",
+        "json",
+        "pdf",
+        "xml"
+      ],
+      "missing_formats": [],
+      "reports": [
+        {
+          "format": "pdf",
+          "url": "https://reports.lintpdf.com/r/YwiwJOhNiQQHKqIfQm9zSMCdgMZaEMXG99bT6abUzpA.pdf",
+          "token": "YwiwJOhNiQQHKqIfQm9zSMCdgMZaEMXG99bT6abUzpA",
+          "expires_at": "2026-05-17T21:36:37.252677+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "annotated_pdf",
+          "url": "https://reports.lintpdf.com/r/mO0rVyuBlIIiZmrENyJ2rtXwO5u4795M_tlLxnRsji8.pdf",
+          "token": "mO0rVyuBlIIiZmrENyJ2rtXwO5u4795M_tlLxnRsji8",
+          "expires_at": "2026-05-17T21:36:37.252677+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "annotated_pdf_markup",
+          "url": "https://reports.lintpdf.com/r/U5Zc5bywDEE33d62fEf9914ELgqcWNxcys1IojEJduY.pdf",
+          "token": "U5Zc5bywDEE33d62fEf9914ELgqcWNxcys1IojEJduY",
+          "expires_at": "2026-05-17T21:36:37.252677+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "html",
+          "url": "https://reports.lintpdf.com/r/qxdYgHaxFvgCwRfyfTeoHuPlE6j4EIfTV3DlWok68cY",
+          "token": "qxdYgHaxFvgCwRfyfTeoHuPlE6j4EIfTV3DlWok68cY",
+          "expires_at": "2026-05-17T21:36:37.252677+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "json",
+          "url": "https://reports.lintpdf.com/r/LZklpizrw0hJjHjPG3jvA_05Mf0tHHbEkbn2VZzXvPo.json",
+          "token": "LZklpizrw0hJjHjPG3jvA_05Mf0tHHbEkbn2VZzXvPo",
+          "expires_at": "2026-05-17T21:36:37.252677+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "xml",
+          "url": "https://reports.lintpdf.com/r/2S9XsTCMK-C52c6kCAWg3jUboMHuna5g2SFAa2C7LuE.xml",
+          "token": "2S9XsTCMK-C52c6kCAWg3jUboMHuna5g2SFAa2C7LuE",
+          "expires_at": "2026-05-17T21:36:37.252677+00:00",
+          "data": null,
+          "content_type": null
+        }
+      ]
+    },
+    {
+      "submission_path": "endpoints",
+      "job_id": "7b8cf5cf-81f7-4a07-b89f-e79b01a24337",
+      "status": "complete",
+      "report_count": 6,
+      "formats": [
+        "annotated_pdf",
+        "annotated_pdf_markup",
+        "html",
+        "json",
+        "pdf",
+        "xml"
+      ],
+      "missing_formats": [],
+      "reports": [
+        {
+          "format": "pdf",
+          "url": "https://reports.lintpdf.com/r/miGhebXzegycHxd2Lpfv8hIsDQ70VoSFjtiUM1SzEeY.pdf",
+          "token": "miGhebXzegycHxd2Lpfv8hIsDQ70VoSFjtiUM1SzEeY",
+          "expires_at": "2026-05-17T21:39:28.089185+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "annotated_pdf",
+          "url": "https://reports.lintpdf.com/r/0JmY8jSj26divh5Qno8hKzzMzUbT4qtIK_Sx9PSELbs.pdf",
+          "token": "0JmY8jSj26divh5Qno8hKzzMzUbT4qtIK_Sx9PSELbs",
+          "expires_at": "2026-05-17T21:39:28.089185+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "annotated_pdf_markup",
+          "url": "https://reports.lintpdf.com/r/dqFE-EyHXiGNbtoLIUo80K6AX2dROUmkhF0g5x8ODp4.pdf",
+          "token": "dqFE-EyHXiGNbtoLIUo80K6AX2dROUmkhF0g5x8ODp4",
+          "expires_at": "2026-05-17T21:39:28.089185+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "html",
+          "url": "https://reports.lintpdf.com/r/tkPH8Es_YG7Gnx6ALihJ-Onvr_KqmuyLOPz23gChHpE",
+          "token": "tkPH8Es_YG7Gnx6ALihJ-Onvr_KqmuyLOPz23gChHpE",
+          "expires_at": "2026-05-17T21:39:28.089185+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "json",
+          "url": "https://reports.lintpdf.com/r/RuR33oxKXzQbbfTFGL1pjjCpsWEOO7nUEaxTnflYVtY.json",
+          "token": "RuR33oxKXzQbbfTFGL1pjjCpsWEOO7nUEaxTnflYVtY",
+          "expires_at": "2026-05-17T21:39:28.089185+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "xml",
+          "url": "https://reports.lintpdf.com/r/1ptq2BTOU4r2DPut6NVO38gLtC7W4VII5BCu56AATEI.xml",
+          "token": "1ptq2BTOU4r2DPut6NVO38gLtC7W4VII5BCu56AATEI",
+          "expires_at": "2026-05-17T21:39:28.089185+00:00",
+          "data": null,
+          "content_type": null
+        }
+      ]
+    },
+    {
+      "submission_path": "batch",
+      "job_id": "a8c186f3-91a0-4522-bf60-e08ae4a170b4",
+      "status": "complete",
+      "report_count": 6,
+      "formats": [
+        "annotated_pdf",
+        "annotated_pdf_markup",
+        "html",
+        "json",
+        "pdf",
+        "xml"
+      ],
+      "missing_formats": [],
+      "reports": [
+        {
+          "format": "pdf",
+          "url": "https://reports.lintpdf.com/r/NI7mXYCuIs38UXsmKRnAlwGTsUqFVn6oOfsm65UAAI0.pdf",
+          "token": "NI7mXYCuIs38UXsmKRnAlwGTsUqFVn6oOfsm65UAAI0",
+          "expires_at": "2026-05-17T21:40:12.569191+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "annotated_pdf",
+          "url": "https://reports.lintpdf.com/r/ze4O6BE8_I7Cw1SHLNFLonNS9fL9pGQ1JSeI4IZwO0U.pdf",
+          "token": "ze4O6BE8_I7Cw1SHLNFLonNS9fL9pGQ1JSeI4IZwO0U",
+          "expires_at": "2026-05-17T21:40:12.569191+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "annotated_pdf_markup",
+          "url": "https://reports.lintpdf.com/r/JTelFSJk_riWDoM-0OvacxTjzOL9tpJz9S_3rfjGxwE.pdf",
+          "token": "JTelFSJk_riWDoM-0OvacxTjzOL9tpJz9S_3rfjGxwE",
+          "expires_at": "2026-05-17T21:40:12.569191+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "html",
+          "url": "https://reports.lintpdf.com/r/m5HhDA_iNmFsRlChuO4Ih-36-EZpcfMbcUvsg_DP3Bw",
+          "token": "m5HhDA_iNmFsRlChuO4Ih-36-EZpcfMbcUvsg_DP3Bw",
+          "expires_at": "2026-05-17T21:40:12.569191+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "json",
+          "url": "https://reports.lintpdf.com/r/PRqq_t7JGZOwvI162WRwU2v4TG81HrT8eT9xtXgxV4I.json",
+          "token": "PRqq_t7JGZOwvI162WRwU2v4TG81HrT8eT9xtXgxV4I",
+          "expires_at": "2026-05-17T21:40:12.569191+00:00",
+          "data": null,
+          "content_type": null
+        },
+        {
+          "format": "xml",
+          "url": "https://reports.lintpdf.com/r/lg9VGoYrZrjBp1C6DcHwByN6kJ5Ve30rmT9EftadzRk.xml",
+          "token": "lg9VGoYrZrjBp1C6DcHwByN6kJ5Ve30rmT9EftadzRk",
+          "expires_at": "2026-05-17T21:40:12.569191+00:00",
+          "data": null,
+          "content_type": null
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    {
+      "kind": "report.pdf",
+      "job_source": "jobs",
+      "job_id": "68b492b3-ac34-4483-84f6-7fe80bd42ae0",
+      "format": "pdf",
+      "url": "https://reports.lintpdf.com/r/YwiwJOhNiQQHKqIfQm9zSMCdgMZaEMXG99bT6abUzpA.pdf",
+      "token": "YwiwJOhNiQQHKqIfQm9zSMCdgMZaEMXG99bT6abUzpA",
+      "expires_at": "2026-05-17T21:36:37.252677+00:00"
+    },
+    {
+      "kind": "report.annotated_pdf",
+      "job_source": "jobs",
+      "job_id": "68b492b3-ac34-4483-84f6-7fe80bd42ae0",
+      "format": "annotated_pdf",
+      "url": "https://reports.lintpdf.com/r/mO0rVyuBlIIiZmrENyJ2rtXwO5u4795M_tlLxnRsji8.pdf",
+      "token": "mO0rVyuBlIIiZmrENyJ2rtXwO5u4795M_tlLxnRsji8",
+      "expires_at": "2026-05-17T21:36:37.252677+00:00"
+    },
+    {
+      "kind": "report.annotated_pdf_markup",
+      "job_source": "jobs",
+      "job_id": "68b492b3-ac34-4483-84f6-7fe80bd42ae0",
+      "format": "annotated_pdf_markup",
+      "url": "https://reports.lintpdf.com/r/U5Zc5bywDEE33d62fEf9914ELgqcWNxcys1IojEJduY.pdf",
+      "token": "U5Zc5bywDEE33d62fEf9914ELgqcWNxcys1IojEJduY",
+      "expires_at": "2026-05-17T21:36:37.252677+00:00"
+    },
+    {
+      "kind": "report.html",
+      "job_source": "jobs",
+      "job_id": "68b492b3-ac34-4483-84f6-7fe80bd42ae0",
+      "format": "html",
+      "url": "https://reports.lintpdf.com/r/qxdYgHaxFvgCwRfyfTeoHuPlE6j4EIfTV3DlWok68cY",
+      "token": "qxdYgHaxFvgCwRfyfTeoHuPlE6j4EIfTV3DlWok68cY",
+      "expires_at": "2026-05-17T21:36:37.252677+00:00"
+    },
+    {
+      "kind": "report.json",
+      "job_source": "jobs",
+      "job_id": "68b492b3-ac34-4483-84f6-7fe80bd42ae0",
+      "format": "json",
+      "url": "https://reports.lintpdf.com/r/LZklpizrw0hJjHjPG3jvA_05Mf0tHHbEkbn2VZzXvPo.json",
+      "token": "LZklpizrw0hJjHjPG3jvA_05Mf0tHHbEkbn2VZzXvPo",
+      "expires_at": "2026-05-17T21:36:37.252677+00:00"
+    },
+    {
+      "kind": "report.xml",
+      "job_source": "jobs",
+      "job_id": "68b492b3-ac34-4483-84f6-7fe80bd42ae0",
+      "format": "xml",
+      "url": "https://reports.lintpdf.com/r/2S9XsTCMK-C52c6kCAWg3jUboMHuna5g2SFAa2C7LuE.xml",
+      "token": "2S9XsTCMK-C52c6kCAWg3jUboMHuna5g2SFAa2C7LuE",
+      "expires_at": "2026-05-17T21:36:37.252677+00:00"
+    },
+    {
+      "kind": "report.pdf",
+      "job_source": "endpoints",
+      "job_id": "7b8cf5cf-81f7-4a07-b89f-e79b01a24337",
+      "format": "pdf",
+      "url": "https://reports.lintpdf.com/r/miGhebXzegycHxd2Lpfv8hIsDQ70VoSFjtiUM1SzEeY.pdf",
+      "token": "miGhebXzegycHxd2Lpfv8hIsDQ70VoSFjtiUM1SzEeY",
+      "expires_at": "2026-05-17T21:39:28.089185+00:00"
+    },
+    {
+      "kind": "report.annotated_pdf",
+      "job_source": "endpoints",
+      "job_id": "7b8cf5cf-81f7-4a07-b89f-e79b01a24337",
+      "format": "annotated_pdf",
+      "url": "https://reports.lintpdf.com/r/0JmY8jSj26divh5Qno8hKzzMzUbT4qtIK_Sx9PSELbs.pdf",
+      "token": "0JmY8jSj26divh5Qno8hKzzMzUbT4qtIK_Sx9PSELbs",
+      "expires_at": "2026-05-17T21:39:28.089185+00:00"
+    },
+    {
+      "kind": "report.annotated_pdf_markup",
+      "job_source": "endpoints",
+      "job_id": "7b8cf5cf-81f7-4a07-b89f-e79b01a24337",
+      "format": "annotated_pdf_markup",
+      "url": "https://reports.lintpdf.com/r/dqFE-EyHXiGNbtoLIUo80K6AX2dROUmkhF0g5x8ODp4.pdf",
+      "token": "dqFE-EyHXiGNbtoLIUo80K6AX2dROUmkhF0g5x8ODp4",
+      "expires_at": "2026-05-17T21:39:28.089185+00:00"
+    },
+    {
+      "kind": "report.html",
+      "job_source": "endpoints",
+      "job_id": "7b8cf5cf-81f7-4a07-b89f-e79b01a24337",
+      "format": "html",
+      "url": "https://reports.lintpdf.com/r/tkPH8Es_YG7Gnx6ALihJ-Onvr_KqmuyLOPz23gChHpE",
+      "token": "tkPH8Es_YG7Gnx6ALihJ-Onvr_KqmuyLOPz23gChHpE",
+      "expires_at": "2026-05-17T21:39:28.089185+00:00"
+    },
+    {
+      "kind": "report.json",
+      "job_source": "endpoints",
+      "job_id": "7b8cf5cf-81f7-4a07-b89f-e79b01a24337",
+      "format": "json",
+      "url": "https://reports.lintpdf.com/r/RuR33oxKXzQbbfTFGL1pjjCpsWEOO7nUEaxTnflYVtY.json",
+      "token": "RuR33oxKXzQbbfTFGL1pjjCpsWEOO7nUEaxTnflYVtY",
+      "expires_at": "2026-05-17T21:39:28.089185+00:00"
+    },
+    {
+      "kind": "report.xml",
+      "job_source": "endpoints",
+      "job_id": "7b8cf5cf-81f7-4a07-b89f-e79b01a24337",
+      "format": "xml",
+      "url": "https://reports.lintpdf.com/r/1ptq2BTOU4r2DPut6NVO38gLtC7W4VII5BCu56AATEI.xml",
+      "token": "1ptq2BTOU4r2DPut6NVO38gLtC7W4VII5BCu56AATEI",
+      "expires_at": "2026-05-17T21:39:28.089185+00:00"
+    },
+    {
+      "kind": "report.pdf",
+      "job_source": "batch",
+      "job_id": "a8c186f3-91a0-4522-bf60-e08ae4a170b4",
+      "format": "pdf",
+      "url": "https://reports.lintpdf.com/r/NI7mXYCuIs38UXsmKRnAlwGTsUqFVn6oOfsm65UAAI0.pdf",
+      "token": "NI7mXYCuIs38UXsmKRnAlwGTsUqFVn6oOfsm65UAAI0",
+      "expires_at": "2026-05-17T21:40:12.569191+00:00"
+    },
+    {
+      "kind": "report.annotated_pdf",
+      "job_source": "batch",
+      "job_id": "a8c186f3-91a0-4522-bf60-e08ae4a170b4",
+      "format": "annotated_pdf",
+      "url": "https://reports.lintpdf.com/r/ze4O6BE8_I7Cw1SHLNFLonNS9fL9pGQ1JSeI4IZwO0U.pdf",
+      "token": "ze4O6BE8_I7Cw1SHLNFLonNS9fL9pGQ1JSeI4IZwO0U",
+      "expires_at": "2026-05-17T21:40:12.569191+00:00"
+    },
+    {
+      "kind": "report.annotated_pdf_markup",
+      "job_source": "batch",
+      "job_id": "a8c186f3-91a0-4522-bf60-e08ae4a170b4",
+      "format": "annotated_pdf_markup",
+      "url": "https://reports.lintpdf.com/r/JTelFSJk_riWDoM-0OvacxTjzOL9tpJz9S_3rfjGxwE.pdf",
+      "token": "JTelFSJk_riWDoM-0OvacxTjzOL9tpJz9S_3rfjGxwE",
+      "expires_at": "2026-05-17T21:40:12.569191+00:00"
+    },
+    {
+      "kind": "report.html",
+      "job_source": "batch",
+      "job_id": "a8c186f3-91a0-4522-bf60-e08ae4a170b4",
+      "format": "html",
+      "url": "https://reports.lintpdf.com/r/m5HhDA_iNmFsRlChuO4Ih-36-EZpcfMbcUvsg_DP3Bw",
+      "token": "m5HhDA_iNmFsRlChuO4Ih-36-EZpcfMbcUvsg_DP3Bw",
+      "expires_at": "2026-05-17T21:40:12.569191+00:00"
+    },
+    {
+      "kind": "report.json",
+      "job_source": "batch",
+      "job_id": "a8c186f3-91a0-4522-bf60-e08ae4a170b4",
+      "format": "json",
+      "url": "https://reports.lintpdf.com/r/PRqq_t7JGZOwvI162WRwU2v4TG81HrT8eT9xtXgxV4I.json",
+      "token": "PRqq_t7JGZOwvI162WRwU2v4TG81HrT8eT9xtXgxV4I",
+      "expires_at": "2026-05-17T21:40:12.569191+00:00"
+    },
+    {
+      "kind": "report.xml",
+      "job_source": "batch",
+      "job_id": "a8c186f3-91a0-4522-bf60-e08ae4a170b4",
+      "format": "xml",
+      "url": "https://reports.lintpdf.com/r/lg9VGoYrZrjBp1C6DcHwByN6kJ5Ve30rmT9EftadzRk.xml",
+      "token": "lg9VGoYrZrjBp1C6DcHwByN6kJ5Ve30rmT9EftadzRk",
+      "expires_at": "2026-05-17T21:40:12.569191+00:00"
+    }
+  ],
+  "endpoint_status_log": [
+    {
+      "group": "VIEWER",
+      "status": 200,
+      "path": "/api/v1/viewer/jobs/68b492b3-ac34-4483-84f6-7fe80bd42ae0/pages"
+    },
+    {
+      "group": "VIEWER",
+      "status": 200,
+      "path": "/api/v1/viewer/jobs/68b492b3-ac34-4483-84f6-7fe80bd42ae0/pages/1/info"
+    },
+    {
+      "group": "VIEWER",
+      "status": 200,
+      "path": "/api/v1/viewer/jobs/68b492b3-ac34-4483-84f6-7fe80bd42ae0/separations"
+    },
+    {
+      "group": "VIEWER",
+      "status": 200,
+      "path": "/api/v1/viewer/jobs/68b492b3-ac34-4483-84f6-7fe80bd42ae0/layers"
+    },
+    {
+      "group": "VIEWER",
+      "status": 200,
+      "path": "/api/v1/viewer/jobs/68b492b3-ac34-4483-84f6-7fe80bd42ae0/config"
+    },
+    {
+      "group": "VIEWER",
+      "status": 200,
+      "path": "/api/v1/viewer/jobs/68b492b3-ac34-4483-84f6-7fe80bd42ae0/verdict"
+    },
+    {
+      "group": "AI",
+      "status": 200,
+      "path": "/api/v1/ai/presets"
+    },
+    {
+      "group": "AI",
+      "status": 200,
+      "path": "/api/v1/ai/config"
+    },
+    {
+      "group": "AI",
+      "status": 200,
+      "path": "/api/v1/ai/credits"
+    },
+    {
+      "group": "AI",
+      "status": 200,
+      "path": "/api/v1/ai/credits/packages"
+    },
+    {
+      "group": "AI",
+      "status": 200,
+      "path": "/api/v1/ai/usage"
+    },
+    {
+      "group": "AI",
+      "status": 200,
+      "path": "/api/v1/ai/usage/trends"
+    },
+    {
+      "group": "BILLING",
+      "status": 200,
+      "path": "/api/v1/files/quota"
+    },
+    {
+      "group": "BILLING",
+      "status": 200,
+      "path": "/api/v1/files/packages"
+    },
+    {
+      "group": "PROFILES",
+      "status": 200,
+      "path": "/api/v1/profiles"
+    },
+    {
+      "group": "USAGE",
+      "status": 200,
+      "path": "/api/v1/usage"
+    },
+    {
+      "group": "ADMIN",
+      "status": 200,
+      "path": "/api/v1/admin/tenants"
+    },
+    {
+      "group": "ADMIN",
+      "status": 200,
+      "path": "/api/v1/admin/tenants/fc6ad865-f66c-4819-a428-6a4f0bcddf27"
+    },
+    {
+      "group": "ADMIN",
+      "status": 200,
+      "path": "/api/v1/admin/tenants/fc6ad865-f66c-4819-a428-6a4f0bcddf27/ai"
+    },
+    {
+      "group": "ADMIN",
+      "status": 200,
+      "path": "/api/v1/admin/tenants/fc6ad865-f66c-4819-a428-6a4f0bcddf27/entitlements"
+    },
+    {
+      "group": "ADMIN",
+      "status": 200,
+      "path": "/api/v1/admin/tenants/fc6ad865-f66c-4819-a428-6a4f0bcddf27/keys"
+    },
+    {
+      "group": "ADMIN",
+      "status": 200,
+      "path": "/api/v1/admin/jobs"
+    },
+    {
+      "group": "ADMIN",
+      "status": 200,
+      "path": "/api/v1/admin/profiles"
+    },
+    {
+      "group": "ADMIN",
+      "status": 200,
+      "path": "/api/v1/admin/ai/usage"
+    }
+  ],
+  "issues_found": [
+    {
+      "id": "ISSUE-1",
+      "severity": "major",
+      "title": "annotated PDFs only overlay findings that have bbox (10/266 = 4%)",
+      "detail": "Only 10 of 266 findings in the sample job carry a bbox; the annotated_pdf format's per-page content stream is nearly identical to the source PDF. Most checks (AI_WCAG_001, LPDF_TEXT_004, LPDF_INK_002 etc.) know the page and font but aren't emitting bbox to FindingResponse. Needs propagation through the analyzers that already compute geometry.",
+      "files": [
+        "packages/engine/src/lintpdf/api/schemas.py",
+        "packages/engine/src/lintpdf/analyzers/",
+        "packages/engine/src/lintpdf/reports/annotated_pdf_report.py"
+      ]
+    },
+    {
+      "id": "ISSUE-2",
+      "severity": "major",
+      "title": "annotated_pdf_markup silently dropped from reports response when tenant has no viewer annotations",
+      "detail": "POST /jobs/{id}/reports with formats=[...,'annotated_pdf_markup'] returns 201 with the markup entry missing from the response instead of an entry with data=None / content_type=null and an explanation. Caller can't distinguish 'format intentionally skipped' from 'format failed'. See service.py:1235-1243.",
+      "files": [
+        "packages/engine/src/lintpdf/reports/service.py"
+      ]
+    },
+    {
+      "id": "ISSUE-3",
+      "severity": "major",
+      "title": "error message cites wrong plan when annotated PDF denied",
+      "detail": "403 response says 'required_plan: starter' for annotated_pdf, but the actual plans that allow annotated_pdf are scale + enterprise (tenants/models.py:125-132, 155-162). starter and growth do NOT include it. The error misleads customers into a cheaper plan that won't fix the problem.",
+      "files": [
+        "packages/engine/src/lintpdf/api/routes/reports.py",
+        "packages/engine/src/lintpdf/tenants/models.py"
+      ]
+    },
+    {
+      "id": "ISSUE-4",
+      "severity": "moderate",
+      "title": "PUT /admin/tenants/{id}/ai returns 500 on invalid billing_mode",
+      "detail": "Passing billing_mode=unlimited (not in AIBillingMode enum) caused HTTP 500 Internal Server Error. Should validate against the enum and return 422 with allowed values.",
+      "files": [
+        "packages/engine/src/lintpdf/api/routes/admin.py"
+      ]
+    },
+    {
+      "id": "ISSUE-5",
+      "severity": "moderate",
+      "title": "AI credit_balance field stays at 0 after admin grant",
+      "detail": "POST /admin/tenants/{id}/ai/credits returns 200 with credits_granted: 1000, but GET /admin/tenants/{id}/ai still shows credit_balance: 0.0. Either the balance aggregation is wrong or the grant didn't link to the AI billing row.",
+      "files": [
+        "packages/engine/src/lintpdf/ai/config.py",
+        "packages/engine/src/lintpdf/api/routes/admin.py"
+      ]
+    },
+    {
+      "id": "ISSUE-6",
+      "severity": "moderate",
+      "title": "JobStatus enum uses 'complete' but API docs/tests expect 'completed'",
+      "detail": "Polling jobs requires matching both 'complete' (enum value) and 'completed' (common-sense naming). The API reference page and first-run driver code expect 'completed' and silently loop forever. Normalize one direction.",
+      "files": [
+        "packages/engine/src/lintpdf/api/models.py"
+      ]
+    },
+    {
+      "id": "ISSUE-7",
+      "severity": "moderate",
+      "title": "GPU inference service unavailable in prod (AI_AFP_001 advisory)",
+      "detail": "Preflight emits 'AI_AFP_001: GPU inference service unavailable for preflight profile recommendation' for every full-ai-scan job in prod. Whole AI categories (image quality, logo detection, dieline, NSFW, profile recommendation) silently degrade to 1 finding each. Either wire up the GPU inference service on Railway or demote these from full-ai-scan so customers don't pay credits for skipped checks.",
+      "files": [
+        "packages/inference/",
+        "packages/engine/src/lintpdf/ai/analyzers/"
+      ]
+    },
+    {
+      "id": "ISSUE-8",
+      "severity": "minor",
+      "title": "AI + AI-credits endpoints blanket-denied with 'invite-only alpha' when tenant.ai_enabled=false",
+      "detail": "Fresh tenants (any plan) get 403 on /ai/credits, /ai/usage, /ai/config PUT unless admin toggles tenant.ai_enabled=true. The error copy 'invite-only alpha' is misleading \u2014 it's a per-tenant flag, not a global one. Either auto-enable on growth+ plans or update the copy.",
+      "files": [
+        "packages/engine/src/lintpdf/ai/access.py"
+      ]
+    }
+  ]
+}

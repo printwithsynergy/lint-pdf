@@ -1,0 +1,91 @@
+{
+  "description": "Amalgam Catalyst wine label, 9 spot colors + overprint. First golden corpus fixture — seeds scripts/audit_preflight_accuracy.py. Canonical reference for what an engine regression looks like on a spot-color-heavy packaging PDF. Source: https://app.lintpdf.com/view/B6pbECLfx1k5QtZj0--3JWdjw8JoTpptUiRYJvxvcdc",
+
+  "expected_inspection_ids": [
+    "PDFX4-001",
+    "PDFX4-006",
+    "LPDF_INK_003",
+    "LPDF_BOX_003",
+    "LPDF_BOX_006",
+    "LPDF_OVER_001",
+    "LPDF_OVER_004",
+    "LPDF_OVER_005",
+    "LPDF_ICC_004",
+    "LPDF_COLOR_003",
+    "LPDF_COLOR_014",
+    "LPDF_ACCESS_004",
+    "LPDF_STD_003",
+    "LPDF_SPOT_001",
+    "LPDF_SPOT_003",
+    "LPDF_SPOT_007",
+    "LPDF_META_003",
+    "LPDF_STRUCT_003",
+    "LPDF_BARCODE_014",
+    "LPDF_BARCODE_015",
+    "LPDF_BARCODE_016",
+    "LPDF_BARCODE_017",
+    "LPDF_STROKE_003",
+    "LPDF_PATH_002",
+    "AI_DIE_002",
+    "LPDF_AI_CDCC_001",
+    "AI_SCAN_001"
+  ],
+
+  "expected_spot_names": [
+    "All",
+    "BUFF",
+    "Dark Biege",
+    "Faint Beige",
+    "Splatter",
+    "Foil 425",
+    "Cutting",
+    "Lt Beige",
+    "Med Beige"
+  ],
+
+  "expected_summary": {
+    "total_findings_min": 250,
+    "total_findings_max": 320,
+    "error_count_min": 2,
+    "error_count_max": 3,
+    "passed": false,
+    "page_count": 1
+  },
+
+  "known_disputed": [],
+
+  "known_missing": [
+    {
+      "inspection_id": "AI_IQ_001",
+      "reason": "Modal GPU endpoint for image-quality scoring timed out during the 2026-04-22 run. Expected once Modal warmup is stable."
+    },
+    {
+      "inspection_id": "AI_NSFW_001",
+      "reason": "Modal GPU endpoint for NSFW classification timed out. Expected clean verdict once stable (this is wine, not adult content)."
+    },
+    {
+      "inspection_id": "AI_LOGO_001",
+      "reason": "Modal GPU endpoint for logo detection timed out. Expected to emit the AMALGAM wordmark + AmalgamWines.com URL once stable."
+    },
+    {
+      "inspection_id": "AI_SZ_001",
+      "reason": "Modal GPU endpoint for safe-zone analysis timed out."
+    },
+    {
+      "inspection_id": "AI_PSTEP_001",
+      "reason": "Modal GPU endpoint for processing-step detection timed out."
+    },
+    {
+      "inspection_id": "AI_FCLASS_001",
+      "reason": "Modal GPU endpoint for document classification timed out. Expected 'wine label' / 'packaging' once stable."
+    },
+    {
+      "inspection_id": "AI_SIM_001",
+      "reason": "Modal GPU endpoint for image-similarity embedding timed out."
+    },
+    {
+      "inspection_id": "AI_AFP_001",
+      "reason": "Modal GPU endpoint for preflight-profile recommendation timed out."
+    }
+  ]
+}

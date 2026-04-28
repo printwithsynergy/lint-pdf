@@ -1,0 +1,243 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lintpdf"
+version = "0.1.0"
+description = "Detection-only PDF preflight engine"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "Think Neverland", email = "dev@thinkneverland.com" },
+]
+
+dependencies = [
+    "pikepdf>=9.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "celery[redis]>=5.4.0",
+    "redis>=5.0.0",
+    "psycopg2-binary>=2.9.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.3.0",
+    "httpx>=0.27.0",
+    "weasyprint>=62.0",
+    "jinja2>=3.1.0",
+    "python-multipart>=0.0.9",
+    "boto3>=1.34.0",
+    "resend>=2.0.0",
+    "defusedxml>=0.7.0",
+    "filetype>=1.2.0",
+    "clamd>=1.0.2",
+    # DNS resolution for the white-label custom domain probe task —
+    # checks customers' CNAME records before flipping `verified=True`.
+    "dnspython>=2.6.0",
+    # Required by viewer routes (tile rendering, separation channels, TAC heatmap).
+    # Previously these were only in [ai] extras, but the viewer is a core
+    # feature, not an AI feature, so it must work without the AI extras.
+    "Pillow>=10.0.0",
+    "pdf2image>=1.17.0",
+    "numpy>=1.26.0",
+    # Structured logging with JSON output + request-scoped context vars.
+    # Wraps stdlib logging so existing logger.info/warning/exception calls
+    # continue to work but emit JSON with a request_id field automatically.
+    "structlog>=24.1.0",
+    # Bulk-files step 11 — Prometheus metrics for the /metrics endpoint.
+    # prometheus_client has no runtime deps beyond stdlib and adds ~10ms
+    # to cold-start; kept in the base deps so observability is on by
+    # default even for non-AI deploys.
+    "prometheus-client>=0.20.0",
+    # Claude Haiku 4.5 is the primary customer AI accuracy auditor
+    # (see lintpdf.audit.claude). Small SDK (~1 MB); keeping it in
+    # the base deps so the audit path works without the heavy ``ai``
+    # extra being installed.
+    "anthropic>=0.30.0",
+]
+
+[project.optional-dependencies]
+ai = [
+    "pyzbar>=0.1.9",
+    "pylibdmtx>=0.1.10",
+    "imagehash>=4.3.0",
+    "colour-science>=0.4.0",
+    "statsmodels>=0.14.0",
+    "language-tool-python>=2.8",
+    "fasttext-wheel>=0.9.2",
+    "scikit-image>=0.22.0",
+    "anthropic>=0.30.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.5.0",
+    "mypy>=1.10.0",
+    "httpx>=0.27.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lintpdf"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "corpus: tests that require downloaded test corpus (deselect with '-m not corpus')",
+    "slow: tests that take more than 10 seconds",
+    "integration: tests that require external services (Redis, PostgreSQL, veraPDF)",
+    "live_ai: tests that hit the real Claude API (cost ~$0.01/run; opt-in via -m live_ai)",
+]
+asyncio_mode = "auto"
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+    "pikepdf.*",
+    "celery.*",
+    "weasyprint.*",
+    "redis.*",
+    "resend.*",
+    "boto3.*",
+    "defusedxml.*",
+    "filetype.*",
+    "clamd.*",
+    "pyzbar.*",
+    "pylibdmtx.*",
+    "imagehash.*",
+    "colour.*",
+    "statsmodels.*",
+    "language_tool_python.*",
+    "fasttext.*",
+    "skimage.*",
+    "pdf2image.*",
+    "anthropic.*",
+    "scipy.*",
+    "zxingcpp.*",
+    "pyiqa.*",
+    "nudenet.*",
+    "ultralytics.*",
+    "open_clip.*",
+    "paddleocr.*",
+    "numpy.*",
+    "pytesseract.*",
+    "botocore.*",
+    "pydantic",
+    "pydantic.*",
+    "pydantic_settings",
+    "pydantic_settings.*",
+    "structlog",
+    "structlog.*",
+    "fastapi",
+    "fastapi.*",
+    "sqlalchemy",
+    "sqlalchemy.*",
+    "httpx",
+    "httpx.*",
+    "jinja2",
+    "jinja2.*",
+    "alembic",
+    "alembic.*",
+    "PIL",
+    "PIL.*",
+    "uvicorn",
+    "uvicorn.*",
+    "starlette",
+    "starlette.*",
+]
+ignore_missing_imports = true
+
+# Application code uses pydantic/FastAPI/SQLAlchemy/pikepdf heavily.
+# Since those libraries are typed as Any (ignore_missing_imports), downstream
+# code triggers false positives for subclassing, decorators, return types, and
+# attribute access on untyped library objects.
+[[tool.mypy.overrides]]
+module = [
+    "lintpdf.api.*",
+    "lintpdf.ai.*",
+    "lintpdf.analyzers.*",
+    "lintpdf.conformance.*",
+    "lintpdf.email.*",
+    "lintpdf.queue.*",
+    "lintpdf.reports.*",
+    "lintpdf.profiles.*",
+    "lintpdf.tenants.*",
+]
+disallow_subclassing_any = false
+disallow_untyped_decorators = false
+warn_return_any = false
+# Remaining errors are real but low-priority pre-existing issues from
+# untyped third-party libs (pikepdf attrs, CxF parser, etc.)
+disable_error_code = ["attr-defined", "assignment", "type-arg", "operator", "index", "dict-item", "call-overload", "no-redef", "return-value", "misc", "import-not-found", "arg-type", "union-attr", "var-annotated", "valid-type"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+    "RUF", # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "UP017",  # datetime.UTC alias requires Python 3.13+; project supports >=3.11
+    "RUF003", # ambiguous unicode chars in comments (en-dash in "0–400%")
+]
+
+[tool.ruff.lint.per-file-ignores]
+# PDF operators use uppercase names (Q, Do, BT, ET, Tf, etc.) per ISO 32000-2
+"src/lintpdf/semantic/interpreter.py" = ["N802"]
+"tests/semantic/test_interpreter.py" = ["N802"]
+# v2 Tier-0 primitives use PascalCase predicate names verbatim from universe enumeration §4
+# (e.g. is_DeviceCMYK, is_ICCBased) — Phase 2 Q1 operator decision.
+"src/lintpdf/primitives/color_space.py" = ["N802"]
+"tests/primitives/test_color_space.py" = ["N802"]
+# Test methods don't use self — grouped in classes for organization only
+"tests/**" = ["PLR6301"]
+# FastAPI Depends() in function defaults is the standard pattern
+"src/lintpdf/api/routes/*.py" = ["B008"]
+# CIEDE2000 / ECG math uses uppercase variables per standard notation (L1, C1, Lbar, etc.)
+"src/lintpdf/analyzers/ecg_analyzer.py" = ["N806"]
+"src/lintpdf/analyzers/advanced_color_analyzer.py" = ["N806"]
+# EPM-Advanced ICC math (Q-C1): L/a/b CIE Lab*, R/G/B sRGB, kL/dHp/etc. CIEDE2000 standard
+"src/lintpdf/epm/icc.py" = ["N806"]
+"tests/epm/test_icc.py" = ["N806"]
+"tests/epm/test_k_strip.py" = ["N806"]
+# Module-level constant-like names in functions (e.g. _DEVICE_DEPENDENT, _SPOT_PREFIXES)
+"src/lintpdf/analyzers/color.py" = ["N806"]
+"src/lintpdf/analyzers/epm_analyzer.py" = ["N806"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["lintpdf"]
+
+[tool.coverage.run]
+source = ["src/lintpdf"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 80

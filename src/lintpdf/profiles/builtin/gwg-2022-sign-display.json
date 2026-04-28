@@ -1,0 +1,30 @@
+{
+  "name": "GWG 2022 Sign & Display (Variant 10)",
+  "description": "GWG 2022 for large format sign and display printing. Lower DPI requirements due to viewing distance.",
+  "version": "1.0",
+  "conformance": null,
+  "workflow": "auto",
+  "checks": {
+    "enabled": [
+      "LPDF_*"
+    ],
+    "disabled": [
+      "PDFX4-*",
+      "LPDF_FONT_016",
+      "LPDF_FONT_017"
+    ],
+    "severity_overrides": {}
+  },
+  "thresholds": {
+    "min_dpi": 72.0,
+    "max_dpi": 300.0,
+    "tac_limit": 350.0,
+    "min_bleed_mm": 5.0,
+    "hairline_threshold": 0.5,
+    "small_text_threshold": 8.0,
+    "very_small_text_threshold": 6.0,
+    "safety_margin_mm": 5.0,
+    "max_file_size_mb": 1000.0,
+    "min_pdf_version": "1.6"
+  }
+}

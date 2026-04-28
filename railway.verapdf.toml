@@ -1,0 +1,10 @@
+[build]
+builder = "DOCKERFILE"
+# Uses a one-line Dockerfile that pulls the official veraPDF image
+dockerfilePath = "packages/engine/Dockerfile.verapdf"
+
+[deploy]
+numReplicas = 1
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+sleepApplication = true
