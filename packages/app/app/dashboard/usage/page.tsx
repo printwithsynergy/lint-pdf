@@ -21,6 +21,29 @@ interface UsageData {
   warning: boolean;
 }
 
+interface AiCreditData {
+  enabled: boolean;
+  balance?: number;
+  monthly_allotment?: number;
+  consumed_this_month?: number;
+  consumed_total?: number;
+  billing_mode?: string;
+  auto_topup?: boolean;
+}
+
+interface AiUsageEntry {
+  inspection_id?: string;
+  inspection_name?: string;
+  category?: string;
+  credits_consumed?: number;
+  created_at?: string;
+}
+
+interface AiUsageData {
+  enabled: boolean;
+  items: AiUsageEntry[];
+}
+
 function ProgressBar({
   label,
   current,
@@ -63,14 +86,20 @@ function ProgressBar({
 
 export default function UsagePage() {
   const [usage, setUsage] = useState<UsageData | null>(null);
+  const [aiCredits, setAiCredits] = useState<AiCreditData | null>(null);
+  const [aiUsage, setAiUsage] = useState<AiUsageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const fetchUsage = useCallback(async () => {
+  const fetchAll = useCallback(async () => {
     try {
-      const resp = await fetch("/api/lintpdf/usage");
-      if (!resp.ok) {
-        const text = await resp.text();
+      const [usageResp, creditResp, aiUsageResp] = await Promise.all([
+        fetch("/api/lintpdf/usage"),
+        fetch("/api/lintpdf/ai-credits"),
+        fetch("/api/lintpdf/ai-usage?limit=20"),
+      ]);
+      if (!usageResp.ok) {
+        const text = await usageResp.text();
         let detail = text;
         try {
           const data = JSON.parse(text);
@@ -83,10 +112,17 @@ export default function UsagePage() {
         } catch {
           /* leave as text */
         }
-        throw new Error(`Failed to load usage (${resp.status}): ${detail}`);
+        throw new Error(
+          `Failed to load usage (${usageResp.status}): ${detail}`,
+        );
       }
-      const data = await resp.json();
-      setUsage(data);
+      setUsage(await usageResp.json());
+      if (creditResp.ok) {
+        setAiCredits(await creditResp.json());
+      }
+      if (aiUsageResp.ok) {
+        setAiUsage(await aiUsageResp.json());
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load usage");
     } finally {
@@ -95,8 +131,8 @@ export default function UsagePage() {
   }, []);
 
   useEffect(() => {
-    fetchUsage();
-  }, [fetchUsage]);
+    fetchAll();
+  }, [fetchAll]);
 
   if (loading) {
     return <SkeletonDashboard type="cards" />;
@@ -106,7 +142,9 @@ export default function UsagePage() {
     return (
       <>
         <h1 className="font-display text-2xl font-bold">Usage</h1>
-        <p className="mt-4 text-destructive">{error || "No data available"}</p>
+        <p className="mt-4 text-destructive">
+          {error || "No usage data yet — submit a job to see your first row."}
+        </p>
       </>
     );
   }
@@ -147,6 +185,89 @@ export default function UsagePage() {
             )}
           </div>
         </div>
+
+        {/* AI usage — only render when AI is enabled for the tenant */}
+        {aiCredits?.enabled && (
+          <div className="rounded-lg border p-4">
+            <h2 className="text-lg font-semibold">AI Credits</h2>
+            <div className="mt-3 space-y-4">
+              {typeof aiCredits.monthly_allotment === "number" &&
+                aiCredits.monthly_allotment > 0 && (
+                  <ProgressBar
+                    label="Monthly allotment"
+                    current={aiCredits.consumed_this_month ?? 0}
+                    max={aiCredits.monthly_allotment}
+                    unit="credits"
+                  />
+                )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium">Balance</span>
+                <span className="text-muted-foreground">
+                  {(aiCredits.balance ?? 0).toLocaleString()} credits
+                </span>
+              </div>
+              {aiCredits.billing_mode && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">Billing mode</span>
+                  <span className="text-muted-foreground">
+                    {aiCredits.billing_mode}
+                    {aiCredits.auto_topup ? " (auto top-up on)" : ""}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {aiUsage?.enabled && aiUsage.items.length > 0 && (
+          <div className="rounded-lg border p-4">
+            <h2 className="text-lg font-semibold">Recent AI inspections</h2>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted-foreground">
+                    <th className="pb-2">Inspection</th>
+                    <th className="pb-2">Category</th>
+                    <th className="pb-2 text-right">Credits</th>
+                    <th className="pb-2 text-right">When</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {aiUsage.items.map((entry, idx) => (
+                    <tr
+                      key={`${entry.inspection_id ?? "row"}-${idx}`}
+                      className="border-t border-border"
+                    >
+                      <td className="py-2">
+                        {entry.inspection_name ??
+                          entry.inspection_id ??
+                          "Inspection"}
+                      </td>
+                      <td className="py-2 text-muted-foreground">
+                        {entry.category ?? "—"}
+                      </td>
+                      <td className="py-2 text-right">
+                        {entry.credits_consumed ?? 0}
+                      </td>
+                      <td className="py-2 text-right text-muted-foreground">
+                        {entry.created_at
+                          ? new Date(entry.created_at).toLocaleDateString()
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {aiCredits?.enabled === false && (
+          <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+            AI inspections are not enabled on this tenant. Contact sales to
+            unlock the AI feature set.
+          </div>
+        )}
 
         {usage.overage_enabled && (
           <div className="rounded-lg border p-4">

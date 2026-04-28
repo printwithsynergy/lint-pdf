@@ -67,30 +67,59 @@ export default function TenantApiReferencePage() {
         rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui.css"
       />
-      <div id="swagger-ui" />
+      <div id="swagger-ui">
+        <p className="text-sm text-muted-foreground">
+          Loading the OpenAPI spec…{" "}
+          <a
+            href={openapiUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            Open spec directly
+          </a>{" "}
+          if this never finishes.
+        </p>
+      </div>
       <Script
         src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"
         strategy="afterInteractive"
       />
       <Script id="swagger-boot" strategy="afterInteractive">
         {`
-          window.addEventListener('load', function () {
-            if (!window.SwaggerUIBundle) {
-              setTimeout(arguments.callee, 50);
-              return;
+          (function () {
+            var attempts = 0;
+            function boot() {
+              attempts += 1;
+              if (!window.SwaggerUIBundle) {
+                if (attempts > 100) {
+                  var el = document.getElementById('swagger-ui');
+                  if (el) el.innerHTML = '<p style="color:#b91c1c">Swagger UI bundle failed to load. Check your network connection or try the public docs link above.</p>';
+                  return;
+                }
+                setTimeout(boot, 50);
+                return;
+              }
+              try {
+                window.SwaggerUIBundle({
+                  url: ${JSON.stringify(openapiUrl)},
+                  dom_id: '#swagger-ui',
+                  deepLinking: true,
+                  displayOperationId: false,
+                  defaultModelsExpandDepth: 0,
+                  docExpansion: 'list',
+                  filter: true,
+                  tryItOutEnabled: true,
+                  persistAuthorization: true
+                });
+              } catch (err) {
+                console.error('Swagger UI boot failed', err);
+                var el = document.getElementById('swagger-ui');
+                if (el) el.innerHTML = '<p style="color:#b91c1c">Swagger UI failed to initialize. See browser console for details.</p>';
+              }
             }
-            window.SwaggerUIBundle({
-              url: ${JSON.stringify(openapiUrl)},
-              dom_id: '#swagger-ui',
-              deepLinking: true,
-              displayOperationId: false,
-              defaultModelsExpandDepth: 0,
-              docExpansion: 'list',
-              filter: true,
-              tryItOutEnabled: true,
-              persistAuthorization: true
-            });
-          });
+            boot();
+          })();
         `}
       </Script>
     </div>
