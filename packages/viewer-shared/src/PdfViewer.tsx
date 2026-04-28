@@ -199,7 +199,7 @@ export function PdfViewer({
     create: createAnnotation,
     update: updateAnnotation,
     remove: deleteAnnotation,
-  } = useAnnotations(jobId, visitorEmail);
+  } = useAnnotations(jobId, visitorEmail, apiBase);
 
   // When a deep-linked annotation id is set, flip to its page as soon
   // as the annotation list loads so the AnnotationLayer can claim the

@@ -508,9 +508,23 @@ export function AnnotationLayer({
   );
 }
 
-/** Tiny hook: loads annotations from the engine and exposes CRUD helpers. */
-export function useAnnotations(_jobId: string, visitorEmail: string | null) {
-  const { apiBase } = useViewerApi();
+/** Tiny hook: loads annotations from the engine and exposes CRUD helpers.
+ *
+ *  ``apiBaseOverride`` lets the parent component pass the resolved
+ *  apiBase explicitly. Necessary because ``useAnnotations`` is
+ *  typically called inside ``PdfViewer`` *before* PdfViewer wraps its
+ *  children in ``ViewerApiContext.Provider`` — without the override,
+ *  ``useViewerApi()`` returns the default ``{ apiBase: "" }`` and the
+ *  hook fetches ``/annotations`` (no prefix → 404). The Provider
+ *  still works for other consumers rendered inside PdfViewer's JSX.
+ */
+export function useAnnotations(
+  _jobId: string,
+  visitorEmail: string | null,
+  apiBaseOverride?: string,
+) {
+  const ctx = useViewerApi();
+  const apiBase = apiBaseOverride ?? ctx.apiBase;
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [loading, setLoading] = useState(true);
 
