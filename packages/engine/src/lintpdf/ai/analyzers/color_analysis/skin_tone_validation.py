@@ -87,6 +87,28 @@ class SkinToneValidationAnalyzer(BaseAIAnalyzer):
             if not detections:
                 continue
 
+            # PR C Slot 3A: filter detections whose centre lies inside a
+            # detected-text region. MST classifiers occasionally tag
+            # warm-colored text glyph clusters as "skin"; without a
+            # text mask these become noisy false positives on label
+            # artwork. When the text mask is available we drop those
+            # rows; when it isn't (GPU offline / pass not run) the
+            # behaviour is unchanged.
+            page_obj = (
+                document.pages[page_idx]
+                if document.pages and page_idx < len(document.pages)
+                else None
+            )
+            dropped_for_text = 0
+            if page_obj is not None:
+                from lintpdf.ai.text_mask import filter_regions_by_text_mask
+
+                detections, dropped_for_text = filter_regions_by_text_mask(
+                    detections, page_obj, dpi=150
+                )
+                if not detections:
+                    continue
+
             summary = _format_skin_tone_summary(detections)
             out_of_range = [d for d in detections if not d.get("in_pleasing_range", True)]
 
@@ -101,6 +123,7 @@ class SkinToneValidationAnalyzer(BaseAIAnalyzer):
                         "total_skin_regions": len(detections),
                         "out_of_pleasing_range": len(out_of_range),
                         "mst_levels_found": [d.get("mst_level") for d in detections],
+                        "dropped_for_text_overlap": dropped_for_text,
                     },
                     object_type="image",
                 )
