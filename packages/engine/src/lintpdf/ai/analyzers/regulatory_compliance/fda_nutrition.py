@@ -11,7 +11,10 @@ import logging
 import re
 from typing import TYPE_CHECKING, Any
 
-from lintpdf.ai.analyzers.regulatory_compliance.nfp_detector import pages_with_nfp
+from lintpdf.ai.analyzers.regulatory_compliance.nfp_detector import (
+    pages_with_nfp,
+    supplement_facts_pages,
+)
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
@@ -123,7 +126,19 @@ class FdaNutritionAnalyzer(BaseAIAnalyzer):
             # No Nutrition Facts panel detected — not necessarily an error
             return []
 
-        for page_num in panel_pages:
+        # Skip pages whose panel is a Supplement Facts panel — those are
+        # governed by 21 CFR 101.36 (DSHEA), not 101.9 (Nutrition Facts).
+        # The 2026-04-28 Opus audit flagged 5 false-positive AI_FDA_001-005
+        # findings where the engine cited 101.9 on Nutrops dietary-
+        # supplement labels.
+        supplement_pages = supplement_facts_pages(document)
+        nutrition_pages = [p for p in panel_pages if p not in supplement_pages]
+        if not nutrition_pages:
+            # Document has only Supplement Facts panels — none of the
+            # 101.9 rules in this analyzer apply.
+            return []
+
+        for page_num in nutrition_pages:
             page_findings = self._check_panel_page(document, events, page_num)
             findings.extend(page_findings)
 

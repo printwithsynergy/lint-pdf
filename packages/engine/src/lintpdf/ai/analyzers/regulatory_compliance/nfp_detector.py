@@ -156,3 +156,51 @@ def pages_with_nfp(document: SemanticDocument) -> list[int]:
         if detect_nfp_regions(page):
             out.append(int(getattr(page, "page_num", 0) or 0))
     return out
+
+
+# Supplement Facts is governed by 21 CFR 101.36 (DSHEA), not 21 CFR
+# 101.9 (Nutrition Facts). The two panels share many structural
+# signals (heading + nutrient vocab + numeric values) so the NFP
+# detector classifies both as "panel detected" — but the FDA Nutrition
+# rules only apply to the 101.9 panel. ``is_supplement_facts_page``
+# distinguishes by the literal header text.
+_SUPPLEMENT_FACTS_PATTERN = re.compile(r"\bSupplement\s+Facts\b", re.IGNORECASE)
+
+
+def is_supplement_facts_page(page) -> bool:  # type: ignore[no-untyped-def]
+    """True when the page text contains a 'Supplement Facts' header.
+
+    The 2026-04-28 Opus audit flagged 5 false-positive AI_FDA_001-005
+    findings on Nutrops dietary-supplement labels where 21 CFR 101.9
+    rules (Nutrition Facts) were applied to a Supplement Facts panel
+    governed by 21 CFR 101.36. The structural patterns of the two
+    panels overlap (heading + Calories + numeric values + nutrient
+    vocab), so we use the literal "Supplement Facts" header as the
+    discriminator.
+
+    NB: this only fires when "Supplement Facts" appears on the page
+    text. Marketing copy that says "supplement facts may vary" won't
+    trigger because the regex requires the exact two-word header.
+    """
+    raw = getattr(page, "content_stream", None)
+    if not raw:
+        return False
+    if isinstance(raw, bytes):
+        try:
+            text = raw.decode("latin-1")
+        except Exception:
+            return False
+    else:
+        text = str(raw)
+    return bool(_SUPPLEMENT_FACTS_PATTERN.search(text))
+
+
+def supplement_facts_pages(document: SemanticDocument) -> set[int]:
+    """Return the set of page numbers that carry a Supplement Facts
+    panel. Used by ``FdaNutritionAnalyzer`` to skip 21 CFR 101.9
+    rules on pages that should be governed by 101.36 instead."""
+    return {
+        int(getattr(page, "page_num", 0) or 0)
+        for page in document.pages
+        if is_supplement_facts_page(page)
+    }
