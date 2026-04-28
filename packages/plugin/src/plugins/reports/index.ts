@@ -78,8 +78,29 @@ export const lintpdfReportsPlugin: PixieDustPlugin = {
               body: { error: "LintPDF API not configured" },
             };
           }
-          const job = await client.getJob(req.params.jobId);
-          return { status: 200, body: job };
+          try {
+            const job = await client.getJob(req.params.jobId);
+            return { status: 200, body: job };
+          } catch (err) {
+            // The SDK throws on any non-2xx engine response (e.g.
+            // "LintPDF API: 404"). Pass the status through to the
+            // dashboard so the report page renders an empty / not-
+            // found state instead of a 500.
+            const message = err instanceof Error ? err.message : String(err);
+            const match = /LintPDF API:\s*(\d{3})/.exec(message);
+            if (match) {
+              const status = Number(match[1]);
+              if (status === 404) {
+                return { status: 404, body: { error: "Job not found" } };
+              }
+              return { status, body: { error: message } };
+            }
+            console.warn("[reports] getJob failed:", message);
+            return {
+              status: 502,
+              body: { error: "Engine unreachable", detail: message },
+            };
+          }
         }) as RouteHandler,
       },
       {
