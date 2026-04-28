@@ -17,6 +17,13 @@ interface ViewerDb {
     create: (args: Record<string, unknown>) => Promise<unknown>;
     findMany: (args: Record<string, unknown>) => Promise<unknown[]>;
   };
+  // Available on PrismaClient even when a model isn't in the typed
+  // schema — used to bypass the bundled Pixie Dust client's field
+  // validator for local-schema-only tables.
+  $queryRawUnsafe?: <T = unknown>(
+    query: string,
+    ...values: unknown[]
+  ) => Promise<T[]>;
 }
 
 function engineUrl(path: string): string {
@@ -1264,13 +1271,28 @@ export function viewerRoutes(db?: ViewerDb): RouteDefinition[] {
         }
 
         try {
-          const views = await db.reportView.findMany({
-            where: { jobId: req.params.jobId, tenantId },
-            orderBy: { viewedAt: "desc" },
-          });
-          return { status: 200, body: views };
-        } catch {
-          return { status: 500, body: { error: "Failed to fetch views" } };
+          // ReportView is a local-schema-only model. The bundled
+          // Pixie Dust PrismaClient doesn't know about it, so typed
+          // calls throw PrismaClientValidationError. Use raw SQL to
+          // bypass the field validator; the table itself is
+          // guaranteed to exist by packages/app/scripts/startup.sh.
+          if (typeof db.$queryRawUnsafe !== "function") {
+            return { status: 200, body: [] };
+          }
+          const rows = await db.$queryRawUnsafe<Record<string, unknown>>(
+            `SELECT * FROM "ReportView" WHERE "jobId" = $1 AND "tenantId" = $2 ORDER BY "viewedAt" DESC`,
+            req.params.jobId,
+            tenantId,
+          );
+          return { status: 200, body: rows };
+        } catch (err) {
+          console.warn(
+            "[viewer/views] query failed (returning empty):",
+            err instanceof Error ? err.message : String(err),
+          );
+          // Empty list instead of 500 — the views log is non-critical
+          // and shouldn't block the dashboard from rendering.
+          return { status: 200, body: [] };
         }
       }) as RouteHandler,
     },
