@@ -75,7 +75,8 @@ export const docSections: DocSection[] = [
       {
         slug: "checks",
         label: "Checks reference",
-        description: "500+ individual checks, grouped by category.",
+        description:
+          "500+ individual checks, grouped by category, plus PDF/X-4 conformance.",
       },
       {
         slug: "job-state",
@@ -92,6 +93,12 @@ export const docSections: DocSection[] = [
         label: "EPM candidacy verdict",
         description:
           "Tier verdict for HP's CMY-only Extended Print Mode — drivers, advisories, IndiChrome hint.",
+      },
+      {
+        slug: "pdfx4-conformance",
+        label: "PDF/X-4 conformance",
+        description:
+          "Full ISO 15930-7:2010 conformance suite — 91 PDFX4-* checks mapped to spec clauses.",
       },
     ],
   },

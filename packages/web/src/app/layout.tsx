@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://lintpdf.com"),
   title: "LintPDF — PDF Preflight API | Preflights you won't hate.",
   description:
-    "Detection-only PDF preflight engine. API-first. 500+ checks for fonts, color, images, transparency, PDF/X-1a, PDF/X-3, PDF/X-4, and PDF/A compliance. Visual annotated reports. Self-service pricing.",
+    "Detection-only PDF preflight engine. API-first. 500+ checks plus PDF/X-4 conformance suite (ISO 15930-7) for fonts, color, images, transparency, PDF/X-1a, PDF/X-3, PDF/X-4, and PDF/A compliance. Visual annotated reports. Self-service pricing.",
   keywords:
     "PDF preflight API, PDF/X-4 validation, print-ready PDF check, prepress quality control, PDF preflight SaaS, preflight-as-a-service, web-to-print preflight, PDF linter",
   openGraph: {

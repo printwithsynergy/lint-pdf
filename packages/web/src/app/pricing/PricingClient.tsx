@@ -37,8 +37,8 @@ export default function PricingClient() {
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
             Start free with 50 files per month. Scale as your preflight volume
-            grows. Every plan includes 500+ checks — the only difference is
-            volume and features.
+            grows. Every plan includes 500+ checks plus the PDF/X-4 conformance
+            suite — the only difference is volume and features.
           </p>
         </div>
       </section>
@@ -348,7 +348,8 @@ export default function PricingClient() {
               </span>
             </div>
             <p className="text-slate-500 max-w-2xl mx-auto">
-              Core preflight checks (500+) stay unlimited on every paid plan.
+              Core preflight checks (500+) and the PDF/X-4 conformance suite
+              stay unlimited on every paid plan.
               AI inspections and file submissions are metered separately — each
               plan grants a monthly allotment that resets every billing cycle,
               and you can buy top-up packs at any time that roll over for 12
