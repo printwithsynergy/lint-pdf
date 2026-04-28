@@ -248,6 +248,28 @@ class PdfAnnotation:
         return bool(self.flags & 0x02)
 
 
+@dataclass(frozen=True)
+class DetectedTextRegion:
+    """A text region recovered from a rasterised page by the OCR pass.
+
+    Coordinates are in PDF user-space points (origin bottom-left), already
+    converted from the OCR backend's pixel-space bboxes by the orchestrator.
+
+    Attributes:
+        bbox: Tight axis-aligned bounding box in PDF points.
+        text: Recognised text, or ``None`` when only the geometry was salvaged.
+        confidence: Backend confidence in [0.0, 1.0].
+        polygon: Optional 4-point polygon in PDF points for tilted text.
+        source: Detection backend identifier (``"paddleocr"`` by default).
+    """
+
+    bbox: PdfBox
+    text: str | None = None
+    confidence: float = 0.0
+    polygon: tuple[tuple[float, float], ...] | None = None
+    source: str = "paddleocr"
+
+
 @dataclass
 class SemanticPage:
     """Enriched page representation with inheritance resolved.
@@ -286,6 +308,11 @@ class SemanticPage:
     content_stream: bytes = b""
     annotations: list[PdfAnnotation] = field(default_factory=list)
     transparency_group: dict[str, Any] | None = None
+    # Populated by the orchestrator's text-region OCR pass when the page
+    # qualifies (placed-image area > 25% or path-heavy / text-light heuristic).
+    # ``None`` = pass not run; ``[]`` = ran and clean; otherwise the regions
+    # in PDF-point coordinates.
+    detected_text_regions: list[DetectedTextRegion] | None = None
 
     @property
     def effective_width(self) -> float:

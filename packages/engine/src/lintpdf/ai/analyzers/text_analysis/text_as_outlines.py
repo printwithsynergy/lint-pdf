@@ -18,7 +18,6 @@ import logging
 from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
-from lintpdf.ai.gpu_client import GPUInferenceClient, GPUServiceUnavailableError
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
@@ -32,14 +31,6 @@ logger = logging.getLogger(__name__)
 # Thresholds for heuristic detection
 _MIN_PATH_COUNT_FOR_SUSPECT = 50  # Pages with many paths but no text
 _MAX_TEXT_CHARS_FOR_SUSPECT = 10  # Negligible extractable text
-
-
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.gpu_client import get_gpu_client
-
-    return get_gpu_client()
 
 
 def _count_path_and_text_events(events: list[ContentStreamEvent], page_num: int) -> tuple[int, int]:
@@ -93,8 +84,6 @@ class TextAsOutlinesAnalyzer(BaseAIAnalyzer):
         pdf_bytes: bytes,
         ai_config: TenantAIConfig | None = None,
     ) -> list[Finding]:
-        from lintpdf.ai.rendering import render_page_to_image
-
         findings: list[Finding] = []
         suspect_pages: list[int] = []
 
@@ -113,40 +102,33 @@ class TextAsOutlinesAnalyzer(BaseAIAnalyzer):
         if not suspect_pages:
             return []
 
-        # Phase 2: GPU OCR verification — render suspect pages and run OCR
-        # to confirm that visible text is stored as paths, not font glyphs
-        gpu = _get_gpu_client()
+        # Phase 2: read the orchestrator's shared text-region pass instead
+        # of running our own GPU call. The orchestrator renders each suspect
+        # page once and populates ``page.detected_text_regions`` in PDF-point
+        # coordinates; this analyzer just reads them. If the field is None the
+        # pass didn't run (GPU outage or trigger heuristic gated it) — bail
+        # silently; AI_SCAN_001 on the orchestrator records the pipeline state.
+        page_index = {page.page_num: page for page in document.pages}
 
         for page_num in suspect_pages:
-            try:
-                png_bytes = render_page_to_image(pdf_bytes, page_num=page_num, dpi=200)
-            except RuntimeError:
-                logger.debug("text_as_outlines: rendering failed for page %d", page_num)
+            page = page_index.get(page_num)
+            if page is None:
+                continue
+            regions = page.detected_text_regions
+            if regions is None:
+                # Pass didn't run for this page; can't decide.
+                continue
+            if not regions:
+                # Pass ran but found no text — page is a true vector-art page,
+                # not outlined text. Skip.
                 continue
 
-            try:
-                result = gpu.detect_outlines(png_bytes)
-            except GPUServiceUnavailableError as exc:
-                # Same rationale as AI_RSYM_001 — GPU outage is infra noise,
-                # not a PDF quality signal. Bail silently; AI_SCAN_001 audit
-                # marker on the orchestrator will still record that the AI
-                # pipeline ran (or attempted to).
-                logger.warning(
-                    "GPU service unavailable for text-as-outlines on page %d: %s "
-                    "— skipping analyzer",
-                    page_num,
-                    exc,
-                )
-                return findings
+            ocr_text = " ".join((r.text or "").strip() for r in regions if r.text).strip()
+            ocr_confidence = max((r.confidence for r in regions), default=0.0)
 
-            ocr_text = result.get("detected_text", "")
-            ocr_confidence = float(result.get("confidence", 0))
-            outlined_regions = result.get("outlined_regions", [])
-
-            # If OCR detected significant text on a page with no extractable
-            # text events, the text is almost certainly outlined
-            if len(ocr_text.strip()) > 20 and ocr_confidence > 0.5:
-                # Get path/text counts for details
+            # Same threshold as before — significant text recognised on a page
+            # with negligible extractable-text events implies outlined glyphs.
+            if len(ocr_text) > 20 and ocr_confidence > 0.5:
                 path_count, text_char_count = _count_path_and_text_events(events, page_num)
 
                 findings.append(
@@ -165,37 +147,30 @@ class TextAsOutlinesAnalyzer(BaseAIAnalyzer):
                             "ocr_confidence": round(ocr_confidence, 4),
                             "extractable_text_chars": text_char_count,
                             "path_count": path_count,
-                            "outlined_region_count": len(outlined_regions),
+                            "outlined_region_count": len(regions),
                             "ocr_text_preview": ocr_text[:200],
                         },
                         object_type="text",
                     )
                 )
 
-                # Report individual outlined regions if available
-                for region in outlined_regions:
-                    bbox_raw = region.get("bbox")
-                    region_text = region.get("text", "")
-                    bbox = (
-                        tuple(float(v) for v in bbox_raw)
-                        if bbox_raw and len(bbox_raw) == 4
-                        else None
-                    )
-                    if region_text:
-                        findings.append(
-                            self._make_finding(
-                                inspection_id="AI_TAO_003",
-                                severity=Severity.WARNING,
-                                message=(
-                                    f"Outlined text region on page {page_num}: '{region_text[:80]}'"
-                                ),
-                                page_num=page_num,
-                                details={
-                                    "region_text": region_text,
-                                },
-                                bbox=bbox,  # type: ignore[arg-type]
-                                object_type="text",
-                            )
+                for region in regions:
+                    region_text = (region.text or "").strip()
+                    if not region_text:
+                        continue
+                    bbox = (region.bbox.x0, region.bbox.y0, region.bbox.x1, region.bbox.y1)
+                    findings.append(
+                        self._make_finding(
+                            inspection_id="AI_TAO_003",
+                            severity=Severity.WARNING,
+                            message=(
+                                f"Outlined text region on page {page_num}: '{region_text[:80]}'"
+                            ),
+                            page_num=page_num,
+                            details={"region_text": region_text},
+                            bbox=bbox,
+                            object_type="text",
                         )
+                    )
 
         return findings

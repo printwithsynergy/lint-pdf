@@ -2343,6 +2343,10 @@ _CAPABILITY_ANALYZERS: dict[str, str] = {
     "tac": "InkCoverageAnalyzer",
     "fonts": "FontAnalyzer",
     "images": "ImageAnalyzer",
+    # PR 2 (OCR/ML): handled inline by ``_run_text_regions_fillin`` rather
+    # than going through ``_build_fillin_analyzer`` since the pass mutates
+    # ``page.detected_text_regions`` instead of producing Findings.
+    "text_regions": "_TextRegionFillin",
 }
 
 
@@ -2388,13 +2392,33 @@ def fill_capability(job_id: str, capability: str) -> dict[str, Any]:
         storage = get_storage()
         pdf_bytes = _download_pdf_with_fallback(storage, job.file_key, job_id)
 
+        from lintpdf.profiles.orchestrator import PreflightOrchestrator
+
+        document, events = PreflightOrchestrator._parse_and_interpret(pdf_bytes)
+
+        # PR 2 (OCR/ML): the text-regions capability runs the shared pass
+        # and persists the per-page results to ``job.detected_text_regions``
+        # rather than generating Findings.
+        if capability == "text_regions":
+            from lintpdf.ai import text_region_pass
+
+            text_region_pass.run(document, events, pdf_bytes, ai_config=None)
+            job.detected_text_regions = _serialise_text_regions(document)
+            caps = dict(job.data_capabilities or {})
+            caps[capability] = True
+            job.data_capabilities = caps
+            db.commit()
+            return {
+                "status": "complete",
+                "job_id": job_id,
+                "capability": capability,
+                "pages_with_regions": sum(1 for p in document.pages if p.detected_text_regions),
+            }
+
         analyzer = _build_fillin_analyzer(capability)
         if analyzer is None:
             return {"status": "unsupported", "capability": capability}
 
-        from lintpdf.profiles.orchestrator import PreflightOrchestrator
-
-        document, events = PreflightOrchestrator._parse_and_interpret(pdf_bytes)
         findings = list(analyzer.analyze(document, events))
         _persist_imported_findings(db, job, findings)
 
@@ -2414,6 +2438,38 @@ def fill_capability(job_id: str, capability: str) -> dict[str, Any]:
         raise
     finally:
         db.close()
+
+
+def _serialise_text_regions(document: Any) -> list[dict[str, Any]]:
+    """Flatten ``page.detected_text_regions`` into a JSON-storable list.
+
+    Output shape matches what the viewer reads back at render time:
+    ``[{page_num, regions: [{bbox: [x0,y0,x1,y1], text, confidence,
+    polygon, source}]}]``. Pages where the pass didn't run are omitted.
+    """
+    out: list[dict[str, Any]] = []
+    for page in document.pages:
+        regions = page.detected_text_regions
+        if not regions:
+            continue
+        out.append(
+            {
+                "page_num": page.page_num,
+                "regions": [
+                    {
+                        "bbox": [r.bbox.x0, r.bbox.y0, r.bbox.x1, r.bbox.y1],
+                        "text": r.text,
+                        "confidence": r.confidence,
+                        "polygon": (
+                            [list(p) for p in r.polygon] if r.polygon is not None else None
+                        ),
+                        "source": r.source,
+                    }
+                    for r in regions
+                ],
+            }
+        )
+    return out
 
 
 def _build_fillin_analyzer(capability: str) -> Any | None:
