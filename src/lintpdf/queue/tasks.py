@@ -995,6 +995,11 @@ def run_preflight(
             job.page_count = result.summary.page_count
             job.duration_ms = duration_ms
             job.completed_at = datetime.datetime.now(datetime.UTC)
+            # PR B (Slot 2A): persist structural evidence so the audit
+            # harness can read it back from JobResponse without
+            # re-parsing the PDF. Built by the orchestrator and
+            # delivered via ``result.metadata["structural_evidence"]``.
+            job.structural_evidence = (result.metadata or {}).get("structural_evidence")
 
             # Store individual findings
             ai_features_used: set[tuple[str, str]] = set()

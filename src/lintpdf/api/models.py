@@ -253,6 +253,11 @@ class Job(Base):
     # disabled). Multiple downstream analyzers read this back at viewer time
     # to highlight outlined captions and fold-zone text.
     detected_text_regions: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
+    # PR B (Slot 2A): compact structural evidence (font embedding, ICC,
+    # encryption, XMP, output intents, spot colorspaces, AcroForm /
+    # OCG presence) the Opus audit harness reads to adjudicate findings
+    # vision can't verify on the rendered PDF alone.
+    structural_evidence: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
     # WS-D packaging inspectors. ``dieline`` carries the name-match
     # or Sonnet-fallback verdict; ``art_size_mm`` is NULL when the
     # dieline is missing (strict — see LPDF_DIE_MISSING);
