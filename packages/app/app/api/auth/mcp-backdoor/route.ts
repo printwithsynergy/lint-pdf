@@ -13,6 +13,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getClientInfo } from "@/lib/auth-helpers";
+import { ensureTenantForUser } from "@/lib/ensure-tenant";
 
 // Local Prisma schema adds ``engineTenantId`` on Tenant and
 // ``impersonatingTenantId`` on Session; the Pixie Dust PrismaClient
@@ -81,7 +82,10 @@ export async function POST(req: Request) {
       userAgent: "MCP-Backdoor-Test",
     });
 
-    // Handle tenant membership: create/update if tenantSlug provided, else find existing
+    // Handle tenant membership: explicit slug → find/create that
+    // tenant; no slug → ensureTenantForUser (reuse existing or
+    // auto-provision). The app's invariant is that every authenticated
+    // user belongs to at least one tenant.
     let tenantId: string | null = null;
     try {
       if (tenantSlug) {
@@ -150,15 +154,11 @@ export async function POST(req: Request) {
           });
         }
       } else {
-        // No slug provided — find user's first existing membership
-        const membership = await prisma.tenantUser.findFirst({
-          where: { userId: user.id },
-          select: { tenantId: true },
-          orderBy: { joinedAt: "desc" },
-        });
-        if (membership) {
-          tenantId = membership.tenantId;
-        }
+        // No explicit slug → reuse existing membership or
+        // auto-provision via the shared helper. Same invariant the
+        // claim-session magic-link flow uses.
+        const ensured = await ensureTenantForUser(user.id, user.email);
+        tenantId = ensured.tenantId;
       }
 
       // Set impersonatingTenantId on the session so plugin routes have tenant context

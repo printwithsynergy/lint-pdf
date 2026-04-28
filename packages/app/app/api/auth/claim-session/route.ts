@@ -13,6 +13,7 @@ import {
 import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import { NextResponse } from "next/server";
 import { getClientInfo } from "@/lib/auth-helpers";
+import { ensureTenantForUser } from "@/lib/ensure-tenant";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -34,6 +35,26 @@ export async function GET(req: Request) {
     }
 
     const session = await createSession(prisma, result.userId, getClientInfo(req));
+
+    // App invariant: every authenticated user belongs to a tenant. The
+    // upstream Pixie Dust auth flow doesn't enforce this, so we guard
+    // it here at the moment a session is actually issued. Non-fatal:
+    // if provisioning fails we still let the session through and the
+    // user lands on a dashboard with empty-state pages.
+    try {
+      const userRow = await prisma.user.findUnique({
+        where: { id: result.userId },
+        select: { email: true },
+      });
+      if (userRow?.email) {
+        await ensureTenantForUser(result.userId, userRow.email);
+      }
+    } catch (err) {
+      console.warn(
+        "[claim-session] ensureTenantForUser failed (non-fatal):",
+        err instanceof Error ? err.message : String(err),
+      );
+    }
 
     const dashboardUrl = `${env.APP_URL}/dashboard`;
     const appName = getConfig().appName;
