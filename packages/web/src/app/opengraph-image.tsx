@@ -6,7 +6,7 @@ import { ImageResponse } from "next/og";
 // is what Slack / iMessage / LinkedIn / Twitter unfurl when someone shares
 // https://lintpdf.com.
 export const runtime = "edge";
-export const alt = "LintPDF — PDF Preflight API. 600+ checks. PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance.";
+export const alt = "LintPDF — PDF Preflight API. 500+ checks. PDF/X-1a, PDF/X-3, PDF/X-4, PDF/A compliance.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -118,7 +118,7 @@ export default async function OpengraphImage() {
             display: "flex",
           }}
         >
-          600+ checks · PDF/X-1a · PDF/X-3 · PDF/X-4 · PDF/A · Zero modifications
+          500+ checks · PDF/X-1a · PDF/X-3 · PDF/X-4 · PDF/A · Zero modifications
         </div>
 
         <div

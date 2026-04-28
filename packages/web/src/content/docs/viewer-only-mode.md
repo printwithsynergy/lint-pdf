@@ -81,7 +81,7 @@ The viewer's toolbar shows every tool your profile allows, with a **Load** butto
 
 | Capability | Backing analyzer | Viewer tool unlocked |
 |---|---|---|
-| `findings` | Full engine pipeline | Findings panel (all 600+ checks) |
+| `findings` | Full engine pipeline | Findings panel (all 500+ checks) |
 | `separations` | Spot-color analyzer | Ink channel viewer |
 | `tac` | Ink-coverage analyzer | TAC heatmap overlay |
 | `fonts` | Font analyzer | Font inspector |
