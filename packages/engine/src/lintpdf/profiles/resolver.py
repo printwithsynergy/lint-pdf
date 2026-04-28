@@ -53,6 +53,14 @@ def _tenant_qualifies(sp: SystemProfile, tenant: Tenant) -> bool:
     Used by point lookups (``get_visible_system_profile``) to avoid a
     second SQL round-trip.
     """
+    # PR B Slot 2B: admin-only profiles are never visible to a tenant
+    # request — only the parallel admin endpoint
+    # (POST /api/v1/admin/jobs/test-system-profile, X-Admin-Key) can
+    # resolve them. Filter here so list-view and point-lookup both
+    # stay consistent.
+    profile_json = sp.preflight_profile_json or {}
+    if profile_json.get("is_admin_only"):
+        return False
     if sp.visibility_mode == "all":
         return True
     plan_ok = sp.min_plan is None or (str(tenant.plan) in _plans_at_or_above(sp.min_plan))

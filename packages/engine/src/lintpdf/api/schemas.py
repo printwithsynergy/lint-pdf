@@ -276,6 +276,17 @@ class JobResponse(BaseModel):
             "omitted. ``null`` when the pass didn't run for the job at all."
         ),
     )
+    structural_evidence: dict[str, Any] | None = Field(
+        default=None,
+        description=(
+            "Compact dict of structural-PDF fields the Opus audit harness "
+            "uses to adjudicate findings that vision can't verify (font "
+            "embedding, ICC profiles, encryption, XMP, output intents, "
+            "spot colorspaces, AcroForm presence, OCG presence). One per "
+            "job, populated by the orchestrator's ``_build_structural_"
+            "evidence`` step. ``null`` for legacy jobs preceding PR B."
+        ),
+    )
     epm_verdict: dict[str, Any] | None = Field(
         default=None,
         description=(

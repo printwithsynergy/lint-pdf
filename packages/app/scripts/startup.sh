@@ -401,6 +401,10 @@ ALTER TABLE jobs
 -- {bbox, text, confidence, polygon, source}. NULL = pass didn't run.
 ALTER TABLE jobs
   ADD COLUMN IF NOT EXISTS detected_text_regions JSONB;
+-- Alembic 052 (PR B Slot 2A): structural-evidence dict for the Opus
+-- audit harness. NULL on legacy jobs.
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS structural_evidence JSONB;
 
 ALTER TABLE tenants
   ADD COLUMN IF NOT EXISTS unbranded_by_default BOOLEAN NOT NULL DEFAULT false;
