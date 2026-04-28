@@ -92,9 +92,20 @@ class CosmeticsLabelingAnalyzer(BaseAIAnalyzer):
         # patterns) collided with non-cosmetic packaging.
         from lintpdf.ai.analyzers.regulatory_compliance._gates import (
             is_cosmetic_applicable,
+            is_supplement_document,
         )
 
+        # Tenant-config gate (industry_type=dietary_supplement etc.).
         if not is_cosmetic_applicable(ai_config):
+            return []
+
+        # Document-level fallback: when ai_config is None or detached
+        # at runtime (worker session lifecycle), use the document's
+        # own ``Supplement Facts`` / ``Dietary Supplement`` markers
+        # to suppress. Identified during the 2026-04-28 audit, where
+        # the gate was bypassed despite industry_type being set on
+        # the tenant.
+        if is_supplement_document(document):
             return []
 
         text = _collect_text(document)

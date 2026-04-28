@@ -119,7 +119,23 @@ class FdaNutritionAnalyzer(BaseAIAnalyzer):
         pdf_bytes: bytes,
         ai_config: TenantAIConfig | None = None,
     ) -> list[Finding]:
+        from lintpdf.ai.analyzers.regulatory_compliance._gates import (
+            is_supplement_document,
+        )
+
         findings: list[Finding] = []
+
+        # Document-level fallback. The 2026-04-28 Opus audit found
+        # AI_FDA_001-005 still firing on Nutrops Supplement Facts
+        # panels even after the per-page supplement-facts skip
+        # below. Cause: the per-page check looks at
+        # ``page.content_stream``, but on outlined-text fixtures
+        # the literal "Supplement Facts" header may sit in a
+        # ProcessingStep or hidden layer. The doc-level scan covers
+        # ``Dietary Supplement`` claim text too, which is harder to
+        # outline-out.
+        if is_supplement_document(document):
+            return []
 
         panel_pages = _find_nutrition_panel_pages(document)
         if not panel_pages:
@@ -128,14 +144,9 @@ class FdaNutritionAnalyzer(BaseAIAnalyzer):
 
         # Skip pages whose panel is a Supplement Facts panel — those are
         # governed by 21 CFR 101.36 (DSHEA), not 101.9 (Nutrition Facts).
-        # The 2026-04-28 Opus audit flagged 5 false-positive AI_FDA_001-005
-        # findings where the engine cited 101.9 on Nutrops dietary-
-        # supplement labels.
         supplement_pages = supplement_facts_pages(document)
         nutrition_pages = [p for p in panel_pages if p not in supplement_pages]
         if not nutrition_pages:
-            # Document has only Supplement Facts panels — none of the
-            # 101.9 rules in this analyzer apply.
             return []
 
         for page_num in nutrition_pages:
