@@ -92,8 +92,11 @@ class SafeZoneViolationsAnalyzer(BaseAIAnalyzer):
                 if hasattr(page_obj, "height_pt") and page_obj.height_pt:
                     page_height_pt = float(page_obj.height_pt)
 
+            # DINO call now asks only for "logo." and "barcode." — text bbox
+            # detection is served from the orchestrator's shared OCR pass via
+            # ``page.detected_text_regions``. One fewer GPU call per page.
             try:
-                result = gpu.detect_objects(png_bytes, prompt="text. logo. barcode.")
+                result = gpu.detect_objects(png_bytes, prompt="logo. barcode.")
             except (GPUServiceNotConfiguredError, GPUServiceRateLimitedError):
                 logger.debug("safe_zone_violations: GPU service not configured, skipping")
                 return findings
@@ -111,9 +114,36 @@ class SafeZoneViolationsAnalyzer(BaseAIAnalyzer):
                 )
                 return findings
 
-            detections = result.get("detections", [])
+            detections = list(result.get("detections", []))
             image_width = float(result.get("image_width", 1))
             image_height = float(result.get("image_height", 1))
+
+            # Splice in text-region detections from the shared OCR pass.
+            # The pass already converted to PDF points, so we round-trip back
+            # to pixel space via the same scale_x/scale_y the loop below expects.
+            page_obj_ts = (
+                document.pages[page_idx]
+                if document.pages and page_idx < len(document.pages)
+                else None
+            )
+            if page_obj_ts is not None and page_obj_ts.detected_text_regions:
+                # Inverse-scale PDF points back to pixel space so the existing
+                # loop can keep its pixel-space arithmetic. Tiny indirection
+                # but avoids a second loop body for one detection family.
+                inv_sx = image_width / page_width_pt if page_width_pt else 1.0
+                inv_sy = image_height / page_height_pt if page_height_pt else 1.0
+                for region in page_obj_ts.detected_text_regions:
+                    bx0 = region.bbox.x0 * inv_sx
+                    by1 = (page_height_pt - region.bbox.y0) * inv_sy
+                    bx1 = region.bbox.x1 * inv_sx
+                    by0 = (page_height_pt - region.bbox.y1) * inv_sy
+                    detections.append(
+                        {
+                            "label": "text",
+                            "confidence": region.confidence,
+                            "bbox": [bx0, min(by0, by1), bx1, max(by0, by1)],
+                        }
+                    )
 
             for detection in detections:
                 label = detection.get("label", "object")

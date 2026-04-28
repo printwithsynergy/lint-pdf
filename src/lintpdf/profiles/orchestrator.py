@@ -284,6 +284,23 @@ class PreflightOrchestrator:
 
         raw_findings.extend(check_pdfvt_structure(document))
 
+        # Step 5d: Shared OCR text-region pass. Runs only on pages where the
+        # trigger heuristic fires (placed-image area > 25% OR path-heavy /
+        # text-light). Multiple downstream consumers read
+        # ``page.detected_text_regions`` instead of issuing their own GPU OCR
+        # calls. Failure is best-effort: pages where the GPU call fails or
+        # rendering breaks are left as ``None`` and consumers skip them.
+        try:
+            from lintpdf.ai import text_region_pass
+
+            text_region_pass.run(document, events, pdf_bytes, ai_config=self._ai_config)
+        except Exception:  # pragma: no cover — best-effort, never fail the job
+            import logging as _logging
+
+            _logging.getLogger(__name__).warning(
+                "text_region_pass failed; consumer analyzers will skip", exc_info=True
+            )
+
         # Step 6: Run AI analyzers (if AI enabled in profile)
         ai_findings = self._run_ai_analyzers(document, events, pdf_bytes)
         raw_findings.extend(ai_findings)

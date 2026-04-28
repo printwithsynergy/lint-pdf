@@ -320,8 +320,23 @@ class GPUInferenceClient:
         return self._post("/inference/embed-image", image_bytes)
 
     def detect_outlines(self, image_bytes: bytes) -> dict[str, Any]:
-        """OCR on path regions to detect outlined text."""
-        return self._post("/inference/detect-outlines", image_bytes)
+        """OCR a rendered page; returns ``{"text_regions": [...]}``.
+
+        The inference service wraps PaddleOCR results in a ``{"result": {...},
+        "processing_time_ms": N, "model": "paddleocr"}`` envelope. Engine-side
+        callers only care about the inner ``text_regions`` payload, so we
+        unwrap here. Callers that mock this client (see
+        ``tests/ai/conftest.py``) can return the inner dict directly.
+        """
+        raw = self._post("/inference/detect-outlines", image_bytes)
+        if isinstance(raw, dict) and "result" in raw and isinstance(raw["result"], dict):
+            inner = raw["result"]
+            # Preserve metadata fields if a caller wants them.
+            for meta in ("processing_time_ms", "model"):
+                if meta in raw and meta not in inner:
+                    inner[meta] = raw[meta]
+            return inner
+        return raw
 
     def detect_symbols(self, image_bytes: bytes) -> dict[str, Any]:
         """Detect regulatory/recycling symbols."""

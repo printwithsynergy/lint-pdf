@@ -983,6 +983,12 @@ def _build_viewer_config(
     # Not on-demand fillable — re-running the analyzers requires a fresh
     # job submission.
     caps["epm_verdict"] = True
+    # ``text_regions`` — PR 2 (OCR/ML accuracy). True when the orchestrator's
+    # shared OCR pass populated ``Job.detected_text_regions`` for this job;
+    # false when the pass didn't run (heuristic gated, GPU outage, or feature
+    # disabled). Fillable on-demand via
+    # POST /api/v1/viewer/jobs/{id}/capabilities/text_regions.
+    caps["text_regions"] = job.detected_text_regions is not None
 
     from lintpdf.tenants.entitlements import resolve_entitlements
 
@@ -1307,7 +1313,9 @@ async def get_tile_warming_status(
 
 #: Capabilities the viewer can request on-demand. Keep in sync with
 #: ``lintpdf.queue.tasks._CAPABILITY_ANALYZERS``.
-_FILLABLE_CAPABILITIES: frozenset[str] = frozenset({"separations", "tac", "fonts", "images"})
+_FILLABLE_CAPABILITIES: frozenset[str] = frozenset(
+    {"separations", "tac", "fonts", "images", "text_regions"}
+)
 
 
 class CapabilityFillResponse(BaseModel):
