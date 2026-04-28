@@ -395,8 +395,9 @@ export function HeroSection() {
         ) : (
           <div className="inline-flex items-center gap-2 rounded-full border border-brand-200 bg-white/95 px-4 py-1.5 text-xs md:text-sm font-medium text-brand-700 mb-6 shadow-sm max-w-full flex-wrap justify-center">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse shrink-0" />
-            500+ preflight checks &middot; PDF/X-1a &middot; PDF/X-3 &middot;
-            PDF/X-4 &middot; PDF/A &middot; ISO 15930 &middot; GWG 2022
+            500+ preflight checks &middot; PDF/X-4 conformance suite (91)
+            &middot; PDF/X-1a &middot; PDF/X-3 &middot; PDF/A &middot; ISO 15930
+            &middot; GWG 2022
           </div>
         )}
 
@@ -450,7 +451,7 @@ export function HeroSection() {
   "id": "f47ac10b-...",
   "status": "processing",
   "ruleset": "gwg-sheetfed",
-  "checks": 500
+  "checks": 591
 }`}</code>
           </pre>
         </div>

@@ -7,9 +7,9 @@ export default function ChecksPage() {
         Checks Reference
       </h2>
       <p className="text-slate-600 mb-4">
-        LintPDF runs 500+ individual Checks across these categories. Each
-        finding in a Report references a Check ID, severity level, and affected
-        page.
+        LintPDF runs 500+ engine checks plus the PDF/X-4 conformance suite (91
+        checks, ISO 15930-7) across these categories. Each finding in a Report
+        references a Check ID, severity level, and affected page.
       </p>
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 mb-6 text-sm text-slate-600">
         <p className="mb-2">

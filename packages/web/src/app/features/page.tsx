@@ -6,7 +6,7 @@ import { AI_CATEGORIES, AI_PRESETS } from "@/lib/brand";
 export const metadata: Metadata = {
   title: "Features — LintPDF",
   description:
-    "500+ rule-based checks plus 32 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, packaging geometry, barcode grading, regulatory compliance, and more.",
+    "500+ rule-based checks + 91 PDF/X-4 conformance checks (ISO 15930-7) + 99 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, packaging geometry, barcode grading, regulatory compliance, and more.",
 };
 
 const coreFeatures = [
@@ -422,7 +422,8 @@ export default function FeaturesPage() {
             Everything Your PDFs Need, Checked Automatically
           </h1>
           <p className="text-lg text-slate-500 max-w-2xl mx-auto">
-            500+ rule-based checks powered by a deterministic engine, plus{" "}
+            500+ rule-based checks + 91 PDF/X-4 conformance checks
+            (ISO 15930-7) powered by a deterministic engine, plus{" "}
             {totalAiInspections} AI-powered inspections for content quality,
             regulatory compliance, and brand verification.
           </p>
@@ -613,7 +614,8 @@ export default function FeaturesPage() {
               Core Engine
             </h2>
             <p className="text-slate-500 max-w-3xl">
-              500+ rule-based checks that run on every file. Deterministic,
+              500+ rule-based checks plus a 91-check PDF/X-4 conformance
+              suite (ISO 15930-7) that run on every file. Deterministic,
               fast, and thorough. Resolution, fonts, colors, transparency,
               bleeds, barcodes, packaging geometry, artwork comparison,
               compliance, and more. Included on all plans with no per-check

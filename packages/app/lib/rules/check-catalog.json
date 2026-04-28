@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 450,
+  "total_checks": 544,
   "categories": [
     {
       "id": "image",
@@ -344,6 +344,18 @@
           "default_severity": "warning"
         },
         {
+          "id": "LPDF_INK_DUPLICATE_DEVICEN_SEP",
+          "name": "Colorant Declared in Both DeviceN and Separation",
+          "description": "The same colorant name (e.g. 'PANTONE 237 C') appears in both a DeviceN/NChannel color space tuple AND a standalone Separation color space. The RIP may treat these as separate plates even though the operator's intent is one ink. Consolidate to a single Separation declaration (or a single DeviceN tuple) before plating to avoid duplicate-plate rejections.",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_INK_PRESS_STATIONS",
+          "name": "Ink Channel Count Above Press Station Limit",
+          "description": "Total printable ink channels (process + spot, excluding non-printing technical layers like Cutting / Perforating / Varnish) exceeds the typical wide-web flexo press station limit (6). Confirm the destination press has enough decks, or consolidate spots into process builds where colorimetric tolerance allows.",
+          "default_severity": "warning"
+        },
+        {
           "id": "LPDF_INK_SUBSTRATE",
           "name": "TAC Exceeds Substrate Limit",
           "description": "Observed max Total Area Coverage exceeds the limit typical for the declared substrate (uncoated offset 280%, coated 300%, newsprint 240%, digital 320%, flexo 260%, gravure 300%, large-format 280%).",
@@ -443,6 +455,12 @@
           "id": "LPDF_SPOT_NAME_TYPO",
           "name": "Spot Color Name Typo",
           "description": "Two spot color names differ by \u2264 2 character edits (e.g. '/Dark Biege' vs '/Dark Beige'). The RIP treats spot names as case-sensitive, character-exact strings \u2014 misspelled separations will not merge with the correctly-named instance and create an extra unintended plate. Excludes Pantone identifiers and process channel names.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_NAME_WHITESPACE",
+          "name": "Spot Color Name Whitespace / Punctuation",
+          "description": "Spot color name has stray leading/trailing whitespace or trailing punctuation (e.g. 'PANTONE 3582 C.  '). The RIP treats spot names as character-exact strings, so this produces a separately named plate from the clean form and breaks DFE spot-name matching/aliasing. Strip the whitespace + trailing punctuation before plate output.",
           "default_severity": "advisory"
         },
         {
@@ -1601,6 +1619,558 @@
           "id": "LPDF_STD_003",
           "name": "ISO 12647 Compliance",
           "description": "ISO 12647 standard compliance check.",
+          "default_severity": "error"
+        }
+      ]
+    },
+    {
+      "id": "pdfx4",
+      "label": "PDF/X-4 conformance",
+      "checks": [
+        {
+          "id": "PDFX4-001",
+          "name": "PDF Version Below 1.6",
+          "description": "PDF/X-4 requires PDF version 1.6 or 1.7. The file declares an older version in its header.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-002",
+          "name": "PDF Header Version Missing",
+          "description": "The PDF header does not declare a version. PDF/X-4 requires a well-formed %PDF-1.x header.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-003",
+          "name": "Binary Marker Missing",
+          "description": "The four-byte binary comment that follows the header is missing. Tools may transmit the file as ASCII and corrupt it.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-004",
+          "name": "Linearized PDF",
+          "description": "PDF is linearized for fast web view; verify the linearization table before sending to press.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-005",
+          "name": "XMP Metadata Missing",
+          "description": "PDF/X-4 requires an XMP metadata stream on the document catalog. Without it the file cannot declare its conformance.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-006",
+          "name": "GTS_PDFXVersion Wrong Or Missing",
+          "description": "The XMP property pdfxid:GTS_PDFXVersion is absent or does not equal 'PDF/X-4'. Required for conformance.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-007",
+          "name": "GTS_PDFXConformance Missing",
+          "description": "Optional pdfxid:GTS_PDFXConformance attribute not declared. Recommended for downstream parser hints.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-008",
+          "name": "XMP Version Mismatch",
+          "description": "XMP pdf:PDFVersion does not match the version on the PDF header.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-009",
+          "name": "xmp:CreateDate Missing",
+          "description": "Required XMP timestamp xmp:CreateDate is missing.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-010",
+          "name": "xmp:ModifyDate Missing",
+          "description": "Required XMP timestamp xmp:ModifyDate is missing.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-011",
+          "name": "dc:title Missing",
+          "description": "Required Dublin Core dc:title element missing from XMP metadata.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-012",
+          "name": "Invalid pdf:Trapped Value",
+          "description": "pdf:Trapped must be True, False, or Unknown. Any other value (or a missing one when Trapped is asserted) is non-conformant.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-013",
+          "name": "Title Mismatch (Info vs XMP)",
+          "description": "Document Info /Title disagrees with XMP dc:title. Editors may surface conflicting strings.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-014",
+          "name": "CreationDate Mismatch",
+          "description": "Document Info /CreationDate disagrees with XMP xmp:CreateDate.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-015",
+          "name": "ModDate Mismatch",
+          "description": "Document Info /ModDate disagrees with XMP xmp:ModifyDate.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-016",
+          "name": "OutputIntent Missing",
+          "description": "PDF/X-4 requires at least one OutputIntent dictionary describing the intended printing condition.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-017",
+          "name": "GTS_PDFX OutputIntent Missing",
+          "description": "No OutputIntent with /S = /GTS_PDFX present. Required for PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-018",
+          "name": "OutputConditionIdentifier Missing",
+          "description": "OutputIntent /OutputConditionIdentifier is missing.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-019",
+          "name": "ICC Profile Not Embedded And Not Registered",
+          "description": "OutputIntent has no /DestOutputProfile and the named condition is not on the ICC registered list.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-020",
+          "name": "ICC Profile Version Below 2.0",
+          "description": "Embedded ICC profile version is below 2.0; modern RIPs may reject it.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-021",
+          "name": "ICC Profile Class Not Output/Display",
+          "description": "Embedded ICC profile class must be output (prtr) or display (mntr) for use as an OutputIntent.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-022",
+          "name": "ICC Color Space Unrecognized",
+          "description": "Embedded ICC profile declares a color space other than CMYK, RGB, Gray, or Lab.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-023",
+          "name": "Multiple GTS_PDFX OutputIntents",
+          "description": "More than one /GTS_PDFX OutputIntent is present. PDF/X-4 expects exactly one.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-024",
+          "name": "RegistryName Missing For Registered Condition",
+          "description": "Registered conditions should carry /RegistryName so consumers can look up the ICC reference.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-025",
+          "name": "OutputIntent /Info Missing",
+          "description": "Recommended /Info string on the OutputIntent describing the press condition is absent.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-026",
+          "name": "CalGray Color Space Used",
+          "description": "CalGray is prohibited in PDF/X-4. Replace with an ICCBased gray profile.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-027",
+          "name": "CalRGB Color Space Used",
+          "description": "CalRGB is prohibited in PDF/X-4. Replace with an ICCBased RGB profile.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-028",
+          "name": "DeviceRGB Without RGB OutputIntent",
+          "description": "DeviceRGB is used but the OutputIntent is not RGB and no DefaultRGB color space is declared. Color is undefined.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-029",
+          "name": "DeviceCMYK Without CMYK OutputIntent",
+          "description": "DeviceCMYK is used but the OutputIntent is not CMYK and no DefaultCMYK is declared.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-030",
+          "name": "DeviceGray Without Gray OutputIntent",
+          "description": "DeviceGray is used but the OutputIntent is not Gray and no DefaultGray is declared.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-031",
+          "name": "ICCBased Component Count Invalid",
+          "description": "An ICCBased color space has a component count other than 1, 3, or 4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-032",
+          "name": "Separation Alternate Inconsistent",
+          "description": "A Separation colorant is declared with conflicting alternate color spaces across the document.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-033",
+          "name": "DeviceN Color Space Detected",
+          "description": "DeviceN color space present; verify colorant tints across the document remain consistent.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-034",
+          "name": "Lab Color Space Used",
+          "description": "Lab color space detected; PDF/X-4 transparency groups must not be Lab \u2014 verify usage.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-035",
+          "name": "Invalid Rendering Intent",
+          "description": "An rendering intent value is set to a name not in the ISO 32000 list (AbsoluteColorimetric, RelativeColorimetric, Saturation, Perceptual).",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-036",
+          "name": "Font Not Embedded",
+          "description": "PDF/X-4 requires every font to be fully embedded. A non-embedded font will substitute on press.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-037",
+          "name": "TrueType Font Program Missing",
+          "description": "TrueType font carries a /FontDescriptor but no /FontFile2 program. RIPs cannot render the glyphs.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-038",
+          "name": "Type3 Font Missing /CharProcs",
+          "description": "Type3 font is declared without a /CharProcs dictionary; no glyph definitions are present.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-039",
+          "name": "CIDFontType2 Missing /CIDToGIDMap",
+          "description": "CIDFontType2 lacks a /CIDToGIDMap, so CID values cannot be mapped to glyph indices.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-040",
+          "name": "External Font File Reference",
+          "description": "Font has an external file reference. PDF/X-4 forbids external resources.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-041",
+          "name": "Font Descriptor Missing",
+          "description": "Font is declared without a /FontDescriptor. Required for embedding-validation and metrics.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-042",
+          "name": "Empty Font Program",
+          "description": "A /FontFile entry exists but the embedded font program is zero-length.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-043",
+          "name": "Transparency Used",
+          "description": "Document uses transparency (live blend modes / soft masks). Allowed in PDF/X-4 but verify flatten compatibility downstream.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-044",
+          "name": "Transparency Group CS Conflicts With OutputIntent",
+          "description": "A transparency group's color space disagrees with the OutputIntent color space, causing color shifts under flattening.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-046",
+          "name": "Non-Standard Blend Mode",
+          "description": "A blend mode outside the 16 ISO 32000 standard names is used. RIPs may flatten it as Normal, changing appearance.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-047",
+          "name": "Soft Mask With Color Space",
+          "description": "Soft mask with an explicit /CS entry; verify rendering against OutputIntent.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-048",
+          "name": "Isolated Knockout Transparency Group",
+          "description": "Isolated + Knockout transparency group present; verify rendering intent before press.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-049",
+          "name": "MediaBox Missing",
+          "description": "Page is missing a /MediaBox. PDF/X-4 requires every page to declare the media size.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-050",
+          "name": "TrimBox Or ArtBox Required",
+          "description": "PDF/X-4 requires either /TrimBox or /ArtBox on every page so the press knows the live area.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-051",
+          "name": "TrimBox And ArtBox Both Present",
+          "description": "Both /TrimBox and /ArtBox are present and disagree. PDF/X-4 expects only one of the two.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-052",
+          "name": "BleedBox Outside Container",
+          "description": "BleedBox extends outside the CropBox or MediaBox.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-053",
+          "name": "TrimBox Outside BleedBox",
+          "description": "TrimBox extends outside the BleedBox.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-054",
+          "name": "Page Box Has Zero/Negative Dimensions",
+          "description": "A page box (Media/Crop/Bleed/Trim/Art) has zero or negative width or height.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-055",
+          "name": "CropBox Outside MediaBox",
+          "description": "CropBox extends outside the MediaBox.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-056",
+          "name": "ArtBox Outside Container",
+          "description": "ArtBox extends outside the BleedBox / CropBox / MediaBox.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-057",
+          "name": "Sound Annotation",
+          "description": "Sound annotations are prohibited in PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-058",
+          "name": "Movie Annotation",
+          "description": "Movie annotations are prohibited in PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-059",
+          "name": "3D Annotation",
+          "description": "3D annotations are prohibited in PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-060",
+          "name": "RichMedia/Screen Annotation",
+          "description": "RichMedia and Screen annotations are prohibited in PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-061",
+          "name": "PrinterMark Not Set To Print",
+          "description": "PrinterMark annotation has /Print flag clear; press output may miss registration / cut marks.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-062",
+          "name": "TrapNet Annotation",
+          "description": "TrapNet annotation present; verify trap network is up to date.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-063",
+          "name": "Document Encrypted",
+          "description": "Document is encrypted. PDF/X-4 prohibits encryption.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-064",
+          "name": "Trailer /Encrypt Present",
+          "description": "Trailer contains an /Encrypt dictionary even if the file is not fully encrypted.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-065",
+          "name": "Permission Restrictions Set",
+          "description": "Document has DRM permission restrictions. PDF/X-4 prohibits.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-066",
+          "name": "OCProperties /D Missing",
+          "description": "OCProperties dictionary is present but its default configuration /D is missing.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-067",
+          "name": "OCG Default BaseState Not ON",
+          "description": "Optional-content default /BaseState is not 'ON'. The press may render unintended layers.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-068",
+          "name": "OCG Layers Default Off",
+          "description": "One or more OCG layers default to OFF. Verify intentional.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-069",
+          "name": "OCProperties Empty",
+          "description": "OCProperties dictionary is present but /OCGs array is empty or missing.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-070",
+          "name": "OCG Auto-State Triggers",
+          "description": "OCG /AS array has automatic-state triggers. Not recommended in PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-071",
+          "name": "JavaScript Detected",
+          "description": "JavaScript actions or scripts are prohibited in PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-072",
+          "name": "Launch Action",
+          "description": "/Launch actions are prohibited in PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-073",
+          "name": "Embedded Files",
+          "description": "EmbeddedFiles names tree is present. PDF/X-4 prohibits embedded files.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-074",
+          "name": "XFA Forms",
+          "description": "XFA forms detected. PDF/X-4 prohibits XFA \u2014 convert to AcroForm or flatten.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-075",
+          "name": "Transfer Function",
+          "description": "Custom transfer function detected. PDF/X-4 prohibits transfer curves.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-076",
+          "name": "Custom Halftone",
+          "description": "Custom halftone dictionary detected. Verify RIP supports the screen.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-077",
+          "name": "PostScript XObject",
+          "description": "Form XObject contains a /Subtype /PS PostScript fragment. PDF/X-4 prohibits PS XObjects.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-078",
+          "name": "External Stream Reference",
+          "description": "XObject stream references an external file. PDF/X-4 forbids external resources.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-079",
+          "name": "LZW Image Compression",
+          "description": "Image uses LZW compression. Deprecated in PDF/X-4 \u2014 re-encode as Flate or JPEG.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-080",
+          "name": "Stream Decompression Failure",
+          "description": "One or more content/object streams failed to decompress. Workflows downstream of PDF/X-4 cannot consume corrupt streams.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-081",
+          "name": "Broken Object References",
+          "description": "Indirect object references resolve to null/missing objects. The PDF is structurally invalid for PDF/X-4.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-082",
+          "name": "Cross-Reference Table Errors",
+          "description": "The xref / xref-stream is inconsistent. RIPs may load partial content or refuse the file outright.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-083",
+          "name": "Trailer /ID Missing",
+          "description": "Trailer /ID array is missing. PDF/X-4 requires it for unique file identification across revisions.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-084",
+          "name": "Incremental Updates",
+          "description": "Trailer carries /Prev so the file has incremental updates. PDF/X-4 expects a clean, fully-rewritten file.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-085",
+          "name": "RGB Image Without RGB OutputIntent",
+          "description": "RGB image embedded with a non-RGB OutputIntent and no RGB DefaultColorSpace.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-086",
+          "name": "Inline Image Too Large",
+          "description": "Inline image exceeds the 4KB recommended maximum. Move large rasters to external image XObjects.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-087",
+          "name": "JPEG2000 (JPX) Image",
+          "description": "Image uses JPEG2000 compression. Verify the destination RIP accepts JPX in PDF/X-4 conformance mode.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-088",
+          "name": "XObject References Null",
+          "description": "An XObject in /Resources /XObject points at a null indirect object.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-089",
+          "name": "Font References Null",
+          "description": "A font in /Resources /Font points at a null indirect object.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-090",
+          "name": "ColorSpace References Null",
+          "description": "A ColorSpace in /Resources /ColorSpace points at a null indirect object.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-091",
+          "name": "ExtGState References Null",
+          "description": "An ExtGState in /Resources /ExtGState points at a null indirect object.",
+          "default_severity": "error"
+        },
+        {
+          "id": "PDFX4-092",
+          "name": "Page Has Content But No Resources",
+          "description": "A page has content but no /Resources entry. Implicit inheritance from the page tree may break under linearization.",
           "default_severity": "error"
         }
       ]
