@@ -397,6 +397,10 @@ ALTER TABLE jobs
   ADD COLUMN IF NOT EXISTS brand_profile_id_override UUID;
 ALTER TABLE jobs
   ADD COLUMN IF NOT EXISTS unbranded_override BOOLEAN NOT NULL DEFAULT false;
+-- Alembic 051: shared OCR text-region pass output. JSONB list of
+-- {bbox, text, confidence, polygon, source}. NULL = pass didn't run.
+ALTER TABLE jobs
+  ADD COLUMN IF NOT EXISTS detected_text_regions JSONB;
 
 ALTER TABLE tenants
   ADD COLUMN IF NOT EXISTS unbranded_by_default BOOLEAN NOT NULL DEFAULT false;

@@ -247,6 +247,12 @@ class Job(Base):
     ocr_force: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False, server_default=sa_text("false")
     )
+    # PR 2 (OCR/ML accuracy): persisted output of the orchestrator's
+    # shared text-region pass — list[DetectedTextRegion] serialised as JSON.
+    # NULL when the pass didn't run (heuristic gated, GPU outage, or feature
+    # disabled). Multiple downstream analyzers read this back at viewer time
+    # to highlight outlined captions and fold-zone text.
+    detected_text_regions: Mapped[list[dict[str, Any]] | None] = mapped_column(JSON, nullable=True)
     # WS-D packaging inspectors. ``dieline`` carries the name-match
     # or Sonnet-fallback verdict; ``art_size_mm`` is NULL when the
     # dieline is missing (strict — see LPDF_DIE_MISSING);

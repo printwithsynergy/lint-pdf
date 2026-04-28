@@ -31,7 +31,11 @@ class OCREngine:
 
             self._engine = PaddleOCR(
                 use_angle_cls=True,
-                lang="en",
+                # ``ml`` is PaddleOCR's multilingual recognition model. Costs
+                # ~3x the weights size of the English-only model (~50 MB → ~150 MB
+                # on disk), so the Modal cache volume must size for it. Verify
+                # cold-start stays under the 300s timeout in modal_deploy.py.
+                lang="ml",
                 use_gpu=False,  # CPU PaddlePaddle; GPU work via PyTorch models
                 show_log=False,
             )

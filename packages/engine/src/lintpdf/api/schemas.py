@@ -265,6 +265,17 @@ class JobResponse(BaseModel):
             "only when the engine ran Claude OCR on this job."
         ),
     )
+    detected_text_regions: list[dict[str, Any]] | None = Field(
+        default=None,
+        description=(
+            "Output of the orchestrator's shared OCR text-region pass (PR 2 "
+            "OCR/ML accuracy). One entry per page with ``page_num`` and "
+            "``regions`` (each with ``bbox`` in PDF points, ``text``, "
+            "``confidence``, optional ``polygon``, ``source``). Pages where "
+            "the trigger heuristic didn't fire or the GPU call failed are "
+            "omitted. ``null`` when the pass didn't run for the job at all."
+        ),
+    )
     epm_verdict: dict[str, Any] | None = Field(
         default=None,
         description=(

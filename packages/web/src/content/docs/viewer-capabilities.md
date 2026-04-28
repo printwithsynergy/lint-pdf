@@ -44,6 +44,7 @@ Viewer-tier tenants see all three as `false` / `[]`. Starter and above see them 
 | `tiles_warmed` | ✗ (set by background task) | `lintpdf.viewer.warm_tiles` Celery task | Flips to `true` once every page tile is cached in S3. Drives the viewer's browser-side prefetch pass. Tracked in Redis at `lintpdf:tile-warm:{job_id}`; poll `/api/v1/viewer/jobs/{job_id}/tile-warming` for progress. |
 | `fonts` | ✓ | Font analyzer | Font inspector |
 | `images` | ✓ | Image analyzer | Image inventory |
+| `text_regions` | ✓ | Shared OCR text-region pass (PaddleOCR, multilingual `ml`) — runs on pages with placed-image area > 25 % or path-heavy / text-light. Per-page output in PDF points: `[{bbox, text, confidence, polygon, source}]`. | Highlights outlined captions and fold-zone text in the viewer; consumed by `safe_zone_violations`, `text_as_outlines`, and color/legibility analyzers. |
 | `layers` | ✗ | Extracted from PDF at job creation; not re-derivable | Layers panel (interactive via `ocg_on` / `ocg_off` query params on the tile endpoint — see below) |
 | `thumbnails` | ✓ (always populated on `complete`) | Page rasterizer | Page thumbnails strip |
 | `metadata` | ✓ (always populated on `complete`) | PDF metadata extractor | Document info panel |
