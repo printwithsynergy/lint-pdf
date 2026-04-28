@@ -852,6 +852,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
     ),
+    "LPDF_BARCODE_031": CheckInfo(
+        "Barcode Quiet Zone Close To Trim",
+        "Barcode bounding box sits within 5 mm of the trim box on at least one side. GS1 quiet-zone clearance (9x X-dim leading / 7x X-dim trailing) may be lost after finishing or seam occlusion at the cut. Verify quiet zones survive the cut.",
+    ),
     "LPDF_SPOT_NAME_TYPO": CheckInfo(
         "Spot Color Name Typo",
         "Two spot color names differ by ≤ 2 character edits (e.g. '/Dark Biege' vs '/Dark Beige'). The RIP treats spot names as case-sensitive, character-exact strings — misspelled separations will not merge with the correctly-named instance and create an extra unintended plate. Excludes Pantone identifiers and process channel names.",
