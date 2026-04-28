@@ -219,13 +219,27 @@ export const lintpdfBillingPlugin: PixieDustPlugin = {
         permission: "billing:manage",
         description: "Get current subscription status",
         handler: async (req: RouteRequest): Promise<RouteResponse> => {
-          const stripe = getStripe();
-          if (!stripe) {
-            return { status: 503, body: { error: "Stripe not configured" } };
-          }
           const tenantId = req.auth?.tenantId;
           if (!tenantId) {
             return { status: 401, body: { error: "Tenant context required" } };
+          }
+
+          // When Stripe isn't configured (e.g. self-hosted dev or
+          // tenant-test environment) we don't 503 — the dashboard's
+          // billing page should render the same empty "free / none"
+          // card it shows when no Stripe customer exists. Surface
+          // `stripe_unavailable` so the UI can optionally hide upgrade
+          // affordances.
+          const stripe = getStripe();
+          if (!stripe) {
+            return {
+              status: 200,
+              body: {
+                plan: "free",
+                status: "none",
+                stripe_unavailable: true,
+              },
+            };
           }
 
           const db = ctx.services.db as BillingDb;
@@ -248,13 +262,16 @@ export const lintpdfBillingPlugin: PixieDustPlugin = {
         permission: "billing:manage",
         description: "List invoices for the current tenant",
         handler: async (req: RouteRequest): Promise<RouteResponse> => {
-          const stripe = getStripe();
-          if (!stripe) {
-            return { status: 503, body: { error: "Stripe not configured" } };
-          }
           const tenantId = req.auth?.tenantId;
           if (!tenantId) {
             return { status: 401, body: { error: "Tenant context required" } };
+          }
+
+          // Same graceful-fallback rule as /subscription: missing
+          // Stripe config returns an empty list rather than 503.
+          const stripe = getStripe();
+          if (!stripe) {
+            return { status: 200, body: { invoices: [] } };
           }
 
           const db = ctx.services.db as BillingDb;
