@@ -36,6 +36,7 @@ Check IDs:
     LPDF_BARCODE_028 — Barcode extends into bleed area
     LPDF_BARCODE_029 — Barcode near fold line
     LPDF_BARCODE_030 — Barcode truncated below ISO minimum height
+    LPDF_BARCODE_031 — Barcode quiet zone too close to trim edge
 """
 
 from __future__ import annotations
@@ -895,6 +896,49 @@ class BarcodeAnalyzer(BaseAnalyzer):
                             bbox=candidate.bbox,
                         )
                     )
+                else:
+                    # LPDF_BARCODE_031: barcode quiet zone too close to
+                    # trim edge. The 2026-04-28 Opus audit flagged this
+                    # on Pavette, OrangeKiss, AN-Energy, Pink-Slush --
+                    # all UPC barcodes whose quiet-zone region (>= 10x
+                    # narrow-bar width) effectively overlaps the trim
+                    # cut, risking quiet-zone occlusion at finishing.
+                    # GS1 quiet-zone minimum is 9x X-dim leading +
+                    # 7x X-dim trailing; a 5 mm buffer to the trim
+                    # edge is a defensive proxy that holds for typical
+                    # 12-mil X-dim retail UPCs.
+                    qz_buf_mm = 5.0
+                    buf_pts = qz_buf_mm * _PTS_PER_MM
+                    breaches: list[str] = []
+                    if bbox[0] - trim.x0 < buf_pts:
+                        breaches.append(f"left ({(bbox[0] - trim.x0) / _PTS_PER_MM:.1f}mm)")
+                    if trim.x1 - bbox[2] < buf_pts:
+                        breaches.append(f"right ({(trim.x1 - bbox[2]) / _PTS_PER_MM:.1f}mm)")
+                    if bbox[1] - trim.y0 < buf_pts:
+                        breaches.append(f"bottom ({(bbox[1] - trim.y0) / _PTS_PER_MM:.1f}mm)")
+                    if trim.y1 - bbox[3] < buf_pts:
+                        breaches.append(f"top ({(trim.y1 - bbox[3]) / _PTS_PER_MM:.1f}mm)")
+                    if breaches:
+                        findings.append(
+                            Finding(
+                                inspection_id="LPDF_BARCODE_031",
+                                severity=Severity.WARNING,
+                                message=(
+                                    f"Barcode quiet zone close to trim edge on page "
+                                    f"{candidate.page_num}: {', '.join(breaches)} "
+                                    f"(< {qz_buf_mm:.0f}mm to trim). GS1 quiet-"
+                                    "zone clearance (9x X-dim leading / 7x X-dim "
+                                    "trailing) may be lost after finishing or seam "
+                                    "occlusion. Verify quiet zones survive the cut."
+                                ),
+                                page_num=candidate.page_num,
+                                details={
+                                    "breaches": breaches,
+                                    "buffer_mm": qz_buf_mm,
+                                },
+                                bbox=candidate.bbox,
+                            )
+                        )
 
             # LPDF_BARCODE_029: Near fold line
             if candidate.has_bounds and page:
