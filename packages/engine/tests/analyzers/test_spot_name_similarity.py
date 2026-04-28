@@ -157,3 +157,72 @@ def test_single_spot_emits_nothing() -> None:
     """Need at least 2 names to compare."""
     findings = SpotNameSimilarityAnalyzer().analyze(_doc("PMS185"), events=[])
     assert findings == []
+
+
+# -- whitespace / trailing punctuation -------------------------------------
+
+
+def test_trailing_whitespace_flagged() -> None:
+    """Cherry-Twist ``PANTONE 3582 C.  `` from the audit — trailing
+    period + spaces produce a separately named plate from the clean
+    name."""
+    findings = SpotNameSimilarityAnalyzer().analyze(_doc("PANTONE 3582 C.  "), events=[])
+    ws = [f for f in findings if f.inspection_id == "LPDF_SPOT_NAME_WHITESPACE"]
+    assert len(ws) == 1
+    assert ws[0].details["raw_name"] == "PANTONE 3582 C.  "
+    assert ws[0].details["cleaned_name"] == "PANTONE 3582 C"
+
+
+def test_leading_whitespace_flagged() -> None:
+    findings = SpotNameSimilarityAnalyzer().analyze(_doc("  Dark Beige"), events=[])
+    ws = [f for f in findings if f.inspection_id == "LPDF_SPOT_NAME_WHITESPACE"]
+    assert len(ws) == 1
+    assert ws[0].details["cleaned_name"] == "Dark Beige"
+
+
+def test_trailing_punctuation_alone_flagged() -> None:
+    """Just a trailing period (no spaces) still produces a separate plate."""
+    findings = SpotNameSimilarityAnalyzer().analyze(_doc("Buff."), events=[])
+    ws = [f for f in findings if f.inspection_id == "LPDF_SPOT_NAME_WHITESPACE"]
+    assert len(ws) == 1
+    assert ws[0].details["cleaned_name"] == "Buff"
+
+
+def test_clean_name_not_flagged() -> None:
+    findings = SpotNameSimilarityAnalyzer().analyze(_doc("PANTONE 3582 C"), events=[])
+    ws = [f for f in findings if f.inspection_id == "LPDF_SPOT_NAME_WHITESPACE"]
+    assert ws == []
+
+
+def test_whitespace_applies_to_pantone() -> None:
+    """The whitespace check must NOT exclude Pantone names — the stray
+    whitespace IS the defect, even on a Pantone name."""
+    findings = SpotNameSimilarityAnalyzer().analyze(_doc("PANTONE 3582 C.  "), events=[])
+    ws = [f for f in findings if f.inspection_id == "LPDF_SPOT_NAME_WHITESPACE"]
+    assert len(ws) == 1
+
+
+def test_whitespace_dedupe() -> None:
+    """Same dirty name appearing twice → one finding, not two."""
+    # Note: ``_doc`` deduplicates by exact original string already (the
+    # color_spaces dict + seen_exact set in _collect_spot_names), so
+    # duplicating the same string in two color-spaces still yields one
+    # spot-name entry. This test guards against a future where that
+    # dedupe is loosened — the whitespace_seen set in the analyzer
+    # itself should still emit only one finding per raw name.
+    doc = _doc("PANTONE 3582 C.  ", "PANTONE 3582 C.  ")
+    findings = SpotNameSimilarityAnalyzer().analyze(doc, events=[])
+    ws = [f for f in findings if f.inspection_id == "LPDF_SPOT_NAME_WHITESPACE"]
+    assert len(ws) == 1
+
+
+def test_whitespace_and_typo_can_coexist() -> None:
+    """A document with both a dirty Pantone name AND a typo-pair on
+    custom colors emits both findings."""
+    findings = SpotNameSimilarityAnalyzer().analyze(
+        _doc("PANTONE 3582 C.  ", "Dark Beige", "Dark Biege"), events=[]
+    )
+    ws = [f for f in findings if f.inspection_id == "LPDF_SPOT_NAME_WHITESPACE"]
+    typos = [f for f in findings if f.inspection_id == "LPDF_SPOT_NAME_TYPO"]
+    assert len(ws) == 1
+    assert len(typos) == 1

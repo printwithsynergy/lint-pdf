@@ -178,6 +178,42 @@ class SpotNameSimilarityAnalyzer(BaseAnalyzer):
     ) -> list[Finding]:
         findings: list[Finding] = []
         all_names = _collect_spot_names(document)
+
+        # LPDF_SPOT_NAME_WHITESPACE — applies to ALL spot names
+        # (including Pantone) because stray whitespace / trailing
+        # punctuation in the colorant name is the defect itself.
+        # Cherry-Twist had ``PANTONE 3582 C.  `` with a trailing
+        # period + two spaces — produces a separately named plate
+        # from the clean ``PANTONE 3582 C`` if any other artwork
+        # ever uses the clean form.
+        whitespace_seen: set[str] = set()
+        for n in all_names:
+            cleaned = n.strip().rstrip(".,;:").rstrip()
+            if cleaned == n or n in whitespace_seen:
+                continue
+            whitespace_seen.add(n)
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_SPOT_NAME_WHITESPACE",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Spot color name {n!r} has stray whitespace or "
+                        f"trailing punctuation. Cleaned form would be "
+                        f"{cleaned!r}. The RIP treats spot names as "
+                        "character-exact strings, so this produces a "
+                        "separately named plate from any artwork that "
+                        "uses the clean name and breaks DFE "
+                        "spot-name matching/aliasing."
+                    ),
+                    details={
+                        "raw_name": n,
+                        "cleaned_name": cleaned,
+                    },
+                    category="color",
+                    object_type="document",
+                )
+            )
+
         names = [n for n in all_names if not _is_excluded(n)]
         if len(names) < 2:
             return findings
