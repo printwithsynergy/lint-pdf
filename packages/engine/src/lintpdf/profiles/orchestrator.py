@@ -215,6 +215,39 @@ def _build_structural_evidence(document: Any) -> dict[str, Any]:
                             }
                         )
 
+    # PR-G (audit-uncertain v2): per-image structural fields. The
+    # post-merge audit had 57 of 101 "uncertain" findings on
+    # ``LPDF_IMG_*`` checks because vision can't measure pixel density
+    # vs the CTM-effective placement. Threading these fields through
+    # to the audit prompt converts most LPDF_IMG_* uncertains into
+    # agree/disagree.
+    images: list[dict[str, Any]] = []
+    for page in pages:
+        page_imgs = getattr(page, "images", None) or []
+        if not isinstance(page_imgs, list):
+            continue
+        for img in page_imgs:
+            cs = getattr(img, "color_space", None)
+            cs_type = getattr(cs, "cs_type", None) if cs is not None else None
+            cs_name = getattr(cs, "name", None) if cs is not None else None
+            images.append(
+                {
+                    "page_num": int(getattr(img, "page_num", 0) or 0),
+                    "name": getattr(img, "name", None),
+                    "pixel_width": int(getattr(img, "width", 0) or 0),
+                    "pixel_height": int(getattr(img, "height", 0) or 0),
+                    "bits_per_component": int(getattr(img, "bits_per_component", 0) or 0),
+                    "color_space_type": cs_type,
+                    "color_space_name": cs_name,
+                    "filters": list(getattr(img, "filters", None) or ()),
+                    "has_soft_mask": bool(getattr(img, "has_soft_mask", False)),
+                    "has_hard_mask": bool(getattr(img, "has_hard_mask", False)),
+                    "interpolate": bool(getattr(img, "interpolate", False)),
+                    "intent": getattr(img, "intent", None),
+                    "inline": bool(getattr(img, "inline", False)),
+                }
+            )
+
     output_intent_summary = []
     for oi in output_intents:
         if not isinstance(oi, dict):
@@ -247,6 +280,7 @@ def _build_structural_evidence(document: Any) -> dict[str, Any]:
         "fonts": fonts,
         "colorspaces": colorspaces,
         "spot_colors": spot_colors,
+        "images": images,
         "has_acroform": bool(catalog.get("/AcroForm") or catalog.get("AcroForm")),
         "has_oc_properties": bool(catalog.get("/OCProperties") or catalog.get("OCProperties")),
         "has_open_action": bool(catalog.get("/OpenAction") or catalog.get("OpenAction")),
