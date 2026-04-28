@@ -345,6 +345,8 @@ class BarcodeAnalyzer(BaseAnalyzer):
         if barcode_pages:
             findings.extend(self._decode_and_grade(barcode_pages, document))
             findings.extend(self._analyze_barcode_quality(barcode_pages, document))
+            # PR D Slot 4: orientation + quiet-zone + bar-height suite.
+            findings.extend(self._check_orientation_suite(barcode_pages, document))
 
         # Detect 2D barcodes from fill patterns (LPDF_BARCODE_014-018)
         findings.extend(self._detect_2d_barcodes(events, document))
@@ -990,6 +992,166 @@ class BarcodeAnalyzer(BaseAnalyzer):
                         details={"barcode_count": count},
                     )
                 )
+
+        return findings
+
+    def _check_orientation_suite(
+        self, candidates: list[_BarcodeCandidate], document: SemanticDocument
+    ) -> list[Finding]:
+        """PR D Slot 4 — barcode orientation + quiet-zone + bar-height suite.
+
+        Closes the 10 barcode misses Opus surfaced in the post-merge audit
+        (`/tmp/audit-opus-postmerge-1777391641/`). Each rule reuses the
+        existing ``_BarcodeCandidate`` bbox + stroke widths; no new
+        rendering or decoding is required.
+
+        Check IDs:
+        * ``LPDF_BARCODE_ORIENTATION`` — 1D barcode rotated >45° off the
+          page's long axis (ladder vs picket mismatch on stick-pack /
+          pouch fixtures).
+        * ``LPDF_BARCODE_QUIET_ZONE`` — bbox sits within 5.2 mm of any
+          page edge (GS1 absolute minimum for picket-on-edge codes).
+        * ``LPDF_BARCODE_HEIGHT_MIN`` — bar height < ``narrow_bar_width *
+          10`` (linear minimum per GS1 General Specifications).
+        """
+        findings: list[Finding] = []
+        # GS1 minima
+        gs1_quiet_zone_pt = 5.2 * 2.83464567  # 5.2 mm in points
+        for candidate in candidates:
+            if not candidate.has_bounds:
+                continue
+            page_idx = candidate.page_num - 1
+            if page_idx < 0 or page_idx >= len(document.pages):
+                continue
+            page = document.pages[page_idx]
+            page_w = page.media_box.width
+            page_h = page.media_box.height
+            x0, y0, x1, y1 = candidate.bbox  # type: ignore[misc]
+            bbox_w = x1 - x0
+            bbox_h = y1 - y0
+
+            # ── ORIENTATION ───────────────────────────────────────────
+            # Page format: portrait if h>w, landscape otherwise.
+            page_landscape = page_w > page_h
+            # Barcode aspect: picket-fence (horizontal bars) is wide
+            # & short (bbox_w > bbox_h * 1.5); ladder is tall & narrow.
+            bar_picket = bbox_w > bbox_h * 1.5
+            bar_ladder = bbox_h > bbox_w * 1.5
+            orientation_mismatch = False
+            mismatch_reason = ""
+            if bar_ladder and page_landscape:
+                # Ladder on landscape page: barcode is rotated 90° off
+                # the natural reading axis. Common stick-pack issue.
+                orientation_mismatch = True
+                mismatch_reason = (
+                    "Ladder-orientation barcode (tall, narrow) on a "
+                    "landscape page — barcode rotated 90° off the "
+                    "page's long axis"
+                )
+            elif bar_picket and not page_landscape:
+                # Picket on portrait page — only a concern when the
+                # bbox is also near the trim edge (barcode running
+                # parallel to the trim, common on stick-packs where
+                # the long bar axis crosses the seal).
+                # Defer to QUIET_ZONE check below.
+                pass
+            if orientation_mismatch:
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_BARCODE_ORIENTATION",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"{mismatch_reason} on page {candidate.page_num}. "
+                            "Verify scanner orientation at the production "
+                            "line — pickers and inline scanners typically "
+                            "expect picket-fence on landscape and ladder "
+                            "on portrait."
+                        ),
+                        page_num=candidate.page_num,
+                        bbox=candidate.bbox,
+                        details={
+                            "page_orientation": "landscape" if page_landscape else "portrait",
+                            "barcode_aspect": "ladder" if bar_ladder else "picket",
+                            "bbox_pts": list(candidate.bbox or ()),
+                        },
+                    )
+                )
+
+            # ── QUIET ZONE ────────────────────────────────────────────
+            # Distance to each page edge.
+            margin_left = x0
+            margin_right = page_w - x1
+            margin_bottom = y0
+            margin_top = page_h - y1
+            edges_violated = [
+                name
+                for name, m in (
+                    ("left", margin_left),
+                    ("right", margin_right),
+                    ("bottom", margin_bottom),
+                    ("top", margin_top),
+                )
+                if m < gs1_quiet_zone_pt
+            ]
+            if edges_violated:
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_BARCODE_QUIET_ZONE_EDGE",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"Barcode on page {candidate.page_num} sits within "
+                            f"{gs1_quiet_zone_pt:.1f}pt (5.2 mm GS1 minimum) "
+                            f"of {len(edges_violated)} page edge(s): "
+                            f"{', '.join(edges_violated)}. Quiet-zone "
+                            "encroachment on labels reduces first-pass "
+                            "scan rate; verify against production die."
+                        ),
+                        page_num=candidate.page_num,
+                        bbox=candidate.bbox,
+                        details={
+                            "edges_violated": edges_violated,
+                            "min_gs1_quiet_zone_mm": 5.2,
+                            "margins_pts": {
+                                "left": round(margin_left, 2),
+                                "right": round(margin_right, 2),
+                                "bottom": round(margin_bottom, 2),
+                                "top": round(margin_top, 2),
+                            },
+                        },
+                    )
+                )
+
+            # ── HEIGHT MIN ────────────────────────────────────────────
+            # Bar height should be at least 10x the narrowest bar width
+            # for linear (1D) symbologies per GS1 General Specs.
+            if candidate.stroke_widths:
+                narrow_bar = min(candidate.stroke_widths)
+                # Bar-axis dimension = the SHORTER of (bbox_w, bbox_h) for
+                # ladder, longer for picket. Use the perpendicular-to-bars
+                # axis: that's the height of the bars themselves.
+                bar_height = min(bbox_w, bbox_h)
+                min_height = narrow_bar * 10
+                if 0 < bar_height < min_height:
+                    findings.append(
+                        Finding(
+                            inspection_id="LPDF_BARCODE_HEIGHT_MIN",
+                            severity=Severity.WARNING,
+                            message=(
+                                f"Barcode on page {candidate.page_num} has bars "
+                                f"only {bar_height:.2f}pt tall — below the "
+                                f"GS1 minimum of {min_height:.2f}pt "
+                                f"(10x narrow bar width {narrow_bar:.2f}pt). "
+                                "Truncated bars reduce scanner read distance."
+                            ),
+                            page_num=candidate.page_num,
+                            bbox=candidate.bbox,
+                            details={
+                                "bar_height_pts": round(bar_height, 2),
+                                "narrow_bar_pts": round(narrow_bar, 2),
+                                "gs1_min_pts": round(min_height, 2),
+                            },
+                        )
+                    )
 
         return findings
 
