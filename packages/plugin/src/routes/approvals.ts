@@ -114,6 +114,14 @@ export function approvalRoutes(): RouteDefinition[] {
           engineUrl(`/api/v1/jobs/${req.params.jobId}/approval-chain`),
           { headers: authHeaders() },
         );
+        // Engine returns 404 "no chain configured" for jobs without an
+        // attached chain. The viewer probes this on every load and
+        // logs the 404 in the browser console even though the app
+        // handles it gracefully. Return 200 + null so the "no chain"
+        // case is a clean empty-state response instead of console noise.
+        if (resp.status === 404) {
+          return { status: 200, body: null };
+        }
         const data = await resp.json().catch(() => ({}));
         return { status: resp.status, body: data };
       }) as RouteHandler,
@@ -197,6 +205,12 @@ export function approvalRoutes(): RouteDefinition[] {
           engineUrl(`/api/v1/jobs/${req.params.jobId}/approval-chain`),
           { headers: authHeaders() },
         );
+        // Same "no chain configured" → empty state shimming as the
+        // /jobs/:jobId/approval-chain handler. Keeps the viewer's
+        // probe quiet for jobs without an attached chain.
+        if (resp.status === 404) {
+          return { status: 200, body: null };
+        }
         const data = await resp.json().catch(() => null);
         return { status: resp.status, body: data };
       }) as RouteHandler,
