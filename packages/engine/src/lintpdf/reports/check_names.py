@@ -1338,6 +1338,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Barcode height mm below ISO minimum",
         "Barcode height Nmm below ISO minimum on page N",
     ),
+    "LPDF_BARCODE_ORIENTATION": CheckInfo(
+        "Barcode orientation mismatch with page",
+        "1D barcode aspect (ladder vs picket) does not match the page's natural reading axis (e.g. ladder barcode on a landscape page). Pickers and inline scanners typically expect picket-fence on landscape and ladder on portrait — verify scanner orientation at the production line.",
+    ),
+    "LPDF_BARCODE_QUIET_ZONE_EDGE": CheckInfo(
+        "Barcode quiet zone below GS1 page-edge minimum",
+        "Barcode bbox sits within 5.2 mm of one or more page edges (GS1 General Specifications absolute minimum quiet zone for picket-on-edge codes). Distinct from LPDF_BARCODE_QUIET_ZONE (dieline proximity). Quiet-zone encroachment on labels reduces first-pass scan rate; verify against production die.",
+    ),
+    "LPDF_BARCODE_HEIGHT_MIN": CheckInfo(
+        "Barcode bar height below GS1 10x narrow-bar minimum",
+        "Bar height is below the GS1 minimum of 10x the narrowest bar width (linear symbology rule). Truncated bars reduce scanner read distance and first-pass scan rate.",
+    ),
     # ── LPDF_BC ─────────────────────────────────────────────────────────────
     "LPDF_BC_001": CheckInfo(
         "Decoded DataMatrix barcode", "Decoded DataMatrix barcode on page N: 'N'"
