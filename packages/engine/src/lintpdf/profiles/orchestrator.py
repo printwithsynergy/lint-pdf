@@ -138,6 +138,122 @@ def _box_to_list(box: Any) -> list[float] | None:
             return None
 
 
+def _build_structural_evidence(document: Any) -> dict[str, Any]:
+    """Compact dict of PDF structural fields the Opus audit harness can use
+    to adjudicate findings that vision can't verify.
+
+    Vision sees rendered output; structural checks (font embedding, ICC,
+    encryption, XMP, output intents, spot colorspaces) need to see the
+    parsed metadata. The audit pre-merge measurement marked ~358 of 1313
+    findings "uncertain" purely because the prompt only had the rendered
+    PDF + the engine's findings. Threading this evidence through to the
+    audit prompt converts most of those into agree/disagree.
+
+    Output is a JSON-serialisable dict (~500 bytes / fixture). Intentionally
+    omits raw stream bytes — only the parsed-summary level.
+    """
+    pages = getattr(document, "pages", None) or []
+    output_intents = getattr(document, "output_intents", None) or []
+    catalog = getattr(document, "catalog", None) or {}
+
+    fonts: list[dict[str, Any]] = []
+    seen_font_names: set[str] = set()
+    colorspaces: list[dict[str, Any]] = []
+    seen_cs_keys: set[str] = set()
+    spot_colors: list[dict[str, Any]] = []
+    seen_spots: set[str] = set()
+
+    for page in pages:
+        page_fonts = getattr(page, "fonts", None) or {}
+        if isinstance(page_fonts, dict):
+            for name, font in page_fonts.items():
+                key = str(getattr(font, "base_font", None) or name)
+                if key in seen_font_names:
+                    continue
+                seen_font_names.add(key)
+                fonts.append(
+                    {
+                        "name": str(name),
+                        "base_font": getattr(font, "base_font", None),
+                        "subtype": getattr(font, "subtype", None),
+                        "embedded": bool(getattr(font, "embedded", False)),
+                        "subset": bool(getattr(font, "subset", False)),
+                        "encoding": getattr(font, "encoding", None),
+                        "has_to_unicode": bool(getattr(font, "has_to_unicode", False)),
+                    }
+                )
+
+        page_cs = getattr(page, "color_spaces", None) or {}
+        if isinstance(page_cs, dict):
+            for cs_name, cs in page_cs.items():
+                cs_type = getattr(cs, "cs_type", None)
+                key = f"{cs_type}:{cs_name}"
+                if key in seen_cs_keys:
+                    continue
+                seen_cs_keys.add(key)
+                colorant_names = list(getattr(cs, "colorant_names", None) or ())
+                colorspaces.append(
+                    {
+                        "name": str(cs_name),
+                        "cs_type": cs_type,
+                        "components": getattr(cs, "components", None),
+                        "icc_profile_ref": getattr(cs, "icc_profile_ref", None),
+                        "alternate": getattr(cs, "alternate", None),
+                        "colorant_names": colorant_names,
+                    }
+                )
+                if cs_type in ("Separation", "DeviceN", "NChannel"):
+                    for cn in colorant_names:
+                        if not cn or cn in seen_spots or cn in ("All", "None"):
+                            continue
+                        seen_spots.add(cn)
+                        spot_colors.append(
+                            {
+                                "name": cn,
+                                "cs_type": cs_type,
+                                "alternate_cs": getattr(cs, "alternate", None),
+                            }
+                        )
+
+    output_intent_summary = []
+    for oi in output_intents:
+        if not isinstance(oi, dict):
+            continue
+        s = oi.get("/S") or oi.get("S")
+        oci = oi.get("/OutputConditionIdentifier") or oi.get("OutputConditionIdentifier")
+        dest = oi.get("/DestOutputProfile") or oi.get("DestOutputProfile")
+        cs = ""
+        if isinstance(dest, dict):
+            cs = dest.get("/ColorSpace") or dest.get("ColorSpace") or ""
+        output_intent_summary.append(
+            {
+                "subtype": s,
+                "output_condition_id": oci,
+                "icc_color_space": cs,
+                "embedded_profile": isinstance(dest, dict),
+            }
+        )
+
+    return {
+        "pdf_version": getattr(document, "version", None),
+        "is_encrypted": bool(getattr(document, "is_encrypted", False)),
+        "page_count": int(getattr(document, "page_count", len(pages))),
+        "xmp_metadata_present": bool(getattr(document, "metadata_stream", None)),
+        "trailer_id_present": bool(
+            (getattr(document, "trailer", None) or {}).get("/ID")
+            or (getattr(document, "trailer", None) or {}).get("ID")
+        ),
+        "output_intents": output_intent_summary,
+        "fonts": fonts,
+        "colorspaces": colorspaces,
+        "spot_colors": spot_colors,
+        "has_acroform": bool(catalog.get("/AcroForm") or catalog.get("AcroForm")),
+        "has_oc_properties": bool(catalog.get("/OCProperties") or catalog.get("OCProperties")),
+        "has_open_action": bool(catalog.get("/OpenAction") or catalog.get("OpenAction")),
+        "has_names_tree": bool(catalog.get("/Names") or catalog.get("Names")),
+    }
+
+
 class PreflightOrchestrator:
     """Executes the full preflight pipeline for a given profile.
 
@@ -341,6 +457,18 @@ class PreflightOrchestrator:
         }
         if color_score_data:
             metadata.update(color_score_data)
+
+        # PR B (Slot 2A): structural-evidence dict consumed by the Opus
+        # audit harness so it can adjudicate non-visual findings (font
+        # embedding, ICC, encryption, XMP, output intents, spot CS) that
+        # vision can't verify on the rendered PDF alone. Best-effort:
+        # never fail the job if the dict can't be built.
+        try:
+            metadata["structural_evidence"] = _build_structural_evidence(document)
+        except Exception:  # pragma: no cover
+            import logging as _logging
+
+            _logging.getLogger(__name__).debug("structural_evidence build failed", exc_info=True)
 
         return PreflightResult(
             job_id=job_id,

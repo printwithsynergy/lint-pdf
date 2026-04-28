@@ -432,6 +432,15 @@ class PreflightProfile(BaseModel):
     ai: AIFeatureConfig = Field(default_factory=AIFeatureConfig)
     color: ColorConfig = Field(default_factory=ColorConfig)
     report: ReportConfig = Field(default_factory=ReportConfig)
+    is_admin_only: bool = Field(
+        default=False,
+        description=(
+            "When true, the profile is only resolvable via the admin path "
+            "(X-Admin-Key header). Tenants requesting the profile by id "
+            "get 404 from the visibility filter. Used by `lintpdf-system-"
+            "test` and other system-only / regression-test profiles."
+        ),
+    )
 
     def is_check_enabled(self, check_id: str) -> bool:
         """Determine if a check ID is enabled by this profile."""

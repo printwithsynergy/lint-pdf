@@ -165,6 +165,20 @@ def verify_admin_key(x_admin_key: str | None = Header(None)) -> str:
     return x_admin_key
 
 
+def is_admin_request(x_admin_key: str | None) -> bool:
+    """Soft variant of :func:`verify_admin_key` — returns True/False
+    without raising. Used by routes that accept both tenant and admin
+    auth (PR B Slot 2B's submit-with-admin-override path).
+    """
+    if not x_admin_key:
+        return False
+    from lintpdf.api.config import get_settings
+
+    settings = get_settings()
+    return bool(settings.admin_api_key) and x_admin_key == settings.admin_api_key
+    return x_admin_key
+
+
 def require_any_auth(*strategies: Callable[..., Any]) -> Callable[..., Any]:
     """Create a dependency that tries multiple auth strategies in order.
 
