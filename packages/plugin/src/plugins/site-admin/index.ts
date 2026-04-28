@@ -132,42 +132,30 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
     // /dashboard/api-reference + the marketing-site /swagger, which
     // both read /openapi.tenant.json.
     //
-    // Canonical path is /dashboard/admin/api-reference. The old
-    // /dashboard/admin/swagger path is kept as a page + redirect so
-    // internal bookmarks and the existing Postman page's back-link
-    // keep working.
+    // The admin pages still exist at /dashboard/admin/api-reference and
+    // /dashboard/admin/swagger so internal bookmarks keep working, and
+    // /dashboard/admin/postman is reachable from the per-tenant detail
+    // pages. They are NOT registered as separate sidebar entries —
+    // super admins reach them by navigating into a tenant or by direct
+    // URL. This consolidates the sidebar so super admins see one
+    // "API Reference" / "API Keys" / "Webhooks" / "Reports" entry per
+    // concept rather than tenant + admin duplicates.
     ctx.addPage({
       path: "/dashboard/admin/api-reference",
-      title: "API Reference (All)",
+      title: "API Reference (Admin)",
       layout: "dashboard",
     });
     ctx.addPage({
       path: "/dashboard/admin/swagger",
-      title: "API Reference (All)",
+      title: "API Reference (Admin)",
       layout: "dashboard",
     });
+    // Cross-tenant views still need their own sidebar entries because
+    // they aggregate every tenant's data, not just the staff tenant's
+    // — but rename to drop the noisy "(All)" suffix and keep the
+    // hierarchy obvious by grouping under "API & Integrations".
     ctx.addNavItem({
-      label: "API Reference (All)",
-      href: "/dashboard/admin/api-reference",
-      icon: "code",
-      section: "admin",
-      group: "API & Integrations",
-      order: 46,
-      requiredRole: "SUPER_ADMIN",
-    });
-    ctx.addNavItem({
-      label: "Postman (full)",
-      href: "/dashboard/admin/postman",
-      icon: "send",
-      section: "admin",
-      group: "API & Integrations",
-      order: 47,
-      requiredRole: "SUPER_ADMIN",
-    });
-    // Cross-tenant views — group by tenant, grant super-admin access to
-    // every tenant's API keys, webhook endpoints, and report tokens.
-    ctx.addNavItem({
-      label: "API Keys (All)",
+      label: "API Keys",
       href: "/dashboard/admin/api-keys",
       icon: "lock",
       section: "admin",
@@ -176,7 +164,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       requiredRole: "SUPER_ADMIN",
     });
     ctx.addNavItem({
-      label: "Webhooks (All)",
+      label: "Webhooks",
       href: "/dashboard/admin/webhook-endpoints",
       icon: "bell",
       section: "admin",
@@ -185,7 +173,7 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       requiredRole: "SUPER_ADMIN",
     });
     ctx.addNavItem({
-      label: "Reports (All)",
+      label: "Reports",
       href: "/dashboard/admin/reports",
       icon: "file-text",
       section: "admin",
@@ -193,12 +181,12 @@ export const lintpdfSiteAdminPlugin: PixieDustPlugin = {
       order: 52,
       requiredRole: "SUPER_ADMIN",
     });
-    // Admin documentation — landing + per-chapter rendering lives at
-    // /dashboard/admin/docs and /dashboard/admin/docs/{slug}, backed by
-    // packages/app/content/docs-admin/.
-    // Admin documentation lives under the same "admin" sidebar section (PD's
-    // NavItem.section enum is "main" | "admin" | "tenant" | "global" — no
-    // custom keys), rendered at the bottom of the group via a high order.
+    // Single role-aware Docs entry. Tenant docs live on the marketing
+    // site; staff docs live in packages/app/content/docs-admin and
+    // render at /dashboard/admin/docs. The sidebar entry routes super
+    // admins to the staff runbooks; tenant users see the public marketing
+    // docs through the dashboard chrome via the in-app API Reference
+    // page (Swagger) — they don't need a second "Documentation" link.
     ctx.addNavItem({
       label: "Documentation",
       href: "/dashboard/admin/docs",
