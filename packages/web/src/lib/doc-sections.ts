@@ -204,7 +204,7 @@ export const docSections: DocSection[] = [
     key: "branding",
     heading: "Branding & sharing",
     blurb:
-      "White-label reports with your domain, logo, and colours; fine-grained share-link controls.",
+      "White-label reports with your domain, logo, and colors; fine-grained share-link controls.",
     items: [
       {
         slug: "branding-and-anonymous",
@@ -215,13 +215,13 @@ export const docSections: DocSection[] = [
         slug: "brand-profiles",
         label: "Brand Profiles",
         description:
-          "Named tenant branding configs — multiple per tenant, one default. Logo, colours, footer text, support email, optional custom domain.",
+          "Named tenant branding configs — multiple per tenant, one default. Logo, colors, footer text, support email, optional custom domain.",
       },
       {
         slug: "brand-specs",
         label: "Brand Specs",
         description:
-          "Per-customer colour specifications with three-level resolution (tenant default, endpoint default, per-job override).",
+          "Per-customer color specifications with three-level resolution (tenant default, endpoint default, per-job override).",
       },
       {
         slug: "share-links",
@@ -374,7 +374,7 @@ export const docSections: DocSection[] = [
       {
         slug: "panels/profile",
         label: "Brand profile",
-        description: "Logo, colours, custom domain.",
+        description: "Logo, colors, custom domain.",
       },
       // /dashboard/endpoints was hard-removed in PR 26; the panel
       // entry is gone too. The Workflows entry under integrations is

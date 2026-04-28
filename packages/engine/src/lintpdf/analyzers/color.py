@@ -70,7 +70,7 @@ class ColorAnalyzer(BaseAnalyzer):
         brand_palette_present: bool = False,
     ) -> None:
         self.tac_limit = tac_limit
-        # When the tenant hasn't declared a brand colour palette we
+        # When the tenant hasn't declared a brand color palette we
         # have no ground truth for whether a pure-K fill or knockout
         # black was intentional. The rules still have noise value on
         # brand-configured tenants, but on an uncategorised tenant

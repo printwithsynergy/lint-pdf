@@ -296,7 +296,7 @@ class Job(Base):
     # over the endpoint's ``default_brand_spec_id`` and the
     # tenant-default BrandSpec row. The orchestrator resolves this
     # via :func:`lintpdf.brand_specs.resolver.resolve_brand_spec_for_job`
-    # and the analyzers gate the strict colour advisories on
+    # and the analyzers gate the strict color advisories on
     # whether a spec was actually resolved. FK set to NULL on
     # delete so archived specs can't dangle. Phase 0.7 PR-B3d: the
     # FK to ``brand_specs.id`` was dropped (alembic 045) — the column
@@ -1035,9 +1035,7 @@ class ApprovalChain(Base):
     # the tenant's ``ToggleOverride(toggle_id='approval_template')``
     # dict. The column itself stays so historical chains keep their
     # template reference for audit replay.
-    template_id: Mapped[uuid.UUID | None] = mapped_column(
-        Uuid, nullable=True
-    )
+    template_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     current_step: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     steps: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)

@@ -27,7 +27,7 @@ The script:
 
 1. Finds or creates the tenant named `"Print With Synergy (Demo Customer)"` with plan=enterprise.
 2. Mints a fresh API key for it (old keys are revoked).
-3. Creates or updates the `"Print with Synergy"` BrandProfile with the PWS brand colours (`#0B5B63` accent, `#0E7A84` hover) and uploads the current logo asset.
+3. Creates or updates the `"Print with Synergy"` BrandProfile with the PWS brand colors (`#0B5B63` accent, `#0E7A84` hover) and uploads the current logo asset.
 4. Attaches `reports.printwithsynergy.com` + `app.printwithsynergy.com` as custom domains (already verified in prod).
 5. Writes the credentials file at `scripts/.lintpdf-demo-credentials.env`:
 

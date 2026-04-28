@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { SkeletonDashboard } from "@/components/skeleton";
 import { EmptyState } from "@thinkneverland/pixie-dust-ui";
 import { useToast } from "@thinkneverland/pixie-dust-ui";
-import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@/components/PortaledConfirmDialog";
 import { Button, Input, FormField } from "@thinkneverland/pixie-dust-ui";
 
 interface WebhookEndpoint {

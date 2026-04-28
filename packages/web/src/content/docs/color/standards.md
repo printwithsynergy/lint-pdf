@@ -33,7 +33,7 @@ GRACoL (General Requirements for Applications in Commercial Offset Lithography) 
 
 ### ISO 12647 compliance — `GRD_STD_003`
 
-ISO 12647 defines process control for half-tone colour separations, proofs, and production prints:
+ISO 12647 defines process control for half-tone color separations, proofs, and production prints:
 
 - OutputIntent ICC profile matches known ISO 12647-2 reference conditions.
 - TAC limits per declared printing condition.
@@ -51,7 +51,7 @@ Use the `iso-12647-compliance` profile:
 
 ## Extended Gamut (ECG) readiness
 
-Extended Gamut Color (also called Expanded Color Gamut, or CMYKOGV) uses 7 inks instead of 4 — CMYK plus Orange, Green, and Violet — to reproduce a wider slice of Pantone. Research against FOGRA55 shows 57.6 % of Pantone colours match at ΔE ≤ 2, 82.7 % at ΔE ≤ 3, and ~90 % at ΔE ≤ 3.7.
+Extended Gamut Color (also called Expanded Color Gamut, or CMYKOGV) uses 7 inks instead of 4 — CMYK plus Orange, Green, and Violet — to reproduce a wider slice of Pantone. Research against FOGRA55 shows 57.6 % of Pantone colors match at ΔE ≤ 2, 82.7 % at ΔE ≤ 3, and ~90 % at ΔE ≤ 3.7.
 
 ### ECG checks
 

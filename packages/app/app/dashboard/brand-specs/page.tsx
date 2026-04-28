@@ -176,7 +176,7 @@ export default function BrandSpecsPage() {
         <div className="md:flex-1">
           <h1 className="font-display text-2xl font-bold">Brand Specs</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Named colour specifications, one per end-customer. Specs plug into
+            Named color specifications, one per end-customer. Specs plug into
             preflight at three levels: the tenant-default row catches every job
             with no explicit override; endpoints can pin a default for every
             submission through them; individual submissions can pass{" "}
@@ -392,7 +392,7 @@ function SwatchEditor({
       </div>
       {colors.length === 0 ? (
         <p className="mt-1 text-xs text-muted-foreground">
-          Add at least one swatch to unlock strict colour advisories.
+          Add at least one swatch to unlock strict color advisories.
         </p>
       ) : (
         <div className="mt-2 space-y-2">

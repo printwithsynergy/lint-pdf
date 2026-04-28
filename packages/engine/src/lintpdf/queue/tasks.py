@@ -112,7 +112,7 @@ _FEATURE_LOCKED_COPY: dict[str, str] = {
     ),
     "legend": (
         "Legend-vs-art swatch classification is a Scale-tier AI feature. "
-        "Upgrade to distinguish colour legend blocks from real artwork."
+        "Upgrade to distinguish color legend blocks from real artwork."
     ),
     "similarity": ("Asset similarity (CLIP embedding) is an Enterprise AI feature."),
     "sonnet_fallback": ("Sonnet-tier vision reasoning is an Enterprise AI feature."),
@@ -647,7 +647,7 @@ def run_preflight(
             # ``job.brand_spec_id`` → endpoint default → tenant default
             # and returns a detached :class:`ResolvedBrandSpec` (or
             # ``None`` when the chain dead-ends). The orchestrator
-            # gates the strict colour advisories on whether this is
+            # gates the strict color advisories on whether this is
             # non-``None``.
             resolved_brand_spec = None
             try:
@@ -857,8 +857,8 @@ def run_preflight(
 
             # WS-die-multi-color — append a post-detection warning
             # when the dieline layer paints its strokes in more than
-            # one colour. A clean dieline is always a single ink; a
-            # multi-colour cut layer typically means misplaced
+            # one color. A clean dieline is always a single ink; a
+            # multi-color cut layer typically means misplaced
             # artwork on the cutter plate.
             if job.dieline and job.dieline.get("multi_color"):
                 result_dict["findings"].append(
@@ -867,7 +867,7 @@ def run_preflight(
                         "severity": "warning",
                         "message": (
                             "Dieline layer / spot contains multiple stroke "
-                            "colours — expected exactly one ink on a cut path."
+                            "colors — expected exactly one ink on a cut path."
                         ),
                         "page_num": 1,
                         "bbox": None,
@@ -1019,7 +1019,7 @@ def run_preflight(
                     )
                 )
 
-            # Persist the multi-colour dieline finding alongside the
+            # Persist the multi-color dieline finding alongside the
             # orchestrator outputs so it shows up in the Findings
             # panel + the report bundle.
             if job.dieline and job.dieline.get("multi_color"):
@@ -1030,7 +1030,7 @@ def run_preflight(
                         severity="warning",
                         message=(
                             "Dieline layer / spot contains multiple stroke "
-                            "colours — expected exactly one ink on a cut path."
+                            "colors — expected exactly one ink on a cut path."
                         ),
                         page_num=1,
                         details={

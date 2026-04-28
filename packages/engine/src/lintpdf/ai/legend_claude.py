@@ -42,7 +42,7 @@ _TOOL_DEFINITION: dict[str, Any] = {
 
 
 _SYSTEM_PROMPT = (
-    "You classify colour swatches on a packaging page as either "
+    "You classify color swatches on a packaging page as either "
     "'legend' (part of a print-operator legend / key / ink list) "
     "or 'art' (actual artwork on the package). Call "
     "``record_swatch_verdict`` once per input index."

@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { SkeletonDashboard } from "@/components/skeleton";
+import { ConfirmDialog } from "@/components/PortaledConfirmDialog";
 import {
   Badge,
   EmptyState,
   useToast,
-  ConfirmDialog,
   Button,
   FileUpload,
   Select,
@@ -237,10 +237,22 @@ export default function PreflightPage() {
 
   async function handleDelete(jobId: string) {
     try {
-      await fetch(`/api/lintpdf/jobs/${jobId}`, { method: "DELETE" });
+      const resp = await fetch(`/api/lintpdf/jobs/${jobId}`, {
+        method: "DELETE",
+      });
+      if (!resp.ok && resp.status !== 204) {
+        const detail = await resp.text().catch(() => "");
+        throw new Error(
+          `Delete failed (${resp.status})${detail ? `: ${detail.slice(0, 200)}` : ""}`,
+        );
+      }
       await fetchJobs();
-    } catch {
-      toast("Failed to delete job", "error");
+      toast("Job deleted", "success");
+    } catch (err) {
+      toast(
+        err instanceof Error ? err.message : "Failed to delete job",
+        "error",
+      );
     }
   }
 
@@ -494,7 +506,10 @@ export default function PreflightPage() {
                           {job.file_name}
                         </Link>
                         <div className="text-xs text-muted-foreground">
-                          {(job.file_size / 1024 / 1024).toFixed(1)} MB
+                          {typeof job.file_size === "number" &&
+                          Number.isFinite(job.file_size)
+                            ? `${(job.file_size / 1024 / 1024).toFixed(1)} MB`
+                            : "—"}
                           {job.page_count ? ` / ${job.page_count} pages` : ""}
                         </div>
                       </TableCell>
@@ -539,13 +554,12 @@ export default function PreflightPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => window.location.href = `/dashboard/preflight/${job.job_id}`}
+                          <Link
+                            href={`/dashboard/preflight/${job.job_id}`}
+                            className="inline-flex items-center justify-center rounded-md border border-border bg-secondary px-3 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary/80"
                           >
                             View
-                          </Button>
+                          </Link>
                           <Button
                             variant="destructive"
                             size="sm"

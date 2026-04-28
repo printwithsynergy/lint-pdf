@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ConfirmDialog } from "@thinkneverland/pixie-dust-ui";
+import { ConfirmDialog } from "@/components/PortaledConfirmDialog";
 import { Button, Input, Dropdown, DropdownItem, DropdownLabel } from "@thinkneverland/pixie-dust-ui";
 
 interface TenantInfo {

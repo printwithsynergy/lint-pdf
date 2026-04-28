@@ -1,6 +1,6 @@
 ---
 title: "Brand Specs"
-description: "Per-customer colour specifications with three-level resolution: tenant default, endpoint default, per-job override."
+description: "Per-customer color specifications with three-level resolution: tenant default, endpoint default, per-job override."
 section: "configuration"
 order: 14
 ---
@@ -14,9 +14,9 @@ order: 14
 > `Default palette (migrated)` BrandSpec on Alembic 041; the old
 > column is read as a fallback only.
 
-A **Brand Spec** is a named colour specification a tenant maintains per end-customer — typically one per brand owner the tenant preflights for (e.g. "Coca-Cola", "PepsiCo", "Nestlé"). Each spec carries:
+A **Brand Spec** is a named color specification a tenant maintains per end-customer — typically one per brand owner the tenant preflights for (e.g. "Coca-Cola", "PepsiCo", "Nestlé"). Each spec carries:
 
-- **Swatches** — one row per approved colour, with a display name, canonical value (hex, named CSS colour, or explicit `rgb()` / `cmyk()`), optional Pantone reference, and optional notes.
+- **Swatches** — one row per approved color, with a display name, canonical value (hex, named CSS color, or explicit `rgb()` / `cmyk()`), optional Pantone reference, and optional notes.
 - **Rich-black composition** (optional) — a target `{c, m, y, k}` percentage that print-production advisories can measure the document's rich black against, in place of the profile's default rich-black reference.
 - **Flags** — `is_default` (exactly one non-archived spec per tenant may carry this; see below) and `is_archived` (soft-delete).
 
@@ -29,7 +29,7 @@ When a job runs, the engine walks a three-level chain to pick the spec that appl
 1. **Per-submission override** — the `brand_spec_id` form field on `POST /api/v1/jobs`. Wins over everything else.
 2. **Endpoint default** — the `default_brand_spec_id` on the custom endpoint the job was submitted through (`POST /api/v1/endpoints/{slug}/submit`). Wins when the submit call didn't supply an explicit spec.
 3. **Tenant default** — the spec whose `is_default=true` (and `is_archived=false`) row the tenant maintains. Used as the catch-all when neither override applies.
-4. **No spec** — when the chain dead-ends, strict colour advisories (e.g. `LPDF_COLOR_021`, `LPDF_STROKE_007`, and the pure-K gate on `LPDF_ADV_005`) stay suppressed. This is deliberate: without a palette there's no way to tell whether a pure-K fill or multi-ink stroke is intentional, and the rules would generate thousands of "might be wrong, can't tell" findings per page.
+4. **No spec** — when the chain dead-ends, strict color advisories (e.g. `LPDF_COLOR_021`, `LPDF_STROKE_007`, and the pure-K gate on `LPDF_ADV_005`) stay suppressed. This is deliberate: without a palette there's no way to tell whether a pure-K fill or multi-ink stroke is intentional, and the rules would generate thousands of "might be wrong, can't tell" findings per page.
 
 Archived specs never satisfy the tenant-default hop, so tenants can retire a spec without having to first remove every endpoint and job reference. Historical jobs that captured the spec at submit time keep resolving to it regardless of archive state.
 

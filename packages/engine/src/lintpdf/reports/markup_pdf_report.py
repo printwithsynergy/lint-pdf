@@ -108,7 +108,7 @@ def _draw_shape(
     color = _hex_to_rgb(str(ann.get("color", "#dc2626")))
     g = ann.get("geometry") or {}
     lines: list[str] = ["q"]
-    # Stroke colour + width. Fill matches stroke for notes (pin) and is
+    # Stroke color + width. Fill matches stroke for notes (pin) and is
     # left transparent for open shapes so underlying content shows.
     lines.append(f"{color[0]:.3f} {color[1]:.3f} {color[2]:.3f} RG")
     lines.append(f"{color[0]:.3f} {color[1]:.3f} {color[2]:.3f} rg")

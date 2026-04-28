@@ -39,7 +39,6 @@ import json
 import sys
 from pathlib import Path
 
-
 # Add the engine src directory to the import path so this script
 # works whether it's invoked from the engine root or the repo
 # root.
@@ -47,7 +46,6 @@ ENGINE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ENGINE_ROOT / "src"))
 
 from lintpdf.reports.check_names import CHECK_NAMES  # noqa: E402
-
 
 # ── Category mapping ────────────────────────────────────────
 
@@ -58,10 +56,10 @@ from lintpdf.reports.check_names import CHECK_NAMES  # noqa: E402
 # in the same order deterministically.
 _PREFIX_CATEGORIES: list[tuple[str, str, str]] = [
     ("LPDF_IMG_", "image", "Image quality"),
-    ("LPDF_COLOR_", "color", "Colour"),
-    ("LPDF_ICC_", "color_management", "Colour management"),
+    ("LPDF_COLOR_", "color", "Color"),
+    ("LPDF_ICC_", "color_management", "Color management"),
     ("LPDF_INK_", "ink_coverage", "Ink coverage"),
-    ("LPDF_SPOT_", "spot_colors", "Spot colours"),
+    ("LPDF_SPOT_", "spot_colors", "Spot colors"),
     ("LPDF_OVER_", "overprint", "Overprint"),
     ("LPDF_TRANS_", "transparency", "Transparency"),
     ("LPDF_FONT_", "fonts", "Fonts"),

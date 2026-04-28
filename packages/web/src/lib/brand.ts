@@ -78,7 +78,7 @@ export const glossary = [
     usage: "Reports, viewer, API",
   },
   {
-    concept: "Named tenant branding config — logo, colours, footer text, support email, optional custom domain. Tenants can have many; exactly one is marked default at any time.",
+    concept: "Named tenant branding config — logo, colors, footer text, support email, optional custom domain. Tenants can have many; exactly one is marked default at any time.",
     term: "Brand Profile",
     usage: "Dashboard, API",
   },
@@ -490,7 +490,7 @@ export const comparisonFeatures: ComparisonFeature[] = [
     enterprise: true,
   },
   {
-    name: "Brand Specs (per-customer colour specifications)",
+    name: "Brand Specs (per-customer color specifications)",
     free: false,
     viewer: false,
     starter: true,

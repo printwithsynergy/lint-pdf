@@ -84,7 +84,7 @@ _LEGACY_TIER_A: frozenset[str] = frozenset(
         "LPDF_EPM_001",  # K-channel usage anywhere
         "LPDF_EPM_002",  # pure-K text
         "LPDF_EPM_006",  # image K-channel dependency
-        "LPDF_EPM_007",  # registration colour
+        "LPDF_EPM_007",  # registration color
     }
 )
 _LEGACY_TIER_B: frozenset[str] = frozenset(

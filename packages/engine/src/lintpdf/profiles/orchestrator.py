@@ -180,7 +180,7 @@ class PreflightOrchestrator:
 
         AI analyzers read ``ai_config.brand_palette`` directly. When a
         BrandSpec has been resolved for this job we need that attribute
-        to reflect the spec's colours rather than the legacy
+        to reflect the spec's colors rather than the legacy
         ``TenantAIConfig.brand_palette`` column. Rather than mutate the
         live ORM object (which would flush on the next commit), we
         build a lightweight ``SimpleNamespace`` that proxies the
@@ -424,7 +424,7 @@ class PreflightOrchestrator:
 
             # Overlay the resolved BrandSpec's palette onto a
             # detached shim so the AI analyzers (which read
-            # ``ai_config.brand_palette``) see the same colours the
+            # ``ai_config.brand_palette``) see the same colors the
             # standard analyzers gate on. We deliberately avoid
             # mutating ``self._ai_config`` — it's still attached to
             # the DB session at the caller and a flush would
@@ -545,7 +545,7 @@ class PreflightOrchestrator:
         safety_pts = _mm_to_pts(t.safety_margin_mm)
 
         # WS-7: gate the ambiguous pure-K / knockout advisories on
-        # the presence of a brand colour palette. Without it we
+        # the presence of a brand color palette. Without it we
         # can't tell whether a large pure-K fill was intentional,
         # and the rules generate thousands of "might be wrong, can't
         # tell" findings per page on vector-dense artwork.

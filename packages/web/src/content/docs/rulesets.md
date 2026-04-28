@@ -28,13 +28,13 @@ The dashboard ships a structured **Rules editor** at `/dashboard/rulesets` so yo
 
 Three tabs operate on the same profile:
 
-- **Rules** — checks grouped by category (Image quality, Colour, Fonts, Packaging, …). Each row exposes a severity dropdown (`error` / `warning` / `advisory` / `off`) and an enable toggle. Per-category bulk actions disable everything in the group or reset to catalog defaults; two profile-wide actions demote every active error to advisory or reset the whole profile.
+- **Rules** — checks grouped by category (Image quality, Color, Fonts, Packaging, …). Each row exposes a severity dropdown (`error` / `warning` / `advisory` / `off`) and an enable toggle. Per-category bulk actions disable everything in the group or reset to catalog defaults; two profile-wide actions demote every active error to advisory or reset the whole profile.
 - **JSON** — raw `PreflightProfile` JSON with live validation. Invalid payloads surface the parse error inline and keep the underlying profile untouched until you fix the syntax.
 - **Diff** — every check whose effective state differs from the baseline profile, showing `was → now` severity chips. Makes it easy to review exactly what changed before saving.
 
 The editor reads a generated catalog (`packages/app/lib/rules/check-catalog.json`) produced by `packages/engine/scripts/export_check_catalog.py`. The catalog pulls from the same `CHECK_NAMES` registry the reports and viewer use, so a new inspection_id added to the engine surfaces automatically in the editor on the next `pnpm catalog:generate` run. CI enforces drift via `pnpm catalog:check`.
 
-A check's **default severity** is baked into the catalog (conformance + ICC checks default to `error`; most image, colour, and print-production checks default to `warning`; everything else `advisory`). Overrides live in the profile's `checks.severity_overrides` block as `{ "LPDF_IMG_001": "error" }`; `"off"` there (or membership in `checks.disabled`) disables the check entirely.
+A check's **default severity** is baked into the catalog (conformance + ICC checks default to `error`; most image, color, and print-production checks default to `warning`; everything else `advisory`). Overrides live in the profile's `checks.severity_overrides` block as `{ "LPDF_IMG_001": "error" }`; `"off"` there (or membership in `checks.disabled`) disables the check entirely.
 
 ## Engine mode only
 

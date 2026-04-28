@@ -1,7 +1,7 @@
 {
   "version": 1,
   "generated_by": "packages/engine/scripts/export_check_catalog.py",
-  "total_checks": 425,
+  "total_checks": 450,
   "categories": [
     {
       "id": "image",
@@ -10,7 +10,7 @@
         {
           "id": "LPDF_IMG_001",
           "name": "Low Image Resolution",
-          "description": "An image doesn't have enough detail for sharp printing \u2014 effective DPI (after the page CTM scales the image) is below the configured minimum. Fires on both colour and grayscale images.",
+          "description": "An image doesn't have enough detail for sharp printing \u2014 effective DPI (after the page CTM scales the image) is below the configured minimum. Fires on both color and grayscale images.",
           "default_severity": "warning"
         },
         {
@@ -123,7 +123,7 @@
         },
         {
           "id": "LPDF_IMG_020",
-          "name": "Image XObject Has Wrong /Subtype",
+          "name": "Image XObject Wrong /Subtype",
           "description": "An image XObject's /Subtype is neither /Image nor /Form (e.g., deprecated /PS, or a vendor-invented subtype the RIP won't recognise).",
           "default_severity": "warning"
         }
@@ -131,7 +131,7 @@
     },
     {
       "id": "color",
-      "label": "Colour",
+      "label": "Color",
       "checks": [
         {
           "id": "LPDF_COLOR_001",
@@ -159,14 +159,14 @@
         },
         {
           "id": "LPDF_COLOR_005",
-          "name": "Registration Colour Used As Artwork Fill",
-          "description": "Registration colour (100% on every CMYK channel) is reserved for crop marks and trapping guides, never artwork. Fires when registration is used as a fill \u2014 typically a registration-only swatch picked up by mistake during design.",
+          "name": "Registration Color Used As Artwork Fill",
+          "description": "Registration color (100% on every CMYK channel) is reserved for crop marks and trapping guides, never artwork. Fires when registration is used as a fill \u2014 typically a registration-only swatch picked up by mistake during design.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_COLOR_006",
           "name": "No Output Intent",
-          "description": "Document declares no Output Intent. Without one, every downstream tool guesses at the destination colour space \u2014 proofs and press output drift unpredictably. Add an Output Intent ICC referencing the target press condition.",
+          "description": "Document declares no Output Intent. Without one, every downstream tool guesses at the destination color space \u2014 proofs and press output drift unpredictably. Add an Output Intent ICC referencing the target press condition.",
           "default_severity": "warning"
         },
         {
@@ -219,8 +219,8 @@
         },
         {
           "id": "LPDF_COLOR_015",
-          "name": "Device-Dependent Colour With OutputIntent",
-          "description": "A device-dependent colour space (DeviceRGB / DeviceCMYK / DeviceGray) is used while an OutputIntent is present. The DeviceRGB branch is disallowed under PDF/X-4 entirely; DeviceCMYK and DeviceGray are allowed but ICC-based alternatives are recommended for predictable colour. Re-tag with an ICCBased alternative.",
+          "name": "Device-Dependent Color With OutputIntent",
+          "description": "A device-dependent color space (DeviceRGB / DeviceCMYK / DeviceGray) is used while an OutputIntent is present. The DeviceRGB branch is disallowed under PDF/X-4 entirely; DeviceCMYK and DeviceGray are allowed but ICC-based alternatives are recommended for predictable color. Re-tag with an ICCBased alternative.",
           "default_severity": "warning"
         },
         {
@@ -232,7 +232,7 @@
         {
           "id": "LPDF_COLOR_017",
           "name": "Impure Black",
-          "description": "Black areas use C, M, or Y in addition to K. Multi-ink blacks are sensitive to press registration and produce visible fringes where neighbouring colours overprint. Replace with pure K or a controlled rich-black recipe.",
+          "description": "Black areas use C, M, or Y in addition to K. Multi-ink blacks are sensitive to press registration and produce visible fringes where neighbouring colors overprint. Replace with pure K or a controlled rich-black recipe.",
           "default_severity": "warning"
         },
         {
@@ -263,7 +263,7 @@
     },
     {
       "id": "color_management",
-      "label": "Colour management",
+      "label": "Color management",
       "checks": [
         {
           "id": "LPDF_ICC_001",
@@ -291,13 +291,13 @@
         },
         {
           "id": "LPDF_ICC_005",
-          "name": "Output intent # has unrecognized condition",
+          "name": "Unrecognized Output Intent Condition",
           "description": "Output intent #N has unrecognized condition 'N'",
           "default_severity": "error"
         },
         {
           "id": "LPDF_ICC_006",
-          "name": "Multiple output intents have inconsistent color space",
+          "name": "Inconsistent Output Intent Color Spaces",
           "description": "Multiple output intents have inconsistent color space types: N",
           "default_severity": "error"
         },
@@ -309,13 +309,13 @@
         },
         {
           "id": "LPDF_ICC_008",
-          "name": "Document uses ICC profiles with different rendering",
+          "name": "Mixed ICC Rendering Intents",
           "description": "Document uses ICC profiles with different rendering intents: N",
           "default_severity": "error"
         },
         {
           "id": "LPDF_ICC_009",
-          "name": "ICC profile has non-D50 PCS illuminant",
+          "name": "Non-D50 ICC Illuminant",
           "description": "ICC profile 'N' has non-D50 PCS illuminant: X=N, Y=N, Z=N (expected X=0.9642, Y=1.0, Z=0.8249)",
           "default_severity": "error"
         }
@@ -353,7 +353,7 @@
     },
     {
       "id": "spot_colors",
-      "label": "Spot colours",
+      "label": "Spot colors",
       "checks": [
         {
           "id": "LPDF_SPOT_001",
@@ -393,13 +393,13 @@
         },
         {
           "id": "LPDF_SPOT_007",
-          "name": "Unknown spot color does not match",
+          "name": "Unknown Spot Color",
           "description": "Unknown spot color 'N' does not match any known color library (PANTONE, HKS, TOYO, DIC, RAL)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_SPOT_008",
-          "name": "Spot color library has alternate",
+          "name": "Spot Library Alternate Mismatch",
           "description": "Spot color 'N' (N library) has alternate space 'N' which is not expected (expected: N)",
           "default_severity": "advisory"
         },
@@ -412,25 +412,43 @@
         {
           "id": "LPDF_SPOT_010",
           "name": "Spot Color Count Exceeds Maximum",
-          "description": "The document declares more spot colours than the configured maximum allowed by the active profile. Excess spots inflate plate counts and press time \u2014 consolidate or convert to process where possible.",
+          "description": "The document declares more spot colors than the configured maximum allowed by the active profile. Excess spots inflate plate counts and press time \u2014 consolidate or convert to process where possible.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_SPOT_011",
           "name": "Spot Color Used At 0% Tint",
-          "description": "A spot colour is referenced at 0% tint and contributes nothing to the rendered output, but it still allocates a separation plate. Either remove the reference or apply a non-zero tint.",
+          "description": "A spot color is referenced at 0% tint and contributes nothing to the rendered output, but it still allocates a separation plate. Either remove the reference or apply a non-zero tint.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_SPOT_DEPRECATED_PANTONE",
           "name": "Deprecated Pantone Suffix",
-          "description": "Spot name uses a legacy Pantone suffix (CV, CVC, CVU, CVP, CVUX) that was retired with the post-2008 Pantone book; verify the spot still maps to the intended colour.",
+          "description": "Spot name uses a legacy Pantone suffix (CV, CVC, CVU, CVP, CVUX) that was retired with the post-2008 Pantone book; verify the spot still maps to the intended color.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_DUPE_PROCESS",
+          "name": "Process Color as Named Spot",
+          "description": "A process channel name (Cyan / Magenta / Yellow / Black / RGB) is declared as a named Separation or DeviceN colorant. This produces a duplicate plate at output (the channel is already imaged via process CMYK). Convert artwork to DeviceCMYK on the existing channel, or rename the spot if it's an intentional special.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_NAME_CASE",
+          "name": "Spot Color Name Case Inconsistent",
+          "description": "Two spot color names match when lowercased but differ in case style (e.g. 'BUFF' vs 'Buff'). The RIP treats them as separate plates. Pick one canonical casing and re-route all artwork to it before plating.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_SPOT_NAME_TYPO",
+          "name": "Spot Color Name Typo",
+          "description": "Two spot color names differ by \u2264 2 character edits (e.g. '/Dark Biege' vs '/Dark Beige'). The RIP treats spot names as case-sensitive, character-exact strings \u2014 misspelled separations will not merge with the correctly-named instance and create an extra unintended plate. Excludes Pantone identifiers and process channel names.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_SPOT_NONCANONICAL",
           "name": "Non-Canonical Spot Name",
-          "description": "Spot colour name doesn't match the lintPDF canonical taxonomy (CutContour, Crease, Perforation, KissCut, ThroughCut, White, Varnish, VarnishFree). Renaming to canonical names improves cross-vendor compatibility (Esko, PackZ, ArtiosCAD).",
+          "description": "Spot color name doesn't match the lintPDF canonical taxonomy (CutContour, Crease, Perforation, KissCut, ThroughCut, White, Varnish, VarnishFree). Renaming to canonical names improves cross-vendor compatibility (Esko, PackZ, ArtiosCAD).",
           "default_severity": "advisory"
         }
       ]
@@ -441,7 +459,7 @@
       "checks": [
         {
           "id": "LPDF_OVER_001",
-          "name": "Overprint On",
+          "name": "Overprint Enabled",
           "description": "Overprint is enabled \u2014 colors will mix where they overlap instead of knocking out.",
           "default_severity": "warning"
         },
@@ -466,13 +484,13 @@
         {
           "id": "LPDF_OVER_005",
           "name": "Overprint Inventory",
-          "description": "Informational summary of every object that has overprint enabled, broken down by colour space. Useful for comparing overprint behaviour against the production proof and the operator's expectations.",
+          "description": "Informational summary of every object that has overprint enabled, broken down by color space. Useful for comparing overprint behaviour against the production proof and the operator's expectations.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_OVER_006",
           "name": "Overprint Active With DeviceRGB",
-          "description": "Overprint is active on a DeviceRGB-coloured object. Overprint is fundamentally a separation-time concept (per-channel knock-out vs preserve), but DeviceRGB has no separation model. Press behaviour is undefined and varies by RIP. Convert to CMYK or remove the overprint flag.",
+          "description": "Overprint is active on a DeviceRGB-colored object. Overprint is fundamentally a separation-time concept (per-channel knock-out vs preserve), but DeviceRGB has no separation model. Press behaviour is undefined and varies by RIP. Convert to CMYK or remove the overprint flag.",
           "default_severity": "warning"
         },
         {
@@ -483,8 +501,8 @@
         },
         {
           "id": "LPDF_OVER_008",
-          "name": "Registration Colour With Overprint Active",
-          "description": "An object painted in registration colour (all CMYK \u2265 ~90%) has overprint enabled. Registration colour is reserved for marks; overprinting it onto artwork lays a heavy ink load over whatever sits below. Remove the overprint or switch to the intended process / spot ink.",
+          "name": "Registration Color With Overprint Active",
+          "description": "An object painted in registration color (all CMYK \u2265 ~90%) has overprint enabled. Registration color is reserved for marks; overprinting it onto artwork lays a heavy ink load over whatever sits below. Remove the overprint or switch to the intended process / spot ink.",
           "default_severity": "warning"
         }
       ]
@@ -502,7 +520,7 @@
         {
           "id": "LPDF_TRANS_002",
           "name": "Transparency \u00d7 Overprint Interaction",
-          "description": "Both transparency and overprint are active on the same page. The interaction between alpha-blended objects and overprinted spot colours is RIP-specific \u2014 flattening behaviour can swap colours or drop objects unpredictably. Verify on a proof.",
+          "description": "Both transparency and overprint are active on the same page. The interaction between alpha-blended objects and overprinted spot colors is RIP-specific \u2014 flattening behaviour can swap colors or drop objects unpredictably. Verify on a proof.",
           "default_severity": "warning"
         },
         {
@@ -525,26 +543,26 @@
         },
         {
           "id": "LPDF_TRANS_006",
-          "name": "Knockout transparency group on page may",
+          "name": "Knockout Transparency Group",
           "description": "Knockout transparency group on page N (may cause unexpected rendering)",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_TRANS_007",
-          "name": "Shading pattern detected",
+          "name": "Shading Pattern",
           "description": "Shading pattern detected on page N (N shadingN, potential gradient banding risk)",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_TRANS_BLEND_CS_MISMATCH",
           "name": "Transparency Blend / OutputIntent CS Mismatch",
-          "description": "Transparency-group blending colour space differs from the OutputIntent destination colour space. Flatteners may render the page colour-shifted relative to the printed proof.",
+          "description": "Transparency-group blending color space differs from the OutputIntent destination color space. Flatteners may render the page color-shifted relative to the printed proof.",
           "default_severity": "warning"
         },
         {
           "id": "LPDF_TRANS_ON_SPOT",
           "name": "Transparency on Spot Page",
-          "description": "Page declares Separation / DeviceN spot colour spaces and also has transparency events. Some RIPs flatten transparency to process colour and lose the spot.",
+          "description": "Page declares Separation / DeviceN spot color spaces and also has transparency events. Some RIPs flatten transparency to process color and lose the spot.",
           "default_severity": "warning"
         }
       ]
@@ -687,8 +705,8 @@
         },
         {
           "id": "LPDF_TEXT_005",
-          "name": "Text Painted In Registration Colour",
-          "description": "Text is painted in registration colour (100% on every CMYK channel). Registration is reserved for crop marks and trapping guides \u2014 text in registration overprints heavily and bleeds when ink trapping fails. Re-tag with the intended ink.",
+          "name": "Text Painted In Registration Color",
+          "description": "Text is painted in registration color (100% on every CMYK channel). Registration is reserved for crop marks and trapping guides \u2014 text in registration overprints heavily and bleeds when ink trapping fails. Re-tag with the intended ink.",
           "default_severity": "advisory"
         },
         {
@@ -897,7 +915,7 @@
         },
         {
           "id": "LPDF_DOC_004",
-          "name": "Document Is Encrypted",
+          "name": "Encrypted Document",
           "description": "Document is password-protected or otherwise encrypted. RIPs and prepress automation cannot reliably parse encrypted PDFs; all PDF/X profiles prohibit encryption. Re-export without a password.",
           "default_severity": "advisory"
         },
@@ -921,8 +939,8 @@
         },
         {
           "id": "LPDF_DOC_008",
-          "name": "Pre-Separated Pages Detected",
-          "description": "One or more pages use a single Separation colour space \u2014 i.e. the document is pre-separated rather than composite. Composite PDF/X is the standard for press-side workflows; pre-separated files require special handling.",
+          "name": "Pre-Separated Pages",
+          "description": "One or more pages use a single Separation color space \u2014 i.e. the document is pre-separated rather than composite. Composite PDF/X is the standard for press-side workflows; pre-separated files require special handling.",
           "default_severity": "advisory"
         },
         {
@@ -969,19 +987,19 @@
         },
         {
           "id": "LPDF_STRUCT_006",
-          "name": "Document contains XFA forms not supported",
+          "name": "Unsupported XFA Forms",
           "description": "Document contains XFA forms (not supported in print workflows)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_007",
-          "name": "Document is a tagged PDF structure tree",
+          "name": "Tagged PDF Structure Present",
           "description": "Document is a tagged PDF (structure tree present)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_008",
-          "name": "JavaScript action detected in page actions",
+          "name": "JavaScript Page Actions",
           "description": "JavaScript action detected in page N actions (security and print workflow risk)",
           "default_severity": "advisory"
         },
@@ -993,31 +1011,31 @@
         },
         {
           "id": "LPDF_STRUCT_010",
-          "name": "Layer configuration has print-specific visibility",
+          "name": "Print-Specific Layer Visibility",
           "description": "Layer configuration has print-specific visibility rules for N layer(s)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_011",
-          "name": "PostScript fragment Type 1 XObject detected",
+          "name": "PostScript Type 1 XObject",
           "description": "PostScript fragment (Type 1 XObject) detected on page N (prohibited in modern PDF/X workflows)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_012",
-          "name": "Document contains bookmarks/outlines entries",
+          "name": "Bookmarks/Outlines Present",
           "description": "Document contains bookmarks/outlines (N entries)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_013",
-          "name": "Embedded page thumbnails detected starting",
+          "name": "Embedded Page Thumbnails",
           "description": "Embedded page thumbnails detected (starting on page N \u2014 increases file size unnecessarily)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_STRUCT_014",
-          "name": "Non-JavaScript action detected in document catalog",
+          "name": "Non-JavaScript Catalog Action",
           "description": "Non-JavaScript action 'N' detected in document catalog (may cause unexpected behavior in print workflow)",
           "default_severity": "advisory"
         }
@@ -1041,7 +1059,7 @@
         },
         {
           "id": "LPDF_META_003",
-          "name": "Trapped key is in XMP metadata",
+          "name": "Trapped Key In XMP Metadata",
           "description": "Trapped key is N in XMP metadata",
           "default_severity": "advisory"
         },
@@ -1113,7 +1131,7 @@
         },
         {
           "id": "LPDF_ACCESS_003",
-          "name": "Document is a tagged PDF StructTreeRoot",
+          "name": "Tagged PDF StructTreeRoot",
           "description": "Document is a tagged PDF (StructTreeRoot and MarkInfo present)",
           "default_severity": "advisory"
         },
@@ -1125,7 +1143,7 @@
         },
         {
           "id": "LPDF_ACCESS_005",
-          "name": "Image on page may lack",
+          "name": "Image Missing Alt Text",
           "description": "Image 'N' on page N may lack alternative text (/Alt)",
           "default_severity": "advisory"
         },
@@ -1155,7 +1173,7 @@
         },
         {
           "id": "LPDF_ACCESS_010",
-          "name": "Reading order undefined /StructTreeRoot has no /K",
+          "name": "Undefined Reading Order",
           "description": "Reading order undefined (/StructTreeRoot has no /K children)",
           "default_severity": "advisory"
         },
@@ -1173,7 +1191,7 @@
         },
         {
           "id": "LPDF_ACCESS_013",
-          "name": "Tab order not specified",
+          "name": "Tab Order Not Specified",
           "description": "Tab order not specified on page N (/Tabs missing)",
           "default_severity": "advisory"
         },
@@ -1269,7 +1287,7 @@
         },
         {
           "id": "LPDF_BARCODE_014",
-          "name": "Potential 2D barcode detected",
+          "name": "Potential 2D Barcode",
           "description": "Potential 2D barcode detected on page N (N modules in NxNpt region)",
           "default_severity": "warning"
         },
@@ -1281,7 +1299,7 @@
         },
         {
           "id": "LPDF_BARCODE_016",
-          "name": "2D barcode on page contains",
+          "name": "Suspect 2D Barcode Content",
           "description": "2D barcode on page N contains N modules",
           "default_severity": "warning"
         },
@@ -1359,7 +1377,7 @@
         },
         {
           "id": "LPDF_BARCODE_029",
-          "name": "Barcode center is mm from page center",
+          "name": "Barcode Off-Center",
           "description": "Barcode center is Nmm from page center on page N \u2014 may be near a fold",
           "default_severity": "warning"
         },
@@ -1367,6 +1385,12 @@
           "id": "LPDF_BARCODE_030",
           "name": "Barcode height mm below ISO minimum",
           "description": "Barcode height Nmm below ISO minimum on page N",
+          "default_severity": "warning"
+        },
+        {
+          "id": "LPDF_BARCODE_031",
+          "name": "Barcode Quiet Zone Close To Trim",
+          "description": "Barcode bounding box sits within 5 mm of the trim box on at least one side. GS1 quiet-zone clearance (9x X-dim leading / 7x X-dim trailing) may be lost after finishing or seam occlusion at the cut. Verify quiet zones survive the cut.",
           "default_severity": "warning"
         },
         {
@@ -1413,13 +1437,13 @@
         },
         {
           "id": "LPDF_PKG_003",
-          "name": "Dieline layer is on a non-printing",
+          "name": "Dieline On Non-Printing Layer",
           "description": "Dieline layer 'N' is on a non-printing layer. Verify this is intentional for your packaging workflow.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PKG_004",
-          "name": "Content on page is positioned significantly",
+          "name": "Content Off-Center",
           "description": "Content on page N is positioned significantly outside the trim box \u2014 may be outside the dieline boundary",
           "default_severity": "advisory"
         },
@@ -1437,25 +1461,25 @@
         },
         {
           "id": "LPDF_PKG_007",
-          "name": "Multiple distinct panel sizes detected across",
+          "name": "Mixed Panel Sizes",
           "description": "Multiple distinct panel sizes detected across N pages (N unique sizes) \u2014 common in multi-panel packaging",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PKG_008",
-          "name": "Multi-page packaging layout detected Verify crossover",
+          "name": "Multi-Page Packaging Layout",
           "description": "Multi-page packaging layout detected. Verify crossover alignment between adjacent panels to ensure seamless print across fold/cut lines.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PKG_009",
-          "name": "Varnish/coating layer detected",
+          "name": "Varnish/Coating Layer",
           "description": "Varnish/coating layer detected: N",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PKG_010",
-          "name": "White ink separation detected Ensure white ink",
+          "name": "White Ink Separation",
           "description": "White ink separation detected. Ensure white ink layer is correctly configured for your substrate and print process.",
           "default_severity": "advisory"
         }
@@ -1503,31 +1527,31 @@
         },
         {
           "id": "LPDF_ADV_007",
-          "name": "CxF spectral data is embedded",
+          "name": "CxF Spectral Data Embedded",
           "description": "CxF spectral data is embedded in the document",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_ADV_008",
-          "name": "CxF spectral range for is -nm",
+          "name": "CxF Spectral Range Mismatch",
           "description": "CxF spectral range for 'N' is N-Nnm, does not cover required 380-730nm",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_ADV_009",
-          "name": "CxF spectral data does not specify measurement",
+          "name": "Missing CxF Measurement Geometry",
           "description": "CxF spectral data does not specify measurement geometry (e.g., 45/0, d/8)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_ADV_010",
-          "name": "CxF illuminant does not match output",
+          "name": "CxF Illuminant Mismatch",
           "description": "CxF illuminant 'N' does not match output intent illuminant 'N'",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_ADV_011",
-          "name": "CxF observer angle \u00b0 is non-standard expected",
+          "name": "Non-Standard CxF Observer Angle",
           "description": "CxF observer angle N\u00b0 is non-standard (expected 2\u00b0 or 10\u00b0)",
           "default_severity": "advisory"
         },
@@ -1551,7 +1575,7 @@
         },
         {
           "id": "LPDF_ADV_015",
-          "name": "CxF version may not be fully",
+          "name": "Incomplete CxF Version Tag",
           "description": "CxF version 'N' may not be fully compatible (supported: N)",
           "default_severity": "advisory"
         }
@@ -1803,7 +1827,7 @@
         },
         {
           "id": "AI_AFP_003",
-          "name": "Preflight profile recommendation has low confidence",
+          "name": "Low Recommendation Confidence",
           "description": "Preflight profile recommendation has low confidence (N). Manual selection may be more appropriate.",
           "default_severity": "advisory"
         }
@@ -1989,13 +2013,13 @@
         },
         {
           "id": "AI_PSTEP_002",
-          "name": "Processing step detected source detail",
+          "name": "Processing Step Source Found",
           "description": "Processing step detected: 'N' (source: N, detail: 'N')",
           "default_severity": "advisory"
         },
         {
           "id": "AI_PSTEP_003",
-          "name": "No processing steps detected in document",
+          "name": "No Processing Steps",
           "description": "No processing steps detected in document.",
           "default_severity": "advisory"
         }
@@ -2025,7 +2049,7 @@
         },
         {
           "id": "AI_RSYM_004",
-          "name": "Expected regulatory symbol was not detected",
+          "name": "Missing Regulatory Symbol",
           "description": "Expected regulatory symbol 'N' was not detected in the document",
           "default_severity": "advisory"
         }
@@ -2103,7 +2127,7 @@
         },
         {
           "id": "AI_TAO_002",
-          "name": "Page contains text converted to outlines",
+          "name": "Text Converted To Outlines",
           "description": "Page N contains text converted to outlines. OCR detected N characters of visible text but only N characters are extractable as live text.",
           "default_severity": "advisory"
         },
@@ -2187,7 +2211,7 @@
         },
         {
           "id": "AI_SPC_002",
-          "name": "All historical submissions have identical finding",
+          "name": "Identical Repeat Finding",
           "description": "All historical submissions have identical finding counts \u2014 no variation to analyze.",
           "default_severity": "advisory"
         },
@@ -2217,13 +2241,13 @@
         },
         {
           "id": "LPDF_AI_BAND_001",
-          "name": "Visible banding detected on page CAMBI",
+          "name": "Visible Banding Detected",
           "description": "Visible banding detected on page N: CAMBI score N exceeds threshold (N)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_AI_CAST_001",
-          "name": "Significant color cast detected",
+          "name": "Significant Color Cast",
           "description": "Significant color cast detected on page N: N cast (deviation N, CLIP-IQA score N)",
           "default_severity": "advisory"
         },
@@ -2235,7 +2259,7 @@
         },
         {
           "id": "LPDF_AI_DIEL_002",
-          "name": "Dieline spot color detected color space",
+          "name": "Dieline Spot In Wrong Color Space",
           "description": "Dieline spot color detected: 'N' (color space 'N', type N) on page N",
           "default_severity": "advisory"
         },
@@ -2253,13 +2277,13 @@
         },
         {
           "id": "LPDF_BCQM_002",
-          "name": "QR code on page contains invalid",
+          "name": "Invalid QR Code Content",
           "description": "QR code on page N contains invalid URL: N",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_BCQM_003",
-          "name": "No human-readable text detected near QR code",
+          "name": "Missing QR Code Human-Readable Text",
           "description": "No human-readable text detected near QR code on page N",
           "default_severity": "advisory"
         },
@@ -2277,7 +2301,7 @@
         },
         {
           "id": "LPDF_BCV_002",
-          "name": "QR code on page contains invalid",
+          "name": "Invalid QR Code Content",
           "description": "QR code on page N contains invalid URL: N \u2014 'N'",
           "default_severity": "advisory"
         },
@@ -2326,13 +2350,13 @@
         {
           "id": "LPDF_DIE_AS_ART",
           "name": "Dieline Spot Used As Fill",
-          "description": "Dieline spot colour is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
+          "description": "Dieline spot color is applied as a fill, not just a stroke. The cutter will follow the filled region as a closed path. Change the fill to the intended print ink (common Canva-export bug).",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_DIE_BLEND_MODE",
           "name": "Dieline Has Non-Normal Blend Mode",
-          "description": "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork \u2014 non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong colour. Set blend mode to Normal on the dieline layer.",
+          "description": "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork \u2014 non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong color. Set blend mode to Normal on the dieline layer.",
           "default_severity": "advisory"
         },
         {
@@ -2367,14 +2391,20 @@
         },
         {
           "id": "LPDF_DIE_MULTI_COLOR",
-          "name": "Dieline Multi-Colour",
-          "description": "Dieline layer / spot contains multiple stroke colours \u2014 a clean cut path should be exactly one ink.",
+          "name": "Dieline Multi-Color",
+          "description": "Dieline layer / spot contains multiple stroke colors \u2014 a clean cut path should be exactly one ink.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_DIE_OPACITY_LOW",
           "name": "Dieline Has Reduced Opacity",
           "description": "Dieline spot is painted with alpha < 100% (semi-transparent). Cutter spots are layer-extracted process controls, not artwork \u2014 partial transparency does not survive RIP separation, so the cut plate either drops to zero coverage or composites into the substrate. Set opacity to 100% on the dieline layer in Illustrator / InDesign.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_DIE_PROCESSING_STEPS",
+          "name": "Dieline ISO 19593-1 Decomposition Missing",
+          "description": "Single dieline spot carries cut, fold, perf, and other finishing operations as one layer. ISO 19593-1:2018 Annex A.4 specifies a separate spot per ProcessingStep (Cutting / Crease / Perforating / KissCut / FoldLine). Without decomposition the converter has to eyeball the artwork to route each operation to the right finishing tool.",
           "default_severity": "advisory"
         },
         {
@@ -2392,7 +2422,7 @@
         {
           "id": "LPDF_DIE_WHITE_GAP",
           "name": "White Underprint Gap",
-          "description": "White / OpaqueWhite underprint covers less than the configured fraction of the dieline area (default 95%). On clear or foil substrates, gaps in white underprint let the substrate show through colour artwork.",
+          "description": "White / OpaqueWhite underprint covers less than the configured fraction of the dieline area (default 95%). On clear or foil substrates, gaps in white underprint let the substrate show through color artwork.",
           "default_severity": "advisory"
         },
         {
@@ -2408,9 +2438,15 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_DIM_CALLOUT_001",
+          "name": "Dimension Callouts In Live Artwork",
+          "description": "Multiple standalone-dimension text tokens (e.g. 2.4409\", 5.7500\", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork \u2014 they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_ECG_001",
           "name": "ECG Readiness Assessment",
-          "description": "Reports whether the document is structured for Expanded Colour Gamut (CMYKOGV) reproduction: spot-colour count, presence of CMYKOGV-like DeviceN spaces, and overall ECG-appropriateness.",
+          "description": "Reports whether the document is structured for Expanded Color Gamut (CMYKOGV) reproduction: spot-color count, presence of CMYKOGV-like DeviceN spaces, and overall ECG-appropriateness.",
           "default_severity": "advisory"
         },
         {
@@ -2434,12 +2470,12 @@
         {
           "id": "LPDF_ECG_005",
           "name": "ECG Ink-Build Exceeds 3-Ink Maximum",
-          "description": "More than three inks are active simultaneously above the significance threshold. ECG prefers a maximum 3-ink build for colour stability \u2014 additional inks create gray-balance drift and compound dot-gain.",
+          "description": "More than three inks are active simultaneously above the significance threshold. ECG prefers a maximum 3-ink build for color stability \u2014 additional inks create gray-balance drift and compound dot-gain.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_ECG_006",
-          "name": "Spot color could be replaced",
+          "name": "Replaceable Spot Color",
           "description": "Spot color 'N' could be replaced by ECG process color 'N' on page(s) N",
           "default_severity": "advisory"
         },
@@ -2452,7 +2488,7 @@
         {
           "id": "LPDF_ECG_008",
           "name": "ECG Gray-Balance Drift Risk",
-          "description": "Objects use a near-equal C / M / Y mix above the high-ink threshold. In ECG workflows these neutrals depend on cross-press consistency that single-pass orange / green / violet inks rarely deliver \u2014 colour shift is likely. Convert critical neutrals to a K-anchored recipe.",
+          "description": "Objects use a near-equal C / M / Y mix above the high-ink threshold. In ECG workflows these neutrals depend on cross-press consistency that single-pass orange / green / violet inks rarely deliver \u2014 color shift is likely. Convert critical neutrals to a K-anchored recipe.",
           "default_severity": "advisory"
         },
         {
@@ -2488,7 +2524,7 @@
         {
           "id": "LPDF_ECG_014",
           "name": "ECG Non-Standard Rich-Black Recipe",
-          "description": "Objects use a rich-black recipe outside the configured ECG default (typically C=60, M=40, Y=40, K=100). Non-standard recipes may shift colour or produce inconsistent neutrals across press runs.",
+          "description": "Objects use a rich-black recipe outside the configured ECG default (typically C=60, M=40, Y=40, K=100). Non-standard recipes may shift color or produce inconsistent neutrals across press runs.",
           "default_severity": "advisory"
         },
         {
@@ -2542,7 +2578,7 @@
         {
           "id": "LPDF_EPM_005",
           "name": "EPM Spot Color K-Dependent Fallback",
-          "description": "A spot color's CMYK alternate values include the K channel. When the spot is unavailable on press and the RIP falls back to alternate values, EPM mode strips K and shifts the rendered colour. Re-author the spot's alternate values to a CMY-only mix.",
+          "description": "A spot color's CMYK alternate values include the K channel. When the spot is unavailable on press and the RIP falls back to alternate values, EPM mode strips K and shifts the rendered color. Re-author the spot's alternate values to a CMY-only mix.",
           "default_severity": "advisory"
         },
         {
@@ -2554,13 +2590,13 @@
         {
           "id": "LPDF_EPM_007",
           "name": "EPM Registration Color In Artwork",
-          "description": "Objects are painted in registration colour (all CMYK \u2265 ~90%) \u2014 a marks-and-bleeds-only ink. In EPM mode the K component is dropped and the object reads as 100% C+M+Y. Replace registration with the intended process or spot ink.",
+          "description": "Objects are painted in registration color (all CMYK \u2265 ~90%) \u2014 a marks-and-bleeds-only ink. In EPM mode the K component is dropped and the object reads as 100% C+M+Y. Replace registration with the intended process or spot ink.",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_EPM_008",
           "name": "EPM Gray Balance Risk",
-          "description": "Objects use a neutral CMY mix (C \u2248 M \u2248 Y, all above the gray-balance threshold) with K=0. Without K to anchor the neutral, EPM-mode presses are at high risk of a colour shift. Convert critical neutrals to a recipe that includes K, or route to CMYK.",
+          "description": "Objects use a neutral CMY mix (C \u2248 M \u2248 Y, all above the gray-balance threshold) with K=0. Without K to anchor the neutral, EPM-mode presses are at high risk of a color shift. Convert critical neutrals to a recipe that includes K, or route to CMYK.",
           "default_severity": "advisory"
         },
         {
@@ -2578,7 +2614,7 @@
         {
           "id": "LPDF_EPM_011",
           "name": "EPM Spot Color Fidelity Risk",
-          "description": "Spot colour may not reproduce accurately on digital devices. Verify the proof on the target press, or convert to a process build with documented gamut coverage.",
+          "description": "Spot color may not reproduce accurately on digital devices. Verify the proof on the target press, or convert to a process build with documented gamut coverage.",
           "default_severity": "advisory"
         },
         {
@@ -2601,7 +2637,7 @@
         },
         {
           "id": "LPDF_EPM_015",
-          "name": "EPM White-Ink Underlayer Detected",
+          "name": "EPM White-Ink Underlayer",
           "description": "A Separation color space resembling white ink was detected. White underlayers are used for dark substrate printing and are typically not part of an EPM workflow \u2014 confirm the press supports the white-ink station before proceeding.",
           "default_severity": "advisory"
         },
@@ -2621,6 +2657,102 @@
           "id": "LPDF_EPM_018",
           "name": "EPM Thin Stroke Below Digital Press Threshold",
           "description": "Stroked path(s) have line width below the configured digital-press minimum (default 0.35pt). Thin strokes may break or print inconsistently on digital substrates.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_BLEED_REJECT",
+          "name": "EPM Bleed Below Digital Trim Minimum",
+          "description": "Bleed extent is less than the digital-press finishing minimum. Insufficient bleed shows white at trim. Extend artwork past the trim box before press.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_FEATURE_SIZE_REJECT",
+          "name": "EPM Feature Below Digital Resolution",
+          "description": "Smallest stroked feature is below digital-press resolution. Lines may render inconsistently. Verify on a proof.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_GAMUT_OUT_REJECT",
+          "name": "EPM Spot Color Out Of CMY Gamut",
+          "description": "A spot color or Lab value falls outside the CMY-only gamut. EPM drops the K plate, so out-of-gamut targets shift visibly on press. Either substitute a process build that EPM can reproduce, or route the job to standard CMYK / IndiChrome.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_IMAGE_RES_REJECT",
+          "name": "EPM Image Resolution Below Digital Minimum",
+          "description": "Image effective resolution is below the digital-press minimum. Pixelation and softening show through. Re-source the asset or route to a press whose RIP can compensate.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_K_COVERAGE_REJECT",
+          "name": "EPM K-Channel Coverage Too High",
+          "description": "Total K-channel coverage exceeds the EPM tolerance. Even after K \u2192 CMY conversion, the resulting density is unrecoverable. Either rebalance with K \u2192 CMY upstream or route to standard CMYK.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_MIXED_SPACES_REJECT",
+          "name": "EPM Mixed Process Color Spaces",
+          "description": "Job mixes process color spaces (e.g. some pages CMYK, some DeviceN). Confirm the press setup matches the dominant space before scheduling.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_PAGE_COUNT_REJECT",
+          "name": "EPM Page Count Below Economic Threshold",
+          "description": "Page count is below the EPM economic break-even. Setup time outweighs the throughput gain. Route to standard CMYK for short runs.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_PAGE_GEOM_REJECT",
+          "name": "EPM Per-Page Geometry Varies",
+          "description": "Bleed / trim / media box geometry differs per page. Operator review recommended before scheduling on EPM.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_PROCESS_COUNT_REJECT",
+          "name": "EPM Process Color Count Above Cap",
+          "description": "Document uses more than 4 process channels. Additional plates blow the EPM throughput advantage. Consolidate or route to a press that supports the channel count natively.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_RICH_BLACK_REJECT",
+          "name": "EPM Rich-Black Recipe Mismatch",
+          "description": "Rich-black usage deviates from the configured recipe (default C\u226540, M\u226520, Y\u226520, K\u226580 per Q-C2). Without K, the CMY composite won't match the designer's intended density. Re-author or accept an off-target neutral.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_SPOT_COUNT_REJECT",
+          "name": "EPM Spot Color Count Above Cap",
+          "description": "Document carries more spot colors than the EPM advisory cap. Consider IndiChrome (expanded gamut) for jobs with rich spot palettes; standard EPM may collapse spots awkwardly.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_SUBSTRATE_REJECT",
+          "name": "EPM Substrate Class Incompatible",
+          "description": "Configured substrate class is incompatible with EPM (e.g. heavy uncoated stock with TAC headroom that benefits from K). Default substrate when unspecified is coated (Q-C3).",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_TEXT_SIZE_REJECT",
+          "name": "EPM Text Below CMY Legibility Floor",
+          "description": "Non-pure-black text smaller than the EPM legibility floor. CMY-only rendering loses contrast at small sizes. Increase point size or convert to a CMY-friendly recipe.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_TRAPPING_REJECT",
+          "name": "EPM Trapping Disabled",
+          "description": "Document carries no explicit trap settings. Tight register on digital presses still benefits from explicit traps; verify the RIP's auto-trap matches the artwork.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_TRIM_BLEED_REJECT",
+          "name": "EPM Trim And Bleed Misaligned",
+          "description": "Trim and bleed boxes are mis-aligned. Visible at finishing. Re-author so bleed fully encloses trim.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_EPM_TRIM_REJECT",
+          "name": "EPM Trim Geometry Inconsistent",
+          "description": "Trim or bleed boxes vary across pages. Finishing on EPM digital presses needs consistent trim geometry. Reconcile boxes upstream.",
           "default_severity": "advisory"
         },
         {
@@ -2648,6 +2780,18 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_LANG_001",
+          "name": "Document Language Missing",
+          "description": "Catalog /Lang is absent on a document containing text. Screen readers and downstream localisation tools cannot determine the document's natural language. Add a BCP-47 tag (e.g. /Lang (en-US), /Lang (fr-CA)). Required by WCAG 2.1 SC 3.1.1.",
+          "default_severity": "advisory"
+        },
+        {
+          "id": "LPDF_LEGIBILITY_001",
+          "name": "Small Rotated Text Legibility Risk",
+          "description": "Text below 6 pt is rotated more than 45\u00b0 off horizontal \u2014 combination of small size and off-axis orientation is a press-side legibility risk, especially on flexible-film substrates where head-registration drift is highest perpendicular to web direction. Complements jurisdiction-specific rules (AI_PHARMA_001 / AI_EU1169_001).",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_PAGE_BLEED_PAST_DIELINE",
           "name": "Page BleedBox Extends Past Dieline",
           "description": "The page's declared /BleedBox extends past the dieline polygon envelope. The press-side bleed allowance does not fit within the cutter region \u2014 imposition will waste paper or clip adjacent units on a multi-up sheet. Either tighten the BleedBox in the export profile or expand the dieline so the bleed sits inside it.",
@@ -2672,51 +2816,57 @@
           "default_severity": "advisory"
         },
         {
+          "id": "LPDF_PLACEHOLDER_001",
+          "name": "Placeholder Text in Artwork",
+          "description": "Variable-data placeholder token (LOT NUMBER, DATE CODE, FRONT PANEL, Template #..., etc.) found in artwork. Either replace with the live data or mark the area as a non-printing imprint zone before plate-making, otherwise the literal placeholder will print.",
+          "default_severity": "advisory"
+        },
+        {
           "id": "LPDF_PRESS_001",
-          "name": "Custom halftone dictionary detected",
+          "name": "Custom Halftone Dictionary",
           "description": "Custom halftone dictionary detected on page N",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PRESS_002",
-          "name": "Transfer function detected on page prohibited",
+          "name": "Prohibited Transfer Function",
           "description": "Transfer function detected on page N (prohibited in PDF/X)",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PRESS_003",
-          "name": "Custom BG/UCR function detected",
+          "name": "Custom BG/UCR Function",
           "description": "Custom BG/UCR function detected on page N",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PRESS_004",
-          "name": "Custom halftone HalftoneType detected in ExtGState",
+          "name": "Custom Halftone In ExtGState",
           "description": "Custom halftone (HalftoneType N) detected in ExtGState 'N' on page N",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PRESS_005",
-          "name": "Custom transfer curve detected in ExtGState",
+          "name": "Custom Transfer Curve In ExtGState",
           "description": "Custom transfer curve (N) detected in ExtGState 'N' on page N",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PROC_001",
-          "name": "Processing step layers detected",
+          "name": "Processing Step Layers",
           "description": "Processing step layers detected: N",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PROC_002",
-          "name": "White ink layer detected",
+          "name": "White Ink Layer",
           "description": "White ink layer detected: N",
           "default_severity": "advisory"
         },
         {
           "id": "LPDF_PSTEP_POSITIONS",
           "name": "ISO 19593-1 Positions Suggestion",
-          "description": "Spot ink whose name suggests a positioning aid (registration / trim mark / colour bar) should be tagged under the ISO 19593-1 'Positions' ProcessingSteps group so prepress strips it before plating.",
+          "description": "Spot ink whose name suggests a positioning aid (registration / trim mark / color bar) should be tagged under the ISO 19593-1 'Positions' ProcessingSteps group so prepress strips it before plating.",
           "default_severity": "advisory"
         },
         {
@@ -2733,7 +2883,7 @@
         },
         {
           "id": "LPDF_PS_001",
-          "name": "Pharma DataMatrix on page is missing",
+          "name": "Missing Pharma DataMatrix",
           "description": "Pharma DataMatrix on page N is missing required EU FMD fields: N",
           "default_severity": "advisory"
         },
@@ -2769,7 +2919,7 @@
         },
         {
           "id": "LPDF_QHR_001",
-          "name": "No human-readable text detected near QR code",
+          "name": "Missing QR Code Human-Readable Text",
           "description": "No human-readable text detected near QR code on page N",
           "default_severity": "advisory"
         },
@@ -2787,7 +2937,7 @@
         },
         {
           "id": "LPDF_QR_001",
-          "name": "QR code on page has insufficient",
+          "name": "Low QR Code Quality",
           "description": "QR code on page N has insufficient left quiet zone: N modules (minimum N per ISO 18004)",
           "default_severity": "advisory"
         },
@@ -2799,7 +2949,7 @@
         },
         {
           "id": "LPDF_QR_003",
-          "name": "QR code on page contains GS1",
+          "name": "GS1 Content In QR Code",
           "description": "QR code on page N contains GS1 Digital Link with GTIN N",
           "default_severity": "advisory"
         },

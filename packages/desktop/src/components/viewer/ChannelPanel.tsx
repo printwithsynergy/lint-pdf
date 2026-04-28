@@ -7,7 +7,7 @@ interface ChannelPanelProps {
 }
 
 /** Visual hint for process channels. Spot channels render as grey
- * swatches since the engine doesn't give us a colour hint. */
+ * swatches since the engine doesn't give us a color hint. */
 const PROCESS_SWATCH: Record<string, string> = {
   Cyan: "bg-cyan-400",
   Magenta: "bg-fuchsia-500",

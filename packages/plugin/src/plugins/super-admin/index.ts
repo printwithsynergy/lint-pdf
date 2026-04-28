@@ -61,15 +61,9 @@ export const lintpdfSuperAdminPlugin: PixieDustPlugin = {
   dependencies: ["lintpdf"],
 
   register(ctx: PluginContext): void {
-    // Navigation — only visible to super admins
-    ctx.addNavItem({
-      label: "My Workspace",
-      href: "/dashboard/preflight",
-      icon: "home",
-      section: "main",
-      order: 1,
-      requiredRole: "SUPER_ADMIN",
-    });
+    // Navigation — "My Workspace" was a redundant alias for /dashboard/preflight.
+    // Removed; super admins reach Preflight via the standard nav like everyone
+    // else, with the impersonation/admin entry points kept under ADMIN.
 
     const routes: RouteDefinition[] = [
       {

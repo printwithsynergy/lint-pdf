@@ -227,15 +227,15 @@ class PantoneManager:
     ) -> float:
         """Compute CIEDE2000 Delta-E.
 
-        Uses colour-science if available, otherwise falls back to CIE76.
+        Uses color-science if available, otherwise falls back to CIE76.
         """
         try:
-            import colour as colour_science
+            import color as color_science
             import numpy as np
 
             a1 = np.array(lab1)
             a2 = np.array(lab2)
-            return float(colour_science.delta_E(a1, a2, method="CIE 2000"))
+            return float(color_science.delta_E(a1, a2, method="CIE 2000"))
         except ImportError:
             pass
 

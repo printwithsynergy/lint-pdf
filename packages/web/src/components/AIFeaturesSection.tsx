@@ -42,7 +42,7 @@ const aiHighlights = [
   {
     title: "Brand Palette Check",
     description:
-      "Maintain a BrandSpec per end-customer — colour palette, reference logos, custom dictionary, and rich-black target. LintPDF picks the right spec per job (per-submission override, endpoint default, or tenant default) and validates every file against it before it reaches production.",
+      "Maintain a BrandSpec per end-customer — color palette, reference logos, custom dictionary, and rich-black target. LintPDF picks the right spec per job (per-submission override, endpoint default, or tenant default) and validates every file against it before it reaches production.",
     icon: (
       <svg
         className="h-6 w-6"

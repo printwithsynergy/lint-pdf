@@ -19,12 +19,12 @@ const capabilities = [
   {
     title: "File comparison",
     description:
-      "Diff two revisions side-by-side with SSIM heatmaps. Catch unintended changes — moved elements, colour shifts, font substitutions — before they ship.",
+      "Diff two revisions side-by-side with SSIM heatmaps. Catch unintended changes — moved elements, color shifts, font substitutions — before they ship.",
   },
   {
     title: "Branded share links",
     description:
-      "Every job mints a tokenized URL with your logo, colours, and footer. Or flip anonymous mode and strip all branding including PDF metadata.",
+      "Every job mints a tokenized URL with your logo, colors, and footer. Or flip anonymous mode and strip all branding including PDF metadata.",
   },
   {
     title: "Cloudflare R2 edge caching",

@@ -253,23 +253,23 @@ def _spectral_to_lab(
     end_nm: int,
     interval_nm: int,
 ) -> tuple[float, float, float] | None:
-    """Convert spectral reflectance data to CIELab using colour-science.
+    """Convert spectral reflectance data to CIELab using color-science.
 
-    Returns None if colour-science is not available.
+    Returns None if color-science is not available.
     """
     try:
-        import colour as colour_science
+        import color as color_science
         import numpy as np
 
         wavelengths = np.arange(start_nm, end_nm + 1, interval_nm, dtype=float)
         if len(wavelengths) != len(spectral_data):
             return None
 
-        sd = colour_science.SpectralDistribution(
+        sd = color_science.SpectralDistribution(
             dict(zip(wavelengths, spectral_data, strict=False)),
         )
-        xyz = colour_science.sd_to_XYZ(sd)
-        lab = colour_science.XYZ_to_Lab(xyz / 100.0)
+        xyz = color_science.sd_to_XYZ(sd)
+        lab = color_science.XYZ_to_Lab(xyz / 100.0)
         return (float(lab[0]), float(lab[1]), float(lab[2]))
     except (ImportError, Exception):
         return None
