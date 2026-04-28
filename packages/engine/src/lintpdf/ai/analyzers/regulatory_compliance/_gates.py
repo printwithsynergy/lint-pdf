@@ -207,33 +207,47 @@ _SUPPLEMENT_DOCUMENT_PATTERNS: tuple[_re.Pattern[str], ...] = (
 
 
 def is_supplement_document(document) -> bool:  # type: ignore[no-untyped-def]
-    """True when any page's content stream contains a supplement-
-    panel marker (``Supplement Facts`` header or ``Dietary
-    Supplement`` claim).
+    """True when any page carries a supplement-panel marker
+    (``Supplement Facts`` header or ``Dietary Supplement`` claim).
 
     Used by ``CosmeticsLabelingAnalyzer``, ``FdaNutritionAnalyzer``,
     and ``EuFir1169Analyzer`` as a content-derived fallback when the
     tenant's ``ai_config.industry_type`` isn't accessible (detached
     SQLAlchemy session in the worker, etc.).
 
-    * ``Supplement Facts`` panel → governed by 21 CFR 101.36 (DSHEA),
-      not 101.9 (Nutrition Facts). Also not a cosmetic, also not a
-      conventional food (FIR 1169 doesn't apply).
-    * ``Dietary Supplement`` claim text → same conclusion.
+    Two evidence paths:
+
+    1. **Live text in the content stream** (the original path) —
+       catches files where ``Supplement Facts`` is rendered as glyphs.
+    2. **OCR-detected text regions** (added 2026-04-28 post-merge audit
+       follow-up) — catches OUTLINED fixtures where the literal header
+       was converted to vector paths and so doesn't appear in the
+       content stream as a string. Reads
+       ``SemanticPage.detected_text_regions`` populated by
+       ``ai.text_region_pass``. When the GPU tier is offline this is
+       a graceful no-op (field is None).
     """
     pages = getattr(document, "pages", None) or []
     for page in pages:
+        # Path 1 — live content stream.
         raw = getattr(page, "content_stream", None)
-        if not raw:
-            continue
-        if isinstance(raw, bytes):
-            try:
-                text = raw.decode("latin-1")
-            except Exception:
-                continue
-        else:
-            text = str(raw)
-        for pat in _SUPPLEMENT_DOCUMENT_PATTERNS:
-            if pat.search(text):
-                return True
+        if raw:
+            if isinstance(raw, bytes):
+                try:
+                    text = raw.decode("latin-1")
+                except Exception:
+                    text = ""
+            else:
+                text = str(raw)
+            for pat in _SUPPLEMENT_DOCUMENT_PATTERNS:
+                if pat.search(text):
+                    return True
+        # Path 2 — OCR text regions (outlined-text fallback).
+        regions = getattr(page, "detected_text_regions", None)
+        if regions:
+            for region in regions:
+                rt = getattr(region, "text", None) or ""
+                for pat in _SUPPLEMENT_DOCUMENT_PATTERNS:
+                    if pat.search(rt):
+                        return True
     return False

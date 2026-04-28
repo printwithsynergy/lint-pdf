@@ -295,18 +295,34 @@ def check_dieline_quality(
     # findings can co-fire when content both crosses the envelope AND
     # exceeds the max-bleed allowance.
     envelope: tuple[float, float, float, float] | None = None
+    multi_up = _is_multi_up(regions) if regions else False
     if regions and signals.foreign_content_bboxes:
         envelope = _envelope_of_regions(regions)
         if envelope is not None:
             outside: list[tuple[float, float, float, float]] = []
             max_overhang = 0.0
             for bbox in signals.foreign_content_bboxes:
-                overhang = _bbox_overhang(bbox, envelope)
+                # Multi-up sheets (N repeats of one die) need per-region
+                # overhang, not sheet-wide envelope. Otherwise content
+                # near each repeat's edge gets falsely flagged as
+                # "outside the dieline" when it's just outside ONE die
+                # but properly inside its neighbour.
+                overhang = (
+                    _min_overhang_against_regions(bbox, regions)
+                    if multi_up
+                    else _bbox_overhang(bbox, envelope)
+                )
                 if overhang > content_outside_tolerance_pts:
                     outside.append(bbox)
                     max_overhang = max(max_overhang, overhang)
             if outside:
-                worst = max(outside, key=lambda b: _bbox_overhang(b, envelope))
+                if multi_up:
+                    worst = max(
+                        outside,
+                        key=lambda b: _min_overhang_against_regions(b, regions),
+                    )
+                else:
+                    worst = max(outside, key=lambda b: _bbox_overhang(b, envelope))
                 findings.append(
                     Finding(
                         inspection_id="LPDF_DIE_CONTENT_OUTSIDE",
@@ -323,6 +339,8 @@ def check_dieline_quality(
                             "dieline_envelope_pts": list(envelope),
                             "worst_paint_bbox_pts": list(worst),
                             "tolerance_pts": content_outside_tolerance_pts,
+                            "multi_up_layout": multi_up,
+                            "dieline_region_count": len(regions),
                         },
                         iso_clause="ISO 15930-7:2010 6.2.4",
                         object_type="dieline_polygon",
@@ -807,6 +825,61 @@ def _bbox_overhang(
         paint_bbox[2] - envelope[2],
         paint_bbox[3] - envelope[3],
     )
+
+
+def _is_multi_up(regions: list[dict[str, float]]) -> bool:
+    """Detect a step-and-repeat layout from the dieline's region list.
+
+    Heuristic: 3 or more regions whose bboxes are roughly equal in size
+    (within 10 %) — typical of a press sheet with N copies of one die.
+    Returns True for DailyFiber's 10-up flat where the engine had been
+    treating the sheet-wide envelope as one giant dieline and falsely
+    flagging every repeat's content as "outside" it.
+    """
+    if len(regions) < 3:
+        return False
+    sizes: list[tuple[float, float]] = []
+    for r in regions:
+        try:
+            w = float(r["x1"]) - float(r["x0"])
+            h = float(r["y1"]) - float(r["y0"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if w <= 0 or h <= 0:
+            continue
+        sizes.append((w, h))
+    if len(sizes) < 3:
+        return False
+    # Are all widths and heights within 10 % of the median?
+    sorted_w = sorted(s[0] for s in sizes)
+    sorted_h = sorted(s[1] for s in sizes)
+    med_w = sorted_w[len(sorted_w) // 2]
+    med_h = sorted_h[len(sorted_h) // 2]
+    if med_w <= 0 or med_h <= 0:
+        return False
+    return all(abs(w - med_w) / med_w < 0.10 and abs(h - med_h) / med_h < 0.10 for w, h in sizes)
+
+
+def _min_overhang_against_regions(
+    paint_bbox: tuple[float, float, float, float],
+    regions: list[dict[str, float]],
+) -> float:
+    """For multi-up sheets, the right comparison is "how far does this
+    paint stick out of the *nearest* dieline region?" not the sheet-wide
+    envelope. Returns the smallest overhang across all regions.
+    """
+    best = float("inf")
+    for r in regions:
+        try:
+            rb = (float(r["x0"]), float(r["y0"]), float(r["x1"]), float(r["y1"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        oh = _bbox_overhang(paint_bbox, rb)
+        if oh < best:
+            best = oh
+            if best == 0.0:
+                break
+    return 0.0 if best == float("inf") else best
 
 
 # ────────────────────────────────────────────────────────────────────
