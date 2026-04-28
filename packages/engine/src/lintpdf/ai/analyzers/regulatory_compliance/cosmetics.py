@@ -86,6 +86,17 @@ class CosmeticsLabelingAnalyzer(BaseAIAnalyzer):
         pdf_bytes: bytes,
         ai_config: TenantAIConfig | None = None,
     ) -> list[Finding]:
+        # Industry gate. The 2026-04-27 Opus audit flagged 4 false
+        # positives on Nutrops dietary-supplement labels where this
+        # rule's structural detection (``Ingredients:`` header + INCI
+        # patterns) collided with non-cosmetic packaging.
+        from lintpdf.ai.analyzers.regulatory_compliance._gates import (
+            is_cosmetic_applicable,
+        )
+
+        if not is_cosmetic_applicable(ai_config):
+            return []
+
         text = _collect_text(document)
         ingredient_match = _INGREDIENTS_HEADER.search(text)
         class_match = _COSM_CLASS_PATTERN.search(text)

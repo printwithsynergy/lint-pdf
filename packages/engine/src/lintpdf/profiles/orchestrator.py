@@ -533,7 +533,9 @@ class PreflightOrchestrator:
             StructureAnalyzer,
             TransparencyAnalyzer,
         )
+        from lintpdf.analyzers.dieline_iso19593 import DielineIso19593Analyzer
         from lintpdf.analyzers.duplicate_process_spot import DuplicateProcessSpotAnalyzer
+        from lintpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
         from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
 
         t = self._plan.thresholds
@@ -588,6 +590,8 @@ class PreflightOrchestrator:
             # 2026-04-28 audit additions:
             PlaceholderTextAnalyzer(),
             DuplicateProcessSpotAnalyzer(),
+            LegibilityCompositeAnalyzer(),
+            DielineIso19593Analyzer(),
             PrepressAnalyzer(),
             BarcodeAnalyzer(
                 barcode_min_dpi=t.barcode_min_dpi,

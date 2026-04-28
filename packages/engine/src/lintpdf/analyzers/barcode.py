@@ -848,8 +848,21 @@ class BarcodeAnalyzer(BaseAnalyzer):
             # LPDF_BARCODE_025: Barcode area DPI
             self._check_barcode_dpi(candidate, document, findings)
 
-            # LPDF_BARCODE_026: Orientation (portrait 1D barcode)
-            if candidate.has_bounds and candidate.width_pts < candidate.height_pts:
+            # LPDF_BARCODE_026: Orientation (portrait 1D barcode).
+            # The 2026-04-27 Opus audit flagged 2 false positives where
+            # this fired on landscape barcodes that happened to sit in
+            # a slightly-taller-than-wide bounding box. Without
+            # inspecting actual bar geometry we can't tell ladder from
+            # picket-fence reliably, so tighten the heuristic to
+            # ``height > 1.5 × width`` — a clearly tall bbox, not just
+            # marginally taller. Cuts the false-positive rate without
+            # losing the genuine ladder-orientation case (true ladder
+            # barcodes are 4× taller than wide on average).
+            if (
+                candidate.has_bounds
+                and candidate.width_pts > 0
+                and candidate.height_pts > 1.5 * candidate.width_pts
+            ):
                 findings.append(
                     Finding(
                         inspection_id="LPDF_BARCODE_026",

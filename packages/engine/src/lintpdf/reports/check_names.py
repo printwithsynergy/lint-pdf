@@ -764,12 +764,12 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         v2_ids=("D-07",),
     ),
     "LPDF_DIE_BLEND_MODE": CheckInfo(
-        "Dieline Non-Normal Blend Mode",
+        "Dieline Has Non-Normal Blend Mode",
         "Dieline spot is painted with a blend mode other than Normal (Multiply, Darken, etc.). Cutter spots are layer-extracted process controls, not artwork — non-Normal blend modes are silently dropped or composited by the RIP, leaving the cut plate missing or in the wrong colour. Set blend mode to Normal on the dieline layer.",
         v2_ids=("D-08",),
     ),
     "LPDF_DIE_OPACITY_LOW": CheckInfo(
-        "Dieline Reduced Opacity",
+        "Dieline Has Reduced Opacity",
         "Dieline spot is painted with alpha < 100% (semi-transparent). Cutter spots are layer-extracted process controls, not artwork — partial transparency does not survive RIP separation, so the cut plate either drops to zero coverage or composites into the substrate. Set opacity to 100% on the dieline layer in Illustrator / InDesign.",
         v2_ids=("D-09",),
     ),
@@ -839,6 +839,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_LANG_001": CheckInfo(
         "Document Language Missing",
         "Catalog /Lang is absent on a document containing text. Screen readers and downstream localisation tools cannot determine the document's natural language. Add a BCP-47 tag (e.g. /Lang (en-US), /Lang (fr-CA)). Required by WCAG 2.1 SC 3.1.1.",
+    ),
+    "LPDF_LEGIBILITY_001": CheckInfo(
+        "Small Rotated Text Legibility Risk",
+        "Text below 6 pt is rotated more than 45° off horizontal — combination of small size and off-axis orientation is a press-side legibility risk, especially on flexible-film substrates where head-registration drift is highest perpendicular to web direction. Complements jurisdiction-specific rules (AI_PHARMA_001 / AI_EU1169_001).",
+    ),
+    "LPDF_DIE_PROCESSING_STEPS": CheckInfo(
+        "Dieline ISO 19593-1 Decomposition Missing",
+        "Single dieline spot carries cut, fold, perf, and other finishing operations as one layer. ISO 19593-1:2018 Annex A.4 specifies a separate spot per ProcessingStep (Cutting / Crease / Perforating / KissCut / FoldLine). Without decomposition the converter has to eyeball the artwork to route each operation to the right finishing tool.",
     ),
     "LPDF_PLACEHOLDER_001": CheckInfo(
         "Placeholder Text in Artwork",
