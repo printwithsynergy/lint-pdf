@@ -836,6 +836,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Viewer DisplayDocTitle",
         "Catalog /ViewerPreferences /DisplayDocTitle should be true so PDF readers show the document's metadata title rather than its filename. Required by WCAG 2.1 SC 2.4.2 when the title is the meaningful identifier.",
     ),
+    "LPDF_LANG_001": CheckInfo(
+        "Document Language Missing",
+        "Catalog /Lang is absent on a document containing text. Screen readers and downstream localisation tools cannot determine the document's natural language. Add a BCP-47 tag (e.g. /Lang (en-US), /Lang (fr-CA)). Required by WCAG 2.1 SC 3.1.1.",
+    ),
+    "LPDF_PLACEHOLDER_001": CheckInfo(
+        "Placeholder Text in Artwork",
+        "Variable-data placeholder token (LOT NUMBER, DATE CODE, FRONT PANEL, Template #..., etc.) found in artwork. Either replace with the live data or mark the area as a non-printing imprint zone before plate-making, otherwise the literal placeholder will print.",
+    ),
+    "LPDF_SPOT_DUPE_PROCESS": CheckInfo(
+        "Process Color as Named Spot",
+        "A process channel name (Cyan / Magenta / Yellow / Black / RGB) is declared as a named Separation or DeviceN colorant. This produces a duplicate plate at output (the channel is already imaged via process CMYK). Convert artwork to DeviceCMYK on the existing channel, or rename the spot if it's an intentional special.",
+    ),
     "LPDF_XMP_GWG_TRAIL": CheckInfo(
         "GWG Audit Trail Missing",
         "No GWG audit-trail namespace was found in XMP metadata. The PDF has not been through a Ghent Workgroup-aware preflight tool.",
@@ -1780,9 +1792,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_META_002": CheckInfo(
         "Title mismatch Info dict vs XMP", "Title mismatch: Info dict 'N' vs XMP 'N'"
     ),
-    "LPDF_META_003": CheckInfo(
-        "Trapped Key In XMP Metadata", "Trapped key is N in XMP metadata"
-    ),
+    "LPDF_META_003": CheckInfo("Trapped Key In XMP Metadata", "Trapped key is N in XMP metadata"),
     "LPDF_META_004": CheckInfo(
         "PDF version mismatch header vs XMP",
         "PDF version mismatch: header 'N' vs XMP 'N'",
@@ -1860,9 +1870,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Multi-Page Packaging Layout",
         "Multi-page packaging layout detected. Verify crossover alignment between adjacent panels to ensure seamless print across fold/cut lines.",
     ),
-    "LPDF_PKG_009": CheckInfo(
-        "Varnish/Coating Layer", "Varnish/coating layer detected: N"
-    ),
+    "LPDF_PKG_009": CheckInfo("Varnish/Coating Layer", "Varnish/coating layer detected: N"),
     "LPDF_PKG_010": CheckInfo(
         "White Ink Separation",
         "White ink separation detected. Ensure white ink layer is correctly configured for your substrate and print process.",
@@ -1889,9 +1897,7 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Custom transfer curve (N) detected in ExtGState 'N' on page N",
     ),
     # ── Processing ──────────────────────────────────────────────────────────
-    "LPDF_PROC_001": CheckInfo(
-        "Processing Step Layers", "Processing step layers detected: N"
-    ),
+    "LPDF_PROC_001": CheckInfo("Processing Step Layers", "Processing step layers detected: N"),
     "LPDF_PROC_002": CheckInfo("White Ink Layer", "White ink layer detected: N"),
     # ── Pharma Serialization ────────────────────────────────────────────────
     "LPDF_PS_001": CheckInfo(
