@@ -852,6 +852,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
     ),
+    "LPDF_SPOT_NAME_TYPO": CheckInfo(
+        "Spot Color Name Typo",
+        "Two spot color names differ by ≤ 2 character edits (e.g. '/Dark Biege' vs '/Dark Beige'). The RIP treats spot names as case-sensitive, character-exact strings — misspelled separations will not merge with the correctly-named instance and create an extra unintended plate. Excludes Pantone identifiers and process channel names.",
+    ),
+    "LPDF_SPOT_NAME_CASE": CheckInfo(
+        "Spot Color Name Case Inconsistent",
+        "Two spot color names match when lowercased but differ in case style (e.g. 'BUFF' vs 'Buff'). The RIP treats them as separate plates. Pick one canonical casing and re-route all artwork to it before plating.",
+    ),
     "LPDF_PLACEHOLDER_001": CheckInfo(
         "Placeholder Text in Artwork",
         "Variable-data placeholder token (LOT NUMBER, DATE CODE, FRONT PANEL, Template #..., etc.) found in artwork. Either replace with the live data or mark the area as a non-printing imprint zone before plate-making, otherwise the literal placeholder will print.",

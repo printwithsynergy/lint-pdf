@@ -538,6 +538,7 @@ class PreflightOrchestrator:
         from lintpdf.analyzers.duplicate_process_spot import DuplicateProcessSpotAnalyzer
         from lintpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
         from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
+        from lintpdf.analyzers.spot_name_similarity import SpotNameSimilarityAnalyzer
 
         t = self._plan.thresholds
         bleed_pts = _mm_to_pts(t.min_bleed_mm)
@@ -594,6 +595,7 @@ class PreflightOrchestrator:
             LegibilityCompositeAnalyzer(),
             DielineIso19593Analyzer(),
             DimensionCalloutAnalyzer(),
+            SpotNameSimilarityAnalyzer(),
             PrepressAnalyzer(),
             BarcodeAnalyzer(
                 barcode_min_dpi=t.barcode_min_dpi,
