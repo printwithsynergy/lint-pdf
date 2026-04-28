@@ -8,6 +8,9 @@ Check IDs:
     LPDF_META_002 — Info dict / XMP title inconsistency
     LPDF_META_003 — Trapped key missing or Unknown
     LPDF_META_004 — PDF version mismatch (header vs XMP)
+    LPDF_LANG_001 — Catalog /Lang absent on a document containing text
+        (added 2026-04-28 after the second Opus audit; impacts screen-
+        reader handoff + downstream localisation tools).
     LPDF_VIEWER_DISPLAY_TITLE — Catalog /ViewerPreferences /DisplayDocTitle
         absent or false (T4-A10)
     LPDF_XMP_GWG_TRAIL — GWG XMP audit-trail namespace not present (T2-XMP01)
@@ -43,6 +46,11 @@ class MetadataAnalyzer(BaseAnalyzer):
 
         # T4-A10 — Catalog /ViewerPreferences /DisplayDocTitle.
         findings.extend(self._check_display_doc_title(document))
+
+        # LPDF_LANG_001 — Catalog /Lang missing on a document with text.
+        # Independent of XMP presence; runs before the XMP early-return
+        # below so we don't skip /Lang on documents that lack XMP.
+        findings.extend(self._check_document_lang(document, events))
 
         # LPDF_META_001: XMP metadata missing
         if document.metadata_stream is None:
@@ -153,6 +161,53 @@ class MetadataAnalyzer(BaseAnalyzer):
                 ),
                 details={"viewer_preferences_present": False},
                 iso_clause="ISO 32000-2 §12.2 / WCAG 2.1 SC 2.4.2",
+            )
+        ]
+
+    @staticmethod
+    def _check_document_lang(
+        document: SemanticDocument,
+        events: list[ContentStreamEvent],
+    ) -> list[Finding]:
+        """LPDF_LANG_001 — /Catalog /Lang must be present on documents
+        that contain text. Required for screen-reader handoff (WCAG
+        2.1 SC 3.1.1 — Language of Page) and used by downstream
+        localisation / translation tools.
+
+        Skipped silently when the document is image-only (no text
+        events) — a tagged scan or photo PDF shouldn't be flagged
+        for missing language. Bilingual labels (Canadian EN/FR,
+        EU multi-language) need /Lang for the *primary* language
+        even though they carry both — the field is the document's
+        natural language, not a list.
+
+        The 2026-04-28 Opus audit flagged 4 misses across the
+        bilingual EN/FR Canadian fixtures where /Lang was absent.
+        """
+        # Skip image-only documents.
+        from lintpdf.semantic.events import TextRenderedEvent
+
+        has_text = any(isinstance(e, TextRenderedEvent) for e in events)
+        if not has_text:
+            return []
+
+        catalog = document.catalog or {}
+        lang = catalog.get("/Lang")
+        if isinstance(lang, str) and lang.strip():
+            return []
+        return [
+            Finding(
+                inspection_id="LPDF_LANG_001",
+                severity=Severity.ADVISORY,
+                message=(
+                    "/Catalog /Lang is missing — assistive tech (screen "
+                    "readers) and downstream localisation tools cannot "
+                    "determine the document's natural language. Add a "
+                    "BCP-47 tag (e.g. /Lang (en-US) for US English, "
+                    "/Lang (fr-CA) for Canadian French)."
+                ),
+                details={"catalog_lang_present": False},
+                iso_clause="ISO 32000-2 §14.9.2 / WCAG 2.1 SC 3.1.1",
             )
         ]
 

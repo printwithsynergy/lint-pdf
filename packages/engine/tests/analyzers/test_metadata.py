@@ -213,3 +213,79 @@ class TestPDFVersionMismatch:
         assert ver is not None
         assert ver.details["header_version"] == "1.5"
         assert ver.details["xmp_version"] == "1.7"
+
+
+# ---------------------------------------------------------------------------
+# LPDF_LANG_001 — added 2026-04-28 after second Opus audit
+# ---------------------------------------------------------------------------
+
+
+class TestDocumentLang:
+    """``LPDF_LANG_001`` — Catalog /Lang missing on a document with text."""
+
+    @staticmethod
+    def _doc_with(catalog: dict | None = None, has_text: bool = True) -> tuple:
+        """Build (doc, events) pair. ``has_text`` toggles whether
+        events contain a TextRenderedEvent."""
+        from lintpdf.semantic.events import TextRenderedEvent
+        from lintpdf.semantic.graphics_state import TransformationMatrix
+
+        doc = SemanticDocument(
+            version="1.7",
+            page_count=1,
+            is_encrypted=False,
+            catalog=catalog or {},
+            pages=[SemanticPage(page_num=1, media_box=PdfBox(0, 0, 612, 792))],
+        )
+        events = []
+        if has_text:
+            events.append(
+                TextRenderedEvent(
+                    operator="Tj",
+                    page_num=1,
+                    operator_index=0,
+                    font_name="F1",
+                    font_size=12.0,
+                    ctm=TransformationMatrix(1, 0, 0, 1, 0, 0),
+                    text_matrix=TransformationMatrix(1, 0, 0, 1, 0, 0),
+                )
+            )
+        return doc, events
+
+    @staticmethod
+    def test_missing_lang_with_text_fires() -> None:
+        doc, events = TestDocumentLang._doc_with(catalog={})
+        findings = MetadataAnalyzer().analyze(doc, events)
+        lang = [f for f in findings if f.inspection_id == "LPDF_LANG_001"]
+        assert len(lang) == 1
+        assert lang[0].severity == Severity.ADVISORY
+
+    @staticmethod
+    def test_lang_present_does_not_fire() -> None:
+        doc, events = TestDocumentLang._doc_with(catalog={"/Lang": "en-US"})
+        findings = MetadataAnalyzer().analyze(doc, events)
+        lang = [f for f in findings if f.inspection_id == "LPDF_LANG_001"]
+        assert len(lang) == 0
+
+    @staticmethod
+    def test_canadian_french_lang_does_not_fire() -> None:
+        doc, events = TestDocumentLang._doc_with(catalog={"/Lang": "fr-CA"})
+        findings = MetadataAnalyzer().analyze(doc, events)
+        lang = [f for f in findings if f.inspection_id == "LPDF_LANG_001"]
+        assert len(lang) == 0
+
+    @staticmethod
+    def test_image_only_doc_does_not_fire() -> None:
+        """No text events → /Lang is irrelevant; no advisory."""
+        doc, events = TestDocumentLang._doc_with(catalog={}, has_text=False)
+        findings = MetadataAnalyzer().analyze(doc, events)
+        lang = [f for f in findings if f.inspection_id == "LPDF_LANG_001"]
+        assert len(lang) == 0
+
+    @staticmethod
+    def test_empty_lang_string_fires() -> None:
+        """``/Lang ()`` (empty string) is treated as missing."""
+        doc, events = TestDocumentLang._doc_with(catalog={"/Lang": ""})
+        findings = MetadataAnalyzer().analyze(doc, events)
+        lang = [f for f in findings if f.inspection_id == "LPDF_LANG_001"]
+        assert len(lang) == 1
