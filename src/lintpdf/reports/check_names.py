@@ -899,6 +899,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Multi-Up Layout Missing Press Marks",
         "Page is a multi-up step-and-repeat (3+ similar dieline regions) but contains no painted content outside the trim box. Multi-up press sheets typically include trim marks, registration targets, and colour bars in the bleed-strip area for the converter; their absence forces eyeball alignment at the press.",
     ),
+    "LPDF_BOX_TRIMBOX_DEFAULTED": CheckInfo(
+        "TrimBox Defaulted To MediaBox",
+        "Page declares no explicit TrimBox; the engine defaulted it to the MediaBox. Production workflows expect an explicit TrimBox so the press knows the final cut size, distinct from any bleed area. Common with office-generated PDFs that lack prepress geometry.",
+    ),
+    "LPDF_BOX_BLEED_TOO_THIN_VS_CONTENT": CheckInfo(
+        "Bleed Insufficient AND Content Past Bleed",
+        "Combined-context warning: declared BleedBox provides less than the configured minimum (3 mm by default) AND painted artwork extends past the BleedBox. The press has no working margin: any cut variance will reveal either unprinted substrate or trimmed artwork. Fires only on the joint condition; the standalone cases are covered by LPDF_BOX_003 (inadequate bleed) and LPDF_BOX_006 (content beyond bleed).",
+    ),
+    "LPDF_BOX_MULTI_LABEL_PAGE": CheckInfo(
+        "Multiple Labels On Single Page",
+        "Page contains 2+ disjoint content clusters separated by an empty band wider than 30 pt. Most label workflows expect each die-cut artwork on its own page or with explicit dieline separation. Confirm imposition is intentional and dielines are supplied for each label. Caught by Opus on Pavette_Pride (front circular + back rectangular labels on a single page).",
+    ),
     "LPDF_DIM_CALLOUT_001": CheckInfo(
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
