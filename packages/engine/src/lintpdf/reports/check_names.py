@@ -919,6 +919,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Mixed Spot+Process Build For Low-Spot Design",
         "Document declares 1-2 spot inks AND process CMYK. For a low-spot-count design this often inflates plate count unnecessarily. Confirm CMYK is needed (e.g. full-tone raster imagery), otherwise consolidate to spot-only or convert spots to process to reduce plates.",
     ),
+    "LPDF_DOC_PDF_VERSION_DATED": CheckInfo(
+        "PDF Header Version Below 1.4",
+        "PDF header version is < 1.4. Many modern prepress workflows assume 1.4+ for transparency support and 1.6+ for PDF/X-4 conformance. Re-export from the design tool with a current version target.",
+    ),
+    "LPDF_SPOT_NAME_CASE_MIXED": CheckInfo(
+        "Spot Inventory Mixes UPPERCASE And Mixed-Case Names",
+        "Custom spot inventory mixes ALL-UPPERCASE names (e.g. /BUFF) with mixed-case names (e.g. /Lt Beige). Inconsistent naming hygiene complicates ink-room matching and colour-database lookups. Pick one casing convention across the brand palette. Excludes Pantone/DIC/TOYO/HKS prefix names (those follow library casing) and process/dieline/ProcessingStep names.",
+    ),
     "LPDF_DIM_CALLOUT_001": CheckInfo(
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
