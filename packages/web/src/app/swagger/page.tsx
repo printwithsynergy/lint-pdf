@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import { hiddenInOssMetadata } from "@/lib/site-mode";
 
 export const metadata: Metadata = {
   title: "API Reference — LintPDF",
   description:
     "Interactive OpenAPI reference for the LintPDF tenant API. Try requests against every endpoint without leaving your browser.",
+  ...hiddenInOssMetadata,
 };
 
 /**

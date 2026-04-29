@@ -8,8 +8,15 @@ import { CompetitorComparisonSection } from "@/components/CompetitorComparisonSe
 import { PricingSection } from "@/components/PricingSection";
 import { TryItCTA } from "@/components/TryItCTA";
 import { CTASection } from "@/components/CTASection";
+import { isSaasMode } from "@/lib/site-mode";
 
 export default function Home() {
+  // SaaS-funnel sections (comparison chart, pricing, try-it CTA, signup
+  // CTA) are gated to SaaS mode. The remaining product-description
+  // sections render in both modes; WebViewerSection internally hides its
+  // pricing-promo block in OSS mode.
+  const saasMode = isSaasMode();
+
   return (
     <main>
       <HeroSection />
@@ -18,10 +25,10 @@ export default function Home() {
       <HotFolderSection />
       <AIFeaturesSection />
       <HowItWorksSection />
-      <CompetitorComparisonSection />
-      <PricingSection />
-      <TryItCTA />
-      <CTASection />
+      {saasMode && <CompetitorComparisonSection />}
+      {saasMode && <PricingSection />}
+      {saasMode && <TryItCTA />}
+      {saasMode && <CTASection />}
     </main>
   );
 }

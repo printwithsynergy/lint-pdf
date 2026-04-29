@@ -1,3 +1,5 @@
+import { isSaasMode } from "@/lib/site-mode";
+
 const aiHighlights = [
   {
     title: "Regulatory Compliance",
@@ -119,27 +121,29 @@ export function AIFeaturesSection() {
           ))}
         </div>
 
-        <div className="mt-10 text-center">
-          <a
-            href="/ai"
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
-          >
-            Explore AI Features
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+        {isSaasMode() && (
+          <div className="mt-10 text-center">
+            <a
+              href="/ai"
+              className="inline-flex items-center gap-2 rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-              />
-            </svg>
-          </a>
-        </div>
+              Explore AI Features
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                />
+              </svg>
+            </a>
+          </div>
+        )}
       </div>
     </section>
   );

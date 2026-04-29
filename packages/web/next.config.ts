@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// Asserts NEXT_PUBLIC_ENABLE_SAAS is set to "true" or "false" at build
+// time. Importing for the side effect — fail loud rather than ship a
+// silent default in either direction.
+import "./src/lib/site-mode";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
