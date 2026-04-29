@@ -1,8 +1,33 @@
-# BUILD-PLAYBOOK.md — LintPDF
+# BUILD-PLAYBOOK.md — LintPDF (archival)
 
 # Module-by-module engineering playbook for AI-assisted development.
 
 # Each phase maps to Linear cards. Read ATLAS-CONTEXT.md before starting.
+
+> **ARCHIVAL NOTE — read before relying on any path or identifier in this doc.**
+>
+> This playbook captures the original module-by-module plan written under the
+> project's earlier "Grounded" working name. Many of the file paths, module
+> names, exception class names, and brand-language terms below reflect that
+> original design and **do not match the current production code**. Treat this
+> document as historical context for *why* the engine is shaped the way it is,
+> not as a directory map.
+>
+> Translation guide for the most common drifts:
+>
+> | This doc says | Current code uses |
+> |---|---|
+> | `src/grounded/` | `packages/engine/src/lintpdf/` |
+> | `grounded.worker` / `grounded.api` | `lintpdf.queue.app` / `lintpdf.api.app` |
+> | `GroundedError` exception base | see `packages/engine/src/lintpdf/exceptions.py` |
+> | `GRD_*` inspection IDs | `LPDF_*` (deterministic) and `AI_*` (AI-tier) |
+> | Aviation brand terms (Flight Plan, Clear to Fly, No-Fly, Radio, Taxiing) | Ruleset, Pass, Fail, Webhook, Processing — see PROJECT.md "Brand language" |
+>
+> Linear card keys (`GRD-001`, `GRD-002`, …) are **kept as-is** — they reference
+> real Linear issues and renaming them would break the issue-tracking history.
+>
+> When in doubt, treat **PROJECT.md** (in this directory) and the live source
+> tree as the source of truth.
 
 ---
 
