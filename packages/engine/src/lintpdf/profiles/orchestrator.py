@@ -730,6 +730,7 @@ class PreflightOrchestrator:
         from lintpdf.analyzers.dimension_callout import DimensionCalloutAnalyzer
         from lintpdf.analyzers.duplicate_process_spot import DuplicateProcessSpotAnalyzer
         from lintpdf.analyzers.ink_extras import InkExtrasAnalyzer
+        from lintpdf.analyzers.legal_copy_min_size import LegalCopyMinSizeAnalyzer
         from lintpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
         from lintpdf.analyzers.metadata_audit import MetadataAuditAnalyzer
         from lintpdf.analyzers.page_geometry_audit import PageGeometryAuditAnalyzer
@@ -790,6 +791,7 @@ class PreflightOrchestrator:
             PlaceholderTextAnalyzer(),
             DuplicateProcessSpotAnalyzer(),
             LegibilityCompositeAnalyzer(),
+            LegalCopyMinSizeAnalyzer(),
             DielineIso19593Analyzer(),
             DielinePerfIndicatorAnalyzer(),
             ColorInventoryAuditAnalyzer(),

@@ -859,6 +859,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Outlined Text Below Legibility Threshold",
         "OCR-detected outlined-text regions measure below 6 pt apparent glyph height. Catches ingredient panels and legal copy that have been converted to vector paths (where the engine's TextRenderedEvent-based legibility check can't see them). Fired by the OCR text-region pass (PR #295). Verify against panel-specific regulatory minimums (FDA / CFIA: 1.0-1.6 mm x-height).",
     ),
+    "LPDF_LEGALCOPY_001": CheckInfo(
+        "Legal Copy Below FDA / CFIA Minimum Size",
+        "Live text falls below the FDA 21 CFR 101.2(c) and CFIA SOR/2003-11 §B.01.012 minimum body-copy size (≈ 1.5 mm x-height ≈ 5 pt composed font size). Complements LPDF_LEGIBILITY_001 (which requires rotation > 45 deg) by catching axis-aligned ingredient and legal panels that pass the rotated-text rule. Severity is advisory because the analyzer is jurisdiction-agnostic — verify against the panel's regulatory market before treating as blocking.",
+    ),
     "LPDF_DIE_PROCESSING_STEPS": CheckInfo(
         "Dieline ISO 19593-1 Decomposition Missing",
         "Single dieline spot carries cut, fold, perf, and other finishing operations as one layer. ISO 19593-1:2018 Annex A.4 specifies a separate spot per ProcessingStep (Cutting / Crease / Perforating / KissCut / FoldLine). Without decomposition the converter has to eyeball the artwork to route each operation to the right finishing tool.",
