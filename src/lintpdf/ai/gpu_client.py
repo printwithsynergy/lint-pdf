@@ -277,8 +277,23 @@ class GPUInferenceClient:
             try:
                 response.raise_for_status()
             except httpx.HTTPStatusError as exc:
-                # 4xx other than 429 or 5xx. These are genuine upstream
-                # problems worth counting toward the breaker threshold.
+                # 404 = endpoint not deployed on this Modal app. That's a
+                # per-endpoint feature gap, not a service outage — the
+                # rest of the inference service is still healthy. Don't
+                # count it toward the breaker (otherwise a single
+                # missing endpoint cascades and tears down every other
+                # GPU-dependent analyzer that DOES work). Caught on
+                # 2026-04-29 when ``/inference/cambi`` / ``/color-cast``
+                # / ``/skin-tone`` 404s opened the breaker on the first
+                # 3 calls of every job, marking 8 unrelated AI analyzers
+                # as ``gpu_unavailable``.
+                if response.status_code == 404:
+                    raise GPUServiceUnavailableError(
+                        f"GPU endpoint not implemented: {exc}"
+                    ) from exc
+                # 4xx other than 404/429 or 5xx. These are genuine
+                # upstream problems worth counting toward the breaker
+                # threshold.
                 self._breaker.record_failure()
                 raise GPUServiceUnavailableError(f"GPU service error: {exc}") from exc
 
