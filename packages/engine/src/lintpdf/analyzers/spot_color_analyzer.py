@@ -78,6 +78,12 @@ def _canonical_colorant(raw: str | None) -> str:
     # Collapse interior whitespace runs so "PANTONE  485  C" matches
     # "PANTONE 485 C".
     s = re.sub(r"\s+", " ", s).strip()
+    # PR-P (audit disagree closure): strip trailing punctuation/
+    # whitespace so "PANTONE 3582 C.  " / "PANTONE 485 C," all
+    # canonicalise to "PANTONE … C". Without this the suffix-
+    # detection in LPDF_SPOT_003 reports "missing C" for names
+    # that DO end in C with stray punctuation.
+    s = s.rstrip(" .,;:")
     return s.upper()
 
 

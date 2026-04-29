@@ -203,6 +203,24 @@ _SUPPLEMENT_DOCUMENT_PATTERNS: tuple[_re.Pattern[str], ...] = (
     _re.compile(r"\bSupplement\s+Facts\b", _re.IGNORECASE),
     _re.compile(r"\bDietary\s+Supplement\b", _re.IGNORECASE),
     _re.compile(r"\bSupplemental\s+Facts\b", _re.IGNORECASE),
+    # PR-P (audit disagree closure): broader supplement indicators
+    # for fixtures whose "Supplement Facts" header is encoded as
+    # positioned glyphs (Identity-H, individual Tj's per char) and
+    # so doesn't appear as a single regex-matchable string in the
+    # raw content stream. Each pattern is supplement-class-only —
+    # NFP labels don't carry these.
+    _re.compile(r"\bGummi(?:es)?\b", _re.IGNORECASE),
+    _re.compile(r"\bSoftgel(?:s)?\b", _re.IGNORECASE),
+    _re.compile(r"\bCapsule(?:s)?\s*\(\d+\)", _re.IGNORECASE),  # "(60) Capsules"
+    _re.compile(r"\bOther\s+Ingredients\s*[:.]", _re.IGNORECASE),
+    # Folic Acid + Biotin + Riboflavin are dietary-supplement-specific
+    # nutrients (NFP labels list them differently / under "Vitamins
+    # and Minerals"). Two or more in close proximity is a strong
+    # signal.
+    _re.compile(
+        r"\bFolic\s+Acid\b.{0,200}\bBiotin\b|\bBiotin\b.{0,200}\bRiboflavin\b",
+        _re.IGNORECASE | _re.DOTALL,
+    ),
 )
 
 
