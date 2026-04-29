@@ -40,6 +40,15 @@ _PATTERNS: tuple[tuple[re.Pattern[str], str], ...] = (
     (re.compile(r"\bTOP\s+PANEL\b", re.IGNORECASE), "TOP PANEL"),
     (re.compile(r"\bBOTTOM\s+PANEL\b", re.IGNORECASE), "BOTTOM PANEL"),
     (re.compile(r"\bSIDE\s+PANEL\b", re.IGNORECASE), "SIDE PANEL"),
+    # PR-V (audit miss closure): seal/finishing technical labels —
+    # printed annotations like 'OVERLAP IN SEAL' / 'END SEAL' /
+    # 'TEAR HERE' that should be on a non-printing techinfo layer
+    # but are sitting in the live artwork. Caught by Opus on
+    # DailyFiber_10up multi-up sheet.
+    (re.compile(r"\bOVERLAP\s+IN\s+SEAL\b", re.IGNORECASE), "OVERLAP IN SEAL"),
+    (re.compile(r"\bEND\s+SEAL\b", re.IGNORECASE), "END SEAL"),
+    (re.compile(r"\bSEAL\s+AREA\b", re.IGNORECASE), "SEAL AREA"),
+    (re.compile(r"\bDIE\s+CUT\s+AREA\b", re.IGNORECASE), "DIE CUT AREA"),
     (re.compile(r"\bTemplate\s*#\s*\d+\b", re.IGNORECASE), "Template #..."),
     (re.compile(r"\bINSERT\s+IN\s+(?:END\s+SEAL|HERE)\b", re.IGNORECASE), "INSERT IN ..."),
     (
@@ -79,7 +88,22 @@ class PlaceholderTextAnalyzer(BaseAnalyzer):
         seen: set[tuple[int, str]] = set()
 
         for page in document.pages:
-            findings.extend(self._scan_text(page, self._content_stream_text(page), seen, "live"))
+            raw_text = self._content_stream_text(page)
+            findings.extend(self._scan_text(page, raw_text, seen, "live"))
+            # PR-V (audit miss closure): some live-text PDFs encode
+            # strings as positioned glyphs — Identity-H CID fonts emit
+            # one (X) Tj per character, so the regex ``\bLOT\s+NUMBER\b``
+            # never matches the raw stream even though the glyphs ARE
+            # present. Build TWO concatenations of Tj/TJ operands —
+            # space-joined (catches ``(LOT) Tj (NUMBER) Tj``) and no-
+            # gap joined (catches ``(L)Tj (O)Tj ... (R)Tj``) — and
+            # scan both. Caught on Pink-Slush p2 and HSI_OUTLINED
+            # placeholder misses.
+            flattened_spaced, flattened_dense = self._flatten_tj_operands(raw_text)
+            if flattened_spaced and flattened_spaced != raw_text:
+                findings.extend(self._scan_text(page, flattened_spaced, seen, "live_flattened"))
+            if flattened_dense and flattened_dense != raw_text:
+                findings.extend(self._scan_text(page, flattened_dense, seen, "live_flattened"))
             # PR-N (audit miss closure): outlined fixtures (Cherry-
             # Twist / Pink-Slush / HSI / OrangeKiss) have their
             # placeholder copy as vector paths. The OCR pass
@@ -99,6 +123,69 @@ class PlaceholderTextAnalyzer(BaseAnalyzer):
             return raw.decode("latin-1") if isinstance(raw, bytes) else str(raw)
         except Exception:
             return ""
+
+    @staticmethod
+    def _flatten_tj_operands(stream: str) -> tuple[str, str]:
+        """Return ``(space_joined, no_gap_joined)`` reconstructions
+        of every ``(...)`` literal-string operand that precedes a
+        ``Tj`` or ``TJ`` operator in the content stream.
+
+        Many CID-encoded fonts emit one Tj call per glyph (``(L) Tj
+        (O) Tj (T) Tj``) so the regex search across the raw stream
+        misses multi-character placeholder phrases. Two flattenings
+        cover both cases:
+
+        * ``space_joined``: separator between operands. Catches
+          ``(LOT) Tj (NUMBER) Tj`` → ``"LOT NUMBER"``.
+        * ``no_gap_joined``: nothing between operands. Catches
+          single-glyph splits like ``(L)Tj (O)Tj ... (R)Tj`` →
+          ``"LOTNUMBER"``.
+
+        The caller scans both. Best-effort: handles unescaped
+        literal strings only. Hex strings (``<HHHH>``) and non-Latin
+        encodings are skipped — those carry CID glyph indices rather
+        than plain ASCII so regex matching wouldn't help even after
+        extraction.
+        """
+        if not stream:
+            return "", ""
+        operands: list[str] = []
+        i = 0
+        n = len(stream)
+        while i < n:
+            ch = stream[i]
+            if ch != "(":
+                i += 1
+                continue
+            j = i + 1
+            depth = 1
+            buf: list[str] = []
+            while j < n and depth > 0:
+                c = stream[j]
+                if c == "\\" and j + 1 < n:
+                    buf.append(stream[j + 1])
+                    j += 2
+                    continue
+                if c == "(":
+                    depth += 1
+                    buf.append(c)
+                elif c == ")":
+                    depth -= 1
+                    if depth > 0:
+                        buf.append(c)
+                else:
+                    buf.append(c)
+                j += 1
+            k = j
+            while k < n and stream[k] in " \t\r\n":
+                k += 1
+            is_tj = k + 1 < n and stream[k] == "T" and stream[k + 1] in ("j", "J")
+            if is_tj:
+                operands.append("".join(buf))
+            i = j
+        space_joined = " ".join(operands).strip()
+        no_gap_joined = "".join(operands)
+        return space_joined, no_gap_joined
 
     @staticmethod
     def _ocr_region_strings(page: object) -> list[str]:
