@@ -891,6 +891,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Painted Content Overlaps Barcode Quiet Zone",
         "Painted artwork (path strokes/fills or images) overlaps the GS1 quiet zone (10x narrow-bar to either side of the bars). Adjacent printed background, frame, or decorative art encroaches the scan window even when the barcode is well clear of the trim edge — verify the quiet zone is clear of any non-barcode ink.",
     ),
+    "LPDF_BOX_BG_NO_BLEED": CheckInfo(
+        "Background Art Reaches Trim Edge With Zero Bleed",
+        "Page declares zero bleed (BleedBox missing or BleedBox == TrimBox) and painted artwork reaches one or more trim edges. Cutting tolerance will leave unprinted slivers along these edges. Extend background art at least 3 mm beyond the trim box and supply a true BleedBox. Distinct from LPDF_BOX_006 (content beyond bleed) — this check fires when the artwork stops at the cut line.",
+    ),
+    "LPDF_BOX_PRESS_MARKS_MISSING": CheckInfo(
+        "Multi-Up Layout Missing Press Marks",
+        "Page is a multi-up step-and-repeat (3+ similar dieline regions) but contains no painted content outside the trim box. Multi-up press sheets typically include trim marks, registration targets, and colour bars in the bleed-strip area for the converter; their absence forces eyeball alignment at the press.",
+    ),
     "LPDF_DIM_CALLOUT_001": CheckInfo(
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
