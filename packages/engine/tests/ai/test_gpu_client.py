@@ -364,3 +364,61 @@ class TestRateLimit429Handling:
             with pytest.raises(GPUServiceUnavailableError, match="circuit breaker"):
                 client.assess_image_quality(b"img")
             assert mock_client_cls.return_value.request.call_count == call_count_before
+
+
+class TestPerCallTimeoutOverride:
+    """PR-H — endpoints with Modal cold-start budgets need a per-call
+    timeout override. ``detect_outlines`` uses 240 s instead of the
+    default 30 s so PaddleOCR's first-hit cold-start (~150-180 s) doesn't
+    kill the request before the container can respond.
+    """
+
+    @staticmethod
+    def test_default_timeout_is_30s() -> None:
+        from lintpdf.ai.gpu_client import GPUInferenceClient
+
+        client = GPUInferenceClient(base_url="https://example.test")
+        assert client._timeout == 30.0
+
+    @staticmethod
+    def test_detect_outlines_passes_cold_start_timeout() -> None:
+        """When ``detect_outlines`` is called, the underlying httpx
+        client.request must receive ``timeout=240`` not ``timeout=30``."""
+        from unittest.mock import MagicMock, patch
+
+        from lintpdf.ai.gpu_client import (
+            _GPU_COLD_START_TIMEOUT_S,
+            GPUInferenceClient,
+        )
+
+        with patch("lintpdf.ai.gpu_client.httpx.Client") as mock_client_cls:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"text_regions": []}
+            mock_client_cls.return_value.request.return_value = mock_response
+
+            client = GPUInferenceClient(base_url="https://example.test")
+            client.detect_outlines(b"png-bytes")
+
+            request_call = mock_client_cls.return_value.request.call_args
+            assert request_call.kwargs["timeout"] == _GPU_COLD_START_TIMEOUT_S
+            assert _GPU_COLD_START_TIMEOUT_S == 240.0
+
+    @staticmethod
+    def test_other_endpoints_keep_default_timeout() -> None:
+        """Non-OCR endpoints (no cold-start concern) use the default 30 s."""
+        from unittest.mock import MagicMock, patch
+
+        from lintpdf.ai.gpu_client import GPUInferenceClient
+
+        with patch("lintpdf.ai.gpu_client.httpx.Client") as mock_client_cls:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {}
+            mock_client_cls.return_value.request.return_value = mock_response
+
+            client = GPUInferenceClient(base_url="https://example.test")
+            client.assess_image_quality(b"png-bytes")
+
+            request_call = mock_client_cls.return_value.request.call_args
+            assert request_call.kwargs["timeout"] == 30.0
