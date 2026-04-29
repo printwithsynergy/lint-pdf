@@ -64,7 +64,14 @@ class CuttingOverprintAnalyzer(BaseAnalyzer):
                         continue
                     if not _is_dieline_name(str(colorant)):
                         continue
-                    cutting_resource_names[str(cs_name)] = str(colorant)
+                    # ``page.color_spaces`` keys preserve the PDF
+                    # ``/Name`` syntax (e.g. ``/CS4``); the interpreter
+                    # emits ``ColorChangedEvent.color_space`` without
+                    # the leading slash (``CS4``). Index under both
+                    # forms so the event-time lookup hits.
+                    key = str(cs_name)
+                    cutting_resource_names[key] = str(colorant)
+                    cutting_resource_names[key.lstrip("/")] = str(colorant)
                     cutting_colorants.add(str(colorant))
                     break  # first cutting colorant per cs is enough
 
@@ -119,25 +126,29 @@ class CuttingOverprintAnalyzer(BaseAnalyzer):
                             first_offending.setdefault(colorant, (event.page_num, "fill"))
                 continue
 
-        # 3. Emit one finding per cutting spot that was painted
-        #    without overprint anywhere in the stream AND was never
-        #    observed with overprint set (so the operator gets one
-        #    clear signal per offending spot).
+        # 3. Emit one finding per cutting spot that was painted without
+        #    overprint anywhere in the stream. ISO 19593-1 requires the
+        #    overprint flag to be set CONSISTENTLY for ProcessingStep
+        #    inks — partial overprint (some uses overprint, others
+        #    knock out) still produces white-outline artefacts on the
+        #    press, so we don't suppress when the spot was also seen
+        #    with overprint elsewhere; we just label it
+        #    "inconsistent" vs "always off".
         findings: list[Finding] = []
         for colorant, (page_num, source) in sorted(first_offending.items()):
-            if colorant in seen_with_overprint:
-                continue
+            inconsistent = colorant in seen_with_overprint
+            qualifier = "inconsistently" if inconsistent else "without"
             findings.append(
                 Finding(
                     inspection_id="LPDF_DIE_CUTTING_NOT_OVERPRINT",
                     severity=Severity.WARNING,
                     message=(
                         f"Cutting / dieline spot '{colorant}' is painted on page "
-                        f"{page_num} ({source}) without the overprint flag set. "
+                        f"{page_num} ({source}) {qualifier} the overprint flag set. "
                         "ISO 19593-1 §6.3 requires ProcessingStep inks (cutting, "
                         "creasing, perforating) to overprint so the dieline "
                         "doesn't knock out live artwork on the press plates. "
-                        "Set OP/op true in the graphics state for any path "
+                        "Set OP/op true in the graphics state for every path "
                         "stroked or filled in this spot."
                     ),
                     page_num=page_num,
@@ -145,6 +156,7 @@ class CuttingOverprintAnalyzer(BaseAnalyzer):
                         "colorant_name": colorant,
                         "first_offending_page": page_num,
                         "operation": source,
+                        "inconsistent_overprint": inconsistent,
                     },
                     category="dieline",
                     object_type="color_space",
