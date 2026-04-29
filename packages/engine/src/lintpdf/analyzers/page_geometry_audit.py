@@ -105,24 +105,42 @@ class PageGeometryAuditAnalyzer(BaseAnalyzer):
         except (AttributeError, TypeError, ValueError):
             return []
 
-        # Suppression: when ANY painted bbox extends meaningfully past
-        # a trim edge (>= 2 pt), the artwork is providing real bleed
-        # even though the BleedBox metadata wasn't updated. The press
-        # has material to trim through, so there's no white-sliver
-        # risk on that side. Only fire when art truly stops AT trim.
-        # Caught by Opus on Pink-Slush p2 — engine fired BG_NO_BLEED
-        # on a page where the background extended ~10pt past trim.
+        # Suppression: when MULTIPLE painted bboxes extend meaningfully
+        # past a trim edge (>= 2 pt), the artwork is providing real
+        # bleed even though the BleedBox metadata wasn't updated. The
+        # press has material to trim through, so there's no white-
+        # sliver risk on that side. Only fire when art truly stops AT
+        # trim. Caught by Opus on Pink-Slush p2 — engine fired
+        # BG_NO_BLEED on a page where the background extended ~10pt
+        # past trim.
+        #
+        # PR-GG calibration: stray glyph / outlined-path bboxes can
+        # extend marginally past trim due to anti-aliasing or path
+        # bbox tolerance; a SINGLE such event shouldn't suppress the
+        # finding. Require at least 3 events past the edge to count
+        # as "real bleed material" — closes Cherry-Twist / OrangeKiss
+        # / Pink-Slush misses where a few outlier paths previously
+        # silenced the rule on outlined fixtures whose actual
+        # background fills stop at trim.
         bleed_overhang_pt = 2.0
-        edges_with_overhang: set[str] = set()
+        edge_overhang_counts: dict[str, int] = {
+            "left": 0,
+            "right": 0,
+            "bottom": 0,
+            "top": 0,
+        }
         for ex0, ey0, ex1, ey1 in page_bboxes:
             if ex0 < tx0 - bleed_overhang_pt:
-                edges_with_overhang.add("left")
+                edge_overhang_counts["left"] += 1
             if ex1 > tx1 + bleed_overhang_pt:
-                edges_with_overhang.add("right")
+                edge_overhang_counts["right"] += 1
             if ey0 < ty0 - bleed_overhang_pt:
-                edges_with_overhang.add("bottom")
+                edge_overhang_counts["bottom"] += 1
             if ey1 > ty1 + bleed_overhang_pt:
-                edges_with_overhang.add("top")
+                edge_overhang_counts["top"] += 1
+        edges_with_overhang: set[str] = {
+            edge for edge, count in edge_overhang_counts.items() if count >= 3
+        }
 
         edges_touched: set[str] = set()
         for ex0, ey0, ex1, ey1 in page_bboxes:
