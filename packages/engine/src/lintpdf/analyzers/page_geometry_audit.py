@@ -105,6 +105,25 @@ class PageGeometryAuditAnalyzer(BaseAnalyzer):
         except (AttributeError, TypeError, ValueError):
             return []
 
+        # Suppression: when ANY painted bbox extends meaningfully past
+        # a trim edge (>= 2 pt), the artwork is providing real bleed
+        # even though the BleedBox metadata wasn't updated. The press
+        # has material to trim through, so there's no white-sliver
+        # risk on that side. Only fire when art truly stops AT trim.
+        # Caught by Opus on Pink-Slush p2 — engine fired BG_NO_BLEED
+        # on a page where the background extended ~10pt past trim.
+        bleed_overhang_pt = 2.0
+        edges_with_overhang: set[str] = set()
+        for ex0, ey0, ex1, ey1 in page_bboxes:
+            if ex0 < tx0 - bleed_overhang_pt:
+                edges_with_overhang.add("left")
+            if ex1 > tx1 + bleed_overhang_pt:
+                edges_with_overhang.add("right")
+            if ey0 < ty0 - bleed_overhang_pt:
+                edges_with_overhang.add("bottom")
+            if ey1 > ty1 + bleed_overhang_pt:
+                edges_with_overhang.add("top")
+
         edges_touched: set[str] = set()
         for ex0, ey0, ex1, ey1 in page_bboxes:
             # Only consider painted content that's actually inside the
@@ -120,6 +139,10 @@ class PageGeometryAuditAnalyzer(BaseAnalyzer):
                 edges_touched.add("bottom")
             if ey1 >= ty1 - _TRIM_EDGE_TOLERANCE_PT and ey0 <= ty1:
                 edges_touched.add("top")
+        # Only fire on edges where art reaches trim AND no overhang
+        # supplies the bleed material. Edges where art extends past
+        # trim by >2 pt are clean.
+        edges_touched -= edges_with_overhang
         if not edges_touched:
             return []
         return [

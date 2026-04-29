@@ -132,9 +132,12 @@ class TestAudit:
 
         _stub_anthropic.messages.create.return_value = opus_response
 
+        # Both check IDs must be vision-verifiable (not in the
+        # structural-only short-circuit list) so the test exercises
+        # the Opus path rather than the auto-confirm fast path.
         findings = [
             _FakeFinding(inspection_id="LPDF_OVER_001", page_num=1),
-            _FakeFinding(inspection_id="LPDF_INK_003", page_num=1, severity="warning"),
+            _FakeFinding(inspection_id="LPDF_HAIRLINE_001", page_num=1, severity="warning"),
         ]
         out = InternalAuditor().audit(b"%PDF-fake", findings)
         assert out[0] is not None and out[0].status == "confirmed"
