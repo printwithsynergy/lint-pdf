@@ -391,7 +391,7 @@ export function HeroSection() {
           <MarketingLogo className="h-52 w-auto md:h-64" />
         </div>
 
-        {betaMode ? (
+        {saasMode && betaMode ? (
           <div className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50/95 px-4 py-1.5 text-xs md:text-sm font-medium text-amber-800 mb-6 shadow-sm">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
             Beta &mdash; Limited Access
