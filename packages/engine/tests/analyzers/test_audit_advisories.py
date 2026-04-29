@@ -148,3 +148,50 @@ def test_ocr_dimension_callout_fires() -> None:
     )
     findings = AuditAdvisoryAnalyzer().analyze(_doc(detected_regions=[region]), [])
     assert any(f.inspection_id == "LPDF_DIE_DIMENSION_CALLOUT" for f in findings)
+
+
+# ── LPDF_NET_WEIGHT_VERIFY ───────────────────────────────────────────
+
+
+def test_net_weight_metric_only_fires() -> None:
+    cs = b"BT /F1 8 Tf (NET WT 6.0 g) Tj ET"
+    findings = AuditAdvisoryAnalyzer().analyze(_doc(content_stream=cs), [])
+    f = [x for x in findings if x.inspection_id == "LPDF_NET_WEIGHT_VERIFY"]
+    assert len(f) == 1
+    assert f[0].details["metric_present"] is True
+    assert f[0].details["imperial_present"] is False
+
+
+def test_net_weight_imperial_only_fires() -> None:
+    cs = b"BT /F1 8 Tf (NET WT 8 oz) Tj ET"
+    findings = AuditAdvisoryAnalyzer().analyze(_doc(content_stream=cs), [])
+    assert any(f.inspection_id == "LPDF_NET_WEIGHT_VERIFY" for f in findings)
+
+
+def test_net_weight_dual_unit_no_finding() -> None:
+    """Dual unit declaration `200 g (8 oz)` should NOT fire."""
+    cs = b"BT /F1 8 Tf (NET WT 200 g (8 oz)) Tj ET"
+    findings = AuditAdvisoryAnalyzer().analyze(_doc(content_stream=cs), [])
+    assert not [f for f in findings if f.inspection_id == "LPDF_NET_WEIGHT_VERIFY"]
+
+
+def test_net_weight_french_metric_fires() -> None:
+    cs = b"BT /F1 8 Tf (POIDS NET 250 g) Tj ET"
+    findings = AuditAdvisoryAnalyzer().analyze(_doc(content_stream=cs), [])
+    assert any(f.inspection_id == "LPDF_NET_WEIGHT_VERIFY" for f in findings)
+
+
+def test_nutrient_quantity_no_finding() -> None:
+    """`5 g sodium per serving` is a regulatory quantity, NOT a net
+    weight — must not fire."""
+    cs = b"BT /F1 8 Tf (5 g sodium per serving) Tj ET"
+    findings = AuditAdvisoryAnalyzer().analyze(_doc(content_stream=cs), [])
+    assert not [f for f in findings if f.inspection_id == "LPDF_NET_WEIGHT_VERIFY"]
+
+
+def test_net_carbs_no_finding() -> None:
+    """`Net Carbs 6 g` is a nutrition label fact, NOT a net weight
+    declaration. Must not fire."""
+    cs = b"BT /F1 8 Tf (Net Carbs 6 g and 200 calories) Tj ET"
+    findings = AuditAdvisoryAnalyzer().analyze(_doc(content_stream=cs), [])
+    assert not [f for f in findings if f.inspection_id == "LPDF_NET_WEIGHT_VERIFY"]

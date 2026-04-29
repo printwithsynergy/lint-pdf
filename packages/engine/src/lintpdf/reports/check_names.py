@@ -955,6 +955,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Verify Legibility At Final Print Size",
         "Text composed size is in the 5-6 pt band — above the FDA 5 pt hard floor (LPDF_LEGALCOPY_001) but below the 6 pt body-copy recommendation. Verify against the final printed panel size and substrate; flexible-film and rotogravure can lose detail below 6 pt body even when the regulatory threshold is met.",
     ),
+    "LPDF_NET_WEIGHT_VERIFY": CheckInfo(
+        "Net Weight Dual-Unit Declaration",
+        "Net weight declaration appears to use only one unit system (imperial or metric). FDA 21 CFR 101.105 requires net quantity declaration in BOTH US customary and metric on products sold in the US. Verify the printed panel includes both units.",
+    ),
+    "LPDF_DIE_NO_SAFE_ZONE": CheckInfo(
+        "Live Copy Inside Dieline Safe Zone",
+        "Live text events sit within 3 mm of a dieline edge or fold line. The press finishing line typically needs a 2-3 mm safety margin from cuts and folds; copy closer than that may be cropped, distorted by the fold, or sealed over. Move the copy further inside the safe zone or relocate the dieline.",
+    ),
     "LPDF_BOX_SEAL_ZONE_VIOLATION": CheckInfo(
         "Live Copy Inside Heat-Seal Keepout",
         "Live text or barcode sits inside a heat-seal / overlap-seal / tear-zone keepout band (5 mm by default) on flexible-film stick-pack or pouch artwork. The seal jaw, crimp, or tear notch will obscure, distort, or seal over the copy. Move the copy outside the seal zone or relocate the seal indicator. Anchored on technical labels like END SEAL, OVERLAP IN SEAL, SEAL AREA, TEAR ACROSS / DÉCHIRER ICI in the artwork.",
