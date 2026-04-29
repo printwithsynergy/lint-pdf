@@ -867,6 +867,22 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Tear/Perf Indicator Without ProcessingStep Spot",
         "Artwork text contains a finishing-operation indicator (e.g. 'TEAR ACROSS', 'DECHIRER ICI', 'PERFORATION', 'KISS CUT', 'SCORE LINE') but no ISO 19593-1 ProcessingStep spot (Perforating / KissCut / Scoring / Creasing) was declared. The converter cannot route the operation to its finishing tool, and the indicator art may also print on the live plates. Detected via OCR text regions, annotation /Contents, and content-stream Tj operands.",
     ),
+    "LPDF_COLOR_PLATE_COUNT_HIGH": CheckInfo(
+        "Total Ink Channels Exceeds Press Capacity",
+        "Document declares more than 6 ink channels (process + spot non-ProcessingStep separations). Many flexo / stick-pack / label presses cap out at 6 ink stations; excess spots may be force-converted to process at the printer. Confirm the press supports all declared plates or convert lower-priority spots to CMYK before release.",
+    ),
+    "LPDF_COLOR_DUPLICATE_K_SPOT": CheckInfo(
+        "Spot Color Name Suggests Duplicate K Plate",
+        "Spot color name contains the token 'black' (e.g. '/Black Black', '/Rich Black', '/Process Black') alongside process K. May produce a duplicate plate at output (double-printed K) or an unintended extra plate. Verify intent: rename the spot if it is an intentional special, or merge with process K.",
+    ),
+    "LPDF_COLOR_DIELINE_PRINTABLE": CheckInfo(
+        "Dieline Spot Will Print On Live Plate",
+        "Generic dieline spot ('/Dieline', '/CutContour', '/Cut') is declared as a regular Separation with no ISO 19593-1 ProcessingStep companion. The spot will print on the live plate unless explicitly set to non-printing in the press workflow. Tag it as ProcessingStep / Cutting (or similar) so the converter routes it to a finishing tool instead of imaging it.",
+    ),
+    "LPDF_COLOR_DEVICEN_CMYK_NAMED": CheckInfo(
+        "DeviceN Tuple Names Process CMYK As Colorants",
+        "DeviceN / NChannel color space names process CMYK channels (/Cyan, /Magenta, /Yellow, /Black) as colorants. Process plates should not appear inside DeviceN tuples — combined with stand-alone Separations this commonly produces extra unintended plates on the RIP. Re-target the artwork onto DeviceCMYK or remove the process names from the DeviceN tuple.",
+    ),
     "LPDF_DIM_CALLOUT_001": CheckInfo(
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
