@@ -963,6 +963,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Live Copy Inside Dieline Safe Zone",
         "Live text events sit within 3 mm of a dieline edge or fold line. The press finishing line typically needs a 2-3 mm safety margin from cuts and folds; copy closer than that may be cropped, distorted by the fold, or sealed over. Move the copy further inside the safe zone or relocate the dieline.",
     ),
+    "LPDF_TEXT_MIRRORED": CheckInfo(
+        "Text Drawn With Mirroring Transformation",
+        "Page has text events drawn with a mirroring (reflection) transformation — the text reads backwards on shelf unless the press applies a second flip during finishing. Common on shrink-sleeve / wrap-around labels but worth confirming when not intended. Distinct from LPDF_TEXT_INVERTED_180 (180° rotation; text still right-reading just upside-down).",
+    ),
+    "LPDF_BOX_NO_MARKS_ON_SHEET": CheckInfo(
+        "Letter-Size Sheet Without Press Marks",
+        "Page is a letter / legal-size sheet with painted artwork occupying only part of the page and no registration / cut marks / colour bars in the slug area. Label production usually expects each die-cut artwork on its own page or with explicit dielines + press marks. Confirm the sheet was the intended deliverable.",
+    ),
     "LPDF_BOX_SEAL_ZONE_VIOLATION": CheckInfo(
         "Live Copy Inside Heat-Seal Keepout",
         "Live text or barcode sits inside a heat-seal / overlap-seal / tear-zone keepout band (5 mm by default) on flexible-film stick-pack or pouch artwork. The seal jaw, crimp, or tear notch will obscure, distort, or seal over the copy. Move the copy outside the seal zone or relocate the seal indicator. Anchored on technical labels like END SEAL, OVERLAP IN SEAL, SEAL AREA, TEAR ACROSS / DÉCHIRER ICI in the artwork.",
