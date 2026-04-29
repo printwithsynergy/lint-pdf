@@ -69,13 +69,20 @@ class TestFontEmbedding:
         assert embed_findings[0].severity == Severity.ERROR
 
     @staticmethod
-    def test_standard_14_not_embedded_ok() -> None:
-        """Standard 14 fonts are exempt from embedding requirement."""
+    def test_standard_14_not_embedded_fires_error() -> None:
+        """Standard 14 fonts that are not embedded still emit LPDF_FONT_001
+        ERROR. Competent prepress operators treat unembedded Helvetica /
+        Times / Courier on production print as a hard error because the
+        receiving RIP may substitute a different font and break layout.
+        Details flag ``is_standard_14=True`` so PDF/A-1b workflows can
+        downgrade severity if needed."""
         font = _make_font(base_font="Helvetica", embedded=False)
         analyzer = FontAnalyzer()
         findings = analyzer.analyze(_make_doc_with_font(font), [])
         embed_findings = [f for f in findings if f.inspection_id == "LPDF_FONT_001"]
-        assert len(embed_findings) == 0
+        assert len(embed_findings) == 1
+        assert embed_findings[0].details["is_standard_14"] is True
+        assert embed_findings[0].severity.value == "error"
 
 
 class TestFontSubsetting:
