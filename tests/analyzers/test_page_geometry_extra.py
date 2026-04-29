@@ -173,3 +173,53 @@ def test_few_events_no_finding() -> None:
     events = [_path(0, 1, (50.0, 100.0, 80.0, 130.0))]
     findings = PageGeometryExtraAnalyzer().analyze(_doc(page), events)
     assert not [x for x in findings if x.inspection_id == "LPDF_BOX_MULTI_LABEL_PAGE"]
+
+
+# ── LPDF_BOX_TRIMBOX_UNDERSIZED (PR-BB) ────────────────────────────
+
+
+def test_artwork_extends_far_past_trimbox_fires() -> None:
+    """Pink-Slush p2 case: TrimBox covers left panel only, artwork
+    extends ~30 pt past the right edge — well beyond a normal 3 mm
+    bleed allowance. Fires LPDF_BOX_TRIMBOX_UNDERSIZED."""
+    page = SemanticPage(
+        page_num=1,
+        media_box=PdfBox(0, 0, 400, 200),
+        trim_box=PdfBox(50, 50, 200, 150),  # left panel only
+    )
+    events = [
+        _path(0, 1, (50.0, 50.0, 350.0, 150.0)),  # extends 150 pt past right
+    ]
+    findings = PageGeometryExtraAnalyzer().analyze(_doc(page), events)
+    f = [x for x in findings if x.inspection_id == "LPDF_BOX_TRIMBOX_UNDERSIZED"]
+    assert len(f) == 1
+    assert f[0].details["worst_side"] == "right"
+
+
+def test_artwork_just_past_trim_within_bleed_no_finding() -> None:
+    """Artwork extends only 5 pt past TrimBox — within normal bleed
+    allowance. Should NOT fire (LPDF_BOX_006 covers the bleed case)."""
+    page = SemanticPage(
+        page_num=1,
+        media_box=PdfBox(0, 0, 400, 200),
+        trim_box=PdfBox(50, 50, 350, 150),
+    )
+    events = [
+        _path(0, 1, (50.0, 50.0, 355.0, 150.0)),  # 5 pt past right
+    ]
+    findings = PageGeometryExtraAnalyzer().analyze(_doc(page), events)
+    assert not [x for x in findings if x.inspection_id == "LPDF_BOX_TRIMBOX_UNDERSIZED"]
+
+
+def test_trim_equals_media_no_undersized_finding() -> None:
+    """When TrimBox==MediaBox the LPDF_BOX_TRIMBOX_DEFAULTED rule owns
+    the case — undersized check should suppress to avoid duplicate
+    coverage."""
+    page = SemanticPage(
+        page_num=1,
+        media_box=PdfBox(0, 0, 400, 200),
+        trim_box=PdfBox(0, 0, 400, 200),
+    )
+    events = [_path(0, 1, (10.0, 10.0, 390.0, 190.0))]
+    findings = PageGeometryExtraAnalyzer().analyze(_doc(page), events)
+    assert not [x for x in findings if x.inspection_id == "LPDF_BOX_TRIMBOX_UNDERSIZED"]

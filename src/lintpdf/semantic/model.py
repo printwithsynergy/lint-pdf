@@ -373,3 +373,9 @@ class SemanticDocument:
     metadata_stream: bytes | None = None
     trailer: dict[str, Any] = field(default_factory=dict)
     pages: list[SemanticPage] = field(default_factory=list)
+    # Populated by the orchestrator before the analyzer loop runs (PR-W).
+    # Carries the dieline detection result so analyzers like BarcodeAnalyzer
+    # can compute fold-proximity geometry without re-running detection.
+    # ``None`` means detection wasn't attempted; ``source="missing"`` means
+    # it was attempted and found no dieline.
+    dieline_result: Any = None
