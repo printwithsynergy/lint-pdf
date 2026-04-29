@@ -919,6 +919,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Multiple Labels On Single Page",
         "Page contains 2+ disjoint content clusters separated by an empty band wider than 30 pt. Most label workflows expect each die-cut artwork on its own page or with explicit dieline separation. Confirm imposition is intentional and dielines are supplied for each label. Caught by Opus on Pavette_Pride (front circular + back rectangular labels on a single page).",
     ),
+    "LPDF_BOX_SEAL_ZONE_VIOLATION": CheckInfo(
+        "Live Copy Inside Heat-Seal Keepout",
+        "Live text or barcode sits inside a heat-seal / overlap-seal / tear-zone keepout band (5 mm by default) on flexible-film stick-pack or pouch artwork. The seal jaw, crimp, or tear notch will obscure, distort, or seal over the copy. Move the copy outside the seal zone or relocate the seal indicator. Anchored on technical labels like END SEAL, OVERLAP IN SEAL, SEAL AREA, TEAR ACROSS / DÉCHIRER ICI in the artwork.",
+    ),
     "LPDF_COLOR_ALL_SEPARATION": CheckInfo(
         "Special /All Separation Used As Artwork",
         "Separation uses the special /All colorant. /All prints to every plate simultaneously and is normally reserved for registration marks. Using it for general artwork will produce unintended ink on every plate at output. Re-target to a real spot or process colorant before plating.",
