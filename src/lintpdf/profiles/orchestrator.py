@@ -724,6 +724,7 @@ class PreflightOrchestrator:
             StructureAnalyzer,
             TransparencyAnalyzer,
         )
+        from lintpdf.analyzers.audit_advisories import AuditAdvisoryAnalyzer
         from lintpdf.analyzers.color_inventory_audit import ColorInventoryAuditAnalyzer
         from lintpdf.analyzers.cutting_overprint import CuttingOverprintAnalyzer
         from lintpdf.analyzers.dieline_iso19593 import DielineIso19593Analyzer
@@ -803,6 +804,7 @@ class PreflightOrchestrator:
             PageGeometryExtraAnalyzer(min_bleed_pts=bleed_pts),
             SealZoneKeepoutAnalyzer(),
             SoloSpotVerifyAnalyzer(),
+            AuditAdvisoryAnalyzer(),
             MetadataAuditAnalyzer(),
             DimensionCalloutAnalyzer(),
             SpotNameSimilarityAnalyzer(),

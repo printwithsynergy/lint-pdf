@@ -927,6 +927,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Single Spot — Verify Decorative vs. Technical",
         "Document declares exactly one Separation/DeviceN spot whose name does not look like a dieline / cutter / processing-step name. Confirm with the printer that the spot is intended as a decorative ink plate (e.g. a brand spot) and not accidentally being used to indicate a die/cut. If technical, rename to follow ISO 19593-1 (Cutting / Perforating / Scoring / Creasing).",
     ),
+    "LPDF_BOX_STEP_AND_REPEAT": CheckInfo(
+        "Multi-Up Step-And-Repeat Imposition",
+        "Page contains 3+ similar dieline regions arranged as a step-and-repeat. Label production workflows typically expect a single artwork unit per page; the printer handles imposition. Confirm the multi-up was the intended deliverable, otherwise re-export as a single-up artwork.",
+    ),
+    "LPDF_DOC_METADATA_INCOMPLETE": CheckInfo(
+        "Asset-Tracking Metadata Incomplete",
+        "Document Info dictionary is missing 2+ asset-tracking keys (Title / Author / Producer / Creator). Brand-owner preflight gates commonly require these for reorder / colour-job tracking; set them in the design tool before final export.",
+    ),
+    "LPDF_DIE_DIMENSION_CALLOUT": CheckInfo(
+        "Dimension Callout In Printable Artwork",
+        'Printable text contains dimension / spec callouts (e.g. 2.4409", 10 mm, GUSSET 21x6.5x2). On a press-ready PDF these belong on a non-printing technical/info layer (OCG with print=false); otherwise they will image to plate. Move callouts to a non-printing layer or remove before final export.',
+    ),
     "LPDF_BOX_SEAL_ZONE_VIOLATION": CheckInfo(
         "Live Copy Inside Heat-Seal Keepout",
         "Live text or barcode sits inside a heat-seal / overlap-seal / tear-zone keepout band (5 mm by default) on flexible-film stick-pack or pouch artwork. The seal jaw, crimp, or tear notch will obscure, distort, or seal over the copy. Move the copy outside the seal zone or relocate the seal indicator. Anchored on technical labels like END SEAL, OVERLAP IN SEAL, SEAL AREA, TEAR ACROSS / DÉCHIRER ICI in the artwork.",
