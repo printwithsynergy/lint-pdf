@@ -1041,6 +1041,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Barcode Quiet Zone Crosses Fold",
         "A 1D barcode's GS1 quiet zone (10x narrow-bar module on each side) overlaps a detected dieline / fold / crease polygon. When the bars print across a seam the scanner can't see a continuous symbol; rotate or relocate the barcode so the entire 10x quiet zone clears the fold geometry. Detected from the dieline result's region bboxes; complements LPDF_BARCODE_029 (fold-line proximity heuristic) with actual fold geometry.",
     ),
+    "LPDF_BARCODE_DARK_BG": CheckInfo(
+        "Barcode On Tinted Background",
+        "A barcode sits on a tinted / coloured fill (CMYK > 10% total ink, RGB below 92% per channel, named Separation spot, or non-white grayscale) without a white knockout box behind the bars + 10x quiet zone. GS1 General Specifications §5.5.7 requires Print Contrast Signal ≥ 0.7 between bars and background; coloured substrates such as pink, purple, or cream drop the PCS below the scan threshold. Place a white knockout fill behind the bars + 10x quiet zone to restore scanability.",
+    ),
     "LPDF_TEXT_NEAR_FOLD": CheckInfo(
         "Text Near Fold Line",
         "Text region within the configured clearance (default 3.0mm) of a fold / crease / score line. Text that crosses or hugs a fold gets bent and becomes hard to read.",
