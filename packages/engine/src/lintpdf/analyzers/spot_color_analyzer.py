@@ -47,8 +47,34 @@ _LIBRARY_EXPECTED_ALTERNATES: dict[str, set[str]] = {
     "RAL": {"DeviceCMYK", "ICCBased", "DeviceRGB"},
 }
 
-# Process color names used in DeviceN spaces
-_PROCESS_COLOR_NAMES = frozenset({"Cyan", "Magenta", "Yellow", "Black"})
+# Process color names used in DeviceN spaces. Compared against the
+# canonicalised (uppercased, no leading "/", whitespace-collapsed)
+# colorant name so PDF-style "/Cyan", "Cyan", "process_cyan",
+# "Process Cyan" all match. Without canonicalising here the raw
+# "/Cyan" name from the PDF would slip through and get mis-flagged
+# as a non-standard spot color (LPDF_SPOT_003 / 007 / 010 false
+# positives — caught by the post-merge Opus audit on Pink-Slush).
+_PROCESS_COLOR_NAMES = frozenset({"CYAN", "MAGENTA", "YELLOW", "BLACK"})
+
+
+def _is_process_colorant(raw: str) -> bool:
+    """True when ``raw`` names a process CMYK channel.
+
+    Matches "/Cyan", "Cyan", "PROCESS CYAN", "process_magenta", etc.
+    after the same canonicalisation the rest of the analyzer uses.
+    """
+    canon = _canonical_colorant(raw)
+    if not canon:
+        return False
+    if canon in _PROCESS_COLOR_NAMES:
+        return True
+    # Strip "PROCESS " / "PROCESS_" prefixes Illustrator sometimes
+    # writes ("Process Cyan" → "CYAN").
+    for prefix in ("PROCESS ", "PROCESS_"):
+        if canon.startswith(prefix) and canon[len(prefix) :] in _PROCESS_COLOR_NAMES:
+            return True
+    return False
+
 
 # Pattern for PANTONE names (e.g., "PANTONE 485 C", "PANTONE Reflex Blue CV")
 _PANTONE_PATTERN = re.compile(r"^PANTONE\s+.+$", re.IGNORECASE)
@@ -78,6 +104,12 @@ def _canonical_colorant(raw: str | None) -> str:
     # Collapse interior whitespace runs so "PANTONE  485  C" matches
     # "PANTONE 485 C".
     s = re.sub(r"\s+", " ", s).strip()
+    # PR-P (audit disagree closure): strip trailing punctuation/
+    # whitespace so "PANTONE 3582 C.  " / "PANTONE 485 C," all
+    # canonicalise to "PANTONE … C". Without this the suffix-
+    # detection in LPDF_SPOT_003 reports "missing C" for names
+    # that DO end in C with stray punctuation.
+    s = s.rstrip(" .,;:")
     return s.upper()
 
 
@@ -488,7 +520,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     # Check for non-standard naming
                     if not any(upper.startswith(prefix) for prefix in _KNOWN_SPOT_PREFIXES):
                         # Skip process color names — they are valid in DeviceN
-                        if colorant in _PROCESS_COLOR_NAMES:
+                        if _is_process_colorant(colorant):
                             continue
                         findings.append(
                             Finding(
@@ -642,7 +674,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                     continue
 
                 process_colors = frozenset(
-                    name for name in cs.colorant_names if name in _PROCESS_COLOR_NAMES
+                    name for name in cs.colorant_names if _is_process_colorant(name)
                 )
 
                 if not process_colors:
@@ -730,7 +762,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 for colorant in cs.colorant_names:
                     if colorant in ("All", "None"):
                         continue
-                    if colorant in _PROCESS_COLOR_NAMES:
+                    if _is_process_colorant(colorant):
                         continue
                     upper = _canonical_colorant(colorant)
                     if not upper:
@@ -925,7 +957,7 @@ class SpotColorAnalyzer(BaseAnalyzer):
                 for colorant in cs.colorant_names:
                     if colorant in ("All", "None"):
                         continue
-                    if colorant in _PROCESS_COLOR_NAMES:
+                    if _is_process_colorant(colorant):
                         continue
                     key = _canonical_colorant(colorant)
                     if not key:

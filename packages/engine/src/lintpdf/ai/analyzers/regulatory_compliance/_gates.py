@@ -203,37 +203,69 @@ _SUPPLEMENT_DOCUMENT_PATTERNS: tuple[_re.Pattern[str], ...] = (
     _re.compile(r"\bSupplement\s+Facts\b", _re.IGNORECASE),
     _re.compile(r"\bDietary\s+Supplement\b", _re.IGNORECASE),
     _re.compile(r"\bSupplemental\s+Facts\b", _re.IGNORECASE),
+    # PR-P (audit disagree closure): broader supplement indicators
+    # for fixtures whose "Supplement Facts" header is encoded as
+    # positioned glyphs (Identity-H, individual Tj's per char) and
+    # so doesn't appear as a single regex-matchable string in the
+    # raw content stream. Each pattern is supplement-class-only —
+    # NFP labels don't carry these.
+    _re.compile(r"\bGummi(?:es)?\b", _re.IGNORECASE),
+    _re.compile(r"\bSoftgel(?:s)?\b", _re.IGNORECASE),
+    _re.compile(r"\bCapsule(?:s)?\s*\(\d+\)", _re.IGNORECASE),  # "(60) Capsules"
+    _re.compile(r"\bOther\s+Ingredients\s*[:.]", _re.IGNORECASE),
+    # Folic Acid + Biotin + Riboflavin are dietary-supplement-specific
+    # nutrients (NFP labels list them differently / under "Vitamins
+    # and Minerals"). Two or more in close proximity is a strong
+    # signal.
+    _re.compile(
+        r"\bFolic\s+Acid\b.{0,200}\bBiotin\b|\bBiotin\b.{0,200}\bRiboflavin\b",
+        _re.IGNORECASE | _re.DOTALL,
+    ),
 )
 
 
 def is_supplement_document(document) -> bool:  # type: ignore[no-untyped-def]
-    """True when any page's content stream contains a supplement-
-    panel marker (``Supplement Facts`` header or ``Dietary
-    Supplement`` claim).
+    """True when any page carries a supplement-panel marker
+    (``Supplement Facts`` header or ``Dietary Supplement`` claim).
 
     Used by ``CosmeticsLabelingAnalyzer``, ``FdaNutritionAnalyzer``,
     and ``EuFir1169Analyzer`` as a content-derived fallback when the
     tenant's ``ai_config.industry_type`` isn't accessible (detached
     SQLAlchemy session in the worker, etc.).
 
-    * ``Supplement Facts`` panel → governed by 21 CFR 101.36 (DSHEA),
-      not 101.9 (Nutrition Facts). Also not a cosmetic, also not a
-      conventional food (FIR 1169 doesn't apply).
-    * ``Dietary Supplement`` claim text → same conclusion.
+    Two evidence paths:
+
+    1. **Live text in the content stream** (the original path) —
+       catches files where ``Supplement Facts`` is rendered as glyphs.
+    2. **OCR-detected text regions** (added 2026-04-28 post-merge audit
+       follow-up) — catches OUTLINED fixtures where the literal header
+       was converted to vector paths and so doesn't appear in the
+       content stream as a string. Reads
+       ``SemanticPage.detected_text_regions`` populated by
+       ``ai.text_region_pass``. When the GPU tier is offline this is
+       a graceful no-op (field is None).
     """
     pages = getattr(document, "pages", None) or []
     for page in pages:
+        # Path 1 — live content stream.
         raw = getattr(page, "content_stream", None)
-        if not raw:
-            continue
-        if isinstance(raw, bytes):
-            try:
-                text = raw.decode("latin-1")
-            except Exception:
-                continue
-        else:
-            text = str(raw)
-        for pat in _SUPPLEMENT_DOCUMENT_PATTERNS:
-            if pat.search(text):
-                return True
+        if raw:
+            if isinstance(raw, bytes):
+                try:
+                    text = raw.decode("latin-1")
+                except Exception:
+                    text = ""
+            else:
+                text = str(raw)
+            for pat in _SUPPLEMENT_DOCUMENT_PATTERNS:
+                if pat.search(text):
+                    return True
+        # Path 2 — OCR text regions (outlined-text fallback).
+        regions = getattr(page, "detected_text_regions", None)
+        if regions:
+            for region in regions:
+                rt = getattr(region, "text", None) or ""
+                for pat in _SUPPLEMENT_DOCUMENT_PATTERNS:
+                    if pat.search(rt):
+                        return True
     return False

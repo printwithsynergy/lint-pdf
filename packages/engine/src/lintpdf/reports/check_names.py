@@ -167,10 +167,21 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_FONT_005": CheckInfo(
         "Missing ToUnicode",
-        "CID font is missing a ToUnicode map — text search and copy may not "
-        "work. Currently fires on CID fonts only; the broader F-13 case "
-        "(ToUnicode missing on any font subtype) is partially covered here.",
+        "Font is missing a ToUnicode CMap — text search, copy/paste, and "
+        "accessibility text extraction may not work. Severity is WARNING "
+        "for CID (Type0) fonts where ISO 32000-2 §9.10.2 requires it in "
+        "practice, ADVISORY for simple Type1 / TrueType fonts where it's "
+        "still considered preflight quality debt.",
         v2_ids=("F-13",),
+    ),
+    "LPDF_FONT_NONE_DECLARED": CheckInfo(
+        "No Fonts Declared",
+        "Page has visible content (non-trivial content stream) but declares "
+        "zero fonts. Almost always means the document's text was converted "
+        "to vector paths (outlined). This is acceptable practice on "
+        "stick-pack / pouch flexo artwork but should be confirmed — any "
+        "live text that slipped through without an embedded font won't "
+        "render at the RIP. Severity: ADVISORY (verification advisory).",
     ),
     "LPDF_FONT_006": CheckInfo(
         "Missing CIDSystemInfo",
@@ -844,9 +855,49 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Small Rotated Text Legibility Risk",
         "Text below 6 pt is rotated more than 45° off horizontal — combination of small size and off-axis orientation is a press-side legibility risk, especially on flexible-film substrates where head-registration drift is highest perpendicular to web direction. Complements jurisdiction-specific rules (AI_PHARMA_001 / AI_EU1169_001).",
     ),
+    "LPDF_TEXT_OUTLINED_SMALL": CheckInfo(
+        "Outlined Text Below Legibility Threshold",
+        "OCR-detected outlined-text regions measure below 6 pt apparent glyph height. Catches ingredient panels and legal copy that have been converted to vector paths (where the engine's TextRenderedEvent-based legibility check can't see them). Fired by the OCR text-region pass (PR #295). Verify against panel-specific regulatory minimums (FDA / CFIA: 1.0-1.6 mm x-height).",
+    ),
     "LPDF_DIE_PROCESSING_STEPS": CheckInfo(
         "Dieline ISO 19593-1 Decomposition Missing",
         "Single dieline spot carries cut, fold, perf, and other finishing operations as one layer. ISO 19593-1:2018 Annex A.4 specifies a separate spot per ProcessingStep (Cutting / Crease / Perforating / KissCut / FoldLine). Without decomposition the converter has to eyeball the artwork to route each operation to the right finishing tool.",
+    ),
+    "LPDF_DIE_PERF_INDICATOR_NO_STEP": CheckInfo(
+        "Tear/Perf Indicator Without ProcessingStep Spot",
+        "Artwork text contains a finishing-operation indicator (e.g. 'TEAR ACROSS', 'DECHIRER ICI', 'PERFORATION', 'KISS CUT', 'SCORE LINE') but no ISO 19593-1 ProcessingStep spot (Perforating / KissCut / Scoring / Creasing) was declared. The converter cannot route the operation to its finishing tool, and the indicator art may also print on the live plates. Detected via OCR text regions, annotation /Contents, and content-stream Tj operands.",
+    ),
+    "LPDF_COLOR_PLATE_COUNT_HIGH": CheckInfo(
+        "Total Ink Channels Exceeds Press Capacity",
+        "Document declares more than 6 ink channels (process + spot non-ProcessingStep separations). Many flexo / stick-pack / label presses cap out at 6 ink stations; excess spots may be force-converted to process at the printer. Confirm the press supports all declared plates or convert lower-priority spots to CMYK before release.",
+    ),
+    "LPDF_COLOR_DUPLICATE_K_SPOT": CheckInfo(
+        "Spot Color Name Suggests Duplicate K Plate",
+        "Spot color name contains the token 'black' (e.g. '/Black Black', '/Rich Black', '/Process Black') alongside process K. May produce a duplicate plate at output (double-printed K) or an unintended extra plate. Verify intent: rename the spot if it is an intentional special, or merge with process K.",
+    ),
+    "LPDF_COLOR_DIELINE_PRINTABLE": CheckInfo(
+        "Dieline Spot Will Print On Live Plate",
+        "Generic dieline spot ('/Dieline', '/CutContour', '/Cut') is declared as a regular Separation with no ISO 19593-1 ProcessingStep companion. The spot will print on the live plate unless explicitly set to non-printing in the press workflow. Tag it as ProcessingStep / Cutting (or similar) so the converter routes it to a finishing tool instead of imaging it.",
+    ),
+    "LPDF_COLOR_DEVICEN_CMYK_NAMED": CheckInfo(
+        "DeviceN Tuple Names Process CMYK As Colorants",
+        "DeviceN / NChannel color space names process CMYK channels (/Cyan, /Magenta, /Yellow, /Black) as colorants. Process plates should not appear inside DeviceN tuples — combined with stand-alone Separations this commonly produces extra unintended plates on the RIP. Re-target the artwork onto DeviceCMYK or remove the process names from the DeviceN tuple.",
+    ),
+    "LPDF_BARCODE_NOMINAL_SIZE_LOW": CheckInfo(
+        "Barcode Below 80% GS1 Nominal Magnification",
+        "Barcode long-axis dimension is below 29.8 mm (80% UPC-A / EAN-13 nominal). At sub-nominal size, X-dimension shrinks below the recommended 0.264 mm and scan reliability drops sharply on flexo / digital print. Increase scale or apply bar-width reduction (BWR) compensation. Particularly relevant on multi-up panels where each panel's barcode is shrunk to fit.",
+    ),
+    "LPDF_BARCODE_QUIET_ZONE_INK": CheckInfo(
+        "Painted Content Overlaps Barcode Quiet Zone",
+        "Painted artwork (path strokes/fills or images) overlaps the GS1 quiet zone (10x narrow-bar to either side of the bars). Adjacent printed background, frame, or decorative art encroaches the scan window even when the barcode is well clear of the trim edge — verify the quiet zone is clear of any non-barcode ink.",
+    ),
+    "LPDF_BOX_BG_NO_BLEED": CheckInfo(
+        "Background Art Reaches Trim Edge With Zero Bleed",
+        "Page declares zero bleed (BleedBox missing or BleedBox == TrimBox) and painted artwork reaches one or more trim edges. Cutting tolerance will leave unprinted slivers along these edges. Extend background art at least 3 mm beyond the trim box and supply a true BleedBox. Distinct from LPDF_BOX_006 (content beyond bleed) — this check fires when the artwork stops at the cut line.",
+    ),
+    "LPDF_BOX_PRESS_MARKS_MISSING": CheckInfo(
+        "Multi-Up Layout Missing Press Marks",
+        "Page is a multi-up step-and-repeat (3+ similar dieline regions) but contains no painted content outside the trim box. Multi-up press sheets typically include trim marks, registration targets, and colour bars in the bleed-strip area for the converter; their absence forces eyeball alignment at the press.",
     ),
     "LPDF_DIM_CALLOUT_001": CheckInfo(
         "Dimension Callouts In Live Artwork",
@@ -1337,6 +1388,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_BARCODE_030": CheckInfo(
         "Barcode height mm below ISO minimum",
         "Barcode height Nmm below ISO minimum on page N",
+    ),
+    "LPDF_BARCODE_ORIENTATION": CheckInfo(
+        "Barcode orientation mismatch with page",
+        "1D barcode aspect (ladder vs picket) does not match the page's natural reading axis (e.g. ladder barcode on a landscape page). Pickers and inline scanners typically expect picket-fence on landscape and ladder on portrait — verify scanner orientation at the production line.",
+    ),
+    "LPDF_BARCODE_QUIET_ZONE_EDGE": CheckInfo(
+        "Barcode quiet zone below GS1 page-edge minimum",
+        "Barcode bbox sits within 5.2 mm of one or more page edges (GS1 General Specifications absolute minimum quiet zone for picket-on-edge codes). Distinct from LPDF_BARCODE_QUIET_ZONE (dieline proximity). Quiet-zone encroachment on labels reduces first-pass scan rate; verify against production die.",
+    ),
+    "LPDF_BARCODE_HEIGHT_MIN": CheckInfo(
+        "Barcode bar height below GS1 10x narrow-bar minimum",
+        "Bar height is below the GS1 minimum of 10x the narrowest bar width (linear symbology rule). Truncated bars reduce scanner read distance and first-pass scan rate.",
     ),
     # ── LPDF_BC ─────────────────────────────────────────────────────────────
     "LPDF_BC_001": CheckInfo(

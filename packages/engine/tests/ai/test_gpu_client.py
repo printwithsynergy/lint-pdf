@@ -194,6 +194,36 @@ class TestGPUInferenceClient:
             mock_client_cls.return_value.request.assert_not_called()
 
     @staticmethod
+    def test_404_does_not_trip_circuit_breaker() -> None:
+        """404 = endpoint not deployed on this Modal app. Should raise
+        GPUServiceUnavailableError BUT not count toward the breaker
+        (so unrelated GPU-dependent analyzers stay healthy when one
+        endpoint is missing). Caught on 2026-04-29 when missing
+        /inference/cambi, /color-cast, /skin-tone endpoints tripped
+        the breaker on the first 3 calls of every job."""
+        import httpx
+
+        with patch("httpx.Client") as mock_client_cls:
+            mock_resp = MagicMock()
+            mock_resp.status_code = 404
+            mock_resp.raise_for_status = MagicMock(
+                side_effect=httpx.HTTPStatusError(
+                    "404 Not Found", request=MagicMock(), response=mock_resp
+                )
+            )
+            mock_client_cls.return_value.request.return_value = mock_resp
+
+            client = GPUInferenceClient("http://gpu:8080")
+
+            # 5 successive 404s should all raise but NOT trip the breaker.
+            for _ in range(5):
+                with pytest.raises(GPUServiceUnavailableError, match="not implemented"):
+                    client.assess_image_quality(b"img")
+
+            # Verify breaker state is still closed.
+            assert client._breaker.state == "closed"
+
+    @staticmethod
     def test_circuit_breaker_resets_after_success() -> None:
         import httpx
 
@@ -364,3 +394,61 @@ class TestRateLimit429Handling:
             with pytest.raises(GPUServiceUnavailableError, match="circuit breaker"):
                 client.assess_image_quality(b"img")
             assert mock_client_cls.return_value.request.call_count == call_count_before
+
+
+class TestPerCallTimeoutOverride:
+    """PR-H — endpoints with Modal cold-start budgets need a per-call
+    timeout override. ``detect_outlines`` uses 240 s instead of the
+    default 30 s so PaddleOCR's first-hit cold-start (~150-180 s) doesn't
+    kill the request before the container can respond.
+    """
+
+    @staticmethod
+    def test_default_timeout_is_30s() -> None:
+        from lintpdf.ai.gpu_client import GPUInferenceClient
+
+        client = GPUInferenceClient(base_url="https://example.test")
+        assert client._timeout == 30.0
+
+    @staticmethod
+    def test_detect_outlines_passes_cold_start_timeout() -> None:
+        """When ``detect_outlines`` is called, the underlying httpx
+        client.request must receive ``timeout=240`` not ``timeout=30``."""
+        from unittest.mock import MagicMock, patch
+
+        from lintpdf.ai.gpu_client import (
+            _GPU_COLD_START_TIMEOUT_S,
+            GPUInferenceClient,
+        )
+
+        with patch("lintpdf.ai.gpu_client.httpx.Client") as mock_client_cls:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {"text_regions": []}
+            mock_client_cls.return_value.request.return_value = mock_response
+
+            client = GPUInferenceClient(base_url="https://example.test")
+            client.detect_outlines(b"png-bytes")
+
+            request_call = mock_client_cls.return_value.request.call_args
+            assert request_call.kwargs["timeout"] == _GPU_COLD_START_TIMEOUT_S
+            assert _GPU_COLD_START_TIMEOUT_S == 240.0
+
+    @staticmethod
+    def test_other_endpoints_keep_default_timeout() -> None:
+        """Non-OCR endpoints (no cold-start concern) use the default 30 s."""
+        from unittest.mock import MagicMock, patch
+
+        from lintpdf.ai.gpu_client import GPUInferenceClient
+
+        with patch("lintpdf.ai.gpu_client.httpx.Client") as mock_client_cls:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {}
+            mock_client_cls.return_value.request.return_value = mock_response
+
+            client = GPUInferenceClient(base_url="https://example.test")
+            client.assess_image_quality(b"png-bytes")
+
+            request_call = mock_client_cls.return_value.request.call_args
+            assert request_call.kwargs["timeout"] == 30.0

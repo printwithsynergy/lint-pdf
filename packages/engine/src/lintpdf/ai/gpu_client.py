@@ -44,6 +44,15 @@ _RATE_LIMIT_MAX_RETRIES = 3
 _RATE_LIMIT_BASE_DELAY_S = 0.8
 _RATE_LIMIT_MAX_DELAY_S = 5.0
 
+# Per-call timeout for endpoints that may hit a Modal cold-start. The
+# OCR / PaddleOCR container in particular can take ~150-180 s on its
+# first request after scale-to-zero (multi-GB model weights pulled
+# from cache volume). The global default of 30 s was killing those
+# requests before the container could respond, leaving
+# ``page.detected_text_regions`` permanently empty in production. Once
+# Modal's warm pool is populated subsequent calls return in < 1 s.
+_GPU_COLD_START_TIMEOUT_S = 240.0
+
 
 class CircuitBreaker:
     """Simple circuit breaker for GPU service calls.
@@ -189,8 +198,14 @@ class GPUInferenceClient:
         files: dict[str, Any] | None = None,
         data: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
+        timeout: float | None = None,
     ) -> dict[str, Any]:
         """Shared HTTP send path with 429 retry + circuit breaker.
+
+        ``timeout`` overrides ``self._timeout`` for this single call. Used
+        by endpoints whose Modal cold-start budget exceeds the global
+        default (e.g. ``/inference/detect-outlines`` first-hit on a
+        scaled-to-zero container can take ~150-180 s).
 
         * Treats 429 as a "retry soon" signal (honours ``Retry-After``
           when the server provides a delta-seconds value) instead of a
@@ -204,6 +219,7 @@ class GPUInferenceClient:
           can tell it apart from "the upstream is actually down".
         """
         self._breaker.check()
+        request_timeout = timeout if timeout is not None else self._timeout
 
         last_retry_after: str | None = None
         for attempt in range(_RATE_LIMIT_MAX_RETRIES + 1):
@@ -214,7 +230,7 @@ class GPUInferenceClient:
                     files=files,
                     data=data,
                     json=json,
-                    timeout=self._timeout,
+                    timeout=request_timeout,
                 )
             except (httpx.TimeoutException, httpx.TransportError, ConnectionError) as exc:
                 self._breaker.record_failure()
@@ -261,8 +277,23 @@ class GPUInferenceClient:
             try:
                 response.raise_for_status()
             except httpx.HTTPStatusError as exc:
-                # 4xx other than 429 or 5xx. These are genuine upstream
-                # problems worth counting toward the breaker threshold.
+                # 404 = endpoint not deployed on this Modal app. That's a
+                # per-endpoint feature gap, not a service outage — the
+                # rest of the inference service is still healthy. Don't
+                # count it toward the breaker (otherwise a single
+                # missing endpoint cascades and tears down every other
+                # GPU-dependent analyzer that DOES work). Caught on
+                # 2026-04-29 when ``/inference/cambi`` / ``/color-cast``
+                # / ``/skin-tone`` 404s opened the breaker on the first
+                # 3 calls of every job, marking 8 unrelated AI analyzers
+                # as ``gpu_unavailable``.
+                if response.status_code == 404:
+                    raise GPUServiceUnavailableError(
+                        f"GPU endpoint not implemented: {exc}"
+                    ) from exc
+                # 4xx other than 404/429 or 5xx. These are genuine
+                # upstream problems worth counting toward the breaker
+                # threshold.
                 self._breaker.record_failure()
                 raise GPUServiceUnavailableError(f"GPU service error: {exc}") from exc
 
@@ -273,8 +304,22 @@ class GPUInferenceClient:
         # The loop only exits via return or raise — this is unreachable.
         raise GPUServiceUnavailableError("GPU service retry loop exited unexpectedly")
 
-    def _post(self, endpoint: str, image_bytes: bytes, **kwargs: Any) -> dict[str, Any]:
-        """Send image to inference endpoint."""
+    def _post(
+        self,
+        endpoint: str,
+        image_bytes: bytes,
+        *,
+        timeout: float | None = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Send image to inference endpoint.
+
+        ``timeout`` is the per-call HTTP timeout in seconds; ``None``
+        falls back to ``self._timeout``. Use a longer value for
+        endpoints that may hit a Modal cold-start (e.g.
+        ``/inference/detect-outlines`` — the OCR container can take
+        ~150-180 s on first hit after scale-to-zero).
+        """
         self._require_configured()
         url = f"{self._base_url}{endpoint}"
         return self._send_with_retry(
@@ -282,6 +327,7 @@ class GPUInferenceClient:
             url,
             files={"image": ("image.png", image_bytes, "image/png")},
             data=kwargs,
+            timeout=timeout,
         )
 
     def assess_image_quality(self, image_bytes: bytes) -> dict[str, Any]:
@@ -327,8 +373,15 @@ class GPUInferenceClient:
         callers only care about the inner ``text_regions`` payload, so we
         unwrap here. Callers that mock this client (see
         ``tests/ai/conftest.py``) can return the inner dict directly.
+
+        Uses the cold-start timeout (240 s) because PaddleOCR's container
+        can take ~150-180 s on first hit when Modal has scaled to zero.
         """
-        raw = self._post("/inference/detect-outlines", image_bytes)
+        raw = self._post(
+            "/inference/detect-outlines",
+            image_bytes,
+            timeout=_GPU_COLD_START_TIMEOUT_S,
+        )
         if isinstance(raw, dict) and "result" in raw and isinstance(raw["result"], dict):
             inner = raw["result"]
             # Preserve metadata fields if a caller wants them.

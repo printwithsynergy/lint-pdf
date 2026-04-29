@@ -227,15 +227,65 @@ class InternalAuditor:
         pdf_bytes: bytes,
         findings: Sequence[JobFinding],
     ) -> list[AuditResult | None]:
-        """Run one Opus call per batch of ``_MAX_FINDINGS_PER_CALL``."""
+        """Run one Opus call per batch of ``_MAX_FINDINGS_PER_CALL``.
+
+        Pre-filter: findings whose check ID matches a structural-only
+        category (PDF/X conformance, accessibility tags, XMP metadata,
+        font embedding, ICC / OutputIntent, ink inventory, language
+        catalog) are not sent to Opus. The engine reads these directly
+        from the PDF object graph, so vision can't verify what already
+        has a deterministic answer — auditing them with Opus only
+        burns tokens and bloats the "needs_context" bucket. The
+        post-merge audit had 583 / 1475 findings (39.5%) marked
+        needs_context, of which ~75% were structural-only checks like
+        these. We mark them ``confirmed`` because the engine's
+        structural detection IS the source of truth here.
+        """
         if not findings:
             return []
 
-        views = [_finding_to_view(i, f) for i, f in enumerate(findings)]
+        results: list[AuditResult | None] = [None] * len(findings)
+        opus_indices: list[int] = []
+        for i, f in enumerate(findings):
+            if _is_structural_only(f.inspection_id):
+                results[i] = AuditResult(
+                    status="confirmed",
+                    rationale=(
+                        "Structural finding read directly from the PDF "
+                        "object graph (catalog / metadata / output intent "
+                        "/ accessibility tag / spot color inventory). "
+                        "Vision audit not applicable."
+                    ),
+                    model=self._model,
+                    at=datetime.now(UTC),
+                )
+            elif _is_operational_advisory(f):
+                # GPU-tier-down / service-degraded advisories are
+                # operational signals, not preflight issues. Vision
+                # can't verify "service availability" — auto-confirm
+                # so they don't bloat the uncertain bucket on
+                # GPU-offline runs.
+                results[i] = AuditResult(
+                    status="confirmed",
+                    rationale=(
+                        "Operational advisory (GPU tier unavailable / "
+                        "service degraded). Status of an external "
+                        "dependency is not pixel-verifiable."
+                    ),
+                    model=self._model,
+                    at=datetime.now(UTC),
+                )
+            else:
+                opus_indices.append(i)
+
+        if not opus_indices:
+            return results
+
+        opus_findings = [findings[i] for i in opus_indices]
+        views = [_finding_to_view(i, f) for i, f in enumerate(opus_findings)]
         page_numbers = [v.page_num for v in views if v.page_num]
         pages = _render_pages_for_audit(pdf_bytes, page_numbers)
 
-        results: list[AuditResult | None] = [None] * len(findings)
         for batch_start in range(0, len(views), _MAX_FINDINGS_PER_CALL):
             batch = views[batch_start : batch_start + _MAX_FINDINGS_PER_CALL]
             try:
@@ -247,7 +297,7 @@ class InternalAuditor:
                     batch_start + len(batch) - 1,
                 )
                 for v in batch:
-                    results[v.index] = AuditResult(
+                    results[opus_indices[v.index]] = AuditResult(
                         status="error",
                         rationale="Auditor call failed; retry the job.",
                         model=self._model,
@@ -257,7 +307,7 @@ class InternalAuditor:
             for v in batch:
                 if v.index in verdicts:
                     entry = verdicts[v.index]
-                    results[v.index] = AuditResult(
+                    results[opus_indices[v.index]] = AuditResult(
                         status=entry["status"],  # type: ignore[arg-type]
                         rationale=entry.get("rationale"),
                         model=self._model,
@@ -311,3 +361,65 @@ class InternalAuditor:
             messages=[{"role": "user", "content": content}],
         )
         return _parse_tool_uses(list(response.content))
+
+
+# Check-ID prefixes / exact IDs for findings the engine reads
+# directly from the PDF object graph. Vision audit is not applicable
+# (the engine's structural detection IS the source of truth) so we
+# auto-confirm without sending to Opus. Compiled from the post-merge
+# audit's "needs_context" top-15 list and the catalog of clearly
+# structural check IDs. Reduces both Opus token cost and the noise
+# in the uncertain bucket.
+_STRUCTURAL_ONLY_PREFIXES: tuple[str, ...] = (
+    "PDFX4-",
+    "PDFX1A-",
+    "PDFA-",
+    "LPDF_ACCESS_",
+    "LPDF_META_",
+    "LPDF_DOC_",
+    "LPDF_VIEWER_",
+    "LPDF_LANG_",
+    "LPDF_FONT_",
+    "LPDF_INK_",
+    "LPDF_STD_",
+    "LPDF_ADV_",
+    "AI_LANG_",
+    "AI_AFP_",
+    "AI_FCLASS_",
+    "AI_VDIFF_",
+    "AI_SCAN_",
+)
+
+_STRUCTURAL_ONLY_EXACT: frozenset[str] = frozenset(
+    {
+        "LPDF_COLOR_006",  # No Output Intent defined
+        "LPDF_COLOR_003",  # Color profile mismatch
+        "LPDF_COLOR_014",  # ICC profile metadata
+        "LPDF_SPOT_001",  # Spot in DeviceCMYK without alternate
+        "LPDF_SPOT_006",  # Spot color overprint flag
+        "LPDF_SPOT_008",  # Tint transform issue
+        "LPDF_STROKE_003",  # Stroke join / cap metadata
+        "LPDF_IMG_018",  # Image colorspace inconsistency
+    }
+)
+
+
+def _is_structural_only(inspection_id: str) -> bool:
+    """True when the finding's verdict is determined by the PDF
+    object graph (no rendered evidence to verify against)."""
+    if inspection_id in _STRUCTURAL_ONLY_EXACT:
+        return True
+    return any(inspection_id.startswith(prefix) for prefix in _STRUCTURAL_ONLY_PREFIXES)
+
+
+def _is_operational_advisory(finding: JobFinding) -> bool:
+    """True when the finding is a service-degraded / tier-down
+    operational signal (e.g. GPU inference unavailable). Not a
+    preflight issue per se — vision can't audit the status of an
+    external dependency."""
+    details = getattr(finding, "details", None) or {}
+    reason = details.get("reason") if isinstance(details, dict) else None
+    if reason in {"gpu_unavailable", "no_target_languages", "no_reference_file"}:
+        return True
+    msg = (getattr(finding, "message", "") or "").lower()
+    return "circuit breaker is open" in msg or "service unavailable" in msg

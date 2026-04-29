@@ -9,7 +9,17 @@ import os
 import uuid as uuid_mod
 from typing import Any
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    Header,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session, selectinload
@@ -278,6 +288,7 @@ async def submit_job(  # skipcq: PY-R1000
     ),
     db: Session = Depends(get_db),
     tenant: Tenant = Depends(get_current_tenant),
+    x_admin_key: str | None = Header(default=None, alias="X-Admin-Key"),
 ) -> JSONResponse:
     """Submit a PDF for preflight checking.
 
@@ -355,13 +366,20 @@ async def submit_job(  # skipcq: PY-R1000
     # Also side-fixes the pre-existing bug where a tenant with a valid
     # custom_profiles row 404'd because the old check only hit the
     # bundled registry.
+    from lintpdf.api.auth import is_admin_request
     from lintpdf.profiles.resolver import (
         profile_exists_for_tenant,
         resolve_effective_profile_id,
     )
 
     profile_id = resolve_effective_profile_id(db, tenant, profile_id)
-    if not profile_exists_for_tenant(db, tenant, profile_id):
+    # PR B Slot 2B: when X-Admin-Key is presented alongside the tenant
+    # bearer, treat as an admin override and bypass the profile
+    # visibility filter. Lets the smoke / audit harness submit fixtures
+    # against ``lintpdf-system-test`` (an is_admin_only profile)
+    # without exposing it to regular tenants.
+    admin_override = is_admin_request(x_admin_key)
+    if not admin_override and not profile_exists_for_tenant(db, tenant, profile_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Profile '{profile_id}' not found",
@@ -883,6 +901,8 @@ def _hydrate_job_response(db: Session, job: Job) -> JobResponse:
         art_size_mm=job.art_size_mm,
         legend_swatches=job.legend_swatches,
         ocr_text_layer=job.ocr_text_layer,
+        detected_text_regions=job.detected_text_regions,
+        structural_evidence=job.structural_evidence,
     )
 
     if job.status == JobStatus.COMPLETE and job.result_json:

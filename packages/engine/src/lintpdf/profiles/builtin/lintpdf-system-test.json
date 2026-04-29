@@ -1,0 +1,36 @@
+{
+  "name": "LintPDF System Test (admin only)",
+  "description": "Maximum-coverage profile that force-enables every analyzer + every AI category regardless of tenant grants. Used for QA / regression-test smokes; the audit harness invokes this via the admin path. Hidden from tenants via is_admin_only.",
+  "version": "1.0",
+  "conformance": "pdfx4",
+  "workflow": "CMYK",
+  "is_admin_only": true,
+  "checks": {
+    "enabled": [
+      "LPDF_*",
+      "PDFX4-*",
+      "PDFX1A-*",
+      "PDFX_*",
+      "PDFA_*",
+      "AI_*"
+    ],
+    "disabled": [],
+    "severity_overrides": {}
+  },
+  "thresholds": {
+    "min_dpi": 150.0,
+    "max_dpi": 600.0,
+    "tac_limit": 300.0,
+    "min_bleed_mm": 3.0,
+    "hairline_threshold": 0.25,
+    "small_text_threshold": 6.0,
+    "very_small_text_threshold": 4.0,
+    "safety_margin_mm": 3.0,
+    "max_file_size_mb": 500.0
+  },
+  "ai": {
+    "enabled": true,
+    "categories": ["all"],
+    "features": []
+  }
+}

@@ -48,6 +48,12 @@ inference_image = (
         "paddlepaddle>=2.5.0",
         "paddleocr>=2.7.0",
     )
+    # Bundle the local ``inference_service`` package into the image so
+    # the ``serve_app`` entrypoint can import it. Modal's auto-mount
+    # only picks up the deploy script itself; the surrounding package
+    # has to be added explicitly. Without this the container fails on
+    # ``ModuleNotFoundError: No module named 'inference_service'``.
+    .add_local_python_source("inference_service")
 )
 
 # ---------------------------------------------------------------------------
@@ -72,17 +78,27 @@ model_cache = modal.Volume.from_name("lintpdf-model-cache", create_if_missing=Tr
     # finish in one wave instead of seven.
     #
     # max_containers=100: burst ceiling, NOT a baseline. With
-    #   min_containers=0 and scale-to-zero, Modal only charges for
-    #   actual warm-container time — so raising the cap from 15 to
-    #   100 costs zero until a workload actually fans out that wide.
-    #   A 100-file burst consumes ~700 container-minutes either way;
-    #   this bump changes wall clock from ~45 min → ~7 min at the
-    #   same spend.
-    # scaledown_window=180: unchanged — idle containers retire in
-    #   3 min, keeping cost close to zero between bursts.
-    # min_containers=0: unchanged — pure scale-to-zero, no baseline cost.
+    #   min_containers=1 and scale-to-one (post-2026-04-28), Modal
+    #   only charges for one warm container plus the actual warm-
+    #   container time during bursts. Raising the cap from 15 to
+    #   100 costs nothing extra until a workload actually fans out
+    #   that wide. A 100-file burst consumes ~700 container-minutes
+    #   either way; this bump changes wall clock from ~45 min →
+    #   ~7 min at the same spend.
+    # scaledown_window=180: unchanged — idle containers above the
+    #   min retire in 3 min, keeping cost close to baseline between
+    #   bursts.
+    # min_containers=1: bumped from 0 (2026-04-28) to keep one
+    #   container always warm. The post-merge audit-cycle smoke
+    #   showed two real cold-start failures on the OCR
+    #   ``/inference/detect-outlines`` endpoint where PaddleOCR's
+    #   ~150-180 s first-hit latency exceeded the engine's per-call
+    #   timeout, leaving ``page.detected_text_regions`` permanently
+    #   ``None`` in production. Keeping one container warm
+    #   eliminates the cold-start tax for the dominant single-job
+    #   case at ~$0.40/day baseline cost.
     scaledown_window=180,
-    min_containers=0,
+    min_containers=1,
     max_containers=100,
     timeout=300,
     memory=8192,
