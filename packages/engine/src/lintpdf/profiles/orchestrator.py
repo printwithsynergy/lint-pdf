@@ -712,6 +712,7 @@ class PreflightOrchestrator:
             StructureAnalyzer,
             TransparencyAnalyzer,
         )
+        from lintpdf.analyzers.color_inventory_audit import ColorInventoryAuditAnalyzer
         from lintpdf.analyzers.dieline_iso19593 import DielineIso19593Analyzer
         from lintpdf.analyzers.dieline_perf_indicator import DielinePerfIndicatorAnalyzer
         from lintpdf.analyzers.dimension_callout import DimensionCalloutAnalyzer
@@ -776,6 +777,7 @@ class PreflightOrchestrator:
             LegibilityCompositeAnalyzer(),
             DielineIso19593Analyzer(),
             DielinePerfIndicatorAnalyzer(),
+            ColorInventoryAuditAnalyzer(),
             DimensionCalloutAnalyzer(),
             SpotNameSimilarityAnalyzer(),
             InkExtrasAnalyzer(),
