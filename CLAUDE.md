@@ -22,3 +22,120 @@ Each `external_format` enum value (`pitstop_xml`, `callas_json`, `callas_xml`, `
 ## No format autopsies
 
 Parsers must fail cleanly with a `422` carrying the field path that broke. Never swallow a parse error and emit zero findings — the caller will assume their report was clean.
+
+---
+
+## Plugin protocol + analyzer conventions (Phase 1)
+
+Every analyzer satisfies the Protocol in `src/lintpdf/plugin/`:
+
+```python
+class Analyzer(Protocol):
+    manifest: PluginManifest                                 # plugin.manifest
+    def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]: ...
+```
+
+Existing analyzers that still implement legacy `analyze(...)` keep
+working — `BaseAnalyzer.analyze_v2` and `BaseAIAnalyzer.analyze_v2`
+ship default impls that forward to `analyze`. New analyzers must
+override `analyze_v2` directly and skip the legacy method.
+
+**Forbidden imports inside `src/lintpdf/analyzers/**` and
+`src/lintpdf/ai/analyzers/**`** (use `ctx.services.*` or
+`ctx.config["ai_config"]` instead):
+
+- `lintpdf.tenants.*` → `ctx.config["ai_config"]` (when reading tenant AI
+  config) or `ctx.services.tenants` (when reading entitlements).
+- `lintpdf.api.models.TenantAIConfig` → read from
+  `ctx.config["ai_config"]` (a plain dict).
+- `lintpdf.audit.metering` → `ctx.services.metering`.
+- `lintpdf.audit.cost`, `lintpdf.ai.cost_cap`, `lintpdf.ai.credits`
+  → `ctx.services.cost_cap`.
+- `lintpdf.api.database` → `ctx.services.database`.
+- `lintpdf.ai.gpu_client` → `ctx.services.gpu_client`.
+- `lintpdf.conformance.verapdf_client` → `ctx.services.verapdf_client`.
+
+`scripts/check_engine_purity.sh` is the tripwire — it counts existing
+violations (baseline: 125) and fails CI when the count goes UP. Down-
+counts (Phase 2 migrations) are encouraged; regenerate the baseline
+with the script's hint after a clean migration commit.
+
+**Capability rule**: if two plugins read the same shared work
+(rendered page image, OCR text regions), wrap it as a `Capabilities`
+provider in `lintpdf/plugin/capabilities/` and have the orchestrator
+fulfil it once. Two analyzers calling `render_page_to_image` directly
+is a code smell.
+
+**Tier guidance** in the manifest:
+
+- `Tier.CPU` — runs in the orchestrator process; no external services.
+- `Tier.GPU` — needs `gpu_client` and usually `page_images`.
+- `Tier.EXTERNAL_AI` — calls an LLM/API; must use `cost_cap` +
+  `metering` services.
+
+**Service-skip pattern**: when a plugin lists a service in
+`requires_services` but `ctx.services.<name>` is `None` (or capability
+in `requires_capabilities` but `ctx.capabilities.<name>` is `None`),
+self-skip with `return []` and a `logger.warning(...)`. Never raise
+— missing services on OSS hosts must degrade gracefully.
+
+---
+
+## Public-API discipline
+
+**Pydantic schema fields**: every `Field(...)` in `api/schemas.py` MUST
+include `description="..."`. The description is what `/openapi.json`
+and `/redoc` surface to API consumers; missing descriptions silently
+ship a worse developer experience.
+
+`scripts/check_openapi_descriptions.py` enforces the rule with a
+baseline counter (initial: 19 undescribed fields). New fields fail
+the build unless described; the existing 19 stay until Phase 2
+backfills them.
+
+Other rules:
+
+- Every FastAPI route handler MUST have a docstring summary and an
+  explicit `responses=` mapping listing each non-200 status it can
+  emit. The summary becomes the operation summary in the generated
+  schema.
+- No raw `dict[str, Any]` returns from public routes. Define a
+  Pydantic response model — even a single-field one — so the client
+  generator has a name to attach.
+- Engine-public vs SaaS-only routes are not yet classified; that's
+  Phase 2. Until then, every new route gets the same description
+  discipline regardless of audience.
+
+---
+
+## Functionality preservation + Hosted SaaS continuity
+
+Mandatory for every non-trivial change.
+
+**Blast-radius before refactor**: run `mcp__ctxo__get_blast_radius`
+on the symbol you're touching. For renames or removals, run
+`mcp__ctxo__find_importers` so you know which files need follow-up
+edits. For cross-cutting refactors, run
+`mcp__ctxo__get_change_intelligence`.
+
+**Behavior-locking test FIRST**: when changing analyzer behaviour or
+schema shape, snapshot the current output into a test that fails if
+the output changes. Commit the test first; commit the refactor
+second. Run `mcp__ctxo__get_pr_impact` after the refactor to see
+fanout.
+
+**Customer surface frozen**: hosted LintPDF (`lintpdf.com` /
+`app.lintpdf.com` / `reports.lintpdf.com`) MUST produce bit-for-bit
+identical responses through every Phase. The
+`tests/regression/test_customer_surface_parity.py` and
+`tests/regression/test_finding_parity.py` suites are the gate. (Both
+land in Phase 2 — Phase 1's tripwire is the engine-purity script.)
+
+**Coverage acceptance bar**: test count never drops; coverage of
+touched files never drops. Net coverage drops require either added
+tests or an explicit dead-code justification in the PR description.
+
+**Never bypass the sandbox**: no `--no-verify`, `--no-gpg-sign`, or
+`--accept-data-loss`. If a hook fails on a file you didn't stage,
+fix the underlying error or unstage the hunk — see the project's
+root `CLAUDE.md` "Working Agreements" section for the rationale.
