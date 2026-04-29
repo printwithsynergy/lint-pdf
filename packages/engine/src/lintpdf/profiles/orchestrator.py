@@ -384,6 +384,18 @@ class PreflightOrchestrator:
         # Step 1-3: Parse, build model, interpret
         document, events = self._parse_and_interpret(pdf_bytes)
 
+        # Step 3b (PR-W): attach DielineResult to the document so
+        # analyzers (BarcodeAnalyzer, etc.) can read fold geometry
+        # without re-running detection. Best-effort: failure leaves
+        # ``document.dieline_result = None`` and consumers skip.
+        try:
+            from lintpdf.analyzers.dieline import detect_dieline
+
+            ai_features = getattr(self._ai_config, "features", None) if self._ai_config else None
+            document.dieline_result = detect_dieline(pdf_bytes, ai_features=ai_features)
+        except Exception:  # pragma: no cover — never fail the job
+            document.dieline_result = None
+
         # Step 4: Run analyzers
         raw_findings: list[Finding] = []
         for analyzer in self._create_analyzers():

@@ -1029,6 +1029,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Barcode Quiet Zone Conflict",
         "An image XObject (likely a barcode) sits closer than the configured quiet zone (default 2.5mm) to a dieline / fold / crease line. The cut blade or fold crease may pass through the barcode quiet zone and break scanability.",
     ),
+    "LPDF_BARCODE_QUIET_ZONE_ON_FOLD": CheckInfo(
+        "Barcode Quiet Zone Crosses Fold",
+        "A 1D barcode's GS1 quiet zone (10x narrow-bar module on each side) overlaps a detected dieline / fold / crease polygon. When the bars print across a seam the scanner can't see a continuous symbol; rotate or relocate the barcode so the entire 10x quiet zone clears the fold geometry. Detected from the dieline result's region bboxes; complements LPDF_BARCODE_029 (fold-line proximity heuristic) with actual fold geometry.",
+    ),
     "LPDF_TEXT_NEAR_FOLD": CheckInfo(
         "Text Near Fold Line",
         "Text region within the configured clearance (default 3.0mm) of a fold / crease / score line. Text that crosses or hugs a fold gets bent and becomes hard to read.",

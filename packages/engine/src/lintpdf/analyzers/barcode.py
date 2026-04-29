@@ -93,6 +93,20 @@ _BARCODE_MAX_CV = 0.5
 _BARCODE_MIN_FILL_DENSITY = 0.2
 
 
+def _bbox_distance(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> float:
+    """Minimum axis-aligned distance between two rectangles, 0 when
+    they overlap or touch. Mirrors ``analyzers.dieline_quality._bbox_distance``.
+    """
+    dx = max(0.0, max(a[0], b[0]) - min(a[2], b[2]))
+    dy = max(0.0, max(a[1], b[1]) - min(a[3], b[3]))
+    if dx == 0 and dy == 0:
+        return 0.0
+    return (dx**2 + dy**2) ** 0.5
+
+
 def _looks_like_2d_barcode(
     fills: list[tuple[float, float, float, float]],
     region_w: float,
@@ -348,6 +362,9 @@ class BarcodeAnalyzer(BaseAnalyzer):
             # PR D Slot 4: orientation + quiet-zone + bar-height suite.
             findings.extend(self._check_orientation_suite(barcode_pages, document))
             findings.extend(self._check_size_and_quiet_zone_ink(barcode_pages, document, events))
+            # PR-W: GS1 quiet-zone-on-fold via DielineResult attached
+            # to the document by the orchestrator.
+            findings.extend(self._check_fold_proximity(barcode_pages, document))
 
         # Detect 2D barcodes from fill patterns (LPDF_BARCODE_014-018)
         findings.extend(self._detect_2d_barcodes(events, document))
@@ -1293,6 +1310,96 @@ class BarcodeAnalyzer(BaseAnalyzer):
                         },
                     )
                 )
+        return findings
+
+    def _check_fold_proximity(
+        self,
+        candidates: list[_BarcodeCandidate],
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """PR-W (audit miss closure): GS1 quiet-zone-on-fold check.
+
+        ``LPDF_BARCODE_029`` only knows about the page centre as a fold
+        proxy. On stick-pack and sachet artwork the fold runs along a
+        side seam — geometry the dieline detector already recovered into
+        ``DielineResult.regions`` / ``.polylines``. When a barcode's
+        GS1 quiet zone (10x narrow-bar leading, 7x trailing) overlaps a
+        fold polygon the bars print across the seam and the scan fails.
+        Caught by Opus on AN-Energy stick-pack and HSI_OUTLINED.
+        """
+        result = getattr(document, "dieline_result", None)
+        if result is None:
+            return []
+        # Collect fold/crease/score region bboxes. Honour both ``regions``
+        # (per-island bboxes) and ``polylines`` (closed polygons). Skip
+        # when neither is populated (e.g. ``source="missing"``).
+        fold_bboxes: list[tuple[float, float, float, float]] = []
+        regions = getattr(result, "regions", None) or []
+        for region in regions:
+            try:
+                fold_bboxes.append(
+                    (
+                        float(region["x0"]),
+                        float(region["y0"]),
+                        float(region["x1"]),
+                        float(region["y1"]),
+                    )
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+        if not fold_bboxes:
+            polylines = getattr(result, "polylines", None) or []
+            for poly in polylines:
+                if not poly:
+                    continue
+                try:
+                    xs = [float(p[0]) for p in poly]
+                    ys = [float(p[1]) for p in poly]
+                except (IndexError, TypeError, ValueError):
+                    continue
+                if not xs or not ys:
+                    continue
+                fold_bboxes.append((min(xs), min(ys), max(xs), max(ys)))
+        if not fold_bboxes:
+            return []
+
+        findings: list[Finding] = []
+        for candidate in candidates:
+            if not candidate.has_bounds or not candidate.stroke_widths:
+                continue
+            narrow_bar = min(candidate.stroke_widths)
+            if narrow_bar <= 0:
+                continue
+            # GS1 minimum quiet zone is 10x narrow-bar module.
+            qz = narrow_bar * 10.0
+            x0, y0, x1, y1 = candidate.bbox  # type: ignore[misc]
+            qz_bbox = (x0 - qz, y0 - qz, x1 + qz, y1 + qz)
+
+            for fold_bbox in fold_bboxes:
+                if _bbox_distance(qz_bbox, fold_bbox) > 0.0:
+                    continue
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_BARCODE_QUIET_ZONE_ON_FOLD",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"Barcode on page {candidate.page_num} sits across a "
+                            f"detected fold/dieline polygon — the GS1 quiet zone "
+                            f"({narrow_bar * 10 / 2.83464567:.2f} mm = 10x narrow-bar) "
+                            "overlaps a fold line, so the bars print across the "
+                            "seam and a scanner won't read the symbol cleanly."
+                        ),
+                        page_num=candidate.page_num,
+                        bbox=candidate.bbox,
+                        details={
+                            "narrow_bar_pts": round(narrow_bar, 3),
+                            "quiet_zone_pts": round(qz, 2),
+                            "fold_bbox": [round(v, 2) for v in fold_bbox],
+                            "dieline_source": getattr(result, "source", None),
+                        },
+                    )
+                )
+                break  # one finding per barcode; further folds are redundant
         return findings
 
     def _check_barcode_color(
