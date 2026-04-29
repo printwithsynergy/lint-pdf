@@ -713,6 +713,7 @@ class PreflightOrchestrator:
             TransparencyAnalyzer,
         )
         from lintpdf.analyzers.dieline_iso19593 import DielineIso19593Analyzer
+        from lintpdf.analyzers.dieline_perf_indicator import DielinePerfIndicatorAnalyzer
         from lintpdf.analyzers.dimension_callout import DimensionCalloutAnalyzer
         from lintpdf.analyzers.duplicate_process_spot import DuplicateProcessSpotAnalyzer
         from lintpdf.analyzers.ink_extras import InkExtrasAnalyzer
@@ -774,6 +775,7 @@ class PreflightOrchestrator:
             DuplicateProcessSpotAnalyzer(),
             LegibilityCompositeAnalyzer(),
             DielineIso19593Analyzer(),
+            DielinePerfIndicatorAnalyzer(),
             DimensionCalloutAnalyzer(),
             SpotNameSimilarityAnalyzer(),
             InkExtrasAnalyzer(),

@@ -863,6 +863,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dieline ISO 19593-1 Decomposition Missing",
         "Single dieline spot carries cut, fold, perf, and other finishing operations as one layer. ISO 19593-1:2018 Annex A.4 specifies a separate spot per ProcessingStep (Cutting / Crease / Perforating / KissCut / FoldLine). Without decomposition the converter has to eyeball the artwork to route each operation to the right finishing tool.",
     ),
+    "LPDF_DIE_PERF_INDICATOR_NO_STEP": CheckInfo(
+        "Tear/Perf Indicator Without ProcessingStep Spot",
+        "Artwork text contains a finishing-operation indicator (e.g. 'TEAR ACROSS', 'DECHIRER ICI', 'PERFORATION', 'KISS CUT', 'SCORE LINE') but no ISO 19593-1 ProcessingStep spot (Perforating / KissCut / Scoring / Creasing) was declared. The converter cannot route the operation to its finishing tool, and the indicator art may also print on the live plates. Detected via OCR text regions, annotation /Contents, and content-stream Tj operands.",
+    ),
     "LPDF_DIM_CALLOUT_001": CheckInfo(
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
