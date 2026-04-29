@@ -7,6 +7,7 @@ import { MarketingLogo } from "./Logo";
 import { ParticleField } from "./ParticleField";
 import { useBeta } from "./BetaContext";
 import { WaitlistModal } from "./WaitlistModal";
+import { isSaasMode } from "@/lib/site-mode";
 
 const LEFT_CODE_LINES = Array.from({ length: 12 }, (_, i) => ({
   id: `left-line-${i + 1}`,
@@ -68,6 +69,9 @@ function RotatingTagline() {
 export function HeroSection() {
   const { betaMode } = useBeta();
   const [waitlistOpen, setWaitlistOpen] = useState(false);
+  const saasMode = isSaasMode();
+  const secondaryHref = saasMode ? "/docs" : "/engine";
+  const secondaryLabel = saasMode ? "View API Docs" : "About the Engine";
 
   return (
     <section className="relative overflow-hidden hero-gradient min-h-[90vh] flex items-center">
@@ -410,31 +414,35 @@ export function HeroSection() {
         </p>
 
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          {betaMode ? (
-            <button
-              type="button"
-              onClick={() => setWaitlistOpen(true)}
-              className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
-            >
-              Join the Waitlist
-            </button>
-          ) : (
-            <a
-              href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com"}/auth/login?plan=free`}
-              className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
-            >
-              Get Started
-            </a>
-          )}
+          {saasMode &&
+            (betaMode ? (
+              <button
+                type="button"
+                onClick={() => setWaitlistOpen(true)}
+                className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
+              >
+                Join the Waitlist
+              </button>
+            ) : (
+              <a
+                href={`${process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com"}/auth/login?plan=free`}
+                className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
+              >
+                Get Started
+              </a>
+            ))}
           <Link
-            href="/docs"
+            href={secondaryHref}
             className="rounded-xl border-2 border-slate-200 px-8 py-3.5 text-base font-medium text-slate-600 transition-all hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
           >
-            View API Docs
+            {secondaryLabel}
           </Link>
         </div>
 
-        {/* Terminal preview */}
+        {/* Terminal preview — hidden in OSS mode because the curl example
+            points at api.lintpdf.com (the SaaS endpoint), which isn't the
+            entry point for the OSS engine. */}
+        {saasMode && (
         <div className="mx-auto mt-16 max-w-2xl rounded-xl border border-slate-200 bg-brand-950 p-1 shadow-2xl shadow-brand-900/10">
           <div className="flex items-center gap-1.5 px-4 py-2.5">
             <span className="h-3 w-3 rounded-full bg-red-500/60" />
@@ -455,6 +463,7 @@ export function HeroSection() {
 }`}</code>
           </pre>
         </div>
+        )}
       </div>
 
       <WaitlistModal

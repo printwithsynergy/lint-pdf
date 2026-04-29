@@ -2,12 +2,17 @@ import React from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AI_CATEGORIES, AI_PRESETS } from "@/lib/brand";
+import { isSaasMode } from "@/lib/site-mode";
 
 export const metadata: Metadata = {
   title: "Features — LintPDF",
   description:
     "500+ rule-based checks + 91 PDF/X-4 conformance checks (ISO 15930-7) + 99 AI-powered inspections for PDF preflight. Resolution, fonts, colors, transparency, bleeds, packaging geometry, barcode grading, regulatory compliance, and more.",
 };
+
+// Capture mode once at module top level so the JSX below is statically
+// tree-shakeable in the OSS bundle.
+const SAAS = isSaasMode();
 
 const coreFeatures = [
   {
@@ -456,12 +461,14 @@ export default function FeaturesPage() {
                 Separations, TAC, font and image catalogues all shipped in the
                 viewer.
               </p>
-              <Link
-                href="/docs/preflight-modes"
-                className="text-xs font-semibold text-brand-700 hover:underline"
-              >
-                Read the mode guide →
-              </Link>
+              {SAAS && (
+                <Link
+                  href="/docs/preflight-modes"
+                  className="text-xs font-semibold text-brand-700 hover:underline"
+                >
+                  Read the mode guide →
+                </Link>
+              )}
             </div>
             <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
@@ -476,39 +483,43 @@ export default function FeaturesPage() {
                 parses the findings and renders them in the viewer with full
                 geometry — no re-checking cost.
               </p>
-              <Link
-                href="/docs/external-imports"
-                className="text-xs font-semibold text-brand-700 hover:underline"
-              >
-                See supported formats →
-              </Link>
-            </div>
-            <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-                Viewer Only
-              </div>
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Just render &amp; share
-              </h3>
-              <p className="text-sm text-slate-500 leading-relaxed mb-4">
-                Submit in minimal mode for pure viewer + share-link use cases —
-                no analyzers run. On Starter+, separations, TAC, fonts, and
-                images can be filled on demand when you need them. The new{" "}
+              {SAAS && (
                 <Link
-                  href="/pricing"
-                  className="font-semibold text-brand-700 hover:underline"
+                  href="/docs/external-imports"
+                  className="text-xs font-semibold text-brand-700 hover:underline"
                 >
-                  Viewer tier
-                </Link>{" "}
-                packages this workflow at $15/mo.
-              </p>
-              <Link
-                href="/docs/viewer-only-mode"
-                className="text-xs font-semibold text-brand-700 hover:underline"
-              >
-                Minimal mode docs →
-              </Link>
+                  See supported formats →
+                </Link>
+              )}
             </div>
+            {SAAS && (
+              <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                  Viewer Only
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  Just render &amp; share
+                </h3>
+                <p className="text-sm text-slate-500 leading-relaxed mb-4">
+                  Submit in minimal mode for pure viewer + share-link use cases
+                  — no analyzers run. On Starter+, separations, TAC, fonts, and
+                  images can be filled on demand when you need them. The new{" "}
+                  <Link
+                    href="/pricing"
+                    className="font-semibold text-brand-700 hover:underline"
+                  >
+                    Viewer tier
+                  </Link>{" "}
+                  packages this workflow at $15/mo.
+                </p>
+                <Link
+                  href="/docs/viewer-only-mode"
+                  className="text-xs font-semibold text-brand-700 hover:underline"
+                >
+                  Minimal mode docs →
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -595,12 +606,14 @@ export default function FeaturesPage() {
                   end-distributors without exposing their supply chain.
                 </p>
               </div>
-              <Link
-                href="/docs/branding-and-anonymous"
-                className="shrink-0 rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-800"
-              >
-                How anonymous mode works →
-              </Link>
+              {SAAS && (
+                <Link
+                  href="/docs/branding-and-anonymous"
+                  className="shrink-0 rounded-xl bg-brand-700 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-800"
+                >
+                  How anonymous mode works →
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -780,32 +793,35 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-2xl font-bold text-slate-900 mb-4">
-            Ready to preflight smarter?
-          </h2>
-          <p className="text-slate-500 max-w-2xl mx-auto mb-8">
-            Core engine checks are available on all plans. AI features are in
-            invite-only alpha — request access to get started.
-          </p>
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <a
-              href="/ai"
-              className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
-            >
-              Explore AI Features
-            </a>
-            <Link
-              href="/docs"
-              className="rounded-xl border-2 border-slate-200 px-8 py-3.5 text-base font-medium text-slate-600 transition-all hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
-            >
-              View Documentation
-            </Link>
+      {/* CTA — SaaS-only. Refers to "Explore AI Features" + Documentation,
+          both of which live at hidden routes in OSS mode. */}
+      {SAAS && (
+        <section className="py-16">
+          <div className="mx-auto max-w-4xl px-6 text-center">
+            <h2 className="text-2xl font-bold text-slate-900 mb-4">
+              Ready to preflight smarter?
+            </h2>
+            <p className="text-slate-500 max-w-2xl mx-auto mb-8">
+              Core engine checks are available on all plans. AI features are in
+              invite-only alpha — request access to get started.
+            </p>
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              <a
+                href="/ai"
+                className="rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
+              >
+                Explore AI Features
+              </a>
+              <Link
+                href="/docs"
+                className="rounded-xl border-2 border-slate-200 px-8 py-3.5 text-base font-medium text-slate-600 transition-all hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
+              >
+                View Documentation
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
     </main>
   );
 }

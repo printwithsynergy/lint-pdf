@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isSaasMode } from "@/lib/site-mode";
 
 const capabilities = [
   {
@@ -67,31 +68,33 @@ export function WebViewerSection() {
           ))}
         </div>
 
-        <div className="mt-10 rounded-2xl border border-brand-200 bg-brand-50/50 p-6 md:p-8 text-center">
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">
-            Already running PitStop, callas, or Acrobat preflight?
-          </h3>
-          <p className="text-slate-600 max-w-2xl mx-auto mb-5">
-            The new <span className="font-semibold">Viewer</span> tier lets you
-            bring your own preflight report and host it in our interactive
-            Web Viewer — branded share links, anonymous output, no engine run
-            needed. Starts at $15 / month.
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <Link
-              href="/pricing"
-              className="rounded-xl bg-brand-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 shadow-md shadow-brand-200"
-            >
-              See Viewer tier pricing
-            </Link>
-            <Link
-              href="/docs/viewer-only-mode"
-              className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200"
-            >
-              Read the docs
-            </Link>
+        {isSaasMode() && (
+          <div className="mt-10 rounded-2xl border border-brand-200 bg-brand-50/50 p-6 md:p-8 text-center">
+            <h3 className="text-xl font-semibold text-slate-900 mb-2">
+              Already running PitStop, callas, or Acrobat preflight?
+            </h3>
+            <p className="text-slate-600 max-w-2xl mx-auto mb-5">
+              The new <span className="font-semibold">Viewer</span> tier lets
+              you bring your own preflight report and host it in our
+              interactive Web Viewer — branded share links, anonymous output,
+              no engine run needed. Starts at $15 / month.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Link
+                href="/pricing"
+                className="rounded-xl bg-brand-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-800 shadow-md shadow-brand-200"
+              >
+                See Viewer tier pricing
+              </Link>
+              <Link
+                href="/docs/viewer-only-mode"
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200"
+              >
+                Read the docs
+              </Link>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );
