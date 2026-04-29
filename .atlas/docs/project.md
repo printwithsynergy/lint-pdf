@@ -10,7 +10,7 @@ Detection-only PDF preflight engine. API-first SaaS that inspects print-ready PD
 ## Team
 
 - Linear: GRD
-- GitHub: thinkneverland/grounded
+- GitHub: thinkneverland/lint-pdf
 
 ## Stack
 
@@ -42,23 +42,24 @@ mypy src/                       # type check
 
 ## Brand Language
 
-| Term         | Meaning                                 |
-| ------------ | --------------------------------------- |
-| Check-In     | Upload endpoint (POST /api/v1/check-in) |
-| Flight Plan  | Preflight profile (rule composition)    |
-| Flight Log   | Inspection report                       |
-| Clear to Fly | All checks passed                       |
-| Failed       | Critical failures found                 |
-| No-Fly       | Critical severity                       |
-| Radio        | Webhook system                          |
-| Taxiing      | Job in progress                         |
-| Arrived      | Job complete                            |
+| Term     | Meaning                                  |
+| -------- | ---------------------------------------- |
+| Submit   | Upload endpoint (POST /api/v1/jobs)      |
+| Ruleset  | Preflight profile (rule composition)     |
+| Report   | Inspection report                        |
+| Pass     | All checks passed                        |
+| Fail     | Critical failures found                  |
+| Warning  | Warnings found                           |
+| Webhook  | Webhook system                           |
+| Processing | Job in progress                        |
+| Complete | Job complete                             |
 
 ## Inspection ID Format
 
-`GRD_{CATEGORY}_{NNN}` — e.g., GRD_FONT_001, GRD_IMG_003
+`LPDF_{CATEGORY}_{NNN}` — e.g., LPDF_FONT_001, LPDF_IMG_003 (deterministic checks).
+`AI_{CATEGORY}_{NNN}` — AI-tier checks (e.g., AI_BARCODE_001).
 
-Categories: FONT, IMG, COLOR, BOX, TRANS, OVER, COMP, STRUCT, GWG
+Categories: FONT, IMG, COLOR, BOX, TRANS, OVER, COMP, STRUCT, GWG, BARCODE, BRAND, etc.
 
 ## Key Constraints
 

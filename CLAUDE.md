@@ -39,7 +39,7 @@ LintPDF is a PDF preflight quality assurance SaaS built on the Pixie Dust framew
 
 **Packages:**
 - `packages/app` — Next.js 15 dashboard (TypeScript, TailwindCSS, Prisma)
-- `packages/plugin` — Fairy Ring plugin for Pixie Dust (`@thinkneverland/grounded-plugin`)
+- `packages/plugin` — Fairy Ring plugin for Pixie Dust (`@thinkneverland/lintpdf-plugin`)
 - `packages/stripe` — Stripe billing integration (`@lintpdf/stripe`)
 - `packages/engine` — Python PDF analysis engine (FastAPI, Celery, pikepdf)
 - `packages/web` — Public marketing site (Next.js)
@@ -51,6 +51,43 @@ LintPDF is a PDF preflight quality assurance SaaS built on the Pixie Dust framew
 - Plugin routes use `req.auth?.tenantId` (NOT `req.tenantId`) for tenant context
 - Engine routes use SQLAlchemy + Alembic migrations
 - App routes use Prisma with multi-file schema in `prisma/schema/`
+
+---
+
+## Brand stack + repo split (in progress)
+
+The codebase is on a multi-phase path to split the engine and viewer into their own OSS repos. **We are in Phase 1.**
+
+Target end state:
+
+```
+LintPDF (proprietary SaaS, this repo — lintpdf.com / app.lintpdf.com / reports.lintpdf.com)
+  ├── powered by SiftPDF (OSS preflight engine — thinkneverland/sift-pdf, post Phase 3)
+  └── ships LoupePDF (OSS PDF viewer — thinkneverland/loupe-pdf, post Phase 3)
+```
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | In-place refactor: plugin protocols, viewer core/lintpdf split, "Grounded" brand scrub. | **In progress** (Track C — this scrub — is part of Phase 1.) |
+| 2 | Registry unification, FastAPI route classification (engine-public vs SaaS-only), backfill `Field(..., description=...)` for OpenAPI. Delete legacy `analyze()` + legacy registries. | Not started |
+| 3 | Repo extraction. Create `thinkneverland/sift-pdf` + `thinkneverland/loupe-pdf` private repos. Engine Python package renames `lintpdf` → `siftpdf`. SaaS rewires to import them as external deps. | Not started |
+| 4 | OSS flip. License audit, repo visibility flipped to public, v1.0 release of SiftPDF + LoupePDF. | Not started |
+
+Hard constraint through every phase: hosted SaaS (lintpdf.com / app.lintpdf.com / reports.lintpdf.com) produces bit-for-bit identical responses, findings, and viewer renders. No customer-visible changes.
+
+### ENABLE_SAAS / OSS-mode posture
+
+Already in place via PRs #313, #315, #317:
+- `NEXT_PUBLIC_ENABLE_SAAS` build-time env var (passed through Docker build args via `OSS_REPO_URL`).
+- Marketing site (`packages/web`) hides SaaS-only sections + beta banner when `ENABLE_SAAS=false`.
+- Engine (`packages/engine`) is unaffected — the toggle lives in `packages/web` only.
+
+**Do not break the OSS-mode posture.** Every refactor must continue to render the marketing site identically with `NEXT_PUBLIC_ENABLE_SAAS=false`.
+
+### Package naming during the split
+
+- Today + Phase 1: engine Python package = `lintpdf`. Workspace npm packages: `@thinkneverland/lintpdf-{plugin,web,app}`, `@lintpdf/{stripe,viewer-shared}`.
+- Post Phase 3: engine renames `lintpdf` → `siftpdf` (entry-point group `siftpdf.plugins`). Viewer publishes as `@thinkneverland/loupe-pdf` + `@thinkneverland/loupe-plugin-lintpdf`. SaaS keeps `lintpdf-*` for SaaS-only modules.
 
 ---
 

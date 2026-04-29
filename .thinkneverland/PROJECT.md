@@ -43,25 +43,28 @@ pytest -m "not slow"            # skip corpus tests
 ruff check src/                 # lint
 ruff format src/                # format
 mypy src/                       # type check
-celery -A grounded.worker worker --loglevel=info  # worker
-uvicorn grounded.api:app --reload                 # dev server
+celery -A lintpdf.queue.app worker --loglevel=info  # worker
+uvicorn lintpdf.api.app:app --reload                # dev server
 ```
 
 ## Project structure
 
+Engine source root: `packages/engine/src/lintpdf/`. Selected subpackages:
+
 ```
-src/
-├── parser/           # Module 1: ParserAdapter + PikePDFAdapter
-├── semantic/         # Module 2-3: SemanticModel + ContentStreamInterpreter
-├── analyzers/        # Module 4: Font, Image, Color, Transparency, Overprint
-├── conformance/      # Module 5: PDFXValidator, PDFAValidator (veraPDF)
-├── rules/            # Module 6: Rule functions + RuleRegistry
-├── profiles/         # Module 7: RulesetLoader + ProfileRegistry
-├── reports/          # Module 8: ReportGenerator (Report output)
-├── api/              # Module 9: FastAPI endpoints + auth + rate limiting
-├── queue/            # Module 10: Celery tasks + TaskQueue
-├── tenants/          # Module 11: TenantManager + multi-tenancy
-└── webhooks/         # Module 12: Webhook delivery
+packages/engine/src/lintpdf/
+├── parser/           # ParserAdapter + PikePDFAdapter
+├── semantic/         # SemanticModel + ContentStreamInterpreter
+├── analyzers/        # Deterministic preflight inspectors (LPDF_* findings)
+├── ai/analyzers/     # AI-tier inspectors (AI_* findings)
+├── conformance/      # PDF/X + PDF/A validators (veraPDF sidecar)
+├── rules/            # Rule functions + RuleRegistry
+├── profiles/         # ProfileRegistry + orchestrator
+├── reports/          # ReportGenerator (HTML, PDF, JSON, XML)
+├── api/              # FastAPI app, routers, auth, middleware
+├── queue/            # Celery worker + tasks
+├── tenants/          # Tenant config, entitlements, snapshots
+└── webhooks/         # Webhook dispatch
 ```
 
 ## Brand language
@@ -95,7 +98,7 @@ src/
 
 - Detection-only: never modify input PDFs
 - Every check traces to an ISO clause reference
-- Inspection IDs follow pattern: GRD*{CATEGORY}*{NNN}
+- Inspection IDs follow pattern: `LPDF_{CATEGORY}_{NNN}` (deterministic) and `AI_{CATEGORY}_{NNN}` (AI-tier)
 - Rulesets are JSON; tenant overrides stored in PostgreSQL
 - veraPDF runs as separate Docker container (REST API on port 8080)
 - 500MB file size limit; streaming interpreter for memory efficiency

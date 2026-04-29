@@ -15,7 +15,7 @@ lint-pdf/
 │   ├── app/             Next.js 15 dashboard (TypeScript, React 19, Prisma, Tailwind 4)
 │   ├── engine/          FastAPI 0.115 PDF preflight engine (Python 3.11+, Celery, pikepdf)
 │   ├── web/             Public marketing + docs site (Next.js)
-│   ├── plugin/          Fairy Ring plugin (`@thinkneverland/grounded-plugin`)
+│   ├── plugin/          Fairy Ring plugin (`@thinkneverland/lintpdf-plugin`)
 │   ├── stripe/          Stripe billing integration (`@lintpdf/stripe`)
 │   ├── inference/       AI/vision inference service (Python, isolated venv)
 │   ├── desktop/         Tauri 2.2 desktop app (excluded from pnpm workspace)

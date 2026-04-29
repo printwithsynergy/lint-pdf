@@ -34,7 +34,7 @@ import {
   lintpdfEndpointsPlugin,
   lintpdfBrandSpecsPlugin,
   lintpdfSuperAdminPlugin,
-} from "@thinkneverland/grounded-plugin";
+} from "@thinkneverland/lintpdf-plugin";
 import { lintpdfBillingPlugin } from "@lintpdf/stripe";
 
 // ============================================

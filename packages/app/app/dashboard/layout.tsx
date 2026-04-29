@@ -8,7 +8,7 @@ import { prisma } from "@thinkneverland/pixie-dust-database/server";
 import {
   getTenantFeatureFlags,
   resolveEngineTenantId,
-} from "@thinkneverland/grounded-plugin";
+} from "@thinkneverland/lintpdf-plugin";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 

@@ -123,19 +123,19 @@ Categories: FONT, IMG, COLOR, BOX, TRANS, OVER, COMP, STRUCT, GWG
 
 ### API status values
 
-| Status  | Meaning                          |
-| ------- | -------------------------------- |
-| queued  | Job accepted, waiting for worker |
-| taxiing | Worker processing                |
-| arrived | Processing complete              |
+| Status     | Meaning                          |
+| ---------- | -------------------------------- |
+| queued     | Job accepted, waiting for worker |
+| processing | Worker processing                |
+| complete   | Processing complete              |
 
 ### Report verdict
 
-| Verdict      | Meaning                                 |
-| ------------ | --------------------------------------- |
-| clear-to-fly | Zero no-fly findings                    |
-| grounded     | One or more no-fly findings             |
-| delay        | Zero no-fly, one or more delay findings |
+| Verdict | Meaning                                 |
+| ------- | --------------------------------------- |
+| pass    | Zero critical-severity findings         |
+| fail    | One or more critical-severity findings  |
+| warn    | Zero critical, one or more warnings     |
 
 ## Known constraints
 
