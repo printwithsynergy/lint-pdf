@@ -720,6 +720,7 @@ class PreflightOrchestrator:
         from lintpdf.analyzers.ink_extras import InkExtrasAnalyzer
         from lintpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
         from lintpdf.analyzers.page_geometry_audit import PageGeometryAuditAnalyzer
+        from lintpdf.analyzers.page_geometry_extra import PageGeometryExtraAnalyzer
         from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
         from lintpdf.analyzers.spot_name_similarity import SpotNameSimilarityAnalyzer
 
@@ -780,6 +781,7 @@ class PreflightOrchestrator:
             DielinePerfIndicatorAnalyzer(),
             ColorInventoryAuditAnalyzer(),
             PageGeometryAuditAnalyzer(),
+            PageGeometryExtraAnalyzer(min_bleed_pts=bleed_pts),
             DimensionCalloutAnalyzer(),
             SpotNameSimilarityAnalyzer(),
             InkExtrasAnalyzer(),
