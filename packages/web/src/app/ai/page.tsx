@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { hiddenInOssMetadata } from "@/lib/site-mode";
 
 export const metadata: Metadata = {
   title: "AI-Powered Preflight — LintPDF",
   description:
     "32 AI inspections across barcode detection, regulatory compliance, content quality, brand verification, and more. Invite-only alpha.",
+  ...hiddenInOssMetadata,
 };
 
 const aiCategories = [

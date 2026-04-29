@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { DocsNav } from "@/components/DocsNav";
+import { hiddenInOssMetadata } from "@/lib/site-mode";
+
+export const metadata: Metadata = {
+  ...hiddenInOssMetadata,
+};
 
 export default function DocsLayout({
   children,

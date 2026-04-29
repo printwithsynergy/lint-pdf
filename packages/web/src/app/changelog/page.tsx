@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { getEntriesWithHtml } from "@/lib/changelog";
+import { hiddenInOssMetadata } from "@/lib/site-mode";
 
 export const metadata: Metadata = {
   title: "Changelog — LintPDF",
   description:
     "The Logbook — version history and release notes for the LintPDF PDF preflight engine.",
+  ...hiddenInOssMetadata,
 };
 
 export default async function ChangelogPage() {

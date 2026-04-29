@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { hiddenInOssMetadata } from "@/lib/site-mode";
 
 export const metadata: Metadata = {
   title: "Integrations — LintPDF",
   description:
     "Connect LintPDF to prepress workflow engines, print ERP/MIS systems, and no-code automation platforms. API-first architecture for any workflow.",
+  ...hiddenInOssMetadata,
 };
 
 /* ------------------------------------------------------------------ */
