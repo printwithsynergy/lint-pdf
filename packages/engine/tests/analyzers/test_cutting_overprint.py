@@ -110,17 +110,20 @@ def test_op_true_for_fill_then_fill_no_finding() -> None:
     assert findings == []
 
 
-def test_op_set_anywhere_in_stream_clears_finding() -> None:
-    """First stroke is OP=false (would fire), but a later stroke with
-    OP=true counts as overprinted at least once. Per-spot rule: if it
-    overprinted somewhere we trust the converter — net no finding."""
+def test_inconsistent_overprint_still_fires() -> None:
+    """First stroke is OP=false (no overprint), later stroke is OP=true.
+    ISO 19593-1 §6.3 requires CONSISTENT overprint — partial coverage
+    still leaves the press with knock-out artefacts on the OP=false
+    paths. We emit one finding flagged ``inconsistent_overprint=True``."""
     events = [
-        _stroke_event(opi=0),  # OP=false default — would fire
+        _stroke_event(opi=0),  # OP=false default — fires
         _op(stroke=True, opi=1),
         _stroke_event(opi=2),  # OP=true now
     ]
     findings = CuttingOverprintAnalyzer().analyze(_doc(), events)
-    assert findings == []
+    assert len(findings) == 1
+    assert findings[0].details["inconsistent_overprint"] is True
+    assert "inconsistently" in findings[0].message
 
 
 # ── No cutting spot: silent ──────────────────────────────────────────
