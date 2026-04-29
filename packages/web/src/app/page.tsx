@@ -21,10 +21,14 @@ export default function Home() {
     <main>
       <HeroSection />
       <FeaturesSection />
-      <WebViewerSection />
-      <HotFolderSection />
-      <AIFeaturesSection />
-      <HowItWorksSection />
+      {/* WebViewer (hosted), HotFolder (desktop app), AIFeatures
+          (invite-only alpha), and HowItWorks (SaaS API submit/queue/report
+          workflow) are all SaaS-only surfaces. Hidden in OSS mode so the
+          public posture only describes what's actually in the OSS engine. */}
+      {saasMode && <WebViewerSection />}
+      {saasMode && <HotFolderSection />}
+      {saasMode && <AIFeaturesSection />}
+      {saasMode && <HowItWorksSection />}
       {saasMode && <CompetitorComparisonSection />}
       {saasMode && <PricingSection />}
       {saasMode && <TryItCTA />}
