@@ -157,3 +157,71 @@ def test_separation_cyan_does_not_trigger_devicen_check() -> None:
     spaces = dict([_sep("Cyan", 0)])
     findings = ColorInventoryAuditAnalyzer().analyze(_doc(spaces), [])
     assert not [x for x in findings if x.inspection_id == "LPDF_COLOR_DEVICEN_CMYK_NAMED"]
+
+
+# ── LPDF_COLOR_ALL_SEPARATION (PR-T) ───────────────────────────────
+
+
+def test_all_separation_fires() -> None:
+    """Amalgam case: /All separation in colorant list."""
+    spaces = dict([_cmyk_cs(), _sep("All", 0), _sep("PMS185", 1)])
+    findings = ColorInventoryAuditAnalyzer().analyze(_doc(spaces), [])
+    f = [x for x in findings if x.inspection_id == "LPDF_COLOR_ALL_SEPARATION"]
+    assert len(f) == 1
+    assert f[0].details["colorant"] == "All"
+
+
+def test_no_all_separation_no_finding() -> None:
+    spaces = dict([_cmyk_cs(), _sep("PMS185", 0)])
+    findings = ColorInventoryAuditAnalyzer().analyze(_doc(spaces), [])
+    assert not [x for x in findings if x.inspection_id == "LPDF_COLOR_ALL_SEPARATION"]
+
+
+# ── LPDF_COLOR_MIXED_SPOT_PROCESS (PR-T) ──────────────────────────
+
+
+def test_one_spot_with_cmyk_fires() -> None:
+    """Nutrops-style: 1 spot + CMYK process."""
+    spaces = dict([_cmyk_cs(), _sep("PANTONE 2725 C", 0)])
+    findings = ColorInventoryAuditAnalyzer().analyze(_doc(spaces), [])
+    f = [x for x in findings if x.inspection_id == "LPDF_COLOR_MIXED_SPOT_PROCESS"]
+    assert len(f) == 1
+    assert f[0].details["spot_inks"] == ["PANTONE 2725 C"]
+
+
+def test_two_spots_with_cmyk_fires() -> None:
+    """Nutrops_LS / Nutrops_SF case: 2 PMS spots + CMYK."""
+    spaces = dict([_cmyk_cs(), _sep("PANTONE 2725 C", 0), _sep("PANTONE 7401 C", 1)])
+    findings = ColorInventoryAuditAnalyzer().analyze(_doc(spaces), [])
+    f = [x for x in findings if x.inspection_id == "LPDF_COLOR_MIXED_SPOT_PROCESS"]
+    assert len(f) == 1
+
+
+def test_three_spots_with_cmyk_no_finding() -> None:
+    """Multi-spot palette + process CMYK is the legitimate
+    full-art case; don't flag."""
+    spaces = dict(
+        [
+            _cmyk_cs(),
+            _sep("PANTONE 185 C", 0),
+            _sep("PANTONE 200 C", 1),
+            _sep("PANTONE 400 C", 2),
+        ]
+    )
+    findings = ColorInventoryAuditAnalyzer().analyze(_doc(spaces), [])
+    assert not [x for x in findings if x.inspection_id == "LPDF_COLOR_MIXED_SPOT_PROCESS"]
+
+
+def test_spot_only_no_cmyk_no_finding() -> None:
+    """Spot-only build (no DeviceCMYK) is fine."""
+    spaces = dict([_sep("PANTONE 2725 C", 0), _sep("PANTONE 7401 C", 1)])
+    findings = ColorInventoryAuditAnalyzer().analyze(_doc(spaces), [])
+    assert not [x for x in findings if x.inspection_id == "LPDF_COLOR_MIXED_SPOT_PROCESS"]
+
+
+def test_processing_step_only_with_cmyk_no_finding() -> None:
+    """Cutting / Perforating spots + CMYK is normal — those are
+    technical inks, not press stations."""
+    spaces = dict([_cmyk_cs(), _sep("Cutting", 0), _sep("Perforating", 1)])
+    findings = ColorInventoryAuditAnalyzer().analyze(_doc(spaces), [])
+    assert not [x for x in findings if x.inspection_id == "LPDF_COLOR_MIXED_SPOT_PROCESS"]
