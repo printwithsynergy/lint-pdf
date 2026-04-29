@@ -123,6 +123,9 @@ class ColorInventoryAuditAnalyzer(BaseAnalyzer):
         findings.extend(self._check_duplicate_k_spot(spot_colorants, process_used))
         findings.extend(self._check_dieline_printable(spot_colorants))
         findings.extend(self._check_devicen_named_cmyk(devicen_named_cmyk))
+        # PR-T (audit miss closure): two more colour-inventory signals.
+        findings.extend(self._check_all_separation(spot_colorants))
+        findings.extend(self._check_mixed_spot_and_process(spot_colorants, process_used))
         return findings
 
     # ── Inventory helpers ──────────────────────────────────────────
@@ -317,6 +320,88 @@ class ColorInventoryAuditAnalyzer(BaseAnalyzer):
                 ),
                 details={
                     "devicen_color_spaces": devicen_hits,
+                },
+                category="color",
+                object_type="document",
+            )
+        ]
+
+    @staticmethod
+    def _check_all_separation(spots: list[str]) -> list[Finding]:
+        """LPDF_COLOR_ALL_SEPARATION (warning).
+
+        ``/All`` is a special PostScript separation that prints to
+        EVERY plate simultaneously. Its only legitimate use is for
+        registration marks. When it appears in the colorant list of
+        a regular Separation it produces unintended ink on every
+        plate. Caught by Opus on Amalgam_Catalyst.
+        """
+        for s in spots:
+            if (_normalise(s) or "") == "all":
+                return [
+                    Finding(
+                        inspection_id="LPDF_COLOR_ALL_SEPARATION",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"Separation '{s}' uses the special /All colorant. "
+                            "/All prints to every plate simultaneously and is "
+                            "normally reserved for registration marks. Using "
+                            "it for general artwork will produce unintended "
+                            "ink on every plate at output. Re-target to a "
+                            "real spot or process colorant before plating."
+                        ),
+                        details={"colorant": s},
+                        category="color",
+                        object_type="document",
+                    )
+                ]
+        return []
+
+    @staticmethod
+    def _check_mixed_spot_and_process(spots: list[str], process_used: set[str]) -> list[Finding]:
+        """LPDF_COLOR_MIXED_SPOT_PROCESS (advisory).
+
+        Document declares both spot inks (Pantones, etc.) AND process
+        CMYK channels. For some workflows this is intentional (CMYK
+        for full-tone imagery + spot for brand colour); for many
+        2-colour spot-only designs the CMYK channels are unintended
+        and inflate plate count. Surfaces the combination so the
+        operator can confirm intent. Skips when:
+        - Only ProcessingStep / dieline spots are present (technical
+          inks, not press stations)
+        - Document has more than 2 spot inks (multi-spot designs
+          legitimately mix with process)
+        Caught by Opus on Nutrops_LS_Dieline + Nutrops_SF_Dieline
+        (2 PMS + CMYK present without obvious need for both).
+        """
+        if "cmyk" not in process_used:
+            return []
+        plate_spots = [
+            s
+            for s in spots
+            if (_normalise(s) or "") not in _ISO_19593_PROCESSING_STEP_TOKENS
+            and (_normalise(s) or "") not in _DIELINE_TOKENS
+        ]
+        # Strict: 1 or 2 spots + CMYK present is the suspicious case.
+        # Multi-spot palettes with CMYK process plates are common in
+        # full-art catalogues and shouldn't fire here.
+        if not plate_spots or len(plate_spots) > 2:
+            return []
+        return [
+            Finding(
+                inspection_id="LPDF_COLOR_MIXED_SPOT_PROCESS",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"Document declares {len(plate_spots)} spot ink(s) "
+                    f"({', '.join(plate_spots)}) AND process CMYK. For a "
+                    "low-spot-count design this often inflates plate count "
+                    "unnecessarily. Confirm CMYK is needed (e.g. full-tone "
+                    "raster imagery), otherwise consolidate to spot-only "
+                    "or convert spots to process to reduce plates."
+                ),
+                details={
+                    "spot_inks": plate_spots,
+                    "process_channels": sorted(process_used),
                 },
                 category="color",
                 object_type="document",

@@ -911,6 +911,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Multiple Labels On Single Page",
         "Page contains 2+ disjoint content clusters separated by an empty band wider than 30 pt. Most label workflows expect each die-cut artwork on its own page or with explicit dieline separation. Confirm imposition is intentional and dielines are supplied for each label. Caught by Opus on Pavette_Pride (front circular + back rectangular labels on a single page).",
     ),
+    "LPDF_COLOR_ALL_SEPARATION": CheckInfo(
+        "Special /All Separation Used As Artwork",
+        "Separation uses the special /All colorant. /All prints to every plate simultaneously and is normally reserved for registration marks. Using it for general artwork will produce unintended ink on every plate at output. Re-target to a real spot or process colorant before plating.",
+    ),
+    "LPDF_COLOR_MIXED_SPOT_PROCESS": CheckInfo(
+        "Mixed Spot+Process Build For Low-Spot Design",
+        "Document declares 1-2 spot inks AND process CMYK. For a low-spot-count design this often inflates plate count unnecessarily. Confirm CMYK is needed (e.g. full-tone raster imagery), otherwise consolidate to spot-only or convert spots to process to reduce plates.",
+    ),
     "LPDF_DIM_CALLOUT_001": CheckInfo(
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
