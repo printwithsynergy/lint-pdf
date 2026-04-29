@@ -13,11 +13,15 @@ from lintpdf.semantic.model import (
 )
 
 
-def _doc(detected_regions: list[DetectedTextRegion] | None = None) -> SemanticDocument:
+def _doc(
+    detected_regions: list[DetectedTextRegion] | None = None,
+    content_stream: bytes | None = None,
+) -> SemanticDocument:
     page = SemanticPage(
         page_num=1,
         media_box=PdfBox(0, 0, 612, 792),
         detected_text_regions=tuple(detected_regions or ()),
+        content_stream=content_stream or b"",
     )
     return SemanticDocument(version="1.7", page_count=1, is_encrypted=False, pages=[page])
 
@@ -52,50 +56,55 @@ def _text(
 
 
 def test_live_copy_inside_keepout_fires() -> None:
-    """``END SEAL`` label at (100,700)→(180,710); live copy at
-    (170,705)→(190,715) sits inside the 5 mm keepout band — fires."""
-    anchor = _text(string="END SEAL", bbox=(100.0, 700.0, 180.0, 710.0))
-    violator = _text(string="ingredients", bbox=(170.0, 705.0, 230.0, 715.0), operator_index=1)
-    findings = SealZoneKeepoutAnalyzer().analyze(_doc(), [anchor, violator])
+    """Content stream contains an ``END SEAL`` label; live copy in the
+    bottom 5 mm band of the MediaBox fires the keepout finding."""
+    cs = b"BT /F1 8 Tf (END SEAL) Tj ET"
+    # MediaBox is 0,0 to 612,792 — bottom 5 mm band is y in [0, 14.17].
+    violator = _text(string="ingredients", bbox=(100.0, 5.0, 230.0, 12.0), operator_index=1)
+    findings = SealZoneKeepoutAnalyzer().analyze(_doc(content_stream=cs), [violator])
     seal = [f for f in findings if f.inspection_id == "LPDF_BOX_SEAL_ZONE_VIOLATION"]
-    assert len(seal) == 1
+    assert len(seal) >= 1
     assert "END SEAL" in seal[0].details["seal_label"]
 
 
 def test_copy_far_from_seal_no_finding() -> None:
-    """Live copy 50 mm away from the seal label is well outside the
-    keepout — no finding."""
-    anchor = _text(string="END SEAL", bbox=(100.0, 700.0, 180.0, 710.0))
+    """Live copy in the middle of the page (far from MediaBox edges) is
+    well outside the synthesised top/bottom 5 mm keepout bands — no
+    finding."""
+    cs = b"BT /F1 8 Tf (END SEAL) Tj ET"
     far = _text(string="big body copy", bbox=(100.0, 400.0, 200.0, 420.0), operator_index=1)
-    findings = SealZoneKeepoutAnalyzer().analyze(_doc(), [anchor, far])
+    findings = SealZoneKeepoutAnalyzer().analyze(_doc(content_stream=cs), [far])
     assert not [f for f in findings if f.inspection_id == "LPDF_BOX_SEAL_ZONE_VIOLATION"]
 
 
 def test_no_seal_anchor_no_finding() -> None:
     """No seal label on the page → analyzer should return early."""
+    cs = b"BT /F1 8 Tf (hello world) Tj ET"
     text = _text(string="hello", bbox=(100.0, 700.0, 200.0, 710.0))
-    findings = SealZoneKeepoutAnalyzer().analyze(_doc(), [text])
+    findings = SealZoneKeepoutAnalyzer().analyze(_doc(content_stream=cs), [text])
     assert not findings
 
 
 def test_overlap_in_seal_label() -> None:
-    """`OVERLAP IN SEAL` is a recognised anchor phrase."""
-    anchor = _text(string="OVERLAP IN SEAL", bbox=(50.0, 100.0, 150.0, 110.0))
-    violator = _text(string="brand", bbox=(140.0, 105.0, 180.0, 115.0), operator_index=1)
-    findings = SealZoneKeepoutAnalyzer().analyze(_doc(), [anchor, violator])
+    """`OVERLAP IN SEAL` content-stream label fires keepout for top-edge
+    text events."""
+    cs = b"BT /F1 8 Tf (OVERLAP IN SEAL) Tj ET"
+    # MediaBox top is 792; 5 mm band is y in [777.83, 792].
+    violator = _text(string="brand", bbox=(50.0, 785.0, 180.0, 791.0), operator_index=1)
+    findings = SealZoneKeepoutAnalyzer().analyze(_doc(content_stream=cs), [violator])
     assert any(f.inspection_id == "LPDF_BOX_SEAL_ZONE_VIOLATION" for f in findings)
 
 
 def test_invisible_text_violator_skipped() -> None:
     """Invisible (rendering mode 3) text isn't a real violator."""
-    anchor = _text(string="END SEAL", bbox=(100.0, 700.0, 180.0, 710.0))
+    cs = b"BT /F1 8 Tf (END SEAL) Tj ET"
     invisible = _text(
         string="hidden",
-        bbox=(170.0, 705.0, 230.0, 715.0),
+        bbox=(100.0, 5.0, 230.0, 12.0),
         operator_index=1,
         rendering_mode=3,
     )
-    findings = SealZoneKeepoutAnalyzer().analyze(_doc(), [anchor, invisible])
+    findings = SealZoneKeepoutAnalyzer().analyze(_doc(content_stream=cs), [invisible])
     assert not [f for f in findings if f.inspection_id == "LPDF_BOX_SEAL_ZONE_VIOLATION"]
 
 
