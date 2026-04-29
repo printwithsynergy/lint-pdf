@@ -293,4 +293,74 @@ class SpotNameSimilarityAnalyzer(BaseAnalyzer):
                         object_type="document",
                     )
                 )
+
+        # PR-N (audit miss closure): token-level comparison. Names
+        # like '/Dark Biege' vs '/Faint Beige' / '/Lt Beige' /
+        # '/Med Beige' share modifier-prefix vocabulary but their
+        # full strings are too far apart for the whole-string
+        # Levenshtein. Compare equivalently-positioned tokens (or
+        # the last token, which most often carries the colour-family
+        # name) instead.
+        token_pairs_emitted: set[frozenset[str]] = set()
+        for i, a in enumerate(names):
+            a_tokens = [t for t in _tokenise(a) if len(t) >= _MIN_TYPO_NAME_LEN]
+            if not a_tokens:
+                continue
+            for b in names[i + 1 :]:
+                b_tokens = [t for t in _tokenise(b) if len(t) >= _MIN_TYPO_NAME_LEN]
+                if not b_tokens:
+                    continue
+                # Compare every cross pair of tokens. If ANY pair
+                # differs by 1-2 edits AND at least one matches an
+                # existing token verbatim from the rest of the
+                # inventory, treat the close pair as a typo.
+                for ta in a_tokens:
+                    for tb in b_tokens:
+                        if ta == tb:
+                            continue
+                        d = _levenshtein(ta, tb)
+                        if d == 0 or d > _MAX_TYPO_DISTANCE:
+                            continue
+                        # Confirm at least one of (ta, tb) appears
+                        # verbatim somewhere else in the inventory —
+                        # rules out one-off coincidental near-matches.
+                        all_tokens: set[str] = set()
+                        for n in names:
+                            all_tokens.update(_tokenise(n))
+                        if ta not in all_tokens or tb not in all_tokens:
+                            continue
+                        pair = frozenset({a, b})
+                        if pair in emitted_pairs or pair in token_pairs_emitted:
+                            continue
+                        token_pairs_emitted.add(pair)
+                        findings.append(
+                            Finding(
+                                inspection_id="LPDF_SPOT_NAME_TYPO",
+                                severity=Severity.WARNING,
+                                message=(
+                                    f"Spot color names {a!r} and {b!r} share "
+                                    f"a modifier-suffix structure where one "
+                                    f"token ({ta!r}) differs from another "
+                                    f"({tb!r}) by only {d} edit"
+                                    f"{'s' if d != 1 else ''} — likely typo. "
+                                    "RIP treats them as separate plates."
+                                ),
+                                details={
+                                    "name_a": a,
+                                    "name_b": b,
+                                    "token_a": ta,
+                                    "token_b": tb,
+                                    "edit_distance": d,
+                                },
+                                category="color",
+                                object_type="document",
+                            )
+                        )
         return findings
+
+
+def _tokenise(name: str) -> list[str]:
+    """Split a normalised spot-color name into lowercase tokens
+    on whitespace / underscore / hyphen boundaries."""
+    norm = (_normalise(name) or "").lower()
+    return [t for t in norm.split("_") if t]

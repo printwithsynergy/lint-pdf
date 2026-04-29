@@ -79,46 +79,69 @@ class PlaceholderTextAnalyzer(BaseAnalyzer):
         seen: set[tuple[int, str]] = set()
 
         for page in document.pages:
-            raw = page.content_stream
-            if not raw:
-                continue
-            try:
-                text = raw.decode("latin-1") if isinstance(raw, bytes) else str(raw)
-            except Exception:
-                continue
-
-            # Skip when the page text is dominated by a clearly
-            # legitimate phrase that would otherwise trip our
-            # placeholder-detection. We don't blanket-skip the whole
-            # page — just narrow windows around the legit phrases.
-            for pat, label in _PATTERNS:
-                m = pat.search(text)
-                if not m:
-                    continue
-                start, end = m.span()
-                # Suppress if a legitimate phrase appears within 30
-                # chars on either side (filled-in dates etc.).
-                window = text[max(0, start - 30) : end + 30]
-                if any(legit.search(window) for legit in _LEGITIMATE_PHRASES):
-                    continue
-                key = (page.page_num, label)
-                if key in seen:
-                    continue
-                seen.add(key)
-                findings.append(
-                    Finding(
-                        inspection_id="LPDF_PLACEHOLDER_001",
-                        severity=Severity.WARNING,
-                        message=(
-                            f"Placeholder text '{label}' on page {page.page_num} — "
-                            "variable-data token left in artwork. Either replace "
-                            "with the live data or mark the area as a non-printing "
-                            "imprint zone before plate-making."
-                        ),
-                        page_num=page.page_num,
-                        details={"placeholder": label},
-                        category="text",
-                        object_type="text",
-                    )
-                )
+            findings.extend(self._scan_text(page, self._content_stream_text(page), seen, "live"))
+            # PR-N (audit miss closure): outlined fixtures (Cherry-
+            # Twist / Pink-Slush / HSI / OrangeKiss) have their
+            # placeholder copy as vector paths. The OCR pass
+            # (PR #295) recovers the strings into
+            # ``page.detected_text_regions``; scan them too so the
+            # placeholder check no longer goes silent on outlined PDFs.
+            for region_text in self._ocr_region_strings(page):
+                findings.extend(self._scan_text(page, region_text, seen, "ocr"))
         return findings
+
+    @staticmethod
+    def _content_stream_text(page: object) -> str:
+        raw = getattr(page, "content_stream", None)
+        if not raw:
+            return ""
+        try:
+            return raw.decode("latin-1") if isinstance(raw, bytes) else str(raw)
+        except Exception:
+            return ""
+
+    @staticmethod
+    def _ocr_region_strings(page: object) -> list[str]:
+        regions = getattr(page, "detected_text_regions", None) or []
+        return [getattr(r, "text", None) or "" for r in regions]
+
+    @staticmethod
+    def _scan_text(
+        page: object,
+        text: str,
+        seen: set[tuple[int, str]],
+        source: str,
+    ) -> list[Finding]:
+        if not text:
+            return []
+        page_num = getattr(page, "page_num", 0)
+        out: list[Finding] = []
+        for pat, label in _PATTERNS:
+            m = pat.search(text)
+            if not m:
+                continue
+            start, end = m.span()
+            window = text[max(0, start - 30) : end + 30]
+            if any(legit.search(window) for legit in _LEGITIMATE_PHRASES):
+                continue
+            key = (page_num, label)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(
+                Finding(
+                    inspection_id="LPDF_PLACEHOLDER_001",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Placeholder text '{label}' on page {page_num} — "
+                        "variable-data token left in artwork. Either replace "
+                        "with the live data or mark the area as a non-printing "
+                        "imprint zone before plate-making."
+                    ),
+                    page_num=page_num,
+                    details={"placeholder": label, "source": source},
+                    category="text",
+                    object_type="text",
+                )
+            )
+        return out
