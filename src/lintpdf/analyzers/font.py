@@ -323,8 +323,16 @@ class FontAnalyzer(BaseAnalyzer):
         """Run all checks on a single font."""
         findings: list[Finding] = []
 
-        # LPDF_FONT_001: Font not embedded (skip Standard 14)
-        if not font.embedded and not font.is_standard_14():
+        # LPDF_FONT_001: Font not embedded. Standard 14 fonts are
+        # equally non-embedded — until 2026-04-29 we suppressed the
+        # error there (PDF/A 1b technically allows them) but Opus's
+        # audit + a competent prepress operator both treat unembedded
+        # Helvetica / Times / Courier on a production print job as a
+        # hard error: the receiving RIP may substitute a different
+        # font, breaking layout. Emit the error for Standard 14 too,
+        # but flag ``is_standard_14`` in details so downstream tooling
+        # can downgrade it on workflows that genuinely permit them.
+        if not font.embedded:
             findings.append(
                 Finding(
                     inspection_id="LPDF_FONT_001",
@@ -335,6 +343,7 @@ class FontAnalyzer(BaseAnalyzer):
                         "font_name": font.name,
                         "base_font": font.base_font,
                         "font_type": font.font_type,
+                        "is_standard_14": font.is_standard_14(),
                     },
                     iso_clause="ISO 15930-7:2010 6.2.11.2",
                     object_id=font.name,
