@@ -202,7 +202,7 @@
     "warning_count": 29
   },
   "03_AN_Energy_StickPack_CA_HSI_ADM_P1_OL": {
-    "advisory_count": 47,
+    "advisory_count": 48,
     "error_count": 6,
     "finding_counts": {
       "AI_DIE_002": 1,
@@ -245,6 +245,7 @@
       "LPDF_STD_002": 1,
       "LPDF_STD_003": 1,
       "LPDF_TEXT_001": 1,
+      "LPDF_TEXT_LEGIBILITY_VERIFY": 1,
       "LPDF_TRANS_007": 1,
       "LPDF_TRANS_ON_SPOT": 1,
       "LPDF_VIEWER_DISPLAY_TITLE": 1,
@@ -299,6 +300,7 @@
       "LPDF_STD_002",
       "LPDF_STD_003",
       "LPDF_TEXT_001",
+      "LPDF_TEXT_LEGIBILITY_VERIFY",
       "LPDF_TRANS_007",
       "LPDF_TRANS_ON_SPOT",
       "LPDF_VIEWER_DISPLAY_TITLE",
@@ -313,7 +315,7 @@
       "PDFX4-084"
     ],
     "fixture": "03_AN_Energy_StickPack_CA_HSI_ADM_P1_OL",
-    "total_findings": 68,
+    "total_findings": 69,
     "warning_count": 15
   },
   "04_Amalgam_Catalyst_9_5x3_5": {
@@ -589,7 +591,7 @@
     "warning_count": 39
   },
   "06_DailyFiber_10up": {
-    "advisory_count": 101,
+    "advisory_count": 107,
     "error_count": 78,
     "finding_counts": {
       "AI_DIE_001": 1,
@@ -658,6 +660,8 @@
       "LPDF_STRUCT_003": 1,
       "LPDF_TEXT_001": 1,
       "LPDF_TEXT_004": 1,
+      "LPDF_TEXT_INVERTED_180": 1,
+      "LPDF_TEXT_LEGIBILITY_VERIFY": 5,
       "LPDF_TEXT_REVERSE_THIN": 1,
       "LPDF_TRANS_003": 3,
       "LPDF_VIEWER_DISPLAY_TITLE": 1,
@@ -735,6 +739,8 @@
       "LPDF_STRUCT_003",
       "LPDF_TEXT_001",
       "LPDF_TEXT_004",
+      "LPDF_TEXT_INVERTED_180",
+      "LPDF_TEXT_LEGIBILITY_VERIFY",
       "LPDF_TEXT_REVERSE_THIN",
       "LPDF_TRANS_003",
       "LPDF_VIEWER_DISPLAY_TITLE",
@@ -746,7 +752,7 @@
       "PDFX4-051"
     ],
     "fixture": "06_DailyFiber_10up",
-    "total_findings": 203,
+    "total_findings": 209,
     "warning_count": 24
   },
   "07_HSI_OUTLINED": {
@@ -895,7 +901,7 @@
     "warning_count": 21
   },
   "08_Nutrops_LS_Dieline": {
-    "advisory_count": 85,
+    "advisory_count": 88,
     "error_count": 15,
     "finding_counts": {
       "AI_DIE_001": 1,
@@ -932,6 +938,7 @@
       "LPDF_COLOR_DIELINE_PRINTABLE": 1,
       "LPDF_DIE_DIMENSION_CALLOUT": 1,
       "LPDF_DIE_PROCESSING_STEPS": 1,
+      "LPDF_DOC_LANG_BILINGUAL": 1,
       "LPDF_FONT_001": 3,
       "LPDF_FONT_005": 13,
       "LPDF_FONT_012": 2,
@@ -941,6 +948,7 @@
       "LPDF_INK_001": 1,
       "LPDF_INK_002": 4,
       "LPDF_INK_003": 1,
+      "LPDF_INK_MIXED_BUILD_VERIFY": 1,
       "LPDF_LANG_001": 1,
       "LPDF_LEGALCOPY_001": 2,
       "LPDF_META_003": 1,
@@ -959,6 +967,7 @@
       "LPDF_STRUCT_003": 1,
       "LPDF_TEXT_002": 3,
       "LPDF_TEXT_004": 1,
+      "LPDF_TEXT_INVERTED_180": 1,
       "LPDF_TEXT_REVERSE_THIN": 1,
       "LPDF_TRANS_003": 1,
       "LPDF_VIEWER_DISPLAY_TITLE": 1,
@@ -1006,6 +1015,7 @@
       "LPDF_COLOR_DIELINE_PRINTABLE",
       "LPDF_DIE_DIMENSION_CALLOUT",
       "LPDF_DIE_PROCESSING_STEPS",
+      "LPDF_DOC_LANG_BILINGUAL",
       "LPDF_FONT_001",
       "LPDF_FONT_005",
       "LPDF_FONT_012",
@@ -1015,6 +1025,7 @@
       "LPDF_INK_001",
       "LPDF_INK_002",
       "LPDF_INK_003",
+      "LPDF_INK_MIXED_BUILD_VERIFY",
       "LPDF_LANG_001",
       "LPDF_LEGALCOPY_001",
       "LPDF_META_003",
@@ -1033,6 +1044,7 @@
       "LPDF_STRUCT_003",
       "LPDF_TEXT_002",
       "LPDF_TEXT_004",
+      "LPDF_TEXT_INVERTED_180",
       "LPDF_TEXT_REVERSE_THIN",
       "LPDF_TRANS_003",
       "LPDF_VIEWER_DISPLAY_TITLE",
@@ -1046,11 +1058,11 @@
       "PDFX4-085"
     ],
     "fixture": "08_Nutrops_LS_Dieline",
-    "total_findings": 119,
+    "total_findings": 122,
     "warning_count": 19
   },
   "09_Nutrops_SF_Dieline": {
-    "advisory_count": 84,
+    "advisory_count": 87,
     "error_count": 15,
     "finding_counts": {
       "AI_DIE_001": 1,
@@ -1087,6 +1099,7 @@
       "LPDF_COLOR_DIELINE_PRINTABLE": 1,
       "LPDF_DIE_DIMENSION_CALLOUT": 1,
       "LPDF_DIE_PROCESSING_STEPS": 1,
+      "LPDF_DOC_LANG_BILINGUAL": 1,
       "LPDF_FONT_001": 3,
       "LPDF_FONT_005": 13,
       "LPDF_FONT_012": 2,
@@ -1096,6 +1109,7 @@
       "LPDF_INK_001": 1,
       "LPDF_INK_002": 4,
       "LPDF_INK_003": 1,
+      "LPDF_INK_MIXED_BUILD_VERIFY": 1,
       "LPDF_LANG_001": 1,
       "LPDF_LEGALCOPY_001": 2,
       "LPDF_META_003": 1,
@@ -1114,6 +1128,7 @@
       "LPDF_STRUCT_003": 1,
       "LPDF_TEXT_002": 3,
       "LPDF_TEXT_004": 1,
+      "LPDF_TEXT_INVERTED_180": 1,
       "LPDF_TEXT_REVERSE_THIN": 1,
       "LPDF_TRANS_003": 1,
       "LPDF_VIEWER_DISPLAY_TITLE": 1,
@@ -1161,6 +1176,7 @@
       "LPDF_COLOR_DIELINE_PRINTABLE",
       "LPDF_DIE_DIMENSION_CALLOUT",
       "LPDF_DIE_PROCESSING_STEPS",
+      "LPDF_DOC_LANG_BILINGUAL",
       "LPDF_FONT_001",
       "LPDF_FONT_005",
       "LPDF_FONT_012",
@@ -1170,6 +1186,7 @@
       "LPDF_INK_001",
       "LPDF_INK_002",
       "LPDF_INK_003",
+      "LPDF_INK_MIXED_BUILD_VERIFY",
       "LPDF_LANG_001",
       "LPDF_LEGALCOPY_001",
       "LPDF_META_003",
@@ -1188,6 +1205,7 @@
       "LPDF_STRUCT_003",
       "LPDF_TEXT_002",
       "LPDF_TEXT_004",
+      "LPDF_TEXT_INVERTED_180",
       "LPDF_TEXT_REVERSE_THIN",
       "LPDF_TRANS_003",
       "LPDF_VIEWER_DISPLAY_TITLE",
@@ -1201,7 +1219,7 @@
       "PDFX4-085"
     ],
     "fixture": "09_Nutrops_SF_Dieline",
-    "total_findings": 118,
+    "total_findings": 121,
     "warning_count": 19
   },
   "10_OrangeKiss_OUTLINED": {

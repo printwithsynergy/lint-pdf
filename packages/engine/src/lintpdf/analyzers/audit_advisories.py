@@ -27,16 +27,33 @@ Check IDs:
   belong on a non-printing techinfo layer; on the print layer they
   image to plate. Flags 4+ fixtures.
 
-* ``LPDF_BARCODE_QUIET_ZONE_VERIFY`` (advisory) — barcode quiet zone
-  measured against the strict GS1 minimum (``10x narrow_bar_width``).
-  Existing ``LPDF_BARCODE_006`` (2.5 mm) and ``LPDF_BARCODE_009``
-  (5 mm) cover the absolute minima; this one fires the GS1 best-
-  practice tier so operators can verify scan reliability before
-  press.
+* ``LPDF_INK_MIXED_BUILD_VERIFY`` (advisory, PR-JJ) — file declares
+  1-2 named Separation spots AND uses DeviceCMYK fills in the
+  content stream. Common case: a brand 2-PMS layout that also drops
+  a 4-process raster image, producing a 6-plate job. Asks the
+  operator to confirm the mixed build was the intended press setup.
+
+* ``LPDF_DOC_LANG_BILINGUAL`` (advisory, PR-JJ) — content stream
+  contains French / Spanish / German / Italian phrases AND ``/Lang``
+  is unset (or doesn't reflect bilingual content). Multilingual
+  packaging needs a primary-language tag for assistive tech +
+  localisation tooling.
+
+* ``LPDF_TEXT_INVERTED_180`` (advisory, PR-JJ) — page has text
+  events whose composed rotation differs by ~180 deg from the
+  majority orientation. Common case: gusseted-bag back-panel
+  artwork printed upside-down relative to the front; intentional
+  on some packaging shapes but worth confirming.
+
+* ``LPDF_TEXT_LEGIBILITY_VERIFY`` (advisory, PR-JJ) — text composed
+  size in the 5-6 pt range. ``LPDF_LEGALCOPY_001`` (5 pt FDA
+  minimum) handles the hard floor; this rule fires the soft tier
+  Opus consistently asks for ("verify against final size").
 """
 
 from __future__ import annotations
 
+import math
 import re
 from typing import TYPE_CHECKING
 
@@ -67,6 +84,74 @@ _DIMENSION_PATTERNS: tuple[re.Pattern[str], ...] = (
 # Asset-tracking metadata keys we expect on production-ready PDFs.
 _TRACKING_KEYS: tuple[str, ...] = ("/Title", "/Author", "/Producer", "/Creator")
 
+# Phrase fragments that strongly imply non-English content (FR / ES /
+# DE / IT). Used to gate ``LPDF_DOC_LANG_BILINGUAL`` on documents that
+# clearly carry multilingual copy. Lowercase + accent-stripped match.
+_NON_EN_PHRASES: tuple[str, ...] = (
+    # French (CFIA bilingual labelling)
+    "ingredients:",
+    "ingrédients",
+    "déchirer",
+    "ne pas",
+    "valeur nutritive",
+    "contenu net",
+    "sans ogm",
+    "fabriqué",
+    # Spanish (FDA Hispanic-market)
+    "ingredientes",
+    "información nutricional",
+    "no contiene",
+    "fabricado en",
+    "fecha de caducidad",
+    # German (EU FIR)
+    "zutaten:",
+    "nährwerte",
+    "mindestens haltbar",
+    # Italian (EU FIR)
+    "ingredienti:",
+    "valori nutrizionali",
+)
+
+# Composed-rotation buckets in degrees. Text whose rotation falls into
+# the same 5-degree bucket as the majority is "axis-aligned"; rotations
+# in the 175-185 deg bucket are "inverted" (~180 deg flip).
+_ROTATION_BUCKET_DEG = 5.0
+_INVERTED_TOLERANCE_DEG = 5.0
+
+# Mixed-build advisory: fires when document has at most this many spots
+# AND DeviceCMYK fills are also present in the content stream.
+_MAX_SPOTS_FOR_MIXED_BUILD = 2
+
+# Soft-tier legibility verification — composed text size in this band
+# is "below 6pt body but above the FDA 5pt floor". LPDF_LEGALCOPY_001
+# already fires below 5pt; this fires the verify advisory in 5-6pt.
+_LEGIBILITY_VERIFY_MIN_PT = 5.0
+_LEGIBILITY_VERIFY_MAX_PT = 6.0
+
+
+def _composed_font_size_pt(event) -> float:  # type: ignore[no-untyped-def]
+    base = abs(event.font_size)
+    if not event.ctm or not event.text_matrix:
+        return base
+    ctm = event.ctm
+    tm = event.text_matrix
+    cx = ctm.a * tm.c + ctm.c * tm.d
+    cy = ctm.b * tm.c + ctm.d * tm.d
+    return base * math.hypot(cx, cy)
+
+
+def _composed_rotation_deg(event) -> float:  # type: ignore[no-untyped-def]
+    """Return the composed rotation angle in degrees, in [0, 360)."""
+    if not event.ctm or not event.text_matrix:
+        return 0.0
+    ctm = event.ctm
+    tm = event.text_matrix
+    a = ctm.a * tm.a + ctm.c * tm.b
+    b = ctm.b * tm.a + ctm.d * tm.b
+    if abs(a) < 1e-9 and abs(b) < 1e-9:
+        return 0.0
+    return (math.degrees(math.atan2(b, a)) + 360.0) % 360.0
+
 
 class AuditAdvisoryAnalyzer(BaseAnalyzer):
     """Codified advisories closing audit misses by giving Opus a finding
@@ -81,6 +166,10 @@ class AuditAdvisoryAnalyzer(BaseAnalyzer):
         findings.extend(self._check_step_and_repeat(document))
         findings.extend(self._check_metadata_incomplete(document))
         findings.extend(self._check_dimension_callout(document))
+        findings.extend(self._check_mixed_build(document, events))
+        findings.extend(self._check_lang_bilingual(document))
+        findings.extend(self._check_text_inverted(events))
+        findings.extend(self._check_legibility_verify(events))
         return findings
 
     @staticmethod
@@ -226,6 +315,284 @@ class AuditAdvisoryAnalyzer(BaseAnalyzer):
                     },
                     category="dieline",
                     object_type="page",
+                )
+            )
+        return out
+
+    @staticmethod
+    def _check_mixed_build(
+        document: SemanticDocument, events: list[ContentStreamEvent]
+    ) -> list[Finding]:
+        """Document declares 1-2 named spots AND uses DeviceCMYK fills.
+
+        The audit consistently asks operators to verify mixed builds —
+        a 2-PMS layout with a process-CMYK photo produces a 6-plate
+        job. If the press deck or budget assumes spot-only or CMYK-only,
+        the surprise rejection happens at plating.
+        """
+        from lintpdf.semantic.events import ColorChangedEvent
+
+        # Count distinct non-process spots.
+        spots: set[str] = set()
+        for page in getattr(document, "pages", None) or []:
+            for cs in (getattr(page, "color_spaces", None) or {}).values():
+                if getattr(cs, "cs_type", None) not in (
+                    "Separation",
+                    "DeviceN",
+                    "NChannel",
+                ):
+                    continue
+                for raw in getattr(cs, "colorant_names", None) or ():
+                    if not raw:
+                        continue
+                    norm = str(raw).strip().lstrip("/").lower().replace("-", "_").replace(" ", "_")
+                    if norm in {
+                        "all",
+                        "none",
+                        "cyan",
+                        "magenta",
+                        "yellow",
+                        "black",
+                        "dieline",
+                        "die_line",
+                        "cutting",
+                        "cut",
+                        "perforating",
+                        "perf",
+                        "scoring",
+                        "score",
+                        "creasing",
+                        "crease",
+                        "varnish",
+                    }:
+                        continue
+                    spots.add(norm)
+        if not 1 <= len(spots) <= _MAX_SPOTS_FOR_MIXED_BUILD:
+            return []
+
+        # Look for DeviceCMYK fills with non-zero ink in the event stream.
+        cmyk_used = False
+        for ev in events:
+            if not isinstance(ev, ColorChangedEvent):
+                continue
+            if "DeviceCMYK" not in str(ev.color_space):
+                continue
+            if any(v > 0.0 for v in (ev.color_values or ())):
+                cmyk_used = True
+                break
+        if not cmyk_used:
+            return []
+
+        return [
+            Finding(
+                inspection_id="LPDF_INK_MIXED_BUILD_VERIFY",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"Document declares {len(spots)} named spot(s) and also uses "
+                    "DeviceCMYK fills. Mixed spot+process builds yield 5-6 plate "
+                    "jobs (e.g. 4 process + 2 PMS). Confirm the press deck has "
+                    "stations for both and that the cost / station-count plan "
+                    "expected the mixed build, or consolidate to spot-only / "
+                    "process-only as appropriate."
+                ),
+                details={
+                    "spot_count": len(spots),
+                    "spot_names": sorted(spots),
+                    "uses_cmyk": True,
+                },
+                category="color",
+                object_type="document",
+            )
+        ]
+
+    @staticmethod
+    def _check_lang_bilingual(document: SemanticDocument) -> list[Finding]:
+        """Multi-language content + ``/Lang`` unset.
+
+        Walks each page's content stream + OCR regions for telltale
+        non-English phrases. When found AND the document has no
+        ``/Lang`` catalog entry, fire an advisory.
+        """
+        from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
+
+        catalog = getattr(document, "catalog", None) or {}
+        lang = catalog.get("/Lang") or catalog.get("Lang")
+        if lang and str(lang).strip():
+            return []
+
+        # Look for non-English phrases anywhere in the document.
+        phrase_hit: str | None = None
+        for page in getattr(document, "pages", None) or []:
+            raw = getattr(page, "content_stream", None)
+            if raw:
+                try:
+                    text = (
+                        raw.decode("latin-1") if isinstance(raw, (bytes, bytearray)) else str(raw)
+                    )
+                    spaced, _ = PlaceholderTextAnalyzer._flatten_tj_operands(text)
+                    haystack = (spaced or text).lower()
+                    for p in _NON_EN_PHRASES:
+                        if p in haystack:
+                            phrase_hit = p
+                            break
+                except Exception:
+                    pass
+            if phrase_hit:
+                break
+            for region in getattr(page, "detected_text_regions", None) or []:
+                t = (getattr(region, "text", None) or "").lower()
+                for p in _NON_EN_PHRASES:
+                    if p in t:
+                        phrase_hit = p
+                        break
+                if phrase_hit:
+                    break
+            if phrase_hit:
+                break
+        if not phrase_hit:
+            return []
+
+        return [
+            Finding(
+                inspection_id="LPDF_DOC_LANG_BILINGUAL",
+                severity=Severity.ADVISORY,
+                message=(
+                    f"Document contains non-English content (matched: {phrase_hit!r}) "
+                    "but the catalog has no /Lang entry. Multilingual packaging "
+                    "should declare the primary language as a BCP-47 tag (e.g. "
+                    "/Lang (en-CA) for Canadian English with French copy) so "
+                    "assistive tech and localisation tooling work correctly."
+                ),
+                details={"matched_phrase": phrase_hit, "lang_present": False},
+                category="metadata",
+                object_type="document",
+            )
+        ]
+
+    @staticmethod
+    def _check_text_inverted(events: list[ContentStreamEvent]) -> list[Finding]:
+        """Detect ~180 deg rotated text against the page majority.
+
+        Walks ``TextRenderedEvent`` rotation buckets per page; if the
+        page has at least 5 events at a "majority" rotation AND at
+        least 3 events ~180 deg off from it, fire an advisory.
+        """
+        from lintpdf.semantic.events import TextRenderedEvent
+
+        per_page: dict[int, list[float]] = {}
+        for ev in events:
+            if not isinstance(ev, TextRenderedEvent):
+                continue
+            if ev.rendering_mode == 3:
+                continue
+            per_page.setdefault(ev.page_num, []).append(_composed_rotation_deg(ev))
+
+        out: list[Finding] = []
+        for page_num, rotations in per_page.items():
+            if len(rotations) < 8:
+                continue
+            buckets: dict[int, int] = {}
+            for r in rotations:
+                key = int(r // _ROTATION_BUCKET_DEG)
+                buckets[key] = buckets.get(key, 0) + 1
+            if not buckets:
+                continue
+            top_bucket, top_count = max(buckets.items(), key=lambda kv: kv[1])
+            if top_count < 5:
+                continue
+            top_deg = top_bucket * _ROTATION_BUCKET_DEG
+            inverted_deg = (top_deg + 180.0) % 360.0
+            inverted_low = (
+                int((inverted_deg - _INVERTED_TOLERANCE_DEG) // _ROTATION_BUCKET_DEG) % 72
+            )
+            inverted_high = (
+                int((inverted_deg + _INVERTED_TOLERANCE_DEG) // _ROTATION_BUCKET_DEG) % 72
+            )
+            inverted_count = 0
+            for k, count in buckets.items():
+                if inverted_low <= inverted_high:
+                    if inverted_low <= k <= inverted_high:
+                        inverted_count += count
+                else:
+                    # wrap around 360 deg
+                    if k >= inverted_low or k <= inverted_high:
+                        inverted_count += count
+            if inverted_count < 3:
+                continue
+            out.append(
+                Finding(
+                    inspection_id="LPDF_TEXT_INVERTED_180",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Page {page_num} has {inverted_count} text event(s) rotated "
+                        f"approximately 180 deg from the page majority "
+                        f"({top_count} events at {top_deg:.0f} deg). On gusseted "
+                        "bag / pouch artwork the back panel is sometimes printed "
+                        "upside-down for unfold orientation; verify the rotation "
+                        "matches the bag finishing layout, otherwise the back "
+                        "panel reads inverted on shelf."
+                    ),
+                    page_num=page_num,
+                    details={
+                        "page_majority_deg": top_deg,
+                        "majority_count": top_count,
+                        "inverted_count": inverted_count,
+                    },
+                    category="text",
+                    object_type="text",
+                )
+            )
+        return out
+
+    @staticmethod
+    def _check_legibility_verify(events: list[ContentStreamEvent]) -> list[Finding]:
+        """Composed font size in 5-6 pt soft-tier band.
+
+        ``LPDF_LEGALCOPY_001`` covers the hard FDA 5 pt floor; this
+        rule fires the soft "verify against final size" tier Opus
+        consistently asks for. Per-page dedupe by font/size bucket so
+        a paragraph emits one finding, not hundreds.
+        """
+        from lintpdf.semantic.events import TextRenderedEvent
+
+        out: list[Finding] = []
+        seen: set[tuple[int, str, float]] = set()
+        for ev in events:
+            if not isinstance(ev, TextRenderedEvent):
+                continue
+            if ev.rendering_mode == 3:
+                continue
+            size_pt = _composed_font_size_pt(ev)
+            if not (_LEGIBILITY_VERIFY_MIN_PT <= size_pt < _LEGIBILITY_VERIFY_MAX_PT):
+                continue
+            key = (ev.page_num, ev.font_name, round(size_pt, 1))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(
+                Finding(
+                    inspection_id="LPDF_TEXT_LEGIBILITY_VERIFY",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Text at {size_pt:.1f} pt (font {ev.font_name}) on page "
+                        f"{ev.page_num} is below the recommended 6 pt body-copy "
+                        "tier. The hard floor (FDA 5 pt) is owned by "
+                        "LPDF_LEGALCOPY_001; this advisory flags the legibility-"
+                        "verify band so you can confirm against the final printed "
+                        "panel size and substrate."
+                    ),
+                    page_num=ev.page_num,
+                    details={
+                        "font_size_pt": round(size_pt, 2),
+                        "font_name": ev.font_name,
+                        "verify_band_pt": [
+                            _LEGIBILITY_VERIFY_MIN_PT,
+                            _LEGIBILITY_VERIFY_MAX_PT,
+                        ],
+                    },
+                    category="text",
+                    object_type="text",
+                    bbox=ev.bbox,
                 )
             )
         return out
