@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { isSaasMode } from "@/lib/site-mode";
 
 const steps = [
   {
@@ -56,20 +57,22 @@ export function HotFolderSection() {
                 </div>
               ))}
             </div>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/docs/desktop-app"
-                className="rounded-xl bg-brand-900 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
-              >
-                Get the Desktop App
-              </Link>
-              <Link
-                href="/docs/integrations-hot-folder"
-                className="rounded-xl border-2 border-slate-200 px-6 py-3 text-sm font-medium text-slate-600 transition-all hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
-              >
-                CLI & Docs
-              </Link>
-            </div>
+            {isSaasMode() && (
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/docs/desktop-app"
+                  className="rounded-xl bg-brand-900 px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
+                >
+                  Get the Desktop App
+                </Link>
+                <Link
+                  href="/docs/integrations-hot-folder"
+                  className="rounded-xl border-2 border-slate-200 px-6 py-3 text-sm font-medium text-slate-600 transition-all hover:border-brand-300 hover:text-brand-700 hover:bg-brand-50"
+                >
+                  CLI & Docs
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Right — feature cards */}

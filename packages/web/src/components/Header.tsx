@@ -6,12 +6,16 @@ import { Logo } from "./Logo";
 import { useBeta } from "./BetaContext";
 import { WaitlistModal } from "./WaitlistModal";
 import { headerLinks } from "@/lib/navigation";
+import { isSaasMode } from "@/lib/site-mode";
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [waitlistOpen, setWaitlistOpen] = useState(false);
   const { betaMode } = useBeta();
 
+  // In OSS mode the public surface has no signup / waitlist CTAs at all —
+  // the marketing site is product info only, no funnel.
+  const showCta = isSaasMode();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.lintpdf.com";
   const ctaLabel = betaMode ? "Join the Waitlist" : "Get Started";
   const ctaHref = betaMode ? undefined : `${appUrl}/auth/login?plan=free`;
@@ -38,22 +42,23 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-            {ctaHref ? (
-              <a
-                href={ctaHref}
-                className="rounded-lg bg-brand-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-800"
-              >
-                {ctaLabel}
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setWaitlistOpen(true)}
-                className="rounded-lg bg-brand-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-800"
-              >
-                {ctaLabel}
-              </button>
-            )}
+            {showCta &&
+              (ctaHref ? (
+                <a
+                  href={ctaHref}
+                  className="rounded-lg bg-brand-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-800"
+                >
+                  {ctaLabel}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setWaitlistOpen(true)}
+                  className="rounded-lg bg-brand-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-800"
+                >
+                  {ctaLabel}
+                </button>
+              ))}
           </nav>
 
           {/* Mobile toggle */}
@@ -100,25 +105,26 @@ export function Header() {
                 {link.label}
               </Link>
             ))}
-            {ctaHref ? (
-              <a
-                href={ctaHref}
-                className="mt-3 block rounded-lg bg-brand-900 px-4 py-2 text-center text-sm font-medium text-white"
-              >
-                {ctaLabel}
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileOpen(false);
-                  setWaitlistOpen(true);
-                }}
-                className="mt-3 w-full rounded-lg bg-brand-900 px-4 py-2 text-center text-sm font-medium text-white"
-              >
-                {ctaLabel}
-              </button>
-            )}
+            {showCta &&
+              (ctaHref ? (
+                <a
+                  href={ctaHref}
+                  className="mt-3 block rounded-lg bg-brand-900 px-4 py-2 text-center text-sm font-medium text-white"
+                >
+                  {ctaLabel}
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    setWaitlistOpen(true);
+                  }}
+                  className="mt-3 w-full rounded-lg bg-brand-900 px-4 py-2 text-center text-sm font-medium text-white"
+                >
+                  {ctaLabel}
+                </button>
+              ))}
           </nav>
         )}
       </header>

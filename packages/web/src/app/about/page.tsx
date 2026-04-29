@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { isSaasMode } from "@/lib/site-mode";
 
 export const metadata: Metadata = {
   title: "About — LintPDF",
   description:
     "LintPDF is a detection-only PDF preflight engine built by Think Neverland. Learn about our philosophy, standards commitment, and the team behind the product.",
 };
+
+const SAAS = isSaasMode();
 
 export default function AboutPage() {
   return (
@@ -169,10 +172,10 @@ export default function AboutPage() {
             geometry, packaging geometry, barcode grading, compliance, and more.
           </p>
           <Link
-            href="/docs"
+            href={SAAS ? "/docs" : "/engine"}
             className="inline-block rounded-xl bg-brand-900 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-brand-800 hover:shadow-lg hover:shadow-brand-900/20 hover:-translate-y-0.5"
           >
-            Read the Docs
+            {SAAS ? "Read the Docs" : "About the Engine"}
           </Link>
         </div>
       </section>
