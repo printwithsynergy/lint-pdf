@@ -93,6 +93,86 @@ _BARCODE_MAX_CV = 0.5
 _BARCODE_MIN_FILL_DENSITY = 0.2
 
 
+def _bbox_distance(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> float:
+    """Minimum axis-aligned distance between two rectangles, 0 when
+    they overlap or touch. Mirrors ``analyzers.dieline_quality._bbox_distance``.
+    """
+    dx = max(0.0, max(a[0], b[0]) - min(a[2], b[2]))
+    dy = max(0.0, max(a[1], b[1]) - min(a[3], b[3]))
+    if dx == 0 and dy == 0:
+        return 0.0
+    return (dx**2 + dy**2) ** 0.5
+
+
+def _bbox_contains(
+    outer: tuple[float, float, float, float],
+    inner: tuple[float, float, float, float],
+) -> bool:
+    """True when ``outer`` fully contains ``inner`` (with ≤ 0.5 pt
+    tolerance to absorb floating-point noise from CTM composition)."""
+    return (
+        outer[0] <= inner[0] + 0.5
+        and outer[1] <= inner[1] + 0.5
+        and outer[2] >= inner[2] - 0.5
+        and outer[3] >= inner[3] - 0.5
+    )
+
+
+# Colorant names that can be treated as a white knockout. Keeping this
+# small and explicit — adding "Light" or "Cream" here would silently
+# suppress real findings.
+_WHITE_SPOT_NAMES: frozenset[str] = frozenset({"WHITE", "OPAQUE WHITE", "WHT"})
+
+
+def _is_white_fill(cs: str, vals: tuple[float, ...]) -> bool:
+    """True when the fill renders as a (near) white knockout. Errs on
+    the side of "yes" so a CMYK 0,0,0,0 box is recognised as a
+    knockout box for any quiet-zone enforcement.
+    """
+    cs_norm = (cs or "").lower()
+    if ("devicecmyk" in cs_norm or cs_norm == "cmyk") and len(vals) >= 4 and sum(vals[:4]) <= 0.05:
+        return True
+    if (
+        ("devicergb" in cs_norm or cs_norm == "rgb")
+        and len(vals) >= 3
+        and all(v >= 0.95 for v in vals[:3])
+    ):
+        return True
+    if ("devicegray" in cs_norm or cs_norm == "gray") and len(vals) >= 1 and vals[0] >= 0.95:
+        return True
+    if "separation" in cs_norm:
+        upper = (cs or "").upper()
+        return any(token in upper for token in _WHITE_SPOT_NAMES)
+    return False
+
+
+def _is_light_fill(cs: str, vals: tuple[float, ...]) -> bool:
+    """True when the fill is light enough to host a barcode without
+    contrast issues. The complement of "tinted" — anything that lands
+    here will NOT count toward the dark-background finding.
+
+    Thresholds err toward calling things tinted (so we surface the
+    miss); the suppression for white-knockout boxes still requires
+    ``_is_white_fill`` to be true, which is strict.
+    """
+    cs_norm = (cs or "").lower()
+    if ("devicecmyk" in cs_norm or cs_norm == "cmyk") and len(vals) >= 4:
+        return sum(vals[:4]) <= 0.10  # < 10% total ink
+    if ("devicergb" in cs_norm or cs_norm == "rgb") and len(vals) >= 3:
+        return all(v >= 0.92 for v in vals[:3])
+    if ("devicegray" in cs_norm or cs_norm == "gray") and len(vals) >= 1:
+        return vals[0] >= 0.92
+    if "separation" in cs_norm:
+        # Zero tint = no ink down → effectively transparent → light.
+        # Any non-zero tint on a custom spot is treated as tinted.
+        return bool(len(vals) >= 1 and vals[0] <= 0.01)
+    # Unknown space → don't false-positive.
+    return True
+
+
 def _looks_like_2d_barcode(
     fills: list[tuple[float, float, float, float]],
     region_w: float,
@@ -348,6 +428,12 @@ class BarcodeAnalyzer(BaseAnalyzer):
             # PR D Slot 4: orientation + quiet-zone + bar-height suite.
             findings.extend(self._check_orientation_suite(barcode_pages, document))
             findings.extend(self._check_size_and_quiet_zone_ink(barcode_pages, document, events))
+            # PR-W: GS1 quiet-zone-on-fold via DielineResult attached
+            # to the document by the orchestrator.
+            findings.extend(self._check_fold_proximity(barcode_pages, document))
+            # PR-Z: GS1 PCS — barcode on a tinted background without
+            # a white knockout box.
+            findings.extend(self._check_barcode_background(barcode_pages, document, events))
 
         # Detect 2D barcodes from fill patterns (LPDF_BARCODE_014-018)
         findings.extend(self._detect_2d_barcodes(events, document))
@@ -1293,6 +1379,206 @@ class BarcodeAnalyzer(BaseAnalyzer):
                         },
                     )
                 )
+        return findings
+
+    def _check_fold_proximity(
+        self,
+        candidates: list[_BarcodeCandidate],
+        document: SemanticDocument,
+    ) -> list[Finding]:
+        """PR-W (audit miss closure): GS1 quiet-zone-on-fold check.
+
+        ``LPDF_BARCODE_029`` only knows about the page centre as a fold
+        proxy. On stick-pack and sachet artwork the fold runs along a
+        side seam — geometry the dieline detector already recovered into
+        ``DielineResult.regions`` / ``.polylines``. When a barcode's
+        GS1 quiet zone (10x narrow-bar leading, 7x trailing) overlaps a
+        fold polygon the bars print across the seam and the scan fails.
+        Caught by Opus on AN-Energy stick-pack and HSI_OUTLINED.
+        """
+        result = getattr(document, "dieline_result", None)
+        if result is None:
+            return []
+        # Collect fold/crease/score region bboxes. Honour both ``regions``
+        # (per-island bboxes) and ``polylines`` (closed polygons). Skip
+        # when neither is populated (e.g. ``source="missing"``).
+        fold_bboxes: list[tuple[float, float, float, float]] = []
+        regions = getattr(result, "regions", None) or []
+        for region in regions:
+            try:
+                fold_bboxes.append(
+                    (
+                        float(region["x0"]),
+                        float(region["y0"]),
+                        float(region["x1"]),
+                        float(region["y1"]),
+                    )
+                )
+            except (KeyError, TypeError, ValueError):
+                continue
+        if not fold_bboxes:
+            polylines = getattr(result, "polylines", None) or []
+            for poly in polylines:
+                if not poly:
+                    continue
+                try:
+                    xs = [float(p[0]) for p in poly]
+                    ys = [float(p[1]) for p in poly]
+                except (IndexError, TypeError, ValueError):
+                    continue
+                if not xs or not ys:
+                    continue
+                fold_bboxes.append((min(xs), min(ys), max(xs), max(ys)))
+        if not fold_bboxes:
+            return []
+
+        findings: list[Finding] = []
+        for candidate in candidates:
+            if not candidate.has_bounds or not candidate.stroke_widths:
+                continue
+            narrow_bar = min(candidate.stroke_widths)
+            if narrow_bar <= 0:
+                continue
+            # GS1 minimum quiet zone is 10x narrow-bar module.
+            qz = narrow_bar * 10.0
+            x0, y0, x1, y1 = candidate.bbox  # type: ignore[misc]
+            qz_bbox = (x0 - qz, y0 - qz, x1 + qz, y1 + qz)
+
+            for fold_bbox in fold_bboxes:
+                if _bbox_distance(qz_bbox, fold_bbox) > 0.0:
+                    continue
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_BARCODE_QUIET_ZONE_ON_FOLD",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"Barcode on page {candidate.page_num} sits across a "
+                            f"detected fold/dieline polygon — the GS1 quiet zone "
+                            f"({narrow_bar * 10 / 2.83464567:.2f} mm = 10x narrow-bar) "
+                            "overlaps a fold line, so the bars print across the "
+                            "seam and a scanner won't read the symbol cleanly."
+                        ),
+                        page_num=candidate.page_num,
+                        bbox=candidate.bbox,
+                        details={
+                            "narrow_bar_pts": round(narrow_bar, 3),
+                            "quiet_zone_pts": round(qz, 2),
+                            "fold_bbox": [round(v, 2) for v in fold_bbox],
+                            "dieline_source": getattr(result, "source", None),
+                        },
+                    )
+                )
+                break  # one finding per barcode; further folds are redundant
+        return findings
+
+    def _check_barcode_background(
+        self,
+        candidates: list[_BarcodeCandidate],
+        document: SemanticDocument,
+        events: list[ContentStreamEvent],
+    ) -> list[Finding]:
+        """PR-Z (audit miss closure): GS1 PCS contrast / barcode on dark
+        background.
+
+        GS1 General Specifications §5.5.7 requires a Print Contrast
+        Signal ≥ 0.7 between the bars and the background. When a
+        barcode sits on a coloured fill (pink, purple, cream) without
+        a white knockout box the PCS drops below specification and
+        the symbol won't scan reliably.
+
+        Tier 1 (this check, structural — no GPU): walk fill events
+        whose bbox overlaps the barcode's quiet-zone halo, classify
+        each fill as light vs tinted by colour space, and flag the
+        barcode when a tinted fill encroaches AND no white knockout
+        box covers the bars.
+
+        Caught roughly seven of the post-merge audit's barcode misses
+        (DailyFiber pink, Nutrops purple, Pink-Slush magenta, etc.).
+        """
+        from lintpdf.semantic.events import PathPaintingEvent
+
+        # Bucket fill events per page so we don't re-scan the whole
+        # event stream per candidate.
+        fills_by_page: dict[int, list[PathPaintingEvent]] = {}
+        for event in events:
+            if not isinstance(event, PathPaintingEvent) or not event.fill:
+                continue
+            bbox = getattr(event, "bbox", None)
+            if not bbox:
+                continue
+            fills_by_page.setdefault(event.page_num, []).append(event)
+
+        findings: list[Finding] = []
+        for candidate in candidates:
+            if not candidate.has_bounds or not candidate.stroke_widths:
+                continue
+            narrow_bar = min(candidate.stroke_widths)
+            if narrow_bar <= 0:
+                continue
+            qz = narrow_bar * 10.0  # GS1 minimum quiet-zone module count
+            x0, y0, x1, y1 = candidate.bbox  # type: ignore[misc]
+            qz_bbox = (x0 - qz, y0 - qz, x1 + qz, y1 + qz)
+            barcode_bbox = (x0, y0, x1, y1)
+
+            page_fills = fills_by_page.get(candidate.page_num) or []
+            tinted: list[tuple[str, tuple[float, ...]]] = []
+            white_knockout = False
+            for ev in page_fills:
+                fbb = getattr(ev, "bbox", None)
+                if not fbb or _bbox_distance(qz_bbox, fbb) > 0.0:
+                    continue
+                # Skip degenerate fills smaller than 5 pt² — likely
+                # decorative artefacts, not background panels.
+                fill_w = float(fbb[2]) - float(fbb[0])
+                fill_h = float(fbb[3]) - float(fbb[1])
+                if fill_w * fill_h < 5.0:
+                    continue
+                cs = ev.fill_color_space or ""
+                vals = tuple(float(v) for v in (ev.fill_color_values or ()))
+                if _is_white_fill(cs, vals) and _bbox_contains(fbb, barcode_bbox):
+                    white_knockout = True
+                    break
+                if not _is_light_fill(cs, vals):
+                    tinted.append((cs, vals))
+
+            if white_knockout or not tinted:
+                continue
+
+            # Surface up to 3 distinct (cs, values) tuples in details.
+            cs_summary: list[dict[str, Any]] = []
+            seen_pairs: set[tuple[str, tuple[float, ...]]] = set()
+            for cs, vals in tinted:
+                key = (cs, vals)
+                if key in seen_pairs:
+                    continue
+                seen_pairs.add(key)
+                cs_summary.append({"color_space": cs, "values": list(vals)})
+                if len(cs_summary) >= 3:
+                    break
+
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_BARCODE_DARK_BG",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"Barcode on page {candidate.page_num} sits on a tinted / "
+                        f"non-white background fill without a detected white "
+                        f"knockout box. GS1 General Specifications §5.5.7 requires "
+                        "a Print Contrast Signal ≥ 0.7 between bars and quiet "
+                        "zone — coloured substrates (pink, purple, cream, etc.) "
+                        "drop the PCS below the scan threshold. Place a white "
+                        "knockout fill behind the bars + 10x quiet zone."
+                    ),
+                    page_num=candidate.page_num,
+                    bbox=candidate.bbox,
+                    details={
+                        "narrow_bar_pts": round(narrow_bar, 3),
+                        "quiet_zone_pts": round(qz, 2),
+                        "tinted_fills": cs_summary,
+                        "tinted_fill_count": len(tinted),
+                    },
+                )
+            )
         return findings
 
     def _check_barcode_color(

@@ -384,6 +384,18 @@ class PreflightOrchestrator:
         # Step 1-3: Parse, build model, interpret
         document, events = self._parse_and_interpret(pdf_bytes)
 
+        # Step 3b (PR-W): attach DielineResult to the document so
+        # analyzers (BarcodeAnalyzer, etc.) can read fold geometry
+        # without re-running detection. Best-effort: failure leaves
+        # ``document.dieline_result = None`` and consumers skip.
+        try:
+            from lintpdf.analyzers.dieline import detect_dieline
+
+            ai_features = getattr(self._ai_config, "features", None) if self._ai_config else None
+            document.dieline_result = detect_dieline(pdf_bytes, ai_features=ai_features)
+        except Exception:  # pragma: no cover — never fail the job
+            document.dieline_result = None
+
         # Step 4: Run analyzers
         raw_findings: list[Finding] = []
         for analyzer in self._create_analyzers():
@@ -713,16 +725,20 @@ class PreflightOrchestrator:
             TransparencyAnalyzer,
         )
         from lintpdf.analyzers.color_inventory_audit import ColorInventoryAuditAnalyzer
+        from lintpdf.analyzers.cutting_overprint import CuttingOverprintAnalyzer
         from lintpdf.analyzers.dieline_iso19593 import DielineIso19593Analyzer
         from lintpdf.analyzers.dieline_perf_indicator import DielinePerfIndicatorAnalyzer
         from lintpdf.analyzers.dimension_callout import DimensionCalloutAnalyzer
         from lintpdf.analyzers.duplicate_process_spot import DuplicateProcessSpotAnalyzer
         from lintpdf.analyzers.ink_extras import InkExtrasAnalyzer
+        from lintpdf.analyzers.legal_copy_min_size import LegalCopyMinSizeAnalyzer
         from lintpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
         from lintpdf.analyzers.metadata_audit import MetadataAuditAnalyzer
         from lintpdf.analyzers.page_geometry_audit import PageGeometryAuditAnalyzer
         from lintpdf.analyzers.page_geometry_extra import PageGeometryExtraAnalyzer
         from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
+        from lintpdf.analyzers.seal_zone_keepout import SealZoneKeepoutAnalyzer
+        from lintpdf.analyzers.solo_spot_verify import SoloSpotVerifyAnalyzer
         from lintpdf.analyzers.spot_name_similarity import SpotNameSimilarityAnalyzer
 
         t = self._plan.thresholds
@@ -778,11 +794,15 @@ class PreflightOrchestrator:
             PlaceholderTextAnalyzer(),
             DuplicateProcessSpotAnalyzer(),
             LegibilityCompositeAnalyzer(),
+            LegalCopyMinSizeAnalyzer(),
             DielineIso19593Analyzer(),
             DielinePerfIndicatorAnalyzer(),
+            CuttingOverprintAnalyzer(),
             ColorInventoryAuditAnalyzer(),
             PageGeometryAuditAnalyzer(),
             PageGeometryExtraAnalyzer(min_bleed_pts=bleed_pts),
+            SealZoneKeepoutAnalyzer(),
+            SoloSpotVerifyAnalyzer(),
             MetadataAuditAnalyzer(),
             DimensionCalloutAnalyzer(),
             SpotNameSimilarityAnalyzer(),

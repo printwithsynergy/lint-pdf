@@ -859,9 +859,17 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Outlined Text Below Legibility Threshold",
         "OCR-detected outlined-text regions measure below 6 pt apparent glyph height. Catches ingredient panels and legal copy that have been converted to vector paths (where the engine's TextRenderedEvent-based legibility check can't see them). Fired by the OCR text-region pass (PR #295). Verify against panel-specific regulatory minimums (FDA / CFIA: 1.0-1.6 mm x-height).",
     ),
+    "LPDF_LEGALCOPY_001": CheckInfo(
+        "Legal Copy Below FDA / CFIA Minimum Size",
+        "Live text falls below the FDA 21 CFR 101.2(c) and CFIA SOR/2003-11 §B.01.012 minimum body-copy size (≈ 1.5 mm x-height ≈ 5 pt composed font size). Complements LPDF_LEGIBILITY_001 (which requires rotation > 45 deg) by catching axis-aligned ingredient and legal panels that pass the rotated-text rule. Severity is advisory because the analyzer is jurisdiction-agnostic — verify against the panel's regulatory market before treating as blocking.",
+    ),
     "LPDF_DIE_PROCESSING_STEPS": CheckInfo(
         "Dieline ISO 19593-1 Decomposition Missing",
         "Single dieline spot carries cut, fold, perf, and other finishing operations as one layer. ISO 19593-1:2018 Annex A.4 specifies a separate spot per ProcessingStep (Cutting / Crease / Perforating / KissCut / FoldLine). Without decomposition the converter has to eyeball the artwork to route each operation to the right finishing tool.",
+    ),
+    "LPDF_DIE_CUTTING_NOT_OVERPRINT": CheckInfo(
+        "Cutting / Dieline Spot Without Overprint",
+        "A cutting / die-line / crease / perforating spot is painted without the overprint flag (OP / op) set in the active graphics state. ISO 19593-1 §6.3 requires ProcessingStep inks to overprint so they print on top of live artwork without knocking out the underlying plates. Default PDF graphics state has overprint disabled, so leaving an ExtGState OP/op false (or absent) on a cutting path produces a white outline at press where the spot intersects live artwork. Set OP/op true on the graphics state used for any path stroked or filled in this spot.",
     ),
     "LPDF_DIE_PERF_INDICATOR_NO_STEP": CheckInfo(
         "Tear/Perf Indicator Without ProcessingStep Spot",
@@ -910,6 +918,18 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_BOX_MULTI_LABEL_PAGE": CheckInfo(
         "Multiple Labels On Single Page",
         "Page contains 2+ disjoint content clusters separated by an empty band wider than 30 pt. Most label workflows expect each die-cut artwork on its own page or with explicit dieline separation. Confirm imposition is intentional and dielines are supplied for each label. Caught by Opus on Pavette_Pride (front circular + back rectangular labels on a single page).",
+    ),
+    "LPDF_BOX_TRIMBOX_UNDERSIZED": CheckInfo(
+        "TrimBox Smaller Than Painted Artwork",
+        "Page declares an explicit TrimBox but painted artwork extends far past it (more than 17 pt / ~6 mm — beyond any reasonable bleed allowance). Indicates the TrimBox covers only one panel of a multi-panel layout; downstream imposition will crop the remaining panels. Expand the TrimBox to encompass the full artwork or supply per-panel TrimBoxes.",
+    ),
+    "LPDF_SPOT_SOLO_VERIFY": CheckInfo(
+        "Single Spot — Verify Decorative vs. Technical",
+        "Document declares exactly one Separation/DeviceN spot whose name does not look like a dieline / cutter / processing-step name. Confirm with the printer that the spot is intended as a decorative ink plate (e.g. a brand spot) and not accidentally being used to indicate a die/cut. If technical, rename to follow ISO 19593-1 (Cutting / Perforating / Scoring / Creasing).",
+    ),
+    "LPDF_BOX_SEAL_ZONE_VIOLATION": CheckInfo(
+        "Live Copy Inside Heat-Seal Keepout",
+        "Live text or barcode sits inside a heat-seal / overlap-seal / tear-zone keepout band (5 mm by default) on flexible-film stick-pack or pouch artwork. The seal jaw, crimp, or tear notch will obscure, distort, or seal over the copy. Move the copy outside the seal zone or relocate the seal indicator. Anchored on technical labels like END SEAL, OVERLAP IN SEAL, SEAL AREA, TEAR ACROSS / DÉCHIRER ICI in the artwork.",
     ),
     "LPDF_COLOR_ALL_SEPARATION": CheckInfo(
         "Special /All Separation Used As Artwork",
@@ -1028,6 +1048,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     "LPDF_BARCODE_QUIET_ZONE": CheckInfo(
         "Barcode Quiet Zone Conflict",
         "An image XObject (likely a barcode) sits closer than the configured quiet zone (default 2.5mm) to a dieline / fold / crease line. The cut blade or fold crease may pass through the barcode quiet zone and break scanability.",
+    ),
+    "LPDF_BARCODE_QUIET_ZONE_ON_FOLD": CheckInfo(
+        "Barcode Quiet Zone Crosses Fold",
+        "A 1D barcode's GS1 quiet zone (10x narrow-bar module on each side) overlaps a detected dieline / fold / crease polygon. When the bars print across a seam the scanner can't see a continuous symbol; rotate or relocate the barcode so the entire 10x quiet zone clears the fold geometry. Detected from the dieline result's region bboxes; complements LPDF_BARCODE_029 (fold-line proximity heuristic) with actual fold geometry.",
+    ),
+    "LPDF_BARCODE_DARK_BG": CheckInfo(
+        "Barcode On Tinted Background",
+        "A barcode sits on a tinted / coloured fill (CMYK > 10% total ink, RGB below 92% per channel, named Separation spot, or non-white grayscale) without a white knockout box behind the bars + 10x quiet zone. GS1 General Specifications §5.5.7 requires Print Contrast Signal ≥ 0.7 between bars and background; coloured substrates such as pink, purple, or cream drop the PCS below the scan threshold. Place a white knockout fill behind the bars + 10x quiet zone to restore scanability.",
     ),
     "LPDF_TEXT_NEAR_FOLD": CheckInfo(
         "Text Near Fold Line",
