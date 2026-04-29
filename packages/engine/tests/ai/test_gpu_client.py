@@ -194,6 +194,36 @@ class TestGPUInferenceClient:
             mock_client_cls.return_value.request.assert_not_called()
 
     @staticmethod
+    def test_404_does_not_trip_circuit_breaker() -> None:
+        """404 = endpoint not deployed on this Modal app. Should raise
+        GPUServiceUnavailableError BUT not count toward the breaker
+        (so unrelated GPU-dependent analyzers stay healthy when one
+        endpoint is missing). Caught on 2026-04-29 when missing
+        /inference/cambi, /color-cast, /skin-tone endpoints tripped
+        the breaker on the first 3 calls of every job."""
+        import httpx
+
+        with patch("httpx.Client") as mock_client_cls:
+            mock_resp = MagicMock()
+            mock_resp.status_code = 404
+            mock_resp.raise_for_status = MagicMock(
+                side_effect=httpx.HTTPStatusError(
+                    "404 Not Found", request=MagicMock(), response=mock_resp
+                )
+            )
+            mock_client_cls.return_value.request.return_value = mock_resp
+
+            client = GPUInferenceClient("http://gpu:8080")
+
+            # 5 successive 404s should all raise but NOT trip the breaker.
+            for _ in range(5):
+                with pytest.raises(GPUServiceUnavailableError, match="not implemented"):
+                    client.assess_image_quality(b"img")
+
+            # Verify breaker state is still closed.
+            assert client._breaker.state == "closed"
+
+    @staticmethod
     def test_circuit_breaker_resets_after_success() -> None:
         import httpx
 

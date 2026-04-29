@@ -48,6 +48,12 @@ inference_image = (
         "paddlepaddle>=2.5.0",
         "paddleocr>=2.7.0",
     )
+    # Bundle the local ``inference_service`` package into the image so
+    # the ``serve_app`` entrypoint can import it. Modal's auto-mount
+    # only picks up the deploy script itself; the surrounding package
+    # has to be added explicitly. Without this the container fails on
+    # ``ModuleNotFoundError: No module named 'inference_service'``.
+    .add_local_python_source("inference_service")
 )
 
 # ---------------------------------------------------------------------------
