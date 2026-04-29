@@ -867,6 +867,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dieline ISO 19593-1 Decomposition Missing",
         "Single dieline spot carries cut, fold, perf, and other finishing operations as one layer. ISO 19593-1:2018 Annex A.4 specifies a separate spot per ProcessingStep (Cutting / Crease / Perforating / KissCut / FoldLine). Without decomposition the converter has to eyeball the artwork to route each operation to the right finishing tool.",
     ),
+    "LPDF_DIE_CUTTING_NOT_OVERPRINT": CheckInfo(
+        "Cutting / Dieline Spot Without Overprint",
+        "A cutting / die-line / crease / perforating spot is painted without the overprint flag (OP / op) set in the active graphics state. ISO 19593-1 §6.3 requires ProcessingStep inks to overprint so they print on top of live artwork without knocking out the underlying plates. Default PDF graphics state has overprint disabled, so leaving an ExtGState OP/op false (or absent) on a cutting path produces a white outline at press where the spot intersects live artwork. Set OP/op true on the graphics state used for any path stroked or filled in this spot.",
+    ),
     "LPDF_DIE_PERF_INDICATOR_NO_STEP": CheckInfo(
         "Tear/Perf Indicator Without ProcessingStep Spot",
         "Artwork text contains a finishing-operation indicator (e.g. 'TEAR ACROSS', 'DECHIRER ICI', 'PERFORATION', 'KISS CUT', 'SCORE LINE') but no ISO 19593-1 ProcessingStep spot (Perforating / KissCut / Scoring / Creasing) was declared. The converter cannot route the operation to its finishing tool, and the indicator art may also print on the live plates. Detected via OCR text regions, annotation /Contents, and content-stream Tj operands.",
