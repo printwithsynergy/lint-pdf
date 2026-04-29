@@ -191,6 +191,8 @@ class AuditAdvisoryAnalyzer(BaseAnalyzer):
         findings.extend(self._check_legibility_verify(events))
         findings.extend(self._check_net_weight_verify(document))
         findings.extend(self._check_die_safe_zone(document, events))
+        findings.extend(self._check_text_mirrored(events))
+        findings.extend(self._check_no_marks_on_label_sheet(document, events))
         return findings
 
     @staticmethod
@@ -803,6 +805,147 @@ class AuditAdvisoryAnalyzer(BaseAnalyzer):
                         "safe_zone_pt": safe_pt,
                     },
                     category="dieline",
+                    object_type="page",
+                )
+            )
+        return out
+
+    @staticmethod
+    def _check_text_mirrored(events: list[ContentStreamEvent]) -> list[Finding]:
+        """Detect text whose composed transformation has a negative
+        horizontal scale (true mirror, not just rotation). Common case:
+        a multi-up sheet that flips alternate panels; the resulting
+        text reads backwards on shelf if the press doesn't apply a
+        second flip. Distinct from ``LPDF_TEXT_INVERTED_180`` (180-deg
+        rotation, still right-reading just upside-down).
+        """
+        from lintpdf.semantic.events import TextRenderedEvent
+
+        mirrored_per_page: dict[int, int] = {}
+        for ev in events:
+            if not isinstance(ev, TextRenderedEvent):
+                continue
+            if ev.rendering_mode == 3:
+                continue
+            if not ev.ctm or not ev.text_matrix:
+                continue
+            # Composed top-left 2x2 determinant. A reflective transform
+            # (mirror) has negative determinant; a pure rotation /
+            # uniform scale has positive determinant.
+            ctm = ev.ctm
+            tm = ev.text_matrix
+            a = ctm.a * tm.a + ctm.c * tm.b
+            b = ctm.b * tm.a + ctm.d * tm.b
+            c = ctm.a * tm.c + ctm.c * tm.d
+            d = ctm.b * tm.c + ctm.d * tm.d
+            det = a * d - b * c
+            if det < -1e-9:
+                mirrored_per_page[ev.page_num] = mirrored_per_page.get(ev.page_num, 0) + 1
+
+        out: list[Finding] = []
+        for page_num, count in sorted(mirrored_per_page.items()):
+            if count < 3:
+                continue
+            out.append(
+                Finding(
+                    inspection_id="LPDF_TEXT_MIRRORED",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Page {page_num} has {count} text event(s) drawn with a "
+                        "mirroring transformation (negative determinant). The text "
+                        "reads backwards on shelf unless the press applies a second "
+                        "flip during finishing — common on shrink-sleeve / wrap-"
+                        "around labels but worth confirming when not intended."
+                    ),
+                    page_num=page_num,
+                    details={"mirrored_event_count": count},
+                    category="text",
+                    object_type="text",
+                )
+            )
+        return out
+
+    @staticmethod
+    def _check_no_marks_on_label_sheet(
+        document: SemanticDocument, events: list[ContentStreamEvent]
+    ) -> list[Finding]:
+        """Multi-label letter-size sheet with no painted content outside
+        the implied label trim — no registration / cut marks / color
+        bars. Complementary to ``LPDF_BOX_PRESS_MARKS_MISSING`` (which
+        gates on a populated dieline); this fires on the "label
+        artwork on letter sheet" case (Pavette).
+        """
+        from lintpdf.semantic.events import ImagePlacedEvent, PathPaintingEvent
+
+        # Heuristic: page is "letter / legal sized" (≥ 7" × 9") AND
+        # painted content occupies < 60% of the page area AND there's
+        # NO content outside the painted-content envelope (no marks).
+        out: list[Finding] = []
+        for page in getattr(document, "pages", None) or []:
+            media = getattr(page, "media_box", None)
+            if media is None:
+                continue
+            try:
+                mw = float(media.x1) - float(media.x0)
+                mh = float(media.y1) - float(media.y0)
+            except (AttributeError, TypeError, ValueError):
+                continue
+            page_area = mw * mh
+            # Letter / legal threshold: ≥ 7" x 9" (504 x 648 pt).
+            if mw < 504 or mh < 648:
+                continue
+
+            page_num = page.page_num
+            bboxes: list[tuple[float, float, float, float]] = []
+            for ev in events:
+                if not isinstance(ev, (PathPaintingEvent, ImagePlacedEvent)):
+                    continue
+                if ev.page_num != page_num:
+                    continue
+                bbox = getattr(ev, "bbox", None)
+                if bbox:
+                    bboxes.append(bbox)
+            if len(bboxes) < 30:
+                continue
+
+            min_x = min(b[0] for b in bboxes)
+            max_x = max(b[2] for b in bboxes)
+            min_y = min(b[1] for b in bboxes)
+            max_y = max(b[3] for b in bboxes)
+            content_area = max(0.0, (max_x - min_x) * (max_y - min_y))
+            if content_area / page_area > 0.6:
+                continue  # content fills the page — trim/marks don't apply
+
+            # Margin from page edge to content envelope on each side.
+            left = min_x - float(media.x0)
+            right = float(media.x1) - max_x
+            top = float(media.y1) - max_y
+            bottom = min_y - float(media.y0)
+            min_margin = min(left, right, top, bottom)
+            if min_margin < 18.0:
+                continue  # content reaches the margin — no slug area to add marks
+
+            out.append(
+                Finding(
+                    inspection_id="LPDF_BOX_NO_MARKS_ON_SHEET",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"Page {page_num} is a letter / legal-size sheet "
+                        f"({mw / 72:.1f}x{mh / 72:.1f} in) with painted artwork "
+                        f"occupying only {(content_area / page_area * 100):.0f}% of "
+                        "the page and no registration / cut marks / colour bars "
+                        "in the slug area. Label production usually expects each "
+                        "die-cut artwork on its own page or with explicit dielines "
+                        "+ press marks. Confirm the sheet was the intended "
+                        "deliverable."
+                    ),
+                    page_num=page_num,
+                    details={
+                        "page_inches": [round(mw / 72, 2), round(mh / 72, 2)],
+                        "content_fraction": round(content_area / page_area, 3),
+                        "margin_min_pt": round(min_margin, 1),
+                    },
+                    category="page",
                     object_type="page",
                 )
             )

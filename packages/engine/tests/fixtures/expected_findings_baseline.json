@@ -1370,7 +1370,7 @@
     "warning_count": 20
   },
   "11_Pavette_Pride_v99": {
-    "advisory_count": 30,
+    "advisory_count": 31,
     "error_count": 2,
     "finding_counts": {
       "AI_DIE_002": 1,
@@ -1384,6 +1384,7 @@
       "LPDF_ADV_004": 1,
       "LPDF_AI_CDCC_001": 1,
       "LPDF_BOX_003": 1,
+      "LPDF_BOX_NO_MARKS_ON_SHEET": 1,
       "LPDF_BOX_TRIMBOX_DEFAULTED": 1,
       "LPDF_COLOR_003": 1,
       "LPDF_COLOR_006": 1,
@@ -1426,6 +1427,7 @@
       "LPDF_ADV_004",
       "LPDF_AI_CDCC_001",
       "LPDF_BOX_003",
+      "LPDF_BOX_NO_MARKS_ON_SHEET",
       "LPDF_BOX_TRIMBOX_DEFAULTED",
       "LPDF_COLOR_003",
       "LPDF_COLOR_006",
@@ -1457,7 +1459,7 @@
       "PDFX4-051"
     ],
     "fixture": "11_Pavette_Pride_v99",
-    "total_findings": 40,
+    "total_findings": 41,
     "warning_count": 8
   },
   "12_Pink-Slush_OUTLINED": {
