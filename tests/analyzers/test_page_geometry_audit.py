@@ -43,39 +43,65 @@ def test_zero_bleed_with_art_at_trim_edge_fires() -> None:
 
 
 def test_art_extending_past_trim_suppresses_finding() -> None:
-    """When art extends meaningfully past the trim edge the press has
-    bleed material to trim through; no white-sliver risk. Caught on
-    Pink-Slush p2 where the background extended ~10pt past trim but
-    the PDF's BleedBox wasn't updated."""
+    """When 3+ paths extend meaningfully past the trim edge the press
+    has bleed material to trim through; no white-sliver risk. Caught
+    on Pink-Slush p2 where the background extended ~10pt past trim
+    but the PDF's BleedBox wasn't updated.
+
+    PR-GG: requires 3+ events past the edge to count as real bleed
+    material — single stray glyph paths shouldn't suppress."""
     page = SemanticPage(
         page_num=1,
         media_box=PdfBox(0, 0, 612, 792),
         trim_box=PdfBox(50, 50, 562, 742),
         bleed_box=PdfBox(50, 50, 562, 742),
     )
-    # Background extends 10pt past trim on all sides.
-    events = [_path(0, 1, (40.0, 40.0, 572.0, 752.0))]
+    # 3 background paths extend 10pt past trim on all sides.
+    events = [_path(i, 1, (40.0, 40.0, 572.0, 752.0)) for i in range(3)]
     findings = PageGeometryAuditAnalyzer().analyze(_doc(page), events)
     assert not [x for x in findings if x.inspection_id == "LPDF_BOX_BG_NO_BLEED"]
 
 
 def test_partial_overhang_only_clears_clean_edges() -> None:
     """Art extends past trim on left only — should still fire on
-    other 3 edges where art stops at trim."""
+    other 3 edges where art stops at trim. PR-GG: 3+ events to
+    qualify as overhang."""
     page = SemanticPage(
         page_num=1,
         media_box=PdfBox(0, 0, 612, 792),
         trim_box=PdfBox(50, 50, 562, 742),
         bleed_box=PdfBox(50, 50, 562, 742),
     )
-    # Art bleeds past LEFT only, stops AT trim on right/top/bottom.
-    events = [_path(0, 1, (40.0, 50.0, 562.0, 742.0))]
+    # 3 paths bleed past LEFT only, stop AT trim on right/top/bottom.
+    events = [_path(i, 1, (40.0, 50.0, 562.0, 742.0)) for i in range(3)]
     findings = PageGeometryAuditAnalyzer().analyze(_doc(page), events)
     no_bleed = [x for x in findings if x.inspection_id == "LPDF_BOX_BG_NO_BLEED"]
     assert len(no_bleed) == 1
     edges = set(no_bleed[0].details["edges_touched"])
     assert "left" not in edges  # has overhang → clean
     assert {"right", "top", "bottom"} <= edges
+
+
+def test_single_outlier_path_does_not_suppress() -> None:
+    """PR-GG: ONE stray glyph extending past trim is anti-aliasing /
+    bbox tolerance, not real bleed material — finding still fires.
+    Closes Cherry-Twist / OrangeKiss / Pink-Slush misses where a few
+    outlier outlined paths previously silenced the rule on outlined
+    fixtures whose actual background fills stop at trim."""
+    page = SemanticPage(
+        page_num=1,
+        media_box=PdfBox(0, 0, 612, 792),
+        trim_box=PdfBox(50, 50, 562, 742),
+        bleed_box=PdfBox(50, 50, 562, 742),
+    )
+    # Background fill at trim, plus ONE stray glyph path 5pt past right.
+    events = [
+        _path(0, 1, (50.0, 50.0, 562.0, 742.0)),  # at trim
+        _path(1, 1, (557.0, 100.0, 567.0, 110.0)),  # 5pt past right
+    ]
+    findings = PageGeometryAuditAnalyzer().analyze(_doc(page), events)
+    no_bleed = [x for x in findings if x.inspection_id == "LPDF_BOX_BG_NO_BLEED"]
+    assert len(no_bleed) == 1
 
 
 def test_zero_bleed_with_art_inside_safe_no_finding() -> None:
