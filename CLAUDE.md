@@ -68,7 +68,7 @@ LintPDF (proprietary SaaS, this repo — lintpdf.com / app.lintpdf.com / reports
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | In-place refactor: plugin protocols, viewer core/lintpdf split, "Grounded" brand scrub. | **In progress.** Track C (Grounded scrub) merged. **Track A (engine plugin protocol) merged in this PR.** Track B (viewer core/lintpdf split) follow-up. |
+| 1 | In-place refactor: plugin protocols, viewer core/lintpdf split, "Grounded" brand scrub. | **Phase 1 complete.** Track C (Grounded scrub) merged. Track A (engine plugin protocol) merged. **Track B (viewer core/lintpdf split) merged in this PR.** |
 | 2 | Registry unification, FastAPI route classification (engine-public vs SaaS-only), backfill `Field(..., description=...)` for OpenAPI. Migrate every analyzer onto `ctx.services.*` / `ctx.config["ai_config"]`. Delete legacy `analyze()` + legacy registries. | Not started |
 | 3 | Repo extraction. Create `thinkneverland/sift-pdf` + `thinkneverland/loupe-pdf` private repos. Engine Python package renames `lintpdf` → `siftpdf`. SaaS rewires to import them as external deps. | Not started |
 | 4 | OSS flip. License audit, repo visibility flipped to public, v1.0 release of SiftPDF + LoupePDF. | Not started |
@@ -87,6 +87,22 @@ via `ctx.services.*` instead of direct imports. See
 rule. The tripwire CI guards live at
 `packages/engine/scripts/check_engine_purity.sh` and
 `scripts/check_openapi_descriptions.py`.
+
+### Viewer plugin protocol (Track B — Phase 1)
+
+The viewer plugin contract lives at
+`packages/viewer-shared/src/core/plugin/`. Plugins are TypeScript
+objects that mount into one of nine slots
+(`overlay.canvas`, `panel.{right,left,bottom}`,
+`toolbar.{top,left,bottom}`, `annotation.source`, `dialog.modal`).
+SaaS-coupled features (page images, annotations, telemetry, i18n,
+theme tokens) live behind `ViewerServices` Protocols with no-op
+defaults for OSS hosts. See
+`packages/viewer-shared/docs/viewer-api.md` for the authoring guide
+and `packages/viewer-shared/CLAUDE.md` for the conventions. The
+boundary rule (`src/core/**` cannot import `@lintpdf/*` or
+`**/lintpdf/**`, cannot hardcode `/api/lintpdf/` paths) is enforced
+by `packages/viewer-shared/eslint.config.mjs`.
 
 ### ENABLE_SAAS / OSS-mode posture
 
