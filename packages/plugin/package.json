@@ -1,5 +1,5 @@
 {
-  "name": "@thinkneverland/grounded-plugin",
+  "name": "@thinkneverland/lintpdf-plugin",
   "version": "0.1.0",
   "description": "Fairy Ring plugin for LintPDF PDF preflight in Pixie Dust dashboard",
   "main": "./dist/index.js",

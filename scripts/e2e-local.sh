@@ -185,7 +185,7 @@ build_app() {
   echo "=== Building application ==="
 
   cd "$ROOT_DIR"
-  pnpm --filter @thinkneverland/grounded-web build 2>&1 | tail -3
+  pnpm --filter @thinkneverland/lintpdf-web build 2>&1 | tail -3
   
   echo "  Application built"
 }

@@ -45,7 +45,7 @@ const config = {
     "@thinkneverland/pixie-dust-usage",
     "@thinkneverland/pixie-dust-waitlist",
     "@thinkneverland/pixie-dust-webhooks",
-    "@thinkneverland/grounded-plugin",
+    "@thinkneverland/lintpdf-plugin",
     "@lintpdf/stripe",
     "@lintpdf/viewer-shared",
   ],
