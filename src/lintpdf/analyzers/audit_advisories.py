@@ -66,19 +66,38 @@ if TYPE_CHECKING:
 
 
 # Patterns that mark a dimension / spec callout in artwork text.
-# Conservative — must be a numeric measurement with a unit suffix to
-# avoid false-firing on ingredient quantities ("5 mg") or pricing.
+# Designed to catch typical prepress callouts across packaging shapes
+# without false-firing on ingredient quantities ("5 mg"), price tags
+# ("$5.99"), or content prose. The patterns require either:
+#   1. A high-precision decimal (3+ decimals — "2.4409"") that's
+#      unambiguously a press measurement
+#   2. A bag-shape callout (GUSSET / WIDTH x HEIGHT x DEPTH) — only
+#      ever appears on technical layers
+#   3. A trim / die / dimension keyword adjacent to a number+unit
 _DIMENSION_PATTERNS: tuple[re.Pattern[str], ...] = (
-    # 2.4409", 5.7500" — inch dimensions with explicit double-quote.
-    # Requires 3-5 decimals so "2.50" (a numeric quantity) doesn't fire;
-    # production callouts use 4 decimals.
-    re.compile(r'\b\d+\.\d{3,5}"'),
-    # 10 mm, 6.5 mm — millimetre dimensions. Word-boundary-anchored so
-    # "5 mm" inside a sentence still matches but "5mmHg" doesn't.
-    re.compile(r"\b\d{1,3}(?:\.\d{1,3})?\s*mm\b", re.IGNORECASE),
-    # GUSSET 21x6.5x2 / 21x6.5x2 GUSSET — bag dimension callouts.
+    # 2.4409", 5.7500" — high-precision inch dimensions. 3+ decimals
+    # is the prepress signature; "2.5" or "5" alone don't fire (could
+    # be a quantity).
+    re.compile(r'\b\d+\.\d{3,5}\s*"'),
+    # GUSSET 21x6.5x2 / 21x6.5x2 GUSSET / 21x6.5x2 V2 — bag-shape
+    # callouts.  Specific enough that ingredient lists don't trigger.
     re.compile(r"\bGUSSET\s+\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*x\s*\d+", re.IGNORECASE),
-    re.compile(r"\b\d+\s*x\s*\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s+(?:GUSSET|V\d+)\b", re.IGNORECASE),
+    re.compile(
+        r"\b\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s*x\s*\d+(?:\.\d+)?\s+(?:GUSSET|V\d+|"
+        r"VERSION\s*\d+)\b",
+        re.IGNORECASE,
+    ),
+    # Trim / die / dimension keyword + number + unit in close
+    # proximity. Catches "Trim: 4.5\"", "Die size 100 x 50 mm", etc.
+    re.compile(
+        r"\b(?:TRIM|DIE\s*SIZE|DIE\s*CUT|FINISHED\s*SIZE|FOLDED\s*SIZE|"
+        r"PANEL\s*SIZE|SHEET\s*SIZE)\b[^a-zA-Z]{0,30}"
+        r"\d+(?:\.\d+)?\s*(?:mm|cm|in|inches|\")",
+        re.IGNORECASE,
+    ),
+    # mm / cm dimensions ≥ 10 (typical packaging dims) — protects
+    # against ingredient mg / g / kg matching since mm is unambiguous.
+    re.compile(r"\b\d{2,4}(?:\.\d{1,3})?\s*mm\b", re.IGNORECASE),
 )
 
 # Asset-tracking metadata keys we expect on production-ready PDFs.
@@ -170,6 +189,8 @@ class AuditAdvisoryAnalyzer(BaseAnalyzer):
         findings.extend(self._check_lang_bilingual(document))
         findings.extend(self._check_text_inverted(events))
         findings.extend(self._check_legibility_verify(events))
+        findings.extend(self._check_net_weight_verify(document))
+        findings.extend(self._check_die_safe_zone(document, events))
         return findings
 
     @staticmethod
@@ -593,6 +614,196 @@ class AuditAdvisoryAnalyzer(BaseAnalyzer):
                     category="text",
                     object_type="text",
                     bbox=ev.bbox,
+                )
+            )
+        return out
+
+    @staticmethod
+    def _check_net_weight_verify(document: SemanticDocument) -> list[Finding]:
+        """Net weight declarations should carry both metric AND
+        imperial / US-customary units (FDA 21 CFR 101.105). Fires
+        when only one unit system is present in detected weight
+        callouts."""
+        from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
+
+        # Net-weight context anchor — broad list of indicators in EN /
+        # FR / ES / DE / IT, plus the EU-compliant ``℮`` symbol. Fires
+        # only when one of these markers is in the document AND a unit
+        # follows within ~100 chars (formatting / line breaks tolerated).
+        # The wide vocabulary means new fixture types (food, cosmetics,
+        # supplements, beverages) all match without per-fixture tuning.
+        weight_indicators = (
+            r"NET\s*WT|NET\s*WEIGHT|NET\s*CONTENT|NET\s*QUANTITY|NET\s*QTY|"
+            r"NET\s+\d|"  # bare "NET 4.94" callouts
+            r"CONTENU\s*NET|POIDS\s*NET|"
+            r"CONTENIDO\s*NETO|PESO\s*NETO|"
+            r"NETTO|NETTOGEWICHT|"
+            r"PESO\s*NETTO|"
+            r"℮"  # noqa: RUF001 - U+212E ESTIMATED SYMBOL is the EU net-content e-mark
+        )
+        net_imperial = re.compile(
+            rf"(?:{weight_indicators})[^a-zA-Z]{{0,100}}\d+(?:\.\d+)?\s*(?:lb|oz|lbs|fl\s*oz)\b",
+            re.IGNORECASE | re.DOTALL,
+        )
+        net_metric = re.compile(
+            rf"(?:{weight_indicators})[^a-zA-Z]{{0,100}}\d+(?:\.\d+)?\s*(?:g|kg|ml|mL|cl|L|gm)\b",
+            re.IGNORECASE | re.DOTALL,
+        )
+        # Dual-unit pattern: "200 g (8 oz)" / "8 oz (200 g)" / "200g/8oz"
+        # — both units already declared, no advisory.
+        dual_unit = re.compile(
+            r"\b\d+(?:\.\d+)?\s*(?:g|kg|ml|mL|cl|L|oz|lb|fl\s*oz)\s*[(/]\s*"
+            r"\d+(?:\.\d+)?\s*(?:g|kg|ml|mL|cl|L|oz|lb|fl\s*oz)",
+            re.IGNORECASE,
+        )
+
+        for page in getattr(document, "pages", None) or []:
+            raw = getattr(page, "content_stream", None)
+            if not raw:
+                continue
+            try:
+                text = raw.decode("latin-1") if isinstance(raw, (bytes, bytearray)) else str(raw)
+                spaced, _ = PlaceholderTextAnalyzer._flatten_tj_operands(text)
+                hay = spaced or text
+            except Exception:
+                continue
+            # If a dual-unit pattern is present, both units are already
+            # declared — no advisory.
+            if dual_unit.search(hay):
+                continue
+            has_imperial = bool(net_imperial.search(hay))
+            has_metric = bool(net_metric.search(hay))
+            if has_imperial and not has_metric:
+                # FDA requires dual declaration.
+                return [
+                    Finding(
+                        inspection_id="LPDF_NET_WEIGHT_VERIFY",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            "Imperial / US-customary net weight detected "
+                            "(lb / oz) but no metric equivalent (g / kg / mL / L). "
+                            "FDA 21 CFR 101.105 requires net quantity declaration "
+                            "in both US customary and metric. Verify the printed "
+                            "panel includes both."
+                        ),
+                        page_num=page.page_num,
+                        details={
+                            "imperial_present": True,
+                            "metric_present": False,
+                        },
+                        category="text",
+                        object_type="document",
+                    )
+                ]
+            if has_metric and not has_imperial:
+                return [
+                    Finding(
+                        inspection_id="LPDF_NET_WEIGHT_VERIFY",
+                        severity=Severity.ADVISORY,
+                        message=(
+                            "Metric net weight detected (g / kg / mL / L) but "
+                            "no imperial / US-customary equivalent (lb / oz). "
+                            "FDA 21 CFR 101.105 requires net quantity declaration "
+                            "in both metric and US customary for products sold "
+                            "in the US. Verify the printed panel includes both."
+                        ),
+                        page_num=page.page_num,
+                        details={
+                            "imperial_present": False,
+                            "metric_present": True,
+                        },
+                        category="text",
+                        object_type="document",
+                    )
+                ]
+        return []
+
+    @staticmethod
+    def _check_die_safe_zone(
+        document: SemanticDocument, events: list[ContentStreamEvent]
+    ) -> list[Finding]:
+        """Live text within 3 mm of any dieline polyline.
+
+        Reuses ``DielineResult.regions`` (per-island bboxes) — when a
+        TextRenderedEvent bbox is closer than ~8.5 pt (3 mm) to a
+        region edge, fire the safe-zone advisory. Aggregates one
+        finding per page with the count of nearby text events.
+        """
+        from lintpdf.semantic.events import TextRenderedEvent
+
+        dl = getattr(document, "dieline_result", None)
+        regions = getattr(dl, "regions", None) if dl else None
+        if not regions:
+            return []
+
+        # 3 mm safe zone in points (1 mm = 2.834645669 pt).
+        safe_pt = 8.5
+
+        # Collect text bboxes per page.
+        text_by_page: dict[int, list[tuple[float, float, float, float]]] = {}
+        for ev in events:
+            if not isinstance(ev, TextRenderedEvent):
+                continue
+            if ev.rendering_mode == 3 or ev.bbox is None:
+                continue
+            text_by_page.setdefault(ev.page_num, []).append(ev.bbox)
+
+        out: list[Finding] = []
+        for page in getattr(document, "pages", None) or []:
+            page_num = page.page_num
+            txt_bboxes = text_by_page.get(page_num, [])
+            if not txt_bboxes:
+                continue
+            close_count = 0
+            for tb in txt_bboxes:
+                tx0, ty0, tx1, ty1 = tb
+                # Compute min distance to any region edge.
+                for r in regions:
+                    rx0 = float(r.get("x0", 0))
+                    ry0 = float(r.get("y0", 0))
+                    rx1 = float(r.get("x1", 0))
+                    ry1 = float(r.get("y1", 0))
+                    # If text is fully outside the region, distance >0.
+                    # If text is inside but close to an edge, distance
+                    # to nearest edge is what we care about.
+                    if tx1 < rx0 or tx0 > rx1 or ty1 < ry0 or ty0 > ry1:
+                        # Outside — distance to nearest corner.
+                        dx = max(rx0 - tx1, tx0 - rx1, 0.0)
+                        dy = max(ry0 - ty1, ty0 - ry1, 0.0)
+                        d = (dx * dx + dy * dy) ** 0.5
+                    else:
+                        # Inside — distance to nearest edge.
+                        d = min(
+                            tx0 - rx0,
+                            rx1 - tx1,
+                            ty0 - ry0,
+                            ry1 - ty1,
+                        )
+                    if d < safe_pt:
+                        close_count += 1
+                        break
+            if close_count == 0:
+                continue
+            out.append(
+                Finding(
+                    inspection_id="LPDF_DIE_NO_SAFE_ZONE",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"{close_count} live text event(s) on page {page_num} "
+                        "sit within 3 mm of a dieline edge / fold line. The "
+                        "press finishing line typically needs a 2-3 mm safety "
+                        "margin from cuts and folds; copy closer than that "
+                        "may be cropped, distorted by the fold, or sealed "
+                        "over. Move the copy further inside the safe zone "
+                        "or relocate the dieline."
+                    ),
+                    page_num=page_num,
+                    details={
+                        "events_near_dieline": close_count,
+                        "safe_zone_pt": safe_pt,
+                    },
+                    category="dieline",
+                    object_type="page",
                 )
             )
         return out

@@ -591,7 +591,7 @@
     "warning_count": 39
   },
   "06_DailyFiber_10up": {
-    "advisory_count": 107,
+    "advisory_count": 108,
     "error_count": 78,
     "finding_counts": {
       "AI_DIE_001": 1,
@@ -630,6 +630,7 @@
       "LPDF_COLOR_PLATE_COUNT_HIGH": 1,
       "LPDF_DIE_CUTTING_NOT_OVERPRINT": 1,
       "LPDF_DIE_DIMENSION_CALLOUT": 1,
+      "LPDF_DIE_NO_SAFE_ZONE": 1,
       "LPDF_DIM_CALLOUT_001": 1,
       "LPDF_FONT_005": 7,
       "LPDF_FONT_015": 2,
@@ -709,6 +710,7 @@
       "LPDF_COLOR_PLATE_COUNT_HIGH",
       "LPDF_DIE_CUTTING_NOT_OVERPRINT",
       "LPDF_DIE_DIMENSION_CALLOUT",
+      "LPDF_DIE_NO_SAFE_ZONE",
       "LPDF_DIM_CALLOUT_001",
       "LPDF_FONT_005",
       "LPDF_FONT_015",
@@ -752,7 +754,7 @@
       "PDFX4-051"
     ],
     "fixture": "06_DailyFiber_10up",
-    "total_findings": 209,
+    "total_findings": 210,
     "warning_count": 24
   },
   "07_HSI_OUTLINED": {
