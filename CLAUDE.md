@@ -68,12 +68,25 @@ LintPDF (proprietary SaaS, this repo — lintpdf.com / app.lintpdf.com / reports
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | In-place refactor: plugin protocols, viewer core/lintpdf split, "Grounded" brand scrub. | **In progress** (Track C — this scrub — is part of Phase 1.) |
-| 2 | Registry unification, FastAPI route classification (engine-public vs SaaS-only), backfill `Field(..., description=...)` for OpenAPI. Delete legacy `analyze()` + legacy registries. | Not started |
+| 1 | In-place refactor: plugin protocols, viewer core/lintpdf split, "Grounded" brand scrub. | **In progress.** Track C (Grounded scrub) merged. **Track A (engine plugin protocol) merged in this PR.** Track B (viewer core/lintpdf split) follow-up. |
+| 2 | Registry unification, FastAPI route classification (engine-public vs SaaS-only), backfill `Field(..., description=...)` for OpenAPI. Migrate every analyzer onto `ctx.services.*` / `ctx.config["ai_config"]`. Delete legacy `analyze()` + legacy registries. | Not started |
 | 3 | Repo extraction. Create `thinkneverland/sift-pdf` + `thinkneverland/loupe-pdf` private repos. Engine Python package renames `lintpdf` → `siftpdf`. SaaS rewires to import them as external deps. | Not started |
 | 4 | OSS flip. License audit, repo visibility flipped to public, v1.0 release of SiftPDF + LoupePDF. | Not started |
 
 Hard constraint through every phase: hosted SaaS (lintpdf.com / app.lintpdf.com / reports.lintpdf.com) produces bit-for-bit identical responses, findings, and viewer renders. No customer-visible changes.
+
+### Engine plugin protocol (Track A — Phase 1)
+
+The engine analyzer plugin contract lives at
+`packages/engine/src/lintpdf/plugin/`. Authors satisfy a single
+Protocol (`manifest` + `analyze_v2(ctx)`); SaaS-coupled features
+(metering, cost cap, GPU client, veraPDF, tenant config) are reached
+via `ctx.services.*` instead of direct imports. See
+`packages/engine/docs/plugin-api.md` for the full guide and
+`packages/engine/CLAUDE.md` for the conventions / banned-imports
+rule. The tripwire CI guards live at
+`packages/engine/scripts/check_engine_purity.sh` and
+`scripts/check_openapi_descriptions.py`.
 
 ### ENABLE_SAAS / OSS-mode posture
 
