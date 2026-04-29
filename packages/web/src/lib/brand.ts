@@ -678,9 +678,9 @@ export const comparisonDimensions: ComparisonDimension[] = [
     label: "Report formats",
     tooltip: "Output formats for preflight results",
     values: {
-      lintpdf: { type: "highlight", value: "JSON, XML, PDF" },
-      pitstop: { type: "text", value: "PDF only" },
-      pdftoolbox: { type: "text", value: "PDF, XML" },
+      lintpdf: { type: "highlight", value: "HTML, PDF, JSON, XML + Viewer" },
+      pitstop: { type: "text", value: "PDF, XML" },
+      pdftoolbox: { type: "text", value: "PDF, XML, JSON" },
       pdfrest: { type: "text", value: "JSON" },
       convertapi: { type: "text", value: "JSON" },
     },
