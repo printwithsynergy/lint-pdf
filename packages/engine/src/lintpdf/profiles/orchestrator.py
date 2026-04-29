@@ -738,6 +738,7 @@ class PreflightOrchestrator:
         from lintpdf.analyzers.page_geometry_extra import PageGeometryExtraAnalyzer
         from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
         from lintpdf.analyzers.seal_zone_keepout import SealZoneKeepoutAnalyzer
+        from lintpdf.analyzers.solo_spot_verify import SoloSpotVerifyAnalyzer
         from lintpdf.analyzers.spot_name_similarity import SpotNameSimilarityAnalyzer
 
         t = self._plan.thresholds
@@ -801,6 +802,7 @@ class PreflightOrchestrator:
             PageGeometryAuditAnalyzer(),
             PageGeometryExtraAnalyzer(min_bleed_pts=bleed_pts),
             SealZoneKeepoutAnalyzer(),
+            SoloSpotVerifyAnalyzer(),
             MetadataAuditAnalyzer(),
             DimensionCalloutAnalyzer(),
             SpotNameSimilarityAnalyzer(),

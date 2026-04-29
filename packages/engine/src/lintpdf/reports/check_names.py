@@ -923,6 +923,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "TrimBox Smaller Than Painted Artwork",
         "Page declares an explicit TrimBox but painted artwork extends far past it (more than 17 pt / ~6 mm — beyond any reasonable bleed allowance). Indicates the TrimBox covers only one panel of a multi-panel layout; downstream imposition will crop the remaining panels. Expand the TrimBox to encompass the full artwork or supply per-panel TrimBoxes.",
     ),
+    "LPDF_SPOT_SOLO_VERIFY": CheckInfo(
+        "Single Spot — Verify Decorative vs. Technical",
+        "Document declares exactly one Separation/DeviceN spot whose name does not look like a dieline / cutter / processing-step name. Confirm with the printer that the spot is intended as a decorative ink plate (e.g. a brand spot) and not accidentally being used to indicate a die/cut. If technical, rename to follow ISO 19593-1 (Cutting / Perforating / Scoring / Creasing).",
+    ),
     "LPDF_BOX_SEAL_ZONE_VIOLATION": CheckInfo(
         "Live Copy Inside Heat-Seal Keepout",
         "Live text or barcode sits inside a heat-seal / overlap-seal / tear-zone keepout band (5 mm by default) on flexible-film stick-pack or pouch artwork. The seal jaw, crimp, or tear notch will obscure, distort, or seal over the copy. Move the copy outside the seal zone or relocate the seal indicator. Anchored on technical labels like END SEAL, OVERLAP IN SEAL, SEAL AREA, TEAR ACROSS / DÉCHIRER ICI in the artwork.",
