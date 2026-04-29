@@ -919,6 +919,10 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Multiple Labels On Single Page",
         "Page contains 2+ disjoint content clusters separated by an empty band wider than 30 pt. Most label workflows expect each die-cut artwork on its own page or with explicit dieline separation. Confirm imposition is intentional and dielines are supplied for each label. Caught by Opus on Pavette_Pride (front circular + back rectangular labels on a single page).",
     ),
+    "LPDF_BOX_TRIMBOX_UNDERSIZED": CheckInfo(
+        "TrimBox Smaller Than Painted Artwork",
+        "Page declares an explicit TrimBox but painted artwork extends far past it (more than 17 pt / ~6 mm — beyond any reasonable bleed allowance). Indicates the TrimBox covers only one panel of a multi-panel layout; downstream imposition will crop the remaining panels. Expand the TrimBox to encompass the full artwork or supply per-panel TrimBoxes.",
+    ),
     "LPDF_BOX_SEAL_ZONE_VIOLATION": CheckInfo(
         "Live Copy Inside Heat-Seal Keepout",
         "Live text or barcode sits inside a heat-seal / overlap-seal / tear-zone keepout band (5 mm by default) on flexible-film stick-pack or pouch artwork. The seal jaw, crimp, or tear notch will obscure, distort, or seal over the copy. Move the copy outside the seal zone or relocate the seal indicator. Anchored on technical labels like END SEAL, OVERLAP IN SEAL, SEAL AREA, TEAR ACROSS / DÉCHIRER ICI in the artwork.",

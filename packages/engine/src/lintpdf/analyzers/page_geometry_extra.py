@@ -1,6 +1,6 @@
-"""PageGeometryExtraAnalyzer — three additional geometry checks
-added by PR-S to close audit-surfaced misses on test-sample,
-Amalgam_Catalyst, and Pavette_Pride_v99.
+"""PageGeometryExtraAnalyzer — additional geometry checks added by
+PR-S and PR-BB to close audit-surfaced misses on test-sample,
+Amalgam_Catalyst, Pavette_Pride_v99, and Pink-Slush.
 
 * ``LPDF_BOX_TRIMBOX_DEFAULTED`` (advisory) — page declares no
   explicit TrimBox; the parser defaulted it to MediaBox. Production
@@ -19,6 +19,14 @@ Amalgam_Catalyst, and Pavette_Pride_v99.
   its own page or with explicit dieline separation. Caught by
   Opus on Pavette_Pride (front circular + back rectangular labels
   on a single page).
+* ``LPDF_BOX_TRIMBOX_UNDERSIZED`` (warning, PR-BB) — TrimBox is
+  explicitly declared but painted artwork extends FAR past it
+  (>2x normal bleed allowance). Indicates the TrimBox covers only
+  one panel of a multi-panel layout while artwork covers the
+  whole sheet — downstream imposition will crop critical regulatory
+  copy. Caught by Opus on Pink-Slush p2 (TrimBox defined only the
+  left/front panel while turquoise foot-panel + crimp areas extend
+  to the right).
 """
 
 from __future__ import annotations
@@ -44,6 +52,11 @@ _MULTI_LABEL_GAP_PT = 30.0
 # plausibly a single-up label (no false positive). Below this we
 # don't fire LPDF_BOX_TRIMBOX_DEFAULTED.
 _SMALL_PAGE_INCHES = 5.0
+# Minimum artwork-past-TrimBox distance (points) before we treat the
+# overhang as "undersized TrimBox" rather than "normal bleed". 2x the
+# default min bleed (~6 mm = 17 pt) — anything beyond that is far past
+# what a reasonable bleed allowance would explain.
+_TRIMBOX_UNDERSIZE_PT = 17.0
 
 
 class PageGeometryExtraAnalyzer(BaseAnalyzer):
@@ -72,6 +85,7 @@ class PageGeometryExtraAnalyzer(BaseAnalyzer):
             findings.extend(self._check_trimbox_defaulted(page))
             findings.extend(self._check_bleed_too_thin_vs_content(page, bboxes_by_page))
             findings.extend(self._check_multi_label_page(page, bboxes_by_page))
+            findings.extend(self._check_trimbox_undersized(page, bboxes_by_page))
         return findings
 
     @staticmethod
@@ -233,6 +247,92 @@ class PageGeometryExtraAnalyzer(BaseAnalyzer):
                         round(max_x, 1),
                         round(max_y, 1),
                     ],
+                },
+                category="page",
+                object_type="page",
+            )
+        ]
+
+    @staticmethod
+    def _check_trimbox_undersized(
+        page: object,
+        bboxes_by_page: dict[int, list[tuple[float, float, float, float]]],
+    ) -> list[Finding]:
+        """Fire when artwork extends far past TrimBox — beyond what any
+        reasonable bleed allowance would explain. Indicates the TrimBox
+        was set too small (e.g., only one panel of a multi-panel layout)
+        and downstream imposition will crop the rest.
+        """
+        media = getattr(page, "media_box", None)
+        trim = getattr(page, "trim_box", None)
+        if media is None or trim is None:
+            return []
+        try:
+            tx0, ty0, tx1, ty1 = (
+                float(trim.x0),
+                float(trim.y0),
+                float(trim.x1),
+                float(trim.y1),
+            )
+            mx0, my0, mx1, my1 = (
+                float(media.x0),
+                float(media.y0),
+                float(media.x1),
+                float(media.y1),
+            )
+        except (AttributeError, TypeError, ValueError):
+            return []
+
+        # Suppress if TrimBox==MediaBox (LPDF_BOX_TRIMBOX_DEFAULTED owns
+        # that case) — the audit miss only applies when the designer
+        # explicitly set a smaller TrimBox.
+        if (
+            abs(tx0 - mx0) < 0.5
+            and abs(ty0 - my0) < 0.5
+            and abs(tx1 - mx1) < 0.5
+            and abs(ty1 - my1) < 0.5
+        ):
+            return []
+
+        page_num = getattr(page, "page_num", 0)
+        page_bboxes = bboxes_by_page.get(page_num, [])
+        if not page_bboxes:
+            return []
+
+        # Find the worst painted-content overhang past TrimBox on any side.
+        max_overhang = 0.0
+        worst_side: str | None = None
+        for ex0, ey0, ex1, ey1 in page_bboxes:
+            for side, dist in (
+                ("left", tx0 - ex0),
+                ("right", ex1 - tx1),
+                ("bottom", ty0 - ey0),
+                ("top", ey1 - ty1),
+            ):
+                if dist > max_overhang:
+                    max_overhang = dist
+                    worst_side = side
+
+        if max_overhang < _TRIMBOX_UNDERSIZE_PT:
+            return []
+
+        return [
+            Finding(
+                inspection_id="LPDF_BOX_TRIMBOX_UNDERSIZED",
+                severity=Severity.WARNING,
+                message=(
+                    f"Page {page_num}: painted artwork extends {max_overhang:.1f} pt "
+                    f"past the TrimBox on the {worst_side} side — far beyond a "
+                    "normal bleed allowance. The TrimBox likely covers only one "
+                    "panel of a multi-panel layout; downstream imposition will "
+                    "crop the rest. Either expand the TrimBox to encompass the "
+                    "full artwork or supply per-panel TrimBoxes."
+                ),
+                page_num=page_num,
+                details={
+                    "overhang_pt": round(max_overhang, 2),
+                    "worst_side": worst_side,
+                    "trim_box": [tx0, ty0, tx1, ty1],
                 },
                 category="page",
                 object_type="page",
