@@ -939,6 +939,22 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "Dimension Callout In Printable Artwork",
         'Printable text contains dimension / spec callouts (e.g. 2.4409", 10 mm, GUSSET 21x6.5x2). On a press-ready PDF these belong on a non-printing technical/info layer (OCG with print=false); otherwise they will image to plate. Move callouts to a non-printing layer or remove before final export.',
     ),
+    "LPDF_INK_MIXED_BUILD_VERIFY": CheckInfo(
+        "Mixed Spot+CMYK Build — Verify Press Setup",
+        "Document declares 1-2 named spots and also uses DeviceCMYK fills (commonly a 2-PMS layout with a process-CMYK photo). The result is a 5-6 plate job. Confirm the press deck has the stations and that the cost / station-count plan expected the mixed build, or consolidate to spot-only / process-only as appropriate.",
+    ),
+    "LPDF_DOC_LANG_BILINGUAL": CheckInfo(
+        "Bilingual Document Without /Lang",
+        "Document contains non-English content (French / Spanish / German / Italian phrases detected) but the catalog has no /Lang entry. Multilingual packaging should declare the primary language as a BCP-47 tag (e.g. /Lang (en-CA) for Canadian English with French copy) so assistive tech and localisation tooling work correctly.",
+    ),
+    "LPDF_TEXT_INVERTED_180": CheckInfo(
+        "Text Rotated 180° From Page Majority",
+        "Page has text events rotated approximately 180° from the dominant orientation. On gusseted-bag / pouch artwork the back panel is sometimes printed upside-down for unfold orientation; verify the rotation matches the bag finishing layout, otherwise the back panel reads inverted on shelf.",
+    ),
+    "LPDF_TEXT_LEGIBILITY_VERIFY": CheckInfo(
+        "Verify Legibility At Final Print Size",
+        "Text composed size is in the 5-6 pt band — above the FDA 5 pt hard floor (LPDF_LEGALCOPY_001) but below the 6 pt body-copy recommendation. Verify against the final printed panel size and substrate; flexible-film and rotogravure can lose detail below 6 pt body even when the regulatory threshold is met.",
+    ),
     "LPDF_BOX_SEAL_ZONE_VIOLATION": CheckInfo(
         "Live Copy Inside Heat-Seal Keepout",
         "Live text or barcode sits inside a heat-seal / overlap-seal / tear-zone keepout band (5 mm by default) on flexible-film stick-pack or pouch artwork. The seal jaw, crimp, or tear notch will obscure, distort, or seal over the copy. Move the copy outside the seal zone or relocate the seal indicator. Anchored on technical labels like END SEAL, OVERLAP IN SEAL, SEAL AREA, TEAR ACROSS / DÉCHIRER ICI in the artwork.",
