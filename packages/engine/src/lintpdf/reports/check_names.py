@@ -883,6 +883,14 @@ CHECK_NAMES: dict[str, CheckInfo] = {
         "DeviceN Tuple Names Process CMYK As Colorants",
         "DeviceN / NChannel color space names process CMYK channels (/Cyan, /Magenta, /Yellow, /Black) as colorants. Process plates should not appear inside DeviceN tuples — combined with stand-alone Separations this commonly produces extra unintended plates on the RIP. Re-target the artwork onto DeviceCMYK or remove the process names from the DeviceN tuple.",
     ),
+    "LPDF_BARCODE_NOMINAL_SIZE_LOW": CheckInfo(
+        "Barcode Below 80% GS1 Nominal Magnification",
+        "Barcode long-axis dimension is below 29.8 mm (80% UPC-A / EAN-13 nominal). At sub-nominal size, X-dimension shrinks below the recommended 0.264 mm and scan reliability drops sharply on flexo / digital print. Increase scale or apply bar-width reduction (BWR) compensation. Particularly relevant on multi-up panels where each panel's barcode is shrunk to fit.",
+    ),
+    "LPDF_BARCODE_QUIET_ZONE_INK": CheckInfo(
+        "Painted Content Overlaps Barcode Quiet Zone",
+        "Painted artwork (path strokes/fills or images) overlaps the GS1 quiet zone (10x narrow-bar to either side of the bars). Adjacent printed background, frame, or decorative art encroaches the scan window even when the barcode is well clear of the trim edge — verify the quiet zone is clear of any non-barcode ink.",
+    ),
     "LPDF_DIM_CALLOUT_001": CheckInfo(
         "Dimension Callouts In Live Artwork",
         'Multiple standalone-dimension text tokens (e.g. 2.4409", 5.7500", 10mm) are present on the live artwork page. These technical dimensions should live on a separate spec / dimension layer (set to non-printing) rather than the printed artwork — they will print unless removed before plate-making. Suppressed when dimensions appear inside product copy contexts (Net Wt., Serving Size, etc.).',
