@@ -167,10 +167,21 @@ CHECK_NAMES: dict[str, CheckInfo] = {
     ),
     "LPDF_FONT_005": CheckInfo(
         "Missing ToUnicode",
-        "CID font is missing a ToUnicode map — text search and copy may not "
-        "work. Currently fires on CID fonts only; the broader F-13 case "
-        "(ToUnicode missing on any font subtype) is partially covered here.",
+        "Font is missing a ToUnicode CMap — text search, copy/paste, and "
+        "accessibility text extraction may not work. Severity is WARNING "
+        "for CID (Type0) fonts where ISO 32000-2 §9.10.2 requires it in "
+        "practice, ADVISORY for simple Type1 / TrueType fonts where it's "
+        "still considered preflight quality debt.",
         v2_ids=("F-13",),
+    ),
+    "LPDF_FONT_NONE_DECLARED": CheckInfo(
+        "No Fonts Declared",
+        "Page has visible content (non-trivial content stream) but declares "
+        "zero fonts. Almost always means the document's text was converted "
+        "to vector paths (outlined). This is acceptable practice on "
+        "stick-pack / pouch flexo artwork but should be confirmed — any "
+        "live text that slipped through without an embedded font won't "
+        "render at the RIP. Severity: ADVISORY (verification advisory).",
     ),
     "LPDF_FONT_006": CheckInfo(
         "Missing CIDSystemInfo",
