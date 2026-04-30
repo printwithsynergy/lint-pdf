@@ -19,7 +19,7 @@ from lintpdf.api.database import get_db
 if TYPE_CHECKING:
     from lintpdf.api.models import Tenant
 
-router = APIRouter(prefix="/api/v1/ai/credits", tags=["ai-credits"])
+router = APIRouter(prefix="/api/v1/ai/credits", tags=["x:saas-only", "ai-credits"])
 
 
 def _app_base_url() -> str:

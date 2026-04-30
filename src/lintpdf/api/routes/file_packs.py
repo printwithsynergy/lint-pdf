@@ -23,7 +23,7 @@ from lintpdf.api.database import get_db
 if TYPE_CHECKING:
     from lintpdf.api.models import Tenant
 
-router = APIRouter(prefix="/api/v1/files", tags=["file-packs"])
+router = APIRouter(prefix="/api/v1/files", tags=["x:saas-only", "file-packs"])
 
 
 class FileQuotaResponse(BaseModel):
