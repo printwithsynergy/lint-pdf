@@ -58,16 +58,16 @@ class VersionDiffAnalyzer(BaseAIAnalyzer):
         self,
         ctx: AnalyzerContext,
     ) -> list[Finding]:
-        # Phase 2 alpha-stream: signature migration. Uses pdf_bytes
-        # + ai_config (._reference_pdf_bytes / .details.reference_file_id).
-        # Reconstituted via _reconstitute_ai_config to preserve attribute
-        # access, including the orchestrator-attached _reference_pdf_bytes.
+        # Phase 2 beta-stream: SaaS coupling routed through ctx.services.
         pdf_bytes = ctx.pdf_bytes
         ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
         ai_config = _reconstitute_ai_config(ai_config_dict)
 
-        # Check for reference file configuration
-        reference_pdf_bytes = self._get_reference_bytes(ai_config)
+        # Check for reference file configuration. ctx.services.storage may
+        # be None on OSS hosts — _get_reference_bytes returns None and we
+        # surface AI_VDIFF_001 same as before.
+        services = ctx.services
+        reference_pdf_bytes = self._get_reference_bytes(ai_config, services)
 
         if reference_pdf_bytes is None:
             return [
@@ -86,11 +86,13 @@ class VersionDiffAnalyzer(BaseAIAnalyzer):
             logger.debug("scikit-image or Pillow not installed — skipping version diff")
             return []
 
-        from lintpdf.ai.rendering import render_all_pages
+        if services is None or services.renderer is None:
+            logger.debug("version_diff: ctx.services.renderer unavailable, skipping")
+            return []
 
         try:
-            current_pages = render_all_pages(pdf_bytes, dpi=150)
-            reference_pages = render_all_pages(reference_pdf_bytes, dpi=150)
+            current_pages = services.renderer.render_all_pages(pdf_bytes, dpi=150)
+            reference_pages = services.renderer.render_all_pages(reference_pdf_bytes, dpi=150)
         except RuntimeError:
             logger.debug("PDF rendering backend unavailable — skipping version diff")
             return []
@@ -164,12 +166,13 @@ class VersionDiffAnalyzer(BaseAIAnalyzer):
         return findings
 
     @staticmethod
-    def _get_reference_bytes(ai_config: Any) -> bytes | None:
+    def _get_reference_bytes(ai_config: Any, services: Any) -> bytes | None:
         """Retrieve reference PDF bytes from configuration.
 
         Resolution order:
         1. Pre-attached bytes on ``ai_config._reference_pdf_bytes`` (set by orchestrator).
-        2. ``reference_file_id`` in ai_config details → fetch from object storage.
+        2. ``reference_file_id`` in ai_config details → fetch via
+           ``services.storage.download(file_id)``.
         """
         if ai_config is None:
             return None
@@ -185,11 +188,12 @@ class VersionDiffAnalyzer(BaseAIAnalyzer):
         if not file_id:
             return None
 
-        try:
-            from lintpdf.api.storage import get_storage_backend
+        if services is None or getattr(services, "storage", None) is None:
+            logger.debug("version_diff: ctx.services.storage unavailable for reference fetch")
+            return None
 
-            storage = get_storage_backend()
-            ref_bytes = storage.download(str(file_id))
+        try:
+            ref_bytes = services.storage.download(str(file_id))
             if ref_bytes and isinstance(ref_bytes, bytes):
                 return ref_bytes
         except Exception:

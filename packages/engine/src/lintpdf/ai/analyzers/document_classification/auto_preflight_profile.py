@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 from lintpdf.ai.base import BaseAIAnalyzer, _reconstitute_ai_config
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.ai.types import (
-    GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
@@ -60,14 +59,6 @@ _DEFAULT_PLAN = {
 }
 
 
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
-
-
 @register_ai_analyzer
 class AutoPreflightProfileAnalyzer(BaseAIAnalyzer):
     """Recommend a preflight profile based on document classification."""
@@ -90,16 +81,19 @@ class AutoPreflightProfileAnalyzer(BaseAIAnalyzer):
         ai_config_dict = ctx.config.get("ai_config") if ctx.config else None
         ai_config = _reconstitute_ai_config(ai_config_dict)
 
-        from lintpdf.ai.rendering import render_page_to_image
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("auto_preflight_profile: ctx.services unavailable, skipping")
+            return []
 
         # Perform classification to drive the recommendation
         try:
-            first_page_png = render_page_to_image(pdf_bytes, page_num=1, dpi=150)
+            first_page_png = services.renderer.render_page_to_image(pdf_bytes, page_num=1, dpi=150)
         except RuntimeError:
             logger.debug("auto_preflight_profile: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
 
         try:
             result = gpu.classify_document(first_page_png)

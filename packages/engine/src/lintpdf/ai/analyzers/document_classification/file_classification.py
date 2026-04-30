@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING
 from lintpdf.ai.base import BaseAIAnalyzer
 from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.ai.types import (
-    GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
@@ -27,14 +26,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _get_gpu_client() -> GPUInferenceClient:
-    # Delegates to the process-level shared client so the circuit breaker
-    # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.types import get_gpu_client
-
-    return get_gpu_client()
-
-
 @register_ai_analyzer
 class FileClassificationAnalyzer(BaseAIAnalyzer):
     """Classify document type using visual document classification model."""
@@ -45,20 +36,22 @@ class FileClassificationAnalyzer(BaseAIAnalyzer):
     credits_per_run = 2
 
     def analyze_v2(self, ctx: AnalyzerContext) -> list[Finding]:
-        # Phase 2 alpha-stream: signature migration. Uses pdf_bytes
-        # only. document + events + ai_config declared but never used.
+        # Phase 2 beta-stream: SaaS coupling routed through ctx.services.
         pdf_bytes = ctx.pdf_bytes
 
-        from lintpdf.ai.rendering import render_page_to_image
+        services = ctx.services
+        if services is None or services.gpu_client is None or services.renderer is None:
+            logger.debug("file_classification: ctx.services unavailable, skipping")
+            return []
 
         # Classify based on the first page (most representative)
         try:
-            first_page_png = render_page_to_image(pdf_bytes, page_num=1, dpi=150)
+            first_page_png = services.renderer.render_page_to_image(pdf_bytes, page_num=1, dpi=150)
         except RuntimeError:
             logger.debug("file_classification: PDF rendering backend unavailable")
             return []
 
-        gpu = _get_gpu_client()
+        gpu = services.gpu_client
 
         try:
             result = gpu.classify_document(first_page_png)
