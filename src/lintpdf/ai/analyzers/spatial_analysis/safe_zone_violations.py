@@ -11,13 +11,13 @@ import logging
 from typing import TYPE_CHECKING
 
 from lintpdf.ai.base import BaseAIAnalyzer
-from lintpdf.ai.gpu_client import (
+from lintpdf.ai.registry import register_ai_analyzer
+from lintpdf.ai.types import (
     GPUInferenceClient,
     GPUServiceNotConfiguredError,
     GPUServiceRateLimitedError,
     GPUServiceUnavailableError,
 )
-from lintpdf.ai.registry import register_ai_analyzer
 from lintpdf.analyzers.finding import Finding, Severity
 
 if TYPE_CHECKING:
@@ -34,7 +34,7 @@ _MM_TO_PT = 2.8346
 def _get_gpu_client() -> GPUInferenceClient:
     # Delegates to the process-level shared client so the circuit breaker
     # accumulates failures across analyzers (see gpu_client.get_gpu_client).
-    from lintpdf.ai.gpu_client import get_gpu_client
+    from lintpdf.ai.types import get_gpu_client
 
     return get_gpu_client()
 
