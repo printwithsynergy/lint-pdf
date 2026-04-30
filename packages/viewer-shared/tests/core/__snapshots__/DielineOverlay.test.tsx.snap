@@ -1,0 +1,23 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DielineOverlay > renders a single icon labeled 'Dieline' for one region 1`] = `
+<div
+  class="absolute inset-0"
+  style="z-index: 16;"
+>
+  <div
+    class="absolute"
+    style="left: 117px; top: 659px;"
+  >
+    <button
+      aria-label="Dieline size"
+      class="flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white shadow ring-1 ring-black/30"
+      style="background-color: rgb(220, 38, 38);"
+      title="Show dieline size"
+      type="button"
+    >
+      i
+    </button>
+  </div>
+</div>
+`;

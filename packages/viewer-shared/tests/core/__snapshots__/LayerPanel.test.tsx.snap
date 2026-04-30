@@ -1,0 +1,101 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LayerPanel > renders one row per layer with checkbox + name 1`] = `
+<div
+  class="space-y-3 p-3 text-slate-200"
+>
+  <div
+    class="flex items-center justify-between"
+  >
+    <h3
+      class="text-sm font-semibold text-white"
+    >
+      Layers
+    </h3>
+    <div
+      class="flex gap-1"
+    >
+      <button
+        class="rounded border border-white/10 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
+      >
+        All On
+      </button>
+      <button
+        class="rounded border border-white/10 px-2 py-0.5 text-xs text-slate-300 hover:bg-slate-800"
+      >
+        All Off
+      </button>
+    </div>
+  </div>
+  <div
+    class="space-y-1"
+  >
+    <label
+      class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-slate-200 hover:bg-slate-800"
+    >
+      <input
+        checked=""
+        class="rounded border-white/10"
+        type="checkbox"
+      />
+      <span
+        class="truncate text-xs"
+      >
+        CutContour
+      </span>
+    </label>
+    <label
+      class="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-slate-200 hover:bg-slate-800"
+    >
+      <input
+        class="rounded border-white/10"
+        type="checkbox"
+      />
+      <span
+        class="truncate text-xs"
+      >
+        Artwork
+      </span>
+    </label>
+  </div>
+</div>
+`;
+
+exports[`LayerPanel > renders the empty-state placeholder when listLayers returns [] 1`] = `
+<div
+  class="p-3 text-xs text-slate-400"
+>
+  This PDF has no optional content layers (OCGs).
+</div>
+`;
+
+exports[`LayerPanel > renders the loading state on first render 1`] = `
+<div
+  class="flex flex-col items-center justify-center gap-2 p-6"
+>
+  <svg
+    class="h-6 w-6 animate-spin text-slate-400"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      class="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      stroke-width="4"
+    />
+    <path
+      class="opacity-75"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      fill="currentColor"
+    />
+  </svg>
+  <span
+    class="text-xs text-slate-500"
+  >
+    Loading layers
+  </span>
+</div>
+`;
