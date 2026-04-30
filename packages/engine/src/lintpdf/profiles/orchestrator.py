@@ -622,14 +622,39 @@ class PreflightOrchestrator:
             # accidentally persist the overlay.
             ai_config_for_analyzers = self._ai_config_with_brand_spec()
 
+            # Phase 2: dispatch via analyze_v2(ctx). Legacy analyzers that
+            # still override analyze() keep working — BaseAIAnalyzer's
+            # default analyze_v2 reconstitutes ai_config from
+            # ctx.config["ai_config"] and forwards to analyze(). Migrated
+            # analyzers override analyze_v2 directly.
+            from lintpdf.plugin.host import default_services_for_saas
+            from lintpdf.plugin.protocol import AnalyzerContext
+
+            ai_config_dict: dict[str, Any] | None = None
+            if ai_config_for_analyzers is not None:
+                if hasattr(ai_config_for_analyzers, "dict"):
+                    ai_config_dict = ai_config_for_analyzers.dict()
+                else:
+                    try:
+                        ai_config_dict = dict(ai_config_for_analyzers)
+                    except (TypeError, ValueError):
+                        ai_config_dict = None
+
+            services = default_services_for_saas()
+            ctx = AnalyzerContext(
+                document=document,
+                events=events,
+                pdf_bytes=pdf_bytes,
+                config={"ai_config": ai_config_dict} if ai_config_dict is not None else {},
+                services=services,
+            )
+
             ai_findings: list[Finding] = []
             ran_categories: set[str] = set()
             ran_features: list[str] = []
             for analyzer in analyzers:
                 try:
-                    findings = analyzer.analyze(
-                        document, events, pdf_bytes, ai_config_for_analyzers
-                    )
+                    findings = analyzer.analyze_v2(ctx)
                     ai_findings.extend(findings)
                     ran_categories.add(analyzer.category)
                     ran_features.append(analyzer.feature_slug)

@@ -51,7 +51,7 @@ class TestGPUUnavailableProducesAdvisory:
         mock_analyzer = MagicMock()
         mock_analyzer.category = "image_quality"
         mock_analyzer.feature_slug = "image_quality_assessment"
-        mock_analyzer.analyze.side_effect = GPUServiceUnavailableError(
+        mock_analyzer.analyze_v2.side_effect = GPUServiceUnavailableError(
             "GPU circuit breaker is open"
         )
 
@@ -93,7 +93,7 @@ class TestRuleBasedFindingsUnaffected:
         mock_analyzer = MagicMock()
         mock_analyzer.category = "image_quality"
         mock_analyzer.feature_slug = "image_quality"
-        mock_analyzer.analyze.side_effect = GPUServiceUnavailableError("GPU down")
+        mock_analyzer.analyze_v2.side_effect = GPUServiceUnavailableError("GPU down")
 
         doc = _minimal_doc(fonts={"F1": font})
 
