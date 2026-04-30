@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { LayerInfo } from "./types";
-import { useViewerApi } from "./types";
+import type { LayerInfo } from "../../types";
+import { useViewerApi } from "../../types";
 
 interface LayerPanelProps {
   jobId: string;

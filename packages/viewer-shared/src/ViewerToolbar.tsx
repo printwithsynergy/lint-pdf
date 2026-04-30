@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ZoomControls } from "./ZoomControls";
+import { ZoomControls } from "./core/components/ZoomControls";
 import type { ViewerCapabilityKey, ViewerConfig } from "./types";
 import { DEFAULT_VIEWER_CONFIG, FILLABLE_CAPABILITIES, useViewerApi } from "./types";
 

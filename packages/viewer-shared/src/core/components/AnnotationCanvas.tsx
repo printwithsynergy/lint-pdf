@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AnnotationTool } from "./AnnotationToolbar";
-import { useViewerApi } from "./types";
+import { useViewerApi } from "../../types";
 
 interface AnnotationCanvasProps {
   jobId: string;

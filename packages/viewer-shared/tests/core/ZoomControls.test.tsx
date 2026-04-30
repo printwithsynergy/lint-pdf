@@ -15,7 +15,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render } from "@testing-library/react";
 
-import { ZoomControls } from "../../src/ZoomControls";
+import { ZoomControls } from "../../src/core/components/ZoomControls";
 
 describe("ZoomControls", () => {
   it("renders default mode at 100%", () => {

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { PageInfo, ViewerFinding } from "./types";
-import { THUMBNAIL_DPI, useViewerApi } from "./types";
+import type { PageInfo, ViewerFinding } from "../../types";
+import { THUMBNAIL_DPI, useViewerApi } from "../../types";
 
 interface PageNavigatorProps {
   pages: PageInfo[];

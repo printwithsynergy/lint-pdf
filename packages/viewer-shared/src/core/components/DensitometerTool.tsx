@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { DensitometerSample } from "./types";
-import { useViewerApi } from "./types";
+import type { DensitometerSample } from "../../types";
+import { useViewerApi } from "../../types";
 
 interface DensitometerToolProps {
   jobId: string;

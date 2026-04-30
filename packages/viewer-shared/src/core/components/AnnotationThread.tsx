@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useViewerApi } from "./types";
+import { useViewerApi } from "../../types";
 
 interface AnnotationEntry {
   id: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DEFAULT_DPI, useViewerApi } from "./types";
+import { DEFAULT_DPI, useViewerApi } from "../../types";
 
 /**
  * WS-17C — instant layer toggling via per-OCG isolated tiles.
