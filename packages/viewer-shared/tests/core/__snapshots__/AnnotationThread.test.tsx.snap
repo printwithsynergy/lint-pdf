@@ -1,0 +1,40 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AnnotationThread > renders the empty-state message when list returns [] 1`] = `
+<div
+  class="p-4 text-sm text-slate-400"
+>
+  No annotations yet. Toggle annotation mode to start marking up the PDF.
+</div>
+`;
+
+exports[`AnnotationThread > renders the loading state on first render 1`] = `
+<div
+  class="flex flex-col items-center justify-center gap-2 p-6"
+>
+  <svg
+    class="h-6 w-6 animate-spin text-slate-400"
+    fill="none"
+    viewBox="0 0 24 24"
+  >
+    <circle
+      class="opacity-25"
+      cx="12"
+      cy="12"
+      r="10"
+      stroke="currentColor"
+      stroke-width="4"
+    />
+    <path
+      class="opacity-75"
+      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      fill="currentColor"
+    />
+  </svg>
+  <span
+    class="text-xs text-slate-500"
+  >
+    Loading annotations
+  </span>
+</div>
+`;

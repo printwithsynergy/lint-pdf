@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MeasureTool > renders the empty drag-hint state on first render 1`] = `
+<div
+  class="absolute inset-0 cursor-crosshair"
+  style="z-index: 25;"
+>
+  <div
+    class="pointer-events-none absolute left-1/2 top-4 -translate-x-1/2 rounded bg-black/70 px-3 py-1 text-xs text-white"
+  >
+    Tap and drag to measure distance.
+  </div>
+</div>
+`;
