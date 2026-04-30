@@ -162,7 +162,7 @@ def _query_historical_data(tenant_id: Any) -> list[dict[str, Any]] | None:
     try:
         from sqlalchemy import func, text
 
-        from lintpdf.api.database import get_db_session
+        from lintpdf.ai.types import get_db_session
         from lintpdf.api.models import Job, JobFinding, JobStatus
     except (ImportError, RuntimeError):
         logger.debug("Database not available for SPC historical query — tenant_id=%s", tenant_id)
