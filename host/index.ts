@@ -22,6 +22,12 @@
  */
 
 import { createContext, useContext } from "react";
+import type { ViewerServices } from "../plugin/services";
+import {
+  defaultThemeTokens,
+  noopI18n,
+  noopTelemetry,
+} from "../plugin/services";
 
 /**
  * Values the host application supplies to the viewer's core
@@ -70,4 +76,56 @@ export const ViewerHostContext = createContext<ViewerHostContextValue>({
  */
 export function useViewerHost(): ViewerHostContextValue {
   return useContext(ViewerHostContext);
+}
+
+// ---------------------------------------------------------------------------
+// ViewerServices context
+// ---------------------------------------------------------------------------
+
+/**
+ * No-op default services. URL builders return empty strings; the
+ * other protocols are filled with the no-op stubs already defined
+ * in `core/plugin/services`. Hosts that supply a partial
+ * `ViewerServices` in their provider override only the fields they
+ * actually have.
+ *
+ * Choosing empty-string for URL builders (rather than throwing)
+ * keeps the boundary forgiving — a misconfigured viewer renders
+ * blank tiles, but doesn't crash.
+ */
+const defaultViewerServices: ViewerServices = {
+  pageImages: {
+    getPageImageUrl: () => "",
+  },
+  annotations: {
+    list: async () => [],
+    create: async (a) => a,
+    update: async (_id, patch) => patch,
+    remove: async () => {},
+  },
+  telemetry: noopTelemetry,
+  i18n: noopI18n,
+  tokens: defaultThemeTokens,
+};
+
+/**
+ * React context carrying the active `ViewerServices` instance.
+ * `<ViewerServicesContext.Provider value={...}>` mounts a host's
+ * concrete impl (LintPDF SaaS supplies one via
+ * `createLintPDFViewerServices` in `src/lintpdf/sources/services`).
+ *
+ * @public
+ */
+export const ViewerServicesContext = createContext<ViewerServices>(
+  defaultViewerServices,
+);
+
+/**
+ * Hook for reading the active `ViewerServices`. Returns the no-op
+ * defaults when no provider is mounted.
+ *
+ * @public
+ */
+export function useViewerServices(): ViewerServices {
+  return useContext(ViewerServicesContext);
 }

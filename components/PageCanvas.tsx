@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { OverlayItem } from "../plugin/types";
 import type { PageInfo } from "../types";
 import { DEFAULT_DPI, SEVERITY_COLORS } from "../types";
-import { useViewerHost } from "../host";
+import { useViewerServices } from "../host";
 
 interface PageCanvasProps {
   jobId: string;
@@ -72,7 +72,7 @@ export function PageCanvas({
   tileCdnBase,
   cropToTrim = false,
 }: PageCanvasProps) {
-  const { apiBase } = useViewerHost();
+  const { pageImages } = useViewerServices();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [tileImg, setTileImg] = useState<HTMLImageElement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -175,13 +175,13 @@ export function PageCanvas({
   })();
 
   // Load tile image — prefer CDN when available, fall back to engine proxy
+  const proxyUrl = pageImages.getPageImageUrl({ pageNum: page.page_num, dpi });
   useEffect(() => {
     setLoading(true);
     const img = new Image();
     const cdnUrl = tileCdnBase
       ? `${tileCdnBase}p${page.page_num}_d${dpi}.png`
       : null;
-    const proxyUrl = `${apiBase}/pages/${page.page_num}/tile?dpi=${dpi}`;
 
     img.onload = () => {
       setTileImg(img);
@@ -195,7 +195,7 @@ export function PageCanvas({
       }
     };
     img.src = cdnUrl ?? proxyUrl;
-  }, [apiBase, page.page_num, dpi, tileCdnBase]);
+  }, [proxyUrl, page.page_num, dpi, tileCdnBase]);
 
   // Animate pulse for selected item
   useEffect(() => {

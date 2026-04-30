@@ -11,18 +11,27 @@
  */
 
 /**
- * Page-image source. Returns a URL the viewer can render into a
- * canvas / `<img>` tag. The viewer caches results — services should
- * not implement their own cache.
+ * Page-image source. Returns a URL the viewer renders into a canvas
+ * / `<img>` tag. The viewer caches results — services should not
+ * implement their own cache.
+ *
+ * URL builders are **synchronous**: hosts that need async signing
+ * pre-resolve into a redirect proxy or blob URL upstream. Returning
+ * a Promise here would force every consumer through `useEffect` +
+ * state, which doesn't fit the `<img src={url}>` rendering pattern.
  *
  * @public
  */
 export interface PageImageService {
+  /**
+   * Standard page-tile URL. The host resolves whatever path /
+   * blob / signed URL is appropriate.
+   */
   getPageImageUrl(args: {
     pageNum: number;
     /** Render DPI; viewer asks for the DPI it needs. */
     dpi: number;
-  }): Promise<string>;
+  }): string;
 }
 
 /**
