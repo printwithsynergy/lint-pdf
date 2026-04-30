@@ -11,17 +11,17 @@ nominal 1 pt asserts the true-positive path still fires.
 
 from __future__ import annotations
 
-from lintpdf.ai.analyzers.regulatory_compliance.eu_fir_1169 import (
+from siftpdf.ai.analyzers.regulatory_compliance.eu_fir_1169 import (
     EuFir1169Analyzer,
 )
-from lintpdf.semantic.events import TextRenderedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
+from siftpdf.semantic.events import TextRenderedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
 def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
     """Build an AnalyzerContext for analyze_v2 calls."""
-    from lintpdf.plugin.protocol import AnalyzerContext
+    from siftpdf.plugin.protocol import AnalyzerContext
 
     return AnalyzerContext(
         document=document,

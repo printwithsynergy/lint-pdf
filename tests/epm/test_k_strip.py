@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.epm import icc
+from siftpdf.epm import icc
 
 # ---- cmyk_to_lab_naive: extremes -----------------------------------------
 

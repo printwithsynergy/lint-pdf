@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.spot_name_similarity import (
+from siftpdf.analyzers.spot_name_similarity import (
     SpotNameSimilarityAnalyzer,
     _levenshtein,
 )
-from lintpdf.semantic.model import (
+from siftpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

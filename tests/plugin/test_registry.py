@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.plugin import discover_entry_points, discover_legacy_ai
+from siftpdf.plugin import discover_entry_points, discover_legacy_ai
 
 
 def test_entry_point_discovery_returns_list():
@@ -21,4 +21,4 @@ def test_legacy_ai_discovery_returns_list():
     for plugin in result[:5]:  # spot-check first 5 — registry is large
         assert hasattr(plugin, "manifest")
         assert hasattr(plugin, "analyze_v2")
-        assert plugin.manifest.id.startswith("lintpdf.legacy.")
+        assert plugin.manifest.id.startswith("siftpdf.legacy.")

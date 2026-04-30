@@ -3,9 +3,9 @@ LPDF_BARCODE_QUIET_ZONE_INK from the post-merge audit closure."""
 
 from __future__ import annotations
 
-from lintpdf.analyzers.barcode import BarcodeAnalyzer
-from lintpdf.semantic.events import PathPaintingEvent
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.barcode import BarcodeAnalyzer
+from siftpdf.semantic.events import PathPaintingEvent
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc() -> SemanticDocument:

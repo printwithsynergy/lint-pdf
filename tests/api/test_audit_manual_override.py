@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from lintpdf.api.models import Job, JobFinding, JobStatus, Tenant
+from siftpdf.api.models import Job, JobFinding, JobStatus, Tenant
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

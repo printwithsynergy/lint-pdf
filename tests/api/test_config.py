@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.api.config import Settings
+from siftpdf.api.config import Settings
 
 
 @pytest.fixture(autouse=True)

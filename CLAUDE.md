@@ -44,16 +44,16 @@ override `analyze_v2` directly and skip the legacy method.
 `src/lintpdf/ai/analyzers/**`** (use `ctx.services.*` or
 `ctx.config["ai_config"]` instead):
 
-- `lintpdf.tenants.*` → `ctx.config["ai_config"]` (when reading tenant AI
+- `siftpdf.tenants.*` → `ctx.config["ai_config"]` (when reading tenant AI
   config) or `ctx.services.tenants` (when reading entitlements).
-- `lintpdf.api.models.TenantAIConfig` → read from
+- `siftpdf.api.models.TenantAIConfig` → read from
   `ctx.config["ai_config"]` (a plain dict).
-- `lintpdf.audit.metering` → `ctx.services.metering`.
-- `lintpdf.audit.cost`, `lintpdf.ai.cost_cap`, `lintpdf.ai.credits`
+- `siftpdf.audit.metering` → `ctx.services.metering`.
+- `siftpdf.audit.cost`, `siftpdf.ai.cost_cap`, `siftpdf.ai.credits`
   → `ctx.services.cost_cap`.
-- `lintpdf.api.database` → `ctx.services.database`.
-- `lintpdf.ai.gpu_client` → `ctx.services.gpu_client`.
-- `lintpdf.conformance.verapdf_client` → `ctx.services.verapdf_client`.
+- `siftpdf.api.database` → `ctx.services.database`.
+- `siftpdf.ai.gpu_client` → `ctx.services.gpu_client`.
+- `siftpdf.conformance.verapdf_client` → `ctx.services.verapdf_client`.
 
 `scripts/check_engine_purity.sh` is the tripwire — it counts existing
 violations (baseline: 125) and fails CI when the count goes UP. Down-

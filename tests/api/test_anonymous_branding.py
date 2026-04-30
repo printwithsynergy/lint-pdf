@@ -1,6 +1,6 @@
 """Tests for the broker-forwarding "anonymous" branding flow.
 
-Covers the pure helpers in :mod:`lintpdf.reports.service` and the public
+Covers the pure helpers in :mod:`siftpdf.reports.service` and the public
 ``/r/{token}.pdf`` share-link endpoint's filename/metadata sanitization.
 """
 
@@ -11,9 +11,9 @@ from datetime import datetime, timezone
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from lintpdf.api.models import Job, JobStatus, ReportToken
-from lintpdf.api.storage import get_storage
-from lintpdf.reports.service import (
+from siftpdf.api.models import Job, JobStatus, ReportToken
+from siftpdf.api.storage import get_storage
+from siftpdf.reports.service import (
     BrandingContext,
     BrandMode,
     build_anonymous_filename,
@@ -48,7 +48,7 @@ class TestParseBrandParam:
 
     @staticmethod
     def test_lintpdf_aliases() -> None:
-        for raw in ("lintpdf", "LintPDF", "default"):
+        for raw in ("siftpdf", "LintPDF", "default"):
             mode, pid = parse_brand_param(raw)
             assert mode is BrandMode.LINTPDF
             assert pid is None
@@ -73,7 +73,7 @@ class TestAnonymousHelpers:
         assert ctx.anonymous is True
         assert ctx.logo_url is None
         # Footer must not reference LintPDF or the tenant.
-        assert ctx.footer_text is None or "lintpdf" not in ctx.footer_text.lower()
+        assert ctx.footer_text is None or "siftpdf" not in ctx.footer_text.lower()
 
     @staticmethod
     def test_build_anonymous_filename_uses_short_id() -> None:
@@ -198,7 +198,7 @@ class TestSharePdfFilenameAnonymity:
             tenant_id=PLACEHOLDER_TENANT_ID,
             token="branded-token-001",
             format="pdf",
-            brand_mode="lintpdf",
+            brand_mode="siftpdf",
         )
         db_session.add(token)
         db_session.commit()

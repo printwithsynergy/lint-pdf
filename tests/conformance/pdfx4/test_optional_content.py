@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.conformance.pdfx4._optional_content import validate_optional_content
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.finding import Severity
+from siftpdf.conformance.pdfx4._optional_content import validate_optional_content
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(catalog: dict[str, Any] | None = None) -> SemanticDocument:

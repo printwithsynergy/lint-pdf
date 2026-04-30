@@ -1,4 +1,4 @@
-"""Tests for ``lintpdf.epm.icc_resolver.resolve_active_icc_profile``.
+"""Tests for ``siftpdf.epm.icc_resolver.resolve_active_icc_profile``.
 
 The resolver bridges object-storage (where the dashboard upload lands)
 to the orchestrator's analyzer layer (which takes a filesystem path).
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from lintpdf.epm.icc_resolver import resolve_active_icc_profile
+from siftpdf.epm.icc_resolver import resolve_active_icc_profile
 
 
 class _StubStorage:

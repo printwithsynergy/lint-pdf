@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from lintpdf.imports.base import ParserError
-from lintpdf.imports.detect import detect_format, parse_external_report, parser_for_format
+from siftpdf.imports.base import ParserError
+from siftpdf.imports.detect import detect_format, parse_external_report, parser_for_format
 
 
 def test_detect_lintpdf_native() -> None:

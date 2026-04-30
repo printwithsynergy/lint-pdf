@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Any
 import pytest
 from fastapi.testclient import TestClient
 
-from lintpdf.api.app import create_app
-from lintpdf.queue.tasks import (
+from siftpdf.api.app import create_app
+from siftpdf.queue.tasks import (
     _record_tile_warm_event,
     _tile_warm_events_all_key,
     _tile_warm_events_key,
@@ -89,8 +89,8 @@ def _admin_env(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def fake_redis(monkeypatch: pytest.MonkeyPatch) -> FakeRedis:
     redis = FakeRedis()
-    import lintpdf.api.middleware as mw
-    import lintpdf.api.routes.admin_warming as aw
+    import siftpdf.api.middleware as mw
+    import siftpdf.api.routes.admin_warming as aw
 
     monkeypatch.setattr(mw, "get_redis_client", lambda: redis)
     monkeypatch.setattr(aw, "get_redis_client", lambda: redis)
@@ -163,7 +163,7 @@ class TestAdminWarmingAuth:
 class TestNoRedis:
     @staticmethod
     def test_events_returns_no_redis(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
-        import lintpdf.api.routes.admin_warming as aw
+        import siftpdf.api.routes.admin_warming as aw
 
         monkeypatch.setattr(aw, "get_redis_client", lambda: None)
 
@@ -175,7 +175,7 @@ class TestNoRedis:
 
     @staticmethod
     def test_summary_returns_no_redis(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
-        import lintpdf.api.routes.admin_warming as aw
+        import siftpdf.api.routes.admin_warming as aw
 
         monkeypatch.setattr(aw, "get_redis_client", lambda: None)
 
@@ -189,7 +189,7 @@ class TestNoRedis:
     def test_job_detail_returns_no_redis(
         client: TestClient, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import lintpdf.api.routes.admin_warming as aw
+        import siftpdf.api.routes.admin_warming as aw
 
         monkeypatch.setattr(aw, "get_redis_client", lambda: None)
 

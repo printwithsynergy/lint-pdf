@@ -17,7 +17,7 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 
-from lintpdf.reports.separation_renderer import (
+from siftpdf.reports.separation_renderer import (
     PROCESS_CHANNEL_ORDER,
     channel_cache_key,
     sample_densitometer,
@@ -87,7 +87,7 @@ class TestDensitometerSpotsOnCacheHit:
         # Patch list_separations so the densitometer knows to look
         # for these spots without needing a real PDF.
         monkeypatch.setattr(
-            "lintpdf.reports.separation_renderer.list_separations",
+            "siftpdf.reports.separation_renderer.list_separations",
             lambda _pdf: [{"name": s, "type": "spot"} for s in spot_names],
         )
 
@@ -134,7 +134,7 @@ class TestDensitometerSpotsOnCacheHit:
             blobs[channel_cache_key(tenant, job, page, dpi, ch)] = _solid_png_bytes(10.0)
 
         monkeypatch.setattr(
-            "lintpdf.reports.separation_renderer.list_separations",
+            "siftpdf.reports.separation_renderer.list_separations",
             lambda _pdf: [{"name": s, "type": "spot"} for s in spot_names],
         )
 
@@ -146,7 +146,7 @@ class TestDensitometerSpotsOnCacheHit:
             raise RuntimeError("stop-test-here")
 
         monkeypatch.setattr(
-            "lintpdf.reports.separation_renderer._run_tiffsep",
+            "siftpdf.reports.separation_renderer._run_tiffsep",
             fake_run_tiffsep,
         )
 
@@ -183,7 +183,7 @@ class TestCmykOnlyFileSkipsSpotWork:
             blobs[channel_cache_key(tenant, job, page, dpi, ch)] = _solid_png_bytes(20.0)
 
         monkeypatch.setattr(
-            "lintpdf.reports.separation_renderer.list_separations",
+            "siftpdf.reports.separation_renderer.list_separations",
             lambda _pdf: [],
         )
 
@@ -191,7 +191,7 @@ class TestCmykOnlyFileSkipsSpotWork:
         def must_not_run(*_a: object, **_k: object) -> None:
             raise AssertionError("tiffsep should not run on full cache hit")
 
-        monkeypatch.setattr("lintpdf.reports.separation_renderer._run_tiffsep", must_not_run)
+        monkeypatch.setattr("siftpdf.reports.separation_renderer._run_tiffsep", must_not_run)
 
         storage = _FakeStorage(blobs=blobs)
         result = sample_densitometer(

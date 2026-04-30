@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.api.storage import InMemoryStorage, get_storage, set_storage
+from siftpdf.api.storage import InMemoryStorage, get_storage, set_storage
 
 
 class TestInMemoryStorage:

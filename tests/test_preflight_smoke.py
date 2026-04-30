@@ -23,10 +23,10 @@ from typing import Any
 
 import pytest
 
-from lintpdf.profiles.orchestrator import PreflightOrchestrator
-from lintpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConfig
-from lintpdf.reports.html_report import generate_html_report
-from lintpdf.reports.json_report import generate_json_report
+from siftpdf.profiles.orchestrator import PreflightOrchestrator
+from siftpdf.profiles.schema import CheckConfig, PreflightProfile, ThresholdConfig
+from siftpdf.reports.html_report import generate_html_report
+from siftpdf.reports.json_report import generate_json_report
 
 _FIXTURE = (
     Path(__file__).parent / "fixtures" / "test-sample.pdf"
@@ -45,11 +45,11 @@ def _stub_claude_explain(*_args: Any, **_kwargs: Any) -> str:
 def _stub_anthropic(monkeypatch):
     """Replace the explain backend with a deterministic stub.
 
-    The real call site lives at ``lintpdf.ai.explain._call_claude``;
+    The real call site lives at ``siftpdf.ai.explain._call_claude``;
     stubbing it keeps the smoke test offline + free.
     """
     try:
-        from lintpdf.ai import explain as _explain_mod
+        from siftpdf.ai import explain as _explain_mod
     except ImportError:
         return
     if hasattr(_explain_mod, "_call_claude"):
@@ -143,7 +143,7 @@ def test_explain_call_uses_stub_only():
     """Calling explain through the stubbed module returns deterministic
     text — no API key needed."""
     try:
-        from lintpdf.ai import explain
+        from siftpdf.ai import explain
     except ImportError:
         pytest.skip("explain module not available")
     if not hasattr(explain, "_call_claude"):

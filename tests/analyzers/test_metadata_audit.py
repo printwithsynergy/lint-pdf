@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.metadata_audit import MetadataAuditAnalyzer
-from lintpdf.semantic.model import (
+from siftpdf.analyzers.metadata_audit import MetadataAuditAnalyzer
+from siftpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

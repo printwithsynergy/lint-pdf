@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.dieline_iso19593 import DielineIso19593Analyzer
-from lintpdf.semantic.model import (
+from siftpdf.analyzers.dieline_iso19593 import DielineIso19593Analyzer
+from siftpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from lintpdf.semantic.graphics_state import GraphicsState, TransformationMatrix
+from siftpdf.semantic.graphics_state import GraphicsState, TransformationMatrix
 
 # --- TransformationMatrix Tests ---
 

@@ -1,4 +1,4 @@
-"""Tests for ``lintpdf.ai.text_mask.build_text_mask``.
+"""Tests for ``siftpdf.ai.text_mask.build_text_mask``.
 
 PR C Slot 3A: builds a numpy mask from ``page.detected_text_regions`` so
 color analyzers can exclude text-edge pixels from sampling.
@@ -8,8 +8,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from lintpdf.ai.text_mask import build_text_mask
-from lintpdf.semantic.model import (
+from siftpdf.ai.text_mask import build_text_mask
+from siftpdf.semantic.model import (
     DetectedTextRegion,
     PdfBox,
     SemanticPage,

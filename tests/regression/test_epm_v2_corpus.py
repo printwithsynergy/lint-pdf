@@ -24,10 +24,10 @@ from typing import Any
 
 import pytest
 
-from lintpdf.analyzers.epm_v2_a import EpmTierAAnalyzer
-from lintpdf.analyzers.epm_v2_b import EpmTierBAnalyzer
-from lintpdf.analyzers.epm_v2_c import EpmTierCAnalyzer
-from lintpdf.epm.scoring import score_epm_candidacy
+from siftpdf.analyzers.epm_v2_a import EpmTierAAnalyzer
+from siftpdf.analyzers.epm_v2_b import EpmTierBAnalyzer
+from siftpdf.analyzers.epm_v2_c import EpmTierCAnalyzer
+from siftpdf.epm.scoring import score_epm_candidacy
 
 _CORPUS_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "accuracy"
 _GOLDEN_DIR = _CORPUS_DIR / "epm-golden"
@@ -47,9 +47,9 @@ def _golden_path(pdf: Path) -> Path:
 def _run_v2_analyzers(pdf_path: Path) -> dict[str, Any]:
     """Run only the v2 EPM analyzers (skip the rest of the orchestrator
     pipeline so the snapshot stays narrow + fast)."""
-    from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
-    from lintpdf.semantic.builder import SemanticModelBuilder
-    from lintpdf.semantic.interpreter import ContentStreamInterpreter
+    from siftpdf.parser.pikepdf_adapter import PikePDFAdapter
+    from siftpdf.semantic.builder import SemanticModelBuilder
+    from siftpdf.semantic.interpreter import ContentStreamInterpreter
 
     pdf_bytes = pdf_path.read_bytes()
     adapter = PikePDFAdapter()

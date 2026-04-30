@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from lintpdf.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
 
 
 class TestPrepressStateChangedEvent:

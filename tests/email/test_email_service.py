@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from lintpdf.email.service import (
+from siftpdf.email.service import (
     EmailResult,
     get_email_client,
     send_api_key_issued,

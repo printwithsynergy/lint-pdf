@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.imports.base import ParserError
-from lintpdf.imports.pitstop import PitStopXmlParser
+from siftpdf.imports.base import ParserError
+from siftpdf.imports.pitstop import PitStopXmlParser
 
 PITSTOP_REPORT_XML = b"""<?xml version="1.0" encoding="UTF-8"?>
 <PitStopReport>

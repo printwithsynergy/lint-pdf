@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from lintpdf.api.models import Job, JobStatus, PreflightSource, Tenant, TenantPlan
+from siftpdf.api.models import Job, JobStatus, PreflightSource, Tenant, TenantPlan
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -132,7 +132,7 @@ class TestCapabilityFillinGate:
         db_session: Session,
         monkeypatch,
     ) -> None:
-        from lintpdf.queue import tasks as queue_tasks
+        from siftpdf.queue import tasks as queue_tasks
 
         monkeypatch.setattr(queue_tasks.fill_capability, "apply_async", MagicMock())
         job = _seed_job(

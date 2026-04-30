@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.analyzers.prepress import PrepressAnalyzer
-from lintpdf.semantic.events import PrepressStateChangedEvent
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.finding import Severity
+from siftpdf.analyzers.prepress import PrepressAnalyzer
+from siftpdf.semantic.events import PrepressStateChangedEvent
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document() -> SemanticDocument:
@@ -176,7 +176,7 @@ class TestCombinedPrepressEvents:
     @staticmethod
     def test_non_prepress_events_ignored() -> None:
         """Non-PrepressStateChangedEvent events are ignored."""
-        from lintpdf.semantic.events import OpacityChangedEvent
+        from siftpdf.semantic.events import OpacityChangedEvent
 
         event = OpacityChangedEvent(
             operator="gs", page_num=1, operator_index=0, non_stroking_alpha=0.5

@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.seal_zone_keepout import SealZoneKeepoutAnalyzer
-from lintpdf.semantic.events import TextRenderedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import (
+from siftpdf.analyzers.seal_zone_keepout import SealZoneKeepoutAnalyzer
+from siftpdf.semantic.events import TextRenderedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import (
     DetectedTextRegion,
     PdfBox,
     SemanticDocument,

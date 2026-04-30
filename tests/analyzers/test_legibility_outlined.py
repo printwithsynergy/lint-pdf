@@ -11,8 +11,8 @@ shared OCR pass) and emits an ADVISORY when bbox heights measure below
 
 from __future__ import annotations
 
-from lintpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
-from lintpdf.semantic.model import (
+from siftpdf.analyzers.legibility_composite import LegibilityCompositeAnalyzer
+from siftpdf.semantic.model import (
     DetectedTextRegion,
     PdfBox,
     SemanticDocument,

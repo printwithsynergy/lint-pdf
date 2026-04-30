@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.barcode import BarcodeAnalyzer
-from lintpdf.analyzers.finding import Severity
-from lintpdf.semantic.events import PathPaintingEvent
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.barcode import BarcodeAnalyzer
+from siftpdf.analyzers.finding import Severity
+from siftpdf.semantic.events import PathPaintingEvent
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document() -> SemanticDocument:

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "lintpdf"
+name = "siftpdf"
 version = "0.1.0"
 description = "Detection-only PDF preflight engine"
 requires-python = ">=3.11"
@@ -51,7 +51,7 @@ dependencies = [
     # default even for non-AI deploys.
     "prometheus-client>=0.20.0",
     # Claude Haiku 4.5 is the primary customer AI accuracy auditor
-    # (see lintpdf.audit.claude). Small SDK (~1 MB); keeping it in
+    # (see siftpdf.audit.claude). Small SDK (~1 MB); keeping it in
     # the base deps so the audit path works without the heavy ``ai``
     # extra being installed.
     "anthropic>=0.30.0",
@@ -79,7 +79,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/lintpdf"]
+packages = ["src/siftpdf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -166,15 +166,15 @@ ignore_missing_imports = true
 # attribute access on untyped library objects.
 [[tool.mypy.overrides]]
 module = [
-    "lintpdf.api.*",
-    "lintpdf.ai.*",
-    "lintpdf.analyzers.*",
-    "lintpdf.conformance.*",
-    "lintpdf.email.*",
-    "lintpdf.queue.*",
-    "lintpdf.reports.*",
-    "lintpdf.profiles.*",
-    "lintpdf.tenants.*",
+    "siftpdf.api.*",
+    "siftpdf.ai.*",
+    "siftpdf.analyzers.*",
+    "siftpdf.conformance.*",
+    "siftpdf.email.*",
+    "siftpdf.queue.*",
+    "siftpdf.reports.*",
+    "siftpdf.profiles.*",
+    "siftpdf.tenants.*",
 ]
 disallow_subclassing_any = false
 disallow_untyped_decorators = false
@@ -209,32 +209,32 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 # PDF operators use uppercase names (Q, Do, BT, ET, Tf, etc.) per ISO 32000-2
-"src/lintpdf/semantic/interpreter.py" = ["N802"]
+"src/siftpdf/semantic/interpreter.py" = ["N802"]
 "tests/semantic/test_interpreter.py" = ["N802"]
 # v2 Tier-0 primitives use PascalCase predicate names verbatim from universe enumeration §4
 # (e.g. is_DeviceCMYK, is_ICCBased) — Phase 2 Q1 operator decision.
-"src/lintpdf/primitives/color_space.py" = ["N802"]
+"src/siftpdf/primitives/color_space.py" = ["N802"]
 "tests/primitives/test_color_space.py" = ["N802"]
 # Test methods don't use self — grouped in classes for organization only
 "tests/**" = ["PLR6301"]
 # FastAPI Depends() in function defaults is the standard pattern
-"src/lintpdf/api/routes/*.py" = ["B008"]
+"src/siftpdf/api/routes/*.py" = ["B008"]
 # CIEDE2000 / ECG math uses uppercase variables per standard notation (L1, C1, Lbar, etc.)
-"src/lintpdf/analyzers/ecg_analyzer.py" = ["N806"]
-"src/lintpdf/analyzers/advanced_color_analyzer.py" = ["N806"]
+"src/siftpdf/analyzers/ecg_analyzer.py" = ["N806"]
+"src/siftpdf/analyzers/advanced_color_analyzer.py" = ["N806"]
 # EPM-Advanced ICC math (Q-C1): L/a/b CIE Lab*, R/G/B sRGB, kL/dHp/etc. CIEDE2000 standard
-"src/lintpdf/epm/icc.py" = ["N806"]
+"src/siftpdf/epm/icc.py" = ["N806"]
 "tests/epm/test_icc.py" = ["N806"]
 "tests/epm/test_k_strip.py" = ["N806"]
 # Module-level constant-like names in functions (e.g. _DEVICE_DEPENDENT, _SPOT_PREFIXES)
-"src/lintpdf/analyzers/color.py" = ["N806"]
-"src/lintpdf/analyzers/epm_analyzer.py" = ["N806"]
+"src/siftpdf/analyzers/color.py" = ["N806"]
+"src/siftpdf/analyzers/epm_analyzer.py" = ["N806"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["lintpdf"]
+known-first-party = ["siftpdf"]
 
 [tool.coverage.run]
-source = ["src/lintpdf"]
+source = ["src/siftpdf"]
 omit = ["tests/*"]
 
 [tool.coverage.report]

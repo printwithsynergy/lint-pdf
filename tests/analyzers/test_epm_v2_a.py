@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers import epm_v2_a
-from lintpdf.epm import codes
-from lintpdf.semantic.events import (
+from siftpdf.analyzers import epm_v2_a
+from siftpdf.epm import codes
+from siftpdf.semantic.events import (
     ColorChangedEvent,
     PathPaintingEvent,
     TextRenderedEvent,
 )
-from lintpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.graphics_state import TransformationMatrix
 
 
 def _ctm() -> TransformationMatrix:

@@ -24,10 +24,10 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from lintpdf.api.routes.ai_config import get_ai_config
+        from siftpdf.api.routes.ai_config import get_ai_config
 
         with patch(
-            "lintpdf.ai.config.get_or_create_ai_config",
+            "siftpdf.ai.config.get_or_create_ai_config",
             return_value=mock_ai_config,
         ):
             response = await get_ai_config(db=mock_db_session, tenant=mock_tenant)
@@ -42,15 +42,15 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from lintpdf.api.ai_schemas import AIConfigUpdateRequest
-        from lintpdf.api.routes.ai_config import update_ai_config
+        from siftpdf.api.ai_schemas import AIConfigUpdateRequest
+        from siftpdf.api.routes.ai_config import update_ai_config
 
         request = AIConfigUpdateRequest(industry_type="pharma")
 
         with (
-            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("siftpdf.ai.access.check_ai_access", return_value=mock_ai_config),
             patch(
-                "lintpdf.ai.config.update_ai_config",
+                "siftpdf.ai.config.update_ai_config",
                 return_value=mock_ai_config,
             ),
         ):
@@ -66,13 +66,13 @@ class TestAIConfigRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from lintpdf.api.ai_schemas import AIConfigUpdateRequest
-        from lintpdf.api.routes.ai_config import update_ai_config
+        from siftpdf.api.ai_schemas import AIConfigUpdateRequest
+        from siftpdf.api.routes.ai_config import update_ai_config
 
         request = AIConfigUpdateRequest(industry_type="food")
 
         with patch(
-            "lintpdf.ai.access.check_ai_access",
+            "siftpdf.ai.access.check_ai_access",
             side_effect=HTTPException(status_code=403, detail="AI not enabled"),
         ):
             with pytest.raises(HTTPException) as exc_info:
@@ -86,11 +86,11 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from lintpdf.api.routes.ai_config import delete_reference_logo
+        from siftpdf.api.routes.ai_config import delete_reference_logo
 
         with (
-            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("lintpdf.ai.config.remove_reference_logo", return_value=False),
+            patch("siftpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("siftpdf.ai.config.remove_reference_logo", return_value=False),
         ):
             with pytest.raises(HTTPException) as exc_info:
                 await delete_reference_logo(
@@ -105,11 +105,11 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from lintpdf.api.routes.ai_config import delete_reference_logo
+        from siftpdf.api.routes.ai_config import delete_reference_logo
 
         with (
-            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("lintpdf.ai.config.remove_reference_logo", return_value=True),
+            patch("siftpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("siftpdf.ai.config.remove_reference_logo", return_value=True),
         ):
             result = await delete_reference_logo(
                 logo_id="test-logo-id", db=mock_db_session, tenant=mock_tenant
@@ -123,8 +123,8 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from lintpdf.api.ai_schemas import PaletteUpdateRequest
-        from lintpdf.api.routes.ai_config import set_brand_palette
+        from siftpdf.api.ai_schemas import PaletteUpdateRequest
+        from siftpdf.api.routes.ai_config import set_brand_palette
 
         request = PaletteUpdateRequest(
             colors=[
@@ -134,8 +134,8 @@ class TestAIConfigRoutes:
         )
 
         with (
-            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("lintpdf.ai.config.update_ai_config", return_value=mock_ai_config),
+            patch("siftpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("siftpdf.ai.config.update_ai_config", return_value=mock_ai_config),
         ):
             result = await set_brand_palette(
                 request=request, db=mock_db_session, tenant=mock_tenant
@@ -149,14 +149,14 @@ class TestAIConfigRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from lintpdf.api.ai_schemas import DictionaryUpdateRequest
-        from lintpdf.api.routes.ai_config import set_custom_dictionary
+        from siftpdf.api.ai_schemas import DictionaryUpdateRequest
+        from siftpdf.api.routes.ai_config import set_custom_dictionary
 
         request = DictionaryUpdateRequest(words=["LintPDF", "CMYK", "preflight"])
 
         with (
-            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("lintpdf.ai.config.update_ai_config", return_value=mock_ai_config),
+            patch("siftpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("siftpdf.ai.config.update_ai_config", return_value=mock_ai_config),
         ):
             result = await set_custom_dictionary(
                 request=request, db=mock_db_session, tenant=mock_tenant
@@ -174,8 +174,8 @@ class TestAICreditRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from lintpdf.ai.credits import CreditBalance
-        from lintpdf.api.routes.ai_credits import get_credits
+        from siftpdf.ai.credits import CreditBalance
+        from siftpdf.api.routes.ai_credits import get_credits
 
         balance = CreditBalance(
             credit_balance=Decimal("100.00"),
@@ -187,8 +187,8 @@ class TestAICreditRoutes:
         )
 
         with (
-            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("lintpdf.ai.credits.get_credit_balance", return_value=balance),
+            patch("siftpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("siftpdf.ai.credits.get_credit_balance", return_value=balance),
         ):
             response = await get_credits(db=mock_db_session, tenant=mock_tenant)
 
@@ -203,8 +203,8 @@ class TestAICreditRoutes:
         mock_tenant: MagicMock,
         mock_ai_config: MagicMock,
     ) -> None:
-        from lintpdf.api.ai_schemas import CreditTopupRequest
-        from lintpdf.api.routes.ai_credits import topup_credits
+        from siftpdf.api.ai_schemas import CreditTopupRequest
+        from siftpdf.api.routes.ai_credits import topup_credits
 
         # The route now creates a Stripe Checkout session and returns the
         # checkout_url / session_id; the package row is inserted by the
@@ -219,14 +219,14 @@ class TestAICreditRoutes:
         }
 
         with (
-            patch("lintpdf.ai.access.check_ai_access", return_value=mock_ai_config),
-            patch("lintpdf.billing.metered_packs.pack_for_size", return_value=mock_pack_def),
-            patch("lintpdf.billing.metered_packs.resolve_price_id", return_value="price_test_500"),
+            patch("siftpdf.ai.access.check_ai_access", return_value=mock_ai_config),
+            patch("siftpdf.billing.metered_packs.pack_for_size", return_value=mock_pack_def),
+            patch("siftpdf.billing.metered_packs.resolve_price_id", return_value="price_test_500"),
             patch(
-                "lintpdf.billing.stripe_client.load_config", return_value=MagicMock(sandbox=True)
+                "siftpdf.billing.stripe_client.load_config", return_value=MagicMock(sandbox=True)
             ),
             patch(
-                "lintpdf.billing.stripe_client.create_checkout_session",
+                "siftpdf.billing.stripe_client.create_checkout_session",
                 return_value=mock_session,
             ),
         ):
@@ -243,10 +243,10 @@ class TestAICreditRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from lintpdf.api.routes.ai_credits import get_credits
+        from siftpdf.api.routes.ai_credits import get_credits
 
         with patch(
-            "lintpdf.ai.access.check_ai_access",
+            "siftpdf.ai.access.check_ai_access",
             side_effect=HTTPException(status_code=403, detail="No access"),
         ):
             with pytest.raises(HTTPException) as exc_info:
@@ -263,7 +263,7 @@ class TestAIPresetRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from lintpdf.api.routes.ai_presets import list_presets
+        from siftpdf.api.routes.ai_presets import list_presets
 
         response = await list_presets(db=mock_db_session, tenant=mock_tenant)
 
@@ -278,7 +278,7 @@ class TestAIPresetRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from lintpdf.api.routes.ai_presets import get_preset
+        from siftpdf.api.routes.ai_presets import get_preset
 
         response = await get_preset(slug="fda-food-label", db=mock_db_session, tenant=mock_tenant)
         assert response.slug == "fda-food-label"
@@ -291,7 +291,7 @@ class TestAIPresetRoutes:
         mock_db_session: MagicMock,
         mock_tenant: MagicMock,
     ) -> None:
-        from lintpdf.api.routes.ai_presets import get_preset
+        from siftpdf.api.routes.ai_presets import get_preset
 
         with pytest.raises(HTTPException) as exc_info:
             await get_preset(slug="nonexistent-preset", db=mock_db_session, tenant=mock_tenant)

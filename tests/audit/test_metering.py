@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from lintpdf.audit.metering import compute_cost_cents
-from lintpdf.audit.quota import is_over_quota
+from siftpdf.audit.metering import compute_cost_cents
+from siftpdf.audit.quota import is_over_quota
 
 
 class _Ent:

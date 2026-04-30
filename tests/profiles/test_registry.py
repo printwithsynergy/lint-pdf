@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.profiles.registry import ProfileNotFoundError, ProfileRegistry
-from lintpdf.profiles.schema import PreflightProfile
+from siftpdf.profiles.registry import ProfileNotFoundError, ProfileRegistry
+from siftpdf.profiles.schema import PreflightProfile
 
 
 class TestProfileRegistry:

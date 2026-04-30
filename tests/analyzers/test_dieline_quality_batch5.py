@@ -19,13 +19,13 @@ import io
 import pikepdf
 import pytest
 
-from lintpdf.analyzers.dieline_quality import (
+from siftpdf.analyzers.dieline_quality import (
     _is_dieline_name,
     _is_varnish_free_name,
     _is_varnish_name,
     check_dieline_quality,
 )
-from lintpdf.analyzers.finding import Severity
+from siftpdf.analyzers.finding import Severity
 
 
 def _make_sep_cs(spot_name: str, pdf: pikepdf.Pdf) -> pikepdf.Array:

@@ -10,12 +10,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
-from lintpdf.analyzers.text_metrics import (
+from siftpdf.analyzers.text_metrics import (
     effective_font_size_pt,
     effective_x_height_mm,
     glyph_bbox_height_mm,
 )
-from lintpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.graphics_state import TransformationMatrix
 
 
 @dataclass

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.accessibility import AccessibilityAnalyzer
-from lintpdf.analyzers.finding import Severity
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.accessibility import AccessibilityAnalyzer
+from siftpdf.analyzers.finding import Severity
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc_with_struct(struct_root: dict, **kwargs) -> SemanticDocument:

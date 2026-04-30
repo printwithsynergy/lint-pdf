@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from lintpdf.plugin import AnalyzerContext, PluginManifest, Tier
-from lintpdf.plugin.host import LegacyAIAdapter, default_services_for_saas
+from siftpdf.plugin import AnalyzerContext, PluginManifest, Tier
+from siftpdf.plugin.host import LegacyAIAdapter, default_services_for_saas
 
 
 class _FakeDoc:
@@ -54,7 +54,7 @@ def test_legacy_adapter_synthesizes_manifest():
     legacy = _FakeLegacyAI()
     adapter = LegacyAIAdapter(legacy)
     m: PluginManifest = adapter.manifest
-    assert m.id.startswith("lintpdf.legacy.")
+    assert m.id.startswith("siftpdf.legacy.")
     assert "_FakeLegacyAI" in m.id
     assert m.tier is Tier.CPU
     assert m.version == "0.0.0-legacy"

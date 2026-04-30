@@ -7,13 +7,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from lintpdf.api.middleware import (
+from siftpdf.api.middleware import (
     build_usage_info,
     check_rate_limit,
     get_current_usage,
     set_rate_limiter,
 )
-from lintpdf.tenants.models import TenantPlan
+from siftpdf.tenants.models import TenantPlan
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

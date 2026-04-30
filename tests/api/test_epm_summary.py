@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from lintpdf.epm import codes
+from siftpdf.epm import codes
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def _make_job(db, *, tenant_id=PLACEHOLDER_TENANT_ID):
-    from lintpdf.api.models import Job, JobStatus
+    from siftpdf.api.models import Job, JobStatus
 
     job = Job(
         id=uuid.uuid4(),
@@ -31,7 +31,7 @@ def _make_job(db, *, tenant_id=PLACEHOLDER_TENANT_ID):
 
 
 def _add_finding(db, *, job_id, inspection_id, severity="warning"):
-    from lintpdf.api.models import JobFinding
+    from siftpdf.api.models import JobFinding
 
     f = JobFinding(
         id=uuid.uuid4(),
@@ -181,7 +181,7 @@ def test_404_for_unknown_job(client: TestClient):
 
 def test_404_for_cross_tenant_job(client: TestClient, db_session: Session):
     """Foreign tenant's job must 404 (no leakage)."""
-    from lintpdf.api.models import Tenant, TenantPlan
+    from siftpdf.api.models import Tenant, TenantPlan
 
     foreign_id = uuid.uuid4()
     db_session.add(

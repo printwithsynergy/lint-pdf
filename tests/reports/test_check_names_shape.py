@@ -22,7 +22,7 @@ import re
 
 import pytest
 
-from lintpdf.reports.check_names import CHECK_NAMES
+from siftpdf.reports.check_names import CHECK_NAMES
 
 # Sentence-shaped verbs that almost always indicate a description
 # leaked into the name slot. Two industry-standard participles are

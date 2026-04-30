@@ -6,8 +6,8 @@ import secrets
 import uuid
 from typing import TYPE_CHECKING
 
-from lintpdf.api.models import Tenant
-from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
+from siftpdf.api.models import Tenant
+from siftpdf.tenants.toggle_models import ToggleOverride, ToggleScope
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

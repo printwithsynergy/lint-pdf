@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.analyzers.overprint import OverprintAnalyzer
-from lintpdf.semantic.events import (
+from siftpdf.analyzers.finding import Severity
+from siftpdf.analyzers.overprint import OverprintAnalyzer
+from siftpdf.semantic.events import (
     ColorChangedEvent,
     OpacityChangedEvent,
     OverprintChangedEvent,
 )
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document() -> SemanticDocument:

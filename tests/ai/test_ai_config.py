@@ -1,10 +1,10 @@
-"""Tests for AI configuration service (lintpdf.ai.config)."""
+"""Tests for AI configuration service (siftpdf.ai.config)."""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lintpdf.ai.config import (
+from siftpdf.ai.config import (
     add_reference_logo,
     admin_update_ai_config,
     get_or_create_ai_config,

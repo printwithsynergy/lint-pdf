@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from lintpdf.api.schemas import (
+from siftpdf.api.schemas import (
     FindingResponse,
     HealthResponse,
     JobCreateResponse,
@@ -37,7 +37,7 @@ class TestHealthResponse:
     def test_defaults() -> None:
         h = HealthResponse(status="ok")
         assert h.status == "ok"
-        assert h.service == "lintpdf"
+        assert h.service == "siftpdf"
 
     @staticmethod
     def test_custom_service() -> None:

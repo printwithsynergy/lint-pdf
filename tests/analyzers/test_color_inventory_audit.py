@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.color_inventory_audit import ColorInventoryAuditAnalyzer
-from lintpdf.semantic.model import (
+from siftpdf.analyzers.color_inventory_audit import ColorInventoryAuditAnalyzer
+from siftpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

@@ -9,21 +9,21 @@ Facts" in copy but no actual panel) disappear.
 
 from __future__ import annotations
 
-from lintpdf.ai.analyzers.regulatory_compliance.fda_nutrition import (
+from siftpdf.ai.analyzers.regulatory_compliance.fda_nutrition import (
     FdaNutritionAnalyzer,
 )
-from lintpdf.ai.analyzers.regulatory_compliance.nfp_detector import (
+from siftpdf.ai.analyzers.regulatory_compliance.nfp_detector import (
     detect_nfp_regions,
     is_supplement_facts_page,
     pages_with_nfp,
     supplement_facts_pages,
 )
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
     """Build an AnalyzerContext for analyze_v2 calls."""
-    from lintpdf.plugin.protocol import AnalyzerContext
+    from siftpdf.plugin.protocol import AnalyzerContext
 
     return AnalyzerContext(
         document=document,

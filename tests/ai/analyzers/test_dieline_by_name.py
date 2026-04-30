@@ -5,8 +5,8 @@ from __future__ import annotations
 from typing import Any
 from unittest.mock import MagicMock
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.plugin.protocol import AnalyzerContext
+from siftpdf.analyzers.finding import Severity
+from siftpdf.plugin.protocol import AnalyzerContext
 
 
 def _ctx(
@@ -75,7 +75,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_dieline_layer() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -93,7 +93,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_cut_contour_spot_color() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -107,7 +107,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_die_layer_case_insensitive() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -120,7 +120,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_cut_layer() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -132,7 +132,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_crease_layer() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -145,7 +145,7 @@ class TestDielineByNameAnalyzer:
     @staticmethod
     def test_no_dieline_packaging_file_returns_delay() -> None:
         """Packaging file without dieline should get a DELAY severity warning."""
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -167,7 +167,7 @@ class TestDielineByNameAnalyzer:
         detect un-named dielines without OCR or a vector heuristic, so
         when the file has any spot colors the severity drops to
         ADVISORY with an honest message about the limitation."""
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -188,7 +188,7 @@ class TestDielineByNameAnalyzer:
     @staticmethod
     def test_no_dieline_non_packaging_returns_advisory() -> None:
         """Non-packaging file without dieline should just get an advisory."""
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -202,7 +202,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_detects_both_layer_and_spot_color() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -220,7 +220,7 @@ class TestDielineByNameAnalyzer:
     @staticmethod
     def test_deduplicates_by_name() -> None:
         """Same name in layers and spot colors should appear only once."""
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -235,7 +235,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_analyzer_metadata() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -247,7 +247,7 @@ class TestDielineByNameAnalyzer:
 
     @staticmethod
     def test_findings_source_and_category() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -289,7 +289,7 @@ class TestTextIndicatorDielineDetection:
 
     @staticmethod
     def test_tear_across_english_detected() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -300,7 +300,7 @@ class TestTextIndicatorDielineDetection:
 
     @staticmethod
     def test_dechirer_ici_french_detected() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -310,7 +310,7 @@ class TestTextIndicatorDielineDetection:
 
     @staticmethod
     def test_tear_here_detected() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -320,7 +320,7 @@ class TestTextIndicatorDielineDetection:
 
     @staticmethod
     def test_open_here_detected() -> None:
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -332,7 +332,7 @@ class TestTextIndicatorDielineDetection:
     def test_clean_artwork_no_dieline_finding() -> None:
         """No tear/perf indicators and no spot/layer → AI_DIE_002 still fires
         (or AI_DIE_005 for non-packaging — depends on industry detection)."""
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -346,7 +346,7 @@ class TestTextIndicatorDielineDetection:
     def test_marketing_use_of_word_tear_does_not_fire() -> None:
         """``Tear-jerker special offer`` should NOT trigger — pattern
         requires the literal callout phrase (``TEAR ACROSS`` etc.)."""
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 
@@ -359,7 +359,7 @@ class TestTextIndicatorDielineDetection:
         """A doc with both a /Cutting spot AND a TEAR ACROSS callout
         should still fire AI_DIE_001 once (the pattern emits one finding
         regardless of how many sources triggered)."""
-        from lintpdf.ai.analyzers.dieline_detection.dieline_by_name import (
+        from siftpdf.ai.analyzers.dieline_detection.dieline_by_name import (
             DielineByNameAnalyzer,
         )
 

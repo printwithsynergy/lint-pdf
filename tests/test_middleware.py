@@ -11,7 +11,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi import HTTPException
 
-from lintpdf.api.middleware import (
+from siftpdf.api.middleware import (
     UsageInfo,
     build_usage_info,
     check_rate_limit,
@@ -20,7 +20,7 @@ from lintpdf.api.middleware import (
     get_redis_client,
     set_rate_limiter,
 )
-from lintpdf.tenants.models import TenantPlan
+from siftpdf.tenants.models import TenantPlan
 
 
 class FakeRedis:

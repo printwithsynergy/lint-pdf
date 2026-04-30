@@ -12,9 +12,9 @@ severity per class in the rules editor:
 
 from __future__ import annotations
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.analyzers.image import ImageAnalyzer
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.finding import Severity
+from siftpdf.analyzers.image import ImageAnalyzer
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document_with_xobjects(xobjects: dict) -> SemanticDocument:

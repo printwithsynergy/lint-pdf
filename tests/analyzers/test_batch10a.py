@@ -17,16 +17,16 @@ import io
 
 import pikepdf
 
-from lintpdf.analyzers.metadata import MetadataAnalyzer
-from lintpdf.analyzers.spot_name_normaliser import (
+from siftpdf.analyzers.metadata import MetadataAnalyzer
+from siftpdf.analyzers.spot_name_normaliser import (
     check_deprecated_pantone_names,
     check_white_subtype_specificity,
     suggest_position_tagging,
 )
-from lintpdf.analyzers.transparency import TransparencyAnalyzer
-from lintpdf.semantic.events import OpacityChangedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import (
+from siftpdf.analyzers.transparency import TransparencyAnalyzer
+from siftpdf.semantic.events import OpacityChangedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import (
     PdfBox,
     SemanticDocument,
     SemanticPage,
@@ -234,8 +234,8 @@ class TestTransparencyOnSpot:
 class TestReverseThinText:
     @staticmethod
     def test_white_small_fill_only_fires() -> None:
-        from lintpdf.analyzers.hairline import HairlineAnalyzer
-        from lintpdf.semantic.events import TextRenderedEvent
+        from siftpdf.analyzers.hairline import HairlineAnalyzer
+        from siftpdf.semantic.events import TextRenderedEvent
 
         events = [
             TextRenderedEvent(
@@ -258,8 +258,8 @@ class TestReverseThinText:
 
     @staticmethod
     def test_white_large_text_silent() -> None:
-        from lintpdf.analyzers.hairline import HairlineAnalyzer
-        from lintpdf.semantic.events import TextRenderedEvent
+        from siftpdf.analyzers.hairline import HairlineAnalyzer
+        from siftpdf.semantic.events import TextRenderedEvent
 
         events = [
             TextRenderedEvent(

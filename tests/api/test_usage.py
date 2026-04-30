@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from lintpdf.api.middleware import set_rate_limiter
+from siftpdf.api.middleware import set_rate_limiter
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

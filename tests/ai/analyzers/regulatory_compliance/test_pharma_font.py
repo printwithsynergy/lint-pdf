@@ -8,17 +8,17 @@ rule lands in WS-3 and is tested separately.
 
 from __future__ import annotations
 
-from lintpdf.ai.analyzers.regulatory_compliance.pharma_font import (
+from siftpdf.ai.analyzers.regulatory_compliance.pharma_font import (
     PharmaFontAnalyzer,
 )
-from lintpdf.semantic.events import TextRenderedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
+from siftpdf.semantic.events import TextRenderedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
 def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
     """Build an AnalyzerContext for analyze_v2 calls."""
-    from lintpdf.plugin.protocol import AnalyzerContext
+    from siftpdf.plugin.protocol import AnalyzerContext
 
     return AnalyzerContext(
         document=document,

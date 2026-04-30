@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.queue.health import get_health_status
+from siftpdf.queue.health import get_health_status
 
 
 class TestHealthStatus:

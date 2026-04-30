@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.conformance.xmp import XmpMetadata
+from siftpdf.conformance.xmp import XmpMetadata
 
 _SAMPLE_XMP = b"""\
 <?xpacket begin="\xef\xbb\xbf" id="W5M0MpCehiHzreSzNTczkc9d"?>

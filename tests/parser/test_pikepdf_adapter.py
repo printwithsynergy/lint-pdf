@@ -18,13 +18,13 @@ import io
 import pikepdf
 import pytest
 
-from lintpdf.exceptions import (
+from siftpdf.exceptions import (
     PDFObjectNotFoundError,
     PDFParseError,
     PDFStructureError,
 )
-from lintpdf.parser.adapter import PdfDocument
-from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
+from siftpdf.parser.adapter import PdfDocument
+from siftpdf.parser.pikepdf_adapter import PikePDFAdapter
 
 # --- Fixtures ---
 

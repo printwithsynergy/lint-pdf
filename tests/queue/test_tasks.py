@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from lintpdf.queue.tasks import dispatch_webhook, run_preflight
+from siftpdf.queue.tasks import dispatch_webhook, run_preflight
 
 
 class TestRunPreflightTask:
     @staticmethod
     def test_task_is_registered() -> None:
-        assert run_preflight.name == "lintpdf.preflight.run"
+        assert run_preflight.name == "siftpdf.preflight.run"
 
     @staticmethod
     def test_task_max_retries() -> None:
@@ -28,7 +28,7 @@ class TestRunPreflightTask:
 class TestDispatchWebhookTask:
     @staticmethod
     def test_task_is_registered() -> None:
-        assert dispatch_webhook.name == "lintpdf.webhook.dispatch"
+        assert dispatch_webhook.name == "siftpdf.webhook.dispatch"
 
     @staticmethod
     def test_task_max_retries() -> None:

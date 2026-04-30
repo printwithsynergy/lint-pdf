@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.imports.base import ParserError
-from lintpdf.imports.custom import CustomMappingParser
+from siftpdf.imports.base import ParserError
+from siftpdf.imports.custom import CustomMappingParser
 
 # ----------------------------------------------------------------------
 # XML mappings

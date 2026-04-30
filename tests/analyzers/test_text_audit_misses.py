@@ -9,9 +9,9 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
-from lintpdf.analyzers.spot_name_similarity import SpotNameSimilarityAnalyzer
-from lintpdf.semantic.model import (
+from siftpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
+from siftpdf.analyzers.spot_name_similarity import SpotNameSimilarityAnalyzer
+from siftpdf.semantic.model import (
     DetectedTextRegion,
     PdfBox,
     PdfColorSpace,

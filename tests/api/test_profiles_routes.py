@@ -7,7 +7,7 @@ import uuid
 from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
-from lintpdf.tenants.toggle_models import ToggleOverride, ToggleScope
+from siftpdf.tenants.toggle_models import ToggleOverride, ToggleScope
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient

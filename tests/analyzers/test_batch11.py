@@ -7,16 +7,16 @@ Covers:
 
 from __future__ import annotations
 
-from lintpdf.ai.analyzers.regulatory_compliance.alcohol import AlcoholLabelingAnalyzer
-from lintpdf.analyzers.transparency import TransparencyAnalyzer
-from lintpdf.semantic.events import TextRenderedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.ai.analyzers.regulatory_compliance.alcohol import AlcoholLabelingAnalyzer
+from siftpdf.analyzers.transparency import TransparencyAnalyzer
+from siftpdf.semantic.events import TextRenderedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
     """Build an AnalyzerContext for analyze_v2 calls."""
-    from lintpdf.plugin.protocol import AnalyzerContext
+    from siftpdf.plugin.protocol import AnalyzerContext
 
     return AnalyzerContext(
         document=document,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.plugin import (
+from siftpdf.plugin import (
     noop_cost_cap,
     noop_metering,
     noop_tenants,

@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 from unittest.mock import MagicMock
 
-from lintpdf.api.models import (
+from siftpdf.api.models import (
     Job,
     JobStatus,
     PreflightSource,
@@ -140,10 +140,10 @@ class TestWarmViewerTiles:
         we patch at the source modules (what the ``from ... import``
         inside the task resolves to).
         """
-        import lintpdf.api.database as database
-        import lintpdf.api.middleware as mw
-        import lintpdf.rendering as rendering
-        from lintpdf.queue import tasks as qtasks
+        import siftpdf.api.database as database
+        import siftpdf.api.middleware as mw
+        import siftpdf.rendering as rendering
+        from siftpdf.queue import tasks as qtasks
 
         monkeypatch.setattr(database, "get_db_session", lambda: db)
         monkeypatch.setattr(mw, "get_redis_client", lambda: redis)
@@ -178,7 +178,7 @@ class TestWarmViewerTiles:
         self._patch(monkeypatch, db_session, redis)
         job = _seed_complete_job(db_session, page_count=4)
 
-        from lintpdf.queue.tasks import _tile_warm_status_key, warm_viewer_tiles
+        from siftpdf.queue.tasks import _tile_warm_status_key, warm_viewer_tiles
 
         result = warm_viewer_tiles(str(job.id))
 
@@ -196,11 +196,11 @@ class TestWarmViewerTiles:
     def test_no_redis_returns_skip(
         self, db_session: Session, monkeypatch: pytest.MonkeyPatch
     ) -> None:
-        import lintpdf.api.middleware as mw
+        import siftpdf.api.middleware as mw
 
         monkeypatch.setattr(mw, "get_redis_client", lambda: None)
 
-        from lintpdf.queue.tasks import warm_viewer_tiles
+        from siftpdf.queue.tasks import warm_viewer_tiles
 
         result = warm_viewer_tiles("nonexistent-id")
         assert result == {"status": "no_redis", "job_id": "nonexistent-id"}
@@ -212,7 +212,7 @@ class TestWarmViewerTiles:
         self._patch(monkeypatch, db_session, redis)
         job = _seed_complete_job(db_session)
 
-        from lintpdf.queue.tasks import _tile_warm_lock_key, warm_viewer_tiles
+        from siftpdf.queue.tasks import _tile_warm_lock_key, warm_viewer_tiles
 
         # Pre-populate the lock key: a second run should bail out.
         redis.set(_tile_warm_lock_key(str(job.id)), "already", nx=False, ex=600)
@@ -241,7 +241,7 @@ class TestWarmViewerTiles:
         db_session.add(job)
         db_session.commit()
 
-        from lintpdf.queue.tasks import warm_viewer_tiles
+        from siftpdf.queue.tasks import warm_viewer_tiles
 
         result = warm_viewer_tiles(str(job.id))
         assert result["status"] == "not_complete"
@@ -254,7 +254,7 @@ class TestWarmViewerTiles:
         monkeypatch.setenv("LINTPDF_TILE_WARMING_PER_TENANT_MAX", "1")
         job = _seed_complete_job(db_session)
 
-        from lintpdf.queue.tasks import (
+        from siftpdf.queue.tasks import (
             _tile_warm_tenant_semaphore_key,
             warm_viewer_tiles,
         )
@@ -286,7 +286,7 @@ class TestTileWarmingEndpoint:
         db_session: Session,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        import lintpdf.api.middleware as mw
+        import siftpdf.api.middleware as mw
 
         monkeypatch.setattr(mw, "get_redis_client", lambda: None)
         job = _seed_complete_job(db_session, page_count=5)
@@ -305,13 +305,13 @@ class TestTileWarmingEndpoint:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         redis = FakeRedis()
-        import lintpdf.api.middleware as mw
+        import siftpdf.api.middleware as mw
 
         monkeypatch.setattr(mw, "get_redis_client", lambda: redis)
 
         job = _seed_complete_job(db_session, page_count=10)
 
-        from lintpdf.queue.tasks import _tile_warm_status_key
+        from siftpdf.queue.tasks import _tile_warm_status_key
 
         redis.hset(
             _tile_warm_status_key(str(job.id)),
@@ -409,7 +409,7 @@ class TestAnnotationsAndComments:
 
             return _R()
 
-        import lintpdf.email.service as email_svc
+        import siftpdf.email.service as email_svc
 
         monkeypatch.setattr(email_svc, "send_annotation_comment", _capture)
 
@@ -473,7 +473,7 @@ class TestMarkupPdfRenderer:
 
     def test_generate_markup_pdf_stamps_all_primitives(self) -> None:
         """All five annotation kinds + appendix page render without error."""
-        from lintpdf.reports.markup_pdf_report import generate_markup_pdf
+        from siftpdf.reports.markup_pdf_report import generate_markup_pdf
 
         pdf_bytes = self._tiny_pdf()
         note_id = str(uuid.uuid4())

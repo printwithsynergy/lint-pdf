@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import struct
 
-from lintpdf.analyzers._font_sfnt import (
+from siftpdf.analyzers._font_sfnt import (
     FsTypeInfo,
     format_fstype_flags,
     parse_fstype,
 )
-from lintpdf.analyzers.finding import Severity
-from lintpdf.analyzers.font import FontAnalyzer
-from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
+from siftpdf.analyzers.finding import Severity
+from siftpdf.analyzers.font import FontAnalyzer
+from siftpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 # ---------------------------------------------------------------------------
 # Helpers — hand-craft a minimal sfnt with a single OS/2 table.

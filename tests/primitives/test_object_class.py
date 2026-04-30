@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.primitives import REGISTRY, object_class
+from siftpdf.primitives import REGISTRY, object_class
 
 # ---- registry --------------------------------------------------------------
 

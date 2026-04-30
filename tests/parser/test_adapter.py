@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.parser.adapter import (
+from siftpdf.parser.adapter import (
     ParserAdapter,
     PdfDocument,
     PdfObject,

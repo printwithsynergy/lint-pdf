@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import math
 
-from lintpdf.analyzers.legal_copy_min_size import LegalCopyMinSizeAnalyzer
-from lintpdf.semantic.events import TextRenderedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.legal_copy_min_size import LegalCopyMinSizeAnalyzer
+from siftpdf.semantic.events import TextRenderedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc() -> SemanticDocument:

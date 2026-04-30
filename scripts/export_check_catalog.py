@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Emit ``check-catalog.json`` for the app's Rules editor.
 
-Reads :data:`lintpdf.reports.check_names.CHECK_NAMES` (the
+Reads :data:`siftpdf.reports.check_names.CHECK_NAMES` (the
 single source of truth for inspection_id → friendly name +
 description) and writes it out in a shape the Rules editor
 consumes, grouped by category with a guessed default severity.
@@ -45,7 +45,7 @@ from pathlib import Path
 ENGINE_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ENGINE_ROOT / "src"))
 
-from lintpdf.reports.check_names import CHECK_NAMES  # noqa: E402
+from siftpdf.reports.check_names import CHECK_NAMES  # noqa: E402
 
 # ── Category mapping ────────────────────────────────────────
 

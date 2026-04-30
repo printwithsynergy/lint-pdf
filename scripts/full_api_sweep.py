@@ -160,7 +160,7 @@ def provision_tenant_if_needed() -> None:
         headers=_admin_headers(),
         json_body={
             "name": f"api-sweep-{uuid.uuid4().hex[:8]}",
-            "contact_email": "sweep@lintpdf.example",
+            "contact_email": "sweep@siftpdf.example",
             "plan": "growth",
         },
         expect=(201,),
@@ -260,7 +260,7 @@ def submit_jobs() -> dict[str, str]:
             headers={"X-Trial-Secret": TRIAL_SECRET},
             data={
                 "name": "API Sweep",
-                "email": "sweep@lintpdf.example",
+                "email": "sweep@siftpdf.example",
                 "company": "Sweep Inc",
             },
             files={"files": (Path(PDF_PATH).name, pdf, "application/pdf")},

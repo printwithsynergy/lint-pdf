@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from lintpdf.analyzers.finding import Finding, Severity
-from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
+from siftpdf.analyzers.finding import Finding, Severity
+from siftpdf.profiles.orchestrator import PreflightResult, PreflightSummary
 
 
 @pytest.fixture

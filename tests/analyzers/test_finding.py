@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.finding import Finding, Severity
+from siftpdf.analyzers.finding import Finding, Severity
 
 
 class TestSeverity:

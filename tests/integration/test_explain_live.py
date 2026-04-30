@@ -1,7 +1,7 @@
 """Live-AI verification (Gate G5 PR 20).
 
 Opt-in test that hits the **real** Claude Haiku 4.5 API via
-:func:`lintpdf.ai.explain.explain_finding`. Exercises the full path:
+:func:`siftpdf.ai.explain.explain_finding`. Exercises the full path:
 
 * No-cache (skip_cache=True) → real API call.
 * Cache write back to the JobFinding row.
@@ -45,8 +45,8 @@ def _has_api_key() -> bool:
 
 def test_real_claude_explain_round_trip(_has_api_key, db_session, tmp_path) -> None:
     """Hit real Claude — assert cache write + non-empty explanation."""
-    from lintpdf.ai.explain import explain_finding
-    from lintpdf.api.models import Job, JobFinding, JobStatus
+    from siftpdf.ai.explain import explain_finding
+    from siftpdf.api.models import Job, JobFinding, JobStatus
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     job = Job(
@@ -96,8 +96,8 @@ def test_real_claude_explain_round_trip(_has_api_key, db_session, tmp_path) -> N
 
 def test_real_claude_explain_caches_second_call(_has_api_key, db_session) -> None:
     """Second call should hit the cache; no new API spend."""
-    from lintpdf.ai.explain import explain_finding
-    from lintpdf.api.models import Job, JobFinding, JobStatus
+    from siftpdf.ai.explain import explain_finding
+    from siftpdf.api.models import Job, JobFinding, JobStatus
     from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
     job = Job(

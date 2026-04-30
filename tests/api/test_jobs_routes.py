@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from io import BytesIO
 from typing import TYPE_CHECKING
 
-from lintpdf.api.models import Job, JobFinding, JobStatus
+from siftpdf.api.models import Job, JobFinding, JobStatus
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -99,7 +99,7 @@ class TestSubmitJobValidation:
         self, client: TestClient, db_session: Session
     ) -> None:
         """Tenant max_file_size_mb is 10 by default; a huge file should be 413."""
-        from lintpdf.api.models import Tenant
+        from siftpdf.api.models import Tenant
 
         t = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         over_limit = (t.max_file_size_mb * 1024 * 1024) + 1
@@ -152,7 +152,7 @@ class TestSubmitJobSuccess:
 
     @staticmethod
     def test_celery_task_dispatched(client: TestClient, minimal_pdf_bytes: bytes) -> None:
-        from lintpdf.queue import tasks
+        from siftpdf.queue import tasks
 
         _submit(client, minimal_pdf_bytes)
         tasks.run_preflight.apply_async.assert_called()
@@ -160,7 +160,7 @@ class TestSubmitJobSuccess:
     @staticmethod
     def test_pdf_stored(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         """The uploaded file should be persisted in in-memory storage."""
-        from lintpdf.api.storage import get_storage
+        from siftpdf.api.storage import get_storage
 
         _submit(client, minimal_pdf_bytes)
         storage = get_storage()
@@ -174,7 +174,7 @@ class TestSubmitJobRateLimitHeaders:
     def test_no_rate_headers_without_redis(
         self, client: TestClient, minimal_pdf_bytes: bytes
     ) -> None:
-        from lintpdf.api.middleware import set_rate_limiter
+        from siftpdf.api.middleware import set_rate_limiter
 
         set_rate_limiter(None)
         resp = _submit(client, minimal_pdf_bytes)
@@ -183,7 +183,7 @@ class TestSubmitJobRateLimitHeaders:
     @staticmethod
     def test_rate_headers_with_redis(client: TestClient, minimal_pdf_bytes: bytes) -> None:
         """When Redis is available, rate limit headers should be present."""
-        from lintpdf.api.middleware import set_rate_limiter
+        from siftpdf.api.middleware import set_rate_limiter
         from tests.api.test_usage import FakeRedis
 
         fake = FakeRedis()
@@ -281,7 +281,7 @@ class TestGetJob:
         client: TestClient, db_session: Session
     ) -> None:
         """Single-job endpoint inlines the EPM verdict + active decisions count."""
-        from lintpdf.epm import codes as epm_codes
+        from siftpdf.epm import codes as epm_codes
 
         result = {
             "summary": {
@@ -318,7 +318,7 @@ class TestGetJob:
         """Per-finding AI explanation + effective_decision projection."""
         from datetime import datetime, timezone
 
-        from lintpdf.decisions.service import record_decision
+        from siftpdf.decisions.service import record_decision
 
         result = {
             "summary": {

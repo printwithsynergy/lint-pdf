@@ -8,13 +8,13 @@ class TestAIPresets:
 
     @staticmethod
     def test_all_seven_presets_exist() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         assert len(_AI_PRESETS) == 7
 
     @staticmethod
     def test_expected_preset_slugs() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         expected = {
             "fda-food-label",
@@ -29,7 +29,7 @@ class TestAIPresets:
 
     @staticmethod
     def test_each_preset_has_required_fields() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         for slug, data in _AI_PRESETS.items():
             assert "name" in data, f"Preset {slug} missing 'name'"
@@ -38,7 +38,7 @@ class TestAIPresets:
 
     @staticmethod
     def test_each_preset_has_features() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         for slug, data in _AI_PRESETS.items():
             features = data["features"]
@@ -47,14 +47,14 @@ class TestAIPresets:
 
     @staticmethod
     def test_full_ai_scan_has_all() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         features = _AI_PRESETS["full-ai-scan"]["features"]
         assert features == ["all"]
 
     @staticmethod
     def test_fda_food_label_features() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         features = _AI_PRESETS["fda-food-label"]["features"]
         assert "fda_nutrition_facts" in features
@@ -63,7 +63,7 @@ class TestAIPresets:
 
     @staticmethod
     def test_packaging_qc_features() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         features = _AI_PRESETS["packaging-qc"]["features"]
         assert "dieline_by_name" in features
@@ -73,7 +73,7 @@ class TestAIPresets:
 
     @staticmethod
     def test_brand_compliance_features() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         features = _AI_PRESETS["brand-compliance"]["features"]
         assert "brand_palette_check" in features
@@ -82,7 +82,7 @@ class TestAIPresets:
 
     @staticmethod
     def test_preset_names_are_non_empty_strings() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         for _slug, data in _AI_PRESETS.items():
             name = data["name"]
@@ -90,7 +90,7 @@ class TestAIPresets:
 
     @staticmethod
     def test_preset_descriptions_are_non_empty_strings() -> None:
-        from lintpdf.api.routes.ai_presets import _AI_PRESETS
+        from siftpdf.api.routes.ai_presets import _AI_PRESETS
 
         for _slug, data in _AI_PRESETS.items():
             desc = data["description"]
@@ -102,7 +102,7 @@ class TestGetFeatureInfo:
 
     @staticmethod
     def test_returns_unknown_for_unregistered_feature() -> None:
-        from lintpdf.api.routes.ai_presets import _get_feature_info
+        from siftpdf.api.routes.ai_presets import _get_feature_info
 
         info = _get_feature_info("nonexistent_feature")
         assert info.slug == "nonexistent_feature"

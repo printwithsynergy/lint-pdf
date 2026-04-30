@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.conformance.pdfx4._color import validate_color
-from lintpdf.semantic.events import ColorChangedEvent, TextRenderedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.finding import Severity
+from siftpdf.conformance.pdfx4._color import validate_color
+from siftpdf.semantic.events import ColorChangedEvent, TextRenderedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(

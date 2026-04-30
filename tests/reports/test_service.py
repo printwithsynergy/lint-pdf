@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import uuid
 
-from lintpdf.api.storage import InMemoryStorage
-from lintpdf.reports.service import BrandingContext, ReportService
+from siftpdf.api.storage import InMemoryStorage
+from siftpdf.reports.service import BrandingContext, ReportService
 
 
 class _FakeDB:

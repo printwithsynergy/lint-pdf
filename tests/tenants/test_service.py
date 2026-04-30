@@ -12,9 +12,9 @@ from sqlalchemy.pool import StaticPool
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-from lintpdf.api.models import Base
-from lintpdf.tenants.models import TenantPlan
-from lintpdf.tenants.service import TenantService
+from siftpdf.api.models import Base
+from siftpdf.tenants.models import TenantPlan
+from siftpdf.tenants.service import TenantService
 
 
 @pytest.fixture

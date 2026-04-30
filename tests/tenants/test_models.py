@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.tenants.models import PLAN_LIMITS, TenantInfo, TenantPlan
+from siftpdf.tenants.models import PLAN_LIMITS, TenantInfo, TenantPlan
 
 
 class TestTenantPlan:

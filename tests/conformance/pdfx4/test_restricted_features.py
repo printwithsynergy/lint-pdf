@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.conformance.pdfx4._restricted_features import validate_restricted_features
-from lintpdf.semantic.events import PrepressStateChangedEvent
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.finding import Severity
+from siftpdf.conformance.pdfx4._restricted_features import validate_restricted_features
+from siftpdf.semantic.events import PrepressStateChangedEvent
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(

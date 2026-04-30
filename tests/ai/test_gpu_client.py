@@ -1,4 +1,4 @@
-"""Tests for GPUInferenceClient and CircuitBreaker (lintpdf.ai.gpu_client)."""
+"""Tests for GPUInferenceClient and CircuitBreaker (siftpdf.ai.gpu_client)."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lintpdf.ai.gpu_client import CircuitBreaker, GPUInferenceClient, GPUServiceUnavailableError
+from siftpdf.ai.gpu_client import CircuitBreaker, GPUInferenceClient, GPUServiceUnavailableError
 
 
 class TestCircuitBreaker:
@@ -266,13 +266,13 @@ class TestSharedClientSingleton:
 
     @staticmethod
     def test_same_url_returns_same_instance() -> None:
-        from lintpdf.ai.gpu_client import (
+        from siftpdf.ai.gpu_client import (
             _reset_shared_clients_for_tests,
             get_gpu_client,
         )
 
         _reset_shared_clients_for_tests()
-        with patch("lintpdf.api.config.get_settings") as mock_settings:
+        with patch("siftpdf.api.config.get_settings") as mock_settings:
             mock_settings.return_value.gpu_inference_url = "http://gpu:8080"
             a = get_gpu_client()
             b = get_gpu_client()
@@ -281,13 +281,13 @@ class TestSharedClientSingleton:
     @staticmethod
     def test_different_urls_return_different_instances() -> None:
         """Test harness / multi-endpoint deployments shouldn't share breakers."""
-        from lintpdf.ai.gpu_client import (
+        from siftpdf.ai.gpu_client import (
             _reset_shared_clients_for_tests,
             get_gpu_client,
         )
 
         _reset_shared_clients_for_tests()
-        with patch("lintpdf.api.config.get_settings") as mock_settings:
+        with patch("siftpdf.api.config.get_settings") as mock_settings:
             mock_settings.return_value.gpu_inference_url = "http://gpu-a:8080"
             a = get_gpu_client()
             mock_settings.return_value.gpu_inference_url = "http://gpu-b:8080"
@@ -297,13 +297,13 @@ class TestSharedClientSingleton:
     @staticmethod
     def test_breaker_failures_persist_across_get_calls() -> None:
         """After record_failure, the next get_gpu_client() sees the same breaker."""
-        from lintpdf.ai.gpu_client import (
+        from siftpdf.ai.gpu_client import (
             _reset_shared_clients_for_tests,
             get_gpu_client,
         )
 
         _reset_shared_clients_for_tests()
-        with patch("lintpdf.api.config.get_settings") as mock_settings:
+        with patch("siftpdf.api.config.get_settings") as mock_settings:
             mock_settings.return_value.gpu_inference_url = "http://gpu:8080"
             a = get_gpu_client()
             a._breaker.record_failure()
@@ -342,7 +342,7 @@ class TestRateLimit429Handling:
 
     @staticmethod
     def test_single_429_that_resolves_does_not_record_failure() -> None:
-        from lintpdf.ai.gpu_client import GPUInferenceClient
+        from siftpdf.ai.gpu_client import GPUInferenceClient
 
         ok = TestRateLimit429Handling._mock_response(200, {"score": 90})
         throttled = TestRateLimit429Handling._mock_response(429)
@@ -357,7 +357,7 @@ class TestRateLimit429Handling:
 
     @staticmethod
     def test_budget_exhausted_429_records_one_failure() -> None:
-        from lintpdf.ai.gpu_client import (
+        from siftpdf.ai.gpu_client import (
             GPUInferenceClient,
             GPUServiceRateLimitedError,
         )
@@ -374,7 +374,7 @@ class TestRateLimit429Handling:
 
     @staticmethod
     def test_three_budget_exhausted_429s_open_the_breaker() -> None:
-        from lintpdf.ai.gpu_client import (
+        from siftpdf.ai.gpu_client import (
             GPUInferenceClient,
             GPUServiceRateLimitedError,
             GPUServiceUnavailableError,
@@ -405,7 +405,7 @@ class TestPerCallTimeoutOverride:
 
     @staticmethod
     def test_default_timeout_is_30s() -> None:
-        from lintpdf.ai.gpu_client import GPUInferenceClient
+        from siftpdf.ai.gpu_client import GPUInferenceClient
 
         client = GPUInferenceClient(base_url="https://example.test")
         assert client._timeout == 30.0
@@ -416,12 +416,12 @@ class TestPerCallTimeoutOverride:
         client.request must receive ``timeout=240`` not ``timeout=30``."""
         from unittest.mock import MagicMock, patch
 
-        from lintpdf.ai.gpu_client import (
+        from siftpdf.ai.gpu_client import (
             _GPU_COLD_START_TIMEOUT_S,
             GPUInferenceClient,
         )
 
-        with patch("lintpdf.ai.gpu_client.httpx.Client") as mock_client_cls:
+        with patch("siftpdf.ai.gpu_client.httpx.Client") as mock_client_cls:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {"text_regions": []}
@@ -439,9 +439,9 @@ class TestPerCallTimeoutOverride:
         """Non-OCR endpoints (no cold-start concern) use the default 30 s."""
         from unittest.mock import MagicMock, patch
 
-        from lintpdf.ai.gpu_client import GPUInferenceClient
+        from siftpdf.ai.gpu_client import GPUInferenceClient
 
-        with patch("lintpdf.ai.gpu_client.httpx.Client") as mock_client_cls:
+        with patch("siftpdf.ai.gpu_client.httpx.Client") as mock_client_cls:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.json.return_value = {}

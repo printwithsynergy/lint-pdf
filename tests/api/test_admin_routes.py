@@ -11,9 +11,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from lintpdf.api.app import create_app
-from lintpdf.api.database import get_db
-from lintpdf.api.models import Base, Job, JobStatus, Tenant, TenantPlan
+from siftpdf.api.app import create_app
+from siftpdf.api.database import get_db
+from siftpdf.api.models import Base, Job, JobStatus, Tenant, TenantPlan
 
 if TYPE_CHECKING:
     from collections.abc import Generator

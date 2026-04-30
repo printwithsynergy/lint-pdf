@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from lintpdf.ai.analyzers.regulatory_compliance._gates import (
+from siftpdf.ai.analyzers.regulatory_compliance._gates import (
     is_cosmetic_applicable,
     is_eu_food_applicable,
     is_ghs_applicable,

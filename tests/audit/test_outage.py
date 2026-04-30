@@ -1,4 +1,4 @@
-"""Unit tests for ``lintpdf.audit.outage``.
+"""Unit tests for ``siftpdf.audit.outage``.
 
 Uses ``fakeredis`` when available (optional test dep); otherwise the
 module's fail-open guard kicks in and the tests assert that
@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from lintpdf.audit import outage
+from siftpdf.audit import outage
 
 
 class _MemoryRedis:

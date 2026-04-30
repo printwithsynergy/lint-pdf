@@ -14,7 +14,7 @@ sheet-wide envelope.
 
 from __future__ import annotations
 
-from lintpdf.analyzers.dieline_quality import (
+from siftpdf.analyzers.dieline_quality import (
     _is_multi_up,
     _min_overhang_against_regions,
 )

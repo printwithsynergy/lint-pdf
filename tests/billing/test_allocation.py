@@ -7,8 +7,8 @@ from decimal import Decimal
 
 import pytest
 
-from lintpdf.api.models import TenantAICreditPackage
-from lintpdf.billing.allocation import (
+from siftpdf.api.models import TenantAICreditPackage
+from siftpdf.billing.allocation import (
     allocate_monthly,
     fulfill_purchase,
 )
@@ -22,7 +22,7 @@ def _period() -> datetime:
 class TestAllocateMonthly:
     @staticmethod
     def test_grants_credits_on_growth_tier(db_session) -> None:
-        from lintpdf.api.models import Tenant
+        from siftpdf.api.models import Tenant
 
         tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         # Conftest seeds a GROWTH tenant (monthly_ai_credits=500).
@@ -47,7 +47,7 @@ class TestAllocateMonthly:
 
     @staticmethod
     def test_idempotent_on_same_period(db_session) -> None:
-        from lintpdf.api.models import Tenant
+        from siftpdf.api.models import Tenant
 
         tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         first = allocate_monthly(
@@ -85,7 +85,7 @@ class TestAllocateMonthly:
 
     @staticmethod
     def test_files_grants_are_distinct_from_credits(db_session) -> None:
-        from lintpdf.api.models import Tenant
+        from siftpdf.api.models import Tenant
 
         tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         c = allocate_monthly(
@@ -110,7 +110,7 @@ class TestAllocateMonthly:
 
     @staticmethod
     def test_returns_none_when_plan_allots_zero(db_session) -> None:
-        from lintpdf.api.models import Tenant, TenantPlan
+        from siftpdf.api.models import Tenant, TenantPlan
 
         tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         tenant.plan = TenantPlan.FREE  # FREE has monthly_ai_credits=0
@@ -126,7 +126,7 @@ class TestAllocateMonthly:
 
     @staticmethod
     def test_override_wins_over_plan_default(db_session) -> None:
-        from lintpdf.api.models import Tenant, TenantPlan
+        from siftpdf.api.models import Tenant, TenantPlan
 
         tenant = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         tenant.plan = TenantPlan.FREE  # plan default = 0

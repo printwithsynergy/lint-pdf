@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.api.auth import generate_api_key, hash_api_key
+from siftpdf.api.auth import generate_api_key, hash_api_key
 
 
 class TestApiKeyGeneration:

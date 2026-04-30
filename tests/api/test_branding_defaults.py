@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from lintpdf.api.models import BrandProfile, BrandProfileType, Tenant
+from siftpdf.api.models import BrandProfile, BrandProfileType, Tenant
 
 if TYPE_CHECKING:
     from fastapi.testclient import TestClient
@@ -22,7 +22,7 @@ class TestGetBrandingDefaults:
         resp = client.get(ROUTE)
         assert resp.status_code == 200
         body = resp.json()
-        assert body["mode"] == "lintpdf"
+        assert body["mode"] == "siftpdf"
         assert body["unbranded_by_default"] is False
         assert body["default_brand_profile_id"] is None
 
@@ -64,10 +64,10 @@ class TestPatchBrandingDefaults:
         t.unbranded_by_default = True
         db_session.commit()
 
-        resp = client.patch(ROUTE, json={"mode": "lintpdf"})
+        resp = client.patch(ROUTE, json={"mode": "siftpdf"})
         assert resp.status_code == 200
         body = resp.json()
-        assert body["mode"] == "lintpdf"
+        assert body["mode"] == "siftpdf"
         assert body["unbranded_by_default"] is False
         assert body["default_brand_profile_id"] is None
 

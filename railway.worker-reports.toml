@@ -21,7 +21,7 @@ watchPatterns = [
 # lets this worker absorb burst render load without stealing Celery
 # slots from deterministic / AI preflight.
 numReplicas = 1
-startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --loglevel=info --queues=reports --concurrency=${CELERY_REPORTS_CONCURRENCY:-4}'"
+startCommand = "sh -c 'celery -A siftpdf.queue.worker worker --loglevel=info --queues=reports --concurrency=${CELERY_REPORTS_CONCURRENCY:-4}'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 gracefulShutdownTimeoutSec = 660

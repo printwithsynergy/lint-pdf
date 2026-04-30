@@ -9,16 +9,16 @@ free, etc.)."""
 
 from __future__ import annotations
 
-from lintpdf.ai.analyzers.regulatory_compliance.eu_fir_1169 import (
+from siftpdf.ai.analyzers.regulatory_compliance.eu_fir_1169 import (
     EuFir1169Analyzer,
     _in_declaration_context,
 )
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _ctx(document, events=None, pdf_bytes=b"", ai_config=None):
     """Build an AnalyzerContext for analyze_v2 calls."""
-    from lintpdf.plugin.protocol import AnalyzerContext
+    from siftpdf.plugin.protocol import AnalyzerContext
 
     return AnalyzerContext(
         document=document,

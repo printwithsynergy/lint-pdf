@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from lintpdf.queue.tasks import (
+from siftpdf.queue.tasks import (
     _DEFAULT_MAX_RETRIES,
     _DEFAULT_RETRY_BASE_DELAY_S,
     _DEFAULT_RETRY_MAX_DELAY_S,
     _RETRY_CEILING,
 )
-from lintpdf.webhooks.events import resolve_signing_secret
+from siftpdf.webhooks.events import resolve_signing_secret
 
 # ---- Q-D3 secret resolution ----------------------------------------------
 

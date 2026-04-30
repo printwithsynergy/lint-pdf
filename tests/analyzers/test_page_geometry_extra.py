@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.page_geometry_extra import PageGeometryExtraAnalyzer
-from lintpdf.semantic.events import PathPaintingEvent
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.page_geometry_extra import PageGeometryExtraAnalyzer
+from siftpdf.semantic.events import PathPaintingEvent
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _path(idx: int, page_num: int, bbox: tuple[float, float, float, float]) -> PathPaintingEvent:

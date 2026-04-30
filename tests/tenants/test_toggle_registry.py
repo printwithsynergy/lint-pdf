@@ -9,14 +9,14 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from lintpdf.api.models import Base
-from lintpdf.tenants.toggle_models import (
+from siftpdf.api.models import Base
+from siftpdf.tenants.toggle_models import (
     MergeStrategy,
     Toggle,
     ToggleScope,
     ToggleType,
 )
-from lintpdf.tenants.toggle_registry import (
+from siftpdf.tenants.toggle_registry import (
     CATEGORY_REGISTRY,
     seed_category_toggles,
 )

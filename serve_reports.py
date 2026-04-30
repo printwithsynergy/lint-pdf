@@ -23,7 +23,7 @@ from datetime import datetime, timedelta, timezone
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-# Set environment before importing anything from lintpdf
+# Set environment before importing anything from siftpdf
 os.environ["LINTPDF_DATABASE_URL"] = "postgresql://lintpdf:lintpdf@localhost:5432/lintpdf"
 os.environ["DATABASE_URL"] = "postgresql://lintpdf:lintpdf@localhost:5432/lintpdf"
 os.environ["LINTPDF_REDIS_URL"] = "redis://localhost:6379/0"
@@ -36,7 +36,7 @@ LOCAL_STORAGE_DIR = "/home/user/lint-pdf/packages/engine/.local-storage"
 
 # ── Local filesystem storage backend ──────────────────────────────────────────
 
-from lintpdf.api.storage import StorageBackend
+from siftpdf.api.storage import StorageBackend
 
 
 class LocalFileStorage(StorageBackend):
@@ -114,7 +114,7 @@ def main():
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    from lintpdf.api.models import (
+    from siftpdf.api.models import (
         Base,
         Job,
         JobFinding,
@@ -122,7 +122,7 @@ def main():
         ReportToken,
         Tenant,
     )
-    from lintpdf.tenants.models import TenantPlan
+    from siftpdf.tenants.models import TenantPlan
 
     db_url = os.environ["LINTPDF_DATABASE_URL"]
     engine = create_engine(db_url)
@@ -157,8 +157,8 @@ def main():
         pdf_bytes = f.read()
     print(f"  File size: {len(pdf_bytes):,} bytes")
 
-    from lintpdf.profiles.orchestrator import PreflightOrchestrator
-    from lintpdf.profiles.schema import AIFeatureConfig, PreflightProfile
+    from siftpdf.profiles.orchestrator import PreflightOrchestrator
+    from siftpdf.profiles.schema import AIFeatureConfig, PreflightProfile
 
     profile = PreflightProfile(
         name="Full Preflight + AI",
@@ -258,7 +258,7 @@ def main():
     print(f"  {len(result.findings)} findings stored")
 
     # ── 6. Generate reports ───────────────────────────────────────────────────
-    from lintpdf.reports.engine import ReportEngine
+    from siftpdf.reports.engine import ReportEngine
 
     report_engine = ReportEngine()
     base_url = os.environ["LINTPDF_REPORT_BASE_URL"]
@@ -304,14 +304,14 @@ def main():
     print(f"{'='*70}")
 
     # ── 8. Patch storage and start server ─────────────────────────────────────
-    from lintpdf.api.storage import set_storage
+    from siftpdf.api.storage import set_storage
     set_storage(storage)
 
     print(f"\n  Starting engine server on port 8000...")
     print(f"  Reports will be served at the URLs above.\n")
 
     import uvicorn
-    from lintpdf.api.app import create_app
+    from siftpdf.api.app import create_app
 
     app = create_app()
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")

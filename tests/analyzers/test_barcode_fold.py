@@ -9,8 +9,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from lintpdf.analyzers.barcode import BarcodeAnalyzer, _BarcodeCandidate
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.barcode import BarcodeAnalyzer, _BarcodeCandidate
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 @dataclass

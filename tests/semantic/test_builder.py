@@ -7,9 +7,9 @@ import io
 import pikepdf
 import pytest
 
-from lintpdf.parser.pikepdf_adapter import PikePDFAdapter
-from lintpdf.semantic.builder import SemanticModelBuilder
-from lintpdf.semantic.model import PdfBox
+from siftpdf.parser.pikepdf_adapter import PikePDFAdapter
+from siftpdf.semantic.builder import SemanticModelBuilder
+from siftpdf.semantic.model import PdfBox
 
 
 @pytest.fixture

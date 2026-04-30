@@ -37,7 +37,7 @@ WORKERS="${LINTPDF_WORKERS:-4}"
 CONCURRENCY="${LINTPDF_CONCURRENCY_PER_WORKER:-20}"
 
 echo "[entrypoint] starting uvicorn on port ${PORT:-8000} (workers=${WORKERS} concurrency=${CONCURRENCY})"
-exec uvicorn lintpdf.api.app:create_app \
+exec uvicorn siftpdf.api.app:create_app \
     --host 0.0.0.0 \
     --port "${PORT:-8000}" \
     --factory \

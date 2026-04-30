@@ -34,7 +34,7 @@ import sys
 from pathlib import Path
 
 # Where the route source files live.
-ROUTES_DIR = Path(__file__).parent.parent / "src" / "lintpdf" / "api" / "routes"
+ROUTES_DIR = Path(__file__).parent.parent / "src" / "siftpdf" / "api" / "routes"
 
 # Where the baseline lives.
 BASELINE_FILE = Path(__file__).parent / "route_classification_baseline.txt"

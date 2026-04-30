@@ -1,0 +1,1714 @@
+"""Dieline-quality findings (Batches 4+5 — Tier-3 dieline wedge).
+
+Runs against a resolved ``DielineResult`` + the raw PDF bytes and
+emits up to six findings per job:
+
+* ``LPDF_DIE_ZORDER`` — dieline drawn below artwork (T3-D02).
+* ``LPDF_DIE_KNOCKOUT`` — dieline stroke set to knockout instead
+  of overprint (T3-D03).
+* ``LPDF_DIE_AS_ART`` — dieline spot used as a fill, so the cutter
+  will follow the filled region as a massive closed path (T3-D15).
+  Canonical Canva-export bug — unique to lintPDF per the
+  competitive audit.
+* ``LPDF_DIE_LAYER_CONTENT`` — non-dieline paint ops inside a
+  dieline-named OCG marked-content block (T3-D01). Catches the
+  Illustrator "dropped an image on the Dieline layer" mistake.
+* ``LPDF_DIE_CONTENT_OUTSIDE`` — non-dieline content whose bbox
+  extends beyond the dieline polygon envelope (T3-D05). Uses the
+  detector's per-region bboxes rather than the trim box so
+  non-rectangular products (round labels, shaped packaging) are
+  measured tightly.
+* ``LPDF_DIE_VARNISH_COLLISION`` — varnish spot paints inside a
+  VarnishFree region (T3-D10). Common coating mistake on packaging.
+
+Shares no state with the detector module in ``dieline.py``. The
+detector says *where* the dieline is; this module says *what's
+wrong with how it's used*. Keeps the 1000-LOC detector focused and
+my quality walker self-contained.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import logging
+from typing import Any
+
+from siftpdf.analyzers.finding import Finding, Severity
+from siftpdf.primitives import object_class
+
+__all__ = ["check_dieline_quality"]
+
+logger = logging.getLogger(__name__)
+
+# Threshold below which a filled dieline area is emitted as advisory
+# rather than error. 50 pt² ≈ 7 x 7 pt ≈ 2.5mm square — below that
+# it's almost certainly a tick-mark or trim marker, not actual
+# filled artwork in the cutter spot.
+_AS_ART_SMALL_AREA_PTS2 = 50.0
+
+
+def check_dieline_quality(
+    pdf_bytes: bytes,
+    *,
+    spot_name: str | None,
+    source: str,
+    regions: list[dict[str, float]] | None = None,
+    content_outside_tolerance_pts: float = 2.83,
+    max_bleed_mm: float | None = None,
+    polylines: list[list[list[float]]] | None = None,
+    min_dieline_feature_mm: float = 1.0,
+    min_dieline_segment_length_mm: float = 1.0,
+    white_coverage_min: float = 0.95,
+    barcode_quiet_zone_mm: float = 2.5,
+    text_to_fold_distance_mm: float = 3.0,
+    bleed_box: tuple[float, float, float, float] | None = None,
+    bleed_box_tolerance_pts: float = 1.0,
+) -> list[Finding]:
+    """Emit dieline-quality findings for a resolved dieline.
+
+    Args:
+        pdf_bytes: Raw PDF.
+        spot_name: ``DielineResult.spot_name`` — Required for the
+            spot-based checks (T3-D02/03/15). When ``None`` those
+            checks silently skip but the OCG-based T3-D01 and
+            varnish T3-D10 can still fire because they rely on
+            separate signals.
+        source: ``DielineResult.source`` — ``"name"`` / ``"vision"``
+            / ``"missing"``. Silent (all findings) when ``"missing"``.
+        regions: ``DielineResult.regions`` — per-island bbox list
+            used by T3-D05 (content-outside-polygon) to compute the
+            dieline envelope. Each dict has ``x0``, ``y0``, ``x1``,
+            ``y1`` keys. ``None`` / empty disables T3-D05.
+        content_outside_tolerance_pts: how far a paint bbox may
+            extend past the dieline envelope before T3-D05 fires
+            (default 2.83pt ≈ 1mm).
+        bleed_box: page's declared ``/BleedBox`` as
+            ``(x0, y0, x1, y1)`` in user-space points. When provided
+            alongside ``regions``, drives the P-30 check that flags
+            BleedBox declarations extending past the dieline polygon.
+            ``None`` disables P-30.
+        bleed_box_tolerance_pts: how far the BleedBox may extend
+            past the dieline envelope before P-30 fires (default
+            1pt ≈ 0.35mm; covers typical die-cut tolerances).
+
+    Returns:
+        Up to six findings. Empty when the preconditions aren't met
+        or the content-stream walk fails.
+    """
+    # T3-D10 (varnish collision) can fire without any dieline detection,
+    # so we DON'T early-return on source=="missing" — each sub-check
+    # gates on its own preconditions below. We do need pdf_bytes to
+    # walk the content stream.
+    if not pdf_bytes:
+        return []
+
+    try:
+        signals = _walk_page_one(pdf_bytes, spot_name)
+    except Exception:
+        logger.exception("dieline_quality: walker failed")
+        return []
+
+    findings: list[Finding] = []
+
+    # T3-D02 — z-order. Fires when dieline was painted AT LEAST once
+    # AND non-dieline content was painted AFTER the last dieline
+    # paint op. Gated on spot_name because it only makes sense when
+    # we have a dieline spot.
+    if (
+        spot_name
+        and signals.last_dieline_paint_idx >= 0
+        and signals.last_nondieline_paint_idx > signals.last_dieline_paint_idx
+    ):
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_ZORDER",
+                severity=Severity.WARNING,
+                message=(
+                    f"Dieline '{spot_name}' is drawn below artwork "
+                    f"(last dieline paint at operator "
+                    f"#{signals.last_dieline_paint_idx}, non-dieline paint "
+                    f"continued to operator #{signals.last_nondieline_paint_idx})"
+                ),
+                page_num=1,
+                details={
+                    "spot_name": spot_name,
+                    "last_dieline_paint_idx": signals.last_dieline_paint_idx,
+                    "last_nondieline_paint_idx": signals.last_nondieline_paint_idx,
+                },
+                iso_clause="ISO 19593-1 §5.3",
+                object_id=spot_name,
+                object_type="spot_color",
+            )
+        )
+
+    # T3-D03 — knockout. Fires when ANY stroke operator painted the
+    # dieline spot while OP=false on the current graphics state.
+    if spot_name and signals.knockout_stroke_count > 0:
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_KNOCKOUT",
+                severity=Severity.WARNING,
+                message=(
+                    f"Dieline '{spot_name}' is set to knockout "
+                    f"({signals.knockout_stroke_count} stroke(s) with OP=false) "
+                    f"— underlying inks will have gaps along cut lines"
+                ),
+                page_num=1,
+                details={
+                    "spot_name": spot_name,
+                    "knockout_stroke_count": signals.knockout_stroke_count,
+                    "first_violation_op_idx": signals.first_knockout_op_idx,
+                },
+                iso_clause="ISO 32000-2:2020 11.7.4.4",
+                object_id=spot_name,
+                object_type="spot_color",
+            )
+        )
+
+    # T3-D15 — used as art. Fires when the dieline spot was the
+    # current fill color at any fill operator. Severity escalates
+    # from advisory to error when the total filled area is large
+    # enough to indicate real artwork (not a tiny tick mark).
+    if spot_name and signals.fill_as_dieline_count > 0:
+        area_pts2 = signals.fill_as_dieline_area_pts2
+        is_large = area_pts2 >= _AS_ART_SMALL_AREA_PTS2
+        severity = Severity.ERROR if is_large else Severity.ADVISORY
+        area_cm2 = area_pts2 * (0.352778 / 10) ** 2  # pt² → cm²
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_AS_ART",
+                severity=severity,
+                message=(
+                    f"Dieline spot '{spot_name}' used as fill on page 1 "
+                    f"({signals.fill_as_dieline_count} fill op(s), "
+                    f"~{area_cm2:.2f} cm² total) — cutter will follow the "
+                    f"filled region"
+                ),
+                page_num=1,
+                details={
+                    "spot_name": spot_name,
+                    "fill_operator_count": signals.fill_as_dieline_count,
+                    "fill_area_pts2": round(area_pts2, 2),
+                    "fill_area_cm2": round(area_cm2, 4),
+                    "first_violation_op_idx": signals.first_fill_as_dieline_idx,
+                    "is_large": is_large,
+                },
+                iso_clause="ISO 19593-1 §5.3",
+                object_id=spot_name,
+                object_type="spot_color",
+            )
+        )
+
+    # D-09 — dieline painted with alpha < 100%. Same RIP failure
+    # surface as D-08: the cutter spot is a layer-extracted process
+    # control and partial transparency does not survive separation.
+    # Severity WARNING. ``min_alpha_pct`` captured in details to
+    # distinguish a 99%-was-an-export-bug from a 20%-was-an-on-purpose
+    # mistake on the dashboard.
+    if spot_name and signals.dieline_opacity_violations:
+        violation_count = len(signals.dieline_opacity_violations)
+        min_alpha = signals.dieline_opacity_min_alpha
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_OPACITY_LOW",
+                severity=Severity.WARNING,
+                message=(
+                    f"Dieline '{spot_name}' painted with alpha < 100% on page 1 "
+                    f"({violation_count} paint op(s), min {min_alpha * 100:.0f}%) "
+                    f"— RIP will drop or composite the cutter plate"
+                ),
+                page_num=1,
+                details={
+                    "spot_name": spot_name,
+                    "violation_count": violation_count,
+                    "min_alpha": round(min_alpha, 4),
+                    "min_alpha_pct": round(min_alpha * 100, 2),
+                    "first_violation_op_idx": signals.dieline_opacity_first_op_idx,
+                },
+                iso_clause="ISO 32000-2:2020 §11.6.4.4 / ISO 19593-1 §5.3",
+                object_id=spot_name,
+                object_type="spot_color",
+            )
+        )
+
+    # D-08 — dieline painted with a non-Normal blend mode. Cutter spots
+    # are control plates, not artwork; any blend mode other than Normal
+    # will fail to survive RIP separation. Severity is WARNING because
+    # depending on the RIP the dieline can either drop entirely or be
+    # composited into the substrate plate — both are press-side defects.
+    if spot_name and signals.dieline_blend_mode_violations:
+        modes_seen = sorted({bm for _, bm in signals.dieline_blend_mode_violations})
+        violation_count = len(signals.dieline_blend_mode_violations)
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_BLEND_MODE",
+                severity=Severity.WARNING,
+                message=(
+                    f"Dieline '{spot_name}' painted with non-Normal blend "
+                    f"mode(s) {modes_seen} on page 1 ({violation_count} paint "
+                    f"op(s)) — RIP will drop or composite the cutter plate"
+                ),
+                page_num=1,
+                details={
+                    "spot_name": spot_name,
+                    "violation_count": violation_count,
+                    "blend_modes": modes_seen,
+                    "first_violation_op_idx": signals.dieline_blend_mode_first_op_idx,
+                },
+                iso_clause="ISO 32000-2:2020 §11.6.2 / ISO 19593-1 §5.3",
+                object_id=spot_name,
+                object_type="spot_color",
+            )
+        )
+
+    # T3-D01 — content on dieline layer (OCG-based). Fires when the
+    # walker saw non-dieline paint ops inside a dieline-named OCG
+    # marked-content block.
+    if signals.layer_content_count > 0:
+        findings.append(
+            Finding(
+                inspection_id="LPDF_DIE_LAYER_CONTENT",
+                severity=Severity.WARNING,
+                message=(
+                    f"Dieline layer {signals.dieline_ocg_names} contains "
+                    f"{signals.layer_content_count} non-dieline paint "
+                    f"operation(s) on page 1 — artwork on the cutter plate"
+                ),
+                page_num=1,
+                details={
+                    "ocg_names": signals.dieline_ocg_names,
+                    "foreign_paint_count": signals.layer_content_count,
+                    "first_violation_op_idx": signals.layer_content_first_op_idx,
+                },
+                iso_clause="ISO 19593-1 §5.3",
+                object_type="dieline_layer",
+            )
+        )
+
+    # T3-D05 — content outside dieline polygon (envelope-based).
+    # Uses DielineResult.regions to compute the axis-aligned envelope
+    # and flags paint bboxes that extend past it by >tolerance.
+    #
+    # T3-D04 (LPDF_DIE_EXCESSIVE_BLEED) rides the same envelope
+    # computation but measures overhang against ``max_bleed_mm``
+    # instead of the smaller `content_outside_tolerance_pts`. Both
+    # findings can co-fire when content both crosses the envelope AND
+    # exceeds the max-bleed allowance.
+    envelope: tuple[float, float, float, float] | None = None
+    multi_up = _is_multi_up(regions) if regions else False
+    if regions and signals.foreign_content_bboxes:
+        envelope = _envelope_of_regions(regions)
+        if envelope is not None:
+            outside: list[tuple[float, float, float, float]] = []
+            max_overhang = 0.0
+            for bbox in signals.foreign_content_bboxes:
+                # Multi-up sheets (N repeats of one die) need per-region
+                # overhang, not sheet-wide envelope. Otherwise content
+                # near each repeat's edge gets falsely flagged as
+                # "outside the dieline" when it's just outside ONE die
+                # but properly inside its neighbour.
+                overhang = (
+                    _min_overhang_against_regions(bbox, regions)
+                    if multi_up
+                    else _bbox_overhang(bbox, envelope)
+                )
+                if overhang > content_outside_tolerance_pts:
+                    outside.append(bbox)
+                    max_overhang = max(max_overhang, overhang)
+            if outside:
+                if multi_up:
+                    worst = max(
+                        outside,
+                        key=lambda b: _min_overhang_against_regions(b, regions),
+                    )
+                else:
+                    worst = max(outside, key=lambda b: _bbox_overhang(b, envelope))
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_DIE_CONTENT_OUTSIDE",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"{len(outside)} content region(s) extend beyond "
+                            f"the dieline polygon by >{content_outside_tolerance_pts:.2f}pt "
+                            f"on page 1 (max overhang {max_overhang:.2f}pt)"
+                        ),
+                        page_num=1,
+                        details={
+                            "foreign_content_count": len(outside),
+                            "max_overhang_pts": round(max_overhang, 2),
+                            "dieline_envelope_pts": list(envelope),
+                            "worst_paint_bbox_pts": list(worst),
+                            "tolerance_pts": content_outside_tolerance_pts,
+                            "multi_up_layout": multi_up,
+                            "dieline_region_count": len(regions),
+                        },
+                        iso_clause="ISO 15930-7:2010 6.2.4",
+                        object_type="dieline_polygon",
+                    )
+                )
+
+    # T3-D04 — excessive bleed past the dieline. Uses the same
+    # envelope computed above, measures overhang against max_bleed_mm
+    # (1mm ≈ 2.83pt).
+    if (
+        max_bleed_mm is not None
+        and max_bleed_mm > 0
+        and envelope is not None
+        and signals.foreign_content_bboxes
+    ):
+        max_bleed_pts = max_bleed_mm / 0.352778
+        excessive: list[tuple[float, float, float, float]] = []
+        worst_overhang_pts = 0.0
+        for bbox in signals.foreign_content_bboxes:
+            overhang = _bbox_overhang(bbox, envelope)
+            if overhang > max_bleed_pts:
+                excessive.append(bbox)
+                worst_overhang_pts = max(worst_overhang_pts, overhang)
+        if excessive:
+            worst_bbox = max(excessive, key=lambda b: _bbox_overhang(b, envelope))
+            worst_overhang_mm = worst_overhang_pts * 0.352778
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_DIE_EXCESSIVE_BLEED",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"{len(excessive)} content region(s) extend past the "
+                        f"dieline by more than {max_bleed_mm:.2f}mm on page 1 "
+                        f"(max overhang {worst_overhang_mm:.2f}mm)"
+                    ),
+                    page_num=1,
+                    details={
+                        "excessive_count": len(excessive),
+                        "max_overhang_mm": round(worst_overhang_mm, 3),
+                        "max_overhang_pts": round(worst_overhang_pts, 2),
+                        "max_bleed_mm": max_bleed_mm,
+                        "dieline_envelope_pts": list(envelope),
+                        "worst_paint_bbox_pts": list(worst_bbox),
+                    },
+                    iso_clause="ISO 15930-7:2010 6.2.4",
+                    object_type="dieline_polygon",
+                )
+            )
+
+    # P-30 — page's declared /BleedBox extends past the dieline polygon
+    # envelope. Distinct from LPDF_DIE_EXCESSIVE_BLEED (content overhang):
+    # P-30 catches a misconfigured bleed *allowance* that doesn't fit
+    # within the cutter region. When the BleedBox extends past the
+    # dieline, the press-side bleed reservation overruns the trim and
+    # imposition wastes paper or clips adjacent units on a multi-up
+    # sheet. Tolerance defaults to 1pt to swallow measurement noise.
+    if bleed_box is not None and regions:
+        envelope_p30 = _envelope_of_regions(regions)
+        if envelope_p30 is not None:
+            overhang_pts = _bbox_overhang(bleed_box, envelope_p30)
+            if overhang_pts > bleed_box_tolerance_pts:
+                overhang_mm = overhang_pts * 0.352778
+                findings.append(
+                    Finding(
+                        inspection_id="LPDF_PAGE_BLEED_PAST_DIELINE",
+                        severity=Severity.WARNING,
+                        message=(
+                            f"Page /BleedBox extends past the dieline polygon "
+                            f"by {overhang_mm:.2f}mm — press-side bleed "
+                            f"allocation does not fit inside the cutter region"
+                        ),
+                        page_num=1,
+                        details={
+                            "overhang_pts": round(overhang_pts, 2),
+                            "overhang_mm": round(overhang_mm, 3),
+                            "tolerance_pts": bleed_box_tolerance_pts,
+                            "bleed_box_pts": list(bleed_box),
+                            "dieline_envelope_pts": list(envelope_p30),
+                        },
+                        iso_clause="ISO 32000-2:2020 §14.11.2 / ISO 19593-1 §5.3",
+                        object_type="page_bleed_box",
+                    )
+                )
+
+    # T3-D10 — varnish / VarnishFree collision.
+    if signals.varnish_spots and signals.varnish_free_spots:
+        varnish_union = _bbox_union(signals.varnish_spots_bboxes)
+        free_union = _bbox_union(signals.varnish_free_spots_bboxes)
+        if varnish_union and free_union:
+            intersection = _bbox_intersect(varnish_union, free_union)
+            if intersection:
+                area_pts2 = (intersection[2] - intersection[0]) * (
+                    intersection[3] - intersection[1]
+                )
+                if area_pts2 >= 50.0:
+                    area_cm2 = area_pts2 * (0.352778 / 10) ** 2
+                    findings.append(
+                        Finding(
+                            inspection_id="LPDF_DIE_VARNISH_COLLISION",
+                            severity=Severity.WARNING,
+                            message=(
+                                f"Varnish spot '{signals.varnish_spots[0]}' overlaps "
+                                f"VarnishFree region by ~{area_cm2:.2f} cm²"
+                            ),
+                            page_num=1,
+                            details={
+                                "varnish_spot": signals.varnish_spots[0],
+                                "varnish_free_spot": signals.varnish_free_spots[0],
+                                "overlap_area_pts2": round(area_pts2, 2),
+                                "overlap_area_cm2": round(area_cm2, 4),
+                                "intersection_bbox_pts": list(intersection),
+                            },
+                            iso_clause="ISO 19593-1 §5.3",
+                            object_id=signals.varnish_spots[0],
+                            object_type="spot_color",
+                        )
+                    )
+
+    # T3-D08 — small dieline features that won't die-cut cleanly.
+    # Walks DielineResult.polylines for any subpath whose perimeter
+    # < min_segment_length_mm OR whose bbox is < min_feature_size_mm
+    # in either dimension.
+    if polylines:
+        small_polys = _find_small_polygons(
+            polylines,
+            min_feature_mm=min_dieline_feature_mm,
+            min_perimeter_mm=min_dieline_segment_length_mm,
+        )
+        if small_polys:
+            smallest = min(small_polys, key=lambda p: min(p["width_mm"], p["height_mm"]))
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_DIE_TOO_SMALL",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"{len(small_polys)} dieline feature(s) below "
+                        f"{min_dieline_feature_mm:.1f}mm cutting threshold "
+                        f"(smallest: {smallest['width_mm']:.2f}x"
+                        f"{smallest['height_mm']:.2f}mm)"
+                    ),
+                    page_num=1,
+                    details={
+                        "feature_count": len(small_polys),
+                        "min_feature_size_mm": min_dieline_feature_mm,
+                        "min_segment_length_mm": min_dieline_segment_length_mm,
+                        "smallest_width_mm": round(smallest["width_mm"], 3),
+                        "smallest_height_mm": round(smallest["height_mm"], 3),
+                        "smallest_perimeter_mm": round(smallest["perimeter_mm"], 3),
+                    },
+                    iso_clause="ISO 19593-1 §5.3 / cutter resolution",
+                    object_type="dieline_polygon",
+                )
+            )
+
+    # T3-D09 — white underprint coverage gap. White-spot bbox area
+    # vs dieline envelope area; fires when coverage < threshold.
+    if signals.white_spots and signals.white_spots_bboxes and regions and white_coverage_min > 0:
+        envelope = _envelope_of_regions(regions)
+        if envelope is not None:
+            envelope_area = (envelope[2] - envelope[0]) * (envelope[3] - envelope[1])
+            if envelope_area > 0:
+                white_union = _bbox_union(signals.white_spots_bboxes)
+                if white_union is not None:
+                    intersection = _bbox_intersect(white_union, envelope)
+                    covered_area = (
+                        (intersection[2] - intersection[0]) * (intersection[3] - intersection[1])
+                        if intersection
+                        else 0.0
+                    )
+                    coverage_pct = (covered_area / envelope_area) * 100.0
+                    if coverage_pct < white_coverage_min * 100.0:
+                        findings.append(
+                            Finding(
+                                inspection_id="LPDF_DIE_WHITE_GAP",
+                                severity=Severity.WARNING,
+                                message=(
+                                    f"White underprint covers {coverage_pct:.1f}% "
+                                    f"of dieline area — gaps will let substrate "
+                                    f"show through color artwork"
+                                ),
+                                page_num=1,
+                                details={
+                                    "white_spot": signals.white_spots[0],
+                                    "white_coverage_pct": round(coverage_pct, 2),
+                                    "white_coverage_min_pct": white_coverage_min * 100.0,
+                                    "dieline_area_pts2": round(envelope_area, 2),
+                                    "white_area_pts2": round(covered_area, 2),
+                                    "dieline_envelope_pts": list(envelope),
+                                },
+                                iso_clause="ISO 19593-1 §5.3 / White underprint",
+                                object_id=signals.white_spots[0],
+                                object_type="spot_color",
+                            )
+                        )
+
+    # T3-D06 — barcode quiet zone vs dieline / fold / crease.
+    # Image bbox within `barcode_quiet_zone_mm` of any dieline /
+    # crease line bbox triggers the advisory.
+    if (
+        signals.image_bboxes
+        and (signals.dieline_line_bboxes or signals.crease_line_bboxes)
+        and barcode_quiet_zone_mm > 0
+    ):
+        quiet_zone_pts = barcode_quiet_zone_mm / 0.352778
+        line_bboxes = signals.dieline_line_bboxes + signals.crease_line_bboxes
+        too_close: list[tuple[float, float, float, float]] = []
+        min_distance_pts = float("inf")
+        for img_bbox in signals.image_bboxes:
+            for line_bbox in line_bboxes:
+                d = _bbox_distance(img_bbox, line_bbox)
+                if d < quiet_zone_pts:
+                    too_close.append(img_bbox)
+                    min_distance_pts = min(min_distance_pts, d)
+                    break
+        if too_close:
+            worst = too_close[0]
+            for img in too_close[1:]:
+                if any(_bbox_distance(img, lb) < _bbox_distance(worst, lb) for lb in line_bboxes):
+                    worst = img
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_BARCODE_QUIET_ZONE",
+                    severity=Severity.ADVISORY,
+                    message=(
+                        f"{len(too_close)} image(s) within {barcode_quiet_zone_mm:.1f}mm "
+                        f"of a fold / cut line — verify barcode quiet zones"
+                    ),
+                    page_num=1,
+                    details={
+                        "image_count": len(too_close),
+                        "quiet_zone_mm": barcode_quiet_zone_mm,
+                        "min_distance_mm": round(min_distance_pts * 0.352778, 3),
+                        "worst_image_bbox_pts": list(worst),
+                    },
+                    iso_clause="GS1 General Specifications / Barcode quiet zone",
+                    object_type="image",
+                )
+            )
+
+    # T3-D07 — text near fold / crease line.
+    if signals.text_bboxes and signals.crease_line_bboxes and text_to_fold_distance_mm > 0:
+        threshold_pts = text_to_fold_distance_mm / 0.352778
+        too_close_text: list[tuple[float, float, float, float]] = []
+        min_dist_pts = float("inf")
+        for text_bbox in signals.text_bboxes:
+            for crease_bbox in signals.crease_line_bboxes:
+                d = _bbox_distance(text_bbox, crease_bbox)
+                if d < threshold_pts:
+                    too_close_text.append(text_bbox)
+                    min_dist_pts = min(min_dist_pts, d)
+                    break
+        if too_close_text:
+            worst_text = too_close_text[0]
+            for tb in too_close_text[1:]:
+                if any(
+                    _bbox_distance(tb, cb) < _bbox_distance(worst_text, cb)
+                    for cb in signals.crease_line_bboxes
+                ):
+                    worst_text = tb
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_TEXT_NEAR_FOLD",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"{len(too_close_text)} text region(s) within "
+                        f"{text_to_fold_distance_mm:.1f}mm of a fold / crease line "
+                        f"— text will be bent at the fold"
+                    ),
+                    page_num=1,
+                    details={
+                        "text_count": len(too_close_text),
+                        "threshold_mm": text_to_fold_distance_mm,
+                        "min_distance_mm": round(min_dist_pts * 0.352778, 3),
+                        "worst_text_bbox_pts": list(worst_text),
+                    },
+                    iso_clause="ISO 19593-1 §5.3 / fold-line clearance",
+                    object_type="text",
+                )
+            )
+
+    # F-32 — text bbox overlaps the dieline cut path itself. Distinct
+    # from LPDF_TEXT_NEAR_FOLD (which fires on text *near* a crease):
+    # F-32 catches text that will be physically cut by the dieline. At
+    # the press, glyphs are sliced and the resulting product looks like
+    # a typo even though the source artwork is fine. Hard production
+    # reject. Uses raw bbox intersection — no tolerance — because the
+    # stroke bbox is already as thin as the painted line.
+    if spot_name and signals.text_bboxes and signals.dieline_line_bboxes:
+        on_path_text: list[tuple[float, float, float, float]] = []
+        worst_overlap_pts2 = 0.0
+        worst_text_bbox: tuple[float, float, float, float] | None = None
+        worst_line_bbox: tuple[float, float, float, float] | None = None
+        for text_bbox in signals.text_bboxes:
+            for line_bbox in signals.dieline_line_bboxes:
+                inter = _bbox_intersect(text_bbox, line_bbox)
+                if inter is None:
+                    continue
+                area = (inter[2] - inter[0]) * (inter[3] - inter[1])
+                if area <= 0:
+                    continue
+                on_path_text.append(text_bbox)
+                if area > worst_overlap_pts2:
+                    worst_overlap_pts2 = area
+                    worst_text_bbox = text_bbox
+                    worst_line_bbox = line_bbox
+                break
+        if on_path_text and worst_text_bbox is not None and worst_line_bbox is not None:
+            findings.append(
+                Finding(
+                    inspection_id="LPDF_TEXT_ON_DIELINE_PATH",
+                    severity=Severity.WARNING,
+                    message=(
+                        f"{len(on_path_text)} text region(s) overlap the "
+                        f"dieline '{spot_name}' cut path on page 1 — "
+                        f"glyphs will be sliced at the cutter"
+                    ),
+                    page_num=1,
+                    details={
+                        "spot_name": spot_name,
+                        "text_count": len(on_path_text),
+                        "worst_overlap_pts2": round(worst_overlap_pts2, 2),
+                        "worst_text_bbox_pts": list(worst_text_bbox),
+                        "worst_dieline_bbox_pts": list(worst_line_bbox),
+                    },
+                    iso_clause="ISO 19593-1 §5.3 / cut-path clearance",
+                    object_id=spot_name,
+                    object_type="text",
+                )
+            )
+
+    # T3-D14 — Braille zone integrity. Always emit the presence
+    # advisory when Braille is detected; severity escalates to
+    # warning when non-Braille incursions are present.
+    if signals.braille_spots and signals.braille_paint_bboxes:
+        braille_envelope = _bbox_union(signals.braille_paint_bboxes)
+        dot_count = len(signals.braille_paint_bboxes)
+        area_pts2 = (
+            (braille_envelope[2] - braille_envelope[0])
+            * (braille_envelope[3] - braille_envelope[1])
+            if braille_envelope
+            else 0.0
+        )
+        area_cm2 = area_pts2 * (0.352778 / 10) ** 2
+        has_violation = signals.non_braille_in_braille_zone > 0
+        severity = Severity.WARNING if has_violation else Severity.ADVISORY
+        if has_violation:
+            msg = (
+                f"Braille zone contains {signals.non_braille_in_braille_zone} "
+                f"non-Braille paint operation(s) — dots will fill in"
+            )
+        else:
+            msg = f"Braille detected: {dot_count} dot(s), ~{area_cm2:.2f} cm². Clearance OK"
+        findings.append(
+            Finding(
+                inspection_id="LPDF_BRAILLE_INTEGRITY",
+                severity=severity,
+                message=msg,
+                page_num=1,
+                details={
+                    "braille_spot": signals.braille_spots[0],
+                    "dot_count": dot_count,
+                    "braille_area_cm2": round(area_cm2, 4),
+                    "has_clearance_violation": has_violation,
+                    "violation_count": signals.non_braille_in_braille_zone,
+                },
+                iso_clause="ISO 19593-1 §5.3 / WHO + EU 92/27 Braille",
+                object_id=signals.braille_spots[0],
+                object_type="spot_color",
+            )
+        )
+
+    return findings
+
+
+def _find_small_polygons(
+    polylines: list[list[list[float]]],
+    *,
+    min_feature_mm: float,
+    min_perimeter_mm: float,
+) -> list[dict[str, float]]:
+    """Return per-polygon size metrics for polygons below cutter
+    resolution thresholds.
+
+    A polygon counts as "too small" when ANY of:
+      - bbox width < min_feature_mm
+      - bbox height < min_feature_mm
+      - perimeter < min_perimeter_mm
+
+    Returns dicts with width_mm, height_mm, perimeter_mm, area_mm2 for
+    every too-small polygon (caller picks the worst).
+    """
+    import math
+
+    out: list[dict[str, float]] = []
+    pt_to_mm = 0.352778
+    for poly in polylines:
+        if not poly or len(poly) < 2:
+            continue
+        try:
+            xs = [float(p[0]) for p in poly]
+            ys = [float(p[1]) for p in poly]
+        except (IndexError, TypeError, ValueError):
+            continue
+        width_pts = max(xs) - min(xs)
+        height_pts = max(ys) - min(ys)
+        perim_pts = 0.0
+        for i in range(len(poly) - 1):
+            try:
+                dx = float(poly[i + 1][0]) - float(poly[i][0])
+                dy = float(poly[i + 1][1]) - float(poly[i][1])
+                perim_pts += math.hypot(dx, dy)
+            except (IndexError, TypeError, ValueError):
+                continue
+        width_mm = width_pts * pt_to_mm
+        height_mm = height_pts * pt_to_mm
+        perim_mm = perim_pts * pt_to_mm
+        if width_mm < min_feature_mm or height_mm < min_feature_mm or perim_mm < min_perimeter_mm:
+            out.append(
+                {
+                    "width_mm": width_mm,
+                    "height_mm": height_mm,
+                    "perimeter_mm": perim_mm,
+                    "area_mm2": width_mm * height_mm,
+                }
+            )
+    return out
+
+
+# ────────────────────────────────────────────────────────────────────
+# Bbox geometry helpers
+# ────────────────────────────────────────────────────────────────────
+
+
+def _envelope_of_regions(
+    regions: list[dict[str, float]],
+) -> tuple[float, float, float, float] | None:
+    """Axis-aligned union of ``DielineResult.regions`` bboxes."""
+    bboxes: list[tuple[float, float, float, float]] = []
+    for r in regions:
+        try:
+            bboxes.append((float(r["x0"]), float(r["y0"]), float(r["x1"]), float(r["y1"])))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return _bbox_union(bboxes)
+
+
+def _bbox_union(
+    bboxes: list[tuple[float, float, float, float]],
+) -> tuple[float, float, float, float] | None:
+    if not bboxes:
+        return None
+    x0 = min(b[0] for b in bboxes)
+    y0 = min(b[1] for b in bboxes)
+    x1 = max(b[2] for b in bboxes)
+    y1 = max(b[3] for b in bboxes)
+    return (x0, y0, x1, y1)
+
+
+def _bbox_intersect(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> tuple[float, float, float, float] | None:
+    x0 = max(a[0], b[0])
+    y0 = max(a[1], b[1])
+    x1 = min(a[2], b[2])
+    y1 = min(a[3], b[3])
+    if x0 >= x1 or y0 >= y1:
+        return None
+    return (x0, y0, x1, y1)
+
+
+def _bbox_overhang(
+    paint_bbox: tuple[float, float, float, float],
+    envelope: tuple[float, float, float, float],
+) -> float:
+    """Return the max distance (points) the paint bbox sticks out of
+    the envelope on any side. 0 when fully contained."""
+    return max(
+        0.0,
+        envelope[0] - paint_bbox[0],
+        envelope[1] - paint_bbox[1],
+        paint_bbox[2] - envelope[2],
+        paint_bbox[3] - envelope[3],
+    )
+
+
+def _is_multi_up(regions: list[dict[str, float]]) -> bool:
+    """Detect a step-and-repeat layout from the dieline's region list.
+
+    Heuristic: 3 or more regions whose bboxes are roughly equal in size
+    (within 10 %) — typical of a press sheet with N copies of one die.
+    Returns True for DailyFiber's 10-up flat where the engine had been
+    treating the sheet-wide envelope as one giant dieline and falsely
+    flagging every repeat's content as "outside" it.
+    """
+    if len(regions) < 3:
+        return False
+    sizes: list[tuple[float, float]] = []
+    for r in regions:
+        try:
+            w = float(r["x1"]) - float(r["x0"])
+            h = float(r["y1"]) - float(r["y0"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if w <= 0 or h <= 0:
+            continue
+        sizes.append((w, h))
+    if len(sizes) < 3:
+        return False
+    # Are all widths and heights within 10 % of the median?
+    sorted_w = sorted(s[0] for s in sizes)
+    sorted_h = sorted(s[1] for s in sizes)
+    med_w = sorted_w[len(sorted_w) // 2]
+    med_h = sorted_h[len(sorted_h) // 2]
+    if med_w <= 0 or med_h <= 0:
+        return False
+    return all(abs(w - med_w) / med_w < 0.10 and abs(h - med_h) / med_h < 0.10 for w, h in sizes)
+
+
+def _min_overhang_against_regions(
+    paint_bbox: tuple[float, float, float, float],
+    regions: list[dict[str, float]],
+) -> float:
+    """For multi-up sheets, the right comparison is "how far does this
+    paint stick out of the *nearest* dieline region?" not the sheet-wide
+    envelope. Returns the smallest overhang across all regions.
+    """
+    best = float("inf")
+    for r in regions:
+        try:
+            rb = (float(r["x0"]), float(r["y0"]), float(r["x1"]), float(r["y1"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        oh = _bbox_overhang(paint_bbox, rb)
+        if oh < best:
+            best = oh
+            if best == 0.0:
+                break
+    return 0.0 if best == float("inf") else best
+
+
+# ────────────────────────────────────────────────────────────────────
+# Internal walker
+# ────────────────────────────────────────────────────────────────────
+
+
+class _QualitySignals:
+    """Mutable scratch-pad the walker fills in."""
+
+    __slots__ = (
+        "braille_paint_bboxes",
+        "braille_spots",
+        "crease_line_bboxes",
+        "dieline_blend_mode_first_op_idx",
+        "dieline_blend_mode_violations",
+        "dieline_line_bboxes",
+        "dieline_ocg_names",
+        "dieline_opacity_first_op_idx",
+        "dieline_opacity_min_alpha",
+        "dieline_opacity_violations",
+        "fill_as_dieline_area_pts2",
+        "fill_as_dieline_count",
+        "first_fill_as_dieline_idx",
+        "first_knockout_op_idx",
+        "foreign_content_bboxes",
+        "foreign_content_max_overhang_pts",
+        "image_bboxes",
+        "knockout_stroke_count",
+        "last_dieline_paint_idx",
+        "last_nondieline_paint_idx",
+        "layer_content_count",
+        "layer_content_first_op_idx",
+        "non_braille_in_braille_zone",
+        "text_bboxes",
+        "varnish_free_spots",
+        "varnish_free_spots_bboxes",
+        "varnish_spots",
+        "varnish_spots_bboxes",
+        "white_spots",
+        "white_spots_bboxes",
+    )
+
+    def __init__(self) -> None:
+        self.last_dieline_paint_idx: int = -1
+        self.last_nondieline_paint_idx: int = -1
+        self.knockout_stroke_count: int = 0
+        self.first_knockout_op_idx: int = -1
+        self.fill_as_dieline_count: int = 0
+        self.fill_as_dieline_area_pts2: float = 0.0
+        self.first_fill_as_dieline_idx: int = -1
+        # T3-D01 — OCG-based layer-content detection.
+        self.dieline_ocg_names: list[str] = []
+        self.layer_content_count: int = 0
+        self.layer_content_first_op_idx: int = -1
+        # T3-D05 — paint bboxes outside the dieline envelope.
+        self.foreign_content_bboxes: list[tuple[float, float, float, float]] = []
+        self.foreign_content_max_overhang_pts: float = 0.0
+        # T3-D10 — varnish / VarnishFree spot bboxes.
+        self.varnish_spots: list[str] = []
+        self.varnish_spots_bboxes: list[tuple[float, float, float, float]] = []
+        self.varnish_free_spots: list[str] = []
+        self.varnish_free_spots_bboxes: list[tuple[float, float, float, float]] = []
+        # T3-D09 — white-spot bboxes for white-coverage calc.
+        self.white_spots: list[str] = []
+        self.white_spots_bboxes: list[tuple[float, float, float, float]] = []
+        # T3-D06 — image bboxes + dieline / crease line stroke bboxes
+        # for barcode-quiet-zone proximity.
+        self.image_bboxes: list[tuple[float, float, float, float]] = []
+        self.dieline_line_bboxes: list[tuple[float, float, float, float]] = []
+        self.crease_line_bboxes: list[tuple[float, float, float, float]] = []
+        # T3-D07 — text bboxes for text-near-fold proximity.
+        self.text_bboxes: list[tuple[float, float, float, float]] = []
+        # T3-D14 — Braille spot bboxes + non-Braille incursions.
+        self.braille_spots: list[str] = []
+        self.braille_paint_bboxes: list[tuple[float, float, float, float]] = []
+        self.non_braille_in_braille_zone: int = 0
+        # D-08 — dieline paint ops painted with a non-Normal blend mode.
+        # Stored as (op_idx, blend_mode_name) pairs. The cutter spot is
+        # a layer-extracted process control, not artwork — any blend
+        # mode other than Normal will not survive RIP separation.
+        self.dieline_blend_mode_violations: list[tuple[int, str]] = []
+        self.dieline_blend_mode_first_op_idx: int = -1
+        # D-09 — dieline paint ops painted with alpha < 1.0. Same RIP
+        # failure surface as D-08 — semi-transparent cutter spots get
+        # silently dropped or composited in separation. Stored as
+        # (op_idx, alpha) pairs; ``min_alpha`` carries the worst seen.
+        self.dieline_opacity_violations: list[tuple[int, float]] = []
+        self.dieline_opacity_first_op_idx: int = -1
+        self.dieline_opacity_min_alpha: float = 1.0
+
+
+# Paint operators split into stroke-only, fill-only, both.
+_STROKE_OPS = {"S", "s"}
+_FILL_OPS = {"f", "F", "f*"}
+_STROKE_AND_FILL_OPS = {"B", "B*", "b", "b*"}
+
+
+# T3-D01 — tokens that identify a dieline OCG / layer.
+_DIELINE_NAME_TOKENS = frozenset(
+    {
+        "die",
+        "dieline",
+        "die line",
+        "die-line",
+        "cut",
+        "cutcontour",
+        "cut contour",
+        "cut-contour",
+        "cutter",
+        "crease",
+        "perf",
+        "perforation",
+        "score",
+        "fold",
+        "kiss",
+        "through-cut",
+    }
+)
+
+# T3-D10 — closed lexicon of varnish / coating spot names.
+_VARNISH_NAME_TOKENS = frozenset(
+    {
+        "varnish",
+        "uv",
+        "uvvarnish",
+        "uv varnish",
+        "aq",
+        "aqcoat",
+        "aquacoat",
+        "aqua coat",
+        "gloss",
+        "matte",
+        "spotuv",
+        "spot uv",
+        "softtouch",
+        "soft touch",
+        "coating",
+    }
+)
+
+_VARNISH_FREE_NAME_TOKENS = frozenset(
+    {
+        "varnishfree",
+        "varnish free",
+        "varnish-free",
+        "novarnish",
+        "no varnish",
+        "no-varnish",
+        "coatingfree",
+        "coating free",
+        "coating-free",
+        "nocoating",
+        "no coating",
+        "no-coating",
+    }
+)
+
+
+def _normalise_spot_name(name: str) -> str:
+    """Lowercase + collapse separators for spot-name matching."""
+    out = name.strip().lstrip("/").lower()
+    out = out.replace("_", " ").replace("-", " ")
+    while "  " in out:
+        out = out.replace("  ", " ")
+    return out
+
+
+def _is_dieline_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return any(tok in norm for tok in _DIELINE_NAME_TOKENS)
+
+
+def _is_varnish_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return any(tok == norm or tok in norm.split() for tok in _VARNISH_NAME_TOKENS)
+
+
+def _is_varnish_free_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    # Require "free" or "no" to appear — avoids catching plain "varnish"
+    # as a free-marker spot.
+    if "free" not in norm and "no " not in norm and norm[:2] != "no":
+        return False
+    return any(tok in norm for tok in _VARNISH_FREE_NAME_TOKENS)
+
+
+# T3-D09 — closed lexicon of white / underprint spot names.
+_WHITE_NAME_TOKENS = frozenset(
+    {
+        "white",
+        "opaque white",
+        "opaquewhite",
+        "whiteunder",
+        "white under",
+        "whiteunderprint",
+        "white underprint",
+    }
+)
+
+
+def _is_white_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return any(tok == norm or tok in norm.split(",") for tok in _WHITE_NAME_TOKENS) or (
+        norm in _WHITE_NAME_TOKENS
+    )
+
+
+# T3-D07 — fold/crease spot tokens (subset of dieline tokens —
+# specifically the fold-line varieties, not full cuts).
+_CREASE_NAME_TOKENS = frozenset(
+    {
+        "crease",
+        "creaseline",
+        "crease line",
+        "fold",
+        "foldline",
+        "fold line",
+        "score",
+        "scoreline",
+        "score line",
+    }
+)
+
+
+def _is_crease_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return norm in _CREASE_NAME_TOKENS or any(
+        tok in norm.split() for tok in ("crease", "fold", "score")
+    )
+
+
+# T3-D14 — Braille spot tokens (closed list, pharma-niche).
+_BRAILLE_NAME_TOKENS = frozenset(
+    {
+        "braille",
+        "braillestep",
+        "braille step",
+        "braille1",
+        "braille 1",
+        "marburg medium",
+        "marburgmedium",
+    }
+)
+
+
+def _is_braille_name(name: str) -> bool:
+    norm = _normalise_spot_name(name)
+    return norm in _BRAILLE_NAME_TOKENS or "braille" in norm
+
+
+def _bbox_distance(
+    a: tuple[float, float, float, float],
+    b: tuple[float, float, float, float],
+) -> float:
+    """Minimum axis-aligned distance between two rectangles. 0 when
+    they overlap or touch."""
+    dx = max(0.0, max(a[0], b[0]) - min(a[2], b[2]))
+    dy = max(0.0, max(a[1], b[1]) - min(a[3], b[3]))
+    if dx == 0 and dy == 0:
+        # Bboxes overlap or are colinear — return 0.
+        # (When they're separated on neither axis the rectangles
+        # actually intersect; same answer.)
+        return 0.0
+    return (dx**2 + dy**2) ** 0.5
+
+
+def _bbox_centre_inside(
+    bbox: tuple[float, float, float, float],
+    container: tuple[float, float, float, float],
+) -> bool:
+    cx = (bbox[0] + bbox[2]) / 2.0
+    cy = (bbox[1] + bbox[3]) / 2.0
+    return container[0] <= cx <= container[2] and container[1] <= cy <= container[3]
+
+
+def _touches_braille_spot(
+    stroke_cs: str | None,
+    fill_cs: str | None,
+    cs_to_spot: dict[str, str],
+    signals: _QualitySignals,
+) -> bool:
+    """True when either the current stroke or fill cs maps to a
+    Braille spot tracked on ``signals``. Used by the clearance check
+    to skip the Braille paint event itself."""
+    for cs in (stroke_cs, fill_cs):
+        if cs is None:
+            continue
+        spot = cs_to_spot.get(cs)
+        if spot and spot in signals.braille_spots:
+            return True
+    return False
+
+
+def _walk_page_one(pdf_bytes: bytes, spot_name: str | None) -> _QualitySignals:
+    import io
+
+    import pikepdf
+
+    signals = _QualitySignals()
+
+    with pikepdf.open(io.BytesIO(pdf_bytes)) as pdf:
+        try:
+            page = pdf.pages[0]
+        except Exception:
+            return signals
+        resources = page.get("/Resources") if hasattr(page, "get") else None
+        cs_dict = resources.get("/ColorSpace") if resources and hasattr(resources, "get") else None
+        extgstate_dict = (
+            resources.get("/ExtGState") if resources and hasattr(resources, "get") else None
+        )
+        props_dict = (
+            resources.get("/Properties") if resources and hasattr(resources, "get") else None
+        )
+
+        # resource name → spot name for Separation color spaces.
+        cs_to_spot = _build_cs_to_spot(cs_dict)
+        # T3-D10 — record which resource names resolve to varnish /
+        # VarnishFree spots so we can tally their paint bboxes.
+        for spot in cs_to_spot.values():
+            if _is_varnish_free_name(spot) and spot not in signals.varnish_free_spots:
+                signals.varnish_free_spots.append(spot)
+            elif _is_varnish_name(spot) and spot not in signals.varnish_spots:
+                signals.varnish_spots.append(spot)
+            if _is_white_name(spot) and spot not in signals.white_spots:
+                signals.white_spots.append(spot)
+            # T3-D14 — Braille spot detection.
+            if _is_braille_name(spot) and spot not in signals.braille_spots:
+                signals.braille_spots.append(spot)
+
+        # T3-D01 — build resource-name → OCG-name map so BDC /OC
+        # /Resource blocks resolve to the actual optional-content
+        # group label.
+        prop_to_ocg_name = _build_prop_to_ocg_name(props_dict)
+
+        # Current graphics-state tracking.
+        current_stroke_cs: str | None = None
+        current_fill_cs: str | None = None
+        # Stack of open dieline-named OCG marked-content blocks.
+        ocg_stack: list[str] = []
+        # Stroking / non-stroking overprint flags (ISO 32000-2 §11.7.4.4).
+        # Default is `false` per spec. OP governs painting ops other than
+        # image/path fill; op (lowercase) governs fill specifically when
+        # explicitly set. We track the stroking flag for T3-D03.
+        op_stroke: bool = False
+        # D-08 — current blend mode (ISO 32000-2 §11.6.2). Default is
+        # Normal per spec. Only non-Normal modes set on the dieline spot
+        # paint trigger LPDF_DIE_BLEND_MODE.
+        current_blend_mode: str = "Normal"
+        blend_mode_stack: list[str] = []
+        # D-09 — current stroking / non-stroking alpha constants
+        # (ISO 32000-2 §11.6.4.4). Defaults are 1.0 per spec. Saved /
+        # restored alongside the rest of the graphics state.
+        current_stroke_alpha: float = 1.0
+        current_fill_alpha: float = 1.0
+        stroke_alpha_stack: list[float] = []
+        fill_alpha_stack: list[float] = []
+
+        # Compound-path subpath accumulator — we need total bbox area
+        # for T3-D15 severity escalation.
+        path_subpath_areas_pts2: list[float] = []
+        current_subpath_points: list[tuple[float, float]] = []
+        # Bbox history for the current compound path — refreshed when
+        # a paint op runs. Batch 5 T3-D05 / T3-D10 consume this list.
+        current_subpath_points_history: list[tuple[float, float, float, float]] = []
+        # Batch 8 — CTM + text state for image (Do) and text (Tj/TJ)
+        # bbox capture. Stack-based for q/Q save/restore.
+        ctm_stack: list[tuple[float, float, float, float, float, float]] = []
+        ctm: tuple[float, float, float, float, float, float] = (1, 0, 0, 1, 0, 0)
+        # Text-matrix tracking — minimal; we only need a position +
+        # approximate extent for proximity, not precise glyph metrics.
+        text_matrix: tuple[float, float, float, float, float, float] | None = None
+        text_line_matrix: tuple[float, float, float, float, float, float] | None = None
+        current_font_size: float = 12.0
+
+        def compose(
+            m1: tuple[float, float, float, float, float, float],
+            m2: tuple[float, float, float, float, float, float],
+        ) -> tuple[float, float, float, float, float, float]:
+            a1, b1, c1, d1, e1, f1 = m1
+            a2, b2, c2, d2, e2, f2 = m2
+            return (
+                a2 * a1 + b2 * c1,
+                a2 * b1 + b2 * d1,
+                c2 * a1 + d2 * c1,
+                c2 * b1 + d2 * d1,
+                e2 * a1 + f2 * c1 + e1,
+                e2 * b1 + f2 * d1 + f1,
+            )
+
+        def finish_subpath() -> None:
+            if not current_subpath_points:
+                return
+            xs = [p[0] for p in current_subpath_points]
+            ys = [p[1] for p in current_subpath_points]
+            area = max(0.0, max(xs) - min(xs)) * max(0.0, max(ys) - min(ys))
+            path_subpath_areas_pts2.append(area)
+            current_subpath_points_history.append((min(xs), min(ys), max(xs), max(ys)))
+            current_subpath_points.clear()
+
+        try:
+            instrs = pikepdf.parse_content_stream(page)
+        except Exception:
+            return signals
+
+        for op_idx, inst in enumerate(instrs):
+            try:
+                op = str(inst.operator)
+                operands = list(getattr(inst, "operands", []))
+            except Exception:
+                continue
+
+            # Color-space setters.
+            if op == "CS" and operands:
+                current_stroke_cs = str(operands[0]).lstrip("/")
+            elif op == "cs" and operands:
+                current_fill_cs = str(operands[0]).lstrip("/")
+
+            # Graphics-state parameter dict reference: `gs /GSName` looks
+            # up the ExtGState entry and applies its fields. We pull OP
+            # from the referenced dict when present.
+            elif op == "gs" and operands and extgstate_dict is not None:
+                try:
+                    gs_name = str(operands[0]).lstrip("/")
+                    gs_entry = extgstate_dict.get("/" + gs_name)
+                    if gs_entry is not None and hasattr(gs_entry, "get"):
+                        op_value = gs_entry.get("/OP")
+                        if op_value is not None:
+                            op_stroke = bool(op_value)
+                        bm_value = gs_entry.get("/BM")
+                        if bm_value is not None:
+                            # /BM may be a Name (single mode) or an Array
+                            # of names (first applicable per §11.6.4.4).
+                            # pikepdf.Name reports __iter__ but raises on
+                            # actual iteration, so isinstance against
+                            # pikepdf.Array is the safe discriminator.
+                            if isinstance(bm_value, pikepdf.Array):
+                                with contextlib.suppress(Exception):
+                                    first = next(iter(bm_value), None)
+                                    if first is not None:
+                                        current_blend_mode = str(first).lstrip("/")
+                            else:
+                                current_blend_mode = str(bm_value).lstrip("/")
+                        ca_value = gs_entry.get("/CA")
+                        if ca_value is not None:
+                            with contextlib.suppress(ValueError, TypeError):
+                                current_stroke_alpha = float(ca_value)
+                        ca_lower = gs_entry.get("/ca")
+                        if ca_lower is not None:
+                            with contextlib.suppress(ValueError, TypeError):
+                                current_fill_alpha = float(ca_lower)
+                except Exception:
+                    pass
+
+            # Path-construction operators that contribute to subpath area.
+            elif op == "m" and len(operands) >= 2:
+                finish_subpath()
+                with contextlib.suppress(ValueError, TypeError):
+                    current_subpath_points.append((float(operands[0]), float(operands[1])))
+            elif op == "l" and len(operands) >= 2:
+                with contextlib.suppress(ValueError, TypeError):
+                    current_subpath_points.append((float(operands[0]), float(operands[1])))
+            elif op == "re" and len(operands) >= 4:
+                try:
+                    x = float(operands[0])
+                    y = float(operands[1])
+                    w = float(operands[2])
+                    h = float(operands[3])
+                    finish_subpath()
+                    current_subpath_points.extend([(x, y), (x + w, y), (x + w, y + h), (x, y + h)])
+                    finish_subpath()
+                except (ValueError, TypeError):
+                    pass
+            elif op in ("c", "v", "y") and len(operands) >= 2:
+                with contextlib.suppress(ValueError, TypeError):
+                    current_subpath_points.append((float(operands[-2]), float(operands[-1])))
+
+            # Marked-content blocks — BDC /OC /Resource → push the
+            # referenced OCG name onto the stack if it's a dieline
+            # layer; EMC → pop.
+            elif op == "BDC" and len(operands) >= 2:
+                # Operand 0 is the tag (/OC, /Layer, /Artifact…);
+                # operand 1 is the property name or property dict.
+                try:
+                    tag = str(operands[0]).lstrip("/")
+                    if tag == "OC":
+                        prop_name = str(operands[1]).lstrip("/")
+                        ocg_label = prop_to_ocg_name.get(prop_name, "")
+                        if _is_dieline_name(ocg_label):
+                            ocg_stack.append(ocg_label)
+                            if ocg_label not in signals.dieline_ocg_names:
+                                signals.dieline_ocg_names.append(ocg_label)
+                        else:
+                            # Push an empty sentinel so the matching
+                            # EMC still pops cleanly.
+                            ocg_stack.append("")
+                    else:
+                        ocg_stack.append("")
+                except Exception:
+                    ocg_stack.append("")
+            elif op == "BMC":
+                ocg_stack.append("")
+            elif op == "EMC":
+                if ocg_stack:
+                    ocg_stack.pop()
+
+            # Graphics-state save / restore — push/pop CTM, blend mode,
+            # and stroking / non-stroking alpha constants.
+            elif op == "q":
+                ctm_stack.append(ctm)
+                blend_mode_stack.append(current_blend_mode)
+                stroke_alpha_stack.append(current_stroke_alpha)
+                fill_alpha_stack.append(current_fill_alpha)
+            elif op == "Q":
+                if ctm_stack:
+                    ctm = ctm_stack.pop()
+                if blend_mode_stack:
+                    current_blend_mode = blend_mode_stack.pop()
+                if stroke_alpha_stack:
+                    current_stroke_alpha = stroke_alpha_stack.pop()
+                if fill_alpha_stack:
+                    current_fill_alpha = fill_alpha_stack.pop()
+
+            # Current Transformation Matrix update.
+            elif op == "cm" and len(operands) >= 6:
+                with contextlib.suppress(ValueError, TypeError):
+                    new_cm = (
+                        float(operands[0]),
+                        float(operands[1]),
+                        float(operands[2]),
+                        float(operands[3]),
+                        float(operands[4]),
+                        float(operands[5]),
+                    )
+                    ctm = compose(ctm, new_cm)
+
+            # Image XObject placement (T3-D06).
+            elif op == "Do":
+                # Image bbox = unit square (0,0)-(1,1) under CTM.
+                a, b, c, d, e, f = ctm
+                xs = [e, e + a, e + c, e + a + c]
+                ys = [f, f + b, f + d, f + b + d]
+                bbox = (min(xs), min(ys), max(xs), max(ys))
+                # Filter: only treat substantial bboxes as image candidates;
+                # tiny <5pt² are typically icon glyphs, not barcodes.
+                w = bbox[2] - bbox[0]
+                h = bbox[3] - bbox[1]
+                if w * h >= 5.0:
+                    signals.image_bboxes.append(bbox)
+
+            # Text-state ops (T3-D07).
+            elif op == "BT":
+                text_matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+                text_line_matrix = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+            elif op == "ET":
+                text_matrix = None
+                text_line_matrix = None
+            elif op == "Tf" and len(operands) >= 2:
+                with contextlib.suppress(ValueError, TypeError):
+                    current_font_size = abs(float(operands[1])) or 12.0
+            elif op == "Tm" and len(operands) >= 6:
+                with contextlib.suppress(ValueError, TypeError):
+                    text_matrix = (
+                        float(operands[0]),
+                        float(operands[1]),
+                        float(operands[2]),
+                        float(operands[3]),
+                        float(operands[4]),
+                        float(operands[5]),
+                    )
+                    text_line_matrix = text_matrix
+            elif op in ("Td", "TD") and len(operands) >= 2 and text_line_matrix is not None:
+                with contextlib.suppress(ValueError, TypeError):
+                    tx = float(operands[0])
+                    ty = float(operands[1])
+                    new_line = compose(text_line_matrix, (1, 0, 0, 1, tx, ty))
+                    text_line_matrix = new_line
+                    text_matrix = new_line
+            elif op == "T*" and text_line_matrix is not None:
+                # Move to next line — uses leading from /Tl. We don't track
+                # leading; approximate as -font_size in y.
+                new_line = compose(text_line_matrix, (1, 0, 0, 1, 0, -current_font_size))
+                text_line_matrix = new_line
+                text_matrix = new_line
+            elif object_class.is_text(op) and text_matrix is not None:
+                # Text rendered. Compute approximate bbox by composing
+                # text_matrix × CTM and applying to a rough text extent.
+                tm_in_user = compose(text_matrix, ctm)
+                _, _, _, _, e_t, f_t = tm_in_user
+                # Approximate glyph width: half of font_size per character
+                # (good enough for proximity work; precise metrics not needed).
+                op_str: str = ""
+                with contextlib.suppress(Exception):
+                    if op == "TJ" and operands and isinstance(operands[0], list):
+                        for item in operands[0]:
+                            if isinstance(item, (str, bytes)):
+                                op_str += str(item)
+                    elif operands:
+                        op_str = str(operands[0])
+                # Strip non-alpha control chars from byte-form display name.
+                approx_chars = max(1, len(op_str.replace("\\", "").strip("()<>")))
+                width_est = current_font_size * approx_chars * 0.5
+                height_est = current_font_size
+                bbox = (e_t, f_t, e_t + width_est, f_t + height_est)
+                signals.text_bboxes.append(bbox)
+                # Advance text matrix by the rendered width.
+                with contextlib.suppress(Exception):
+                    text_matrix = compose(text_matrix, (1, 0, 0, 1, width_est, 0))
+
+            # Paint operators — drive the signal gathering.
+            elif op in _STROKE_OPS or op in _FILL_OPS or op in _STROKE_AND_FILL_OPS:
+                finish_subpath()
+                area = sum(path_subpath_areas_pts2)
+
+                stroke_is_dieline = (
+                    op in _STROKE_OPS or op in _STROKE_AND_FILL_OPS
+                ) and _cs_is_dieline(current_stroke_cs, cs_to_spot, spot_name)
+                fill_is_dieline = (
+                    op in _FILL_OPS or op in _STROKE_AND_FILL_OPS
+                ) and _cs_is_dieline(current_fill_cs, cs_to_spot, spot_name)
+
+                # Pre-compute the paint bbox — union of subpath bboxes
+                # for the current compound path. Used by T3-D05 and
+                # T3-D10.
+                paint_bbox = _bbox_union(current_subpath_points_history)
+
+                # T3-D02 z-order signal.
+                if stroke_is_dieline or fill_is_dieline:
+                    signals.last_dieline_paint_idx = op_idx
+                else:
+                    signals.last_nondieline_paint_idx = op_idx
+
+                # T3-D03 knockout signal — stroked in dieline spot with
+                # OP=false.
+                if stroke_is_dieline and not op_stroke:
+                    signals.knockout_stroke_count += 1
+                    if signals.first_knockout_op_idx < 0:
+                        signals.first_knockout_op_idx = op_idx
+
+                # T3-D15 fill-as-dieline signal.
+                if fill_is_dieline:
+                    signals.fill_as_dieline_count += 1
+                    signals.fill_as_dieline_area_pts2 += area
+                    if signals.first_fill_as_dieline_idx < 0:
+                        signals.first_fill_as_dieline_idx = op_idx
+
+                # D-08 — dieline paint with non-Normal blend mode.
+                # ISO 32000-2 §11.6.2: blend modes other than Normal
+                # composite the painted layer with the backdrop, but
+                # the cutter spot is a layer-extracted process control.
+                # Any blend mode other than Normal will be silently
+                # collapsed by the RIP, leaving the dieline either
+                # missing or painted in the wrong color on the plate.
+                if (stroke_is_dieline or fill_is_dieline) and current_blend_mode != "Normal":
+                    signals.dieline_blend_mode_violations.append((op_idx, current_blend_mode))
+                    if signals.dieline_blend_mode_first_op_idx < 0:
+                        signals.dieline_blend_mode_first_op_idx = op_idx
+
+                # D-09 — dieline paint with alpha < 1.0 (semi-transparent
+                # cutter spot). ISO 32000-2 §11.6.4.4: /CA + /ca govern
+                # stroking and non-stroking alpha constants. Same RIP
+                # failure surface as D-08 — the spot plate either drops
+                # to zero coverage or composites into the substrate
+                # instead of becoming a hard cutter outline.
+                # Only the alpha relevant to the actual paint type
+                # counts: stroke ops measure /CA, fill ops measure /ca,
+                # combined ops (B/B*/b/b*) take the worst of both.
+                if stroke_is_dieline or fill_is_dieline:
+                    alphas: list[float] = []
+                    if stroke_is_dieline:
+                        alphas.append(current_stroke_alpha)
+                    if fill_is_dieline:
+                        alphas.append(current_fill_alpha)
+                    effective_alpha = min(alphas) if alphas else 1.0
+                    if effective_alpha < 1.0:
+                        signals.dieline_opacity_violations.append((op_idx, effective_alpha))
+                        if signals.dieline_opacity_first_op_idx < 0:
+                            signals.dieline_opacity_first_op_idx = op_idx
+                        if effective_alpha < signals.dieline_opacity_min_alpha:
+                            signals.dieline_opacity_min_alpha = effective_alpha
+
+                # T3-D01 — any paint inside a dieline-named OCG that's
+                # NOT using the dieline spot is foreign content on the
+                # cutter plate.
+                in_dieline_ocg = any(n for n in ocg_stack if _is_dieline_name(n))
+                if in_dieline_ocg and not (stroke_is_dieline or fill_is_dieline):
+                    signals.layer_content_count += 1
+                    if signals.layer_content_first_op_idx < 0:
+                        signals.layer_content_first_op_idx = op_idx
+
+                # T3-D05 — record all non-dieline paint bboxes so the
+                # caller can compare them against the dieline envelope.
+                if paint_bbox and not (stroke_is_dieline or fill_is_dieline):
+                    signals.foreign_content_bboxes.append(paint_bbox)
+
+                # T3-D14 — non-Braille paint inside Braille zone. Track
+                # incursions BEFORE the new paint bbox is appended to
+                # signals.braille_paint_bboxes (so we don't compare a
+                # Braille paint to itself).
+                if (
+                    paint_bbox
+                    and signals.braille_paint_bboxes
+                    and not _touches_braille_spot(
+                        current_stroke_cs, current_fill_cs, cs_to_spot, signals
+                    )
+                ):
+                    for braille_bbox in signals.braille_paint_bboxes:
+                        if _bbox_centre_inside(paint_bbox, braille_bbox):
+                            signals.non_braille_in_braille_zone += 1
+                            break
+
+                # T3-D10 / T3-D14 — record paint bboxes keyed by spot type.
+                if paint_bbox:
+                    stroke_spot = _cs_mapped_spot(current_stroke_cs, cs_to_spot)
+                    fill_spot = _cs_mapped_spot(current_fill_cs, cs_to_spot)
+                    touched_spots = {s for s in (stroke_spot, fill_spot) if s}
+                    for s in touched_spots:
+                        if s in signals.varnish_spots:
+                            signals.varnish_spots_bboxes.append(paint_bbox)
+                        if s in signals.varnish_free_spots:
+                            signals.varnish_free_spots_bboxes.append(paint_bbox)
+                        if s in signals.white_spots:
+                            signals.white_spots_bboxes.append(paint_bbox)
+                        if s in signals.braille_spots:
+                            signals.braille_paint_bboxes.append(paint_bbox)
+                    # T3-D06/D07 — track stroke bboxes painted with the
+                    # active dieline / crease spot for proximity checks.
+                    if (
+                        op in _STROKE_OPS or op in _STROKE_AND_FILL_OPS
+                    ) and stroke_spot is not None:
+                        if stroke_spot == spot_name and spot_name is not None:
+                            signals.dieline_line_bboxes.append(paint_bbox)
+                        elif _is_crease_name(stroke_spot):
+                            signals.crease_line_bboxes.append(paint_bbox)
+
+                path_subpath_areas_pts2.clear()
+                current_subpath_points_history.clear()
+
+            # `n` ends a path without painting — just discard the path.
+            elif op == "n":
+                finish_subpath()
+                path_subpath_areas_pts2.clear()
+
+    return signals
+
+
+def _cs_is_dieline(
+    cs_name: str | None,
+    cs_to_spot: dict[str, str],
+    spot_name: str | None,
+) -> bool:
+    """Resolve a color-space name to its Separation spot and compare.
+
+    Returns False when ``spot_name`` is None (Batch 4 spot-based checks
+    rely on knowing which spot counts as dieline; when the caller hasn't
+    provided one, no paint op qualifies as dieline).
+    """
+    if cs_name is None or spot_name is None:
+        return False
+    mapped = cs_to_spot.get(cs_name)
+    return mapped == spot_name
+
+
+def _cs_mapped_spot(
+    cs_name: str | None,
+    cs_to_spot: dict[str, str],
+) -> str | None:
+    """Return the spot colorant name mapped to ``cs_name``, or None."""
+    if cs_name is None:
+        return None
+    return cs_to_spot.get(cs_name)
+
+
+def _build_prop_to_ocg_name(props_dict: Any) -> dict[str, str]:
+    """Map ``/Properties`` resource names to their OCG `/Name`.
+
+    BDC operators tagged ``/OC /SomeProp`` look up the OCG via the
+    page's /Resources /Properties dict. Without this map the walker
+    can't tell whether a marked-content block is on a dieline layer.
+    """
+    out: dict[str, str] = {}
+    if props_dict is None:
+        return out
+    try:
+        items = props_dict.items() if hasattr(props_dict, "items") else []
+    except Exception:
+        return out
+    for key, value in items:
+        try:
+            res_name = str(key).lstrip("/")
+            if not hasattr(value, "get"):
+                continue
+            ocg_type = value.get("/Type")
+            if ocg_type is not None and str(ocg_type).lstrip("/") != "OCG":
+                continue
+            ocg_name = value.get("/Name")
+            if ocg_name is not None:
+                out[res_name] = str(ocg_name)
+        except Exception:
+            continue
+    return out
+
+
+def _build_cs_to_spot(cs_dict: Any) -> dict[str, str]:
+    """Map each Separation resource name to its colorant spot name.
+
+    Walks the page's ``/Resources /ColorSpace`` dict, looks for arrays
+    that start with ``/Separation``, and records the second element as
+    the colorant name.
+    """
+    out: dict[str, str] = {}
+    if cs_dict is None:
+        return out
+    try:
+        items = cs_dict.items() if hasattr(cs_dict, "items") else []
+    except Exception:
+        return out
+    for key, value in items:
+        try:
+            name = str(key).lstrip("/")
+            if not hasattr(value, "__getitem__"):
+                continue
+            # Color-space array: [/Separation  /SpotName  /Alternate  <tintTransform>]
+            first = value[0] if len(value) > 0 else None
+            if str(first).lstrip("/") != "Separation":
+                continue
+            spot = value[1] if len(value) > 1 else None
+            if spot is not None:
+                out[name] = str(spot).lstrip("/")
+        except Exception:
+            continue
+    return out

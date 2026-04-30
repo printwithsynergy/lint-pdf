@@ -11,7 +11,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from lintpdf.epm import codes
+from siftpdf.epm import codes
 from tests.api.conftest import PLACEHOLDER_TENANT_ID
 
 if TYPE_CHECKING:
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 def _create_chain_with_token(db: Session, *, fired_epm_codes: list[str] | None = None) -> str:
     """Create a job + approval chain + step. Returns the access token."""
-    from lintpdf.api.models import (
+    from siftpdf.api.models import (
         ApprovalChain,
         ApprovalStep,
         Job,

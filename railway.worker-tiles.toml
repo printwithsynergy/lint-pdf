@@ -23,7 +23,7 @@ watchPatterns = [
 # packages/engine/src/lintpdf/queue/tasks.py at the warm_viewer_tiles
 # dispatch site and redeploy.
 numReplicas = 1
-startCommand = "sh -c 'celery -A lintpdf.queue.worker worker --loglevel=info --queues=tiles --concurrency=${CELERY_TILES_CONCURRENCY:-2}'"
+startCommand = "sh -c 'celery -A siftpdf.queue.worker worker --loglevel=info --queues=tiles --concurrency=${CELERY_TILES_CONCURRENCY:-2}'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 gracefulShutdownTimeoutSec = 660

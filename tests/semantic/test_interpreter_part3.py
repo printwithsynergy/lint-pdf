@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from lintpdf.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
-from lintpdf.semantic.interpreter import ContentStreamInterpreter
+from siftpdf.semantic.events import ImagePlacedEvent, PrepressStateChangedEvent
+from siftpdf.semantic.interpreter import ContentStreamInterpreter
 
 
 def _make_resources(**kwargs: object) -> dict[str, object]:

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers import epm_v2_b
-from lintpdf.epm import codes
-from lintpdf.semantic.events import ImagePlacedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import (
+from siftpdf.analyzers import epm_v2_b
+from siftpdf.epm import codes
+from siftpdf.semantic.events import ImagePlacedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

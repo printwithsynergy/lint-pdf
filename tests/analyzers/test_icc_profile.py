@@ -2,13 +2,13 @@
 
 import struct
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.analyzers.icc_profile_analyzer import IccProfileAnalyzer
-from lintpdf.profiles.icc.profile_manager import (
+from siftpdf.analyzers.finding import Severity
+from siftpdf.analyzers.icc_profile_analyzer import IccProfileAnalyzer
+from siftpdf.profiles.icc.profile_manager import (
     extract_icc_tags,
     validate_icc_profile_bytes,
 )
-from lintpdf.semantic.model import (
+from siftpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,

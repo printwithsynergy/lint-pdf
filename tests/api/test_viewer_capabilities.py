@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock
 
-from lintpdf.api.models import (
+from siftpdf.api.models import (
     BrandProfile,
     BrandProfileType,
     Job,
@@ -105,7 +105,7 @@ class TestViewerConfigProjection:
         client: TestClient, db_session: Session
     ) -> None:
         # Even if the tenant default is anonymous, ``?brand=lintpdf`` wins.
-        from lintpdf.api.models import Tenant
+        from siftpdf.api.models import Tenant
 
         t = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         assert t is not None
@@ -133,7 +133,7 @@ class TestViewerConfigProjection:
             primary_color="#ff00aa",
         )
         db_session.add(profile)
-        from lintpdf.api.models import Tenant
+        from siftpdf.api.models import Tenant
 
         t = db_session.query(Tenant).filter(Tenant.id == PLACEHOLDER_TENANT_ID).first()
         assert t is not None
@@ -161,7 +161,7 @@ class TestCapabilityFillEndpoint:
     def test_queues_task_for_fillable_capability(
         client: TestClient, db_session: Session, monkeypatch
     ) -> None:
-        from lintpdf.queue import tasks as queue_tasks
+        from siftpdf.queue import tasks as queue_tasks
 
         mock_task = MagicMock()
         mock_task.id = "task-abc-123"

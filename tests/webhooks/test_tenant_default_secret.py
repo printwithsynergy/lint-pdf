@@ -11,14 +11,14 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from lintpdf.api.models import (
+from siftpdf.api.models import (
     Base,
     Tenant,
     TenantPlan,
     WebhookDelivery,
     WebhookEndpoint,
 )
-from lintpdf.webhooks.events import emit_event
+from siftpdf.webhooks.events import emit_event
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -92,7 +92,7 @@ def _patch_dispatch(monkeypatch) -> MagicMock:
     """Replace ``dispatch_webhook.delay`` with a MagicMock so emit_event
     doesn't reach into Celery during the unit test."""
     mock = MagicMock()
-    import lintpdf.queue.tasks as queue_tasks
+    import siftpdf.queue.tasks as queue_tasks
 
     monkeypatch.setattr(queue_tasks.dispatch_webhook, "delay", mock)
     return mock
@@ -152,7 +152,7 @@ def test_emit_event_skips_when_neither_secret_set(
 
     import logging
 
-    with caplog.at_level(logging.ERROR, logger="lintpdf.webhooks.events"):
+    with caplog.at_level(logging.ERROR, logger="siftpdf.webhooks.events"):
         emit_event(db, _TENANT_A, "job.completed", {"x": 1})
 
     assert mock.call_count == 0

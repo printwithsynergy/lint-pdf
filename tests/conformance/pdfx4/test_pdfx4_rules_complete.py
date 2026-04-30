@@ -3,7 +3,7 @@
 The per-sub-validator tests in this directory already cover 83 of the 91
 ``PDFX4-NNN`` rules. This file (a) plugs the 8 gaps for rules whose triggers
 weren't asserted anywhere else, and (b) asserts every fired rule is also
-registered in ``lintpdf.reports.check_names.CHECK_NAMES`` so the catalog
+registered in ``siftpdf.reports.check_names.CHECK_NAMES`` so the catalog
 generator can group it under the ``pdfx4`` category.
 """
 
@@ -11,13 +11,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lintpdf.conformance.pdfx4._boxes import validate_boxes
-from lintpdf.conformance.pdfx4._metadata import validate_metadata
-from lintpdf.reports.check_names import CHECK_NAMES
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.conformance.pdfx4._boxes import validate_boxes
+from siftpdf.conformance.pdfx4._metadata import validate_metadata
+from siftpdf.reports.check_names import CHECK_NAMES
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 if TYPE_CHECKING:
-    from lintpdf.analyzers.finding import Finding
+    from siftpdf.analyzers.finding import Finding
 
 _VALID_XMP_BASE = """<?xml version="1.0" encoding="UTF-8"?>
 <x:xmpmeta xmlns:x="adobe:ns:meta/">

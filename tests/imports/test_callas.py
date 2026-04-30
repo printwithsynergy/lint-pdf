@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from lintpdf.imports.base import ParserError
-from lintpdf.imports.callas import CallasJsonParser, CallasXmlParser
+from siftpdf.imports.base import ParserError
+from siftpdf.imports.callas import CallasJsonParser, CallasXmlParser
 
 CALLAS_JSON = json.dumps(
     {

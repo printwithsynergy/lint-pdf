@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from lintpdf.api.models import (
+from siftpdf.api.models import (
     ApprovalChain,
     ApprovalStep,
     Job,

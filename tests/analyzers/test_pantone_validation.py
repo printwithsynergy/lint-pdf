@@ -1,13 +1,13 @@
 """Tests for Pantone validation — reference DB, Delta-E, and analyzer integration."""
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.analyzers.spot_color_analyzer import SpotColorAnalyzer
-from lintpdf.profiles.icc.pantone_manager import (
+from siftpdf.analyzers.finding import Severity
+from siftpdf.analyzers.spot_color_analyzer import SpotColorAnalyzer
+from siftpdf.profiles.icc.pantone_manager import (
     DeltaEResult,
     PantoneManager,
     PantoneReference,
 )
-from lintpdf.semantic.model import (
+from siftpdf.semantic.model import (
     PdfBox,
     PdfColorSpace,
     SemanticDocument,
@@ -187,8 +187,8 @@ class TestOrchestratorPantoneOverrides:
     def test_orchestrator_passes_overrides_to_spot_analyzer(self):
         """Overrides passed to orchestrator reach SpotColorAnalyzer."""
 
-        from lintpdf.profiles.orchestrator import PreflightOrchestrator
-        from lintpdf.profiles.schema import PreflightProfile
+        from siftpdf.profiles.orchestrator import PreflightOrchestrator
+        from siftpdf.profiles.schema import PreflightProfile
 
         # Minimal profile that enables spot color checking
         profile = PreflightProfile.model_validate(
@@ -214,8 +214,8 @@ class TestOrchestratorPantoneOverrides:
 
     def test_orchestrator_none_overrides_gives_none_to_analyzer(self):
         """When no overrides, SpotColorAnalyzer receives None."""
-        from lintpdf.profiles.orchestrator import PreflightOrchestrator
-        from lintpdf.profiles.schema import PreflightProfile
+        from siftpdf.profiles.orchestrator import PreflightOrchestrator
+        from siftpdf.profiles.schema import PreflightProfile
 
         profile = PreflightProfile.model_validate(
             {

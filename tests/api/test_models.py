@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.api.models import (
+from siftpdf.api.models import (
     Base,
     Job,
     JobFinding,

@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import select
 
-from lintpdf.tenants import toggle_audit
-from lintpdf.tenants.toggle_models import (
+from siftpdf.tenants import toggle_audit
+from siftpdf.tenants.toggle_models import (
     Toggle,
     ToggleAuditLog,
     ToggleOverride,

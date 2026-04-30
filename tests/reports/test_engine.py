@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING
 import pytest
 
 if TYPE_CHECKING:
-    from lintpdf.profiles.orchestrator import PreflightResult
+    from siftpdf.profiles.orchestrator import PreflightResult
 
-from lintpdf.reports.engine import ReportEngine
+from siftpdf.reports.engine import ReportEngine
 
 
 class TestReportEngine:

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.document import DocumentAnalyzer
-from lintpdf.analyzers.finding import Severity
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.document import DocumentAnalyzer
+from siftpdf.analyzers.finding import Severity
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _make_document(

@@ -9,9 +9,9 @@ import time
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-from lintpdf.profiles.schema import PreflightProfile, AIFeatureConfig
-from lintpdf.profiles.orchestrator import PreflightOrchestrator
-from lintpdf.reports.engine import ReportEngine
+from siftpdf.profiles.schema import PreflightProfile, AIFeatureConfig
+from siftpdf.profiles.orchestrator import PreflightOrchestrator
+from siftpdf.reports.engine import ReportEngine
 
 PDF_PATH = "/home/user/lint-pdf/packages/web/public/lintpdf_preflight_test_final.pdf"
 OUTPUT_DIR = "/home/user/lint-pdf/packages/web/public/reports"

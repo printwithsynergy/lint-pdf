@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from lintpdf.primitives import REGISTRY, geometry
+from siftpdf.primitives import REGISTRY, geometry
 
 # ---- registry ------------------------------------------------------------
 

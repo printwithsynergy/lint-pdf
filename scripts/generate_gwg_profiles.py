@@ -29,7 +29,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-PROFILES_DIR = Path(__file__).resolve().parent.parent / "src" / "lintpdf" / "profiles" / "builtin"
+PROFILES_DIR = Path(__file__).resolve().parent.parent / "src" / "siftpdf" / "profiles" / "builtin"
 
 
 @dataclass(frozen=True)

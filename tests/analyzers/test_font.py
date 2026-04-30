@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.analyzers.font import FontAnalyzer
-from lintpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
+from siftpdf.analyzers.finding import Severity
+from siftpdf.analyzers.font import FontAnalyzer
+from siftpdf.semantic.model import PdfBox, PdfFont, SemanticDocument, SemanticPage
 
 
 def _make_font(

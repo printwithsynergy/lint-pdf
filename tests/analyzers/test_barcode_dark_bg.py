@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.barcode import BarcodeAnalyzer, _BarcodeCandidate
-from lintpdf.semantic.events import PathPaintingEvent
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.barcode import BarcodeAnalyzer, _BarcodeCandidate
+from siftpdf.semantic.events import PathPaintingEvent
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc() -> SemanticDocument:

@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from lintpdf.imports.base import ParserError
-from lintpdf.imports.lintpdf_native import LintpdfNativeParser
+from siftpdf.imports.base import ParserError
+from siftpdf.imports.lintpdf_native import LintpdfNativeParser
 
 
 def test_parses_full_example() -> None:

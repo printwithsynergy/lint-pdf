@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from lintpdf.queue.app import celery_app, create_celery_app
+from siftpdf.queue.app import celery_app, create_celery_app
 
 
 class TestCeleryApp:
     @staticmethod
     def test_create_app_returns_celery() -> None:
         app = create_celery_app(broker_url="memory://")
-        assert app.main == "lintpdf"
+        assert app.main == "siftpdf"
 
     @staticmethod
     def test_custom_broker() -> None:

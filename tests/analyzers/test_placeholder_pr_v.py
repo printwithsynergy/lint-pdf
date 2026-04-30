@@ -8,8 +8,8 @@
 
 from __future__ import annotations
 
-from lintpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
-from lintpdf.semantic.model import (
+from siftpdf.analyzers.placeholder_text import PlaceholderTextAnalyzer
+from siftpdf.semantic.model import (
     PdfBox,
     SemanticDocument,
     SemanticPage,

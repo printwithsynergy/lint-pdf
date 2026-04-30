@@ -12,9 +12,9 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from lintpdf.api.models import Base, Job, JobFinding, JobStatus, Tenant, TenantPlan
-from lintpdf.api.storage import InMemoryStorage
-from lintpdf.queue.tasks import run_preflight
+from siftpdf.api.models import Base, Job, JobFinding, JobStatus, Tenant, TenantPlan
+from siftpdf.api.storage import InMemoryStorage
+from siftpdf.queue.tasks import run_preflight
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -67,7 +67,7 @@ class FakeFinding:
 
     def __post_init__(self) -> None:
         if self.severity is None:
-            from lintpdf.analyzers.finding import Severity
+            from siftpdf.analyzers.finding import Severity
 
             self.severity = Severity.ADVISORY
 
@@ -181,10 +181,10 @@ class TestRunPreflightPipeline:
         mock_orchestrator.run.return_value = orchestrator_result
 
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=db_session),
-            patch("lintpdf.api.storage.get_storage", return_value=storage),
+            patch("siftpdf.api.database.get_db_session", return_value=db_session),
+            patch("siftpdf.api.storage.get_storage", return_value=storage),
             patch(
-                "lintpdf.profiles.orchestrator.PreflightOrchestrator",
+                "siftpdf.profiles.orchestrator.PreflightOrchestrator",
                 return_value=mock_orchestrator,
             ),
         ):
@@ -261,8 +261,8 @@ class TestRunPreflightPipeline:
     @staticmethod
     def test_job_not_found(db_session: Session, storage: InMemoryStorage) -> None:
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=db_session),
-            patch("lintpdf.api.storage.get_storage", return_value=storage),
+            patch("siftpdf.api.database.get_db_session", return_value=db_session),
+            patch("siftpdf.api.storage.get_storage", return_value=storage),
         ):
             result = run_preflight.run(
                 str(uuid.uuid4()),
@@ -285,10 +285,10 @@ class TestRunPreflightPipeline:
         mock_orchestrator.run.side_effect = RuntimeError("Parse error")
 
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=db_session),
-            patch("lintpdf.api.storage.get_storage", return_value=storage),
+            patch("siftpdf.api.database.get_db_session", return_value=db_session),
+            patch("siftpdf.api.storage.get_storage", return_value=storage),
             patch(
-                "lintpdf.profiles.orchestrator.PreflightOrchestrator",
+                "siftpdf.profiles.orchestrator.PreflightOrchestrator",
                 return_value=mock_orchestrator,
             ),
             pytest.raises((RuntimeError, Retry)),
@@ -313,7 +313,7 @@ class TestDispatchTenantWebhooks:
         self, db_session: Session, storage: InMemoryStorage, job_in_db: Job
     ) -> None:
         """Verify dispatch_webhook.delay is called when webhooks exist."""
-        from lintpdf.api.models import WebhookEndpoint
+        from siftpdf.api.models import WebhookEndpoint
 
         db_session.add(
             WebhookEndpoint(
@@ -332,13 +332,13 @@ class TestDispatchTenantWebhooks:
         mock_orchestrator.run.return_value = FakeResult(job_id=str(job_in_db.id))
 
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=db_session),
-            patch("lintpdf.api.storage.get_storage", return_value=storage),
+            patch("siftpdf.api.database.get_db_session", return_value=db_session),
+            patch("siftpdf.api.storage.get_storage", return_value=storage),
             patch(
-                "lintpdf.profiles.orchestrator.PreflightOrchestrator",
+                "siftpdf.profiles.orchestrator.PreflightOrchestrator",
                 return_value=mock_orchestrator,
             ),
-            patch("lintpdf.queue.tasks.dispatch_webhook") as mock_dispatch,
+            patch("siftpdf.queue.tasks.dispatch_webhook") as mock_dispatch,
         ):
             run_preflight.run(
                 str(job_in_db.id),
@@ -354,7 +354,7 @@ class TestDispatchTenantWebhooks:
     def test_inactive_webhooks_skipped(
         self, db_session: Session, storage: InMemoryStorage, job_in_db: Job
     ) -> None:
-        from lintpdf.api.models import WebhookEndpoint
+        from siftpdf.api.models import WebhookEndpoint
 
         db_session.add(
             WebhookEndpoint(
@@ -373,13 +373,13 @@ class TestDispatchTenantWebhooks:
         mock_orchestrator.run.return_value = FakeResult(job_id=str(job_in_db.id))
 
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=db_session),
-            patch("lintpdf.api.storage.get_storage", return_value=storage),
+            patch("siftpdf.api.database.get_db_session", return_value=db_session),
+            patch("siftpdf.api.storage.get_storage", return_value=storage),
             patch(
-                "lintpdf.profiles.orchestrator.PreflightOrchestrator",
+                "siftpdf.profiles.orchestrator.PreflightOrchestrator",
                 return_value=mock_orchestrator,
             ),
-            patch("lintpdf.queue.tasks.dispatch_webhook") as mock_dispatch,
+            patch("siftpdf.queue.tasks.dispatch_webhook") as mock_dispatch,
         ):
             run_preflight.run(
                 str(job_in_db.id),

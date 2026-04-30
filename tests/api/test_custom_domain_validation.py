@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from fastapi import HTTPException
 
-from lintpdf.api.routes.branding import validate_custom_domain
+from siftpdf.api.routes.branding import validate_custom_domain
 
 
 class TestValidCustomDomains:

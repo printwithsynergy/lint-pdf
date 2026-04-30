@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.semantic.events import (
+from siftpdf.semantic.events import (
     ClippingPathSetEvent,
     ColorChangedEvent,
     FormXObjectEnteredEvent,
@@ -13,7 +13,7 @@ from lintpdf.semantic.events import (
     PathPaintingEvent,
     TextRenderedEvent,
 )
-from lintpdf.semantic.interpreter import ContentStreamInterpreter
+from siftpdf.semantic.interpreter import ContentStreamInterpreter
 
 
 def _make_interpreter(resources: dict | None = None, page_num: int = 1) -> ContentStreamInterpreter:

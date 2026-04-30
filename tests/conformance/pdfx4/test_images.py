@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from lintpdf.analyzers.finding import Severity
-from lintpdf.conformance.pdfx4._images import validate_images
-from lintpdf.semantic.events import ImagePlacedEvent
-from lintpdf.semantic.graphics_state import TransformationMatrix
-from lintpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
+from siftpdf.analyzers.finding import Severity
+from siftpdf.conformance.pdfx4._images import validate_images
+from siftpdf.semantic.events import ImagePlacedEvent
+from siftpdf.semantic.graphics_state import TransformationMatrix
+from siftpdf.semantic.model import PdfBox, SemanticDocument, SemanticPage
 
 
 def _doc(output_intents: list[dict[str, Any]] | None = None) -> SemanticDocument:

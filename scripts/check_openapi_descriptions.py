@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 ENGINE_ROOT = Path(__file__).resolve().parent.parent
-SCHEMAS = ENGINE_ROOT / "src" / "lintpdf" / "api" / "schemas.py"
+SCHEMAS = ENGINE_ROOT / "src" / "siftpdf" / "api" / "schemas.py"
 BASELINE_FILE = ENGINE_ROOT / "scripts" / "openapi_descriptions_baseline.txt"
 
 # Match ``Field(...)`` calls — including multi-line. We collapse

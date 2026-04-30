@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from lintpdf.semantic.graphics_state import GraphicsState
+from siftpdf.semantic.graphics_state import GraphicsState
 
 
 class TestPrepressState:

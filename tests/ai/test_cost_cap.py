@@ -12,7 +12,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from lintpdf.ai.cost_cap import (
+from siftpdf.ai.cost_cap import (
     CAP_TOGGLE_ID,
     CostCapExceededError,
     _month_window,
@@ -23,20 +23,20 @@ from lintpdf.ai.cost_cap import (
     monthly_usage_cents,
     remaining_cents,
 )
-from lintpdf.api.models import (
+from siftpdf.api.models import (
     AIUsageLog,
     Base,
     Tenant,
     TenantPlan,
 )
-from lintpdf.tenants.toggle_models import (
+from siftpdf.tenants.toggle_models import (
     MergeStrategy,
     Toggle,
     ToggleOverride,
     ToggleScope,
     ToggleType,
 )
-from lintpdf.tenants.toggle_registry import seed_category_toggles
+from siftpdf.tenants.toggle_registry import seed_category_toggles
 
 if TYPE_CHECKING:
     from collections.abc import Generator

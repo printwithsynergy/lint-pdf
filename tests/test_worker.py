@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from lintpdf.queue.app import create_celery_app
+from siftpdf.queue.app import create_celery_app
 
 TEST_SECRET = "test-webhook-secret"
 
@@ -25,7 +25,7 @@ class TestCeleryAppCreation:
 
     @staticmethod
     def test_creates_app(celery_app) -> None:
-        assert celery_app.main == "lintpdf"
+        assert celery_app.main == "siftpdf"
 
     @staticmethod
     def test_json_serializer(celery_app) -> None:
@@ -60,7 +60,7 @@ class TestCeleryAppCreation:
         schedule = celery_app.conf.beat_schedule
         assert "cleanup-expired-reports" in schedule
         task_conf = schedule["cleanup-expired-reports"]
-        assert task_conf["task"] == "lintpdf.queue.tasks.cleanup_expired_reports"
+        assert task_conf["task"] == "siftpdf.queue.tasks.cleanup_expired_reports"
         assert task_conf["schedule"] == 86400.0
 
     @staticmethod
@@ -76,10 +76,10 @@ class TestWorkerInit:
     def test_on_worker_init_calls_init_db() -> None:
         """_on_worker_init should initialize the database."""
         with (
-            patch("lintpdf.api.database.init_db") as mock_init_db,
+            patch("siftpdf.api.database.init_db") as mock_init_db,
             patch.dict("os.environ", {"LINTPDF_DATABASE_URL": "postgresql://test:5432/testdb"}),
         ):
-            from lintpdf.queue.worker import _on_worker_init
+            from siftpdf.queue.worker import _on_worker_init
 
             _on_worker_init()
             mock_init_db.assert_called_once_with("postgresql://test:5432/testdb")
@@ -93,7 +93,7 @@ class TestWorkerInit:
             patch.dict("os.environ", {}, clear=True),
         ):
             os.environ.pop("LINTPDF_DATABASE_URL", None)
-            from lintpdf.queue.worker import _on_worker_init
+            from siftpdf.queue.worker import _on_worker_init
 
             with pytest.raises(RuntimeError, match="LINTPDF_DATABASE_URL"):
                 _on_worker_init()
@@ -101,7 +101,7 @@ class TestWorkerInit:
     @staticmethod
     def test_worker_module_exports_app() -> None:
         """The worker module should export the celery app."""
-        from lintpdf.queue.worker import app
+        from siftpdf.queue.worker import app
 
         assert app is not None
 
@@ -116,14 +116,14 @@ class TestWorkerInit:
         """
         from unittest.mock import MagicMock, patch
 
-        from lintpdf.api import database as db_module
+        from siftpdf.api import database as db_module
 
         # Swap the real engine out for a MagicMock; ``init_db`` uses
         # Postgres-only pool kwargs that SQLite's SingletonThreadPool
         # rejects, so we mock at the create_engine layer instead of
         # pointing at a real URL.
         fake_engine = MagicMock()
-        with patch("lintpdf.api.database.create_engine", return_value=fake_engine):
+        with patch("siftpdf.api.database.create_engine", return_value=fake_engine):
             db_module.reset_db_state()  # start clean
             db_module.init_db("postgresql://fake@host/db")
             assert db_module._db_state["engine"] is fake_engine
@@ -142,11 +142,11 @@ class TestWorkerInit:
         """The Celery worker-fork signal handler must call reset_db_state."""
         from unittest.mock import patch
 
-        from lintpdf.queue.app import _configure_worker_process
+        from siftpdf.queue.app import _configure_worker_process
 
         with (
-            patch("lintpdf.api.database.reset_db_state") as mock_reset,
-            patch("lintpdf.api.logging_config.configure_logging") as mock_log,
+            patch("siftpdf.api.database.reset_db_state") as mock_reset,
+            patch("siftpdf.api.logging_config.configure_logging") as mock_log,
         ):
             _configure_worker_process()
             mock_log.assert_called_once()
@@ -159,27 +159,27 @@ class TestRunPreflightTask:
     @staticmethod
     def test_task_is_registered() -> None:
         """run_preflight should be registered as a Celery task."""
-        from lintpdf.queue.tasks import run_preflight
+        from siftpdf.queue.tasks import run_preflight
 
-        assert run_preflight.name == "lintpdf.preflight.run"
+        assert run_preflight.name == "siftpdf.preflight.run"
 
     @staticmethod
     def test_task_retry_config() -> None:
-        from lintpdf.queue.tasks import run_preflight
+        from siftpdf.queue.tasks import run_preflight
 
         assert run_preflight.max_retries == 2
         assert run_preflight.default_retry_delay == 10
 
     @staticmethod
     def test_task_time_limits() -> None:
-        from lintpdf.queue.tasks import run_preflight
+        from siftpdf.queue.tasks import run_preflight
 
         assert run_preflight.time_limit == 300
         assert run_preflight.soft_time_limit == 270
 
     def _run_preflight_fn(self, retries=0, **kwargs):
         """Call run_preflight's underlying function with a mock self context."""
-        from lintpdf.queue.tasks import run_preflight
+        from siftpdf.queue.tasks import run_preflight
 
         # Access the actual function from the Celery task's _decorated attribute
         # or use push_request to set up request context
@@ -194,7 +194,7 @@ class TestRunPreflightTask:
         mock_db = MagicMock()
         mock_db.query.return_value.filter.return_value.first.return_value = None
 
-        with patch("lintpdf.api.database.get_db_session", return_value=mock_db):
+        with patch("siftpdf.api.database.get_db_session", return_value=mock_db):
             result = self._run_preflight_fn(
                 job_id="00000000-0000-0000-0000-000000000001",
                 profile_id="lintpdf-default",
@@ -206,7 +206,7 @@ class TestRunPreflightTask:
 
     def test_successful_preflight_run(self) -> None:
         """Successful preflight should return complete status."""
-        from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
+        from siftpdf.profiles.orchestrator import PreflightResult, PreflightSummary
 
         mock_db = MagicMock()
         mock_job = MagicMock()
@@ -234,11 +234,11 @@ class TestRunPreflightTask:
         )
 
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=mock_db),
-            patch("lintpdf.api.storage.get_storage", return_value=mock_storage),
-            patch("lintpdf.profiles.registry.ProfileRegistry") as MockRegistry,  # noqa: N806
-            patch("lintpdf.profiles.orchestrator.PreflightOrchestrator") as MockOrch,  # noqa: N806
-            patch("lintpdf.queue.tasks._dispatch_tenant_webhooks"),
+            patch("siftpdf.api.database.get_db_session", return_value=mock_db),
+            patch("siftpdf.api.storage.get_storage", return_value=mock_storage),
+            patch("siftpdf.profiles.registry.ProfileRegistry") as MockRegistry,  # noqa: N806
+            patch("siftpdf.profiles.orchestrator.PreflightOrchestrator") as MockOrch,  # noqa: N806
+            patch("siftpdf.queue.tasks._dispatch_tenant_webhooks"),
         ):
             MockRegistry.return_value.get.return_value = MagicMock()
             MockOrch.return_value.run.return_value = mock_result
@@ -257,7 +257,7 @@ class TestRunPreflightTask:
 
     def test_r2_failure_falls_back_to_redis(self) -> None:
         """When R2 download fails, task should try Redis cache."""
-        from lintpdf.profiles.orchestrator import PreflightResult, PreflightSummary
+        from siftpdf.profiles.orchestrator import PreflightResult, PreflightSummary
 
         mock_db = MagicMock()
         mock_job = MagicMock()
@@ -288,12 +288,12 @@ class TestRunPreflightTask:
         )
 
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=mock_db),
-            patch("lintpdf.api.storage.get_storage", return_value=mock_storage),
-            patch("lintpdf.api.middleware.get_redis_client", return_value=mock_redis),
-            patch("lintpdf.profiles.registry.ProfileRegistry") as MockReg,  # noqa: N806
-            patch("lintpdf.profiles.orchestrator.PreflightOrchestrator") as MockOrch,  # noqa: N806
-            patch("lintpdf.queue.tasks._dispatch_tenant_webhooks"),
+            patch("siftpdf.api.database.get_db_session", return_value=mock_db),
+            patch("siftpdf.api.storage.get_storage", return_value=mock_storage),
+            patch("siftpdf.api.middleware.get_redis_client", return_value=mock_redis),
+            patch("siftpdf.profiles.registry.ProfileRegistry") as MockReg,  # noqa: N806
+            patch("siftpdf.profiles.orchestrator.PreflightOrchestrator") as MockOrch,  # noqa: N806
+            patch("siftpdf.queue.tasks._dispatch_tenant_webhooks"),
         ):
             MockReg.return_value.get.return_value = MagicMock()
             MockOrch.return_value.run.return_value = mock_result
@@ -318,9 +318,9 @@ class TestRunPreflightTask:
         mock_storage.download_pdf.side_effect = Exception("R2 down")
 
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=mock_db),
-            patch("lintpdf.api.storage.get_storage", return_value=mock_storage),
-            patch("lintpdf.api.middleware.get_redis_client", return_value=None),
+            patch("siftpdf.api.database.get_db_session", return_value=mock_db),
+            patch("siftpdf.api.storage.get_storage", return_value=mock_storage),
+            patch("siftpdf.api.middleware.get_redis_client", return_value=None),
         ):
             # retries=2 == max_retries, so it won't call self.retry
             result = self._run_preflight_fn(
@@ -339,9 +339,9 @@ class TestCleanupExpiredReports:
 
     @staticmethod
     def test_task_is_registered() -> None:
-        from lintpdf.queue.tasks import cleanup_expired_reports
+        from siftpdf.queue.tasks import cleanup_expired_reports
 
-        assert cleanup_expired_reports.name == "lintpdf.queue.tasks.cleanup_expired_reports"
+        assert cleanup_expired_reports.name == "siftpdf.queue.tasks.cleanup_expired_reports"
 
     @staticmethod
     def test_cleanup_returns_count() -> None:
@@ -351,11 +351,11 @@ class TestCleanupExpiredReports:
         mock_service.cleanup_expired.return_value = 7
 
         with (
-            patch("lintpdf.api.database.get_db_session", return_value=mock_db),
-            patch("lintpdf.api.storage.get_storage", return_value=mock_storage),
-            patch("lintpdf.reports.service.ReportService", return_value=mock_service),
+            patch("siftpdf.api.database.get_db_session", return_value=mock_db),
+            patch("siftpdf.api.storage.get_storage", return_value=mock_storage),
+            patch("siftpdf.reports.service.ReportService", return_value=mock_service),
         ):
-            from lintpdf.queue.tasks import cleanup_expired_reports
+            from siftpdf.queue.tasks import cleanup_expired_reports
 
             result = cleanup_expired_reports()
         assert result == {"cleaned": 7}
@@ -367,13 +367,13 @@ class TestDispatchWebhook:
 
     @staticmethod
     def test_task_is_registered() -> None:
-        from lintpdf.queue.tasks import dispatch_webhook
+        from siftpdf.queue.tasks import dispatch_webhook
 
-        assert dispatch_webhook.name == "lintpdf.webhook.dispatch"
+        assert dispatch_webhook.name == "siftpdf.webhook.dispatch"
 
     @staticmethod
     def test_task_retry_config() -> None:
-        from lintpdf.queue.tasks import dispatch_webhook
+        from siftpdf.queue.tasks import dispatch_webhook
 
         assert dispatch_webhook.max_retries == 3
         assert dispatch_webhook.default_retry_delay == 5
@@ -385,7 +385,7 @@ class TestDispatchWebhook:
         mock_response.raise_for_status.return_value = None
 
         with patch("httpx.post", return_value=mock_response):
-            from lintpdf.queue.tasks import dispatch_webhook
+            from siftpdf.queue.tasks import dispatch_webhook
 
             result = dispatch_webhook(
                 webhook_url="https://example.com/webhook",
@@ -406,7 +406,7 @@ class TestDispatchWebhook:
         mock_response.raise_for_status.return_value = None
 
         with patch("httpx.post", return_value=mock_response) as mock_post:
-            from lintpdf.queue.tasks import dispatch_webhook
+            from siftpdf.queue.tasks import dispatch_webhook
 
             payload = {"job_id": "123"}
             secret = TEST_SECRET
@@ -430,7 +430,7 @@ class TestDispatchWebhook:
     @staticmethod
     def test_dispatch_failure_returns_error() -> None:
         with patch("httpx.post", side_effect=Exception("Connection refused")):
-            from lintpdf.queue.tasks import dispatch_webhook
+            from siftpdf.queue.tasks import dispatch_webhook
 
             result = dispatch_webhook(
                 webhook_url="https://example.com/webhook",
@@ -448,7 +448,7 @@ class TestDispatchTenantWebhooks:
 
     @staticmethod
     def test_dispatches_to_active_endpoints() -> None:
-        from lintpdf.queue.tasks import _dispatch_tenant_webhooks
+        from siftpdf.queue.tasks import _dispatch_tenant_webhooks
 
         mock_db = MagicMock()
         endpoint = MagicMock()
@@ -458,13 +458,13 @@ class TestDispatchTenantWebhooks:
         endpoint.is_active = True
         mock_db.query.return_value.filter.return_value.all.return_value = [endpoint]
 
-        with patch("lintpdf.queue.tasks.dispatch_webhook") as mock_dispatch:
+        with patch("siftpdf.queue.tasks.dispatch_webhook") as mock_dispatch:
             _dispatch_tenant_webhooks(mock_db, "tenant-123", "job.completed", {"job_id": "abc"})
             mock_dispatch.delay.assert_called_once()
 
     @staticmethod
     def test_filters_by_event_type() -> None:
-        from lintpdf.queue.tasks import _dispatch_tenant_webhooks
+        from siftpdf.queue.tasks import _dispatch_tenant_webhooks
 
         mock_db = MagicMock()
         endpoint = MagicMock()
@@ -474,13 +474,13 @@ class TestDispatchTenantWebhooks:
         endpoint.is_active = True
         mock_db.query.return_value.filter.return_value.all.return_value = [endpoint]
 
-        with patch("lintpdf.queue.tasks.dispatch_webhook") as mock_dispatch:
+        with patch("siftpdf.queue.tasks.dispatch_webhook") as mock_dispatch:
             _dispatch_tenant_webhooks(mock_db, "tenant-123", "job.completed", {"job_id": "abc"})
             mock_dispatch.delay.assert_not_called()
 
     @staticmethod
     def test_matching_event_dispatches() -> None:
-        from lintpdf.queue.tasks import _dispatch_tenant_webhooks
+        from siftpdf.queue.tasks import _dispatch_tenant_webhooks
 
         mock_db = MagicMock()
         endpoint = MagicMock()
@@ -490,6 +490,6 @@ class TestDispatchTenantWebhooks:
         endpoint.is_active = True
         mock_db.query.return_value.filter.return_value.all.return_value = [endpoint]
 
-        with patch("lintpdf.queue.tasks.dispatch_webhook") as mock_dispatch:
+        with patch("siftpdf.queue.tasks.dispatch_webhook") as mock_dispatch:
             _dispatch_tenant_webhooks(mock_db, "tenant-123", "job.completed", {"job_id": "abc"})
             mock_dispatch.delay.assert_called_once()
